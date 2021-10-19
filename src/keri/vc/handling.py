@@ -3,11 +3,13 @@
 keri.vc.handling module
 
 """
+import json
+
 from hio.base import doing
 from hio.help import decking
 from keri import kering
 from keri.help import helping
-from keri.vdr import issuing
+from keri.vdr import issuing, viring
 
 from . import proving
 from .. import help
@@ -16,7 +18,7 @@ from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
 from ..kering import ShortageError
 from ..peer import exchanging
-from ..vc.proving import Credentialer, buildProof
+from ..vc.proving import Credentialer
 
 logger = help.ogler.getLogger()
 
@@ -215,6 +217,8 @@ class ApplyHandler(doing.DoDoer):
                                             source=source,
                                             status=self.issuer.regk)
                 try:
+                    print("about to issue")
+                    print(creder.pretty())
                     self.issuer.issue(creder=creder, dt=dt)
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
@@ -319,7 +323,6 @@ class IssueHandler(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                print("got message")
                 payload = msg["payload"]
                 envelopes = payload["vc"]
                 for envlop in envelopes:
@@ -327,8 +330,6 @@ class IssueHandler(doing.DoDoer):
                     proof = envlop["proof"]
 
                     vs = crd["v"]
-
-                    print("got credential")
 
                     kind, version, size = Deversify(vs)
                     raw = dumps(ked=crd, kind=kind)
@@ -364,8 +365,6 @@ class IssueHandler(doing.DoDoer):
                 if cueKin == "saved":
                     creder = cue["creder"]
 
-                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
-                    logger.info(creder.pretty())
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
 
@@ -411,7 +410,17 @@ class RequestHandler(doing.Doer):
 
     resource = "/presentation/request"
 
-    def __init__(self, wallet, cues=None, **kwa):
+    def __init__(self, hab, wallet, cues=None, **kwa):
+        """
+        Create an `exn` request handler for processing credential presentation requests
+
+        Parameters
+            hab (Habitate) is the environment
+            wallet (Wallet) is the wallet holding the credentials to present
+            cues (decking.Deck) of responses cue'ed up by this handler
+
+        """
+        self.hab = hab
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
@@ -445,7 +454,7 @@ class RequestHandler(doing.Doer):
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
-                    pe = presentation_exchange(matches)
+                    pe = presentation_exchange(db=self.hab.db, reger=self.wallet.reger, credentials=matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
@@ -540,11 +549,10 @@ class ProofHandler(doing.Doer):
                 if "descriptor_map" not in pe:
                     raise ValueError("invalud presentation submission in proof payload")
 
+                # TODO:  Find verifiable credential in vcs based on `path`
                 dm = pe["descriptor_map"]
 
-                for idx, descriptor in enumerate(dm):
-                    # TODO:  Find verifiable credential in vcs based on `path`
-                    vc = vcs[idx]
+                for vc in vcs:
                     self.proofs.append((pre, vc))
 
                 yield
@@ -552,14 +560,16 @@ class ProofHandler(doing.Doer):
             yield
 
 
-def envelope(msg, typ=JSONSchema()):
+def envelope(msg, msgs=bytearray()):
     """
     Returns a dict of a VC split into the "vc" and "proof"
 
     Parameters:
         msg: bytes of verifiable credential to split
-        typ: schema type of the VC
+        msgs: optional event log messages in support of the credential
+
     """
+
 
     ims = bytearray(msg)
     try:
@@ -571,32 +581,60 @@ def envelope(msg, typ=JSONSchema()):
 
     return dict(
         vc=creder.crd,
-        proof=ims.decode("utf-8")
+        proof=ims.decode("utf-8"),
+        msgs=msgs.decode("utf-8")
     )
 
 
-def presentation_exchange(credentials):
+def presentation_exchange(db, reger, credentials):
+    """
+    Create a presentation exchange body containing the credential and event logs
+    needed to provide proof of holding a valid credential
+
+    Parameters:
+        db (Baser) is the environment database
+        reger (Registry) is the credential registry database
+        credentials (List) is the list of credential instances
+
+    """
     dm = []
     vcs = []
 
     for idx, (creder, prefixer, seqner, diger, sigers) in enumerate(credentials):
-        proof = buildProof(prefixer, seqner, diger, sigers)
+        said = creder.said
+        regk = creder.status
+        vci = viring.nsKey([regk, said])
+
+        issr = creder.crd["i"]
+
+        msgs = bytearray()
+        for msg in db.clonePreIter(pre=issr):
+            msgs.extend(msg)
+
+        for msg in reger.clonePreIter(pre=regk):
+            msgs.extend(msg)
+
+        for msg in reger.clonePreIter(pre=vci):
+            msgs.extend(msg)
+
+        proof = viring.buildProof(prefixer, seqner, diger, sigers)
         dm.append(dict(
             id=creder.schema,
             format="cesr",
             path="$.verifiableCredential[{}]".format(idx)
         ))
+        craw = viring.messagize(creder=creder, proof=proof)
+        vcs.append(envelope(craw, msgs))
 
-        vcs.append(dict(
-            vc=creder.crd,
-            proof=proof.decode("utf-8")
-        ))
+        sources = reger.sources(creder)
+        vcs.extend([envelope(craw) for craw in sources])
+
 
     d = dict(
         presentation_submission=dict(
             descriptor_map=dm
         ),
-        verifiableCredential=vcs
+        verifiableCredential=vcs,
     )
 
     return d

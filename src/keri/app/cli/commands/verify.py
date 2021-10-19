@@ -9,7 +9,7 @@ from keri import kering
 from keri.app import habbing
 from keri.core import coring
 
-parser = argparse.ArgumentParser(description='Sign an arbitrary string')
+parser = argparse.ArgumentParser(description='Verify a signature on arbitrary data')
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument("--prefix", "-p", help="Identifier prefix of the signer", required=True)

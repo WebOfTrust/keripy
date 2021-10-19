@@ -9,12 +9,59 @@ A special purpose Verifiable Data Registry (VDR)
 """
 from dataclasses import dataclass
 
-from keri.db import koming, subing
+from keri.db import koming, subing, basing
 
 from .. import kering
 from ..core import coring
 from ..db import dbing
 from ..vc import proving
+
+
+class regerdict(dict):
+    """
+    Subclass of dict that has db as attribute and employs read through cash
+    from db Baser.stts of kever states to reload kever from state in database
+    if not in memory as dict item
+    """
+    __slots__ = ('reger', 'db', 'klas')  # no .__dict__ just for db reference
+
+    def __init__(self, *pa, **kwa):
+        super(regerdict, self).__init__(*pa, **kwa)
+        self.db = None
+        self.reger = None
+
+    def __getitem__(self, k):
+        from ..vdr import eventing
+        try:
+            return super(regerdict, self).__getitem__(k)
+        except KeyError as ex:
+            if not self.db or not self.reger:
+                raise ex  # reraise KeyError
+            if (state := self.reger.states.get(keys=k)) is None:
+                raise ex  # reraise KeyError
+            try:
+                tever = eventing.Tever(state=state, db=self.db, reger=self.reger)
+            except kering.MissingEntryError:  # no kel event for keystate
+                raise ex  # reraise KeyError
+            self.__setitem__(k, tever)
+            return tever
+
+    def __contains__(self, k):
+        if not super(regerdict, self).__contains__(k):
+            try:
+                self.__getitem__(k)
+                return True
+            except KeyError:
+                return False
+        else:
+            return True
+
+    def get(self, k, default=None):
+        if not super(regerdict, self).__contains__(k):
+            return default
+        else:
+            return self.__getitem__(k)
+
 
 
 @dataclass
@@ -146,6 +193,7 @@ class Registry(dbing.LMDBer):
         self.cdts = None
         self.cpse = None
         self.seals = None
+        self.saved = None
         self.issus = None
         self.subjs = None
         self.schms = None
@@ -156,8 +204,16 @@ class Registry(dbing.LMDBer):
         self.mce = None
         self.mse = None
         self.mase = None
+        self.states = None  # key states
 
-        self._tevers = dict()
+
+        if "db" in kwa:
+            self._tevers = regerdict()
+            self._tevers.reger = self  # assign db for read thorugh cache of kevers
+            self._tevers.db = kwa["db"]
+        else:
+            self._tevers = dict()
+
 
         super(Registry, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -190,6 +246,8 @@ class Registry(dbing.LMDBer):
         self.taes = self.env.open_db(key=b'taes.')
         self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
 
+        self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
+
         # Holds the credential
         self.creds = proving.CrederSuber(db=self, subkey="creds.")
 
@@ -200,6 +258,8 @@ class Registry(dbing.LMDBer):
         # Partially signed credential escrow
         self.cpse = subing.CesrSuber(db=self, subkey='cpse.', klas=coring.Saider)
 
+        # Index of credentials processed and saved.  Indicates fully verified (even if revoked)
+        self.saved = subing.CesrSuber(db=self, subkey='saved.', klas=coring.Saider)
         # Index of credentials by issuer.  My credentials issued, key == hab.pre
         self.issus = subing.CesrDupSuber(db=self, subkey='issus.', klas=coring.Saider)
         # Index of credentials by subject.  My credentials received, key == hab.pre
@@ -227,7 +287,6 @@ class Registry(dbing.LMDBer):
         self.regs = koming.Komer(db=self,
                                  subkey='regs.',
                                  schema=RegistryRecord, )
-
 
         return self.env
 
@@ -272,6 +331,41 @@ class Registry(dbing.LMDBer):
             msg.extend(pcnt)
             msg.extend(atc)
             yield msg
+
+    def sources(self, creder):
+        """
+        Returns raw bytes of any source ('p') credential that is in our database
+         
+        Parameters:
+            creder is Credentialer root credential
+             
+        """
+        chains = creder.crd["p"]
+        saids = []
+        for source in chains:
+            for _, data in source.items():
+                saids.append(data['d'])
+
+        sources = []
+        for said in saids:
+            key = said.encode("utf-8")
+            creder = self.creds.get(keys=key)
+
+            # TODO:  de-dupe the seals here and extract the signatures
+            seals = self.seals.get(keys=key)
+            prefixer = None
+            seqner = None
+            diger = None
+            sigers = []
+            for seal in seals:
+                (prefixer, seqner, diger, siger) = seal
+                sigers.append(siger)
+        
+            proof = buildProof(prefixer=prefixer, seqner=seqner, diger=diger, sigers=sigers)
+            craw = messagize(creder=creder, proof=proof)
+            sources.append(craw)
+            
+        return sources    
 
 
     def putTvt(self, key, val):
@@ -663,3 +757,49 @@ def nsKey(comps):
     comps = map(lambda p: p if not hasattr(p, "encode") else p.encode("utf-8"), comps)
     return b':'.join(comps)
 
+
+
+def buildProof(prefixer, seqner, diger, sigers):
+    """
+    Create CESR proof attachment from the quadlet of seal plus signatures on the credential
+    
+    Parameters:
+        prefixer (Prefixer) Identifier of the issuer of the credential
+        seqner (Seqner) is the sequence number of the event used to sign the credential
+        diger (Diger) is the digest of the event used to sign the credential
+        sigers (list) are the cryptographic signatures on the credential
+
+    """
+
+    prf = bytearray()
+    prf.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+    prf.extend(prefixer.qb64b)
+    prf.extend(seqner.qb64b)
+    prf.extend(diger.qb64b)
+
+    prf.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+    for siger in sigers:
+        prf.extend(siger.qb64b)
+
+    return prf
+
+
+def messagize(creder, proof):
+    """
+    Create a CESR message format with proof attachment for credential
+    
+    Parameters
+        creder is Credentialer instance of credential 
+        proof is str CESR proof attachment 
+    :return: 
+    """
+    
+    craw = bytearray(creder.raw)
+    if len(proof) % 4:
+        raise ValueError("Invalid attachments size={}, nonintegral"
+                         " quadlets.".format(len(proof)))
+    craw.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                               count=(len(proof) // 4)).qb64b)
+    craw.extend(proof)
+
+    return craw

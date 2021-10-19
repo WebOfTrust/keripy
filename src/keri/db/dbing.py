@@ -46,20 +46,19 @@ l
 """
 
 import os
-import stat
 import shutil
-import tempfile
+import stat
+from collections import abc
 from contextlib import contextmanager
 from typing import Union
-from collections import abc
 
 import lmdb
+from hio.base import filing
 from orderedset import OrderedSet as oset
 
 from hio.base import filing
 
 from ..help import helping
-from ..core import coring
 
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)

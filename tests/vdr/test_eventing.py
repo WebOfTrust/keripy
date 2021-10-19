@@ -386,7 +386,7 @@ def test_prefixer():
 
 
 def test_tever_escrow():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         Tever()
 
     # registry with no backers, invalid anchor

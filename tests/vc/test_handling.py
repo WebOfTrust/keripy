@@ -179,7 +179,7 @@ def test_proving():
         assert creder.said == "E8sY-Bf_kmJ1ducVjMXrvfoyxgw1zmst-h-dUswjZ_rg"
 
         msg = sidHab.endorse(serder=creder)
-        hanWallet = Wallet(db=hanPDB)
+        hanWallet = Wallet(reger=hanPDB)
 
         issuer.issue(creder=creder)
         parseCredential(ims=msg,
@@ -190,7 +190,7 @@ def test_proving():
         assert hanPDB.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        hanRequestHandler = RequestHandler(wallet=hanWallet)
+        hanRequestHandler = RequestHandler(hab=hanHab, wallet=hanWallet)
         hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen(), handlers=[hanRequestHandler])
 
         # Create the issue credential payload
@@ -231,8 +231,9 @@ def test_proving():
         assert len(vcs) == 1
 
         proof = (
-            "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw"
-            "-AxDNI7_ZmaI-AABAA0pFYDPH3jqvS4z-6lSefLLg-Zr7-IABhP69VruJUFK3SwP_x0ksPzknQq6Q4kV8bR9lyxb8pHFQyFAonj_agAA"
+            "-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE"
+            "-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAA0pFYDPH3jqvS4z-6lSefLLg"
+            "-Zr7-IABhP69VruJUFK3SwP_x0ksPzknQq6Q4kV8bR9lyxb8pHFQyFAonj_agAA"
         )
 
         assert vcs[0]["proof"] == proof

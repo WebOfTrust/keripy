@@ -34,7 +34,11 @@ class Delegatey:
         self.notified = False
 
     def processMessage(self, msg):
-        salt = coring.Salter(raw=msg["salt"].encode("utf-8")).qb64
+        if len(msg["salt"]) != 16:
+            salt = coring.Salter().qb64
+        else:
+            salt = coring.Salter(raw=msg["salt"].encode("utf-8")).qb64
+
         seed = msg["seed"] if "seed" in msg else None
         wits = msg["wits"] if "wits" in msg else None
         toad = msg["toad"] if "toad" in msg else None
@@ -54,7 +58,17 @@ class Delegatey:
         query = dict()
         query['i'] = pre
         serder = eventing.query(route="logs", query=query)
-        return self.hab.endorse(serder, last=True)
+
+        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
+        msg.extend(pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(self.hab.delsigers))
+        msg.extend(counter.qb64b)
+        for siger in self.hab.delsigers:
+            msg.extend(siger.qb64b)
+        return msg
 
 
 class InceptDoer(doing.DoDoer):

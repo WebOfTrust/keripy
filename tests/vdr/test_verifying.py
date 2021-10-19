@@ -508,7 +508,7 @@ def test_verifier_chained_credential():
         # Revoke Ian's issuer credential and vic should no longer be able to verify
         # Han's credential that's linked to it
         roniss.cues.clear()  # empty Ron's cue, we're done with all the previous events
-        roniss.revoke(vcdig=creder.said)
+        roniss.revoke(creder=creder)
         for cue in roniss.cues:
             msg = cue["msg"]
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)

@@ -3,7 +3,7 @@
 keri.peer.exchanging module
 
 """
-
+import logging
 from datetime import timedelta
 
 from hio.base import doing
@@ -85,16 +85,24 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-        tholder, verfers = self.hab.verifiage(pre=source.qb64)
+        if source.qb64 not in self.hab.kevers:
+            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+            self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
+            raise MissingSignatureError("Unable to find sender {} in kevers"
+                                        " for evt = {}.".format(source, serder))
+
+        kever = self.hab.kevers[source.qb64]
+        tholder, verfers = self.hab.verifiage(pre=source.qb64, sn=kever.lastEst.s)
 
         if self.controller is not None and self.controller != source.qb64:
             raise AuthZError("Message {} is from invalid source {}"
                              "".format(payload, source.qb64))
 
         #  Verify provided sigers using verfers
-        sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+        ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
         if not tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, sigers=sigers)
+            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+            self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                         " for evt = {}.".format(tholder.sith,
                                                                 [siger.qb64 for siger in sigers],
@@ -103,7 +111,7 @@ class Exchanger(doing.DoDoer):
         msg = dict(
             payload=payload,
             pre=source,
-            sigers=sigers,
+            sigers=ssigers,
             verfers=verfers,
         )
 
@@ -127,15 +135,59 @@ class Exchanger(doing.DoDoer):
             msg = responses.pop(0)
             yield msg
 
-    def escrowPSEvent(self, serder, sigers):
+    def processEscrow(self):
+        """
+        Process all escrows for `exn` messages
+
+        """
+        self.processEscrowPartialSigned()
+
+
+    def escrowPSEvent(self, serder, source, sigers):
         """
         Escrow event that does not have enough signatures.
 
         Parameters:
             serder is Serder instance of event
+            source is Prefixer of the origin of the exn
             sigers is list of Siger instances of indexed controller sigs
         """
-        pass
+        dig = serder.digb
+        self.hab.db.epse.put(keys=dig, val=serder)
+        self.hab.db.esigs.put(keys=dig, vals=sigers)
+        self.hab.db.esrc.put(keys=dig, val=source)
+
+
+    def processEscrowPartialSigned(self):
+        for (dig,), serder in self.hab.db.epse.getItemIter():
+            sigers = self.hab.db.esigs.get(keys=dig)
+            source = self.hab.db.esrc.get(keys=dig)
+
+            try:
+
+                self.processEvent(serder=serder, source=source, sigers=sigers)
+
+            except MissingSignatureError as ex:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.info("Exchange partially signed unescrow failed: %s\n", ex.args[0])
+                else:
+                    logger.info("Exchange partially signed failed: %s\n", ex.args[0])
+            except Exception as ex:
+                self.hab.db.epse.rem(dig)
+                self.hab.db.esigs.rem(dig)
+                self.hab.db.esrc.rem(dig)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
+                else:
+                    logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
+            else:
+                self.hab.db.epse.rem(dig)
+                self.hab.db.esigs.rem(dig)
+                self.hab.db.esrc.rem(dig)
+                logger.info("Exchanger unescrow succeeded in valid exchange: "
+                            "creder=\n%s\n", serder.pretty())
+
+
 
 
 def exchange(route, payload, date=None, modifiers=None, version=coring.Version,

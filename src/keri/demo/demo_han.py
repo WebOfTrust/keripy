@@ -61,12 +61,12 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
     logger.info("\nDirect Mode demo of %s:\nNamed %s listening on TCP port %s, witness on TCP Port %s.\n\n",
                 hab.pre, hab.name, localPort, witnessPort)
     reger = viring.Registry(name="han")
-    wallet = walleting.Wallet(db=reger, name="han")
+    wallet = walleting.Wallet(reger=reger, name="han")
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
     dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    pdbDoer = basing.BaserDoer(baser=wallet.db)  # doer do reopens if not opened and closes
+    pdbDoer = basing.BaserDoer(baser=wallet.reger)  # doer do reopens if not opened and closes
 
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')
@@ -79,7 +79,7 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
 
     verifier = verifying.Verifier(hab=hab, reger=reger)
     issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
-    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+    requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
 
     witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)
     witnessClientDoer = clienting.ClientDoer(client=witnessClient)

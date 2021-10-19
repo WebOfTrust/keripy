@@ -85,6 +85,7 @@ def allParsator(ims, verifier):
                                            )
 
         except kering.SizedGroupError as ex:  # error inside sized group
+            print(ex)
             # processOneIter already flushed group so do not flush stream
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Parser msg extraction error: %s\n", ex.args[0])
@@ -92,6 +93,7 @@ def allParsator(ims, verifier):
                 logger.error("Parser msg extraction error: %s\n", ex.args[0])
 
         except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+            print(ex)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Parser msg extraction error: %s\n", ex.args[0])
             else:
@@ -99,6 +101,7 @@ def allParsator(ims, verifier):
             del ims[:]  # delete rest of stream to force cold restart
 
         except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+            print(ex)
             # Non extraction errors happen after successfully extracted from stream
             # so we don't flush rest of stream just resume
             if logger.isEnabledFor(logging.DEBUG):
@@ -209,6 +212,14 @@ def parseProof(ims=b''):
         raise ColdStartError("unable to parse VC, attachments expected")
 
     ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
+    if ctr.code == CtrDex.AttachedMaterialQuadlets:  # check for pipelined
+        pags = ctr.count * 4
+        if len(ims) != pags:
+            raise ShortageError("VC proof attachment invalid length {}, expected {}"
+                                "".format(len(ims), pags))
+
+        ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
+
     if ctr.code != CtrDex.TransIdxSigGroups or ctr.count != 1:
         raise ExtractionError("Invalid attachment to VC {}, expected one {}"
                               "".format(ctr.code, CtrDex.TransIdxSigGroups))
@@ -228,30 +239,6 @@ def parseProof(ims=b''):
         isigers.append(isiger)
 
     return prefixer, seqner, diger, isigers
-
-
-def buildProof(prefixer, seqner, diger, sigers):
-    """
-
-    Parameters:
-        prefixer (Prefixer) Identifier of the issuer of the credential
-        seqner (Seqner) is the sequence number of the event used to sign the credential
-        diger (Diger) is the digest of the event used to sign the credential
-        sigers (list) are the cryptographic signatures on the credential
-
-    """
-
-    prf = bytearray()
-    prf.extend(Counter(CtrDex.TransIdxSigGroups, count=1).qb64b)
-    prf.extend(prefixer.qb64b)
-    prf.extend(seqner.qb64b)
-    prf.extend(diger.qb64b)
-
-    prf.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-    for siger in sigers:
-        prf.extend(siger.qb64b)
-
-    return prf
 
 
 class Credentialer:

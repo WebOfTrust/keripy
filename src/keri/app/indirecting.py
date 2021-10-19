@@ -11,6 +11,7 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
+from keri.app import agenting
 
 from . import habbing, keeping, directing, storing, httping
 from .. import help
@@ -40,7 +41,6 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
         habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         doers.extend([ksDoer, dbDoer, habDoer])
 
-    print("Witness", name, ":", hab.pre)
     verfer = verifying.Verifier(name=name, hab=hab)
     app = falcon.App(cors_enable=True)
 
@@ -61,9 +61,24 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
 
     directant = directing.Directant(hab=hab, server=server, verifier=verfer)
 
-    doers.extend([regDoer, directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep])
+    witStart = WitnessStart(name=name, hab=hab)
+
+    doers.extend([regDoer, directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, witStart])
 
     return doers
+
+
+class WitnessStart (doing.Doer):
+    def __init__(self, name, hab, **opts):
+        self.hab = hab
+        self.name = name
+        super().__init__(**opts)
+
+    def do(self,  tymth=None, tock=0.0, **opts):
+        while not self.hab.inited:
+            yield self.tock
+
+        print("Witness", self.name, ":", self.hab.pre)
 
 
 class Indirector(doing.DoDoer):
@@ -345,7 +360,7 @@ class MailboxDirector(doing.DoDoer):
 
         #  neeeds unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
-                                                               lax=False,
+                                                               lax=True,
                                                                local=False,
                                                                direct=False)
 
@@ -357,7 +372,9 @@ class MailboxDirector(doing.DoDoer):
             self.tevery = None
 
         if self.exchanger is not None:
-            doers.extend([doing.doify(self.exchangerDo)])
+            self.witq = agenting.WitnessInquisitor(hab=hab)
+            doers.extend([self.witq, doing.doify(self.exchangerDo)])
+
 
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
@@ -521,10 +538,22 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
+            self.exchanger.processEscrow()
+            yield
+
+            while self.exchanger.cues:
+                cue = self.exchanger.cues.popleft()
+                cueKin = cue["kin"]
+                if cueKin == "query":
+                    qargs = cue["q"]
+                    self.witq.query(**qargs)
+                yield
+
             for rep in self.exchanger.processResponseIter():
                 self.rep.reps.append(rep)
                 yield  # throttle just do one cue at a time
             yield
+
 
 
 class Poller(doing.DoDoer):
@@ -591,7 +620,6 @@ class Poller(doing.DoDoer):
                 idx = evt["id"]
                 msg = evt["data"]
                 tpc = evt["name"]
-                # ser = coring.Serder(raw=msg.encode("utf-8"))
 
                 self.msgs.append(msg.encode("utf=8"))
 
@@ -708,8 +736,8 @@ class HttpMessageHandler(doing.DoDoer):
         self.app = app if app is not None else falcon.App(cors_enable=True)
 
         self.app.add_route("/kel", self)
-        self.app.add_route("/req/logs", self, suffix="req")
-        self.app.add_route("/req/ksn", self, suffix="req")
+        self.app.add_route("/qry/logs", self, suffix="req")
+        self.app.add_route("/qry/ksn", self, suffix="req")
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,

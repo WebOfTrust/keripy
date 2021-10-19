@@ -8,9 +8,14 @@ import json
 import os
 
 import lmdb
+from keri.app import keeping, habbing
+from keri.core import coring, scheming
 
 from keri.core.coring import Diger, Versify, Serials
+from keri.db import basing
 from keri.db.dbing import openLMDB, dgKey, snKey
+from keri.vc import proving
+from keri.vdr import viring
 from keri.vdr.viring import Registry, nsKey
 
 
@@ -283,7 +288,7 @@ def test_clone():
              "gMzf-vTfEHDylFdgn2e_u_ppaFajIdvEvONX6dcSYzlfBQ").encode("utf-8")
 
     rot1 = dict(v=vs, i=regk.decode("utf-8"),
-                s="{:x}".format(sn+1), ba=[rarb2.decode("utf-8")],
+                s="{:x}".format(sn + 1), ba=[rarb2.decode("utf-8")],
                 t="rot")
     rot1b = json.dumps(rot1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r1dig = Diger(ser=rot1b)
@@ -292,7 +297,7 @@ def test_clone():
              "EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsOsBPzRCw").encode("utf-8")
 
     rot2 = dict(v=vs, i=regk.decode("utf-8"),
-                s="{:x}".format(sn+2), br=[rarb.decode("utf-8")],
+                s="{:x}".format(sn + 2), br=[rarb.decode("utf-8")],
                 t="rot")
     rot2b = json.dumps(rot2, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     r2dig = Diger(ser=rot2b)
@@ -339,6 +344,66 @@ def test_clone():
             b',"t":"rot"}-VA0-BABBklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
             b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAAAAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIG'
             b'M9u2Edk-PLMZ1H4')
+
+
+def test_build_proof():
+    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+    with basing.openDB(name="sid") as sigDB, \
+            keeping.openKS(name="sid") as sigKS:
+        sigHab = habbing.Habitat(ks=sigKS, db=sigDB, salt=sidSalt, icount=3, ncount=3, temp=True)
+
+        sed = dict()
+        sed["$id"] = ""
+        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
+        sed.update(dict(
+            type="object",
+            properties=dict(
+                id=dict(
+                    type="string"
+                ),
+                lei=dict(
+                    type="string"
+                )
+            )
+        ))
+
+        schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        credSubject = dict(
+            d="",
+            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
+        )
+
+        creder = proving.credential(issuer=sigHab.pre,
+                                    schema=schemer.said,
+                                    subject=credSubject)
+
+        sigHab.rotate()
+        sigHab.rotate()
+        sigHab.rotate()
+        sigHab.rotate()
+
+        prefixer = coring.Prefixer(qb64=sigHab.kever.prefixer.qb64)
+        seqner = coring.Seqner(sn=sigHab.kever.lastEst.s)
+        diger = coring.Diger(qb64=sigHab.kever.lastEst.d)
+
+        sigers = sigHab.mgr.sign(ser=creder.raw, verfers=sigHab.kever.verfers, indexed=True)
+
+        proof = viring.buildProof(prefixer, seqner, diger, sigers)
+        assert proof == (b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAA'
+                         b'AAAAAABAECc96yX1sYswnD6LXEcoNuJ0ehi8gkFMEGedqURhXMBU-AADAA8jPya7'
+                         b'QXiXZRPIYrtoel7cAhN2dS57ejZBEE501Cr4i5kBMDFu6qEPK9l1CBtZU2Djeh0T'
+                         b'8ZI1wyUqTeQgrpAgAB031v3FUTPZoPY19kv7xrf49HyPSukG7qhrZJEltiMcuzTQ'
+                         b'mAYsHIJzygD9XleyA3HcsTgB9pObBPTqPOfv7ZCgACzLFfAe0YvpKU5Lslt78f_H'
+                         b'SgdZJPca1tCTt0bPC00TWg11HbI_t0vdGNQkogIVzcoZnsK4FVZe1CeveRZym2BA')
+
+        prefixer, seqner, diger, isigers = proving.parseProof(proof)
+        assert prefixer.qb64 == sigHab.pre
+        assert diger.qb64 == sigHab.kever.lastEst.d
+        assert seqner.sn == 4
+        assert len(isigers) == 3
 
 
 if __name__ == "__main__":

@@ -110,10 +110,6 @@ class Issuer:
             self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
-            clone = self.reger.clonePreIter(self.regk)
-            for msg in clone:
-                self.psr.parseOne(ims=msg)
-
             if self.regk not in self.tevers:
                 raise kering.ConfigurationError("Improper Issuer inception for "
                                                 "pre={}.".format(self.regk))
@@ -175,11 +171,11 @@ class Issuer:
             serder = vdr.eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                           dt=dt)
 
-        self.anchorMsg(serder, reason=craw.decode("utf-8"))
+        self.anchorMsg(serder=serder, subject=creder.subject, reason=craw.decode("utf-8"))
 
         return True
 
-    def revoke(self, vcdig, dt=None):
+    def revoke(self, creder, dt=None):
         """
 
         Create and process iss message event
@@ -188,7 +184,7 @@ class Issuer:
             vcdig is hash digest of vc content qb64
 
         """
-
+        vcdig = creder.said
         vckey = nsKey([self.regk, vcdig])
         vcser = self.reger.getTel(snKey(pre=vckey, sn=0))
         if vcser is None:
@@ -203,7 +199,7 @@ class Issuer:
             serder = vdr.eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                            dig=iserder.dig, dt=dt)
 
-        self.anchorMsg(serder)
+        self.anchorMsg(serder, subject=creder.subject)
 
         return True
 
@@ -216,7 +212,7 @@ class Issuer:
 
         return msg
 
-    def anchorMsg(self, serder, reason=None, seal=None):
+    def anchorMsg(self, serder, subject=None, reason=None, seal=None):
 
         group = self.hab.group()
 
@@ -236,11 +232,13 @@ class Issuer:
             self.cues.extend([
                 dict(
                     kin="kevt",
-                    msg=kevt
+                    msg=kevt,
+                    sub=subject
                 ),
                 dict(
                     kin="send",
-                    msg=tevt
+                    msg=tevt,
+                    sub=subject
                 ),
             ])
 

@@ -9,6 +9,11 @@ class Location:
 
 
 witnesses = {
+    "EZ921Tv_rdgIiHURHiWwyG8vW6R69QN2sCOYUDUvfCN0": Location(ip4="20.84.20.73", tcp=5921, http=5923),
+    "BHGK9Gem8PdiZ7PZ9WcIwxM7YnGaztYA65X3o5_RxFa8": Location(ip4="20.84.20.37", tcp=5632, http=5642),
+    "B4tbPLI_TEze0pzAA-X-gewpdg22yfzN8CdKKIF5wETM": Location(ip4="20.84.20.56", tcp=5632, http=5642),
+    "Boq71an-vhU6DtlZzzJF7yIqbQxb56rcxeB0LppxeDOA": Location(ip4="20.84.20.124", tcp=5632, http=5642),
+
     "B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M": Location(ip4="127.0.0.1", tcp=5631),
     "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo": Location(ip4="127.0.0.1", tcp=5632, http=5642),  # wan
     "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw": Location(ip4="127.0.0.1", tcp=5633, http=5643),  # wil
@@ -17,10 +22,6 @@ witnesses = {
     "Eu_se69BU6tYdF2o-YD411OzwbvImOfu1m023Bu8FM_I": Location(ip4="127.0.0.1", tcp=5621, http=5620),
     "EEWuHgyO9iTgfz43mtY1IaRH-TrmV-YpcbpPoKKSpz8U": Location(ip4="127.0.0.1", tcp=5721, http=5720),
     "E5JuUB6iOaKV5-0EeADj0S3KCvvkUZDnuLw8VPK8Qang": Location(ip4="127.0.0.1", tcp=5821, http=5820),
-
-    # "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo": Location(ip4="52.188.131.0", tcp=5632, http=5642),  # wan
-    # "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw": Location(ip4="52.186.43.227", tcp=5633, http=5643),  # wil
-    # "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c": Location(ip4="52.186.44.60", tcp=5634, http=5644),  # wes
 }
 
 
@@ -74,7 +75,13 @@ witness_resolver = {
                                                      "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"],
     "EZNNZO-Sa41t-ps_jwOeeDmo2x_nPNavwOEl1QbN7O7s": ["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
                                                      "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                                                     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
+                                                     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"],
+    "EZ921Tv_rdgIiHURHiWwyG8vW6R69QN2sCOYUDUvfCN0": [
+        "BHGK9Gem8PdiZ7PZ9WcIwxM7YnGaztYA65X3o5_RxFa8",
+        "B4tbPLI_TEze0pzAA-X-gewpdg22yfzN8CdKKIF5wETM",
+        "Boq71an-vhU6DtlZzzJF7yIqbQxb56rcxeB0LppxeDOA",
+    ]
+
 }
 
 

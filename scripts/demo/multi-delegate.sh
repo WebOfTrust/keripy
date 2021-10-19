@@ -9,6 +9,6 @@ kli query --name multisig2 --prefix EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg
 kli query --name multisig3 --prefix EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg --witness BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
 kli multisig demo --file tests/app/cli/commands/multisig/multisig-delegated-sample.json
-kli vc registry demo
-kli agent demo
+#kli vc registry demo
+#kli agent demo
 

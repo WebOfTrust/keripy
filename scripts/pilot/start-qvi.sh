@@ -12,4 +12,5 @@ else
 fi
 
 echo "Launching QVI agent"
-kli agent start --name qvi --controller E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5621 --admin-http-port 5623 --path=../kiwi/dist-qvi
+kli agent start --name qvi --controller E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5621 \
+  --admin-http-port 5623 --path=../kiwi/dist-qvi
