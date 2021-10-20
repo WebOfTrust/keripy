@@ -47,6 +47,10 @@ class Postman(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        if self.hab.kever.wits:
+            self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
+            self.extend([self.witq])
+
         while True:
             while self.evts:
                 evt = self.evts.popleft()
@@ -62,6 +66,10 @@ class Postman(doing.DoDoer):
                 fwd = forward(pre=recp, topic=tpc, serder=srdr)
                 ims = bytearray(fwd.raw)
                 ims.extend(act)
+
+                while recp not in self.hab.kevers:
+                    self.witq.query(pre=recp)
+                    yield 1.0
 
                 kever = self.hab.kevers[recp]
                 wit = random.choice(kever.wits)

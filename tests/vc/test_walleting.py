@@ -76,9 +76,6 @@ def test_wallet():
 
         assert bytearray(siger.qb64b) == sig0
         # verify the seal
-        print(prefixer.qb64b)
-        print(seqner.qb64b)
-        print(diger.qb64b)
         # assert sl == seal
 
         # verify we can look up credential by Schema SAID

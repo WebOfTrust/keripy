@@ -9,10 +9,10 @@ class Location:
 
 
 witnesses = {
-    "EZ921Tv_rdgIiHURHiWwyG8vW6R69QN2sCOYUDUvfCN0": Location(ip4="20.84.20.73", tcp=5921, http=5923),
-    "BHGK9Gem8PdiZ7PZ9WcIwxM7YnGaztYA65X3o5_RxFa8": Location(ip4="20.84.20.37", tcp=5632, http=5642),
-    "B4tbPLI_TEze0pzAA-X-gewpdg22yfzN8CdKKIF5wETM": Location(ip4="20.84.20.56", tcp=5632, http=5642),
-    "Boq71an-vhU6DtlZzzJF7yIqbQxb56rcxeB0LppxeDOA": Location(ip4="20.84.20.124", tcp=5632, http=5642),
+    "EZ921Tv_rdgIiHURHiWwyG8vW6R69QN2sCOYUDUvfCN0": Location(ip4="20.88.177.97", tcp=5921, http=5923),
+    "BHGK9Gem8PdiZ7PZ9WcIwxM7YnGaztYA65X3o5_RxFa8": Location(ip4="20.88.176.87", tcp=5632, http=5642),
+    "B4tbPLI_TEze0pzAA-X-gewpdg22yfzN8CdKKIF5wETM": Location(ip4="20.88.176.198", tcp=5632, http=5642),
+    "Boq71an-vhU6DtlZzzJF7yIqbQxb56rcxeB0LppxeDOA": Location(ip4="20.81.11.189", tcp=5632, http=5642),
 
     "B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M": Location(ip4="127.0.0.1", tcp=5631),
     "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo": Location(ip4="127.0.0.1", tcp=5632, http=5642),  # wan

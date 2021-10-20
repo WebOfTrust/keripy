@@ -108,7 +108,7 @@ class OobiQueryRecord:  # information for responding to OOBI query
     Usage:
         oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)
     """
-    cid: str = None # qb64
+    cid: str = None  # qb64
     role: str = None  # one of kering.Roles None is any or all
     eids: list[str] = field(default_factory=list)  # of qb64  empty is any
     scheme: str = None  # one of kering.Schemes None is any or all
@@ -123,7 +123,7 @@ class HabitatRecord:  # baser.habs
     Habitat information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
-    watchers: list[str] = field(default_factory=list) # aids qb64 of watchers
+    watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
     #
 
 
@@ -294,6 +294,7 @@ class LocationRecord:  # baser.locs
 
     """
     url: str  # full url including host:port/path?query scheme is optional
+
     # cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
     def __iter__(self):
@@ -679,7 +680,7 @@ class Baser(dbing.LMDBer):
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
         self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
-                                        klas=(coring.Verfer, coring.Cigar))
+                                             klas=(coring.Verfer, coring.Cigar))
 
         # all reply messages. Maps reply said to serialization. Replys are
         # versioned sads ( with version string) so use Serder to deserialize and
@@ -690,7 +691,7 @@ class Baser(dbing.LMDBer):
         # route in reply to single (Saider,)  of escrowed reply.
         # Routes such as /end/role  /loc/schema
         self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.',
-                                                      klas=coring.Saider)
+                                          klas=coring.Saider)
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
         # maps key=cid.role.eid to val=said of end reply
@@ -703,14 +704,13 @@ class Baser(dbing.LMDBer):
         # service endpoint identifer (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
         self.ends = koming.Komer(db=self, subkey='ends.',
-                                      schema=EndpointRecord, )
+                                 schema=EndpointRecord, )
 
         # service endpont locations keyed by eid.scheme  (endpoint identifier)
         # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  schema=LocationRecord, )
-
 
         # index of last retrieved message from witness mailbox
         self.tops = koming.Komer(db=self,
@@ -736,9 +736,7 @@ class Baser(dbing.LMDBer):
         # exchange source prefix
         self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
 
-
         return self.env
-
 
     def reload(self):
         """
@@ -954,6 +952,34 @@ class Baser(dbing.LMDBer):
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
+
+    def findAnchoringEvent(self, pre, anchor):
+        """
+        Search through a KEL for the event that contains a specific anchor.
+        Returns the Serder of the first event with the anchor, None if not found
+
+        Parameters:
+            pre is qb64 identifier of the KEL to search
+            anchor is dict of anchor to find
+
+        """
+        for evt in self.clonePreIter(pre=pre):
+            srdr = coring.Serder(raw=evt)
+            if "a" in srdr.ked:
+                ancs = srdr.ked["a"]
+                if len(ancs) != 1:
+                    continue
+
+                anc = ancs[0]
+                spre = anc["i"]
+                ssn = int(anc["s"])
+                sdig = anc["d"]
+
+                if spre == anchor["i"] and ssn == int(anchor["s"]) \
+                        and anchor["d"] == sdig:
+                    return srdr
+
+        return None
 
     def putEvt(self, key, val):
         """

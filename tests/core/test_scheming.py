@@ -199,7 +199,6 @@ def test_resolution():
     v = schemer.verify(payload)
     assert v is True
     v = schemer.verify(badload)
-    print("Bad", v)
     assert v is False
 
 

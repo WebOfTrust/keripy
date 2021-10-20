@@ -108,40 +108,37 @@ class Verifier:
         schema = creder.schema
         prov = creder.crd["p"]
 
+        # we don't know about this issuer
+        if creder.issuer not in self.hab.kevers or self.hab.kevers[creder.issuer].sn < seqner.sn:
+            if self.escrowMIE(creder, prefixer, seqner, diger, sigers):
+                self.cues.append(dict(kin="query", q=dict(pre=creder.issuer, sn=seqner.sn)))
+            raise kering.MissingIssuerError("issuer identifier {} not in Kevers".format(creder.issuer))
+
         if regk not in self.tevers:  # registry event not found yet
-            self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
-            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
+            if self.escrowMRE(creder, prefixer, seqner, diger, sigers):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state, lastSeen = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
-            self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
-            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
+            if self.escrowMRE(creder, prefixer, seqner, diger, sigers):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         if state is VcStates.expired:
-            self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
-            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
+            if self.escrowMRE(creder, prefixer, seqner, diger, sigers):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state is VcStates.revoked:  # no escrow, credential has been revoked
             logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
             # Log this and continue instead of the previous exception so we save a revoked credential.
             # raise kering.InvalidCredentialStateError("..."))
 
-        # we don't know about this issuer
-        if creder.issuer not in self.hab.kevers:
-            self.escrowMIE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
-            raise kering.MissingIssuerError("issuer identifier {} not in Kevers".format(creder.issuer))
-
         # Verify the credential against the schema
         scraw = scheming.jsonSchemaCache.resolve(schema)
         if not scraw:
-            self.escrowMSE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
+            if self.escrowMSE(creder, prefixer, seqner, diger, sigers):
+                self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
 
@@ -203,7 +200,7 @@ class Verifier:
         key = creder.saider.qb64b
 
         self._persist(creder, prefixer, seqner, diger, sigers)
-        self.reger.pse.pin(keys=key, val=coring.Dater())
+        return self.reger.pse.put(keys=key, val=coring.Dater())
 
     def escrowMRE(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -221,7 +218,8 @@ class Verifier:
         key = creder.saider.qb64b
 
         self._persist(creder, prefixer, seqner, diger, sigers)
-        self.reger.mre.pin(keys=key, val=coring.Dater())
+        return self.reger.mre.put(keys=key, val=coring.Dater())
+
 
     def escrowMIE(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -239,7 +237,7 @@ class Verifier:
         key = creder.saider.qb64b
 
         self._persist(creder, prefixer, seqner, diger, sigers)
-        self.reger.mie.pin(keys=key, val=coring.Dater())
+        return self.reger.mie.put(keys=key, val=coring.Dater())
 
     def escrowMCE(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -257,7 +255,7 @@ class Verifier:
         key = creder.saider.qb64b
 
         self._persist(creder, prefixer, seqner, diger, sigers)
-        self.reger.mce.pin(keys=key, val=coring.Dater())
+        return self.reger.mce.put(keys=key, val=coring.Dater())
 
     def escrowMSE(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -275,7 +273,7 @@ class Verifier:
         key = creder.saider.qb64b
 
         self._persist(creder, prefixer, seqner, diger, sigers)
-        self.reger.mse.pin(keys=key, val=coring.Dater())
+        return self.reger.mse.put(keys=key, val=coring.Dater())
 
     def processEscrows(self):
         """
@@ -386,7 +384,6 @@ class Verifier:
 
         creder = self.reger.creds.get(keys=said)
 
-        # TODO:  de-dupe the seals here and extract the signatures
         seals = self.reger.seals.get(keys=said)
         prefixer = None
         seqner = None
@@ -423,10 +420,11 @@ class Verifier:
             nodeSaid: (str) qb64 SAID of node credential
 
         """
-        creder = self.reger.creds.get(keys=nodeSaid)
-        if creder is None:
+        said = self.reger.saved.get(keys=nodeSaid)
+        if said is None:
             return None
 
+        creder = self.reger.creds.get(keys=nodeSaid)
         iss = self.reger.subjs.get(keys=nodeSubject)
         if iss is None:
             return None
@@ -443,6 +441,6 @@ class Verifier:
         dtnow = helping.nowUTC()
         dte = helping.fromIso8601(lastSeen.dts)
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-            return VcStates.Expired
+            return VcStates.expired
 
         return status

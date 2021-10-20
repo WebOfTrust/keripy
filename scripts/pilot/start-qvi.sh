@@ -7,7 +7,7 @@ then
   echo "Identifier prefix exists."
 else
   echo "Identifier prefix does not exist, running incept"
-  kli delegate incept --name qvi --file scripts/pilot/qvi-incept.json
+  kli incept --name qvi --file scripts/pilot/qvi-incept.json
   kli vc registry incept --name qvi --registry-name qvi
 fi
 

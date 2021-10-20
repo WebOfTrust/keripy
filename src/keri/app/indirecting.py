@@ -326,7 +326,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, topics, verifier=None, kvy=None, exc=None, rep=None, cues=None, **kwa):
+    def __init__(self, hab, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, **kwa):
         """
         Initialize instance.
 
@@ -350,16 +350,16 @@ class MailboxDirector(doing.DoDoer):
         self.pollers = []
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.ims = bytearray()
+        self.ims = ims if ims is not None else bytearray()
 
         doers = []
         doers.extend([doing.doify(self.pollDo),
                       doing.doify(self.msgDo),
-                      doing.doify(self.cueDo),
                       doing.doify(self.escrowDo)])
 
         #  neeeds unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
+                                                               cues=self.cues,
                                                                lax=True,
                                                                local=False,
                                                                direct=False)
@@ -367,7 +367,7 @@ class MailboxDirector(doing.DoDoer):
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,
                                  db=self.hab.db,
-                                 regk=None, local=False)
+                                 regk=None, local=False, cues=self.cues)
         else:
             self.tevery = None
 
@@ -463,32 +463,6 @@ class MailboxDirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    def cueDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        yield  # enter context
-        while True:
-            while self.kvy.cues:
-                cue = self.kvy.cues.popleft()
-                self.cues.append(cue)
-                yield  # throttle just do one cue at a time
-            yield
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """

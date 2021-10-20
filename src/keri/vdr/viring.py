@@ -9,7 +9,7 @@ A special purpose Verifiable Data Registry (VDR)
 """
 from dataclasses import dataclass
 
-from keri.db import koming, subing, basing
+from keri.db import koming, subing
 
 from .. import kering
 from ..core import coring
@@ -291,6 +291,53 @@ class Registry(dbing.LMDBer):
         return self.env
 
 
+    def get_credentials(self, saids):
+        """
+        Returns fully expanded credential with chained credentials attached.
+
+        Parameters:
+           saids is list of Saider objects:
+
+        """
+        creds = []
+        for saider in saids:
+            key = saider.qb64b
+            creder = self.creds.get(keys=key)
+            if creder is None:
+                continue
+
+            seals = self.seals.get(keys=key)
+            prefixer = None
+            seqner = None
+            diger = None
+            sigers = []
+            for seal in seals:
+                (prefixer, seqner, diger, siger) = seal
+                sigers.append(siger)
+
+            chainSaids = []
+            for p in creder.crd["p"]:
+                v = list(p.values()).pop()
+                chainSaids.append(coring.Saider(qb64=v["d"]))
+            chains = self.get_credentials(chainSaids)
+
+            regk = creder.status
+            status, lastSeen = self.tevers[regk].vcState(key)
+            cred = dict(
+                sad=creder.crd,
+                pre=prefixer.qb64,
+                sn=seqner.sn,
+                dig=diger.qb64,
+                sigers=[sig.qb64 for sig in sigers],
+                chains=chains,
+                status=status,
+                # lastSeen=lastSeen.dts,
+            )
+
+            creds.append(cred)
+        return creds
+
+
     def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
@@ -332,7 +379,7 @@ class Registry(dbing.LMDBer):
             msg.extend(atc)
             yield msg
 
-    def sources(self, creder):
+    def sources(self, db, creder):
         """
         Returns raw bytes of any source ('p') credential that is in our database
          
@@ -349,9 +396,8 @@ class Registry(dbing.LMDBer):
         sources = []
         for said in saids:
             key = said.encode("utf-8")
-            creder = self.creds.get(keys=key)
+            screder = self.creds.get(keys=key)
 
-            # TODO:  de-dupe the seals here and extract the signatures
             seals = self.seals.get(keys=key)
             prefixer = None
             seqner = None
@@ -360,10 +406,25 @@ class Registry(dbing.LMDBer):
             for seal in seals:
                 (prefixer, seqner, diger, siger) = seal
                 sigers.append(siger)
-        
+
+            regk = screder.status
+            vci = nsKey([regk, said])
+
+            issr = screder.crd["i"]
+            msgs = bytearray()
+            for msg in db.clonePreIter(pre=issr):
+                msgs.extend(msg)
+
+            for msg in self.clonePreIter(pre=regk):
+                msgs.extend(msg)
+
+            for msg in self.clonePreIter(pre=vci):
+                msgs.extend(msg)
+
             proof = buildProof(prefixer=prefixer, seqner=seqner, diger=diger, sigers=sigers)
-            craw = messagize(creder=creder, proof=proof)
-            sources.append(craw)
+            craw = messagize(creder=screder, proof=proof)
+            sources.append((craw, msgs))
+            sources.extend(self.sources(db, screder))
             
         return sources    
 
@@ -629,6 +690,13 @@ class Registry(dbing.LMDBer):
         Returns None if no entry at key
         """
         return self.getVal(self.oots, key)
+
+    def getOotItemIter(self):
+        """
+        Return iterator of all items in .taes
+
+        """
+        return self.getAllItemIter(self.oots, split=True)
 
     def delOot(self, key):
         """

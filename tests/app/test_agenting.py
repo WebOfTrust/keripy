@@ -3,7 +3,6 @@
 tests.app.agenting module
 
 """
-import pytest
 
 from hio.base import doing
 from keri.help import nowIso8601
@@ -124,46 +123,3 @@ def test_witness_inquisitor(mockGetWitnessByPrefix, mockHelpingNowUTC):
 
         assert palHab.pre in qinHab.kevers
         assert qinHab.pre in palHab.kevers
-
-
-def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix, mockHelpingNowUTC):
-    with habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
-                         wits=[]) as palHab, \
-            habbing.openHab(name="qin", salt=b'abcdef0123456789', transferable=True,
-                            wits=[]) as qinHab:
-        witq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
-
-        # query up a few to make sure it still works
-        stamp = nowIso8601()  # need same time stamp or not duplicate
-        witq.query(pre=palHab.pre, stamp=stamp)
-        witq.query(pre=palHab.pre, stamp=stamp)
-        witq.query(pre=palHab.pre, stamp=stamp)
-
-        assert len(witq.smsgs) == 0
-        assert len(witq.msgs) == 3
-
-        msgDo = witq.msgDo()
-
-        next(msgDo)
-        next(msgDo)
-        assert len(witq.msgs) == 0
-        assert len(witq.smsgs) == 1  # no duplicates allowed in set
-
-        witq.query(pre=qinHab.pre, stamp=stamp)
-        witq.query(pre=qinHab.pre, stamp=stamp)
-        witq.query(pre=qinHab.pre, stamp=stamp)
-        next(msgDo)
-        assert len(witq.msgs) == 0
-        assert len(witq.smsgs) == 2  # one for palHab one for qinHab
-
-        smsg = witq.smsgs.pop()
-        assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
-                        b'r":"logs","rr":"","q":{"i":"EGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA"}}-'
-                        b'VAj-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAiSajpCB5wYLkWXFTV-T'
-                        b'iGEN58AXzuvoo5S9WPD_1zonUcay_PwoCV-Xbk9cXNYyy_EjgHrKCLcj16XzDb-y3Dg')
-
-        smsg = witq.smsgs.pop()
-        assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
-                        b'r":"logs","rr":"","q":{"i":"EhseHwdptGefggyGOIKXbMyLW4LYaZov2nXwb8STvvNk"}}-'
-                        b'VAj-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAc85BBRst-40GPr-Sd5Q'
-                        b'cr8vmFG934mMhYuZekFtK-6w_vJ-_6wu-zVhTlZW-evGTFlNGcwnI7YYcRI9zLwyIDQ')

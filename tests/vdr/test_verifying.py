@@ -71,13 +71,12 @@ def test_verifier():
             missing = True
 
         assert missing is True
-        assert len(verifier.cues) == 2
+        assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()
-        assert cue["kin"] == "query"
+        assert cue["kin"] == "telquery"
         q = cue["q"]
-        assert q["pre"] == hab.pre
+        assert q["ri"] == issuer.regk
         issuer.issue(creder=creder)
-        cue = verifier.cues.popleft()
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         verifier.processEscrows()
@@ -288,7 +287,7 @@ def test_verifier_multisig():
 
 def test_verifier_chained_credential():
     qviSchema = "E-_XCbf1LJ0v9CR7g-_gOknf5dpoZROgF7qG5T8mXCv8"
-    vLeiSchema = "EJEY6JAAVfAh8-yBTV37rHaJ9b_VKvkZunz_oJupzsvQ"
+    vLeiSchema = "EC9rQ-xi_3cRrjANStL6tn6Kn4Z444r9rvTr_Vfi-750"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as ron, \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as ian, \
@@ -335,12 +334,11 @@ def test_verifier_chained_credential():
             missing = True
 
         assert missing is True
-        assert len(ronverfer.cues) == 2
+        assert len(ronverfer.cues) == 1
         cue = ronverfer.cues.popleft()
-        assert cue["kin"] == "query"
+        assert cue["kin"] == "telquery"
         q = cue["q"]
-        assert q["pre"] == ron.pre
-        ronverfer.cues.popleft()
+        assert q["ri"] == roniss.regk
 
         roniss.issue(creder=creder)
 
@@ -409,12 +407,11 @@ def test_verifier_chained_credential():
             missing = True
 
         assert missing is True
-        assert len(ianverfer.cues) == 2
+        assert len(ianverfer.cues) == 1
         cue = ianverfer.cues.popleft()
-        assert cue["kin"] == "query"
+        assert cue["kin"] == "telquery"
         q = cue["q"]
-        assert q["pre"] == ian.pre
-        cue = ianverfer.cues.popleft()
+        assert q["ri"] == ianiss.regk
 
 
         ianiss.issue(creder=vLeiCreder)
