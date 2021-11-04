@@ -7,12 +7,9 @@ import argparse
 
 from hio import help
 from hio.base import doing
-from hio.core.tcp import clienting
-
-from keri.app import directing, obtaining
+from keri.app import directing, agenting, indirecting
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
-from keri.core import eventing, parsing
 
 logger = help.ogler.getLogger()
 
@@ -39,6 +36,11 @@ class QueryDoer(doing.DoDoer):
 
         self.wit = wit
         self.pre = pre
+        self.cues = help.decking.Deck()
+
+        self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=["/replay", "/receipt"])
+        self.witq = agenting.WitnessInquisitor(hab=self.hab)
+        doers.extend([self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.queryDo)])
@@ -55,29 +57,15 @@ class QueryDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        loc = obtaining.getwitnessbyprefix(self.wit)
-        client = clienting.Client(host=loc.ip4, port=loc.tcp)
-        clientDoer = clienting.ClientDoer(client=client)
+        self.witq.query(pre=self.pre, r="ksn")
 
-        kevery = eventing.Kevery(db=self.hab.db,
-                                 lax=False,
-                                 local=False)
-
-        self.parser = parsing.Parser(ims=client.rxbs,
-                                     framed=True,
-                                     kvy=kevery)
-
-        doifiedDoer = doing.doify(self.msgDo)
-        self.extend([clientDoer, doifiedDoer])
-        self.toRemove.extend([clientDoer, doifiedDoer])
-
-        msg = self.hab.query(self.pre, route="logs")  # Query for remote pre Event
-        client.tx(msg)  # send to connected remote
-        yield 1.0
-
-        while self.pre not in kevery.kevers:
-            client.tx(msg)  # send to connected remote
+        while True:
             yield self.tock
+            if self.cues:
+                cue = self.cues.popleft()
+                serder = cue["serder"]
+                if serder.pre == self.pre:
+                    break
 
         displaying.printIdentifier(self.hab, self.pre)
 
@@ -85,24 +73,29 @@ class QueryDoer(doing.DoDoer):
 
         return
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
+
+    def cueDo(self, tymth, tock=0.0, **opts):
         """
-        Returns: doifiable Doist compatibile generator method (doer dog) to process
-            incoming message stream of .kevery
 
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
+        Handle cues coming out of our external Mailbox listener and forward to controller
+        mailbox if appropriate
 
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
         """
-        done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.mbd.kvy.cues:
+                cue = self.mbd.kvy.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+                if cueKin == "query":
+                    qargs = cue["q"]
+                    self.witq.backoffQuery(**qargs)
+
+                elif cueKin == "keyStateSaved":
+                    self.cues.append(cue)
+
+                yield self.tock
+            yield self.tock
+

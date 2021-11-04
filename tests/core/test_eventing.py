@@ -4311,8 +4311,7 @@ def test_reload_kever(mockHelpingNowUTC):
                                     '  "br": [],\n'
                                     '  "ba": []\n'
                                     ' },\n'
-                                    ' "di": "",\n'
-                                    ' "r": ""\n'
+                                    ' "di": ""\n'
                                     '}')
         assert state.sn == 6
         assert state.ked["f"] == '6'

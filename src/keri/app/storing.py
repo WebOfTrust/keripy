@@ -353,7 +353,15 @@ class Respondant(doing.DoDoer):
                 elif cueKin in ("replay",):
                     dest = cue["dest"]
                     msgs = cue["msgs"]
+
                     self.mbx.storeMsg(topic=dest+'/replay', msg=msgs)
+                elif cueKin in ("reply", ):
+                    data = cue["data"]
+                    route = cue["route"]
+                    dest = cue["dest"]
+
+                    msg = self.hab.reply(data=data, route=route+"/"+self.hab.pre)
+                    self.mbx.storeMsg(topic=dest+"/replay", msg=msg)
 
                 yield self.tock
 

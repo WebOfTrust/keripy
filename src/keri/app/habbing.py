@@ -411,7 +411,6 @@ class Habitat:
                     msgs.extend(self.makeLocScheme(url=url,
                                                  scheme=scheme,
                                                  stamp=help.toIso8601(dt=dt)))
-
             self.psr.parse(ims=msgs)
 
             if "iurls" in conf:  # process OOBI URLs
@@ -1184,6 +1183,12 @@ class Habitat:
             elif cueKin in ("replay",):
                 msgs = cue["msgs"]
                 yield msgs
+
+            elif cueKin in ("reply", ):
+                data = cue["data"]
+                route = cue["route"]
+                msg = self.reply(data=data, route=route)
+                yield msg
 
 
 class HabitatDoer(doing.Doer):

@@ -395,6 +395,7 @@ class Verifier:
 
         return creder, prefixer, seqner, diger, sigers
 
+
     def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """
         Returns query message for querying registry

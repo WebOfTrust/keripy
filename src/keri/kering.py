@@ -443,3 +443,19 @@ class FailedSchemaValidationError(KeriError):
     Usage:
         raise FailedSchemaValidationError("error message")
     """
+
+
+class OutOfOrderKeyStateError(ValidationError):
+    """
+    Error referenced event missing from log so can't verify this ket state event
+    Usage:
+        raise OutOfOrderKeyStateError("error message")
+    """
+
+
+class UntrustedKeyStateSource(KeriError):
+    """
+    Error untrusted source of key state, not aid, aid's witness or our watcher
+    Usage:
+        raise UntrustedKeyStateSource("error message")
+    """
