@@ -2075,8 +2075,8 @@ class Kever:
                                       " = {}.".format(toad, wits, serder.ked))
 
             if len(windices) < toad:  # not fully witnessed yet
-                self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, diger=diger)
-
+                if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, diger=diger):
+                    self.cues.append(dict(kin="query", q=dict(pre=serder.issuer, sn=seqner.sn)))
                 raise MissingWitnessSignatureError("Failure satisfying toad = {} "
                                                    "on witness sigs for {} for evt = {}.".format(toad,
                                                                                                  [siger.qb64 for siger
@@ -2310,9 +2310,9 @@ class Kever:
             self.db.putPde(dgkey, couple)
 
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addPwe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
+        return self.db.addPwe(snKey(serder.preb, serder.sn), serder.digb)
 
     def state(self, kind=Serials.json):
         """
@@ -4416,25 +4416,14 @@ class Kevery:
                             delpre = self.kevers[eserder.pre].delegator
                         else:
                             delpre = eserder.ked["di"]
-                        for evts in self.db.clonePreIter(pre=delpre):
-                            srdr = coring.Serder(raw=evts)
-                            if "a" in srdr.ked:
-                                ancs = srdr.ked["a"]
-                                if len(ancs) != 1:
-                                    continue
 
-                                anc = ancs[0]
-                                spre = anc["i"]
-                                ssn = int(anc["s"])
-                                sdig = anc["d"]
-
-                                if spre == eserder.ked["i"] and ssn == eserder.sn \
-                                        and eserder.dig == sdig:
-                                    seqner = coring.Seqner(sn=srdr.sn)
-                                    diger = srdr.diger
-                                    couple = seqner.qb64b + diger.qb64b
-                                    self.db.putPde(dgkey, couple)
-                                    break
+                        anchor = dict(i=eserder.ked["i"], s=eserder.sn, d=eserder.dig)
+                        srdr = self.db.findAnchoringEvent(pre=delpre, anchor=anchor)
+                        if srdr is not None:
+                            seqner = coring.Seqner(sn=srdr.sn)
+                            diger = srdr.diger
+                            couple = seqner.qb64b + diger.qb64b
+                            self.db.putPde(dgkey, couple)
 
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]

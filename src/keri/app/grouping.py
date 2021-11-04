@@ -188,7 +188,6 @@ class Groupy:
                 emsg.extend(self.hab.endorse(serder=exn, last=True))
                 self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
                                       reason=reason))
-                print("Local identifier rotated, checking other group members:")
 
             for aid in group.aids:
                 kever = self.hab.kevers[aid]

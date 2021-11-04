@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.kli.witness module
+keri.kli.agent module
 
 Witness command line interface
 """
@@ -15,12 +15,10 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import decking
-
 from keri import help
 from keri import kering
-from keri.app import directing, agenting, indirecting, storing, grouping
+from keri.app import directing, agenting, indirecting, storing, grouping, forwarding
 from keri.app.cli.common import existing
-from keri.core import scheming
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
@@ -102,9 +100,9 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     proofs = decking.Deck()
     issuerCues = decking.Deck()
 
-    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
-    requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
+    ims = bytearray()
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, ims=ims)
+    requestHandler = handling.RequestHandler(hab=hab, wallet=wallet)
     applyHandler = handling.ApplyHandler(hab=hab, verifier=verifier, name=name, issuerCues=issuerCues)
     proofHandler = handling.ProofHandler(proofs=proofs)
 
@@ -204,7 +202,7 @@ class AdminProofHandler(doing.DoDoer):
                 vcproof = bytearray(presentation["proof"].encode("utf-8"))
                 msgs = bytearray(presentation["msgs"].encode("utf-8"))
                 self.ims.extend(msgs)
-                yield 3.0
+                yield
 
                 creder = proving.Credentialer(crd=vc)
 
@@ -214,6 +212,12 @@ class AdminProofHandler(doing.DoDoer):
                 msg = bytearray(creder.raw)
                 msg.extend(vcproof)
                 proving.parseCredential(ims=msg, verifier=self.verifier)
+
+                c = self.verifier.reger.saved.get(creder.said)
+                while c is None:
+                    c = self.verifier.reger.saved.get(creder.said)
+                    yield
+
                 self.parsed.append((creder, vcproof))
 
                 yield
@@ -243,19 +247,8 @@ class AdminProofHandler(doing.DoDoer):
                     self.parsed.append((creder, vcproof))
 
                 else:
-                    regk = creder.status
-                    state, lastSeen = self.verifier.tevers[regk].vcState(creder.said)
-
-                    prefixer, seqner, diger, isigers = proving.parseProof(ims=vcproof)
-                    cred = dict(
-                        sad=creder.crd,
-                        pre=prefixer.qb64,
-                        sn=seqner.sn,
-                        dig=diger.qb64,
-                        sigers=[sig.qb64 for sig in isigers],
-                        status=state,
-                    )
-
+                    creders = self.verifier.reger.get_credentials([creder.saider])
+                    cred = creders[0]
 
                     ser = exchanging.exchange(route="/cmd/presentation/proof", payload=cred)
                     msg = bytearray(ser.raw)
@@ -285,9 +278,11 @@ class AdminCueHandler(doing.DoDoer):
         self.mbx = mbx
         self.cues = cues if cues is not None else decking.Deck()
         self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser)
+        self.postman = forwarding.Postman(hab=self.hab)
 
 
-        super(AdminCueHandler, self).__init__(doers=[self.witq, doing.doify(self.cueDo)], **kwa)
+
+        super(AdminCueHandler, self).__init__(doers=[self.postman, self.witq, doing.doify(self.cueDo)], **kwa)
 
     def cueDo(self, tymth, tock=0.0, **opts):
         """
@@ -320,37 +315,38 @@ class AdminCueHandler(doing.DoDoer):
                     delpre = cue["delpre"]
                     self.witq.query(pre=delpre)
 
+                elif cue["kin"] == "query":
+                    qargs = cue["q"]
+                    self.witq.backoffQuery(**qargs)
+
                 elif cueKin in ("psUnescrow",):
                     srdr = cue["serder"]
                     if self.hab.kever.delegator is None:
                         if srdr.pre in self.hab.kevers:
                             kever = self.hab.kevers[srdr.pre]
                             delpre = kever.delegator
-                            wits = kever.wits
                         else:
-                            wits = srdr.ked["b"]
                             delpre = srdr.ked["di"]
 
                         if delpre != self.hab.pre:
                             continue
 
-                        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser, wits=wits)
-                        self.extend([witq])
-
-                        while srdr.pre not in self.hab.kevers:  # TODO: check sn here.
-                            witq.query(pre=srdr.pre)
-                            yield 1.0
+                        if srdr.pre not in self.hab.kevers:  # TODO: check sn here.
+                            self.witq.query(pre=srdr.pre)
 
                         print("Successfully deletated to", srdr.pre, "for", srdr.ked["t"], ":", srdr.ked["s"])
                     else:
                         self.hab.delegatedRotationAccepted()
                         evt = self.hab.makeOwnEvent(sn=self.hab.kever.sn)
-                        witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=evt, klas=agenting.TCPWitnesser)
+                        witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=bytearray(evt),
+                                                            klas=agenting.TCPWitnesser)
                         self.extend([witDoer])
                         while not witDoer.done:
                             yield self.tock
 
                         self.remove([witDoer])
+                        self.postman.send(recipient=self.hab.kever.delegator, topic="delegate", msg=bytearray(evt))
+
                         print("Successfully received delegation", "for", self.hab.kever.ilk, ":", self.hab.kever.sn)
                         payload = dict(
                             delegator=self.hab.kever.delegator,
@@ -359,9 +355,8 @@ class AdminCueHandler(doing.DoDoer):
                             dt=helping.nowIso8601())
                         ser = exchanging.exchange(route="/delegate", payload=payload)
                         msg = bytearray(ser.raw)
-                        msg.extend(self.hab.sanction(ser))
+                        msg.extend(self.hab.endorse(serder=ser))
                         self.mbx.storeMsg(self.controller + "/delegate", msg)
-
 
                 yield self.tock
             yield self.tock

@@ -291,12 +291,11 @@ def test_credential_parsator():
         verifier = verifying.Verifier(hab=hab, name="verifier")
         proving.parseCredential(ims=msg, verifier=verifier)
 
-        assert len(verifier.cues) == 2
+        assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()
-        print(cue)
-        assert cue['kin'] == "query"
+        assert cue['kin'] == "telquery"
         q = cue["q"]
-        assert q["pre"] == hab.pre
+        assert q["ri"] == issuer.regk
 
 
 if __name__ == '__main__':

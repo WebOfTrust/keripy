@@ -280,7 +280,6 @@ def test_issue_credential_full_multisig():
         assert cue["kin"] == "multisig"
         data = cue["data"]
         assert len(data) == 1
-        print(data[0])
         assert data[0]['s'] == '0'
         assert data[0]['i'] == creder.saider.qb64
         assert 'd' in data[0]

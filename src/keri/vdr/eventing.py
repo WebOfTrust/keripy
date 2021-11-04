@@ -9,6 +9,8 @@ VC TEL  support
 import json
 import logging
 from collections import deque, namedtuple
+
+from hio.help import decking
 from math import ceil
 
 import pysodium
@@ -534,6 +536,7 @@ def query(regk,
                                version=version,
                                kind=kind)
 
+
 class Tever:
     """
     Tever is KERI transaction event verifier class
@@ -568,7 +571,7 @@ class Tever:
     """
     NoBackers = False
 
-    def __init__(self, state=None, serder=None, seqner=None, diger=None, bigers=None, db=None,
+    def __init__(self, cues=None, state=None, serder=None, seqner=None, diger=None, bigers=None, db=None,
                  reger=None, noBackers=None, regk=None, local=False):
         """
         Create incepting tever and state from registry inception serder
@@ -593,6 +596,8 @@ class Tever:
             raise ValueError("Missing required arguments. Need state or serder")
 
         self.reger = reger if reger is not None else Registry()
+        self.cues = cues if cues is not None else decking.Deck()
+
         self.db = db if db is not None else basing.Baser(reopen=True)
         self.local = True if local else False
 
@@ -901,8 +906,8 @@ class Tever:
 
             # check if fully anchored
             if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-                self.escrowALEvent(serder=serder, seqner=seqner, diger=diger)
-
+                if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger):
+                    self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked,
                                                    ))
@@ -967,8 +972,8 @@ class Tever:
 
             # check if fully anchored
             if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-                self.escrowALEvent(serder=serder, seqner=seqner, diger=diger)
-
+                if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger):
+                    self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked))
 
@@ -1001,7 +1006,6 @@ class Tever:
           vcpre:  the VC identifier
         """
         vci = nsKey([self.prefixer.qb64, vcpre])
-
         digs = []
         for _, dig in self.reger.getTelItemPreIter(pre=vci):
             digs.append(dig)
@@ -1097,7 +1101,8 @@ class Tever:
 
         # check if fully anchored
         if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-            self.escrowALEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers, baks=baks)
+            if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers, baks=baks):
+                self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
             raise MissingAnchorError("Failure verify event = {} "
                                      "".format(serder.ked))
 
@@ -1196,9 +1201,9 @@ class Tever:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.putTvt(key, serder.raw)
-        self.reger.putTae(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
+        return self.reger.putTae(snKey(serder.preb, serder.sn), serder.digb)
 
     def getBackerState(self, ked):
         rega = ked["ra"]
@@ -1236,7 +1241,7 @@ class Tevery:
 
     """
 
-    def __init__(self, reger=None, db=None, regk=None, local=False):
+    def __init__(self, reger=None, db=None, regk=None, local=False, cues=None):
         """
         Initialize instance:
 
@@ -1252,7 +1257,7 @@ class Tevery:
         self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
-        self.cues = deque()
+        self.cues = cues if cues is not None else decking.Deck()
 
     @property
     def tevers(self):
@@ -1310,7 +1315,8 @@ class Tevery:
                               reger=self.reger,
                               db=self.db,
                               regk=self.regk,
-                              local=self.local)
+                              local=self.local,
+                              cues = self.cues)
                 self.tevers[regk] = tever
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
@@ -1329,6 +1335,7 @@ class Tevery:
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             tever = self.tevers[regk]
+            tever.cues = self.cues
             if ilk in [Ilks.vrt]:
                 sno = tever.sn + 1  # proper sn of new inorder event
             else:
@@ -1336,7 +1343,7 @@ class Tevery:
                 sno = 0 if esn is None else esn + 1
 
             if sn > sno:  # sn later than sno so out of order escrow
-                # escrow oEut-of-order event
+                # escrow out-of-order event
                 self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
@@ -1431,7 +1438,9 @@ class Tevery:
                 logger.error("Tevery escrow process error: %s\n", ex.args[0])
 
     def processEscrowOutOfOrders(self):
-        pass
+        for (pre, snb, digb) in self.reger.getOotItemIter():
+            print("oot-tel-event", pre)
+
 
     def processEscrowAnchorless(self):
         """

@@ -52,7 +52,6 @@ class Wallet:
         for saider in saiders:
             creder = self.reger.creds.get(keys=saider.qb64b)
 
-            # TODO:  de-dupe the seals here and extract the signatures
             seals = self.reger.seals.get(keys=saider.qb64b)
             prefixer = None
             seqner = None

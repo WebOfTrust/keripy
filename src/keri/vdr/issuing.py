@@ -492,7 +492,7 @@ class IssuerDoer(doing.DoDoer):
                     )
                     self.gdoer.msgs.append(msg)
                 elif cueKin == "logEvent":
-                    print("TEL event saved")
+                    pass
 
 
                 yield self.tock

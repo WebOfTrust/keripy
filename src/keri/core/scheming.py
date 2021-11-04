@@ -78,7 +78,7 @@ class CacheResolver:
 
 
 jsonSchemaCache = CacheResolver(cache={
-    "E3n2Od38xMVDoM6Km-Awse_Cw9z0RtUJN-j0MQo642xw": b'{"$id":"E3n2Od38xMVDoM6Km-Awse_Cw9z0RtUJN-j0MQo642xw",'
+    "EFBMQwQ1fv_bEBpqrom0EHLytFZiP5tWAs5HUpaa-WUg": b'{"$id":"EFBMQwQ1fv_bEBpqrom0EHLytFZiP5tWAs5HUpaa-WUg",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"Legal Entity Official Organizational Role vLEI '
                                                     b'Credential","description":"A vLEI Role Credential issued by a '
@@ -98,15 +98,14 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'"dt","ri","LEI","personLegalName","officialRole","t"],'
                                                     b'"type":"object"},"p":{"contains":{"type":"object"},'
                                                     b'"description":"source block","items":{"properties":{'
-                                                    b'"qualifiedvLEIIssuervLEICredential":{"description":"chain to '
-                                                    b'issuer credential","properties":{"d":{"type":"string"},'
+                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
+                                                    b'credential","properties":{"d":{"type":"string"},'
                                                     b'"i":{"type":"string"}},"additionalProperties":false,'
                                                     b'"type":"object"}},"additionalProperties":false,"required":['
-                                                    b'"qualifiedvLEIIssuervLEICredential"],"type":"object"},'
-                                                    b'"maxItems":1,"minItems":1,"type":"array"}},'
-                                                    b'"additionalProperties":false,"required":["i","s","d"],'
-                                                    b'"type":"object"}',
-    "EJEY6JAAVfAh8-yBTV37rHaJ9b_VKvkZunz_oJupzsvQ": b'{"$id":"EJEY6JAAVfAh8-yBTV37rHaJ9b_VKvkZunz_oJupzsvQ",'
+                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
+                                                    b'"minItems":1,"type":"array"}},"additionalProperties":false,'
+                                                    b'"required":["i","s","d"],"type":"object"}',
+    "EC9rQ-xi_3cRrjANStL6tn6Kn4Z444r9rvTr_Vfi-750": b'{"$id":"EC9rQ-xi_3cRrjANStL6tn6Kn4Z444r9rvTr_Vfi-750",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"Legal Entity vLEI Credential","description":"A vLEI '
                                                     b'Credential issued by a Qualified vLEI issuer to a Legal '
@@ -128,10 +127,11 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'"additionalProperties":false,"type":"object"}},'
                                                     b'"additionalProperties":false,"required":['
                                                     b'"qualifiedvLEIIssuervLEICredential"],"type":"object"},'
-                                                    b'"maxItems":1,"minItems":1,"type":"array"}},'
+                                                    b'"maxItems":1,"minItems":1,"type":"array"},"r":{"contains":{'
+                                                    b'"type":"object"},"description":"rules block","type":"array"}},'
                                                     b'"additionalProperties":false,"required":["i","s","d"],'
                                                     b'"type":"object"}',
-    "EmaEqu_zIkxXKsrNJFTJq_s2c96McS8yzHhcvYDW8u5A": b'{"$id":"EmaEqu_zIkxXKsrNJFTJq_s2c96McS8yzHhcvYDW8u5A",'
+    "EMNumLS-O9ScGskk8h4xHvoiAeQf-CDW6KU3LoDUiz3o": b'{"$id":"EMNumLS-O9ScGskk8h4xHvoiAeQf-CDW6KU3LoDUiz3o",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"Legal Entity Engagement Context Role vLEI Credential",'
                                                     b'"description":"A vLEI Role Credential issued to representatives '
@@ -151,15 +151,13 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'"dt","ri","LEI","personLegalName","engagementContextRole","t"],'
                                                     b'"type":"object"},"p":{"contains":{"type":"object"},'
                                                     b'"description":"source block","items":{"properties":{'
-                                                    b'"qualifiedvLEIIssuervLEICredential":{"description":"chain to '
-                                                    b'issuer credential","properties":{"d":{"type":"string"},'
+                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
+                                                    b'credential","properties":{"d":{"type":"string"},'
                                                     b'"i":{"type":"string"}},"additionalProperties":false,'
                                                     b'"type":"object"}},"additionalProperties":false,"required":['
-                                                    b'"qualifiedvLEIIssuervLEICredential"],"type":"object"},'
-                                                    b'"maxItems":1,"minItems":1,"type":"array"}},'
-                                                    b'"additionalProperties":false,"required":["i","s","d"],'
-                                                    b'"type":"object"}',
-    # GLEIFvLEICredential
+                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
+                                                    b'"minItems":1,"type":"array"}},"additionalProperties":false,'
+                                                    b'"required":["i","s","d"],"type":"object"}',
     "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc": b'{"$id":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"GLEIF vLEI Credential","description":"The vLEI '
@@ -176,7 +174,6 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'"dt","ri","LEI","t"],"type":"object"},"p":{"maxItems":0,'
                                                     b'"minItems":0,"type":"array"}},"additionalProperties":false,'
                                                     b'"required":["d","i"]}',
-    # QualifiedvLEIIssuervLEICredential
     "E-_XCbf1LJ0v9CR7g-_gOknf5dpoZROgF7qG5T8mXCv8": b'{"$id":"E-_XCbf1LJ0v9CR7g-_gOknf5dpoZROgF7qG5T8mXCv8",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"Qualified vLEI Issuer Credential","description":"A '

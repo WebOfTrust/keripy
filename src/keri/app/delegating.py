@@ -237,8 +237,6 @@ class RotateDoer(doing.DoDoer):
         witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
         self.extend([witq])
 
-        print("Hello, could someone approve my delegated rotation, please?")
-
         while self.delegatorPrefix not in self.hab.kevers or self.hab.kevers[self.delegatorPrefix].sn < 2:
             witq.query(self.delegatorPrefix)
             yield self.tock

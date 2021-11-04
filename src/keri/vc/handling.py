@@ -217,8 +217,6 @@ class ApplyHandler(doing.DoDoer):
                                             source=source,
                                             status=self.issuer.regk)
                 try:
-                    print("about to issue")
-                    print(creder.pretty())
                     self.issuer.issue(creder=creder, dt=dt)
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
@@ -290,20 +288,22 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hab, verifier, cues=None, **kwa):
+    def __init__(self, hab, verifier, ims=None, cues=None, **kwa):
         """
 
         Parameters:
             wallet (Wallet) credential wallet that will hold the issued credentials
             typ (JSONSchema) credential type to accept
         """
+        self.hab = hab
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.ims = ims if ims is not None else bytearray()
 
         self.verifier = verifier
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.HttpWitnesser)
 
-        doers = [self.witq, doing.doify(self.msgDo), doing.doify(self.verifierDo)]
+        doers = [self.witq, doing.doify(self.msgDo)]
 
         super(IssueHandler, self).__init__(doers=doers, **kwa)
 
@@ -325,59 +325,29 @@ class IssueHandler(doing.DoDoer):
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
                 envelopes = payload["vc"]
+
+                envelopes.reverse()
                 for envlop in envelopes:
                     crd = envlop["vc"]
                     proof = envlop["proof"]
+                    msgs = bytearray(envlop["msgs"].encode("utf-8"))
+                    self.ims.extend(msgs)
+                    yield
 
-                    vs = crd["v"]
+                    creder = proving.Credentialer(crd=crd)
 
-                    kind, version, size = Deversify(vs)
-                    raw = dumps(ked=crd, kind=kind)
-                    if len(raw) != size:
-                        raise ValueError("invalid length {} for credential = {}".format(size, crd))
-
-                    msg = bytearray(raw)
+                    msg = bytearray(creder.raw)
                     msg.extend(proof.encode("utf-8"))
-
                     proving.parseCredential(ims=msg, verifier=self.verifier)
+
+                    c = self.verifier.reger.saved.get(creder.said)
+                    while c is None:
+                        c = self.verifier.reger.saved.get(creder.said)
+                        yield
+
                 yield
 
             yield
-
-    def verifierDo(self, tymth, tock=0.0, **opts):
-        """
-        Process cues from Verifier coroutine
-
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.verifier.cues:
-                cue = self.verifier.cues.popleft()
-                cueKin = cue["kin"]
-
-                if cueKin == "saved":
-                    creder = cue["creder"]
-
-                    print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
-                    print(creder.pretty())
-
-                elif cueKin == "query":
-                    qargs = cue["q"]
-                    self.witq.query(**qargs)
-
-                elif cueKin == "telquery":
-                    qargs = cue["q"]
-                    self.witq.telquery(**qargs)
-
-                yield self.tock
-            yield self.tock
 
 
 class RequestHandler(doing.Doer):
@@ -387,7 +357,7 @@ class RequestHandler(doing.Doer):
         have the following format:
 
              {
-                "submission_requirements": [{
+                ""submission_requirements": [{
                    "name": "Proof of LEI",
                    "rule": "pick",
                    "count": 1,
@@ -509,12 +479,10 @@ class ProofHandler(doing.Doer):
 
     resource = "/presentation/proof"
 
-    def __init__(self, typ=JSONSchema(), cues=None, proofs=None, **kwa):
+    def __init__(self, cues=None, proofs=None, **kwa):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.proofs = proofs if proofs is not None else decking.Deck()
-
-        self.typ = typ
 
         super(ProofHandler, self).__init__(**kwa)
 
@@ -552,6 +520,7 @@ class ProofHandler(doing.Doer):
                 # TODO:  Find verifiable credential in vcs based on `path`
                 dm = pe["descriptor_map"]
 
+                vcs.reverse()
                 for vc in vcs:
                     self.proofs.append((pre, vc))
 
@@ -626,8 +595,8 @@ def presentation_exchange(db, reger, credentials):
         craw = viring.messagize(creder=creder, proof=proof)
         vcs.append(envelope(craw, msgs))
 
-        sources = reger.sources(creder)
-        vcs.extend([envelope(craw) for craw in sources])
+        sources = reger.sources(db, creder)
+        vcs.extend([envelope(msg=craw, msgs=msgs) for craw, msgs in sources])
 
 
     d = dict(

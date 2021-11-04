@@ -28,7 +28,6 @@ def test_digest_ungrouping():
 
 @contextmanager
 def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    print()
     with habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as hab1, \
             habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as hab2, \
             habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as hab3:

@@ -54,7 +54,6 @@ def interact(args):
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1
     except kering.ValidationError as ex:
-        print(ex)
         return -1
 
 

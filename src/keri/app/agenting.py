@@ -139,7 +139,7 @@ class WitnessInquisitor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msgs=None, wits=None, klas=None, **kwa):
+    def __init__(self, hab, reger=None, msgs=None, wits=None, klas=None, **kwa):
         """
         For all msgs, select a random witness from Habitat's current set of witnesses
         send the msg and process all responses (KEL replays, RCTs, etc)
@@ -150,14 +150,14 @@ class WitnessInquisitor(doing.DoDoer):
 
         """
         self.hab = hab
+        self.reger = reger
         self.wits = wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
-        self.smsgs = oset()
 
-        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo), doing.doify(self.msgDo)], **kwa)
+        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=1.0, **opts):
+    def msgDo(self, tymth=None, tock=1.0, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -180,26 +180,14 @@ class WitnessInquisitor(doing.DoDoer):
         self.extend(witers)
 
         while True:
-            while not self.smsgs:
-                yield self.tock
-
-            msg = self.smsgs.pop()
-            witer = random.choice(witers)
-            witer.msgs.append(bytearray(msg))
-
-            yield 2.0
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
             while not self.msgs:
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.smsgs.add(msg)
+            witer = random.choice(witers)
+            witer.msgs.append(bytearray(msg))
+
+            yield self.tock
 
 
     def query(self, pre, r="logs", sn=0, **kwa):
@@ -209,6 +197,15 @@ class WitnessInquisitor(doing.DoDoer):
     def telquery(self, ri, i, r="tels", **kwa):
         msg = self.hab.query(i, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
         self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
+
+    def backoffQuery(self, pre, sn=None, anc=None):
+        backoff = BackoffWitnessQuery(hab=self.hab, pre=pre, sn=sn, anc=anc)
+        self.extend([backoff])
+
+    def backoffTelQuery(self, ri, i):
+        backoff = BackoffWitnessTelQuery(hab=self.hab, reger=self.reger, ri=ri, i=i, wits=self.hab.kever.wits)
+        self.extend([backoff])
+
 
 
 class WitnessPublisher(doing.DoDoer):
@@ -432,6 +429,162 @@ class HttpWitnesser(doing.DoDoer):
             yield
 
 
+class BackoffWitnessQuery(doing.DoDoer):
+    """
+    Queries selection of target witnesses randomly performing truncated exponential backoff
+    retries
+
+    """
+
+    def __init__(self, hab, pre, wits=None, sn=None, anchor=None, startTyme=0.25, maxTyme=60, doers=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+            maxTime is seconds int of maximum amount of time before giving up
+
+        """
+        self.hab = hab
+        self.wits = wits if wits is not None else self.hab.kever.wits
+        self.startType = startTyme
+        self.maxTyme = maxTyme
+
+        self.pre = pre
+        self.sn = sn
+        self.anchor = anchor
+
+        self.parser = None
+        doers = doers if doers is not None else []
+        doers.extend([doing.doify(self.queryDo)])
+
+        super(BackoffWitnessQuery, self).__init__(doers=doers, **kwa)
+
+    def queryDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        tyme = self.startType
+        while tyme <= self.maxTyme:
+
+            if self.pre in self.hab.kevers:
+                kever = self.hab.kevers[self.pre]
+                if self.sn is not None and kever.sn >= self.sn:
+                    break
+                if self.anchor is not None:
+                    srdr = self.hab.db.findAnchoringEvent(pre=self.pre, anchor=self.anchor)
+                    if srdr is not None:
+                        break
+
+
+            wit = random.choice(self.wits)
+            loc = obtaining.getwitnessbyprefix(wit)
+
+            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+            clientDoer = http.clienting.ClientDoer(client=client)
+
+            self.extend([clientDoer])
+
+            msg = self.hab.query(self.pre, route="logs", query=dict())  # Query for remote pre Event
+            httping.createCESRRequest(msg, client)
+            while client.requests:
+                yield self.tock
+
+            while not client.responses:
+                yield self.tock
+
+            self.remove([clientDoer])
+
+            delay = tyme + random.randint(0, 1000) / 1000.0
+            tyme *= 2
+
+            yield delay
+
+
+class BackoffWitnessTelQuery(doing.DoDoer):
+    """
+    Queries selection of target witnesses randomly performing truncated exponential backoff
+    retries
+
+    """
+
+    def __init__(self, hab, reger,  ri, i, wits, startTyme=0.25, maxTyme=60, doers=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+            maxTime is seconds int of maximum amount of time before giving up
+
+        """
+        self.hab = hab
+        self.reger = reger
+        self.wits = wits
+        self.maxTyme = maxTyme
+        self.startTyme = startTyme
+
+        self.ri = ri
+        self.i = i
+
+        self.parser = None
+        doers = doers if doers is not None else []
+        doers.extend([doing.doify(self.queryDo)])
+
+        super(BackoffWitnessTelQuery, self).__init__(doers=doers, **kwa)
+
+    def queryDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        tyme = self.startTyme
+        while tyme <= self.maxTyme:
+
+            if self.ri in self.reger.tevers:
+                tever = self.reger.tevers[self.ri]
+                if tever.vcState(self.i) is not None:
+                    break
+
+            wit = random.choice(self.wits)
+            loc = obtaining.getwitnessbyprefix(wit)
+
+            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+            clientDoer = http.clienting.ClientDoer(client=client)
+
+            self.extend([clientDoer])
+
+            msg = self.hab.query(self.i, route="tels", query=dict(ri=self.ri))  # Query for remote pre Event
+
+            httping.createCESRRequest(msg, client)
+            while client.requests:
+                yield self.tock
+
+            while not client.responses:
+                yield self.tock
+
+            self.remove([clientDoer])
+
+            delay = tyme + random.randint(0, 1000) / 1000.0
+            tyme *= 2
+
+            yield delay
+
+
 class KiwiServer(doing.DoDoer):
     """
     Routes for handling UI requests for Credential issuance/revocation and presentation requests
@@ -495,7 +648,7 @@ class KiwiServer(doing.DoDoer):
         self.app.add_route("/multisig", self, suffix="multisig")
         self.gdoer = gdoer
 
-        self.witq = WitnessInquisitor(hab=hab, klas=HttpWitnesser)
+        self.witq = WitnessInquisitor(hab=hab, reger=self.verifier.reger, klas=HttpWitnesser)
         self.postman = forwarding.Postman(hab=self.hab)
 
         doers = [self.witq, self.postman, self.registryIcpr, doing.doify(self.verifierDo), doing.doify(
@@ -529,29 +682,52 @@ class KiwiServer(doing.DoDoer):
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
 
-                    recpt = creder.subject["i"]
+                    if creder.crd["i"] == self.hab.pre:
+                        recpt = creder.subject["i"]
+                        said = creder.said
+                        regk = creder.status
+                        vci = viring.nsKey([regk, said])
+                        issr = creder.crd["i"]
 
-                    craw = viring.messagize(creder, proof)
-                    vcs = [handling.envelope(craw)]
+                        msgs = bytearray()
+                        for msg in self.hab.db.clonePreIter(pre=issr):
+                            msgs.extend(msg)
 
-                    sources = self.verifier.reger.sources(creder)
-                    for craw in sources:
-                        vcs.extend([handling.envelope(craw)])
+                        for msg in self.verifier.reger.clonePreIter(pre=regk):
+                            msgs.extend(msg)
 
-                    pl = dict(
-                        vc=vcs
-                    )
+                        for msg in self.verifier.reger.clonePreIter(pre=vci):
+                            msgs.extend(msg)
 
-                    exn = exchanging.exchange(route="/credential/issue", payload=pl)
-                    self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
+
+                        craw = viring.messagize(creder, proof)
+                        vcs = [handling.envelope(msg=craw)]
+
+                        sources = self.verifier.reger.sources(self.hab.db, creder)
+                        for craw, smsgs in sources:
+                            self.postman.send(recipient=recpt, topic="credential", msg=smsgs)
+                            vcs.extend([handling.envelope(msg=craw)])
+
+                        pl = dict(
+                            vc=vcs
+                        )
+
+                        self.postman.send(recipient=recpt, topic="credential", msg=msgs)
+                        exn = exchanging.exchange(route="/credential/issue", payload=pl)
+                        self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
 
                 elif cueKin == "query":
                     qargs = cue["q"]
-                    self.witq.query(**qargs)
+                    self.witq.backoffQuery(**qargs)
 
                 elif cueKin == "telquery":
                     qargs = cue["q"]
-                    self.witq.telquery(**qargs)
+                    self.witq.backoffTelQuery(**qargs)
+
+                elif cueKin == "proof":
+                    nodeSaid = cue["said"]
+                    creder = self.verifier.reger.creds.get(keys=nodeSaid)
+
 
                 yield self.tock
             yield self.tock
@@ -598,7 +774,7 @@ class KiwiServer(doing.DoDoer):
                 cueKin = cue['kin']
                 if cueKin == "send":
                     tevt = cue["msg"]
-                    subject = cue["sub"]
+                    sub = cue["sub"]
                     witSender = WitnessPublisher(hab=self.hab, msg=bytearray(tevt))
                     self.extend([witSender])
 
@@ -606,11 +782,11 @@ class KiwiServer(doing.DoDoer):
                         _ = yield self.tock
 
                     self.remove([witSender])
-                    if subject is not None:
-                        self.postman.send(recipient=subject["i"], topic="credential", msg=bytearray(tevt))
+
+                    if sub is not None:
+                        self.postman.send(recipient=sub["i"], topic="credential", msg=bytearray(tevt))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    subject = cue["sub"]
                     witDoer = WitnessReceiptor(hab=self.hab, msg=bytearray(kevt))
                     self.extend([witDoer])
 
@@ -618,10 +794,6 @@ class KiwiServer(doing.DoDoer):
                         yield self.tock
 
                     self.remove([witDoer])
-                    if subject is not None:
-                        evt = coring.Serder(raw=kevt)
-                        msg = self.hab.db.cloneEvtMsg(pre=evt.pre, fn=evt.sn, dig=evt.digb)
-                        self.postman.send(recipient=subject["i"], topic="credential", msg=bytearray(msg))
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
@@ -630,7 +802,7 @@ class KiwiServer(doing.DoDoer):
                     )
                     self.gdoer.append(msg)
                 elif cueKin == "logEvent":
-                    print("TEL event saved")
+                    pass
 
 
                 yield self.tock
@@ -679,6 +851,9 @@ class KiwiServer(doing.DoDoer):
         source = body.get("source")
         recipientIdentifier = body.get("recipient")
         notify = body["notify"] if "notify" in body else True
+
+        if recipientIdentifier not in self.hab.kevers:
+            self.witq.query(recipientIdentifier)
 
         issuer = self.getIssuer(name=registry)
         if issuer is None:
@@ -1000,43 +1175,11 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         saids = issuer.reger.issus.get(keys=pre)
-        creds = self.get_credentials(saids)
+        creds = self.verifier.reger.get_credentials(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
-
-
-    def get_credentials(self, saids):
-        creds = []
-        for saider in saids:
-            key = saider.qb64b
-            creder = self.verifier.reger.creds.get(keys=key)
-
-            # TODO:  de-dupe the seals here and extract the signatures
-            seals = self.verifier.reger.seals.get(keys=key)
-            prefixer = None
-            seqner = None
-            diger = None
-            sigers = []
-            for seal in seals:
-                (prefixer, seqner, diger, siger) = seal
-                sigers.append(siger)
-
-            regk = creder.status
-            status, lastSeen = self.verifier.tevers[regk].vcState(key)
-            cred = dict(
-                sad=creder.crd,
-                pre=prefixer.qb64,
-                sn=seqner.sn,
-                dig=diger.qb64,
-                sigers=[sig.qb64 for sig in sigers],
-                status=status,
-                # lastSeen=lastSeen.dts,
-            )
-
-            creds.append(cred)
-        return creds
 
 
     def on_get_credentials_received(self, req, rep):
@@ -1056,7 +1199,7 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         saids = self.verifier.reger.subjs.get(keys=pre)
-        creds = self.get_credentials(saids)
+        creds = self.verifier.reger.get_credentials(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
