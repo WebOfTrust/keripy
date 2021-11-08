@@ -230,5 +230,60 @@ def test_keystate(mockHelpingNowUTC):
         saider = bamDB.knas.get(keys=keys)
         assert saider is None
 
+    # Bob is the controller
+    # Bam is verifying the key state for Bob with a stale key state in the way
+    with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+         basing.openDB(name="bam") as bamDB:
+
+        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                                 wits=[], temp=True)
+        assert bobHab.pre == "Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI"
+
+        # Get ksn from Bob and verify
+        ksn = bobHab.kever.state()
+        assert ksn.pre == bobHab.pre
+        assert ksn.sn == 0
+        assert ksn.ked["d"] == bobHab.kever.serder.dig
+
+        for _ in range(3):
+            bobHab.rotate()
+
+        # Get ksn from Bob and verify
+        ksn = bobHab.kever.state()
+        assert ksn.pre == bobHab.pre
+        assert ksn.sn == 3
+        assert ksn.ked["d"] == bobHab.kever.serder.dig
+
+        staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
+        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy)
+
+        for _ in range(5):
+            bobHab.rotate()
+
+        # Get ksn from Bob and verify
+        ksn = bobHab.kever.state()
+        assert ksn.pre == bobHab.pre
+        assert ksn.sn == 8
+        assert ksn.ked["d"] == bobHab.kever.serder.dig
+
+        liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
+        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy)
+
+        msgs = bytearray()  # outgoing messages
+        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+            msgs.extend(msg)
+
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+
+        assert bobHab.pre in bamKvy.kevers
+
+        bamKvy.processEscrows()
+
+        keys = (bobHab.pre, bobHab.pre)
+        saider = bamDB.knas.get(keys=keys)
+        assert saider.qb64 == bobHab.kever.serder.dig
+        latest = bamDB.ksns.get(keys=(saider.qb64,))
+        assert latest.sn == 8
 
     """End Test"""

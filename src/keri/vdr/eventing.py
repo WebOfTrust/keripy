@@ -91,7 +91,7 @@ def incept(
     if len(oset(baks)) != len(baks):
         raise ValueError("Invalid baks = {}, has duplicates.".format(baks))
 
-    if isinstance(toad, int):
+    if isinstance(toad, str):
         toad = "{:x}".format(toad)
     elif toad is None:
         if not baks:
@@ -194,7 +194,7 @@ def rotate(
         raise ValueError("Invalid member combination among baks = {}, cuts ={}, "
                          "and adds = {}.".format(baks, cuts, adds))
 
-    if isinstance(toad, int):
+    if isinstance(toad, str):
         toad = "{:x}".format(toad)
     elif toad is None:
         if not newbakset:
@@ -449,7 +449,6 @@ def state(pre,
         "v": "KERI10JSON00011c_",
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
         "s": "2":,
-        "t": "ksn",
         "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
         "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
         "ri": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
@@ -468,7 +467,6 @@ def state(pre,
 
     """
     vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.ksn
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -513,7 +511,6 @@ def state(pre,
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
                d=dig,
-               t=ilk,
                ri=ri,
                dt=dts,
                et=eilk,

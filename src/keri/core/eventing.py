@@ -46,7 +46,7 @@ DRT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
               "bt", "br", "ba", "a"]
 IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 
-KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
+KSN_LABELS = ["v", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "n",
               "bt", "b", "c", "ee", "di"]
 
 RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
@@ -1072,7 +1072,6 @@ def state(pre,
         "v": "KERI10JSON00011c_",
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
         "s": "2":,
-        "t": "ksn",
         "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
         "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
         "f": "3",
@@ -1098,7 +1097,6 @@ def state(pre,
     "r": ""  when no route
     """
     vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.ksn
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -1155,7 +1153,6 @@ def state(pre,
     ksd = dict(v=vs,  # version string
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
-               t=ilk,
                p=pig,
                d=dig,
                f="{:x}".format(fn),  # lowercase hex string no leading zeros
@@ -1513,7 +1510,7 @@ class Kever:
             db = basing.Baser(reopen=True)  # default name = "main"
         self.db = db
         self.cues = cues
-        self.prefixes = prefixes if prefixes is not None else oset()
+        self.prefixes = prefixes if prefixes is not None else db.prefixes
         self.local = True if local else False
 
         if state:  # preload from state
@@ -3133,6 +3130,7 @@ class Kevery:
         """
         pass
 
+
     def processReply(self, serder, cigars=None, tsgs=None):
         """
         Process one reply message with either attached nontrans signing couples
@@ -3443,8 +3441,7 @@ class Kevery:
               "br": [],
               "ba": []
             },
-            "di": "",
-            "r": ""
+            "di": ""
           }
         }
 
@@ -3486,9 +3483,22 @@ class Kevery:
                 raise kering.UntrustedKeyStateSource("key state notice for {} from untrusted source {} "
                                                      .format(kserder.pre, aid))
 
+        if kserder.pre in self.kevers:
+            kever = self.kevers[kserder.pre]
+            if kserder.sn < kever.sn:
+                raise ValidationError("Skipped stale key state at sn {} for {}."
+                                      "".format(kserder.sn, kserder.pre))
+
         keys = (pre, aid,)
         osaider = self.db.knas.get(keys=keys)  # get old said if any
         dater = coring.Dater(dts=serder.ked["dt"])
+
+        # BADA Logic
+        accepted = self.acceptReply(serder=serder, saider=saider, route=route,
+                                    aid=aid, osaider=osaider, cigars=cigars,
+                                    tsgs=tsgs)
+        if not accepted:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
@@ -3510,12 +3520,6 @@ class Kevery:
         if not sserder.compare(dig=diger.qb64b):  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
                                   "".format(ked["s"]))
-        # BADA Logic
-        accepted = self.acceptReply(serder=serder, saider=saider, route=route,
-                                    aid=aid, osaider=osaider, cigars=cigars,
-                                    tsgs=tsgs)
-        if not accepted:
-            raise UnverifiedReplyError(f"Unverified reply.")
 
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
@@ -3654,11 +3658,12 @@ class Kevery:
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
             if sdig is None:
-                # should create cue here to request key state for sprefixer signer
+                # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                self.cues.append(dict(kin="query", q=dict(pre=spre)))
                 continue
 
             # retrieve last event itself of signer given sdig
@@ -3937,7 +3942,7 @@ class Kevery:
                         logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.knes.remIokey(iokeys=(pre, ion))  # remove escrow
+                    self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow
                     self.removeKeyState(saider)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
@@ -3945,12 +3950,12 @@ class Kevery:
                         logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.knes.remIokey(iokeys=(pre, ion))  # remove escrow only
+                    self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow only
                     logger.info("Kevery unescrow succeeded for key state=\n%s\n",
                                 serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.knes.remIokey(iokeys=(pre, ion))  # remove escrow
+                self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow
                 self.removeKeyState(saider)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
@@ -4272,8 +4277,9 @@ class Kevery:
             self.processEscrowUnverTrans()
             self.processEscrowPartialWigs()
             self.processEscrowPartialSigs()
-            self.processEscrowDuplicitous()
+            self.processEscrowReply()
             self.processEscrowKeyState()
+            self.processEscrowDuplicitous()
 
 
         except Exception as ex:  # log diagnostics errors etc
