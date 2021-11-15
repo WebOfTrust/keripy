@@ -814,9 +814,9 @@ class Parser:
                 if trqs:
                     kvy.processReceiptQuadruples(serder, trqs, firner=firner)
 
-            except AttributeError:
+            except AttributeError as e:
                 raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
+                                      "= {}.".format(serder.pretty()))
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             if not (cigars or wigers or tsgs):
@@ -836,24 +836,6 @@ class Parser:
                 raise kering.ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty()))
 
-        elif ilk in (Ilks.ksn,):  # key state notification msg
-            if not (cigars or tsgs):
-                raise kering.ValidationError("Missing attached endorser signature(s) "
-                       "to key state notification msg = {}.".format(serder.pretty()))
-
-            try:
-                if cigars:  # process separately so do not clash on errors
-                    # may want two different functions One for processKeyStateNoticeNonTrans
-                    # and one for processKeyStateNoticeTrans
-                    kvy.processKeyStateNotice(serder, cigars=cigars)  # nontrans
-
-                if tsgs:  # process separately so do not clash on errors
-                    kvy.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
-
-            except AttributeError:
-                raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty()))
-
         elif ilk in (Ilks.rpy, ):  # reply message
             if not (cigars or tsgs):
                 raise kering.ValidationError("Missing attached endorser signature(s) "
@@ -866,7 +848,7 @@ class Parser:
                 if tsgs:  # process separately so do not clash on errors
                     kvy.processReply(serder, tsgs=tsgs)  #  trans
 
-            except AttributeError:
+            except AttributeError as e:
                 raise kering.ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty()))
 
@@ -886,14 +868,14 @@ class Parser:
                                              "to key log query msg = {}.".format(serder.pretty()))
 
             route = serder.ked["r"]
-            if route in ["logs"]:
+            if route in ["logs", "ksn"]:
                 try:
                     kvy.processQuery(**args)
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 
-            elif route in ["tels"]:
+            elif route in ["tels", "tsn"]:
                 try:
                     tvy.processQuery(**args)
                 except AttributeError as e:

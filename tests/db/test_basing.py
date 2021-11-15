@@ -3,33 +3,23 @@
 tests.db.dbing module
 
 """
-import pytest
-
-import os
 import json
-import datetime
+import os
+
 import lmdb
-
+import pytest
 from hio.base import doing
-
-from keri.help import helping
 from keri.app import habbing, keeping
 from keri.core import coring, eventing
-
-from keri.core.coring import Signer, Nexter, Prefixer, Serder
-from keri.core.coring import MtrDex, MtrDex, MtrDex
-from keri.core.coring import Serials, Vstrings, Versify
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
-
-from keri.db import dbing
-from keri.db.dbing import clearDatabaserDir, openLMDB
-from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitKeyON, splitKeyFN, splitKeySN, splitKeyDT)
-from keri.db.dbing import LMDBer
+from keri.core.coring import MtrDex
+from keri.core.coring import Serials, Versify
+from keri.core.coring import Signer, Nexter
+from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
+from keri.db import dbing
 from keri.db.basing import openDB, Baser
-
-
+from keri.db.dbing import (dgKey, onKey, snKey)
+from keri.db.dbing import openLMDB
 
 
 def test_baser():
@@ -1731,7 +1721,7 @@ def test_clean_baser():
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.sn == 6
         assert state.ked["f"] == '6'
-        assert natHab.db.env.stat()['entries'] == 37
+        assert natHab.db.env.stat()['entries'] == 43
 
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
@@ -1740,7 +1730,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.digb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.dig == natHab.kever.serder.dig
-            assert natHab.db.env.stat()['entries'] == 37
+            assert natHab.db.env.stat()['entries'] == 43
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)

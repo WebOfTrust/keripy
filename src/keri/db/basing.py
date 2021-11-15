@@ -736,6 +736,38 @@ class Baser(dbing.LMDBer):
         # exchange source prefix
         self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
 
+
+        # KSN support datetime stamps and signatures indexed and not-indexed
+        # all ksn  kdts (key state datetime serializations) maps said to date-time
+        self.kdts = subing.CesrSuber(db=self, subkey='kdts.', klas=coring.Dater)
+
+        # all key state messages. Maps key state said to serialization. ksns are
+        # versioned sads ( with version string) so use Serder to deserialize and
+        # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
+        self.ksns = subing.SerderSuber(db=self, subkey='ksns.')
+
+        # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys
+        # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
+        #  of reply and trans signer's key state est evt to val Siger for each
+        # signature.
+        self.ksgs = subing.CesrIoSetSuber(db=self, subkey='ksgs.', klas=coring.Siger)
+
+        # all key state kcgs  (ksn non-indexed signature serializations) maps ksn SAID
+        # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
+        # nontrans qb64 of Prefixer is same as Verfer
+        self.kcgs = subing.CatCesrIoSetSuber(db=self, subkey='kcgs.',
+                                             klas=(coring.Verfer, coring.Cigar))
+
+        # all key state escrows indices of partially signed ksn messages. Maps
+        # route in reply to single (Saider,)  of escrowed ksn.
+        # Routes such as ???
+        self.knes = subing.CesrIoSetSuber(db=self, subkey='knes', klas=coring.Saider)
+
+
+        # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
+        # maps key=cid.role.eid to val=said of end reply
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+
         return self.env
 
     def reload(self):
