@@ -82,7 +82,7 @@ class CredentialIssuer(doing.DoDoer):
         )
 
 
-        reger = viring.Registry(name=registryName)
+        reger = viring.Registry(name=registryName, db=self.hab.db)
         issuer = issuing.Issuer(hab=self.hab, name=registryName, reger=reger)
         self.verifier = verifying.Verifier(hab=self.hab, name=registryName, reger=reger, tevers=issuer.tevers)
         meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
@@ -106,14 +106,28 @@ class CredentialIssuer(doing.DoDoer):
 
         self.issr.msgs.append(self.msg)
 
-        done = False
-        while not done:
-            while self.verifier.cues:
-                cue = self.verifier.cues.popleft()
+        creder = None
+        published = False
+        witnessed = False
+        finished = False
+        while not ((published and witnessed) or finished):
+            while self.issr.cues:
+                cue = self.issr.cues.popleft()
                 if cue["kin"] == "saved":
-                    done = True
+                    creder = cue["creder"]
+
+                if cue["kin"] == "finished":
+                    finished = True
+
+                elif cue["kin"] == "published":
+                    published = True
+
+                elif cue["kin"] == "witnessed":
+                    witnessed = True
 
                 yield self.tock
             yield
 
+
+        print(f"{creder.said} has been issued.")
         self.remove(self.toRemove)

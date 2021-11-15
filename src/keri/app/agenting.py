@@ -194,7 +194,7 @@ class WitnessInquisitor(doing.DoDoer):
         msg = self.hab.query(pre, route=r, query=dict(), **kwa)  # Query for remote pre Event
         self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
 
-    def telquery(self, ri, i, r="tels", **kwa):
+    def telquery(self, ri, i=None, r="tels", **kwa):
         msg = self.hab.query(i, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
         self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
 
@@ -202,7 +202,7 @@ class WitnessInquisitor(doing.DoDoer):
         backoff = BackoffWitnessQuery(hab=self.hab, pre=pre, sn=sn, anc=anc)
         self.extend([backoff])
 
-    def backoffTelQuery(self, ri, i):
+    def backoffTelQuery(self, ri=None, i=None):
         backoff = BackoffWitnessTelQuery(hab=self.hab, reger=self.reger, ri=ri, i=i, wits=self.hab.kever.wits)
         self.extend([backoff])
 
@@ -405,7 +405,6 @@ class HttpWitnesser(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-
             httping.createCESRRequest(msg, self.client)
             while self.client.requests:
                 yield self.tock
@@ -557,7 +556,7 @@ class BackoffWitnessTelQuery(doing.DoDoer):
 
             if self.ri in self.reger.tevers:
                 tever = self.reger.tevers[self.ri]
-                if tever.vcState(self.i) is not None:
+                if self.i is None or tever.vcState(self.i) is not None:
                     break
 
             wit = random.choice(self.wits)

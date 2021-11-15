@@ -14,7 +14,7 @@ from hio.help.hicting import Mict
 
 from keri import kering
 
-from keri.core import eventing, parsing
+from keri.core import eventing, parsing, routing
 from keri.core.coring import MtrDex, Salter
 
 from keri.db import basing
@@ -128,7 +128,11 @@ def test_reply(mockHelpingNowUTC):
         # create non-local kevery for Tam to process non-local msgs
         tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
         # create non-local parer for Tam to process non-local msgs
-        tamPrs = parsing.Parser(kvy=tamKvy)
+        rtr = routing.Router()
+        rvy = routing.Revery(db=tamDB, rtr=rtr)
+        kvy = eventing.Kevery(db=tamDB, lax=False, local=True, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        tamPrs = parsing.Parser(kvy=tamKvy, rvy=rvy)
 
         # setup Wat's habitat nontrans
         watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
@@ -155,9 +159,12 @@ def test_reply(mockHelpingNowUTC):
         assert nelHab.ks == nelKS
         assert nelHab.db == nelDB
         assert not nelHab.kever.prefixer.transferable
-        nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False)
+        nelRtr = routing.Router()
+        nelRvy = routing.Revery(db=nelHab.db, rtr=nelRtr)
+        nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False, rvy=nelRvy)
+        nelKvy.registerReplyRoutes(router=nelRtr)
         # create non-local parer for Nel to process non-local msgs
-        nelPrs = parsing.Parser(kvy=nelKvy)
+        nelPrs = parsing.Parser(kvy=nelKvy, rvy=nelRvy)
 
         assert nelHab.pre == 'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
@@ -704,7 +711,7 @@ def test_reply(mockHelpingNowUTC):
         assert tamHab.pre in nelHab.kevers
 
         # process escrow reply
-        nelKvy.processEscrowReply()
+        nelRvy.processEscrowReply()
 
         #verify /end/role escrow removed
         saidkeys = (serder0.said, )

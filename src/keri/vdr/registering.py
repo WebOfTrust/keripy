@@ -40,7 +40,7 @@ class RegistryInceptDoer(doing.DoDoer):
                 msg = self.msgs.popleft()
                 name = msg["name"]
 
-                reger = viring.Registry(name=self.hab.name, temp=False)
+                reger = viring.Registry(name=self.hab.name, temp=False, db=self.hab.db)
                 self.issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, noBackers=True, **kwa)
                 self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
                 yield self.tock

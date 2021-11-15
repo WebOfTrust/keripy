@@ -19,7 +19,7 @@ from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..db.dbing import snKey, dgKey
 from ..help import helping
 from ..vc import proving
-from .. import vdr
+from ..vdr import eventing
 from ..vdr.viring import Registry, nsKey
 
 logger = help.ogler.getLogger()
@@ -90,7 +90,7 @@ class Issuer:
             else:
                 pre = group.gid
 
-            self.regser = vdr.eventing.incept(pre,
+            self.regser = eventing.incept(pre,
                                           baks=self.backers,
                                           toad=toad,
                                           cnfg=self.cnfg,
@@ -99,7 +99,7 @@ class Issuer:
             self.reger.regs.put(keys=self.name,
                                 val=viring.RegistryRecord(registryKey=self.regk))
 
-            self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
+            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             try:
@@ -107,7 +107,7 @@ class Issuer:
             except kering.MissingAnchorError:
                 logger.info("Credential registry missing anchor for inception = {}".format(self.regser.ked))
         else:
-            self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
+            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             if self.regk not in self.tevers:
@@ -141,7 +141,7 @@ class Issuer:
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
-        serder = vdr.eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
+        serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
                                  adds=adds, cuts=cuts)
 
         self.regser = serder
@@ -166,9 +166,9 @@ class Issuer:
         craw = self.hab.endorse(creder)
 
         if self.noBackers:
-            serder = vdr.eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
+            serder = eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
         else:
-            serder = vdr.eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                           dt=dt)
 
         self.anchorMsg(serder=serder, subject=creder.subject, reason=craw.decode("utf-8"))
@@ -194,9 +194,9 @@ class Issuer:
         iserder = Serder(raw=bytes(ievt))
 
         if self.noBackers:
-            serder = vdr.eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig, dt=dt)
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig, dt=dt)
         else:
-            serder = vdr.eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                            dig=iserder.dig, dt=dt)
 
         self.anchorMsg(serder, subject=creder.subject)
@@ -372,16 +372,20 @@ class IssuerDoer(doing.DoDoer):
 
         self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
 
-        doers = [self.gdoer, doing.doify(self.issueDo), doing.doify(self.issuerDo), doing.doify(self.escrowDo)]
+        doers = [
+            self.gdoer,
+            doing.doify(self.issueDo),
+            doing.doify(self.issuerDo),
+            doing.doify(self.escrowDo),
+            doing.doify(self.verifierDo),
+        ]
 
         super(IssuerDoer, self).__init__(doers=doers, **kwa)
-
 
     def enter(self, **kwargs):
         if not self.issuer.inited:
             self.issuer.setup(**self.issuer._inits)
-        super(IssuerDoer, self).enter(**kwargs)
-
+        return super(IssuerDoer, self).enter(**kwargs)
 
     def issueDo(self, tymth, tock=0.0, **kwa):
         """
@@ -404,15 +408,15 @@ class IssuerDoer(doing.DoDoer):
                 recipient = msg["recipient"]
                 data = msg["data"]
 
-                dt = data["dt"] if "dt" in data else None
+                dt = data["dt"] if "dt" in data else helping.nowIso8601()
 
                 types = ["VerifiableCredential", typ]
 
                 d = dict(
-                    i="",
-                    type=types,
-                    si=recipient,
-                    dt=helping.nowIso8601()
+                    d="",
+                    i=recipient,
+                    dt=dt,
+                    t=types,
                 )
 
                 d |= data
@@ -429,8 +433,6 @@ class IssuerDoer(doing.DoDoer):
                                             subject=d,
                                             source=source,
                                             status=self.issuer.regk)
-
-
 
                 try:
                     self.issuer.issue(creder=creder, dt=dt)
@@ -472,6 +474,7 @@ class IssuerDoer(doing.DoDoer):
                         _ = yield self.tock
 
                     self.remove([witSender])
+                    self.cues.append(dict(kin="published", regk=self.issuer.regk))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
                     witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
@@ -481,8 +484,7 @@ class IssuerDoer(doing.DoDoer):
                         yield self.tock
 
                     self.remove([witDoer])
-
-                    self.cues.append(dict(kin="finished"))
+                    self.cues.append(dict(kin="witnessed", regk=self.issuer.regk))
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
@@ -492,8 +494,8 @@ class IssuerDoer(doing.DoDoer):
                     )
                     self.gdoer.msgs.append(msg)
                 elif cueKin == "logEvent":
+                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
                     pass
-
 
                 yield self.tock
 
@@ -506,7 +508,7 @@ class IssuerDoer(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Groupy escrow for group icp, rot and ixn request messages.
+        Processes the Issuer escrow.
 
         """
         # start enter context
@@ -516,3 +518,22 @@ class IssuerDoer(doing.DoDoer):
             self.verifier.processEscrows()
             yield
 
+    def verifierDo(self, tymth, tock=0.0):
+        """
+        Returns:  doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Processes the Verifier cues.
+
+        """
+        yield self.tock
+
+        while True:
+            while self.verifier.cues:
+                cue = self.verifier.cues.popleft()
+                if cue["kin"] == "saved":
+                    self.cues.append(cue)
+                yield self.tock
+            yield

@@ -15,7 +15,7 @@ from hio.help import hicting
 from .. import help
 from .. import kering
 from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
-from ..core import coring, eventing, parsing
+from ..core import coring, eventing, parsing, routing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
@@ -161,8 +161,11 @@ class Habitat:
                                                                temp=self.temp,
                                                                reopen=True)
         self.ridx = 0  # rotation index of latest establishment event
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+        self.rtr = routing.Router()
+        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
+        self.kvy.registerReplyRoutes(router=self.rtr)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.pre = None  # wait to setup until after db is known to be opened
         self.delpre = None

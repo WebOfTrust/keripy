@@ -37,6 +37,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.diger.qb64 == 'EvpB-_BWD7tOhLI0cDyEQbziBt6IMyQnkrh0booR4vhg'
 
         res = issuer.rotate(adds=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
+        tsn = issuer.tevers[issuer.regk].state()
         assert res is True
         kevt, tevt = events(issuer)
         assert kevt == (
@@ -70,6 +71,8 @@ def test_issuer(mockHelpingNowUTC):
                         b'ZY_6m5mL9DkqKYnUvnyLufx-iLQMZhgfnAQ')
         ser = Serder(raw=tevt)
         assert ser.diger.qb64 == 'ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk'
+
+        tsn = issuer.tevers[issuer.regk].vcState(vcpre=ser.pre)
 
         issuer.revoke(creder=creder)
         kevt, tevt = events(issuer)

@@ -760,12 +760,12 @@ class Baser(dbing.LMDBer):
 
         # all key state escrows indices of partially signed ksn messages. Maps
         # route in reply to single (Saider,)  of escrowed ksn.
-        # Routes such as ???
+        # Routes such as /ksn/{aid}
         self.knes = subing.CesrIoSetSuber(db=self, subkey='knes', klas=coring.Saider)
 
 
-        # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
-        # maps key=cid.role.eid to val=said of end reply
+        # key state SAID database for successfully saved key state notices
+        # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
 
         return self.env

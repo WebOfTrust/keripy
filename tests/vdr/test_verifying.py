@@ -262,9 +262,8 @@ def test_verifier_multisig():
         assert kever.sn == 2
 
         issuer.processEscrows()
-        status, lastSeen = issuer.tvy.tevers[issuer.regk].vcState(creder.said)
-        assert status == eventing.VcStates.issued
-        assert lastSeen is not None
+        status = issuer.tvy.tevers[issuer.regk].vcState(creder.said)
+        assert status.ked["et"] == coring.Ilks.iss
 
         gkev = hab1.kevers[gid]
         sigers = []

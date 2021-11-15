@@ -16,10 +16,10 @@ from keri.app import agenting
 from . import habbing, keeping, directing, storing, httping
 from .. import help
 from ..app import obtaining
-from ..core import eventing, parsing
+from ..core import eventing, parsing, routing
 from ..db import basing
 from ..peer import exchanging
-from ..vdr import verifying
+from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
 
 logger = help.ogler.getLogger()
@@ -41,7 +41,8 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
         habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         doers.extend([ksDoer, dbDoer, habDoer])
 
-    verfer = verifying.Verifier(name=name, hab=hab)
+    reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
+    verfer = verifying.Verifier(name=name, hab=hab, reger=reger)
     app = falcon.App(cors_enable=True)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=name, temp=temp)
@@ -326,7 +327,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, **kwa):
+    def __init__(self, hab, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None, **kwa):
         """
         Initialize instance.
 
@@ -357,17 +358,24 @@ class MailboxDirector(doing.DoDoer):
                       doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
 
+        self.rtr = routing.Router()
+        self.rvy = rvy if rvy is not None else routing.Revery(db=self.hab.db, rtr=self.rtr,
+                                                              lax=True, local=False)
+
         #  neeeds unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
                                                                cues=self.cues,
+                                                               rvy=self.rvy,
                                                                lax=True,
                                                                local=False,
                                                                direct=False)
+        self.kvy.registerReplyRoutes(self.rtr)
 
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,
-                                 db=self.hab.db,
-                                 regk=None, local=False, cues=self.cues)
+                                 db=self.hab.db, rvy=self.rvy,
+                                 local=False, cues=self.cues)
+            self.tevery.registerReplyRoutes(self.rtr)
         else:
             self.tevery = None
 
@@ -380,7 +388,8 @@ class MailboxDirector(doing.DoDoer):
                                      framed=True,
                                      kvy=self.kvy,
                                      tvy=self.tevery,
-                                     exc=self.exchanger)
+                                     exc=self.exchanger,
+                                     rvy=self.rvy)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
@@ -486,6 +495,7 @@ class MailboxDirector(doing.DoDoer):
         yield  # enter context
         while True:
             self.kvy.processEscrows()
+            self.rvy.processEscrowReply()
             if self.tevery is not None:
                 self.tevery.processEscrows()
 
@@ -722,9 +732,10 @@ class HttpMessageHandler(doing.DoDoer):
         if self.verifier is not None:
             self.app.add_route("/tel", self)
             self.app.add_route("/qry/tels", self, suffix="req")
+            self.app.add_route("/qry/tsn", self, suffix="req")
             self.tvy = Tevery(reger=self.verifier.reger,
                               db=self.hab.db,
-                              regk=None, local=False)
+                              local=False)
             doers.extend([doing.doify(self.verifierDo)])
         else:
             self.tvy = None
