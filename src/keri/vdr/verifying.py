@@ -16,7 +16,6 @@ from .. import help, kering
 from ..core import parsing, coring, scheming
 from ..help import helping
 from .. import vdr
-from ..vdr.eventing import VcStates
 from ..vdr.viring import Registry
 
 logger = help.ogler.getLogger()
@@ -119,17 +118,20 @@ class Verifier:
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
-        state, lastSeen = self.tevers[regk].vcState(vcid)
+        state = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
             if self.escrowMRE(creder, prefixer, seqner, diger, sigers):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
-        if state is VcStates.expired:
+
+        dtnow = helping.nowUTC()
+        dte = helping.fromIso8601(state.ked["dt"])
+        if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
             if self.escrowMRE(creder, prefixer, seqner, diger, sigers):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
-        elif state is VcStates.revoked:  # no escrow, credential has been revoked
+        elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
             logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
             # Log this and continue instead of the previous exception so we save a revoked credential.
             # raise kering.InvalidCredentialStateError("..."))
@@ -161,18 +163,21 @@ class Verifier:
             for label, node in s.items():
                 nodeSubject = node["i"]
                 nodeSaid = node["d"]
-                status = self.verifyChain(label, nodeSubject, nodeSaid)
-                if status is None:
+                state = self.verifyChain(label, nodeSubject, nodeSaid)
+                if state is None:
                     self.escrowMCE(creder, prefixer, seqner, diger, sigers)
                     self.cues.append(dict(kin="proof", subject=nodeSubject, said=nodeSaid))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({}) for {}"
                                                    .format(creder.said, label, nodeSaid, nodeSubject))
-                elif status == VcStates.expired:
+
+                dtnow = helping.nowUTC()
+                dte = helping.fromIso8601(state.ked["dt"])
+                if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
                     self.escrowMCE(creder, prefixer, seqner, diger, sigers)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({}) for {}"
                                                    .format(creder.said, label, nodeSaid, nodeSubject))
-                elif status == VcStates.revoked:
+                elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):
                     raise kering.RevokedChainError("Failure to verify credential {} chain {}({}) for {}"
                                                    .format(creder.said, label, nodeSaid, nodeSubject))
                 else:  # VcStatus == VcStates.Issued
@@ -435,13 +440,8 @@ class Verifier:
 
         tever = self.tevers[creder.status]
 
-        status, lastSeen = tever.vcState(nodeSaid)
-        if status is None:
+        state = tever.vcState(nodeSaid)
+        if state is None:
             return None
 
-        dtnow = helping.nowUTC()
-        dte = helping.fromIso8601(lastSeen.dts)
-        if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-            return VcStates.expired
-
-        return status
+        return state

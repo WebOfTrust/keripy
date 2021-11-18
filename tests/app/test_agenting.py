@@ -5,6 +5,8 @@ tests.app.agenting module
 """
 
 from hio.base import doing
+
+from keri.core import coring
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting
 from keri.core.eventing import SealSource
@@ -70,9 +72,8 @@ def test_witness_sender(mockGetWitnessByPrefix):
         for name in ["wes", "wil", "wan"]:
             reger = viring.Registry(name=name)
             raw = reger.getTvt(dbing.dgKey(serder.preb, serder.digb))
-            assert raw is None
-            # found = coring.Serder(raw=bytes(raw))
-            # assert serder.pre == found.pre
+            found = coring.Serder(raw=bytes(raw))
+            assert serder.pre == found.pre
 
 
 def test_witness_inquisitor(mockGetWitnessByPrefix, mockHelpingNowUTC):

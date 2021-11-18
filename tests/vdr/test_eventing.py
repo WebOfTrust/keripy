@@ -14,7 +14,7 @@ from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
     MissingWitnessSignatureError, LikelyDuplicitousError
 from keri.vdr import eventing, viring
-from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery, VcStates
+from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery
 from keri.vdr.viring import nsKey
 
 
@@ -694,10 +694,9 @@ def test_tevery():
         diger = rotser.diger
 
         tvy.processEvent(serder=iss, seqner=seqner, diger=diger)
-        status, lastSeen = tev.vcState(vcdig)
-        assert status == VcStates.issued
-        assert lastSeen is not None
-        assert tev.vcSn(vcdig) == 0
+        status = tev.vcState(vcdig.decode("utf-8"))
+        assert status.ked['et'] == Ilks.iss
+        assert status.sn == 0
 
         # revoke the vc
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
@@ -710,10 +709,9 @@ def test_tevery():
         diger = rotser.diger
 
         tvy.processEvent(serder=rev, seqner=seqner, diger=diger)
-        status, lastSeen = tev.vcState(vcdig)
-        assert status == VcStates.revoked
-        assert lastSeen is not None
-        assert tev.vcSn(vcdig) == 1
+        status = tev.vcState(vcdig.decode("utf-8"))
+        assert status.ked["et"] == Ilks.rev
+        assert status.sn == 1
 
 
 def test_tevery_process_escrow():

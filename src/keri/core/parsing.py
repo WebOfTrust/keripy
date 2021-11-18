@@ -90,7 +90,7 @@ class Parser:
 
     """
 
-    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
+    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Initialize instance:
 
@@ -103,6 +103,7 @@ class Parser:
             kvy (Kevery): route KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
@@ -110,6 +111,7 @@ class Parser:
         self.kvy = kvy
         self.tvy = tvy
         self.exc = exc
+        self.rvy = rvy
 
     @staticmethod
     def sniff(ims):
@@ -195,7 +197,7 @@ class Parser:
                 yield
 
 
-    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
+    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -216,6 +218,7 @@ class Parser:
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -226,7 +229,8 @@ class Parser:
                                     pipeline=pipeline,
                                     kvy=kvy,
                                     tvy=tvy,
-                                    exc=exc)
+                                    exc=exc,
+                                    rvy=rvy)
 
         while True:
             try:
@@ -235,7 +239,7 @@ class Parser:
                 break
 
 
-    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
+    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -256,6 +260,7 @@ class Parser:
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -266,7 +271,8 @@ class Parser:
                                      pipeline=pipeline,
                                      kvy=kvy,
                                      tvy=tvy,
-                                     exc=exc)
+                                     exc=exc,
+                                     rvy=rvy)
         while True:
             try:
                 next(parsator)
@@ -274,7 +280,7 @@ class Parser:
                 break
 
 
-    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
+    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -311,6 +317,7 @@ class Parser:
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
 
         while ims:  # only process until ims empty
             try:
@@ -319,7 +326,8 @@ class Parser:
                                                    pipeline=pipeline,
                                                    kvy=kvy,
                                                    tvy=tvy,
-                                                   exc=exc)
+                                                   exc=exc,
+                                                   rvy=rvy)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -347,7 +355,7 @@ class Parser:
         return True
 
 
-    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
+    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
@@ -366,6 +374,7 @@ class Parser:
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -382,6 +391,7 @@ class Parser:
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
 
         done = False
         while not done:
@@ -391,7 +401,8 @@ class Parser:
                                                    pipeline=pipeline,
                                                    kvy=kvy,
                                                    tvy=tvy,
-                                                   exc=exc)
+                                                   exc=exc,
+                                                   rvy=rvy)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -420,7 +431,7 @@ class Parser:
         return done
 
 
-    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
+    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply.
@@ -443,6 +454,7 @@ class Parser:
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -459,6 +471,7 @@ class Parser:
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
 
 
         while True:  # continuous stream processing never stop
@@ -468,7 +481,8 @@ class Parser:
                                                    pipeline=pipeline,
                                                    kvy=kvy,
                                                    tvy=tvy,
-                                                   exc=exc)
+                                                   exc=exc,
+                                                   rvy=rvy)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -496,7 +510,7 @@ class Parser:
         return True  # should never return
 
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None):
         """
         Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
@@ -521,6 +535,7 @@ class Parser:
             kvy (Kevery) route KERI KEL message types to this instance
             tvy (Tevery) route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
 
         Logic:
             Currently only support couters on attachments not on combined or
@@ -843,10 +858,10 @@ class Parser:
 
             try:
                 if cigars:  # process separately so do not clash on errors
-                    kvy.processReply(serder, cigars=cigars)  # nontrans
+                    rvy.processReply(serder, cigars=cigars)  # nontrans
 
                 if tsgs:  # process separately so do not clash on errors
-                    kvy.processReply(serder, tsgs=tsgs)  #  trans
+                    rvy.processReply(serder, tsgs=tsgs)  #  trans
 
             except AttributeError as e:
                 raise kering.ValidationError("No kevery to process so dropped msg"

@@ -7,7 +7,7 @@ routes: /ksn
 
 """
 from keri.app import keeping, habbing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, routing
 from keri.db import basing
 
 
@@ -18,7 +18,7 @@ def test_keystate(mockHelpingNowUTC):
           "t": "rpy",
           "d": "E_9aLcmV9aEVEm7mXvEY3V_CmbyvG7Ahj6HCq-D48meM",
           "dt": "2021-11-04T12:57:59.823350+00:00",
-          "r": "ksn",
+          "r": "/ksn/EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
           "a": {
             "v": "KERI10JSON000274_",
             "i": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
@@ -52,7 +52,6 @@ def test_keystate(mockHelpingNowUTC):
         }
 
     """
-    print()
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = coring.Salter(raw=raw)
     salt = salter.qb64
@@ -100,8 +99,11 @@ def test_keystate(mockHelpingNowUTC):
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+        bamRtr = routing.Router()
+        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamKvy.registerReplyRoutes(router=bamRtr)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -165,8 +167,11 @@ def test_keystate(mockHelpingNowUTC):
         habr.watchers = [wesHab.pre]
         bamHab.db.habs.pin("bam", habr)
 
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+        bamRtr = routing.Router()
+        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamKvy.registerReplyRoutes(router=bamRtr)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy, rvy=bamRvy)
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
@@ -255,8 +260,12 @@ def test_keystate(mockHelpingNowUTC):
         assert ksn.ked["d"] == bobHab.kever.serder.dig
 
         staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
-        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy)
+
+        bamRtr = routing.Router()
+        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamKvy.registerReplyRoutes(router=bamRtr)
+        parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy)
 
         for _ in range(5):
             bobHab.rotate()
@@ -268,16 +277,17 @@ def test_keystate(mockHelpingNowUTC):
         assert ksn.ked["d"] == bobHab.kever.serder.dig
 
         liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
-        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy)
+        parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy)
 
         msgs = bytearray()  # outgoing messages
         for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
 
         assert bobHab.pre in bamKvy.kevers
 
+        bamRvy.processEscrowReply()
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, bobHab.pre)

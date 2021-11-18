@@ -9,7 +9,7 @@ A special purpose Verifiable Data Registry (VDR)
 """
 from dataclasses import dataclass
 
-from keri.db import koming, subing
+from keri.db import koming, subing, escrowing
 
 from .. import kering
 from ..core import coring
@@ -40,11 +40,19 @@ class regerdict(dict):
             if (state := self.reger.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                tever = eventing.Tever(state=state, db=self.db, reger=self.reger)
+                tever = eventing.Tever(stt=state, db=self.db, reger=self.reger)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
-            self.__setitem__(k, tever)
+            super(regerdict, self).__setitem__(k, tever)
             return tever
+
+    def __setitem__(self, key, item):
+        super(regerdict, self).__setitem__(key, item)
+        self.db.states.pin(keys=key, val=item.state())
+
+    def __delitem__(self, key):
+        super(regerdict, self).__delitem__(key)
+        self.db.states.rem(keys=key)
 
     def __contains__(self, k):
         if not super(regerdict, self).__contains__(k):
@@ -204,6 +212,8 @@ class Registry(dbing.LMDBer):
         self.mce = None
         self.mse = None
         self.mase = None
+        self.txnsb = None
+        self.credsb = None
         self.states = None  # key states
 
 
@@ -281,7 +291,8 @@ class Registry(dbing.LMDBer):
         # Missing anchor seal escrow for Issuer Events before they reach the Tevery
         self.mase = subing.IoSetSuber(db=self, subkey="mase.")
 
-
+        # Collection of sub-dbs for persisting Registry Txn State Notices
+        self.txnsb = escrowing.Broker(db=self, subkey="txn")
 
         # registry keys keyed by Registry name
         self.regs = koming.Komer(db=self,
@@ -322,7 +333,7 @@ class Registry(dbing.LMDBer):
             chains = self.get_credentials(chainSaids)
 
             regk = creder.status
-            status, lastSeen = self.tevers[regk].vcState(key)
+            status = self.tevers[regk].vcState(saider.qb64)
             cred = dict(
                 sad=creder.crd,
                 pre=prefixer.qb64,
@@ -330,8 +341,7 @@ class Registry(dbing.LMDBer):
                 dig=diger.qb64,
                 sigers=[sig.qb64 for sig in sigers],
                 chains=chains,
-                status=status,
-                # lastSeen=lastSeen.dts,
+                status=status.ked,
             )
 
             creds.append(cred)

@@ -8,7 +8,6 @@ VC TEL  support
 
 import json
 import logging
-from collections import namedtuple
 
 from hio.help import decking
 from math import ceil
@@ -21,7 +20,7 @@ from .. import help
 from ..core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                            Ilks, Seqner, Verfer)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
-from ..db import basing
+from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
@@ -39,11 +38,8 @@ BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
 REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
 BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
 
-TSN_LABELS = ["v", "i", "s", "t", "d", "ri", "et", "bt", "b", "c", "br", "ba"]
-
-VcState = namedtuple("VcState", 'issued revoked expired')
-
-VcStates = VcState(issued='issued', revoked="revoked", expired="expired")
+TSN_LABELS = ["v", "i", "s", "d", "ii", "a", "et", "bt", "b", "c", "br", "ba"]
+CRED_TSN_LABELS = ["v", "i", "s", "d", "ri", "a", "ra"]
 
 
 def incept(
@@ -92,7 +88,7 @@ def incept(
         raise ValueError("Invalid baks = {}, has duplicates.".format(baks))
 
     if isinstance(toad, str):
-        toad = "{:x}".format(toad)
+        toad = int(toad, 16)
     elif toad is None:
         if not baks:
             toad = 0
@@ -195,7 +191,7 @@ def rotate(
                          "and adds = {}.".format(baks, cuts, adds))
 
     if isinstance(toad, str):
-        toad = "{:x}".format(toad)
+        toad = int(toad, 16)
     elif toad is None:
         if not newbakset:
             toad = 0
@@ -415,6 +411,7 @@ def state(pre,
           eilk,
           br,
           ba,
+          a,
           dts=None,  # default current datetime
           toad=None,  # default based on wits
           wits=None,  # default to []
@@ -434,9 +431,10 @@ def state(pre,
         eilk (str): message type (ilk) oflatest event
         br (list): witness remove list (cuts)
         ba (list): witness add list (adds)
+        a (dict): key event anchor data
         dts (str) ISO 8601 formated current datetime
         toad (int): int of witness threshold
-        wits (str): list of witness prefixes qb64
+        wits (list): list of witness prefixes qb64
         cnfg (list): list of strings TraitDex of configuration traits
         version (str): Version instance
         kind (str): serialization kind
@@ -453,8 +451,8 @@ def state(pre,
         "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
         "ri": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
         "dt": "2020-08-22T20:35:06.687702+00:00",
-        "et": "rot",
-        "kt": "1",
+        "et": "vrt",
+        "a": {i=12, d="EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv"},
         "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "bt": "1",
@@ -471,7 +469,7 @@ def state(pre,
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
 
-    if eilk not in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.bis, Ilks.rev, Ilks.brv):
+    if eilk not in (Ilks.vcp, Ilks.vrt):
         raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
 
     if dts is None:
@@ -508,12 +506,13 @@ def state(pre,
                          ".".format(ba))
 
     ksd = dict(v=vs,  # version string
-               i=pre,  # qb64 prefix
+               i=ri,  # qb64 SAID of the registry
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
                d=dig,
-               ri=ri,
+               ii=pre,
                dt=dts,
                et=eilk,
+               a=a,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=br,
                ba=ba,
@@ -522,6 +521,77 @@ def state(pre,
                )
 
     return Serder(ked=ksd)  # return serialized ksd
+
+
+def vcstate(vcpre,
+            dig,
+            sn,
+            ri,
+            eilk,
+            a,
+            ra=None,
+            dts=None,  # default current datetime
+            version=Version,
+            kind=Serials.json,
+            ):
+    """
+    Returns serder of credential transaction state notification message.
+    Utility function to automate creation of tsn events.
+
+    Parameters:
+        vcpre (str): is qb64 SAID of the credential
+        dig (str): is qb64 digest of latest event
+        sn (int): sequence number of latest event
+        ri (str): registry identifier
+        ra (dict): optional registry seal for registries with backers
+        dig is digest of latest event
+        eilk is message type (ilk) oflatest event
+        version is Version instance
+        kind is serialization kind
+
+    Credential Transaction State Dict
+    {
+       "v": "KERI10JSON00012d_",
+       "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
+       "s": "0",
+       "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
+       "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+       "a": {
+        "s": 3,
+        "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
+       },
+       "dt": "2021-01-01T00:00:00.000000+00:00",
+       "et": "bis"
+    }
+    """
+
+    vs = Versify(version=version, kind=kind, size=0)
+
+    if sn < 0:
+        raise ValueError("Negative sn = {} in key state.".format(sn))
+
+    if eilk not in (Ilks.iss, Ilks.bis, Ilks.rev, Ilks.brv):
+        raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
+
+    if dts is None:
+        dts = helping.nowIso8601()
+
+    if ra is None:
+        ra = dict()
+
+    ksd = dict(v=vs,  # version string
+               i=vcpre,  # qb64 prefix
+               s="{:x}".format(sn),  # lowercase hex string no leading zeros
+               d=dig,
+               ri=ri,
+               ra=ra,
+               a=a,
+               dt=dts,
+               et=eilk,
+               )
+
+    return Serder(ked=ksd)  # return serialized ksd
+
 
 
 def query(regk,
@@ -576,7 +646,6 @@ def query(regk,
                                version=version,
                                kind=kind)
 
-
 class Tever:
     """
     Tever is KERI transaction event verifier class
@@ -609,7 +678,7 @@ class Tever:
     """
     NoBackers = False
 
-    def __init__(self, cues=None, state=None, serder=None, seqner=None, diger=None, bigers=None, db=None,
+    def __init__(self, cues=None, stt=None, serder=None, seqner=None, diger=None, bigers=None, db=None,
                  reger=None, noBackers=None, regk=None, local=False):
         """ Create incepting tever and state from registry inception serder
 
@@ -617,7 +686,7 @@ class Tever:
 
         Parameters:
             serder (Serder): instance of registry inception event
-            state (Serder): transaction state notice state message Serder
+            stt (Serder): transaction state notice state message Serder
             seqner (Seqner): issuing event sequence number from controlling KEL.
             diger (Diger): issuing event digest from controlling KEL.
             bigers (list): list of Siger instances of indexed backer signatures of
@@ -636,7 +705,7 @@ class Tever:
 
         """
 
-        if not (state or serder):
+        if not (stt or serder):
             raise ValueError("Missing required arguments. Need state or serder")
 
         self.reger = reger if reger is not None else Registry()
@@ -645,8 +714,8 @@ class Tever:
         self.db = db if db is not None else basing.Baser(reopen=True)
         self.local = True if local else False
 
-        if state:  # preload from state
-            self.reload(state)
+        if stt:  # preload from state
+            self.reload(stt)
             return
 
         self.version = serder.version
@@ -685,7 +754,6 @@ class Tever:
         self.regk = self.prefixer.qb64
         self.reger.states.pin(keys=self.regk, val=self.state())
 
-
     def reload(self, ksn):
         """ Reload Tever attributes (aka its state) from state serder
 
@@ -703,8 +771,8 @@ class Tever:
                                                           ksn.pretty()))
 
         self.version = ksn.version
-        self.pre = ksn.pre
-        self.regk = ksn.ked["ri"]
+        self.pre = ksn.ked["ii"]
+        self.regk = ksn.ked["i"]
         self.prefixer = Prefixer(qb64=self.regk)
         self.sn = ksn.sn
         self.ilk = ksn.ked["et"]
@@ -720,7 +788,6 @@ class Tever:
             raise kering.MissingEntryError("Corresponding event for state={} not found."
                                            "".format(ksn.pretty()))
         self.serder = Serder(raw=bytes(raw))
-
 
     def state(self, kind=Serials.json):
         """ Returns Serder instance of current transaction state notification message
@@ -742,12 +809,19 @@ class Tever:
         if self.noBackers:
             cnfg.append(TraitDex.NoBackers)
 
+        dgkey = dbing.dgKey(self.regk, self.serder.dig)
+        couple = self.reger.getAnc(dgkey)
+        ancb = bytearray(couple)
+        seqner = coring.Seqner(qb64b=ancb, strip=True)
+        diger = coring.Diger(qb64b=ancb, strip=True)
+
         return (state(pre=self.pre,
                       dig=self.serder.dig,
                       sn=self.sn,
                       ri=self.regk,
                       dts=None,
                       eilk=self.ilk,
+                      a=dict(s=seqner.sn, d=diger.qb64),
                       br=br,
                       ba=ba,
                       toad=self.toad,
@@ -883,7 +957,6 @@ class Tever:
             self.revoke(serder, seqner=seqner, diger=diger, sn=sn, bigers=bigers)
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
-
 
     def rotate(self, serder, sn):
         """ Process registry management TEL, non-inception events (vrt)
@@ -1126,13 +1199,37 @@ class Tever:
             digs.append(dig)
 
         if len(digs) == 0:
-            return None, None
+            return None
 
-        status = VcStates.issued if len(digs) == 1 else VcStates.revoked
-        dig = bytes(digs[-1])
-        lastSeen = self.reger.tets.get(keys=(vci.decode("utf-8"), dig.decode("utf-8")))
+        vcsn = len(digs) - 1
+        vcdig = bytes(digs[-1])
 
-        return status, lastSeen
+        dgkey = dbing.dgKey(vci, vcdig)  # get message
+        raw = self.reger.getTvt(key=dgkey)
+        serder = coring.Serder(raw=bytes(raw))
+
+        if self.noBackers:
+            vcilk = Ilks.iss if len(digs) == 1 else Ilks.rev
+            ra = dict()
+        else:
+            vcilk = Ilks.bis if len(digs) == 1 else Ilks.brv
+            ra=serder.ked["ra"]
+
+
+        dgkey = dbing.dgKey(vci, vcdig)
+        couple = self.reger.getAnc(dgkey)
+        ancb = bytearray(couple)
+        seqner = coring.Seqner(qb64b=ancb, strip=True)
+        diger = coring.Diger(qb64b=ancb, strip=True)
+
+        return vcstate(vcpre=vcpre,
+                       dig=vcdig.decode("utf-8"),
+                       sn=vcsn,
+                       ri=self.prefixer.qb64,
+                       eilk=vcilk,
+                       ra=ra,
+                       a=dict(s=seqner.sn, d=diger.qb64),
+                       )
 
     def vcSn(self, vcpre):
         """ Calculates the current seq no of VC from db.
@@ -1313,7 +1410,6 @@ class Tever:
         logger.info("Tever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
 
-
     def escrowALEvent(self, serder, seqner, diger, bigers=None, baks=None):
         """ Update associated logs for escrow of anchorless event
 
@@ -1341,7 +1437,6 @@ class Tever:
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.digb)
-
 
     def getBackerState(self, ked):
         """ Calculate and return the current list of backers for event dict
@@ -1397,7 +1492,9 @@ class Tevery:
 
     """
 
-    def __init__(self, reger=None, db=None, regk=None, local=False, cues=None):
+    TimeoutTSN = 3600
+
+    def __init__(self, reger=None, db=None, regk=None, local=False, lax=False, cues=None, rvy=None):
         """ Initialize instance:
 
         Parameters:
@@ -1411,9 +1508,11 @@ class Tevery:
 
         """
         self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
+        self.rvy = rvy
         self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
+        self.lax = True if lax else False
         self.cues = cues if cues is not None else decking.Deck()
 
     @property
@@ -1422,6 +1521,11 @@ class Tevery:
 
         return self.reger.tevers
 
+    @property
+    def kevers(self):
+        """ Returns .db.kevers read through cache of key event logs """
+
+        return self.db.kevers
 
     def processEvent(self, serder, seqner, diger, wigers=None):
         """ Process one event serder with attached indexde signatures sigers
@@ -1517,7 +1621,6 @@ class Tevery:
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
-
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """ Process TEL query event message (qry)
 
@@ -1542,22 +1645,345 @@ class Tevery:
 
         if route == "tels":
             mgmt = qry["ri"]
-            vcpre = qry["i"]
-            vck = nsKey([mgmt, vcpre])
 
             cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)
 
-            cloner = self.reger.clonePreIter(pre=vck, fn=0)  # create iterator at 0
-            for msg in cloner:
-                msgs.extend(msg)
+            if vcpre := qry["i"]:
+                vck = nsKey([mgmt, vcpre])
+                cloner = self.reger.clonePreIter(pre=vck, fn=0)  # create iterator at 0
+                for msg in cloner:
+                    msgs.extend(msg)
 
             if msgs:
                 self.cues.append(dict(kin="replay", dest=source, msgs=msgs))
+        elif route == "tsn":
+            ri = qry["ri"]
+            if ri in self.tevers:
+                tever = self.tevers[ri]
+                tsn = tever.state()
+                self.cues.push(dict(kin="reply", route="/tsn/registry", data=tsn.ked, dest=source))
+
+                if vcpre := qry["i"]:
+                    tsn = tever.vcState(vcpre=vcpre)
+                    self.cues.push(dict(kin="reply", route="/tsn/credential", data=tsn.ked, dest=source))
+
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+
+    def registerReplyRoutes(self, router):
+        """ Register the routes for processing messages embedded in `rpy` event messages
+
+        Parameters:
+            router(Router): reply message router
+
+        """
+        router.addRoute("/tsn/registry/{aid}", self, suffix="RegistryTxnState")
+        router.addRoute("/tsn/credential/{aid}", self, suffix="CredentialTxnState")
+
+    def processReplyRegistryTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+        """ Process one reply message for key state = /tsn/registry
+
+         Process one reply message for key state = /tsn/registry
+         with either attached nontrans receipt couples in cigars or attached trans
+         indexed sig groups in tsgs.
+         Assumes already validated saider, dater, and route from serder.ked
+
+         Parameters:
+             serder (Serder): instance of reply msg (SAD)
+             saider (Saider): instance  from said in serder (SAD)
+             route (str): reply route
+             cigars (list): of Cigar instances that contain nontrans signing couple
+                           signature in .raw and public key in .verfer
+             tsgs (list): tuples (quadruples) of form
+                 (prefixer, seqner, diger, [sigers]) where:
+                 prefixer is pre of trans endorser
+                 seqner is sequence number of trans endorser's est evt for keys for sigs
+                 diger is digest of trans endorser's est evt for keys for sigs
+                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+         Reply Message:
+         {
+           "v" : "KERI10JSON00011c_",
+           "t" : "rpy",
+           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+           "dt": "2020-08-22T17:50:12.988921+00:00",
+           "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
+           "a" :
+             {
+               "v": "KERI10JSON0001b0_",
+               "i": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+               "s": "1",
+               "d": "EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0",
+               "ii": "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY",
+               "dt": "2021-01-01T00:00:00.000000+00:00",
+               "et": "vrt",
+               "a": {
+                "s": 2,
+                "d": "Ef12IRHtb_gVo5ClaHHNV90b43adA0f8vRs3jeU-AstY"
+               },
+               "bt": "1",
+               "br": [],
+               "ba": [
+                "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
+               ],
+               "b": [
+                "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
+               ],
+               "c": []
+             }
+         }
+
+         """
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if tsgs is not None else []
+
+        # reply specific logic
+        if not route.startswith("/tsn"):
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
+        aid = kwargs["aid"]
+        data = serder.ked["a"]
+        dater = coring.Dater(dts=serder.ked["dt"])
+
+        tserder = coring.Serder(ked=data)
+
+        for k in TSN_LABELS:
+            if k not in tserder.ked:
+                raise ValidationError("Missing element = {} from {} msg."
+                                      " tsn = {}.".format(k, Ilks.tsn,
+                                                          serder.pretty()))
+
+        # fetch from serder to process
+        ked = tserder.ked
+        regk = tserder.pre
+        pre = ked["ii"]
+        sn = tserder.sn
+
+        if pre not in self.kevers:
+            if self.reger.txnsb.escrowStateNotice(typ="registry-mae", pre=regk, aid=aid, serder=serder, saider=saider,
+                                                  dater=dater, cigars=cigars, tsgs=tsgs):
+                self.cues.append(dict(kin="query", q=dict(pre=pre)))
+
+            raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
+
+        # Load backers from either tsn or Kever of issuer
+        cnfg = ked["c"]
+        if TraitDex.NoBackers in cnfg:
+            kevers = self.kevers[pre]
+            baks = kevers.wits
+        else:
+            baks = ked["b"]
+
+        wats = set()
+        for _, habr in self.db.habs.getItemIter():
+            wats |= set(habr.watchers)
+
+        # not in promiscuous mode
+        if not self.lax:
+            # check source and ensure we should accept it
+            if aid != pre and \
+                    aid not in baks and \
+                    aid not in wats:
+                raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
+                                                     .format(tserder.pre, aid))
+
+        if regk in self.tevers:
+            tever = self.tevers[regk]
+            if tserder.sn < tever.sn:
+                raise ValidationError("Skipped stale transaction state at sn {} for {}."
+                                      "".format(tserder.sn, tserder.pre))
+
+        keys = (regk, aid,)
+        osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
+
+        # BADA Logic
+        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+                                        aid=aid, osaider=osaider, cigars=cigars,
+                                        tsgs=tsgs)
+        if not accepted:
+            raise kering.UnverifiedReplyError(f"Unverified reply.")
+
+        ldig = self.reger.getTel(key=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
+
+        # Only accept key state if for last seen version of event at sn
+        if ldig is None:  # escrow because event does not yet exist in database
+            if self.reger.txnsb.escrowStateNotice(typ="registry-ooo", pre=regk, aid=aid, serder=serder, saider=saider,
+                                                  dater=dater, cigars=cigars, tsgs=tsgs):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
+
+            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
+
+        diger = coring.Diger(qb64=ked["d"])
+        ldig = bytes(ldig)
+        # retrieve last event itself of signer given sdig
+        sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
+        # assumes db ensures that sraw must not be none because sdig was in KE
+        sserder = Serder(raw=bytes(sraw))
+
+        if not sserder.compare(dig=diger.qb64b):  # mismatch events problem with replay
+            raise ValidationError("Mismatch keystate at sn = {} with db."
+                                  "".format(ked["s"]))
+
+        tsaider = coring.Saider(qb64=diger.qb64)
+        self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
+        self.cues.append(dict(kin="txnStateSaved", serder=tserder))
+
+    def processReplyCredentialTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+        """ Process one reply message for key state = /tsn/registry
+
+         Process one reply message for key state = /tsn/registry
+         with either attached nontrans receipt couples in cigars or attached trans
+         indexed sig groups in tsgs.
+         Assumes already validated saider, dater, and route from serder.ked
+
+         Parameters:
+             serder (Serder): instance of reply msg (SAD)
+             saider (Saider): instance  from said in serder (SAD)
+             route (str): reply route
+             cigars (list): of Cigar instances that contain nontrans signing couple
+                           signature in .raw and public key in .verfer
+             tsgs (list): tuples (quadruples) of form
+                 (prefixer, seqner, diger, [sigers]) where:
+                 prefixer is pre of trans endorser
+                 seqner is sequence number of trans endorser's est evt for keys for sigs
+                 diger is digest of trans endorser's est evt for keys for sigs
+                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+         Reply Message:
+         {
+           "v" : "KERI10JSON00011c_",
+           "t" : "rpy",
+           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+           "dt": "2020-08-22T17:50:12.988921+00:00",
+           "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
+           "a" :
+             {
+              "v": "KERI10JSON00012d_",
+              "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
+              "s": "0",
+              "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
+              "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+              "a": {
+               "s": 3,
+               "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
+              },
+              "dt": "2021-01-01T00:00:00.000000+00:00",
+              "et": "bis"
+             }
+         }
+
+         """
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if tsgs is not None else []
+
+        # reply specific logic
+        if not route.startswith("/tsn"):
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
+        aid = kwargs["aid"]
+        data = serder.ked["a"]
+        dater = coring.Dater(dts=serder.ked["dt"])
+
+        tserder = coring.Serder(ked=data)
+        for k in CRED_TSN_LABELS:
+            if k not in tserder.ked:
+                raise ValidationError("Missing element = {} from {} msg."
+                                      " tsn = {}.".format(k, Ilks.tsn,
+                                                          serder.pretty()))
+
+        # fetch from serder to process
+        ked = tserder.ked
+        regk = tserder.ked["ri"]
+        vcpre = tserder.pre
+        sn = tserder.sn
+        ra = tserder.ked["ra"]
+
+        if 's' in ra:
+            regsn = ra["s"]
+        else:
+            regsn = 0
+
+        if regk not in self.tevers or self.tevers[regk].sn < regsn:
+            if self.reger.txnsb.escrowStateNotice(typ="credential-mre", pre=vcpre, aid=aid, serder=serder,
+                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
+
+            raise kering.MissingRegistryError("Failure verify event = {} ".format(serder.ked))
+
+        tever = self.tevers[regk]
+        pre = tever.pre
+
+        if pre not in self.kevers:
+            if self.reger.txnsb.escrowStateNotice(typ="credential-mae", pre=vcpre, aid=aid, serder=serder,
+                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                self.cues.append(dict(kin="query", q=dict(pre=aid)))
+
+            raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
+
+
+        # Load backers from either tsn or Kever of issuer
+        if tever.noBackers:
+            kevers = self.kevers[pre]
+            baks = kevers.wits
+        else:
+            baks = tever.baks
+
+        wats = set()
+        for _, habr in self.db.habs.getItemIter():
+            wats |= set(habr.watchers)
+
+        # not in promiscuous mode
+        if not self.lax:
+            # check source and ensure we should accept it
+            if aid != pre and \
+                    aid not in baks and \
+                    aid not in wats:
+                raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
+                                                     .format(tserder.pre, aid))
+
+        keys = (vcpre, aid,)
+        osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
+
+        # BADA Logic
+        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+                                        aid=aid, osaider=osaider, cigars=cigars,
+                                        tsgs=tsgs)
+        if not accepted:
+            raise kering.UnverifiedReplyError(f"Unverified reply.")
+
+        vci = nsKey([regk, vcpre])
+        ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
+
+        # Only accept key state if for last seen version of event at sn
+        if ldig is None:  # escrow because event does not yet exist in database
+            if self.reger.txnsb.escrowStateNotice(typ="credential-ooo", pre=vcpre, aid=aid, serder=serder,
+                                                  saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcpre)))
+
+            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
+
+        diger = coring.Diger(qb64=ked["d"])
+        ldig = bytes(ldig)
+        # retrieve last event itself of signer given sdig
+        sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
+        # assumes db ensures that sraw must not be none because sdig was in KE
+        sserder = Serder(raw=bytes(sraw))
+
+        if sn < sserder.sn:
+            raise ValidationError("Stale txn state at sn = {} with db."
+                                  "".format(ked["s"]))
+
+        if not sserder.compare(dig=diger.qb64b):  # mismatch events problem with replay
+            raise ValidationError("Mismatch txn state at sn = {} with db."
+                                  "".format(ked["s"]))
+
+        tsaider = coring.Saider(qb64=diger.qb64)
+        self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
+        self.cues.append(dict(kin="txnStateSaved", serder=tserder))
+
 
     @staticmethod
     def registryKey(serder):
@@ -1580,7 +2006,6 @@ class Tevery:
             return rega["i"]
         else:
             raise ValidationError("invalid ilk {} for tevery event = {}".format(ilk, serder.ked))
-
 
     def escrowOOEvent(self, serder, seqner, diger):
         """ Escrow out-of-order TEL events.
@@ -1607,13 +2032,22 @@ class Tevery:
         logger.info("Tever state: Escrowed our of order TEL event "
                     "event = %s\n", serder.ked)
 
-
     def processEscrows(self):
         """ Loop through escrows and process and events that may now be finalized """
 
         try:
             self.processEscrowAnchorless()
             self.processEscrowOutOfOrders()
+            self.reger.txnsb.processEscrowState(typ="credential-mre", processReply=self.processReplyCredentialTxnState,
+                                                extype=kering.MissingRegistryError)
+            self.reger.txnsb.processEscrowState(typ="credential-mae", processReply=self.processReplyCredentialTxnState,
+                                                extype=kering.MissingAnchorError)
+            self.reger.txnsb.processEscrowState(typ="credential-ooo", processReply=self.processReplyCredentialTxnState,
+                                                extype=kering.OutOfOrderTxnStateError)
+            self.reger.txnsb.processEscrowState(typ="registry-mae", processReply=self.processReplyRegistryTxnState,
+                                                extype=kering.MissingAnchorError)
+            self.reger.txnsb.processEscrowState(typ="registry-ooo", processReply=self.processReplyRegistryTxnState,
+                                                extype=kering.OutOfOrderTxnStateError)
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
@@ -1634,7 +2068,6 @@ class Tevery:
         """
         for (pre, snb, digb) in self.reger.getOotItemIter():
             print("oot-tel-event", pre)
-
 
     def processEscrowAnchorless(self):
         """ Process escrow of TEL events received before the anchoring KEL event.
