@@ -660,6 +660,7 @@ class Baser(dbing.LMDBer):
 
         self.firsts = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
+        self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 
         # habitat prefixes keyed by habitat name
         self.habs = koming.Komer(db=self,
@@ -1721,6 +1722,26 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAllPreIter(self.kels, pre)
+
+    def getKelBackIter(self, pre, fn):
+        """
+        Returns iterator of all dup vals in insertion order for all entries
+        with same prefix across all sequence numbers without gaps. Stops if
+        encounters gap.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+        db is opened as named sub db with dupsort=True
+
+        Parameters:
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
+        return self.getIoValsAllPreBackIter(self.kels, pre, fn)
 
     def getKelEstIter(self, pre):
         """

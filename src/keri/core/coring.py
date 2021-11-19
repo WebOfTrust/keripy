@@ -3893,6 +3893,11 @@ class Serder:
         """
         return self.said.encode("utf-8")
 
+    @property
+    def est(self):
+        """ Returns True if Serder represents an establishment event """
+        return self.ked["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
 
     def pretty(self, *, size=1024):
         """
