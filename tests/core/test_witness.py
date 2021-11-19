@@ -14,7 +14,6 @@ from keri.db import dbing, basing
 from keri.app import habbing, keeping, directing
 from keri.core import coring, eventing, parsing
 
-
 logger = help.ogler.getLogger()
 
 
@@ -32,11 +31,11 @@ def test_indexed_witness_replay():
     salt = coring.Salter(raw=b'abcdef0123456789').qb64
 
     with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
-         basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
-         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
+            basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
+            basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+            basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
+            basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+            basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
 
         # witnesses first so can setup inception event for cam
         wsith = 1
@@ -44,8 +43,8 @@ def test_indexed_witness_replay():
         # Wes's receipts will be rcts with a receipt couple attached
 
         wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wesHab.ks == wesKS
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
@@ -54,9 +53,9 @@ def test_indexed_witness_replay():
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wokHab.ks == wokKS
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
@@ -66,8 +65,8 @@ def test_indexed_witness_replay():
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
         wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wamHab.ks == wamKS
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
@@ -77,8 +76,8 @@ def test_indexed_witness_replay():
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
         wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wilHab.ks == wilKS
         assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
@@ -89,9 +88,9 @@ def test_indexed_witness_replay():
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
         camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB,
-                                   isith=csith, icount=3,
-                                   toad=2, wits=wits,
-                                   salt=salt, temp=True)  # stem is .name
+                                 isith=csith, icount=3,
+                                 toad=2, wits=wits,
+                                 salt=salt, temp=True)  # stem is .name
         assert camHab.ks == camKS
         assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
@@ -108,8 +107,8 @@ def test_indexed_witness_replay():
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
         vanHab = habbing.Habitat(name='van', ks=vanKS, db=vanDB,
-                                   isith=vsith, icount=3,
-                                   salt=salt, temp=True)  # stem is .name
+                                 isith=vsith, icount=3,
+                                 salt=salt, temp=True)  # stem is .name
         assert vanHab.ks == vanKS
         assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
@@ -134,7 +133,7 @@ def test_indexed_witness_replay():
             assert len(rctMsg) == 566
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs:# process rct msgs from all witnesses
+        for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
@@ -147,7 +146,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    dig=camHab.kever.serder.dig)
@@ -186,7 +185,7 @@ def test_indexed_witness_replay():
             assert len(rctMsg) == 281
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs:# process rct msgs from all witnesses
+        for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
@@ -199,7 +198,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    dig=camHab.kever.serder.dig)
@@ -261,7 +260,7 @@ def test_indexed_witness_replay():
             assert len(rctMsg) == 281
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs:# process rct msgs from all witnesses
+        for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
@@ -274,7 +273,7 @@ def test_indexed_witness_replay():
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    dig=camHab.kever.serder.dig)
@@ -288,12 +287,11 @@ def test_indexed_witness_replay():
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam's rot and wit receipts to Van
-        #vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
-        #vanKvy.process(ims=bytearray(camRotWitRctMsg))
-        #vanKvy.processEscrows()
-        #assert vcKvr.sn == 2
-        #assert vcKvr.wits == camHab.kever.wits
-
+        # vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
+        # vanKvy.process(ims=bytearray(camRotWitRctMsg))
+        # vanKvy.processEscrows()
+        # assert vcKvr.sn == 2
+        # assert vcKvr.wits == camHab.kever.wits
 
         # send Cam rot's witness rcts to Van first then send Cam rot
         parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=vanKvy)
@@ -309,9 +307,6 @@ def test_indexed_witness_replay():
 
         # need disjoint test of sending witness receipts to Van not conjoint
         # from Cam replay
-
-
-
 
     assert not os.path.exists(wokKS.path)
     assert not os.path.exists(wokDB.path)
@@ -339,11 +334,11 @@ def test_nonindexed_witness_receipts():
     salt = coring.Salter(raw=b'abcdef0123456789').qb64
 
     with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
-         basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
-         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
+            basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
+            basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+            basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
+            basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+            basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
 
         # witnesses first so can setup inception event for cam
         wsith = 1
@@ -351,8 +346,8 @@ def test_nonindexed_witness_receipts():
         # Wes's receipts will be rcts with a receipt couple attached
 
         wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wesHab.ks == wesKS
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
@@ -361,9 +356,9 @@ def test_nonindexed_witness_receipts():
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wokHab.ks == wokKS
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
@@ -373,8 +368,8 @@ def test_nonindexed_witness_receipts():
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
         wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wamHab.ks == wamKS
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
@@ -384,8 +379,8 @@ def test_nonindexed_witness_receipts():
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
         wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
+                                 isith=wsith, icount=1,
+                                 salt=salt, transferable=False, temp=True)  # stem is .name
         assert wilHab.ks == wilKS
         assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
@@ -396,9 +391,9 @@ def test_nonindexed_witness_receipts():
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
         camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB,
-                                   isith=csith, icount=3,
-                                   toad=2, wits=wits,
-                                   salt=salt, temp=True)  # stem is .name
+                                 isith=csith, icount=3,
+                                 toad=2, wits=wits,
+                                 salt=salt, temp=True)  # stem is .name
         assert camHab.ks == camKS
         assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
@@ -415,8 +410,8 @@ def test_nonindexed_witness_receipts():
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
         vanHab = habbing.Habitat(name='van', ks=vanKS, db=vanDB,
-                                   isith=vsith, icount=3,
-                                   salt=salt, temp=True)  # stem is .name
+                                 isith=vsith, icount=3,
+                                 salt=salt, temp=True)  # stem is .name
         assert vanHab.ks == vanKS
         assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
@@ -439,7 +434,7 @@ def test_nonindexed_witness_receipts():
             assert len(rctMsg) == 566
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs: # Cam process rct msgs from all witnesses
+        for msg in rctMsgs:  # Cam process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -498,7 +493,7 @@ def test_nonindexed_witness_receipts():
             assert len(rctMsg) == 281
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs: # Cam process rct msgs from all witnesses
+        for msg in rctMsgs:  # Cam process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -579,7 +574,7 @@ def test_nonindexed_witness_receipts():
             assert len(rctMsg) == 281
             rctMsgs.append(rctMsg)
 
-        for msg in rctMsgs:# process rct msgs from all witnesses
+        for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -624,7 +619,7 @@ def test_nonindexed_witness_receipts():
         assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
         assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
         assert vcKvr.sn == 2  # rot accepted
-        assert vcKvr.wits == wits  #  wits changed
+        assert vcKvr.wits == wits  # wits changed
 
     assert not os.path.exists(wokKS.path)
     assert not os.path.exists(wokDB.path)
@@ -636,6 +631,69 @@ def test_nonindexed_witness_receipts():
     assert not os.path.exists(camDB.path)
 
     """End Test"""
+
+
+def test_out_of_order_witnessed_events():
+    # Bob is the controller
+    # Wes is his witness
+    # Bam is verifying the key state for Bob from Wes
+    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+            basing.openDB(name="bam") as bamDB:
+
+        # setup Wes's habitat nontrans
+        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 isith=1, icount=1, transferable=False, temp=True)
+
+        assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
+
+        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                                 wits=[wesHab.pre], temp=True)
+        assert bobHab.pre == "ERcQaCHYX-RyXFAzF1d6arcuyFlehM2NJuUeCD_KhHgA"
+
+        # Create Bob's icp, pass to Wes and generate receipt.
+        wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
+        bobIcp = bobHab.makeOwnEvent(sn=0)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
+        assert bobHab.pre in wesHab.kevers
+        iserder = coring.Serder(raw=bytearray(bobIcp))
+        wesHab.receipt(serder=iserder)
+
+        # Rotate and get Bob's rot, pass to Wes and generate receipt.
+        bobHab.rotate()
+        bobRotMsg = bobHab.makeOwnEvent(sn=1)
+        parsing.Parser().parse(ims=bytearray(bobRotMsg), kvy=wesKvy)
+        assert wesKvy.kevers[bobHab.pre].sn == 1
+        bobRot = coring.Serder(raw=bobRotMsg)
+        wesHab.receipt(serder=bobRot)
+
+        # Get the receipted rotation event and pass, out of order to Bam
+        msgs = bytearray()
+        for msg in wesDB.clonePreIter(pre=bobHab.pre, fn=1):
+            msgs.extend(msg)
+
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+
+        # Ensure the rot ended up in out-of-order escrow
+        assert bobHab.pre not in bamKvy.kevers
+        oodig = bamDB.getOoes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
+        assert bobRot.digb == bytes(oodig[0])
+
+        # Pass the icp to Bam, process escrows and see if the fully
+        # receipted event lands in Bam's Kevery
+        msg = wesDB.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.digb)
+
+        parsing.Parser().parse(ims=msg, kvy=bamKvy)
+        bamKvy.processEscrows()
+
+        assert bobHab.pre in bamKvy.kevers
+        assert bamKvy.kevers[bobHab.pre].sn == 1
+
+        pwedig = bamDB.getPwes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
+        assert pwedig == []
+
+
 
 
 if __name__ == "__main__":

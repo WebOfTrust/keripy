@@ -2569,7 +2569,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   seqner=seqner, diger=diger)
+                                   seqner=seqner, diger=diger, wigers=wigers)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -2608,7 +2608,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       seqner=seqner, diger=diger)
+                                       seqner=seqner, diger=diger, wigers=wigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
@@ -3651,7 +3651,7 @@ class Kevery:
             if sn < 0:  # no more events
                 return None
 
-    def escrowOOEvent(self, serder, sigers, seqner=None, diger=None):
+    def escrowOOEvent(self, serder, sigers, seqner=None, diger=None, wigers=None):
         """
         Update associated logs for escrow of Out-of-Order event
 
@@ -3666,6 +3666,8 @@ class Kevery:
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.addOoe(snKey(serder.preb, serder.sn), serder.digb)
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and diger:
             couple = seqner.qb64b + diger.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
@@ -3989,7 +3991,12 @@ class Kevery:
 
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                    self.processEvent(serder=eserder, sigers=sigers)
+
+                    #  get wigs
+                    wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
+                    wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers)
 
                     # If process does NOT validate event with sigs, becasue it is
                     # still out of order then process will attempt to re-escrow
