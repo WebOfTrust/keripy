@@ -1593,9 +1593,10 @@ class Kever:
         else:
             self.delegated = True
 
+        wits = serder.ked["b"]
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+        fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
                                 first=True if not check else False, seqner=seqner, diger=diger,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
@@ -1824,7 +1825,7 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
                                     first=True if not check else False, seqner=seqner, diger=diger,
                                     firner=firner, dater=dater)
 
@@ -2229,7 +2230,7 @@ class Kever:
 
         return delegator  # return delegator prefix
 
-    def logEvent(self, serder, sigers=None, wigers=None, first=False,
+    def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, diger=None, firner=None, dater=None):
         """
         Update associated logs for verified event.
@@ -2239,6 +2240,7 @@ class Kever:
             serder is Serder instance of current event
             sigers is optional list of Siger instance for current event
             wigers is optional list of Siger instance of indexed witness sigs
+            wits is optional list of current witnesses provide during any establishment event
             first is Boolean True means first seen accepted log of event.
                     Otherwise means idempotent log of event to accept additional
                     signatures beyond the threshold provided for first seen
@@ -2262,6 +2264,8 @@ class Kever:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if wits:
+            self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
             if seqner and diger:  # authorized delegated or issued event
@@ -2494,6 +2498,35 @@ class Kevery:
         Returns .db.prefixes
         """
         return self.db.prefixes
+
+    def fetchWitnessState(self, pre, sn):
+        """ Returns the list of witness for the identifier prefix at the sequence number
+
+        Returns the witness state (list of witnesses) at the given sequence number (sn) of the
+        identifier prefix (pre).  It uses the .wits database that stores witness state at the
+        sequence number of each establishment event.  If sn represents an interaction event (ixn) it
+        searches backwards for the last establishment event prior to sn and returns that witness state.
+
+        Args:
+            pre (str): identifier prefix qb64
+            sn (int): sequence number of the event for which witness state is desired
+
+        Returns:
+            list:  list of coring.Prefixer objects representing the witness state for the identifier prefix at
+                 the sequence number
+
+        """
+        preb = pre.encode("utf-8")
+        for digb in self.db.getKelBackIter(preb, sn):
+            dgkey = dgKey(preb, digb)
+            raw = self.db.getEvt(dgkey)
+            serder = coring.Serder(raw=bytes(raw))
+            if serder.est:
+                wits = self.db.wits.get(dgkey)
+                return wits
+
+        return []
+
 
     def processEvents(self, evts=None):
         """
