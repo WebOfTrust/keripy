@@ -2315,6 +2315,17 @@ class Prefixer(Matter):
                 raise DerivationError("Non-empty nxt = {} for non-transferable"
                                       " code = {}".format(ked["n"],
                                                           verfer.code))
+
+            if verfer.code == MtrDex.Ed25519N and "b" in ked and ked["b"]:
+                raise DerivationError("Non-empty b = {} for non-transferable"
+                                      " code = {}".format(ked["b"],
+                                                          verfer.code))
+
+            if verfer.code == MtrDex.Ed25519N and "a" in ked and ked["a"]:
+                raise DerivationError("Non-empty a = {} for non-transferable"
+                                      " code = {}".format(ked["a"],
+                                                          verfer.code))
+
         except Exception as ex:
             raise DerivationError("Error checking nxt = {}".format(ex))
 
