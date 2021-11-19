@@ -1699,6 +1699,10 @@ class Kever:
         self.cuts = []  # always empty at inception since no prev event
         self.adds = []  # always empty at inception since no prev event
         wits = ked["b"]
+        if not self.prefixer.transferable and wits:  # wits must be empty for nontrans prefix
+            raise ValidationError("Invalid inception wits not empty for "
+                                  "non-transferable prefix = {} for evt = {}."
+                                  "".format(self.prefixer.qb64, ked))
         if len(oset(wits)) != len(wits):
             raise ValidationError("Invalid backers = {}, has duplicates for evt = {}."
                                   "".format(wits, ked))
@@ -1714,6 +1718,13 @@ class Kever:
                 raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
                                       "".format(toad, wits, ked))
         self.toad = toad
+
+        data = ked["a"]
+        if not self.prefixer.transferable and data:  # data must be empty for nontrans prefix
+            raise ValidationError("Invalid inception data not empty for "
+                                  "non-transferable prefix = {} for evt = {}."
+                                  "".format(self.prefixer.qb64, ked))
+
 
         # need this to recognize recovery events and transferable receipts
         self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)  # last establishment event location

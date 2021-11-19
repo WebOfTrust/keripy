@@ -728,8 +728,16 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                           b'c"],"n":"","bt":"0","b":[],"c":[],"a":[]}')
 
     with pytest.raises(DerivationError):
-        # non-empty nxt wtih non-transferable code
+        # non-empty nxt with non-transferable code
         serder = incept(keys=keys0, code=MtrDex.Ed25519N, nxt="ABCDE")
+
+    with pytest.raises(DerivationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"])
+
+    with pytest.raises(DerivationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}])
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  # original signing keypair transferable default
@@ -1606,6 +1614,142 @@ def test_kever(mockHelpingNowUTC):
                     b=[],  # list of qual Base64 may be empty
                     c=[],  # list of config ordered mappings may be empty
                     a=[],  # list of seals
+                    )
+
+        # Derive AID from ked
+        aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
+
+        assert aid0.code == MtrDex.Ed25519N
+        assert aid0.qb64 == skp0.verfer.qb64
+
+        # update ked with pre
+        ked0["i"] = aid0.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
+
+
+    with openDB() as db:  # Non-Transferable case
+        # Setup inception key event dict
+        # create current key
+        sith = 1  # one signer
+        skp0 = Signer(transferable=False)  # original signing keypair non-transferable
+        assert skp0.code == MtrDex.Ed25519_Seed
+        assert skp0.verfer.code == MtrDex.Ed25519N
+        keys = [skp0.verfer.qb64]
+
+        # create next key Error case
+        skp1 = Signer()  # next signing keypair transferable is default
+        assert skp1.code == MtrDex.Ed25519_Seed
+        assert skp1.verfer.code == MtrDex.Ed25519
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest
+        nxt = ""
+
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  # one attached signature unspecified index
+
+        baks = ["BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
+
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    b=baks,  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
+                    a={},  # list of seals
+                    )
+
+        # Derive AID from ked
+        with pytest.raises(DerivationError):
+            aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
+
+        # update ked with pre
+        ked0["i"] = skp0.verfer.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)
+
+        # retry with valid empty baks
+        baks = []
+        # use some data, also invalid
+        a = [dict(i="E_z8Wqqom6eeIFsng3cGQiUJ1uiNelCrR9VgFlk_8QAM")]
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  # one attached signature unspecified index
+
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    b=baks,  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
+                    a=a,  # list of seals
+                    )
+
+        # Derive AID from ked
+        with pytest.raises(DerivationError):
+            aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
+
+        # update ked with pre
+        ked0["i"] = aid0.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
+
+        # retry with valid empty baks and empty a
+        baks = []
+        a = []
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  # one attached signature unspecified index
+
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    b=baks,  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
+                    a=a,  # list of seals
                     )
 
         # Derive AID from ked
