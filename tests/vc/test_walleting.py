@@ -19,13 +19,12 @@ def test_wallet():
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
         assert sidHab.pre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
 
-        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
+        schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
         credSubject = dict(
             d="",
             i=sidHab.pre,
             dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
-            t=["VerifiableCredential", "GLEIFvLEICredential"]
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
@@ -35,33 +34,31 @@ def test_wallet():
                             schema=schema,
                             subject=credSubject,
                             status=issuer.regk)
-        assert creder.said == "EXiDN1cDrhCa0e0X6HqvRyJzsY3kvOgFgvPgGLX3kzWU"
+        assert creder.said == "EdVcIiMggOn14NQGaZos_jpE2pXxer-AvKpMLlwDxIls"
 
         issuer.issue(creder=creder)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON0001d1_","d":"EXiDN1cDrhCa0e0X6HqvRyJzsY3kvOgFgv'
-                       b'PgGLX3kzWU","s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","'
-                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"Ee3U'
-                       b'KTz6rAIG_tkvDl1V0ZKtrm-b8ettPH-3CZNYX4dI","i":"E4YPqsEOaPNaZxVIb'
+        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EdVcIiMggOn14NQGaZos_jpE2pXxer-AvK'
+                       b'pMLlwDxIls","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"ENVs'
+                       b'WQ93HnvS7G4fIQiA_fR8DNGu66v8fqSdJw_PYcF0","i":"E4YPqsEOaPNaZxVIb'
                        b'Y-Gx2bJgP-c7AH_K7pEE-YfcI9E","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","t":["VerifiableCredential","G'
-                       b'LEIFvLEICredential"],"ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78'
-                       b'Tt2r9M4"},"p":[]}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-Y'
-                       b'fcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-Ax'
-                       b'DNI7_ZmaI-AABAATwkSDRzoQHlIIUwNg8OXSekA1yDZj9xVljzPSnUp0JXMgDsCj'
-                       b'mG15IHGk_G0yRZU72NISiF8szGHbrzFhEmFDg')
+                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EGZHiBoV8v5tWAt7yeTTln-C'
+                       b'uefIGPhajTT78Tt2r9M4"},"p":[]}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP'
+                       b'-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNB'
+                       b'bUNTBYzLYw-AxDNI7_ZmaI-AABAAwt0BCpOWyDsP34Gz6cGDpaPho7QOSP4wo7yA'
+                       b'JLUEfGGltGqI__wsyvJtGUyNod8bxKFwIXJKGzgLI9-7ZGVrAQ')
 
-        ser = (b'{"v":"KERI10JSON0001d1_","d":"EXiDN1cDrhCa0e0X6HqvRyJzsY3kvOgFgvPgGLX3kzWU",'
-               b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"E4YPqsEOaPNaZxVIbY-G'
-               b'x2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"Ee3UKTz6rAIG_tkvDl1V0ZKtrm-b8ettPH-3CZNY'
-               b'X4dI","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","t":["VerifiableCredential'
-               b'","GLEIFvLEICredential"],"ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4"'
-               b'},"p":[]}')
+        ser = (b'{"v":"KERI10JSON00019e_","d":"EdVcIiMggOn14NQGaZos_jpE2pXxer-AvKpMLlwDxIls",'
+               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"E4YPqsEOaPNaZxVIbY-G'
+               b'x2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"ENVsWQ93HnvS7G4fIQiA_fR8DNGu66v8fqSdJw_P'
+               b'YcF0","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EGZHiBoV8v5tWAt7yeTT'
+               b'ln-CuefIGPhajTT78Tt2r9M4"},"p":[]}')
 
-        sig0 = (b'AATwkSDRzoQHlIIUwNg8OXSekA1yDZj9xVljzPSnUp0JXMgDsCjmG15IHGk_G0yR'
-                b'ZU72NISiF8szGHbrzFhEmFDg')
+        sig0 = (b'AAwt0BCpOWyDsP34Gz6cGDpaPho7QOSP4wo7yAJLUEfGGltGqI__wsyvJtGUyNod'
+                b'8bxKFwIXJKGzgLI9-7ZGVrAQ')
 
         parseCredential(ims=msg, verifier=verifier)
 

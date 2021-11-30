@@ -861,8 +861,6 @@ class KiwiServer(doing.DoDoer):
                        "credentials".format(registry)
             return
 
-        types = ["VerifiableCredential", body.get("type")]
-
         data = body.get("credentialData")
         dt = data["dt"] if "dt" in data else nowIso8601()
 
@@ -870,7 +868,6 @@ class KiwiServer(doing.DoDoer):
             d="",
             i=recipientIdentifier,
             dt=dt,
-            t=types,
         )
 
         d |= data
