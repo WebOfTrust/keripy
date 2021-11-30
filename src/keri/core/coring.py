@@ -508,8 +508,8 @@ class Matter:
     # not (hs + ss) % 4.
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
-    Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9),
-                  ('6', 10), ('9', 2)])
+    Sizes.update([('0', 2), ('1', 4), ('2', 4), ('3', 4), ('4', 2), ('5', 2),
+                  ('6', 2), ('7', 4), ('8', 4), ('9', 4)])
     # Codes table maps to Sizage namedtuple of (hs, ss, fs) from hs chars of code
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be 0 for Matter unless fs is None which allows
@@ -547,9 +547,9 @@ class Matter:
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
                 '1AAG': Sizage(hs=4, ss=0, fs=36),
                 '1AAH': Sizage(hs=4, ss=0, fs=100),
-                '9A': Sizage(hs=2, ss=2, fs=None),
-                '9B': Sizage(hs=2, ss=2, fs=None),
-                '9C': Sizage(hs=2, ss=2, fs=None),
+                '4A': Sizage(hs=2, ss=2, fs=None),
+                '5A': Sizage(hs=2, ss=2, fs=None),
+                '6A': Sizage(hs=2, ss=2, fs=None),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
@@ -804,17 +804,17 @@ class Matter:
             else:
                 raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
 
-        cs = self.Sizes[first]  # get hard code size
-        if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+        hs = self.Sizes[first]  # get hard code size
+        if len(qb64b) < hs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(hs-len(qb64b)))
 
-        code = qb64b[:cs]  # extract hard code
+        code = qb64b[:hs]  # extract hard code
         if hasattr(code, "decode"):
             code = code.decode("utf-8")
         if code not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs = self.Codes[code]  # assumes hs in both tables match
         bs = hs + ss  # both hs and ss
         size = None
         if not fs:  # compute fs from size chars in ss part of code
@@ -829,7 +829,7 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
         # fs is None
 
         if len(qb64b) < fs:  # need more bytes
@@ -877,7 +877,6 @@ class Matter:
         else:
             both = code
 
-
         if len(both) != bs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                           .format(bs, len(code)))
@@ -912,13 +911,12 @@ class Matter:
             else:
                 raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
-        cs = self.Bizes[first]  # get code hard size equvalent sextets
-        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
-        if len(qb2) < bcs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+        hs = self.Bizes[first]  # get code hard size equvalent sextets
+        bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
+        if len(qb2) < bhs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bhs-len(qb2)))
 
-        # bode = nabSextets(qb2, cs)  # b2 version of hard part of code
-        code = b2ToB64(qb2, cs)  # extract and convert hard part of code
+        code = b2ToB64(qb2, hs)  # extract and convert hard part of code
         if code not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
@@ -939,7 +937,7 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
