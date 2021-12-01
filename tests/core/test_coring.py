@@ -263,6 +263,9 @@ def test_matter():
                                             'StrB64_L0': '4A',
                                             'StrB64_L1': '5A',
                                             'StrB64_L2': '6A',
+                                            'StrB64_Big_L0': '7AAA',
+                                            'StrB64_Big_L1': '8AAA',
+                                            'StrB64_Big_L2': '9AAA',
                                          }
 
     assert Matter.Codex == MtrDex
@@ -316,6 +319,9 @@ def test_matter():
                             '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
                             '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
                             '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
+                            '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
+                            '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
+                            '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size

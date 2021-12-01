@@ -371,7 +371,6 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 
-
 @dataclass(frozen=True)
 class MatterCodex:
     """
@@ -414,12 +413,78 @@ class MatterCodex:
     StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
     StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
     StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-
+    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
 
-MtrDex = MatterCodex()
+MtrDex = MatterCodex()  #  Make instance
+
+
+@dataclass(frozen=True)
+class VarRawSizeCodex:
+    """
+    VarRawSizeCodex is codex all selector characters for the 2 sets of three
+    variable raw size tables where each set acts as one table but with different
+    leader byte sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Lead0:          str = '4'  # First Selector Character for all ls == 0 codes
+    Lead1:          str = '5'  # First Selector Character for all ls == 1 codes
+    Lead2:          str = '6'  # First Selector Character for all ls == 2 codes
+    Lead0_Big:      str = '7'  # First Selector Character for all ls == 0 codes
+    Lead1_Big:      str = '8'  # First Selector Character for all ls == 1 codes
+    Lead2_Big:      str = '9'  # First Selector Character for all ls == 2 codes
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+VizeDex = VarRawSizeCodex()  #  Make instance
+
+
+@dataclass(frozen=True)
+class SmallVarRawSizeCodex:
+    """
+    SmallVarRawSizeCodex is codex all selector characters for the three small
+    variable raw size tables that act as one table but with different leader
+    byte sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Lead0:      str = '4'  # First Selector Character for all ls == 0 codes
+    Lead1:      str = '5'  # First Selector Character for all ls == 1 codes
+    Lead2:      str = '6'  # First Selector Character for all ls == 2 codes
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SmallVizeDex = SmallVarRawSizeCodex()  #  Make instance
+
+
+@dataclass(frozen=True)
+class LargeVarRawSizeCodex:
+    """
+    LargeVarRawSizeCodex is codex all selector characters for the three large
+    variable raw size tables that act as one table but with different leader
+    byte sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Lead0:      str = '7'  # First Selector Character for all ls == 0 codes
+    Lead1:      str = '8'  # First Selector Character for all ls == 1 codes
+    Lead2:      str = '9'  # First Selector Character for all ls == 2 codes
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+LargeVizeDex = LargeVarRawSizeCodex()  #  Make instance
+
 
 @dataclass(frozen=True)
 class NonTransCodex:
@@ -429,8 +494,8 @@ class NonTransCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Ed25519N:      str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N:        str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -551,21 +616,24 @@ class Matter:
                 '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
                 '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
                 '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
+                '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
+                '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
+                '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, size=None,
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, size=None, rize=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
             raw (bytes): unqualified crypto material usable for crypto operations
             code (str): stable (hard) part of derivation code
-            size (int): number of quadlets when variable sized material besides
-                        full derivation code else None
+            size (int): number of quadlets of variable sized material else None
+            rize (int): raw size in bytes when variable sized material else None
             qb64b (bytes): fully qualified crypto material Base64
             qb64 (str, bytes):  fully qualified crypto material Base64
             qb2 (bytes): fully qualified crypto material Base2
@@ -573,11 +641,14 @@ class Matter:
                 bytearray after parsing qb64b or qb2. False means do not strip
 
 
-        Needs either (raw and code) or qb64b or qb64 or qb2
+        Needs either (raw and code and optionally size and rsize)
+               or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code provided then validate that code is correct for length of raw
+        When raw and code and option size and rsize provided
+            then validate that code is correct for length of raw, size, rsize
             and assign .raw
-        Else when qb64b or qb64 or qb2 provided extract and assign .raw and .code
+        Else when qb64b or qb64 or qb2 provided extract and assign
+            .raw and .code and .size and .rsize
 
         """
         if raw is not None:  #  raw provided
@@ -589,6 +660,9 @@ class Matter:
 
             if code not in self.Codes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
+
+            if code[0] in VizeDex:  # rize required
+                pass
 
             hs, ss, fs, ls = self.Codes[code]  # get sizes
 
@@ -762,7 +836,7 @@ class Matter:
         raw = self.raw  #  bytes or bytearray
 
         hs, ss, fs, ls = self.Codes[code]
-        if not fs:  # compute code both from size
+        if not fs:  # compute code size from size
             cs = hs + ss  # both hard + soft size
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
