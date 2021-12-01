@@ -467,7 +467,8 @@ DigDex =DigCodex()  #  Make instance
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
 # fs is the full size int number of chars in code plus appended material if any
-Sizage = namedtuple("Sizage", "hs ss fs")
+# ls is the lead size int number of bytes to pre-pad pre-converted raw binary
+Sizage = namedtuple("Sizage", "hs ss fs ls")
 
 class Matter:
     """
@@ -510,46 +511,46 @@ class Matter:
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 4), ('2', 4), ('3', 4), ('4', 2), ('5', 2),
                   ('6', 2), ('7', 4), ('8', 4), ('9', 4)])
-    # Codes table maps to Sizage namedtuple of (hs, ss, fs) from hs chars of code
+    # Codes table maps to Sizage namedtuple of (hs, ss, fs, as) from hs chars of code
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be 0 for Matter unless fs is None which allows
     # for variable size multiple of 4, i.e. not (hs + ss) % 4.
     Codes = {
-                'A': Sizage(hs=1, ss=0, fs=44),
-                'B': Sizage(hs=1, ss=0, fs=44),
-                'C': Sizage(hs=1, ss=0, fs=44),
-                'D': Sizage(hs=1, ss=0, fs=44),
-                'E': Sizage(hs=1, ss=0, fs=44),
-                'F': Sizage(hs=1, ss=0, fs=44),
-                'G': Sizage(hs=1, ss=0, fs=44),
-                'H': Sizage(hs=1, ss=0, fs=44),
-                'I': Sizage(hs=1, ss=0, fs=44),
-                'J': Sizage(hs=1, ss=0, fs=44),
-                'K': Sizage(hs=1, ss=0, fs=76),
-                'L': Sizage(hs=1, ss=0, fs=76),
-                'M': Sizage(hs=1, ss=0, fs=4),
-                'N': Sizage(hs=1, ss=0, fs=12),
-                'O': Sizage(hs=1, ss=0, fs=44),
-                'P': Sizage(hs=1, ss=0, fs=124),
-                '0A': Sizage(hs=2, ss=0, fs=24),
-                '0B': Sizage(hs=2, ss=0, fs=88),
-                '0C': Sizage(hs=2, ss=0, fs=88),
-                '0D': Sizage(hs=2, ss=0, fs=88),
-                '0E': Sizage(hs=2, ss=0, fs=88),
-                '0F': Sizage(hs=2, ss=0, fs=88),
-                '0G': Sizage(hs=2, ss=0, fs=88),
-                '0H': Sizage(hs=2, ss=0, fs=8),
-                '1AAA': Sizage(hs=4, ss=0, fs=48),
-                '1AAB': Sizage(hs=4, ss=0, fs=48),
-                '1AAC': Sizage(hs=4, ss=0, fs=80),
-                '1AAD': Sizage(hs=4, ss=0, fs=80),
-                '1AAE': Sizage(hs=4, ss=0, fs=56),
-                '1AAF': Sizage(hs=4, ss=0, fs=8),
-                '1AAG': Sizage(hs=4, ss=0, fs=36),
-                '1AAH': Sizage(hs=4, ss=0, fs=100),
-                '4A': Sizage(hs=2, ss=2, fs=None),
-                '5A': Sizage(hs=2, ss=2, fs=None),
-                '6A': Sizage(hs=2, ss=2, fs=None),
+                'A': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'B': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'C': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'D': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'E': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'F': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'G': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'H': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'I': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'J': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'K': Sizage(hs=1, ss=0, fs=76, ls=0),
+                'L': Sizage(hs=1, ss=0, fs=76, ls=0),
+                'M': Sizage(hs=1, ss=0, fs=4, ls=0),
+                'N': Sizage(hs=1, ss=0, fs=12, ls=0),
+                'O': Sizage(hs=1, ss=0, fs=44, ls=0),
+                'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+                '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
+                '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
+                '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+                '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
+                '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
+                '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
+                '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
+                '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
+                '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+                '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
+                '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+                '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
+                '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
+                '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
@@ -589,7 +590,7 @@ class Matter:
             if code not in self.Codes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs = self.Codes[code]  # get sizes
+            hs, ss, fs, ls = self.Codes[code]  # get sizes
 
             if not fs:  # compute fs from size
                 if size is None or size < 0 or size > (64 ** ss - 1):
@@ -642,7 +643,7 @@ class Matter:
             code (str): derivation code Base64
             size (int): number of quadlets of material besides code
         """
-        hs, ss, fs = cls.Codes[code]  # get sizes
+        hs, ss, fs, ls = cls.Codes[code]  # get sizes
         bs = hs + ss  # both hard + soft code size
         if not fs:  # compute fs from .size
             if size is None or size < 0 or size > (64 ** ss - 1):
@@ -660,7 +661,7 @@ class Matter:
         """
         Returns full size in bytes for .code and .size
         """
-        hs, ss, fs = self.Codes[self.code]  # get sizes
+        hs, ss, fs, ls = self.Codes[self.code]  # get sizes
 
         if not fs:  # compute fs from .size
             if self.size is None or self.size < 0 or self.size > (64 ** ss - 1):
@@ -760,7 +761,7 @@ class Matter:
         size = self.size  # optional size if variable length
         raw = self.raw  #  bytes or bytearray
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         if not fs:  # compute code both from size
             bs = hs + ss  # both hard + soft size
             if bs % 4:
@@ -814,7 +815,7 @@ class Matter:
         if code not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
-        hs, ss, fs = self.Codes[code]  # assumes hs in both tables match
+        hs, ss, fs, ls = self.Codes[code]  # assumes hs in both tables match
         bs = hs + ss  # both hs and ss
         size = None
         if not fs:  # compute fs from size chars in ss part of code
@@ -860,7 +861,7 @@ class Matter:
         size = self.size  # optional size if variable length
         raw = self.raw  #  bytes or bytearray
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         bs = hs + ss
 
         if not fs:  # compute code both from size
@@ -920,7 +921,7 @@ class Matter:
         if code not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         bs = hs + ss  # both hs and ss
         size = None
         if not fs:  # compute fs from size chars in ss part of code
@@ -2779,10 +2780,10 @@ class Indexer:
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 for Indexer
     Codes = {
-                'A': Sizage(hs=1, ss=1, fs=88),
-                'B': Sizage(hs=1, ss=1, fs=88),
-                '0A': Sizage(hs=2, ss=2, fs=156),
-                '0B': Sizage(hs=2, ss=2, fs=None),
+                'A': Sizage(hs=1, ss=1, fs=88, ls=0),
+                'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+                '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
+                '0B': Sizage(hs=2, ss=2, fs=None, ls=0),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
@@ -2820,7 +2821,7 @@ class Indexer:
             if code not in self.Codes:
                 raise UnexpectedCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs = self.Codes[code] # get sizes for code
+            hs, ss, fs, ls = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
             if index < 0 or index > (64 ** ss - 1):
                 raise InvalidCodeIndexError("Invalid index={} for code={}.".format(index, code))
@@ -2866,7 +2867,7 @@ class Indexer:
         """
         Returns raw size in bytes for a given code
         """
-        hs, ss, fs = cls.Codes[code]  # get sizes
+        hs, ss, fs, ls = cls.Codes[code]  # get sizes
         return ( (fs - (hs + ss)) * 3 // 4 )
 
 
@@ -2935,7 +2936,7 @@ class Indexer:
         index = self.index  # index value int used for soft
         raw = self.raw  # bytes or bytearray
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidCodeIndexError("Invalid index={} for code={}."
@@ -2983,7 +2984,7 @@ class Indexer:
         if hard not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs = self.Codes[hard]
+        hs, ss, fs, ls = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
         # assumes that unit tests on Indexer and IndexerCodex ensure that
         # .Codes and .Sizes are well formed.
@@ -3032,7 +3033,7 @@ class Indexer:
         index = self.index  # index value int used for soft
         raw = self.raw  #  bytes or bytearray
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         bs = hs + ss
         if not fs:  # compute fs from index
             if bs % 4:
@@ -3091,7 +3092,7 @@ class Indexer:
         if hard not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs = self.Codes[hard]
+        hs, ss, fs, ls = self.Codes[hard]
         bs = hs + ss  # both hs and ss
         # assumes that unit tests on Indexer and IndexerCodex ensure that
         # .Codes and .Sizes are well formed.
@@ -3257,35 +3258,35 @@ class Counter:
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
     Codes = {
-                '-A': Sizage(hs=2, ss=2, fs=4),
-                '-B': Sizage(hs=2, ss=2, fs=4),
-                '-C': Sizage(hs=2, ss=2, fs=4),
-                '-D': Sizage(hs=2, ss=2, fs=4),
-                '-E': Sizage(hs=2, ss=2, fs=4),
-                '-F': Sizage(hs=2, ss=2, fs=4),
-                '-G': Sizage(hs=2, ss=2, fs=4),
-                '-H': Sizage(hs=2, ss=2, fs=4),
-                '-I': Sizage(hs=2, ss=2, fs=4),
-                '-U': Sizage(hs=2, ss=2, fs=4),
-                '-V': Sizage(hs=2, ss=2, fs=4),
-                '-W': Sizage(hs=2, ss=2, fs=4),
-                '-X': Sizage(hs=2, ss=2, fs=4),
-                '-Y': Sizage(hs=2, ss=2, fs=4),
-                '-Z': Sizage(hs=2, ss=2, fs=4),
-                '-a': Sizage(hs=2, ss=2, fs=4),
-                '-c': Sizage(hs=2, ss=2, fs=4),
-                '-d': Sizage(hs=2, ss=2, fs=4),
-                '-e': Sizage(hs=2, ss=2, fs=4),
-                '-k': Sizage(hs=2, ss=2, fs=4),
-                '-l': Sizage(hs=2, ss=2, fs=4),
-                '-r': Sizage(hs=2, ss=2, fs=4),
-                '-w': Sizage(hs=2, ss=2, fs=4),
-                '-0U': Sizage(hs=3, ss=5, fs=8),
-                '-0V': Sizage(hs=3, ss=5, fs=8),
-                '-0W': Sizage(hs=3, ss=5, fs=8),
-                '-0X': Sizage(hs=3, ss=5, fs=8),
-                '-0Y': Sizage(hs=3, ss=5, fs=8),
-                '-0Z': Sizage(hs=3, ss=5, fs=8)
+                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
+                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
@@ -3317,7 +3318,7 @@ class Counter:
             if code not in self.Codes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs = self.Codes[code] # get sizes for code
+            hs, ss, fs, ls = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
             if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
                 raise InvalidCodeSizeError("Whole code size not full size or not "
@@ -3402,7 +3403,7 @@ class Counter:
         code = self.code  # codex value chars hard code
         count = self.count  # index value int used for soft
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         bs = hs + ss  # both hard + soft size
         if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
             raise InvalidCodeSizeError("Whole code size not full size or not "
@@ -3448,7 +3449,7 @@ class Counter:
         if hard not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs = self.Codes[hard]
+        hs, ss, fs, ls = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
 
         # assumes that unit tests on Counter and CounterCodex ensure that
@@ -3476,7 +3477,7 @@ class Counter:
         code = self.code  # codex chars hard code
         count = self.count  # index value int used for soft
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs, ls = self.Codes[code]
         bs = hs + ss
         if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
             raise InvalidCodeSizeError("Whole code size not full size or not "
@@ -3518,7 +3519,7 @@ class Counter:
         if hard not in self.Codes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs = self.Codes[hard]
+        hs, ss, fs, ls = self.Codes[hard]
         bs = hs + ss  # both hs and ss
         # assumes that unit tests on Counter and CounterCodex ensure that
         # .Codes and .Sizes are well formed.

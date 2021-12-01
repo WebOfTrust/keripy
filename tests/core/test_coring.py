@@ -281,46 +281,47 @@ def test_matter():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Matter.Codes == {
-                            'A': Sizage(hs=1, ss=0, fs=44),
-                            'B': Sizage(hs=1, ss=0, fs=44),
-                            'C': Sizage(hs=1, ss=0, fs=44),
-                            'D': Sizage(hs=1, ss=0, fs=44),
-                            'E': Sizage(hs=1, ss=0, fs=44),
-                            'F': Sizage(hs=1, ss=0, fs=44),
-                            'G': Sizage(hs=1, ss=0, fs=44),
-                            'H': Sizage(hs=1, ss=0, fs=44),
-                            'I': Sizage(hs=1, ss=0, fs=44),
-                            'J': Sizage(hs=1, ss=0, fs=44),
-                            'K': Sizage(hs=1, ss=0, fs=76),
-                            'L': Sizage(hs=1, ss=0, fs=76),
-                            'M': Sizage(hs=1, ss=0, fs=4),
-                            'N': Sizage(hs=1, ss=0, fs=12),
-                            'O': Sizage(hs=1, ss=0, fs=44),
-                            'P': Sizage(hs=1, ss=0, fs=124),
-                            '0A': Sizage(hs=2, ss=0, fs=24),
-                            '0B': Sizage(hs=2, ss=0, fs=88),
-                            '0C': Sizage(hs=2, ss=0, fs=88),
-                            '0D': Sizage(hs=2, ss=0, fs=88),
-                            '0E': Sizage(hs=2, ss=0, fs=88),
-                            '0F': Sizage(hs=2, ss=0, fs=88),
-                            '0G': Sizage(hs=2, ss=0, fs=88),
-                            '0H': Sizage(hs=2, ss=0, fs=8),
-                            '1AAA': Sizage(hs=4, ss=0, fs=48),
-                            '1AAB': Sizage(hs=4, ss=0, fs=48),
-                            '1AAC': Sizage(hs=4, ss=0, fs=80),
-                            '1AAD': Sizage(hs=4, ss=0, fs=80),
-                            '1AAE': Sizage(hs=4, ss=0, fs=56),
-                            '1AAF': Sizage(hs=4, ss=0, fs=8),
-                            '1AAG': Sizage(hs=4, ss=0, fs=36),
-                            '1AAH': Sizage(hs=4, ss=0, fs=100),
-                            '4A': Sizage(hs=2, ss=2, fs=None),
-                            '5A': Sizage(hs=2, ss=2, fs=None),
-                            '6A': Sizage(hs=2, ss=2, fs=None),
+                            'A': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'B': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'C': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'D': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'E': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'F': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'G': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'H': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'I': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'J': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'K': Sizage(hs=1, ss=0, fs=76, ls=0),
+                            'L': Sizage(hs=1, ss=0, fs=76, ls=0),
+                            'M': Sizage(hs=1, ss=0, fs=4, ls=0),
+                            'N': Sizage(hs=1, ss=0, fs=12, ls=0),
+                            'O': Sizage(hs=1, ss=0, fs=44, ls=0),
+                            'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+                            '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
+                            '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
+                            '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+                            '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
+                            '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
+                            '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
+                            '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
+                            '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
+                            '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+                            '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
+                            '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+                            '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
+                            '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
+                            '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size
     assert Matter.Codes['A'].ss == 0  # soft size
     assert Matter.Codes['A'].fs == 44  # full size
+    assert Matter.Codes['A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
     for ckey in Matter.Codes.keys():
@@ -800,15 +801,16 @@ def test_indexer():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Codes == {
-                                'A': Sizage(hs=1, ss=1, fs=88),
-                                'B': Sizage(hs=1, ss=1, fs=88),
-                                '0A': Sizage(hs=2, ss=2, fs=156),
-                                '0B': Sizage(hs=2, ss=2, fs=None)
+                                'A': Sizage(hs=1, ss=1, fs=88, ls=0),
+                                'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+                                '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
+                                '0B': Sizage(hs=2, ss=2, fs=None, ls=0)
                             }
 
     assert Indexer.Codes['A'].hs == 1  # hard size
     assert Indexer.Codes['A'].ss == 1  # soft size
     assert Indexer.Codes['A'].fs == 88  # full size
+    assert Indexer.Codes['A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
     for ckey in Indexer.Codes.keys():
@@ -1117,41 +1119,42 @@ def test_counter():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Counter.Codes == {
-                                '-A': Sizage(hs=2, ss=2, fs=4),
-                                '-B': Sizage(hs=2, ss=2, fs=4),
-                                '-C': Sizage(hs=2, ss=2, fs=4),
-                                '-D': Sizage(hs=2, ss=2, fs=4),
-                                '-E': Sizage(hs=2, ss=2, fs=4),
-                                '-F': Sizage(hs=2, ss=2, fs=4),
-                                '-G': Sizage(hs=2, ss=2, fs=4),
-                                '-H': Sizage(hs=2, ss=2, fs=4),
-                                '-I': Sizage(hs=2, ss=2, fs=4),
-                                '-U': Sizage(hs=2, ss=2, fs=4),
-                                '-V': Sizage(hs=2, ss=2, fs=4),
-                                '-W': Sizage(hs=2, ss=2, fs=4),
-                                '-X': Sizage(hs=2, ss=2, fs=4),
-                                '-Y': Sizage(hs=2, ss=2, fs=4),
-                                '-Z': Sizage(hs=2, ss=2, fs=4),
-                                '-a': Sizage(hs=2, ss=2, fs=4),
-                                '-c': Sizage(hs=2, ss=2, fs=4),
-                                '-d': Sizage(hs=2, ss=2, fs=4),
-                                '-e': Sizage(hs=2, ss=2, fs=4),
-                                '-k': Sizage(hs=2, ss=2, fs=4),
-                                '-l': Sizage(hs=2, ss=2, fs=4),
-                                '-r': Sizage(hs=2, ss=2, fs=4),
-                                '-w': Sizage(hs=2, ss=2, fs=4),
-                                '-0U': Sizage(hs=3, ss=5, fs=8),
-                                '-0V': Sizage(hs=3, ss=5, fs=8),
-                                '-0W': Sizage(hs=3, ss=5, fs=8),
-                                '-0X': Sizage(hs=3, ss=5, fs=8),
-                                '-0Y': Sizage(hs=3, ss=5, fs=8),
-                                '-0Z': Sizage(hs=3, ss=5, fs=8)
+                                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
+                                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+                                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+                                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+                                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+                                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+                                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
                              }
 
 
     assert Counter.Codes['-A'].hs == 2  # hard size
     assert Counter.Codes['-A'].ss == 2  # soft size
     assert Counter.Codes['-A'].fs == 4  # full size
+    assert Counter.Codes['-A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
     for ckey in Counter.Codes.keys():
@@ -3535,4 +3538,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_indexer()
