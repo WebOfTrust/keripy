@@ -411,9 +411,9 @@ class MatterCodex:
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X15519 100 char b64 Cipher of 24 char qb64 Salt
-    GPG:                  str = '9A'    # Legacy gpg tool variable length padded material
-    GPGSM:                str = '9B'    # Legacy gpgsm tool variable length padded material
-    OpenSSL:              str = '9C'    # Legacy openssl tool variable length padded material
+    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
+    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
+    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
 
 
     def __iter__(self):

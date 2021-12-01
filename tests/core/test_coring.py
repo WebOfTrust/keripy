@@ -260,9 +260,9 @@ def test_matter():
                                             'Tag': '1AAF',
                                             'DateTime': '1AAG',
                                             'X25519_Cipher_Salt': '1AAH',
-                                            'GPG': '9A',
-                                            'GPGSM': '9B',
-                                            'OpenSSL': '9C',
+                                            'StrB64_L0': '4A',
+                                            'StrB64_L1': '5A',
+                                            'StrB64_L2': '6A',
                                          }
 
     assert Matter.Codex == MtrDex
