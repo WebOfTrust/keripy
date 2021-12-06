@@ -23,7 +23,9 @@ import hashlib
 
 
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
-                      InvalidCodeIndexError, InvalidCodeSizeError,
+                      InvalidSizeError,
+                      InvalidCodeSizeError, InvalidVarIndexError,
+                      InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError,
                       ValidationError, VersionError, DerivationError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
@@ -413,9 +415,15 @@ class MatterCodex:
     StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
     StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
     StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
+    Str_L0:               str = '4B'    # String Leader Size 0
+    Str_L1:               str = '5B'    # String Leader Size 1
+    Str_L2:               str = '6B'    # String Leader Size 2
     StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
     StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
     StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
+    Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
+    Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
+    Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -476,9 +484,9 @@ class LargeVarRawSizeCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Lead0:      str = '7'  # First Selector Character for all ls == 0 codes
-    Lead1:      str = '8'  # First Selector Character for all ls == 1 codes
-    Lead2:      str = '9'  # First Selector Character for all ls == 2 codes
+    Lead0_Big:      str = '7'  # First Selector Character for all ls == 0 codes
+    Lead1_Big:      str = '8'  # First Selector Character for all ls == 1 codes
+    Lead2_Big:      str = '9'  # First Selector Character for all ls == 2 codes
 
     def __iter__(self):
         return iter(astuple(self))
@@ -559,8 +567,11 @@ class Matter:
 
     Hidden:
         _code (str): value for .code property
-        _size (int): value for .size property
         _raw (bytes): value for .raw property
+        _rsize (bytes): value for .rsize property. Raw size in bytes when
+            variable sized material else None.
+        _size (int): value for .size property. Number of quadlets of variable
+            sized material else None.
         _infil (types.MethodType): creates qb64b from .raw and .code
                                    (fully qualified Base64)
         _exfil (types.MethodType): extracts .code and .raw from qb64b
@@ -616,23 +627,28 @@ class Matter:
                 '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
                 '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
                 '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
+                '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
+                '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
+                '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
                 '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
                 '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
                 '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
+                '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
+                '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
+                '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, size=None, rize=None,
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
             raw (bytes): unqualified crypto material usable for crypto operations
             code (str): stable (hard) part of derivation code
-            size (int): number of quadlets of variable sized material else None
             rize (int): raw size in bytes when variable sized material else None
             qb64b (bytes): fully qualified crypto material Base64
             qb64 (str, bytes):  fully qualified crypto material Base64
@@ -661,24 +677,50 @@ class Matter:
             if code not in self.Codes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            if code[0] in VizeDex:  # rize required
-                pass
+            if code[0] in VizeDex:  # rize needed
+                if rize:  # use rsize to extract exactly rsize bytes from raw
+                    if rize < 0:
+                        raise InvalidVarRawSizeError("Missing var raw size for "
+                                                 "code={}.".format(code))
+                else:  # use length of provided raw
+                    rize = len(raw)
 
-            hs, ss, fs, ls = self.Codes[code]  # get sizes
+                ls = (3 - (rize % 3)) % 3  # lead (pad) size
+                bs = rize + ls
+                if bs <= (64 ** 2 - 1) and code[0] in SmallVizeDex:
+                    if ls == 0:
+                        s = VizeDex.Lead0
+                    elif ls == 1:
+                        s = VizeDex.Lead1
+                    elif ls == 2:
+                        s = VizeDex.Lead2
+                elif bs <= (64 ** 4 - 1):
+                    if ls == 0:
+                        s = VizeDex.Lead0_Big
+                    elif ls == 1:
+                        s = VizeDex.Lead1_Big
+                    elif ls == 2:
+                        s = VizeDex.Lead2_Big
+                else:
+                    raise InvalidVarRawSizeError("Raw size too big for code={}."
+                                                 "".format(code))
+                code = s + code[1:]  # adjust code for proper lead size
 
-            if not fs:  # compute fs from size
-                if size is None or size < 0 or size > (64 ** ss - 1):
-                    raise InvalidCodeSizeError("Invalid size={} for code={}."
-                                               "".format(size, code))
-                cs = hs + ss  # code size
-                if cs % 4:
-                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                    "variable length material. cs={}.".format(cs))
-            else:
-                if size is not None:
-                    raise InvalidCodeSizeError("Invalid size={} for code={}.".format(size, code))
+            hs, ss, fs, ls = self.Codes[code]  # get sizes assumes ls consistent
 
-            self._size = size
+            #if not fs:  # compute fs from rsize
+                #if size is None or size < 0 or size > (64 ** ss - 1):
+                    #raise InvalidVarSizeError("Invalid size={} for code={}."
+                                               #"".format(size, code))
+                #cs = hs + ss  # code size
+                #if cs % 4:
+                    #raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                    #"variable length material. cs={}.".format(cs))
+            #else:
+                #if size is not None:
+                    #raise InvalidVarSizeError("Invalid size={} for code={}.".format(size, code))
+
+            self._size = None # size
 
             rawsize = Matter._rawSize(code)
             raw = raw[:rawsize]  # copy only exact size from raw stream
@@ -710,24 +752,16 @@ class Matter:
 
 
     @classmethod
-    def _rawSize(cls, code, size=None):
+    def _rawSize(cls, code):
         """
         Returns raw size in bytes for a given code and optional size
         Parameters:
             code (str): derivation code Base64
-            size (int): number of quadlets of material besides code
         """
         hs, ss, fs, ls = cls.Codes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
-        if not fs:  # compute fs from .size
-            if size is None or size < 0 or size > (64 ** ss - 1):
-                raise InvalidCodeSizeError("Invalid size={} for code={}."
-                                           "".format(size, code))
-
-            if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                    "variable length material. cs={}.".format(cs))
-            fs = (size * 4) + cs
+        if not fs:  # compute fs from .size or .rize
+            raise  InvalidCodeSizeError("Not fixed raw size code {}".format(code))
         return ((fs - cs) * 3 // 4)
 
 
@@ -739,7 +773,7 @@ class Matter:
 
         if not fs:  # compute fs from .size
             if self.size is None or self.size < 0 or self.size > (64 ** ss - 1):
-                raise InvalidCodeSizeError("Invalid size={} for code={}."
+                raise InvalidVarSizeError("Invalid size={} for code={}."
                                            "".format(self.size, self.code))
 
             cs = hs + ss  # both hard + soft code size
@@ -764,6 +798,7 @@ class Matter:
         """
         Returns ._size int
         Makes .size read only
+        ._size (int): number of quadlets of variable sized material else None
         """
         return self._size
 
@@ -843,7 +878,7 @@ class Matter:
                                       "variable length material. cs={}.".format(cs))
 
             if size < 0 or size > (64 ** ss - 1):
-                raise InvalidCodeIndexError("Invalid size={} for code={}."
+                raise InvalidVarSizeError("Invalid size={} for code={}."
                                             "".format(size, code))
             # both is hard code + converted index
             both = "{}{}".format(code, intToB64(size, l=ss))
@@ -945,7 +980,7 @@ class Matter:
                                       "variable length material. cs={}.".format(cs))
 
             if size < 0 or size > (64 ** ss - 1):
-                raise InvalidCodeIndexError("Invalid size={} for code={}."
+                raise InvalidVarSizeError("Invalid size={} for code={}."
                                             "".format(size, code))
             # both is hard code + converted index
             both = "{}{}".format(code, intToB64(size, l=ss))
@@ -2898,7 +2933,7 @@ class Indexer:
             hs, ss, fs, ls = self.Codes[code] # get sizes for code
             cs = hs + ss  # both hard + soft code size
             if index < 0 or index > (64 ** ss - 1):
-                raise InvalidCodeIndexError("Invalid index={} for code={}.".format(index, code))
+                raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
             if not fs:  # compute fs from index
                 if cs % 4:
@@ -3013,7 +3048,7 @@ class Indexer:
         hs, ss, fs, ls = self.Codes[code]
 
         if index < 0 or index > (64 ** ss - 1):
-            raise InvalidCodeIndexError("Invalid index={} for code={}."
+            raise InvalidVarIndexError("Invalid index={} for code={}."
                                         "".format(index, code))
 
         # both is hard code + converted index
@@ -3116,7 +3151,7 @@ class Indexer:
             fs = (index * 4) + cs
 
         if index < 0 or index > (64 ** ss - 1):
-            raise InvalidCodeIndexError("Invalid index={} for code={}.".format(index, code))
+            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
         both =  "{}{}".format(code, intToB64(index, l=ss))
@@ -3398,7 +3433,7 @@ class Counter:
                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
 
             if count < 0 or count > (64 ** ss - 1):
-                raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
+                raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
             self._code = code
             self._count = count
@@ -3482,7 +3517,7 @@ class Counter:
             raise InvalidCodeSizeError("Whole code size not full size or not "
                                   "multiple of 4. cs={} fs={}.".format(cs, fs))
         if count < 0 or count > (64 ** ss - 1):
-            raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
@@ -3557,7 +3592,7 @@ class Counter:
                                   "multiple of 4. cs={} fs={}.".format(cs, fs))
 
         if count < 0 or count > (64 ** ss - 1):
-            raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both =  "{}{}".format(code, intToB64(count, l=ss))

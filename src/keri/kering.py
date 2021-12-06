@@ -130,8 +130,23 @@ class UnknownCodeError(MaterialError):
         raise UnknownCodeError("error message")
     """
 
+class InvalidSizeError(MaterialError):
+    """
+    Invalid size encountered during crypto material init
+    Usage:
+        raise InvalidSizeError("error message")
+    """
 
-class InvalidCodeIndexError(MaterialError):
+
+class InvalidCodeSizeError(InvalidSizeError):
+    """
+    Invalid code size encountered during crypto material init
+    Usage:
+        raise InvalidCodeSizeError("error message")
+    """
+
+
+class InvalidVarIndexError(InvalidSizeError):
     """
     Invalid code index encountered during crypto material init
     Usage:
@@ -139,12 +154,21 @@ class InvalidCodeIndexError(MaterialError):
     """
 
 
-class InvalidCodeSizeError(MaterialError):
+class InvalidVarSizeError(InvalidSizeError):
     """
-    Invalid code size encountered during crypto material init
+    Invalid variable size encountered during crypto material init
     Usage:
-        raise UnknownCodeError("error message")
+        raise InvalidVarSizeError("error message")
     """
+
+
+class InvalidVarRawSizeError(InvalidSizeError):
+    """
+    Invalid raw size encountered during crypto material init
+    Usage:
+        raise InvalidRawSizeError("error message")
+    """
+
 
 
 # Errors validating  event messages and attachements
