@@ -2686,16 +2686,11 @@ class Kevery:
                                                      sigers=sigers,
                                                      verfers=eserder.verfers)
 
-                        # only verify wigers if lastest est event of current key state
-                        # matches est event of processed event
-                        if (eserder.sn == kever.lastEst.s and
-                                eserder.dig == kever.lastEst.d):
-                            werfers = [Verfer(qb64=wit) for wit in kever.wits]
-                            wigers, windices = verifySigs(serder=serder,
-                                                          sigers=wigers,
-                                                          verfers=werfers)
-                        else:
-                            wigers = []
+                        wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
+                        werfers = [Verfer(qb64=wit) for wit in wits]
+                        wigers, windices = verifySigs(serder=serder,
+                                                      sigers=wigers,
+                                                      verfers=werfers)
 
                         if sigers or wigers:  # at least one verified sig or wig so log evt
                             # not first seen update so ignore return
@@ -2746,12 +2741,12 @@ class Kevery:
                                       "".format(ked["s"], ked))
 
             # process each couple verify sig and write to db
+            wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
             for wiger in wigers:
                 # assign verfers from witness list
-                kever = self.kevers[pre]  # get key state
-                if wiger.index >= len(kever.wits):
+                if wiger.index >= len(wits):
                     continue  # skip invalid witness index
-                wiger.verfer = Verfer(qb64=kever.wits[wiger.index])  # assign verfer
+                wiger.verfer = Verfer(qb64=wits[wiger.index])  # assign verfer
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
 
@@ -2830,10 +2825,10 @@ class Kevery:
                         continue  # skip own receipt attachment on non-local event
 
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
-                    kever = self.kevers[pre]  # get key state to check if witness
+                    wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
                     rpre = cigar.verfer.qb64  # prefix of receiptor
-                    if rpre in kever.wits:  # its a witness receipt
-                        index = kever.wits.index(rpre)
+                    if rpre in wits:  # its a witness receipt
+                        index = wits.index(rpre)
                         # create witness indexed signature
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.addWig(key=dgkey, val=wiger.qb64b)  # write to db
@@ -2898,10 +2893,10 @@ class Kevery:
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
-                kever = self.kevers[pre]  # get key state to check if witness
+                wits = self.fetchWitnessState(pre, sn)
                 rpre = cigar.verfer.qb64  # prefix of receiptor
-                if rpre in kever.wits:  # its a witness receipt
-                    index = kever.wits.index(rpre)
+                if rpre in wits:  # its a witness receipt
+                    index = wits.index(rpre)
                     # create witness indexed signature and write to db
                     wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                     self.db.addWig(key=dgKey(pre, ldig), val=wiger.qb64b)

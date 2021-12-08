@@ -4,12 +4,12 @@ import pytest
 
 from keri import help
 from keri.app import keeping, habbing
-from keri.core import parsing
+from keri.core import parsing, eventing, coring
 from keri.core.coring import CtrDex, Counter
 from keri.core.coring import Signer, Nexter
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (incept, rotate, interact)
-from keri.db import basing
+from keri.db import basing, dbing
 from keri.db.basing import openDB
 from keri.kering import (ValidationError)
 
@@ -330,6 +330,106 @@ def test_witness_state():
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
+
+
+def test_stale_event_receipts():
+    # Bob is the controller
+    # Wes, Wil and Wan are his witnesses
+    # Bam is verifying the key events with receipts from Bob
+    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+         basing.openDB(name="wan") as wanDB, keeping.openKS(name="wan") as wanKS, \
+         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS, \
+         basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+         basing.openDB(name="bam") as bamDB:
+
+        # setup Wes's habitat nontrans
+        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 isith=1, icount=1, transferable=False, temp=True)
+
+        assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
+
+        # setup Wan's habitat nontrans
+        wanHab = habbing.Habitat(name='wan', ks=wanKS, db=wanDB,
+                                 isith=1, icount=1, transferable=False, temp=True)
+
+        assert wanHab.pre == "BBtKPeN9p4lum6qDRa28fDfVShFk6c39FlBgHBsCq148"
+
+        # setup Wil's habitat nontrans
+        wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
+                                 isith=1, icount=1, transferable=False, temp=True)
+
+        assert wilHab.pre == "BRetJdWSxemd-ej8OLpEFfYuyv1VZECKGMuGjB-M05BA"
+
+        # setup Bob's transferable habitat with wil, wes and wan as witnesses
+        awits = [wesHab, wilHab, wanHab]
+        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
+        assert bobHab.pre == "ElW9qSk_RNt9bhRVtw315BpLMoHuA5gLs3NuYZUQpF1U"
+        
+        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
+
+        # Pass incept to witnesses, receipted event to bam
+        bobIcp = bobHab.makeOwnEvent(sn=0)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=bamKvy)
+        assert bobHab.pre not in bamKvy.kevers
+
+        for witHab in awits:
+            kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
+            parsing.Parser().parse(ims=bytearray(bobIcp), kvy=kvy)
+            assert bobHab.pre in witHab.kevers
+            iserder = coring.Serder(raw=bytearray(bobIcp))
+            msg = witHab.receipt(serder=iserder)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+
+        bamKvy.processEscrows()
+        assert bobHab.pre in bamKvy.kevers
+
+        # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
+        rot0 = bobHab.rotate(toad=2)
+        parsing.Parser().parse(ims=bytearray(rot0), kvy=bamKvy)
+
+        for witHab in [wesHab, wanHab]:
+            kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
+            parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy)
+            iserder = coring.Serder(raw=bytearray(rot0))
+            msg = witHab.receipt(serder=iserder)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+
+        bamKvy.processEscrows()
+        assert bamKvy.kevers[bobHab.pre].sn == 1
+
+        # Validate that bam has 2 receipts in DB for event 1
+        ser = coring.Serder(raw=rot0)
+        dgkey = dbing.dgKey(ser.preb, ser.digb)
+        wigs = bamDB.getWigs(dgkey)
+        assert len(wigs) == 2
+
+
+        # Rotate out Wil, pass to witnesses, receipted event to bam.
+        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
+        parsing.Parser().parse(ims=bytearray(rot1), kvy=bamKvy)
+
+        for witHab in [wesHab, wanHab]:
+            kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
+            parsing.Parser().parse(ims=bytearray(rot1), kvy=kvy)
+            iserder = coring.Serder(raw=bytearray(rot1))
+            msg = witHab.receipt(serder=iserder)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+
+        bamKvy.processEscrows()
+        assert bamKvy.kevers[bobHab.pre].sn == 2
+        assert bamKvy.kevers[bobHab.pre].wits == [wesHab.pre, wanHab.pre]
+
+        # Pass receipts from Wil for event 1 to Bam
+        kvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
+        parsing.Parser().parse(ims=bytearray(rot0), kvy=kvy)
+        iserder = coring.Serder(raw=bytearray(rot0))
+        msg = wilHab.receipt(serder=iserder)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
+
+        # Validate that bam has 3 receipts in DB for event 1
+        wigs = bamDB.getWigs(dgkey)
+        assert len(wigs) == 3
 
 
         """ Done Test """
