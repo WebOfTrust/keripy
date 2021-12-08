@@ -322,7 +322,7 @@ class Credentialer:
             raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                   version.minor))
 
-        crd["d"] = Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs
+        crd["d"] = Saider.Dummy * coring.Matter.Sizes[coring.MtrDex.Blake3_256].fs
 
         if not kind:
             kind = knd

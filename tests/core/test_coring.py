@@ -106,6 +106,11 @@ def test_b64_conversions():
     i = b64ToInt(cs)
     assert i == 0
 
+    cs = intToB64(0, l=0)
+    assert cs == ""
+    with pytest.raises(ValueError):
+        i = b64ToInt(cs)
+
     cs = intToB64b(0)
     assert cs == b"A"
     i = b64ToInt(cs)
@@ -277,7 +282,7 @@ def test_matter():
     assert Matter.Codex == MtrDex
 
     # first character of code with hard size of code
-    assert Matter.Sizes == {
+    assert Matter.Hards == {
         'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
         'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1 ,'Q': 1, 'R': 1,
         'S': 1, 'T': 1, 'U': 1, 'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1,
@@ -289,7 +294,7 @@ def test_matter():
     }
 
     # Codes table with sizes of code (hard) and full primitive material
-    assert Matter.Codes == {
+    assert Matter.Sizes == {
                             'A': Sizage(hs=1, ss=0, fs=44, ls=0),
                             'B': Sizage(hs=1, ss=0, fs=44, ls=0),
                             'C': Sizage(hs=1, ss=0, fs=44, ls=0),
@@ -336,18 +341,18 @@ def test_matter():
                             '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
                         }
 
-    assert Matter.Codes['A'].hs == 1  # hard size
-    assert Matter.Codes['A'].ss == 0  # soft size
-    assert Matter.Codes['A'].fs == 44  # full size
-    assert Matter.Codes['A'].ls == 0  # lead size
+    assert Matter.Sizes['A'].hs == 1  # hard size
+    assert Matter.Sizes['A'].ss == 0  # soft size
+    assert Matter.Sizes['A'].fs == 44  # full size
+    assert Matter.Sizes['A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
-    for ckey in Matter.Codes.keys():
-        assert Matter.Sizes[ckey[0]] == Matter.Codes[ckey].hs
+    for ckey in Matter.Sizes.keys():
+        assert Matter.Hards[ckey[0]] == Matter.Sizes[ckey].hs
 
     #  verify all Codes have ss == 0 and not fs % 4 and hs > 0 and fs > hs
     #  if fs is not None else not (hs + ss) % 4
-    for val in Matter.Codes.values():
+    for val in Matter.Sizes.values():
         if val.fs is not None:
             assert val.ss == 0 and not val.fs % 4 and  val.hs > 0 and  val.fs > val.hs
         else:
@@ -355,9 +360,12 @@ def test_matter():
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
-    for skey, sval in Matter.Sizes.items():
+    for skey, sval in Matter.Hards.items():
         ckey = b64ToB2(skey)
-        assert Matter.Bizes[ckey] == sval
+        assert Matter.Bards[ckey] == sval
+
+    assert Matter._rawSize(MtrDex.Ed25519) == 32
+    assert Matter._leadSize(MtrDex.Ed25519) == 0
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
@@ -405,7 +413,7 @@ def test_matter():
     # test truncates extra bytes from qb64 parameter
     longprefix = prefix + "ABCD"  # extra bytes in size
     matter = Matter(qb64=longprefix)
-    assert len(matter.qb64) == Matter.Codes[matter.code].fs
+    assert len(matter.qb64) == Matter.Sizes[matter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortprefix = prefix[:-4]  # too few bytes in  size
@@ -419,7 +427,7 @@ def test_matter():
     # test truncates extra bytes from qb2 parameter
     longprebin = prebin + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     matter = Matter(qb2=longprebin)
-    assert len(matter.qb64) == Matter.Codes[matter.code].fs
+    assert len(matter.qb64) == Matter.Sizes[matter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortprebin = prebin[:-4]  # too few bytes in  size
@@ -807,7 +815,7 @@ def test_indexer():
     assert Indexer.Codex == IdrDex
 
     # first character of code with hard size of code
-    assert Indexer.Sizes == {
+    assert Indexer.Hards == {
        'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
        'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
        'S': 1, 'T': 1, 'U': 1, 'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1,
@@ -818,33 +826,33 @@ def test_indexer():
     }
 
     # Codes table with sizes of code (hard) and full primitive material
-    assert Indexer.Codes == {
+    assert Indexer.Sizes == {
                                 'A': Sizage(hs=1, ss=1, fs=88, ls=0),
                                 'B': Sizage(hs=1, ss=1, fs=88, ls=0),
                                 '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
                                 '0B': Sizage(hs=2, ss=2, fs=None, ls=0)
                             }
 
-    assert Indexer.Codes['A'].hs == 1  # hard size
-    assert Indexer.Codes['A'].ss == 1  # soft size
-    assert Indexer.Codes['A'].fs == 88  # full size
-    assert Indexer.Codes['A'].ls == 0  # lead size
+    assert Indexer.Sizes['A'].hs == 1  # hard size
+    assert Indexer.Sizes['A'].ss == 1  # soft size
+    assert Indexer.Sizes['A'].fs == 88  # full size
+    assert Indexer.Sizes['A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
-    for ckey in Indexer.Codes.keys():
-        assert Indexer.Sizes[ckey[0]] == Indexer.Codes[ckey].hs
+    for ckey in Indexer.Sizes.keys():
+        assert Indexer.Hards[ckey[0]] == Indexer.Sizes[ckey].hs
 
     # verify all Codes have hs > 0 and ss > 0 and fs >= hs + ss if fs is not None
-    for val in Indexer.Codes.values():
+    for val in Indexer.Sizes.values():
         assert val.hs > 0 and val.ss > 0
         if val.fs is not None:
             assert val.fs >= val.hs + val.ss
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
-    for skey, sval in Indexer.Sizes.items():
+    for skey, sval in Indexer.Hards.items():
         ckey = b64ToB2(skey)
-        assert Indexer.Bizes[ckey] == sval
+        assert Indexer.Bards[ckey] == sval
 
 
     with pytest.raises(EmptyMaterialError):
@@ -912,7 +920,7 @@ def test_indexer():
     # test truncates extra bytes from qb64 parameter
     longqsig64 = qsig64 + "ABCD"
     indexer = Indexer(qb64=longqsig64)
-    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
+    assert len(indexer.qb64) == Indexer.Sizes[indexer.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsig64 = qsig64[:-4]  # too short
@@ -931,7 +939,7 @@ def test_indexer():
     longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     indexer = Indexer(qb2=longqsig2b)
     assert indexer.qb2 == qsig2b
-    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
+    assert len(indexer.qb64) == Indexer.Sizes[indexer.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqsig2b = qsig2b[:-4]  # too few bytes in  size
@@ -1125,7 +1133,7 @@ def test_counter():
     assert Counter.Codex == CtrDex
 
     # first character of code with hard size of code
-    assert Counter.Sizes == {
+    assert Counter.Hards == {
        '-A': 2, '-B': 2, '-C': 2, '-D': 2, '-E': 2, '-F': 2, '-G': 2, '-H': 2, '-I': 2,
        '-J': 2, '-K': 2, '-L': 2, '-M': 2, '-N': 2, '-O': 2, '-P': 2, '-Q': 2, '-R': 2,
        '-S': 2, '-T': 2, '-U': 2, '-V': 2, '-W': 2, '-X': 2, '-Y': 2, '-Z': 2,
@@ -1136,7 +1144,7 @@ def test_counter():
     }
 
     # Codes table with sizes of code (hard) and full primitive material
-    assert Counter.Codes == {
+    assert Counter.Sizes == {
                                 '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
                                 '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
                                 '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -1169,24 +1177,24 @@ def test_counter():
                              }
 
 
-    assert Counter.Codes['-A'].hs == 2  # hard size
-    assert Counter.Codes['-A'].ss == 2  # soft size
-    assert Counter.Codes['-A'].fs == 4  # full size
-    assert Counter.Codes['-A'].ls == 0  # lead size
+    assert Counter.Sizes['-A'].hs == 2  # hard size
+    assert Counter.Sizes['-A'].ss == 2  # soft size
+    assert Counter.Sizes['-A'].fs == 4  # full size
+    assert Counter.Sizes['-A'].ls == 0  # lead size
 
     # verify first hs Sizes matches hs in Codes for same first char
-    for ckey in Counter.Codes.keys():
-        assert Counter.Sizes[ckey[:2]] == Counter.Codes[ckey].hs
+    for ckey in Counter.Sizes.keys():
+        assert Counter.Hards[ckey[:2]] == Counter.Sizes[ckey].hs
 
     #  verify all Codes have hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
-    for val in Counter.Codes.values():
+    for val in Counter.Sizes.values():
         assert val.hs > 0 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
-    for skey, sval in Counter.Sizes.items():
+    for skey, sval in Counter.Hards.items():
         ckey = b64ToB2(skey)
-        assert Counter.Bizes[ckey] == sval
+        assert Counter.Bards[ckey] == sval
 
 
     with pytest.raises(EmptyMaterialError):
@@ -1230,7 +1238,7 @@ def test_counter():
     # test truncates extra bytes from qb64 parameter
     longqsc64 = qsc + "ABCD"
     counter = Counter(qb64=longqsc64)
-    assert len(counter.qb64) == Counter.Codes[counter.code].fs
+    assert len(counter.qb64) == Counter.Sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
@@ -1241,7 +1249,7 @@ def test_counter():
     longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     counter = Counter(qb2=longqscb2)
     assert counter.qb2 == qscb2
-    assert len(counter.qb64) == Counter.Codes[counter.code].fs
+    assert len(counter.qb64) == Counter.Sizes[counter.code].fs
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
@@ -1372,7 +1380,7 @@ def test_counter():
     ims = bytearray( qscb + b"ABCD")
     counter = Counter(qb64b=ims, strip=True)
     assert counter.qb64b == qscb
-    assert len(counter.qb64b) == Counter.Codes[counter.code].fs
+    assert len(counter.qb64b) == Counter.Sizes[counter.code].fs
     assert ims == extra
 
     # test with longer ims for qb2
@@ -1380,7 +1388,7 @@ def test_counter():
     ims = bytearray(qscb2) + extra
     counter = Counter(qb2=ims, strip=True)
     assert counter.qb2 == qscb2
-    assert len(counter.qb2) == Counter.Codes[counter.code].fs * 3 // 4
+    assert len(counter.qb2) == Counter.Sizes[counter.code].fs * 3 // 4
     assert ims == extra
 
     # raises error if not bytearray
@@ -2426,7 +2434,7 @@ def test_prefixer():
     prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519N)  # default code is None
     assert prefixer.code == MtrDex.Ed25519N
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
-    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
+    assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], n="", t="icp")
     assert prefixer.verify(ked=ked) == True
@@ -2439,7 +2447,7 @@ def test_prefixer():
     prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519)  # defaults provide Ed25519N prefixer
     assert prefixer.code == MtrDex.Ed25519
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
-    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
+    assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], t="icp")
     assert prefixer.verify(ked=ked) == True
@@ -3219,7 +3227,7 @@ def test_serder():
     assert evt1.diger.code == MtrDex.Blake3_256
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
-    assert len(evt1.dig) == Matter.Codes[MtrDex.Blake3_256].fs
+    assert len(evt1.dig) == Matter.Sizes[MtrDex.Blake3_256].fs
     assert evt1.dig == 'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
     assert evt1.diger.verify(evt1.raw)
 
@@ -3556,6 +3564,7 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
-    test_counter()
-    test_indexer()
+    test_b64_conversions()
+    #test_matter()
+    #test_counter()
+    #test_indexer()
