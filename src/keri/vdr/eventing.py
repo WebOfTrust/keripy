@@ -2067,7 +2067,7 @@ class Tevery:
 
         """
         for (pre, snb, digb) in self.reger.getOotItemIter():
-            print("oot-tel-event", pre)
+            pass
 
     def processEscrowAnchorless(self):
         """ Process escrow of TEL events received before the anchoring KEL event.

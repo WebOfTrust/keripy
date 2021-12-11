@@ -69,25 +69,22 @@ def test_credential_handlers(mockHelpingNowUTC):
         result = client.simulate_post(path="/credential/issue", body=b)
         assert result.status == falcon.HTTP_200
 
-        tevt = (
-            b'{"v":"KERI10JSON0000ba_","i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P98'
-            b'2bk6dq_TBo","s":"0","t":"iss","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
-            b'PEcJ7f9ejHjJMC38","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0A'
-            b'AAAAAAAAAAAAAAAAAAAAAgEU11Yo0QlBdXPZmztI1JMoUvzdK3N8RvQBgEjwkud_aI')
-        kevt = (
-            b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
-            b'pEE-YfcI9E","s":"2","t":"ixn","p":"ET6FzE7z8CFUDyfKjq__QIln5RwHB'
-            b'JrJz5amM9XYukLc","a":[{"i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982b'
-            b'k6dq_TBo","s":"0","d":"E3koeMJIrYBh1ROB1qhMg-aD4blvD1X1sJ0PumtJx'
-            b'g4g"}]}-AABAAg9F9i7jJsoQW1QyO2p3zVEYZ0OCg-MrmiIT_z8DnlLMent3EAzK'
-            b'3AqZLSNLAt0-rbCNW3pEbMei_dLOjonB0Dg')
+        tevt = (b'{"v":"KERI10JSON0000ba_","i":"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpF'
+                b'HeXRkNmJa4","s":"0","t":"iss","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+                b'PEcJ7f9ejHjJMC38","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0A'
+                b'AAAAAAAAAAAAAAAAAAAAAgEhiDgRBYl6Y1c3NhEvyetUtUIEgEp1dqg6En5TBIgULE')
+        kevt = (b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
+                b'pEE-YfcI9E","s":"2","t":"ixn","p":"ET6FzE7z8CFUDyfKjq__QIln5RwHB'
+                b'JrJz5amM9XYukLc","a":[{"i":"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpFHe'
+                b'XRkNmJa4","s":"0","d":"EKnYwFVO_2TnkBkezmXsb7mSez9U-coq-qdrooTgq'
+                b'dgo"}]}-AABAAvhjGuyTEqx66EG6QHapV5jIW3NpNsxGylA6wtKTy8GGQEHYwusH'
+                b'Udu8ga4MbrA47QhwVc5sEZx0z60xj-IW5DQ')
         cred = (
-            b'{"v":"KERI10JSON0001ce_","d":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982bk6dq_TBo",'
+            b'{"v":"KERI10JSON00019b_","d":"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpFHeXRkNmJa4",'
             b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"a":{"d":"EK4u1L3M5kWaZhCP1VZV9gp-zxHMAgrSz04REpRoGsj4",'
+            b'"a":{"d":"EaS5yjWKgh0rpMtN95HTjEwnp4K7Ij6Mffq8HE8yuZBQ",'
             b'"i":"EgGTr6JW6geC7wlSIz6qPsYz8a-ITy52o3urlh0F2MLE","dt":"2021-01-01T00:00:00.000000+00:00",'
-            b'"t":["VerifiableCredential","GLEIFvLEICredential"],"LEI":"1234567890abcdefg",'
-            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"},"p":[]}')
+            b'"LEI":"1234567890abcdefg","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"},"p":[]}')
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -106,25 +103,25 @@ def test_credential_handlers(mockHelpingNowUTC):
                                            b'"EhFUqi_LAldgF0I6XmN9JGjc7Wh7ld1yCRiUxtMDVvow"}')
         assert result.status == falcon.HTTP_NOT_FOUND
 
+        print(creder.saider.qb64)
         # Now revoke the actual credential
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
-                                           b'"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982bk6dq_TBo"}')
+                                           b'"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpFHeXRkNmJa4"}')
         assert result.status == falcon.HTTP_202
 
-        rev = (
-            b'{"v":"KERI10JSON0000ed_","i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P98'
-            b'2bk6dq_TBo","s":"1","t":"rev","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
-            b'PEcJ7f9ejHjJMC38","p":"E3koeMJIrYBh1ROB1qhMg-aD4blvD1X1sJ0PumtJx'
-            b'g4g","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-            b'AAAAAAAAwE6aqRdE9Phc4TvZIqVXLiC0-3DITkln0qCxEAxDZEJwE')
+        rev = (b'{"v":"KERI10JSON0000ed_","i":"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpF'
+               b'HeXRkNmJa4","s":"1","t":"rev","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+               b'PEcJ7f9ejHjJMC38","p":"EKnYwFVO_2TnkBkezmXsb7mSez9U-coq-qdrooTgq'
+               b'dgo","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
+               b'AAAAAAAAwE9uu8gJ1wiM3nyhJFLs31B0trS1rPbmahXsji6Iw8pMg')
         rkevt = (
             b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
-            b'pEE-YfcI9E","s":"3","t":"ixn","p":"EU11Yo0QlBdXPZmztI1JMoUvzdK3N'
-            b'8RvQBgEjwkud_aI","a":[{"i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982b'
-            b'k6dq_TBo","s":"1","d":"Emheh-wT2AjMRPx_CKY2otv2TuL2cOIVe0Aauitqw'
-            b'zAA"}]}-AABAAGgzpdBudkosIuPT6Gku2ICnf9zBLMaPn1jzZD8dLF4x8a5VQ0mQ'
-            b'GCtS-Kyo7mb1OFICJ-5-c-odJkIvBfZU5Aw')
+            b'pEE-YfcI9E","s":"3","t":"ixn","p":"EhiDgRBYl6Y1c3NhEvyetUtUIEgEp'
+            b'1dqg6En5TBIgULE","a":[{"i":"EZFskvfmJtnFNb7F0qBVkCqWicC2QmfqpFHe'
+            b'XRkNmJa4","s":"1","d":"EdC03jsrm-PRAI99U4P-bMnu3PfSPigYEnU3HXo10'
+            b'Ga8"}]}-AABAAvWzBB0ia_AGYftcKl3992C0dXyBgbAbc3xH9azGenqsg_6hJ9Cw'
+            b'ROiumSXeQk8TuZT9SpVm3p1Fl84v94jiUDw')
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
         evt = cue["msg"]

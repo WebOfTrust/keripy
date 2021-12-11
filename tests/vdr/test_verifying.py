@@ -27,11 +27,11 @@ def test_verifier_query(mockHelpingNowUTC):
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         assert msg == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000'
-                    b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
-                    b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
-                    b'8Tt2r9M4"}}-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-'
-                    b'AABAA4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ'
-                    b'_FOcTo9R0krY25tQvpBOzfT0aDA')
+                       b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
+                       b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
+                       b'8Tt2r9M4"}}-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-'
+                       b'AABAA4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ'
+                       b'_FOcTo9R0krY25tQvpBOzfT0aDA')
 
 
 def test_verifier():
@@ -43,19 +43,16 @@ def test_verifier():
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
         verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger, tevers=issuer.tevers)
 
-        types = ["VerifiableCredential", "GLEIFvLEICredential"]
-
         credSubject = dict(
             d="",
             i=recp.pre,
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
-            t=types,
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         creder = proving.credential(issuer=hab.pre,
-                                    schema="ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc",
+                                    schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
                                     subject=d,
                                     status=issuer.regk)
 
@@ -100,7 +97,7 @@ def test_verifier():
         assert saider[0].qb64 == creder.said
         saider = reger.subjs.get(recp.pre)
         assert saider[0].qb64 == creder.said
-        saider = reger.schms.get("ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc")
+        saider = reger.schms.get("EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg")
         assert saider[0].qb64 == creder.said
 
 
@@ -187,19 +184,16 @@ def test_verifier_multisig():
 
         verifier = verifying.Verifier(hab=verfer, name="verifier", reger=reger, tevers=issuer.tevers)
 
-        types = ["VerifiableCredential", "GLEIFvLEICredential"]
-
         credSubject = dict(
             d="",
             i=recp.pre,
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
-            t=types,
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         creder = proving.credential(issuer=group1.gid,
-                                    schema="ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc",
+                                    schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
                                     subject=d,
                                     status=issuer.regk)
 
@@ -285,8 +279,8 @@ def test_verifier_multisig():
 
 
 def test_verifier_chained_credential():
-    qviSchema = "E-_XCbf1LJ0v9CR7g-_gOknf5dpoZROgF7qG5T8mXCv8"
-    vLeiSchema = "EC9rQ-xi_3cRrjANStL6tn6Kn4Z444r9rvTr_Vfi-750"
+    qviSchema = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
+    vLeiSchema = "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as ron, \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as ian, \
@@ -309,10 +303,6 @@ def test_verifier_chained_credential():
             i=ian.pre,
             dt=helping.nowIso8601(),
             LEI="5493001KJTIIGC8Y1R12",
-            t=[
-                "VerifiableCredential",
-                "QualifiedvLEIIssuervLEICredential"
-            ],
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
@@ -374,10 +364,6 @@ def test_verifier_chained_credential():
             i=han.pre,
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
-            t=[
-                "VerifiableCredential",
-                "LegalEntityvLEICredential"
-            ],
         )
         _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
@@ -392,7 +378,10 @@ def test_verifier_chained_credential():
                                         schema=vLeiSchema,
                                         subject=d,
                                         status=ianiss.regk,
-                                        source=[chain])
+                                        source=[chain],
+                                        rules=[dict(
+                                            usageDisclaimer="Use carefully."
+                                        )])
 
         msg = ian.endorse(serder=vLeiCreder)
         del msg[:vLeiCreder.size]
@@ -411,7 +400,6 @@ def test_verifier_chained_credential():
         assert cue["kin"] == "telquery"
         q = cue["q"]
         assert q["ri"] == ianiss.regk
-
 
         ianiss.issue(creder=vLeiCreder)
 
@@ -449,7 +437,6 @@ def test_verifier_chained_credential():
             msg = cue["msg"]
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
-
         ianverfer.processCredential(creder, prefixer, seqner, diger, sigers)
 
         # Process the escrows to get Ian's credential out of missing chain escrow
@@ -463,7 +450,6 @@ def test_verifier_chained_credential():
         saider = ianreg.schms.get(vLeiSchema)
         assert saider[0].qb64 == vLeiCreder.said
 
-
         # Now lets get Ron's crecential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
         victvy = eventing.Tevery(reger=vicreg, db=vic.db, local=False)
@@ -475,7 +461,6 @@ def test_verifier_chained_credential():
         for cue in roniss.cues:
             msg = cue["msg"]
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-
 
         vicverfer.processCredential(creder, prefixer, seqner, diger, sigers)
         assert len(vicverfer.cues) == 1
@@ -511,7 +496,6 @@ def test_verifier_chained_credential():
 
         with pytest.raises(kering.RevokedChainError):
             vicverfer.processCredential(vLeiCreder, vLeiPrefixer, vLeiSeqner, vLeiDiger, vLeiSigers)
-
 
 
 if __name__ == '__main__':

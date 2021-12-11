@@ -14,6 +14,7 @@ from keri.vdr import issuing, viring
 from . import proving
 from .. import help
 from ..app import agenting
+from ..core import scheming
 from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
 from ..kering import ShortageError
@@ -183,14 +184,10 @@ class ApplyHandler(doing.DoDoer):
                     logger.info("request for incorrect issuer {} to {}".format(issuer, self.hab.pre))
                     continue
 
-                typ = payload["type"]
-                if typ != "QualifiedvLEIIssuervLEICredential":
+                if schema != scheming.QualifiedvLEIIssuervLEICredential:
                     logger.info("credential type {} is invalid, only QualifiedvLEIIssuervLEICredential can be "
-                                "auto-issued".format(typ))
+                                "auto-issued".format(schema))
                     continue
-
-
-                types = ["VerifiableCredential", typ]
 
 
                 data = payload["body"]
@@ -200,7 +197,6 @@ class ApplyHandler(doing.DoDoer):
                     d="",
                     i=recipientIdentifier.qb64,
                     dt=dt,
-                    t=types,
                 )
 
                 d |= data

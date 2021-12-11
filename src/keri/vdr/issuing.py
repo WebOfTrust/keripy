@@ -403,20 +403,17 @@ class IssuerDoer(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 schema = msg["schema"]
-                typ = msg["typ"]
                 source = msg["source"]
                 recipient = msg["recipient"]
                 data = msg["data"]
 
                 dt = data["dt"] if "dt" in data else helping.nowIso8601()
 
-                types = ["VerifiableCredential", typ]
 
                 d = dict(
                     d="",
                     i=recipient,
                     dt=dt,
-                    t=types,
                 )
 
                 d |= data

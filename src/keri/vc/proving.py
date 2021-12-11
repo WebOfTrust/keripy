@@ -30,6 +30,7 @@ def credential(schema,
                subject,
                status=None,
                source=None,
+               rules=None,
                version=Version,
                kind=Serials.json):
     """
@@ -57,6 +58,9 @@ def credential(schema,
 
     if status is not None:
         subject["ri"] = status
+
+    if rules is not None:
+        vc["r"] = rules
 
     _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Ids.d)
     vc["a"] = sad

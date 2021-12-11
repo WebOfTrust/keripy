@@ -43,7 +43,7 @@ def test_issuing():
         redIssueHandler = IssueHandler(hab=sidHab, verifier=verifier)
         redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen(), handlers=[redIssueHandler])
 
-        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
+        schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
 
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
@@ -51,7 +51,6 @@ def test_issuing():
             i=sidHab.pre,
             dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
-            t=["VerifiableCredential", "GLEIFvLEICredential"]
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
@@ -60,21 +59,20 @@ def test_issuing():
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EUxHbA_hU7vtde9a8GXrEvpoVaUdd2-FXh_jBZbM-3gM"
+        assert creder.said == "EDS25tLS65M0TCFufzPrB6LGbPMD-94uZeNMoHwYMiEs"
 
         issuer.issue(creder=creder)
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON0001d1_","d":"EUxHbA_hU7vtde9a8GXrEvpoVaUdd2-FXh'
-                       b'_jBZbM-3gM","s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","'
-                       b'i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"EFUJ'
-                       b'YK-w1tyryZOihzQHH18AzHpkCIvaeEmMtwXHIzSk","i":"EWJuxKtF-w3DD9RuH'
+        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EDS25tLS65M0TCFufzPrB6LGbPMD-94uZe'
+                       b'NMoHwYMiEs","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+                       b'i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"E6wo'
+                       b'-DkpRamjRdofuOvuN5GFj3Eo2SJMRyzkzbxZqTv4","i":"EWJuxKtF-w3DD9RuH'
                        b'IO0zcIo7eakSkcUT6XBfGU_sAqM","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","t":["VerifiableCredential","G'
-                       b'LEIFvLEICredential"],"ri":"EQNgVMXpmIWmPLoNgPxj1-xCMTm0-K8f3sBlU'
-                       b'ckNZSTY"},"p":[]}-VA0-FABEWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU'
-                       b'_sAqM0AAAAAAAAAAAAAAAAAAAAAAAEK29DLvJwcxTSkPvaBJttJkuzZ3NUgBKyx_'
-                       b'eV2k7bcZs-AABAA6DYmVaPqvZC3IuVkpDbyhKjI8ljl1gWQZvQf-NDOaeKyzQISR'
-                       b'dQ0AKXFtHpg6CVf3fThzZ5l_Tme0L7aWN99CQ')
+                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EQNgVMXpmIWmPLoNgPxj1-xC'
+                       b'MTm0-K8f3sBlUckNZSTY"},"p":[]}-VA0-FABEWJuxKtF-w3DD9RuHIO0zcIo7e'
+                       b'akSkcUT6XBfGU_sAqM0AAAAAAAAAAAAAAAAAAAAAAAEK29DLvJwcxTSkPvaBJttJ'
+                       b'kuzZ3NUgBKyx_eV2k7bcZs-AABAAOqKy8SbNPYKbIniRlBXu6Q_WX8w4mpgLornU'
+                       b'--u-cI89A9nKbhbh7rvYwbJ_n1d5t-J08Qhl7UdMLqDO4IwMCQ')
 
         # Create the issue credential payload
         pl = dict(
@@ -92,15 +90,14 @@ def test_issuing():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"KERI10JSON0001d1_","d":"EUxHbA_hU7vtde9a8GXrEvpoVaUdd2-FXh_jBZbM-3gM",'
-               b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"EWJuxKtF-w3DD9RuHIO0'
-               b'zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"EFUJYK-w1tyryZOihzQHH18AzHpkCIvaeEmMtwXH'
-               b'IzSk","i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","t":["VerifiableCredential'
-               b'","GLEIFvLEICredential"],"ri":"EQNgVMXpmIWmPLoNgPxj1-xCMTm0-K8f3sBlUckNZSTY"'
-               b'},"p":[]}')
-        sig0 = (b'AA6DYmVaPqvZC3IuVkpDbyhKjI8ljl1gWQZvQf-NDOaeKyzQISRdQ0AKXFtHpg6CVf3fThzZ5l_T'
-                b'me0L7aWN99CQ')
+        ser = (b'{"v":"KERI10JSON00019e_","d":"EDS25tLS65M0TCFufzPrB6LGbPMD-94uZeNMoHwYMiEs",'
+               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EWJuxKtF-w3DD9RuHIO0'
+               b'zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"E6wo-DkpRamjRdofuOvuN5GFj3Eo2SJMRyzkzbxZ'
+               b'qTv4","i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EQNgVMXpmIWmPLoNgPxj'
+               b'1-xCMTm0-K8f3sBlUckNZSTY"},"p":[]}')
+        sig0 = (b'AAOqKy8SbNPYKbIniRlBXu6Q_WX8w4mpgLornU--u-cI89A9nKbhbh7rvYwbJ_n1d5t-J08Qhl7U'
+                b'dMLqDO4IwMCQ')
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
@@ -157,13 +154,12 @@ def test_proving():
         parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
         assert hanKvy.kevers[vicHab.pre].sn == 0  # accepted event
 
-        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
+        schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
         credSubject = dict(
             d="",
             i=hanHab.pre,
             dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
-            t=["VerifiableCredential", "GLEIFvLEICredential"]
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
@@ -176,7 +172,7 @@ def test_proving():
                             status=issuer.regk,
                             )
 
-        assert creder.said == "E8sY-Bf_kmJ1ducVjMXrvfoyxgw1zmst-h-dUswjZ_rg"
+        assert creder.said == "EFsACDhPR9UOxiYwHPgZOAEpORwZLSpaWcUIQDAYUlK0"
 
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(reger=hanPDB)
@@ -232,9 +228,8 @@ def test_proving():
 
         proof = (
             "-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE"
-            "-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAA0pFYDPH3jqvS4z-6lSefLLg"
-            "-Zr7-IABhP69VruJUFK3SwP_x0ksPzknQq6Q4kV8bR9lyxb8pHFQyFAonj_agAA"
-        )
+            "-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI"
+            "-AABAAfWUIcCddbWKkmUeZLeqoAGBvezE5NWWZ6MQkgxp6EMxDrhpUWUrpnDabsvmLJ67R5znLb24G59p2f-MIygF9Dg")
 
         assert vcs[0]["proof"] == proof
 
