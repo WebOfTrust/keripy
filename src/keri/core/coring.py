@@ -722,7 +722,7 @@ class Matter:
         elif qb64b is not None:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
-                del qb64b[:self.Sizes[self.code].fs]
+                del qb64b[:self.fullSize]
 
         elif qb64 is not None:
             self._exfil(qb64)
@@ -730,7 +730,7 @@ class Matter:
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
-                del qb2[:self.Sizes[self.code].fs*3//4]
+                del qb2[:self.fullSize*3//4]
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "

@@ -695,15 +695,24 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64b=qb64.encode("utf-8"))
-    assert matter.code == code
-    assert matter.raw == raw
-
     matter = Matter(qb64=qb64)
     assert matter.code == code
     assert matter.raw == raw
 
     matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64)  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # test strip
+    matter = Matter(qb64b=bytearray(qb64.encode("utf-8")), strip=True)
     assert matter.code == code
     assert matter.raw == raw
 
@@ -722,6 +731,11 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+
+    # test strip
+    matter = Matter(qb2=bytearray(qb2), strip=True)
+    assert matter.code == code
+    assert matter.raw == raw
 
     # test variable sized with leader 1 with code replacement
     code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 1 raw
