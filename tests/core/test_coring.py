@@ -20,14 +20,15 @@ from fractions import Fraction
 
 from keri.kering import Version, Versionage
 from keri.kering import (EmptyMaterialError,  RawMaterialError, DerivationError,
-                         ValidationError, ShortageError)
+                         ValidationError, ShortageError, InvalidCodeSizeError)
 
 from keri.help import helping
 from keri.help.helping import sceil
 
 from keri.core import coring
 from keri.core.coring import Ilkage, Ilks, Ids
-from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter, sniff
+from keri.core.coring import (Sizage, MtrDex, Matter, SmallVrzDex, LargeVrzDex,
+                              IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import generateSigners,  generateSecrets
@@ -107,6 +108,11 @@ def test_b64_conversions():
     assert i == 0
 
     cs = intToB64(0, l=0)
+    assert cs == ""
+    with pytest.raises(ValueError):
+        i = b64ToInt(cs)
+
+    cs = intToB64(None, l=0)
     assert cs == ""
     with pytest.raises(ValueError):
         i = b64ToInt(cs)
@@ -265,6 +271,8 @@ def test_matter():
                                             'Tag': '1AAF',
                                             'DateTime': '1AAG',
                                             'X25519_Cipher_Salt': '1AAH',
+                                            'TBD1': '2AAA',
+                                            'TBD2': '3AAA',
                                             'StrB64_L0': '4A',
                                             'StrB64_L1': '5A',
                                             'StrB64_L2': '6A',
@@ -327,6 +335,8 @@ def test_matter():
                             '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
                             '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
                             '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+                            '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
+                            '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
                             '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
                             '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
                             '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
@@ -383,9 +393,12 @@ def test_matter():
     with pytest.raises(EmptyMaterialError):
         matter = Matter(raw=verkey, code='')
 
-    matter = Matter(raw=verkey)
+    matter = Matter(raw=verkey)  # default code is MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.code == MtrDex.Ed25519N
+    assert matter.both == MtrDex.Ed25519N
+    assert matter.size == None
+    assert matter.fullSize == 44
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
     assert matter.transferable == False
@@ -450,8 +463,8 @@ def test_matter():
         matter = Matter(raw=shortverkey)
 
     # test prefix on full identifier
-    full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
-    matter = Matter(qb64=full)
+    both = prefix + ":mystuff/mypath/toresource?query=what#fragment"
+    matter = Matter(qb64=both)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64 == prefix
@@ -460,8 +473,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test nongreedy prefixb on full identifier
-    full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
-    matter = Matter(qb64b=full)
+    both = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
+    matter = Matter(qb64b=both)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64 == prefix
@@ -469,6 +482,590 @@ def test_matter():
     assert matter.transferable == False
     assert matter.digestive == False
 
+    # Test ._bexfil
+    matter = Matter(qb64=prefix)  #
+    raw = matter.raw
+    code = matter.code
+    qb2 = matter.qb2
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == prefix
+    assert matter.qb2 == qb2
+
+    # Test ._binfil
+    test = matter._binfil()
+    assert test == qb2
+
+    # Test strip
+    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
+    prefixb = prefix.encode("utf-8")  # bytes
+    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
+              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
+
+    # strip ignored if qb64
+    matter = Matter(qb64=prefix, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+
+    ims = bytearray(prefixb)  # strip from ims qb64b
+    matter = Matter(qb64b=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert not ims  # stripped
+
+    ims = bytearray(prebin)
+    matter = Matter(qb2=ims, strip=True)  #  strip from ims qb2
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert not ims  # stripped
+
+    # test strip with extra q64b
+    extra = bytearray(b"ABCD")
+    ims = bytearray(prefixb) + extra
+    matter = Matter(qb64b=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert ims == extra   # stripped not include extra
+
+    # test strip with extra qb2
+    extra = bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    ims = bytearray(prebin) + extra
+    matter = Matter(qb2=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert ims == extra   # stripped not include extra
+
+    # test fix sized with leader 1
+    code = MtrDex.TBD1
+    assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 1
+    raw = b'ab'
+    qb64 = '2AAAAGFi'
+    qb2 = b'\xd8\x00\x00\x00ab'
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == code
+    assert matter.size == None
+    assert matter.fullSize == 8
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test fix sized with leader 2
+    code = MtrDex.TBD2
+    assert Matter._rawSize(code) == 1
+    assert Matter._leadSize(code) == 2
+    raw = b'z'
+    qb64 = '3AAAAAB6'
+    qb2 = b'\xdc\x00\x00\x00\x00z'
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == code
+    assert matter.size == None
+    assert matter.fullSize == 8
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 1
+    code = MtrDex.Str_L1
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 1
+    raw = b'abcde'  # 5 bytes two triplets with lead 1
+    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '5BACAGFiY2Rl'
+    qb2 = b'\xe4\x10\x02\x00abcde'
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 1 with code replacement
+    code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 1 raw
+    code =  MtrDex.Str_L1
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 1
+    raw = b'abcde'  # 5 bytes two triplets with lead 1
+    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '5BACAGFiY2Rl'
+    qb2 = b'\xe4\x10\x02\x00abcde'
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 1 with code replacement
+    code2 = MtrDex.Str_L2  # use leader 0 code but with lead size 1 raw
+    code =  MtrDex.Str_L1
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 1
+    raw = b'abcde'  # 5 bytes two triplets with lead 1
+    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '5BACAGFiY2Rl'
+    qb2 = b'\xe4\x10\x02\x00abcde'
+    matter = Matter(raw=raw, code=code2)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test rize parameter to extract portion of raw passed in
+    raw = b'abcdefghijk'  # extra bytes in raw
+    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '5BACAGFiY2Rl'
+    qb2 = b'\xe4\x10\x02\x00abcde'
+    matter = Matter(raw=raw, code=code, rize=5)
+    assert matter.raw == raw[:5]
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 2
+    code = MtrDex.Str_L2
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 2
+    raw = b'abcd'  # 4 bytes two triplets with lead 2
+    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '6BACAABhYmNk'
+    qb2 = b'\xe8\x10\x02\x00\x00abcd'
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 2 with code replacement
+    code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 2 raw
+    code =  MtrDex.Str_L2
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 2
+    raw = b'abcd'  # 4 bytes two triplets with lead 2
+    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '6BACAABhYmNk'
+    qb2 = b'\xe8\x10\x02\x00\x00abcd'
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 2 with code replacement
+    code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 2 raw
+    code =  MtrDex.Str_L2
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 2
+    raw = b'abcd'  # 6 bytes two triplets with lead 2
+    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '6BACAABhYmNk'
+    qb2 = b'\xe8\x10\x02\x00\x00abcd'
+    matter = Matter(raw=raw, code=code1)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test rize parameter to extract portion of raw passed in
+    raw = b'abcdefghijk'  # extra bytes in raw
+    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '6BACAABhYmNk'
+    qb2 = b'\xe8\x10\x02\x00\x00abcd'
+    matter = Matter(raw=raw, code=code, rize=4)
+    assert matter.raw == raw[:4]
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 0
+    code = MtrDex.Str_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 0
+    assert Matter._leadSize(code) == 0
+    raw = b'abcdef'  # 6 bytes two triplets with lead 0
+    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '4BACYWJjZGVm'
+    qb2 = b'\xe0\x10\x02abcdef'
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64b=qb64.encode("utf-8"))
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64)
+    assert matter.code == code
+    assert matter.raw == raw
+
+    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    assert matter.code == code
+    assert matter.raw == raw
+
+    # Test ._bexfil
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+
+    matter = Matter(qb2=qb2)
+    assert matter.code == code
+    assert matter.raw == raw
+    assert matter.qb64b == qb64.encode("utf-8")
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 0 with code replacement
+    code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 0 raw
+    code =  MtrDex.Str_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 0
+    raw = b'abcdef'  # 6 bytes two triplets with lead 0
+    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '4BACYWJjZGVm'
+    qb2 = b'\xe0\x10\x02abcdef'
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test variable sized with leader 0 with code replacement
+    code1 = MtrDex.Str_L2  # use leader 2 code but with lead size 0 raw
+    code =  MtrDex.Str_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 0
+    raw = b'abcdef'  # 6 bytes two triplets with lead 0
+    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '4BACYWJjZGVm'
+    qb2 = b'\xe0\x10\x02abcdef'
+    matter = Matter(raw=raw, code=code1)
+    assert matter.raw == raw
+    assert matter.code == code  # replaced
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+
+    # test rize parameter to extract portion of raw passed in
+    raw = b'abcdefghijk'  # extra bytes in raw
+    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    qb64 = '4BACYWJjZGVm'
+    qb2 = b'\xe0\x10\x02abcdef'
+    matter = Matter(raw=raw, code=code, rize=6)
+    assert matter.raw == raw[:6]
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 2  # quadlets
+    assert matter.fullSize == 12  # chars
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # text big code substitution for rsize bigger than 4095  4k
+    code0 = MtrDex.Str_L0
+    code = MtrDex.Str_Big_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 0
+    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
+    assert len(raw) == 32 * 129
+    assert len(raw) > 64 ** 2 - 1
+    assert not len(raw) % 3
+    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 1376  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 5512   # chars
+
+    # text big code substitution for rsize bigger than 4095  4k
+    code0 = MtrDex.Str_L1
+    code = MtrDex.Str_Big_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 0
+    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
+    assert len(raw) == 32 * 129
+    assert len(raw) > 64 ** 2 - 1
+    assert not len(raw) % 3
+    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 1376  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 5512   # chars
+
+    # text big code substitution for rsize bigger than 4095  4k
+    code0 = MtrDex.Str_L2
+    code = MtrDex.Str_Big_L0
+    with pytest.raises(InvalidCodeSizeError):
+        assert Matter._rawSize(code) == 2
+    assert Matter._leadSize(code) == 0
+    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
+    assert len(raw) == 32 * 129
+    assert len(raw) > 64 ** 2 - 1
+    assert not len(raw) % 3
+    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
+    matter = Matter(raw=raw, code=code0)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == both
+    assert matter.size == 1376  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 5512   # chars
+
+
+    #  add crypt for encrypted x25519
+
+    # test other codes
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
@@ -715,85 +1312,6 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
-    # Test ._bexfil
-    matter = Matter(qb64=prefix)  #
-    raw = matter.raw
-    code = matter.code
-    qb2 = matter.qb2
-    matter._bexfil(qb2)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == prefix
-    assert matter.qb2 == qb2
-
-    # Test ._binfil
-    test = matter._binfil()
-    assert test == qb2
-
-    # Test strip
-    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
-    prefixb = prefix.encode("utf-8")  # bytes
-    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
-              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
-
-    # strip ignored if qb64
-    matter = Matter(qb64=prefix, strip=True)
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-    assert matter.qb64b == prefixb
-    assert matter.qb64 == prefix
-    assert matter.qb2 == prebin
-    assert matter.transferable == False
-    assert matter.digestive == False
-
-    ims = bytearray(prefixb)  # strip from ims qb64b
-    matter = Matter(qb64b=ims, strip=True)
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-    assert matter.qb64b == prefixb
-    assert matter.qb64 == prefix
-    assert matter.qb2 == prebin
-    assert matter.transferable == False
-    assert matter.digestive == False
-    assert not ims  # stripped
-
-    ims = bytearray(prebin)
-    matter = Matter(qb2=ims, strip=True)  #  strip from ims qb2
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-    assert matter.qb64b == prefixb
-    assert matter.qb64 == prefix
-    assert matter.qb2 == prebin
-    assert matter.transferable == False
-    assert matter.digestive == False
-    assert not ims  # stripped
-
-    # test strip with extra q64b
-    extra = bytearray(b"ABCD")
-    ims = bytearray(prefixb) + extra
-    matter = Matter(qb64b=ims, strip=True)
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-    assert matter.qb64b == prefixb
-    assert matter.qb64 == prefix
-    assert matter.qb2 == prebin
-    assert matter.transferable == False
-    assert matter.digestive == False
-    assert ims == extra   # stripped not include extra
-
-    # test strip with extra qb2
-    extra = bytearray([1, 2, 3, 4, 5])  # extra bytes in size
-    ims = bytearray(prebin) + extra
-    matter = Matter(qb2=ims, strip=True)
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-    assert matter.qb64b == prefixb
-    assert matter.qb64 == prefix
-    assert matter.qb2 == prebin
-    assert matter.transferable == False
-    assert matter.digestive == False
-    assert ims == extra   # stripped not include extra
     """ Done Test """
 
 
@@ -3564,7 +4082,6 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_b64_conversions()
-    #test_matter()
+    test_matter()
     #test_counter()
     #test_indexer()

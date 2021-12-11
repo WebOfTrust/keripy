@@ -400,7 +400,7 @@ class MatterCodex:
     Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
     Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed:   str = 'P'  # X15519 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
     Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -416,7 +416,9 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt:   str = '1AAH'  # X15519 100 char b64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
+    TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
+    TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
     StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
     StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
     StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
@@ -437,29 +439,6 @@ MtrDex = MatterCodex()  #  Make instance
 
 
 @dataclass(frozen=True)
-class VarRawSizeCodex:
-    """
-    VarRawSizeCodex is codex all selector characters for the 2 sets of three
-    variable raw size tables where each set acts as one table but with different
-    leader byte sizes.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Lead0:          str = '4'  # First Selector Character for all ls == 0 codes
-    Lead1:          str = '5'  # First Selector Character for all ls == 1 codes
-    Lead2:          str = '6'  # First Selector Character for all ls == 2 codes
-    Lead0_Big:      str = '7'  # First Selector Character for all ls == 0 codes
-    Lead1_Big:      str = '8'  # First Selector Character for all ls == 1 codes
-    Lead2_Big:      str = '9'  # First Selector Character for all ls == 2 codes
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-VizeDex = VarRawSizeCodex()  #  Make instance
-
-
-@dataclass(frozen=True)
 class SmallVarRawSizeCodex:
     """
     SmallVarRawSizeCodex is codex all selector characters for the three small
@@ -476,7 +455,7 @@ class SmallVarRawSizeCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SmallVizeDex = SmallVarRawSizeCodex()  #  Make instance
+SmallVrzDex = SmallVarRawSizeCodex()  #  Make instance
 
 
 @dataclass(frozen=True)
@@ -496,7 +475,7 @@ class LargeVarRawSizeCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-LargeVizeDex = LargeVarRawSizeCodex()  #  Make instance
+LargeVrzDex = LargeVarRawSizeCodex()  #  Make instance
 
 
 @dataclass(frozen=True)
@@ -632,6 +611,8 @@ class Matter:
                 '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
                 '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
                 '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+                '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
+                '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
                 '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
                 '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
                 '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
@@ -661,7 +642,7 @@ class Matter:
             qb64b (bytes): fully qualified crypto material Base64
             qb64 (str, bytes):  fully qualified crypto material Base64
             qb2 (bytes): fully qualified crypto material Base2
-            strip (bool): True means strip counter contents from input stream
+            strip (bool): True means strip (delete) matter from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
 
@@ -687,7 +668,7 @@ class Matter:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
             bsb = 0  # raw binary size including leader in bytes
-            if code[0] in VizeDex:  # dynamic size based on rize or raw
+            if code[0] in SmallVrzDex or code[0] in LargeVrzDex:  # dynamic size
                 if rize:  # use rsize to determin length of raw to extract
                     if rize < 0:
                         raise InvalidVarRawSizeError(f"Missing var raw size for "
@@ -697,39 +678,23 @@ class Matter:
 
                 ls = (3 - (rize % 3)) % 3  # calc actual lead (pad) size
                 bsb = rize + ls  # raw binary size including leader in bytes
-                size = bsb // 4  # calculate value of size in quadlets
-                if code[0] in SmallVizeDex:  # compute code with sizes
+                size = bsb // 3  # calculate value of size in triplets
+                if code[0] in SmallVrzDex:  # compute code with sizes
                     if bsb <= (64 ** 2 - 1):
                         hs = 2
-                        if ls == 0:
-                            s = VizeDex.Lead0
-                        elif ls == 1:
-                            s = VizeDex.Lead1
-                        elif ls == 2:
-                            s = VizeDex.Lead2
+                        s = astuple(SmallVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
                     elif bsb <= (64 ** 4 - 1):  # make big version of code
                         hs = 4
-                        ss = 4
-                        if ls == 0:
-                            s = VizeDex.Lead0_Big
-                        elif ls == 1:
-                            s = VizeDex.Lead1_Big
-                        elif ls == 2:
-                            s = VizeDex.Lead2_Big
+                        s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{'A'*(hs-2)}{code[1]}"
                     else:
                         raise InvalidVarRawSizeError(r"Unsupported raw size for "
                                                      f"code={code}.")
-                elif code[0] in LargeVizeDex:  # compute code with sizes
+                elif code[0] in LargeVrzDex:  # compute code with sizes
                     if bsb <= (64 ** 4 - 1):
                         hs = 4
-                        if ls == 0:
-                            s = VizeDex.Lead0_Big
-                        elif ls == 1:
-                            s = VizeDex.Lead1_Big
-                        elif ls == 2:
-                            s = VizeDex.Lead2_Big
+                        s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
                     else:
                         raise InvalidVarRawSizeError(r"Unsupported raw size for "
@@ -743,13 +708,12 @@ class Matter:
                 if fs is None:  # invalid
                     raise InvalidVarSizeError(r"Unsupported variable size "
                                                  f"code={code}.")
-                rsize = Matter._rawSize(code)
+                rize = Matter._rawSize(code)
 
-            raw = raw[:rsize]  # copy only exact size from raw stream
-            if len(raw) != rsize:  # forbids shorter
+            raw = raw[:rize]  # copy only exact size from raw stream
+            if len(raw) != rize:  # forbids shorter
                 raise RawMaterialError(f"Not enougth raw bytes for code={code}"
-                                       f"expected {rsize} got {len(raw)}.")
-
+                                       f"expected {rize} got {len(raw)}.")
 
             self._code = code  # hard value part of code
             self._size = size  #  soft value part of code in int
@@ -776,15 +740,15 @@ class Matter:
     @classmethod
     def _rawSize(cls, code):
         """
-        Returns raw size in bytes for a given code
+        Returns raw size in bytes not including leader for a given code
         Parameters:
             code (str): derivation code Base64
         """
-        hs, ss, fs, _ = cls.Sizes[code]  # get sizes
+        hs, ss, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
-            raise  InvalidCodeSizeError(f"None fixed raw size code {code}.")
-        return ((fs - cs) * 3 // 4)
+            raise  InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
+        return (((fs - cs ) * 3 // 4) - ls)
 
 
     @classmethod
@@ -797,20 +761,6 @@ class Matter:
         _, _, _, ls = cls.Sizes[code]  # get lead size from .Sizes table
         return ls
 
-
-    def _fullSize(self):
-        """
-        Returns full size in bytes
-        Fixed size codes returns fs from .Sizes
-        Variable size codes where fs==None computes fs from .size and sizes
-        """
-        hs, ss, fs, _ = self.Sizes[self.code]  # get sizes
-
-        if fs is None:  # compute fs from ss characters in code
-            fs = hs + ss + (self.size * 4)
-        return fs
-
-
     @property
     def code(self):
         """
@@ -821,15 +771,6 @@ class Matter:
 
 
     @property
-    def both(self):
-        """
-        Returns complete text code, both hard and soft parts
-        """
-        _, ss, _, _ = self.Sizes[self.code]
-        return (f"{self.code}{intToB64(size, l=ss)}")
-
-
-    @property
     def size(self):
         """
         Returns ._size int or None if not variable sized matter
@@ -837,6 +778,29 @@ class Matter:
         ._size (int): number of quadlets of variable sized material else None
         """
         return self._size
+
+
+    @property
+    def both(self):
+        """
+        Returns both hard and soft parts that are the complete text code
+        """
+        _, ss, _, _ = self.Sizes[self.code]
+        return (f"{self.code}{intToB64(self.size, l=ss)}")
+
+
+    @property
+    def fullSize(self):
+        """
+        Returns full size of matter in bytes
+        Fixed size codes returns fs from .Sizes
+        Variable size codes where fs==None computes fs from .size and sizes
+        """
+        hs, ss, fs, _ = self.Sizes[self.code]  # get sizes
+
+        if fs is None:  # compute fs from ss characters in code
+            fs = hs + ss + (self.size * 4)
+        return fs
 
 
     @property
@@ -903,7 +867,7 @@ class Matter:
         self.code + converted self.raw to Base64 with pad chars stripped
         """
         code = self.code  # hard size codex value
-        size = self.size  # optional size if variable length
+        size = self.size  # size if variable length, None otherwise
         raw = self.raw  #  bytes or bytearray
 
         hs, ss, fs, ls = self.Sizes[code]
@@ -987,8 +951,8 @@ class Matter:
         # strip off prepended code and append pad characters
         ps = cs % 4  # pad size ps = cs mod 4
         base = qb64b[cs:] + ps * BASE64_PAD
-        raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+        raw = decodeB64(base)[ls:]  # decode and strip off leader bytes
+        if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
@@ -1009,7 +973,7 @@ class Matter:
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
 
-        if not fs:  # compute code both from size
+        if fs is None:  # compute both and fs from size
             cs = hs + ss  # both hard + soft size
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
@@ -1019,7 +983,8 @@ class Matter:
                 raise InvalidVarSizeError("Invalid size={} for code={}."
                                             "".format(size, code))
             # both is hard code + converted index
-            both = "{}{}".format(code, intToB64(size, l=ss))
+            both = f"{code}{intToB64(size, l=ss)}"
+            fs = hs + ss + (size * 4)
         else:
             both = code
 
@@ -1029,7 +994,7 @@ class Matter:
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
         bcode = b64ToInt(both).to_bytes(n,'big')  # right aligned b2 code
 
-        full = bcode + raw
+        full = bcode + bytes([0]*ls) + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
@@ -1091,12 +1056,12 @@ class Matter:
         qb2 = qb2[:bfs]  # fully qualified primitive code plus material
 
         # right shift to right align raw material
-        i = int.from_bytes(qb2, 'big')
-        i >>= 2 * (cs % 4)
+        i = int.from_bytes(qb2, 'big') >> (2 * (cs % 4))
+        # i >>= 2 * (cs % 4)
         bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
-        raw = i.to_bytes(bfs, 'big')[bcs:]  # extract raw
+        raw = i.to_bytes(bfs, 'big')[(bcs+ls):]  # extract raw strip leader bytes
 
-        if len(raw) != (len(qb2) - bcs):  # exact lengths
+        if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
             raise ConversionError("Improperly qualified material = {}".format(qb2))
 
         self._code = code
