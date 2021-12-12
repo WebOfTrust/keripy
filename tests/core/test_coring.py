@@ -1053,7 +1053,7 @@ def test_matter():
     assert matter.size == 4128  == len(raw) / 3 # quadlets
     assert matter.fullSize == 16520   # chars
 
-    # text big code substitution for rsize bigger than 4095  4k
+    # text big code substitution for size bigger than 4095  4k
     code2 = MtrDex.Str_L2
     code = MtrDex.Str_Big_L0
     with pytest.raises(InvalidCodeSizeError):
