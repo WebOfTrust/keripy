@@ -667,7 +667,6 @@ class Matter:
             if code not in self.Sizes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            bsb = 0  # raw binary size including leader in bytes
             if code[0] in SmallVrzDex or code[0] in LargeVrzDex:  # dynamic size
                 if rize:  # use rsize to determin length of raw to extract
                     if rize < 0:
@@ -677,14 +676,14 @@ class Matter:
                     rize = len(raw)
 
                 ls = (3 - (rize % 3)) % 3  # calc actual lead (pad) size
-                bsb = rize + ls  # raw binary size including leader in bytes
-                size = bsb // 3  # calculate value of size in triplets
+                # raw binary size including leader in bytes
+                size = (rize + ls) // 3  # calculate value of size in triplets
                 if code[0] in SmallVrzDex:  # compute code with sizes
-                    if bsb <= (64 ** 2 - 1):
+                    if size <= (64 ** 2 - 1):
                         hs = 2
                         s = astuple(SmallVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"
-                    elif bsb <= (64 ** 4 - 1):  # make big version of code
+                    elif size <= (64 ** 4 - 1):  # make big version of code
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{'A'*(hs-2)}{code[1]}"
@@ -692,7 +691,7 @@ class Matter:
                         raise InvalidVarRawSizeError(r"Unsupported raw size for "
                                                      f"code={code}.")
                 elif code[0] in LargeVrzDex:  # compute code with sizes
-                    if bsb <= (64 ** 4 - 1):
+                    if size <= (64 ** 4 - 1):
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
                         code = f"{s}{code[1:hs]}"

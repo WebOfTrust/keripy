@@ -1022,59 +1022,49 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
-    # text big code substitution for rsize bigger than 4095  4k
+    # text big code substitution for size bigger than 4095  4k
     code0 = MtrDex.Str_L0
     code = MtrDex.Str_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
-    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
-    assert len(raw) == 32 * 129
-    assert len(raw) > 64 ** 2 - 1
+    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129 * 3
+    assert len(raw) == 32 * 129 * 3 == 12384
+    assert len(raw) > (64 ** 2 - 1) * 3  # 12282
     assert not len(raw) % 3
-    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
+    both = '7AABABAg'   # full code both hard and soft parts two quadlets/triplets
     matter = Matter(raw=raw, code=code0)
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 1376  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 5512   # chars
+    assert matter.size == 4128  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 16520   # chars
 
-    # text big code substitution for rsize bigger than 4095  4k
-    code0 = MtrDex.Str_L1
+    # text big code substitution for size bigger than 4095  4k replacement
+    code1 = MtrDex.Str_L1
     code = MtrDex.Str_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
-    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
-    assert len(raw) == 32 * 129
-    assert len(raw) > 64 ** 2 - 1
-    assert not len(raw) % 3
-    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
-    matter = Matter(raw=raw, code=code0)
+    matter = Matter(raw=raw, code=code1)
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 1376  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 5512   # chars
+    assert matter.size == 4128  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 16520   # chars
 
     # text big code substitution for rsize bigger than 4095  4k
-    code0 = MtrDex.Str_L2
+    code2 = MtrDex.Str_L2
     code = MtrDex.Str_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
-    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129
-    assert len(raw) == 32 * 129
-    assert len(raw) > 64 ** 2 - 1
-    assert not len(raw) % 3
-    both = '7AABAAVg'   # full code both hard and soft parts two quadlets/triplets
-    matter = Matter(raw=raw, code=code0)
+    matter = Matter(raw=raw, code=code2)
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 1376  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 5512   # chars
+    assert matter.size == 4128  == len(raw) / 3 # quadlets
+    assert matter.fullSize == 16520   # chars
 
 
     #  add crypt for encrypted x25519
