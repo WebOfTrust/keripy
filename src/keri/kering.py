@@ -267,6 +267,63 @@ class UnverifiedReplyError(ValidationError):
     """
 
 
+
+class MissingAnchorError(ValidationError):
+    """
+    Error TEL event missing anchor to validating KEL event
+    Usage:
+        raise MissingAnchorError("error message")
+    """
+
+
+class MissingRegistryError(ValidationError):
+    """
+    Error registry is missing from the Tevers
+    Usage:
+        raise MissingRegistryError("error message")
+    """
+
+
+class MissingIssuerError(ValidationError):
+    """
+    Error issuer is missing from the Tevers
+    Usage:
+        raise MissingIssuerError("error message")
+    """
+
+
+class InvalidCredentialStateError(ValidationError):
+    """
+    Error in state of credential, either has not been issued or has been revoked
+    Usage:
+        raise InvalidCredentialStateError("error message")
+    """
+
+
+class UnverifiedProofError(ValidationError):
+    """
+    Error signature from credential CESR proof is unverfied
+    Usage:
+        raise UnverifiedProofError("error message")
+    """
+
+
+class OutOfOrderKeyStateError(ValidationError):
+    """
+    Error referenced event missing from log so can't verify this key state event
+    Usage:
+        raise OutOfOrderKeyStateError("error message")
+    """
+
+
+class OutOfOrderTxnStateError(ValidationError):
+    """
+    Error referenced event missing from log so can't verify this txn state event
+    Usage:
+        raise OutOfOrderTxnStateError("error message")
+    """
+
+
 # Stream Parsing and Extraction Errors
 class ExtractionError(KeriError):
     """
@@ -360,14 +417,7 @@ class UnexpectedOpCodeError(DerivationCodeError):
         raise DerivationCodeError("error message")
     """
 
-
-class MissingAnchorError(ValidationError):
-    """
-    Error TEL event missing anchor to validating KEL event
-    Usage:
-        raise MissingAnchorError("error message")
-    """
-
+# Other errors
 
 class ExchangeError(KeriError):
     """
@@ -400,37 +450,6 @@ class InvalidGroupError(KeriError):
         raise MissingAidError("error message")
     """
 
-
-class MissingRegistryError(ValidationError):
-    """
-    Error registry is missing from the Tevers
-    Usage:
-        raise MissingRegistryError("error message")
-    """
-
-
-class MissingIssuerError(ValidationError):
-    """
-    Error issuer is missing from the Tevers
-    Usage:
-        raise MissingIssuerError("error message")
-    """
-
-
-class InvalidCredentialStateError(ValidationError):
-    """
-    Error in state of credential, either has not been issued or has been revoked
-    Usage:
-        raise InvalidCredentialStateError("error message")
-    """
-
-
-class UnverifiedProofError(ValidationError):
-    """
-    Error signature from credential CESR proof is unverfied
-    Usage:
-        raise UnverifiedProofError("error message")
-    """
 
 
 class MissingChainError(KeriError):
@@ -469,26 +488,11 @@ class FailedSchemaValidationError(KeriError):
     """
 
 
-class OutOfOrderKeyStateError(ValidationError):
-    """
-    Error referenced event missing from log so can't verify this key state event
-    Usage:
-        raise OutOfOrderKeyStateError("error message")
-    """
-
 
 class UntrustedKeyStateSource(KeriError):
     """
     Error untrusted source of key state, not aid, aid's witness or our watcher
     Usage:
         raise UntrustedKeyStateSource("error message")
-    """
-
-
-class OutOfOrderTxnStateError(ValidationError):
-    """
-    Error referenced event missing from log so can't verify this txn state event
-    Usage:
-        raise OutOfOrderTxnStateError("error message")
     """
 

@@ -32,8 +32,9 @@ from keri.core.coring import (Sizage, MtrDex, Matter, SmallVrzDex, LargeVrzDex,
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
-from keri.core.coring import Seqner, Siger, Dater
+from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
+                              B64_CHARS, Reb64, nabSextets)
+from keri.core.coring import Seqner, Siger, Dater, Texter
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -230,6 +231,29 @@ def test_b64_conversions():
     assert i == 0o76
     p = nabSextets(b, 1)
     assert p == b'\xf8'
+
+    assert B64_CHARS == ('A','B','C','D','E','F','G','H','I','J','K','L','M','N',
+                         'O','P','Q','R','S','T','U','V','W','X','Y','Z',
+                         'a','b','c','d','e','f','g','h','i','j','k','l','m','n',
+                         'o','p','q','r','s','t','u','v','w','x','y','z',
+                         '0','1','2','3','4','5','6','7','8','9','-','_')
+    assert '@' not in B64_CHARS
+    assert 'A' in B64_CHARS
+
+    text = b"-A-Bg-1-3-cd"
+    match = Reb64.match(text)
+    assert match
+    assert match is not None
+
+    text = b''
+    match = Reb64.match(text)
+    assert match
+    assert match is not None
+
+    text = b'123#$'
+    match = Reb64.match(text)
+    assert not match
+    assert match is None
 
     """End Test"""
 
@@ -2224,7 +2248,66 @@ def test_dater():
 
     """ Done Test """
 
+def test_texter():
+    """
+    Test Texter variable sized Base64 text subclass of Matter
+    """
+    with pytest.raises(EmptyMaterialError):
+        texter = Texter()
 
+    text = "@!"
+    with pytest.raises(ValueError):
+        texter = Texter(text=text)
+
+    text = ""
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.StrB64_L0
+    assert texter.both == '4AAA'
+    assert texter.raw == b''
+    assert texter.qb64 == '4AAA'
+    assert texter.qb2 == b'\xe0\x00\x00'
+    assert texter.text == text
+
+    text = "-"
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.StrB64_L2
+    assert texter.both == '6AAB'
+    assert texter.raw == b'>'
+    assert texter.qb64 == '6AABAAA-'
+    assert texter.qb2 == b'\xe8\x00\x01\x00\x00>'
+    assert texter.text == text
+
+    text = "-A"
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.StrB64_L1
+    assert texter.both == '5AAB'
+    assert texter.raw == b'\x0f\x80'
+    assert texter.qb64 == '5AABAA-A'
+    assert texter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
+    assert texter.text == text
+
+    text = "-A-"
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.StrB64_L0
+    assert texter.both == '4AAB'
+    assert texter.raw == b'\x03\xe0>'
+    assert texter.qb64 == '4AABA-A-'
+    assert texter.qb2 == b'\xe0\x00\x01\x03\xe0>'
+    assert texter.text == text
+
+    text = "-A-B"
+    texter = Texter(text=text)
+    assert texter.code == MtrDex.StrB64_L0
+    assert texter.both == '4AAB'
+    assert texter.raw == b'\xf8\x0f\x81'
+    assert texter.qb64 == '4AAB-A-B'
+    assert texter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
+    assert texter.text == text
+
+
+
+
+    """ Done Test """
 
 def test_verfer():
     """
@@ -4086,6 +4169,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
-    #test_counter()
-    #test_indexer()
+    test_texter()
