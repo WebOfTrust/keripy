@@ -1305,11 +1305,24 @@ class Texter(Matter):
     bytes. The text is used as is to form the value part of the qb64 version not
     including the leader.
 
+    Due to ambiguity that arises for  text that starts with 'A' and whose length
+    is a multiple of 3 or 4 the leading 'A' may be stripped.
+
     Examples: strings:
+    text = ""
+    qb64 = '4AAA'
 
+    text = "-"
+    qb64 = '6AABAAA-'
 
-    The fully encoded qb64 versions are respectively
+    text = "-A"
+    qb64 = '5AABAA-A'
 
+    text = "-A-"
+    qb64 = '4AABA-A-'
+
+    text = "-A-B"
+    qb64 = '4AAB-A-B'
 
     Example uses: pathing for nested SADs and SAIDs
 
@@ -1391,9 +1404,14 @@ class Texter(Matter):
         Returns the value portion of .qb64 with text code and leader removed
         """
         _, _, _, ls = self.Sizes[self.code]
-        ws = (ls + 1) % 4
-        text = encodeB64(bytes([0]*ls) + self.raw)[ws:]
-        return text.decode('utf-8')
+        text = encodeB64(bytes([0]*ls) + self.raw)
+        ws = 0
+        if ls == 0 and text:
+            if text[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        return text.decode('utf-8')[ws:]
 
 
 class Verfer(Matter):

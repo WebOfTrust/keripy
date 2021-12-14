@@ -2304,9 +2304,6 @@ def test_texter():
     assert texter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
     assert texter.text == text
 
-
-
-
     """ Done Test """
 
 def test_verfer():
