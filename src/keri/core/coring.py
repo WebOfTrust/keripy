@@ -140,7 +140,10 @@ B64ChrByIdx[62] = '-'
 B64ChrByIdx[63] = '_'
 # Map char to Base64 index
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
+B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
 
+B64REX = b'^[A-Za-z0-9\-\_]*\Z'
+Reb64 = re.compile(B64REX) #compile is faster
 
 def intToB64(i, l=1):
     """
@@ -520,6 +523,27 @@ class DigCodex:
 DigDex =DigCodex()  #  Make instance
 
 
+@dataclass(frozen=True)
+class TextCodex:
+    """
+    TextCodex is codex all variable sized Base64 Text derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
+    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
+    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
+    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+TexDex =TextCodex()  #  Make instance
+
+
+
 # namedtuple for size entries in matter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
@@ -884,7 +908,7 @@ class Matter:
         else:
             both = code
 
-        ps = ((3 - (len(raw) % 3)) % 3) - ls # adjusted pad size, 0 if ls
+        ps = ((3 - (len(raw) % 3)) % 3) - ls  # adjusted pad size, 0 if ls
         # check valid pad size for code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
             raise InvalidCodeSizeError("Invalid code = {} for converted raw "
@@ -1269,6 +1293,125 @@ class Dater(Matter):
         Returns datetime.datetime instance converted from .dts
         """
         return helping.fromIso8601(self.dts)
+
+
+
+class Texter(Matter):
+    """
+    Texter is subclass of Matter, cryptographic material, for variable length
+    strings that only contain Base64 URL safe characters. When created using
+    the 'text' paramaeter, the encoded matter in qb64 format in the text domain
+    is more compact than would be the case if the string were passed in as raw
+    bytes. The text is used as is to form the value part of the qb64 version not
+    including the leader.
+
+    Due to ambiguity that arises for  text that starts with 'A' and whose length
+    is a multiple of 3 or 4 the leading 'A' may be stripped.
+
+    Examples: strings:
+    text = ""
+    qb64 = '4AAA'
+
+    text = "-"
+    qb64 = '6AABAAA-'
+
+    text = "-A"
+    qb64 = '5AABAA-A'
+
+    text = "-A-"
+    qb64 = '4AABA-A-'
+
+    text = "-A-B"
+    qb64 = '4AAB-A-B'
+
+    Example uses: pathing for nested SADs and SAIDs
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .transferable is Boolean, True when transferable derivation code False otherwise
+
+    Properties:
+        .text is the Base64 text value, .qb64 with text code and leader removed.
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    Methods:
+
+    """
+
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.StrB64_L0, text=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            text is the variable sized Base64 text string
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if text is None:
+                raise EmptyMaterialError("Missing text string.")
+            if hasattr(text, "encode"):
+                text = text.encode("utf-8")
+            if not Reb64.match(text):
+                raise ValueError("Invalid Base64.")
+            raw = self._rawify(text)
+
+        super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                         code=code, **kwa)
+        if self.code not in TexDex:
+            raise ValidationError("Invalid code = {} for Texter."
+                                  "".format(self.code))
+
+    def _rawify(self, text):
+        """Returns raw value equivalent of Base64 text.
+        Suitable for variable sized matter
+
+        Parameters:
+            text (bytes): Base64 bytes
+        """
+        ts = len(text) % 4  # text size mod 4
+        ws = (4 - ts) % 4  # pre conv wad size in chars
+        ls = (3 - ts) % 3  # post conv lead size in bytes
+        base = b'A' * ws + text  # pre pad with wad of zeros in Base64 == 'A'
+        raw = decodeB64(base)[ls:]  # convert and remove leader
+        return raw  # raw binary equivalent of text
+
+    @property
+    def text(self):
+        """
+        Property test:  value portion Base64 str
+        Returns the value portion of .qb64 with text code and leader removed
+        """
+        _, _, _, ls = self.Sizes[self.code]
+        text = encodeB64(bytes([0]*ls) + self.raw)
+        ws = 0
+        if ls == 0 and text:
+            if text[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        return text.decode('utf-8')[ws:]
 
 
 class Verfer(Matter):
