@@ -5,12 +5,12 @@ tests.vc.handling module
 """
 from hio.base import doing
 
-from keri.app import keeping, habbing, indirecting
+from keri.app import keeping, habbing, indirecting, signing
 from keri.core import coring, scheming, eventing, parsing
 from keri.db import basing
 from keri.peer import exchanging
 from keri.vc.handling import IssueHandler, envelope, RequestHandler
-from keri.vc.proving import credential, parseCredential
+from keri.vc.proving import credential
 from keri.vc.walleting import Wallet
 from keri.vdr import viring, verifying, issuing
 
@@ -59,20 +59,20 @@ def test_issuing():
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3KUhWbyavJpI"
+        assert creder.said == "EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzXn7ocm0lb9A"
 
         issuer.issue(creder=creder)
-        msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3K'
-                       b'UhWbyavJpI","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+        msg = signing.ratify(sidHab, serder=creder, pipelined=True)
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzX'
+                       b'n7ocm0lb9A","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
                        b'i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6X'
                        b'brY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a6-Vc","i":"EeBZcaNdy0ZkuquN3'
                        b'67PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21:26:21.233257+00'
                        b':00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRerXG3S'
-                       b'91Xs2ESrLgtBPlXkrQfw"},"p":[]}-VA0-FABEeBZcaNdy0ZkuquN367PMj4Plg'
-                       b'1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEeBZcaNdy0ZkuquN367PMj'
-                       b'4Plg1201MSevpLREfB3Pxs-AABAA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7'
-                       b'T_khiIgqSV_9QFBLwMNwkzWZ9RkVu-V1KxIUNc64f5-4bJ_mCQ')
+                       b'91Xs2ESrLgtBPlXkrQfw"},"p":[]}-VA3-JAB6AABAAA--FABEeBZcaNdy0Zkuq'
+                       b'uN367PMj4Plg1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEeBZcaNdy0'
+                       b'ZkuquN367PMj4Plg1201MSevpLREfB3Pxs-AABAAh8MqB8-SlX1AkYHyMIaJ54Xv'
+                       b'cUkx-daOLsnyRbbBRZ5uZdfNUP_rpidW-r4f10jEUSFccI8x1IH_DGMOl_y2Dw')
 
         # Create the issue credential payload
         pl = dict(
@@ -90,29 +90,29 @@ def test_issuing():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"KERI10JSON00019e_","d":"EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3KUhWbyavJpI",'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzXn7ocm0lb9A",'
                b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EeBZcaNdy0ZkuquN367P'
                b'Mj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6XbrY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a'
                b'6-Vc","i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21'
                b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRer'
                b'XG3S91Xs2ESrLgtBPlXkrQfw"},"p":[]}')
-        sig0 = (b'AA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7T_khiIgqSV_9QFBLwMNwkzWZ9RkVu-V1KxIUNc'
-                b'64f5-4bJ_mCQ')
+        sig0 = (b'AAh8MqB8-SlX1AkYHyMIaJ54XvcUkx-daOLsnyRbbBRZ5uZdfNUP_rpidW-r4f10jEUSFccI8x1I'
+                b'H_DGMOl_y2Dw')
 
         # verify we can load serialized VC by SAID
-        key = creder.said.encode("utf-8")
-        assert redPDB.creds.get(key).raw == ser
+        creder, sadsigers, sadcigars = redPDB.cloneCred(said=creder.said)
+        assert creder.raw == ser
 
         # verify the signature
-        seals = redPDB.seals.get(key)
-        sigs = [sig for (_, _, _, sig) in seals]
-        assert len(sigs) == 1
-        assert sigs[0].qb64b == sig0
+        assert len(sadsigers) == 1
+        (_, _, _, _, sigers) = sadsigers[0]
+        assert sigers[0].qb64b == sig0
+        assert len(sadcigars) == 0
 
         # verify we can look up credential by Schema SAID
         schema = redPDB.schms.get(schema)
         assert len(schema) == 1
-        assert schema[0].qb64b == key
+        assert schema[0].qb64 == creder.said
 
 
 def test_proving():
@@ -172,14 +172,13 @@ def test_proving():
                             status=issuer.regk,
                             )
 
-        assert creder.said == "E6-urcXGcMqAttS_vhTIhnDfVNyrRpD4a4H-tljMlFuc"
+        assert creder.said == "EkHBr-04I1Id_bXI4luPZsASLVJ4ZOsI3a5ChZgE0iug"
 
-        msg = sidHab.endorse(serder=creder)
+        msg = signing.ratify(sidHab, serder=creder)
         hanWallet = Wallet(reger=hanPDB)
 
         issuer.issue(creder=creder)
-        parseCredential(ims=msg,
-                        verifier=verifier)
+        parsing.Parser().parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
@@ -192,7 +191,7 @@ def test_proving():
         # Create the issue credential payload
         pl = dict(
             input_descriptors=[
-                dict(x=schema)
+                dict(s=schema)
             ]
         )
 
@@ -227,9 +226,9 @@ def test_proving():
         assert len(vcs) == 1
 
         proof = (
-            "-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny"
-            "-6AfglVOKnJje8-vqyKTlh0nc-AABAACh-lXY9RhTOTsEiX1A8PSMcACFwSeS4Ba8wg2mZtfYVg-ah6iRHBPwyDS40hQJ2w9"
-            "-NCemL_JgvG2-ohIU5zCQ")
+            "-JAB6AABAAA--FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny"
+            "-6AfglVOKnJje8-vqyKTlh0nc-AABAA6W18DO1EXT8Qeu_kaPqEQBPIlQQE_EoLDzxJb_M71EqQEC"
+            "-lA1lsW4R9lWTkj55jSvWIuTbTkXoTJVCyzKSTBA")
 
         assert vcs[0]["proof"] == proof
 

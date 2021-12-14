@@ -13,8 +13,8 @@ from keri.vdr import issuing, viring
 
 from . import proving
 from .. import help
-from ..app import agenting
-from ..core import scheming
+from ..app import agenting, signing
+from ..core import scheming, parsing
 from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
 from ..kering import ShortageError
@@ -218,7 +218,7 @@ class ApplyHandler(doing.DoDoer):
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
                 craw = self.hab.endorse(creder)
-                proving.parseCredential(ims=craw, verifier=self.verifier)
+                parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield self.tock
 
@@ -330,11 +330,11 @@ class IssueHandler(doing.DoDoer):
                     self.ims.extend(msgs)
                     yield
 
-                    creder = proving.Credentialer(crd=crd)
+                    creder = proving.Credentialer(ked=crd)
 
                     msg = bytearray(creder.raw)
                     msg.extend(proof.encode("utf-8"))
-                    proving.parseCredential(ims=msg, verifier=self.verifier)
+                    parsing.Parser().parse(ims=msg, vry=self.verifier)
 
                     c = self.verifier.reger.saved.get(creder.said)
                     while c is None:
@@ -414,8 +414,8 @@ class RequestHandler(doing.Doer):
 
                 matches = []
                 for descriptor in descriptors:
-                    said = descriptor["x"]
-                    credentials = self.wallet.getCredentials(said)
+                    schema = descriptor["s"]
+                    credentials = self.wallet.getCredentials(schema)
                     if len(credentials) > 0:
                         matches.append(credentials[0])
 
@@ -565,7 +565,7 @@ def presentation_exchange(db, reger, credentials):
     dm = []
     vcs = []
 
-    for idx, (creder, prefixer, seqner, diger, sigers) in enumerate(credentials):
+    for idx, (creder, sadsigers, sadcigars) in enumerate(credentials):
         said = creder.said
         regk = creder.status
         vci = viring.nsKey([regk, said])
@@ -582,13 +582,13 @@ def presentation_exchange(db, reger, credentials):
         for msg in reger.clonePreIter(pre=vci):
             msgs.extend(msg)
 
-        proof = viring.buildProof(prefixer, seqner, diger, sigers)
+        # TODO:  Package credential in presentation exchange, transposing all signatures:
         dm.append(dict(
             id=creder.schema,
             format="cesr",
             path="$.verifiableCredential[{}]".format(idx)
         ))
-        craw = viring.messagize(creder=creder, proof=proof)
+        craw = signing.provision(creder, sadsigers=sadsigers, sadcigars=sadcigars)
         vcs.append(envelope(craw, msgs))
 
         sources = reger.sources(db, creder)

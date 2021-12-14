@@ -57,7 +57,7 @@ def test_witness_sender(mockGetWitnessByPrefix):
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.said)
-        msg = issuing.Issuer.messagize(serder=serder, seal=seal)
+        msg = issuing.Issuer.attachSeal(serder=serder, seal=seal)
 
         witDoer = agenting.WitnessPublisher(hab=palHab, msg=msg, klas=agenting.TCPWitnesser)
 

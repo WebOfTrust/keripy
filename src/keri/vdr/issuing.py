@@ -204,7 +204,7 @@ class Issuer:
         return True
 
     @staticmethod
-    def messagize(serder, seal):
+    def attachSeal(serder, seal):
         msg = bytearray(serder.raw)
         msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
         msg.extend(Seqner(sn=seal.s).qb64b)
@@ -226,7 +226,7 @@ class Issuer:
                 kevt = self.hab.interact(data=[rseal])
 
             seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.said)
-            tevt = self.messagize(serder=serder, seal=seal)
+            tevt = self.attachSeal(serder=serder, seal=seal)
 
             self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
             self.cues.extend([
@@ -251,7 +251,7 @@ class Issuer:
                 self.escrow(serder)
                 raise kering.MissingAnchorError("anchor not provided for multisig")
             else:
-                tevt = self.messagize(serder=serder, seal=seal)
+                tevt = self.attachSeal(serder=serder, seal=seal)
                 self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
 
                 self.cues.append(dict(kin="logEvent", msg=tevt))
@@ -437,7 +437,7 @@ class IssuerDoer(doing.DoDoer):
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
                 craw = self.hab.endorse(creder)
-                proving.parseCredential(ims=craw, verifier=self.verifier)
+                parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield self.tock
 
