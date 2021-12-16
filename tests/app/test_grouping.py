@@ -77,7 +77,7 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -165,7 +165,7 @@ def test_multisig_rotate():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -231,7 +231,7 @@ def test_multisig_interact():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))

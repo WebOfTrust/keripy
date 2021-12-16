@@ -209,7 +209,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = tamHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -230,7 +230,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -275,7 +275,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)  # old saidkeys
         assert dater.dts == help.helping.DTS_BASE_0
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig != serderR.dig  # old serderR
+        assert serder.said != serderR.said  # old serderR
         couples = tamHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -296,7 +296,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)  # old saidkeys
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig != serderR.dig  # old serderR
+        assert serder.said != serderR.said  # old serderR
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -345,7 +345,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_1
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = tamHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -371,7 +371,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_1
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -409,7 +409,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = tamHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -430,7 +430,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -537,7 +537,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = tamHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -558,7 +558,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -602,8 +602,8 @@ def test_reply(mockHelpingNowUTC):
                        b'":"/end/role/add","a":{"cid":"E45sehIW71DobP0x5jLAxQSIyYIYZk74Bx'
                        b'CpMTZ4vxs4","role":"witness","eid":"BFUOWBaJz-sB_6b-_u_P9W8hgBQ8'
                        b'Su9mAtN9cY2sVGiY"}}-VBg-FABE45sehIW71DobP0x5jLAxQSIyYIYZk74BxCpM'
-                       b'TZ4vxs40AAAAAAAAAAAAAAAAAAAAAAAE4T_mFD3oQLRCxZPJ4ayMNw1tnLCQqGJD'
-                       b'oIeRCZRLIeg-AADAASMn1I-N17pc7xNAFK5ZJ7-MKB2ljT-4uSBXihMiO_XwJIzg'
+                       b'TZ4vxs40AAAAAAAAAAAAAAAAAAAAAAAE45sehIW71DobP0x5jLAxQSIyYIYZk74B'
+                       b'xCpMTZ4vxs4-AADAASMn1I-N17pc7xNAFK5ZJ7-MKB2ljT-4uSBXihMiO_XwJIzg'
                        b'6U6H7crRK2b4fJyDffL0CV-DQ0w0ab9v6i5HOBgAB9L5xfg2clkqDURVLFO2XxdT'
                        b'nqme1aZJvmbbpOZ6avtJFPciNZ8ArUD7xx24DPhconiPDIaiLxwMieaSTiP7KCgA'
                        b'CSK9xe7PbN6fz6BiUdg8k-y3bAOO7i80W-qBPl_Sb8MwBjpDgWoSRGxbIofU_9uy'
@@ -616,7 +616,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -661,7 +661,7 @@ def test_reply(mockHelpingNowUTC):
                        b'":"/loc/scheme","a":{"eid":"E45sehIW71DobP0x5jLAxQSIyYIYZk74BxCp'
                        b'MTZ4vxs4","scheme":"http","url":"http://localhost:8080/controlle'
                        b'r/tam"}}-VBg-FABE45sehIW71DobP0x5jLAxQSIyYIYZk74BxCpMTZ4vxs40AAA'
-                       b'AAAAAAAAAAAAAAAAAAAAE4T_mFD3oQLRCxZPJ4ayMNw1tnLCQqGJDoIeRCZRLIeg'
+                       b'AAAAAAAAAAAAAAAAAAAAE45sehIW71DobP0x5jLAxQSIyYIYZk74BxCpMTZ4vxs4'
                        b'-AADAAmqnXkPMlIJj6wjnrila2jV2Q1vSYscwvqDGr_rHdGoVLNycKZwCwkFgzn4'
                        b'u1ZKGGcY-lo3nDwc8iJ_4NZUu7BQABQDm1pDATlf7WDFDw7XxBFS2N3sgBxZZF45'
                        b'NI-HQEXL_DqzvesII6lwphD_7daeTPWcPLNRO7v5xW1adcMNVpCQACaMzNsoPbvb'
@@ -675,7 +675,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -715,7 +715,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serder0.dig
+        assert serder.said == serder0.said
         quadkeys = (serder0.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -737,7 +737,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serder1.dig
+        assert serder.said == serder1.said
         quadkeys = (serder1.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -776,7 +776,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -833,7 +833,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         couples = nelHab.db.scgs.get(keys=saidkeys)
         assert len(couples) == 1
         verfer, cigar = couples[0]
@@ -877,7 +877,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_1
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -902,7 +902,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_1
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -940,7 +940,7 @@ def test_reply(mockHelpingNowUTC):
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
@@ -965,7 +965,7 @@ def test_reply(mockHelpingNowUTC):
         dater = tamHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == help.helping.DTS_BASE_0
         serder = tamHab.db.rpys.get(keys=saidkeys)
-        assert serder.dig == serderR.dig
+        assert serder.said == serderR.said
         quadkeys = (serderR.said,
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",

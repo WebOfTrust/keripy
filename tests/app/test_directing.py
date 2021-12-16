@@ -93,7 +93,7 @@ def test_directing_basic():
                                  temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert bobHab.iserder.dig == bobSerder.dig
+        assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
@@ -126,7 +126,7 @@ def test_directing_basic():
                                  temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.iserder.dig == eveSerder.dig
+        assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)

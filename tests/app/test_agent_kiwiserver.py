@@ -73,14 +73,14 @@ def test_credential_handlers(mockHelpingNowUTC):
                 b'lsxQvbdRadsVCPCSqg40","i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_E'
                 b'pa1AKKg","s":"0","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
                 b'yyo","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-                b'AAAAAAAAgEsbnYX-RW0G6SWK-PBSNt9ZMHLJaf8vTcqCWsGNMUR6U')
-        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EsbnYX-RW0G6SWK-PBSNt9ZM'
-                b'HLJaf8vTcqCWsGNMUR6U","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
-                b'KTlh0nc","s":"2","p":"ETDEeG2V-gtX_32ALDlc5Bvj4oWs5Q14DISnLZt3qJ'
-                b'NQ","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
+                b'AAAAAAAAgEVgkg5sqEmZvTnlCBQSSrxUAmb48q-MKI7aqK7b2mx1Y')
+        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EVgkg5sqEmZvTnlCBQSSrxUA'
+                b'mb48q-MKI7aqK7b2mx1Y","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
+                b'KTlh0nc","s":"2","p":"EUEfHVjhRI0f5WmNPF6PxLJigCxQn73ijikUzO9p42'
+                b'f8","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
                 b':"0","d":"EfZ4XAxBDq7ByJgutFqgK_S9lsxQvbdRadsVCPCSqg40"}]}-AABAA'
-                b'raoOayjwrI8FuEqPpU5ioAoIVNtxaiXEuQQYSQFKFE1ea2aigv4cE9PEwPa2a8q7'
-                b'ngofOr9weA06C4rk7DEYDg')
+                b'kD43aLawYAwhCAQUTJSveKzJaiKPO2KoKfrU4tThbKb0O78kqd_x4G-F0SwGIYID'
+                b'-axzzJzOwDu1XeEtD_m3Aw')
         cred = (
             b'{"v":"KERI10JSON00019b_","d":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg",'
             b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"EPmpiN6bEM8EI0Mctny-'
@@ -117,16 +117,16 @@ def test_credential_handlers(mockHelpingNowUTC):
                b'Js9ZApQDIezlcY3SDRtk","i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_E'
                b'pa1AKKg","s":"1","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
                b'yyo","p":"EfZ4XAxBDq7ByJgutFqgK_S9lsxQvbdRadsVCPCSqg40","dt":"20'
-               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwEAic'
-               b'sgOS2LaldLHpvQIRoT4-WptUjoGseOJlRlyGY3CM')
+               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwELsa'
+               b'CvnKHrn29YjPZhi39BJ5cc13Ll4XMdZq26ptjPBA')
         rkevt = (
-            b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EAicsgOS2LaldLHpvQIRoT4-'
-            b'WptUjoGseOJlRlyGY3CM","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
-            b'KTlh0nc","s":"3","p":"EsbnYX-RW0G6SWK-PBSNt9ZMHLJaf8vTcqCWsGNMUR'
-            b'6U","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
+            b'{"v":"KERI10JSON00013a_","t":"ixn","d":"ELsaCvnKHrn29YjPZhi39BJ5'
+            b'cc13Ll4XMdZq26ptjPBA","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
+            b'KTlh0nc","s":"3","p":"EVgkg5sqEmZvTnlCBQSSrxUAmb48q-MKI7aqK7b2mx'
+            b'1Y","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
             b':"1","d":"EaVOPw17fC1KO_DaEh4p1PbFJs9ZApQDIezlcY3SDRtk"}]}-AABAA'
-            b'w9TPQ_1aYBe0qP-Fg4TXJ12QSh6dwBMX4XxAEj17zguFLjeu-qq_5s2qYC6Rwht4'
-            b'lL_k0NId8w6hAqpefbfzBQ')
+            b'j0A10hxN0xmyPtUnJJVppeCSXNIjTkPEwSl-jmIzG0rv7GUDfNy3jh2GOW9FgbSn'
+            b'ldpmTXF4sbltRygpx_HbCA')
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
         evt = cue["msg"]

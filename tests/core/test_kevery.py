@@ -47,7 +47,7 @@ def test_kevery():
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
                         nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -69,10 +69,10 @@ def test_kevery():
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
                         sn=1)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -87,10 +87,10 @@ def test_kevery():
         # Event 2 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
                         sn=2)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -104,9 +104,9 @@ def test_kevery():
 
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=3)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -120,9 +120,9 @@ def test_kevery():
 
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=4)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -137,10 +137,10 @@ def test_kevery():
         # Event 5 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
                         sn=5)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -154,9 +154,9 @@ def test_kevery():
 
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=6)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -172,10 +172,10 @@ def test_kevery():
         # nxt digest is empty
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt="",
                         sn=7)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -189,7 +189,7 @@ def test_kevery():
 
         # Event 8 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -206,7 +206,7 @@ def test_kevery():
         # Event 8 Rotation
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
                         sn=8)
         # create sig counter
@@ -275,38 +275,38 @@ def test_witness_state():
 
         ixn0 = hab.interact()
         assert ixn0 == (
-            b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EExqNbGiqFpLAHvBCWGCtxQ5'
-            b'8Y3r-M90ouzHbNX8LDDI","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"1","p":"EpE9oW_x8h7dRNXCsYUSZ7VrJcA3LrnfBwmpf6nyRG'
-            b'Fw","a":[]}-AABAAp4EFNIIWtLxaMm23eYc1Q0fwpQLR6OPIzvD_aCZTx9bOVJ5'
-            b'qOPaDo3waav2QWCu-NK-MTv2FFwe4TgDnNPsHCQ')
+            b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EnmIjmjrCQ9MJGzk6sg44zO9'
+            b'QAfPhgRtgmdnG6kAwEv0","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"1","p":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbANA91WP'
+            b'HA","a":[]}-AABAAVmp0AsKRYDnl1hjObV1m6waHErFu2czgWkhOVMHsuy9TR-5'
+            b'e_oJKup5Pxf9IK5LViMZF6DgUsR0ctk_2H27iDw')
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
         rot1 = hab.rotate()
         assert rot1 == (
-            b'{"v":"KERI10JSON000155_","t":"rot","d":"ETaqQode3grs5cCTCVXwCo5H'
-            b'qL-wmn1YpSUtzTvn-BZs","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"2","p":"EExqNbGiqFpLAHvBCWGCtxQ58Y3r-M90ouzHbNX8LD'
-            b'DI","kt":"1","k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"'
+            b'{"v":"KERI10JSON000155_","t":"rot","d":"EITSN2f52JXziJEChYETgxHf'
+            b'SdHRj1h4VzjwZXl1coII","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"2","p":"EnmIjmjrCQ9MJGzk6sg44zO9QAfPhgRtgmdnG6kAwE'
+            b'v0","kt":"1","k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"'
             b'],"n":"E7giSjZhH8qC_oXAqUoA8JoOlal15MsEtTr30JTMwgi0","bt":"2","b'
-            b'r":[],"ba":[],"a":[]}-AABAAp0DgBKauupHZjzSwbdr0ml4l2XbP9VwU6xknZ'
-            b'3OmwHIE741F-iCPFqeXbIgSGJk6C7TAwm8KZ65lp18l4D9RCw')
+            b'r":[],"ba":[],"a":[]}-AABAADjFwzRpvRMcqMVYeXHRJzNRWm2Ev3d6jbWrGS'
+            b'0WIC6WCnFwCY8ENVWM3BWkHUBxMGnuImxPqj_xCFJaxWbIRCw')
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
         rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
         assert rot2 == (
-            b'{"v":"KERI10JSON00020f_","t":"rot","d":"EN7d31o5U4TRFfSqfAlg7X2_'
-            b'gmUqKZBNEk5Ry3R0z0MI","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"3","p":"ETaqQode3grs5cCTCVXwCo5HqL-wmn1YpSUtzTvn-B'
-            b'Zs","kt":"1","k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"'
+            b'{"v":"KERI10JSON00020f_","t":"rot","d":"E-KoW6rnZsHnwupnRGIUFgfH'
+            b'ntxsCdE-R0tvkaN3uuro","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"3","p":"EITSN2f52JXziJEChYETgxHfSdHRj1h4VzjwZXl1co'
+            b'II","kt":"1","k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"'
             b'],"n":"EhAly7aOUUvArcUdJgqag1K4nf7mODsgDnZhJGQnOBzE","bt":"3","b'
             b'r":["BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"ba":["B7ejs'
             b'kZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BnfnWbP3CTkWapC7rQxSkp'
             b'ioxkb-nbmhs-JoHbiwU5q4","BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXN'
-            b'OKSu0"],"a":[]}-AABAAMEgdHsqJq-thHKh6qWarZSnuzJyFxp20a-mN_AY6W4T'
-            b'RacAJVkziRKRVcjEugYLAQINqOCAzq2hijEcBXMEAAw')
+            b'OKSu0"],"a":[]}-AABAArVCLfOe0erkyekHEWRNd2nYuRt5hZEYcf71Sg8ZkkG6'
+            b'Os_iqV6xu1qwOQGPtiDUC5O0_u3mftpoWUkEteZblCg')
         wit3 = hab.kvy.fetchWitnessState(hab.pre, 3)
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
@@ -406,7 +406,7 @@ def test_stale_event_receipts():
 
         # Validate that bam has 2 receipts in DB for event 1
         ser = coring.Serder(raw=rot0)
-        dgkey = dbing.dgKey(ser.preb, ser.digb)
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
         wigs = bamDB.getWigs(dgkey)
         assert len(wigs) == 2
 

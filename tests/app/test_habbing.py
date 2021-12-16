@@ -40,10 +40,10 @@ def test_habitat_rotate_with_witness():
             keeping.openKS(name=name, temp=False) as ks:
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False,
                               wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
-        oidig = hab.iserder.dig
+        oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
-        odig = hab.kever.serder.dig
+        odig = hab.kever.serder.said
 
     with basing.openDB(name=name, temp=False, reload=True) as db, \
             keeping.openKS(name=name, temp=False) as ks:
@@ -55,13 +55,13 @@ def test_habitat_rotate_with_witness():
         assert hab.kevers is db.kevers
         assert hab.pre in hab.prefixes
         assert hab.pre in hab.kevers
-        assert hab.iserder.dig == oidig
+        assert hab.iserder.said == oidig
 
         hab.rotate(count=3)
 
         assert hab.ridx == 1
         assert opub != hab.kever.verfers[0].qb64
-        assert odig != hab.kever.serder.dig
+        assert odig != hab.kever.serder.said
 
 
 def test_habitat_reinitialization():
@@ -79,10 +79,10 @@ def test_habitat_reinitialization():
             keeping.openKS(name=name, clear=True, temp=False) as ks:
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
-        oidig = hab.iserder.dig
+        oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
-        odig = hab.kever.serder.dig
+        odig = hab.kever.serder.said
         assert hab.ridx == 0
 
     with basing.openDB(name=name, temp=False) as db, \
@@ -97,23 +97,23 @@ def test_habitat_reinitialization():
         assert hab.kevers is db.kevers
         assert hab.pre in hab.prefixes
         assert hab.pre in hab.kevers
-        assert hab.iserder.dig == oidig
+        assert hab.iserder.said == oidig
 
         hab.rotate()
 
         assert hab.ridx == 1
         assert opub != hab.kever.verfers[0].qb64
-        assert odig != hab.kever.serder.dig
+        assert odig != hab.kever.serder.said
 
         npub = hab.kever.verfers[0].qb64
-        ndig = hab.kever.serder.dig
+        ndig = hab.kever.serder.said
 
         assert opre == hab.pre
         assert hab.kever.verfers[0].qb64 == npub
         assert hab.ridx == 1
 
-        assert hab.kever.serder.dig != odig
-        assert hab.kever.serder.dig == ndig
+        assert hab.kever.serder.said != odig
+        assert hab.kever.serder.said == ndig
 
         hab.ks.close(clear=True)
         hab.db.close(clear=True)
@@ -137,10 +137,10 @@ def test_habitat_reinitialization_reload():
             keeping.openKS(name=name, clear=True, temp=False) as ks, \
             configing.openCF(name=name, base="", clear=True, temp=False) as  cf:
         hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, icount=1, temp=False)
-        oidig = hab.iserder.dig
+        oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
-        odig = hab.kever.serder.dig
+        odig = hab.kever.serder.said
         assert hab.ridx == 0
 
     # openDB with reload=True which should reload .habs into db.kevers and db.prefixes
@@ -156,23 +156,23 @@ def test_habitat_reinitialization_reload():
         assert hab.kevers is db.kevers
         assert hab.pre in hab.prefixes
         assert hab.pre in hab.kevers
-        assert hab.iserder.dig == oidig
+        assert hab.iserder.said == oidig
 
         hab.rotate()
 
         assert hab.ridx == 1
         assert opub != hab.kever.verfers[0].qb64
-        assert odig != hab.kever.serder.dig
+        assert odig != hab.kever.serder.said
 
         npub = hab.kever.verfers[0].qb64
-        ndig = hab.kever.serder.dig
+        ndig = hab.kever.serder.said
 
         assert opre == hab.pre
         assert hab.kever.verfers[0].qb64 == npub
         assert hab.ridx == 1
 
-        assert hab.kever.serder.dig != odig
-        assert hab.kever.serder.dig == ndig
+        assert hab.kever.serder.said != odig
+        assert hab.kever.serder.said == ndig
 
         hab.cf.close(clear=True)
         hab.ks.close(clear=True)
@@ -197,7 +197,7 @@ def test_habitat_with_delegation():
 
     assert bobhab.delserder.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
     assert bobhab.delserder.ked["s"] == '0'
-    assert bobhab.delserder.dig == "E02P9urPad7b2DHSjXUygfEMHR2umpHA1sioOQtPBU0I"
+    assert bobhab.delserder.said == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
 
     assert bobhab.accepted is False
 

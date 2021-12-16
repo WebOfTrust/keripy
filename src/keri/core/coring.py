@@ -3943,38 +3943,23 @@ class Serder:
         return Sizeify(ked=ked, kind=kind)
 
 
-    def compare(self, dig=None, diger=None):
+    def compare(self, said=None):
         """
-        Returns True  if dig and either .diger.qb64 or .diger.qb64b match or
-            if both .diger.raw and dig are valid digests of self.raw
-            Otherwise returns False
+        Returns True  if said and either .saider.qb64 or .saider.qb64b match
 
-        Convenience method to allow comparison of own .diger digest self.raw
-        with some other purported digest of self.raw
+        Convenience method to allow comparison of own .saider digest self.raw
+        with some other purported said of self.raw
 
         Parameters:
-            dig is qb64b or qb64 digest of ser to compare with .diger.raw
-            diger is Diger instance of digest of ser to compare with .diger.raw
+            said is qb64b or qb64 SAID of ser to compare with .said
 
-            if both supplied dig takes precedence
-
-
-        If both match then as optimization returns True and does not verify either
-          as digest of ser
-        Else If both have same code but do not match then as optimization returns False
-           and does not verify if either is digest of ser
-        Else recalcs both digests using each one's code to verify they
-            they are both digests of ser regardless of matching codes.
         """
 
-        if dig is not None:
-            if hasattr(dig, "encode"):
-                dig = dig.encode('utf-8')  # makes bytes
+        if said is not None:
+            if hasattr(said, "encode"):
+                said = said.encode('utf-8')  # makes bytes
 
-            return dig == self.saidb  # matching
-
-        elif diger is not None:
-            return diger.qb64b == self.saidb
+            return said == self.saidb  # matching
 
         else:
             raise ValueError("Both dig and diger may not be None.")
@@ -3996,7 +3981,7 @@ class Serder:
         self._kind = kind
         self._version = version
         self._size = size
-        self._diger = Saider(qb64=ked["d"], code=self._code)
+        self._saider = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -4015,7 +4000,7 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
-        self._diger = Saider(qb64=ked["d"], code=self._code)
+        self._saider = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -4034,7 +4019,7 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
-        self._diger = Saider(qb64=ked["d"], code=self._code)
+        self._saider = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -4055,30 +4040,30 @@ class Serder:
 
 
     @property
-    def diger(self):
+    def saider(self):
         """
         Returns Diger of digest of self.raw
         diger (digest material) property getter
         """
-        return self._diger
+        return self._saider
 
 
     @property
-    def dig(self):
+    def said(self):
         """
-        Returns qualified Base64 digest of self.raw
-        dig (digest) property getter
+        Returns str qb64  of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
         """
-        return self.diger.qb64
+        return self.saider.qb64
 
 
     @property
-    def digb(self):
+    def saidb(self):
         """
-        Returns qualified Base64 digest of self.raw
-        dig (digest) property getter
+        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
         """
-        return self.diger.qb64b
+        return self.saider.qb64b
 
 
     @property
@@ -4156,23 +4141,6 @@ class Serder:
         """
         return self.pre.encode("utf-8")
 
-
-    @property
-    def said(self):
-        """
-        Returns str qb64  of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.dig
-
-
-    @property
-    def saidb(self):
-        """
-        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.digb
 
     @property
     def est(self):  # establishative

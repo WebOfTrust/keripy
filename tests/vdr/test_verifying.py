@@ -154,7 +154,7 @@ def test_verifier_multisig():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -231,7 +231,7 @@ def test_verifier_multisig():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))

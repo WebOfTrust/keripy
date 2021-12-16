@@ -78,6 +78,7 @@ non transferable identifier after an inception event. You can however rotate to 
 your identifier.
 
 ##### Transferable
+
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
@@ -110,7 +111,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
-    icpDigest = srdr.diger.qb64
+    icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
 
     print(srdr.raw.decode("utf-8"))
@@ -198,6 +199,7 @@ non transferable identifier after an inception event. You can however rotate to 
 your identifier.
 
 ##### Transferable
+
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
@@ -219,7 +221,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, nxt=nxt,
+                           code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -230,7 +233,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
-    icpDigest = srdr.diger.qb64
+    icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
 
     print(srdr.raw.decode("utf-8"))
@@ -304,6 +307,7 @@ non transferable identifier after an inception event. You can however rotate to 
 your identifier.
 
 ##### Transferable
+
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
@@ -326,7 +330,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfer.qb64 for verfer in verfers]
 
     nxt = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, nxt=nxt,
+                           code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -337,7 +342,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfer.qb64 for verfer in verfers]
     nxtKeyDig = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
-    icpDigest = srdr.diger.qb64
+    icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
 
     print(srdr.raw.decode("utf-8"))
@@ -563,6 +568,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```
 
 #### Rotating Keys
+
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
@@ -581,7 +587,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
     srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
-    
+
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -592,7 +598,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
-    icpDigest = srdr.diger.qb64
+    icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)  # Create rotation event
 
     print(srdr.raw.decode("utf-8"))
@@ -623,17 +629,18 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
     srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
-    
+
     print(srdr.raw.decode("utf-8"))
     print()
 
     # ------------------------------Basic Abandonment---------------------------
-    verfers, digers = mgr.rotate(verfers[0].qb64, count=0)  # grab inception next keys but generate no next keys for rotation
+    verfers, digers = mgr.rotate(verfers[0].qb64,
+                                 count=0)  # grab inception next keys but generate no next keys for rotation
 
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
-    icpDigest = srdr.diger.qb64
+    icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt="", sn=1)  # nxt is empty i.e. abandoned
 
     print(srdr.raw.decode("utf-8"))

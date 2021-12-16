@@ -615,11 +615,11 @@ def test_serder_suber():
         pre = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         srdr0 = eventing.incept(keys=[pre])
 
-        keys = (pre, srdr0.dig)
+        keys = (pre, srdr0.said)
         sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
-        assert actual.dig == srdr0.dig
+        assert actual.said == srdr0.said
 
         sdb.rem(keys)
         actual = sdb.get(keys=keys)
@@ -628,27 +628,27 @@ def test_serder_suber():
         sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
-        assert actual.dig == srdr0.dig
+        assert actual.said == srdr0.said
 
-        srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.dig)
+        srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
         result = sdb.put(keys=keys, val=srdr1)
         assert not result
         assert isinstance(actual, coring.Serder)
-        assert actual.dig == srdr0.dig
+        assert actual.said == srdr0.said
 
         result = sdb.pin(keys=keys, val=srdr1)
         assert result
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
-        assert actual.dig == srdr1.dig
+        assert actual.said == srdr1.said
 
         # test with keys as string not tuple
-        keys = "{}.{}".format(pre, srdr1.dig)
+        keys = "{}.{}".format(pre, srdr1.said)
 
         sdb.put(keys=keys, val=srdr1)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
-        assert actual.dig == srdr1.dig
+        assert actual.said == srdr1.said
 
         sdb.rem(keys)
         actual = sdb.get(keys=keys)
@@ -665,18 +665,18 @@ def test_serder_suber():
         sdb.put(keys=("a","1"), val=srdr0)
         sdb.put(keys=("a","2"), val=srdr1)
 
-        items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter()]
-        assert items == [(('a', '1'), srdr0.dig),
-                         (('a', '2'), srdr1.dig)]
+        items = [(keys, srdr.said) for keys, srdr in sdb.getItemIter()]
+        assert items == [(('a', '1'), srdr0.said),
+                         (('a', '2'), srdr1.said)]
 
         assert sdb.put(keys=("b","1"), val=srdr0)
         assert sdb.put(keys=("b","2"), val=srdr1)
         assert sdb.put(keys=("bc","1"), val=srdr0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter(keys=topkeys)]
-        assert items == [(('b', '1'), srdr0.dig),
-                         (('b', '2'), srdr1.dig)]
+        items = [(keys, srdr.said) for keys, srdr in sdb.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), srdr0.said),
+                         (('b', '2'), srdr1.said)]
 
     assert not os.path.exists(db.path)
     assert not db.opened

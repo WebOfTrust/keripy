@@ -37,10 +37,10 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
         tsn = tever.state()
 
         assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU",'
-         b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
-         b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
-         b'et":"vcp","a":{"s":1,"d":"El_BQtHCLfnquRphKXnT_tNQED4vBGH8q_MvW93I58HM"},"bt'
-         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+                           b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
+                           b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"E-H2udL7vQADRbeDID2ApJ8NKyQx-c7TUpCe7Oxriax8"},"bt'
+                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
@@ -55,7 +55,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'E9p2BrULgix4vX8OyJtgyu8X60YXf9fZe3QEk4Fx03l4'
+        assert saider[0].qb64b == b'EkuNMOhl1lMQXbp4V7rNHAMhp4NGy4k1tlg4bXzD_m4c'
 
         tmsgs = bytearray()
         cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
@@ -97,10 +97,10 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         tsn = tever.state()
 
         assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU",'
-         b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
-         b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
-         b'et":"vcp","a":{"s":1,"d":"El_BQtHCLfnquRphKXnT_tNQED4vBGH8q_MvW93I58HM"},"bt'
-         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+                           b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
+                           b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"E-H2udL7vQADRbeDID2ApJ8NKyQx-c7TUpCe7Oxriax8"},"bt'
+                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
@@ -110,7 +110,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'E9p2BrULgix4vX8OyJtgyu8X60YXf9fZe3QEk4Fx03l4'
+        assert saider[0].qb64b == b'EkuNMOhl1lMQXbp4V7rNHAMhp4NGy4k1tlg4bXzD_m4c'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "query"
@@ -131,7 +131,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'E9p2BrULgix4vX8OyJtgyu8X60YXf9fZe3QEk4Fx03l4'
+        assert saider[0].qb64b == b'EkuNMOhl1lMQXbp4V7rNHAMhp4NGy4k1tlg4bXzD_m4c'
 
         tmsgs = bytearray()
         cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
@@ -207,10 +207,10 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         tsn = tever.state()
 
         assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"E83bZ5DV-FSe8WeldHfVBGmvJ1LBnV8RBXUyNzrTClZ8",'
-         b'"s":"0","d":"E83bZ5DV-FSe8WeldHfVBGmvJ1LBnV8RBXUyNzrTClZ8","ii":"ECJTKtR-Gly'
-         b'bCmn1PCiVwIuGBjaOUXI09XWDdXkrJNj0","dt":"2021-01-01T00:00:00.000000+00:00","'
-         b'et":"vcp","a":{"s":1,"d":"Emj5CcCPsaxN0XlFtPTn1xFHBmQpfGdBe43VM1nsYIks"},"bt'
-         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+                           b'"s":"0","d":"E83bZ5DV-FSe8WeldHfVBGmvJ1LBnV8RBXUyNzrTClZ8","ii":"ECJTKtR-Gly'
+                           b'bCmn1PCiVwIuGBjaOUXI09XWDdXkrJNj0","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"Ensje9wtQ6Pa5ed1QmYxrXMb9lFUnLy09nKHdcTioSdg"},"bt'
+                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
@@ -223,7 +223,7 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, wesHab.pre))
-        assert saider[0].qb64b == b'ENzKynIVMbnU_lOC4dFHXsscry1TyS1KDnpvly2yeL9Y'
+        assert saider[0].qb64b == b'Ee7FzyMw4Ys4NACg7Luv9p-wYHf9kfY-qwqayrd_Faqo'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "query"
@@ -248,7 +248,7 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, wesHab.pre))
-        assert saider[0].qb64b == b'ENzKynIVMbnU_lOC4dFHXsscry1TyS1KDnpvly2yeL9Y'
+        assert saider[0].qb64b == b'Ee7FzyMw4Ys4NACg7Luv9p-wYHf9kfY-qwqayrd_Faqo'
 
         parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy)
 
@@ -318,10 +318,10 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         tsn = tever.state()
 
         assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU",'
-         b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
-         b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
-         b'et":"vcp","a":{"s":1,"d":"El_BQtHCLfnquRphKXnT_tNQED4vBGH8q_MvW93I58HM"},"bt'
-         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+                           b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
+                           b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"E-H2udL7vQADRbeDID2ApJ8NKyQx-c7TUpCe7Oxriax8"},"bt'
+                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
@@ -388,18 +388,18 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         tsn = tever.state()
 
         assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU",'
-         b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
-         b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
-         b'et":"vcp","a":{"s":1,"d":"El_BQtHCLfnquRphKXnT_tNQED4vBGH8q_MvW93I58HM"},"bt'
-         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+                           b'"s":"0","d":"E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ii":"Et78eYkh8A3'
+                           b'H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"E-H2udL7vQADRbeDID2ApJ8NKyQx-c7TUpCe7Oxriax8"},"bt'
+                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         ctsn = tever.vcState(vcpre=creder.said)
         assert ctsn.raw == (
             b'{"v":"KERI10JSON000135_","i":"EVVXgwIhfMUoLs4_yrhN_fDPdkmxthgcVEIk6b3-Zk88",'
-             b'"s":"0","d":"EnqaokAOPWgId2MRy50RuZ-U7m9fT-i5X8lmoUhYgJvc","ri":"E_dyu0_yRdu'
-             b'OU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ra":{},"a":{"s":2,"d":"E0qeJzHFP-RhtTI9O'
-             b'2YdRf89pG-2mKYpaADcpx8_zQU0"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
-             b'iss"}')
+            b'"s":"0","d":"EnqaokAOPWgId2MRy50RuZ-U7m9fT-i5X8lmoUhYgJvc","ri":"E_dyu0_yRdu'
+            b'OU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU","ra":{},"a":{"s":2,"d":"EznRN95JXRyGDE4R1'
+            b'cWAcC3c7ffVasG9Aqxh94_loe1s"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
+            b'iss"}')
 
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
 
@@ -409,7 +409,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-mre", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EwBWKGgRdozTBmrRDrEH_emEtXxftl4KPRlOHQ5W_5fk'
+        assert saider[0].qb64b == b'Ew8NvCinPq3n9LoZIqjMOUOmhY9Hw6YN99EWAozbtA6Q'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "telquery"
@@ -438,7 +438,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-ooo", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EwBWKGgRdozTBmrRDrEH_emEtXxftl4KPRlOHQ5W_5fk'
+        assert saider[0].qb64b == b'Ew8NvCinPq3n9LoZIqjMOUOmhY9Hw6YN99EWAozbtA6Q'
 
         vci = viring.nsKey([issuer.regk, creder.said])
         tmsgs = bytearray()

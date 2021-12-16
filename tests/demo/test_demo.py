@@ -98,7 +98,7 @@ def test_direct_mode_bob_eve_demo():
                                 temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert bobHab.iserder.dig == bobSerder.dig
+        assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
@@ -135,7 +135,7 @@ def test_direct_mode_bob_eve_demo():
 
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.iserder.dig == eveSerder.dig
+        assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
@@ -271,7 +271,7 @@ def test_direct_mode_sam_eve_demo():
 
         assert samHab.ks == samKS
         assert samHab.db == samDB
-        assert samHab.iserder.dig == samSerder.dig
+        assert samHab.iserder.said == samSerder.said
         assert samHab.pre == sam
 
         samClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
@@ -306,7 +306,7 @@ def test_direct_mode_sam_eve_demo():
                                  secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.iserder.dig == eveSerder.dig
+        assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=samPort)
@@ -579,7 +579,7 @@ def test_indirect_mode_sam_cam_wit_demo():
                                  temp=True)
         assert samHab.ks == samKS
         assert samHab.db == samDB
-        assert samHab.iserder.dig == samSerder.dig
+        assert samHab.iserder.said == samSerder.said
         assert samHab.pre == sam
 
         samClient = clienting.Client(host='127.0.0.1', port=witPort)
@@ -618,7 +618,7 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         assert camHab.ks == camKS
         assert camHab.db == camDB
-        assert camHab.iserder.dig == camSerder.dig
+        assert camHab.iserder.said == camSerder.said
         assert camHab.pre == cam
 
         camClient = clienting.Client(host='127.0.0.1', port=witPort)

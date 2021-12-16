@@ -34,7 +34,7 @@ def test_withness_receiptor(mockGetWitnessByPrefix):
 
         kev = palHab.kever
         ser = kev.serder
-        dgkey = dbing.dgKey(ser.preb, ser.digb)
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
         wigs = wanHab.db.getWigs(dgkey)
         assert len(wigs) == 3
@@ -56,7 +56,7 @@ def test_witness_sender(mockGetWitnessByPrefix):
 
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
-        seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.dig)
+        seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.said)
         msg = issuing.Issuer.messagize(serder=serder, seal=seal)
 
         witDoer = agenting.WitnessPublisher(hab=palHab, msg=msg, klas=agenting.TCPWitnesser)
@@ -71,7 +71,7 @@ def test_witness_sender(mockGetWitnessByPrefix):
 
         for name in ["wes", "wil", "wan"]:
             reger = viring.Registry(name=name)
-            raw = reger.getTvt(dbing.dgKey(serder.preb, serder.digb))
+            raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
             found = coring.Serder(raw=bytes(raw))
             assert serder.pre == found.pre
 
@@ -109,7 +109,7 @@ def test_witness_inquisitor(mockGetWitnessByPrefix, mockHelpingNowUTC):
         for hab in [palHab, qinHab]:
             kev = hab.kever
             ser = kev.serder
-            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
             wigs = wanHab.db.getWigs(dgkey)
             assert len(wigs) == 3

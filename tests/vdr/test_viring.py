@@ -393,7 +393,7 @@ def test_build_proof():
 
         proof = viring.buildProof(prefixer, seqner, diger, sigers)
         assert proof == (b'-FABEBQmzPGqnkRXCHrfRHDdy0eS5hIsTD9peCfhavXoxhXI0AAAAAAAAAAAAAAA'
-                         b'AAAAAABAE2x2qj7Ma_JWD5-08TBNXxqcDnGMP0ibTAN-l3P5HZpA-AADAAI-OMaF'
+                         b'AAAAAABAExDuNKMkRvMZG8ITkX3gRAVfsRvImCtsMTplKcqKpvQE-AADAAI-OMaF'
                          b'IvZVUmLSAApfmJnoRBtsyuXYX0ge9Xc_r6ckChqICYuScxvof4qJ_tWfwutNqbxM'
                          b'9_hv5Ux12oTx9rCAABwVkDWD_jemXddSaBdgDU4QYvW_2eLiPCvG95gEBLu-alA3'
                          b'4NfC5HJKL5y9m7FD2d5eXE13jgMoYv-eRYx5J4BgACpZv8RxdMD4N4HUyFTe0R_A'

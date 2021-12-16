@@ -61,7 +61,7 @@ def test_proving():
                        b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
                        b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0-FABEPmp'
                        b'iN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAA'
-                       b'ECt-hFBmiTBZFJgKIhQ29BYtcAXyxg9XErDUAd2Nu5Cc-AABAAApdXwNj-5ilQhG'
+                       b'EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAApdXwNj-5ilQhG'
                        b'HeTqnnCoXKSoSNHRb9VGp_tFFvTQBqikZrYhwmGCmiOhIs4koaH7NUOXrOlXEq3i'
                        b'NbeoI3BQ')
 
@@ -86,7 +86,7 @@ def test_proving():
         assert seqner.sn == sidHab.kever.sn
 
         diger = Diger(qb64b=proof, strip=True)
-        assert diger.qb64 == sidHab.kever.serder.dig
+        assert diger.qb64 == sidHab.kever.serder.said
 
         ictr = Counter(qb64b=proof, strip=True)
         assert ictr.code == CtrDex.ControllerIdxSigs

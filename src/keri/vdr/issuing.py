@@ -141,7 +141,7 @@ class Issuer:
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
-        serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
+        serder = eventing.rotate(dig=self.regser.said, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
                                  adds=adds, cuts=cuts)
 
         self.regser = serder
@@ -168,7 +168,7 @@ class Issuer:
         if self.noBackers:
             serder = eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                           dt=dt)
 
         self.anchorMsg(serder=serder, subject=creder.subject, reason=craw.decode("utf-8"))
@@ -194,10 +194,10 @@ class Issuer:
         iserder = Serder(raw=bytes(ievt))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig, dt=dt)
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
-                                           dig=iserder.dig, dt=dt)
+            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+                                           dig=iserder.said, dt=dt)
 
         self.anchorMsg(serder, subject=creder.subject)
 
@@ -216,7 +216,7 @@ class Issuer:
 
         group = self.hab.group()
 
-        rseal = SealEvent(serder.pre, serder.ked["s"], serder.dig)
+        rseal = SealEvent(serder.pre, serder.ked["s"], serder.said)
         rseal = rseal._asdict()
 
         if group is None:
@@ -225,7 +225,7 @@ class Issuer:
             else:
                 kevt = self.hab.interact(data=[rseal])
 
-            seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
+            seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.said)
             tevt = self.messagize(serder=serder, seal=seal)
 
             self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
@@ -280,7 +280,7 @@ class Issuer:
                 pre = serder.ked["ii"]
 
             sn = serder.sn
-            dig = serder.dig
+            dig = serder.said
 
             seal = None
             for evts in self.hab.db.clonePreIter(pre=pre):
@@ -297,7 +297,7 @@ class Issuer:
 
                     if spre == serder.ked["i"] and ssn == sn \
                             and dig == sdig:
-                        seal = SealSource(s=eserder.sn, d=eserder.dig)
+                        seal = SealSource(s=eserder.sn, d=eserder.said)
                         break
 
             if not seal:

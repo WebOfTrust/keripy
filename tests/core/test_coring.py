@@ -294,20 +294,20 @@ def test_matter():
         'Tag': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
-                                            'TBD1': '2AAA',
-                                            'TBD2': '3AAA',
-                                            'StrB64_L0': '4A',
-                                            'StrB64_L1': '5A',
-                                            'StrB64_L2': '6A',
-                                            'Str_L0': '4B',
-                                            'Str_L1': '5B',
-                                            'Str_L2': '6B',
-                                            'StrB64_Big_L0': '7AAA',
-                                            'StrB64_Big_L1': '8AAA',
-                                            'StrB64_Big_L2': '9AAA',
-                                            'Str_Big_L0': '7AAB',
-                                            'Str_Big_L1': '8AAB',
-                                            'Str_Big_L2': '9AAB',
+        'TBD1': '2AAA',
+        'TBD2': '3AAA',
+        'StrB64_L0': '4A',
+        'StrB64_L1': '5A',
+        'StrB64_L2': '6A',
+        'Str_L0': '4B',
+        'Str_L1': '5B',
+        'Str_L2': '6B',
+        'StrB64_Big_L0': '7AAA',
+        'StrB64_Big_L1': '8AAA',
+        'StrB64_Big_L2': '9AAA',
+        'Str_Big_L0': '7AAB',
+        'Str_Big_L1': '8AAB',
+        'Str_Big_L2': '9AAB',
     }
 
     assert Matter.Codex == MtrDex
@@ -326,52 +326,52 @@ def test_matter():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Matter.Sizes == {
-                            'A': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'B': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'C': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'D': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'E': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'F': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'G': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'H': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'I': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'J': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'K': Sizage(hs=1, ss=0, fs=76, ls=0),
-                            'L': Sizage(hs=1, ss=0, fs=76, ls=0),
-                            'M': Sizage(hs=1, ss=0, fs=4, ls=0),
-                            'N': Sizage(hs=1, ss=0, fs=12, ls=0),
-                            'O': Sizage(hs=1, ss=0, fs=44, ls=0),
-                            'P': Sizage(hs=1, ss=0, fs=124, ls=0),
-                            '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
-                            '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
-                            '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
-                            '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
-                            '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
-                            '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
-                            '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
-                            '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-                            '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
-                            '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
-                            '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
-                            '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
-                            '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
-                            '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
-                            '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
-                            '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-                            '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-                            '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-                            '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
-                            '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
-                            '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
-                            '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
-                            '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
-                            '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
-                            '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+        'A': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'B': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'C': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'D': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'E': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'F': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'G': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'H': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'I': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'J': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'K': Sizage(hs=1, ss=0, fs=76, ls=0),
+        'L': Sizage(hs=1, ss=0, fs=76, ls=0),
+        'M': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'N': Sizage(hs=1, ss=0, fs=12, ls=0),
+        'O': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
+        '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
+        '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
+        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
+        '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
+        '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
+        '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
 
     assert Matter.Sizes['A'].hs == 1  # hard size
@@ -522,7 +522,7 @@ def test_matter():
 
     # Test strip
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  # str
     prefixb = prefix.encode("utf-8")  # bytes
     prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
               b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
@@ -549,7 +549,7 @@ def test_matter():
     assert not ims  # stripped
 
     ims = bytearray(prebin)
-    matter = Matter(qb2=ims, strip=True)  #  strip from ims qb2
+    matter = Matter(qb2=ims, strip=True)  # strip from ims qb2
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64b == prefixb
@@ -570,7 +570,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
-    assert ims == extra   # stripped not include extra
+    assert ims == extra  # stripped not include extra
 
     # test strip with extra qb2
     extra = bytearray([1, 2, 3, 4, 5])  # extra bytes in size
@@ -583,7 +583,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
-    assert ims == extra   # stripped not include extra
+    assert ims == extra  # stripped not include extra
 
     # test fix sized with leader 1
     code = MtrDex.TBD1
@@ -618,7 +618,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -671,7 +671,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -697,7 +697,7 @@ def test_matter():
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'abcde'  # 5 bytes two triplets with lead 1
-    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code)
@@ -722,7 +722,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -730,7 +730,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64b=qb64)  #  works for either
+    matter = Matter(qb64b=qb64)  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -762,12 +762,12 @@ def test_matter():
 
     # test variable sized with leader 1 with code replacement
     code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 1 raw
-    code =  MtrDex.Str_L1
+    code = MtrDex.Str_L1
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'abcde'  # 5 bytes two triplets with lead 1
-    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code0)
@@ -783,12 +783,12 @@ def test_matter():
 
     # test variable sized with leader 1 with code replacement
     code2 = MtrDex.Str_L2  # use leader 0 code but with lead size 1 raw
-    code =  MtrDex.Str_L1
+    code = MtrDex.Str_L1
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'abcde'  # 5 bytes two triplets with lead 1
-    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code2)
@@ -804,7 +804,7 @@ def test_matter():
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
-    both = '5BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '5BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '5BACAGFiY2Rl'
     qb2 = b'\xe4\x10\x02\x00abcde'
     matter = Matter(raw=raw, code=code, rize=5)
@@ -824,7 +824,7 @@ def test_matter():
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
     raw = b'abcd'  # 4 bytes two triplets with lead 2
-    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '6BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '6BACAABhYmNk'
     qb2 = b'\xe8\x10\x02\x00\x00abcd'
     matter = Matter(raw=raw, code=code)
@@ -853,7 +853,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -875,12 +875,12 @@ def test_matter():
 
     # test variable sized with leader 2 with code replacement
     code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 2 raw
-    code =  MtrDex.Str_L2
+    code = MtrDex.Str_L2
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
     raw = b'abcd'  # 4 bytes two triplets with lead 2
-    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '6BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '6BACAABhYmNk'
     qb2 = b'\xe8\x10\x02\x00\x00abcd'
     matter = Matter(raw=raw, code=code0)
@@ -896,12 +896,12 @@ def test_matter():
 
     # test variable sized with leader 2 with code replacement
     code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 2 raw
-    code =  MtrDex.Str_L2
+    code = MtrDex.Str_L2
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
     raw = b'abcd'  # 6 bytes two triplets with lead 2
-    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '6BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '6BACAABhYmNk'
     qb2 = b'\xe8\x10\x02\x00\x00abcd'
     matter = Matter(raw=raw, code=code1)
@@ -917,7 +917,7 @@ def test_matter():
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
-    both = '6BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '6BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '6BACAABhYmNk'
     qb2 = b'\xe8\x10\x02\x00\x00abcd'
     matter = Matter(raw=raw, code=code, rize=4)
@@ -937,7 +937,7 @@ def test_matter():
         assert Matter._rawSize(code) == 0
     assert Matter._leadSize(code) == 0
     raw = b'abcdef'  # 6 bytes two triplets with lead 0
-    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '4BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '4BACYWJjZGVm'
     qb2 = b'\xe0\x10\x02abcdef'
     matter = Matter(raw=raw, code=code)
@@ -966,7 +966,7 @@ def test_matter():
     assert matter.code == code
     assert matter.raw == raw
 
-    matter = Matter(qb64=qb64.encode("utf-8"))  #  works for either
+    matter = Matter(qb64=qb64.encode("utf-8"))  # works for either
     assert matter.code == code
     assert matter.raw == raw
 
@@ -988,12 +988,12 @@ def test_matter():
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 0 raw
-    code =  MtrDex.Str_L0
+    code = MtrDex.Str_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
     raw = b'abcdef'  # 6 bytes two triplets with lead 0
-    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '4BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '4BACYWJjZGVm'
     qb2 = b'\xe0\x10\x02abcdef'
     matter = Matter(raw=raw, code=code0)
@@ -1009,12 +1009,12 @@ def test_matter():
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Str_L2  # use leader 2 code but with lead size 0 raw
-    code =  MtrDex.Str_L0
+    code = MtrDex.Str_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
     raw = b'abcdef'  # 6 bytes two triplets with lead 0
-    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '4BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '4BACYWJjZGVm'
     qb2 = b'\xe0\x10\x02abcdef'
     matter = Matter(raw=raw, code=code1)
@@ -1028,10 +1028,9 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
-
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
-    both = '4BAC'   # full code both hard and soft parts two quadlets/triplets
+    both = '4BAC'  # full code both hard and soft parts two quadlets/triplets
     qb64 = '4BACYWJjZGVm'
     qb2 = b'\xe0\x10\x02abcdef'
     matter = Matter(raw=raw, code=code, rize=6)
@@ -1051,17 +1050,17 @@ def test_matter():
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
-    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop'  * 129 * 3
+    raw = b'ABCDEFGHIJKLMNOPabcdefghijklmnop' * 129 * 3
     assert len(raw) == 32 * 129 * 3 == 12384
     assert len(raw) > (64 ** 2 - 1) * 3  # 12282
     assert not len(raw) % 3
-    both = '7AABABAg'   # full code both hard and soft parts two quadlets/triplets
+    both = '7AABABAg'  # full code both hard and soft parts two quadlets/triplets
     matter = Matter(raw=raw, code=code0)
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 4128  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 16520   # chars
+    assert matter.size == 4128 == len(raw) / 3  # quadlets
+    assert matter.fullSize == 16520  # chars
 
     # text big code substitution for size bigger than 4095  4k replacement
     code1 = MtrDex.Str_L1
@@ -1073,8 +1072,8 @@ def test_matter():
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 4128  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 16520   # chars
+    assert matter.size == 4128 == len(raw) / 3  # quadlets
+    assert matter.fullSize == 16520  # chars
 
     # text big code substitution for size bigger than 4095  4k
     code2 = MtrDex.Str_L2
@@ -1086,9 +1085,8 @@ def test_matter():
     assert matter.raw == raw
     assert matter.code == code
     assert matter.both == both
-    assert matter.size == 4128  == len(raw) / 3 # quadlets
-    assert matter.fullSize == 16520   # chars
-
+    assert matter.size == 4128 == len(raw) / 3  # quadlets
+    assert matter.fullSize == 16520  # chars
 
     #  add crypt for encrypted x25519
 
@@ -1371,10 +1369,10 @@ def test_indexer():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Sizes == {
-                                'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-                                'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-                                '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-                                '0B': Sizage(hs=2, ss=2, fs=None, ls=0)
+        'A': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
+        '0B': Sizage(hs=2, ss=2, fs=None, ls=0)
     }
 
     assert Indexer.Sizes['A'].hs == 1  # hard size
@@ -1687,35 +1685,35 @@ def test_counter():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Counter.Sizes == {
-                                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
-                                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
-                                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-                                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-                                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-                                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-                                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
     }
 
     assert Counter.Sizes['-A'].hs == 2  # hard size
@@ -3679,8 +3677,8 @@ def test_serder():
     assert serder.ked == e1
     assert serder.kind == Serials.json
     assert serder.version == Versionage(major=1, minor=0)
-    assert serder.dig == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
-    assert serder.digb == b'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert serder.said == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert serder.saidb == b'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
     assert serder.size == 111
     assert serder.verfers == []
     assert serder.raw == (b'{"v":"KERI10JSON00006f_","d":"EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU",'
@@ -3817,13 +3815,13 @@ def test_serder():
     assert serder.preb == b"ABCDEFG"
 
     # test digest properties .diger and .dig
-    assert evt1.diger.qb64 == evt1.dig
-    assert evt1.diger.code == MtrDex.Blake3_256
-    assert len(evt1.diger.raw) == 32
-    assert len(evt1.dig) == 44
-    assert len(evt1.dig) == Matter.Sizes[MtrDex.Blake3_256].fs
-    assert evt1.dig == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
-    assert evt1.diger.verify(evt1.ked)
+    assert evt1.saider.qb64 == evt1.said
+    assert evt1.saider.code == MtrDex.Blake3_256
+    assert len(evt1.saider.raw) == 32
+    assert len(evt1.said) == 44
+    assert len(evt1.said) == Matter.Sizes[MtrDex.Blake3_256].fs
+    assert evt1.said == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert evt1.saider.verify(evt1.ked)
 
     evt1 = Serder(ked=ked1)
     assert evt1.kind == kind1
@@ -3832,7 +3830,7 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
-    assert evt1.diger.code == MtrDex.Blake3_256
+    assert evt1.saider.code == MtrDex.Blake3_256
     assert serder.sn == 1
     assert serder.pre == "ABCDEFG"
     assert serder.preb == b"ABCDEFG"
@@ -3883,8 +3881,8 @@ def test_serder():
     assert evt1.size == size2
     assert evt1.raw == e2ss[:size2]
     assert evt1.version == vers1
-    assert evt1.dig == 'Ey-vff1yzcQf5Zxd8sMY6L6tGM1DErjo-q8FyB0CCDyk'
-    assert evt1.diger.verify(evt1.ked)
+    assert evt1.said == 'Ey-vff1yzcQf5Zxd8sMY6L6tGM1DErjo-q8FyB0CCDyk'
+    assert evt1.saider.verify(evt1.ked)
 
     #  round trip
     evt2 = Serder(raw=evt1.raw)
@@ -3919,30 +3917,31 @@ def test_serder():
     knd, version, size = Deversify(evt2.ked["v"])
     assert knd == Serials.json
 
-    # TODO: Determine the correct approach to current digest code
     #  Test diger code
-    # ked = {'v': 'KERI10JSON000072_', 'd': "E0hZX-3EoRCbRj9I9Kxz3k6oEYgTTiw005rG7f3jEho0", 'i': 'ABCDEFG', 'sn': '0001',
-    #        'ilk': 'rot'}
-    # raw = (
-    #     b'{"v":"KERI10JSON000072_","d":"E0hZX-3EoRCbRj9I9Kxz3k6oEYgTTiw005rG7f3jEho0","i":"ABCDEFG","sn":"0001",'
-    #     b'"ilk":"rot"}')
-    # srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
-    # assert srdr.kind == 'JSON'
-    # assert srdr.raw == raw
-    # assert srdr.ked == ked
-    # assert srdr.diger.code == MtrDex.SHA3_256
-    #
-    # #  Test compare
-    # ked = {'v': 'KERI10JSON000072_', 'd': 'E0hZX-3EoRCbRj9I9Kxz3k6oEYgTTiw005rG7f3jEho0', 'i': 'ABCDEFG', 'sn': '0001',
-    #        'ilk': 'rot'}
-    # raw = (
-    #     b'{"v":"KERI10JSON000072_","d":"E0hZX-3EoRCbRj9I9Kxz3k6oEYgTTiw005rG7f3jEho0","i":"ABCDEFG","sn":"0001",'
-    #     b'"ilk":"rot"}')
-    # srdr = Serder(raw=raw)
-    # assert srdr.kind == 'JSON'
-    # assert srdr.raw == raw
-    # assert srdr.ked == ked
-    # assert srdr.diger.code == MtrDex.Blake3_256
+    ked = {'v': "KERI10JSON00006a_",
+           'd': 'HPg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA',
+           'i': 'ABCDEFG', 's': 1,
+           't': 'rot'}
+    raw = (
+        b'{"v":"KERI10JSON00006a_","d":"HPg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA","i":"ABCDEFG","s":1,"t":"rot"}')
+    srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
+    assert srdr.kind == 'JSON'
+    assert srdr.raw == raw
+    assert srdr.ked == ked
+    assert srdr.saider.code == MtrDex.SHA3_256
+
+    #  Test compare
+    ked = {'v': "KERI10JSON00006a_",
+           'd': 'EWDZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE',
+           'i': 'ABCDEFG', 's': 1,
+           't': 'rot'}
+    raw = (
+        b'{"v":"KERI10JSON00006a_","d":"EWDZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE","i":"ABCDEFG","s":1,"t":"rot"}')
+    srdr = Serder(raw=raw)
+    assert srdr.kind == 'JSON'
+    assert srdr.raw == raw
+    assert srdr.ked == ked
+    assert srdr.saider.code == MtrDex.Blake3_256
 
     # diger0 = Diger(ser=srdr.raw)  # default code
     # diger1 = Diger(ser=srdr.raw, code=MtrDex.SHA3_256)
@@ -3963,21 +3962,22 @@ def test_serder():
     # assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
     # assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256))  # codes not match
     # assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)  # codes not match
-    #
-    # # need tests will fully populated serder for icp rot dip drt
-    # pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-    # wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
-    # wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
-    # srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
-    # assert srdr.raw == (b'{"v":"KERI10JSON00011e_","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
-    #                     b'"s":"0","t":"icp","kt":"1","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-    #                     b'c"],"n":"","bt":"2","b":["B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed'
-    #                     b'2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I"],"c":[],"a":[]}')
-    # # test for serder.verfers and serder.werfers
-    # assert srdr.pre == pre0
-    # assert srdr.sn == 0
-    # assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
-    # assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
+
+    # need tests will fully populated serder for icp rot dip drt
+    pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
+    assert srdr.raw == (b'{"v":"KERI10JSON000151_","t":"icp","d":"Eazv_T06u6n_PevJi0BXtvOn7THI5I5tlDUU'
+                        b'XzrGLyl8","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
+                        b'","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"n":"","bt":"2","b":['
+                        b'"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed2Tpxc8KeCEWoq3_RKKRjU_3P-'
+                        b'chSser9J4eAtAK6I"],"c":[],"a":[]}')
+    # test for serder.verfers and serder.werfers
+    assert srdr.pre == pre0
+    assert srdr.sn == 0
+    assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
+    assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
 
     # test .said and .saidb properties
     ked = {

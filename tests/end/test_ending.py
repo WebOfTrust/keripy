@@ -65,8 +65,8 @@ def test_signature_designature():
     # setup habitat
     hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
     assert hab.pre == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
-    digest = hab.kever.serder.dig
-    assert digest == 'EQPIVlWCS1lcYscr2qD9E7na5oa-uneaNMZTlCdIN0zs'
+    digest = hab.kever.serder.said
+    assert digest == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
 
     # example body text
     text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
@@ -107,7 +107,7 @@ def test_signature_designature():
     header = ending.signature([signage])  # put it in a list
     assert header == ({
         'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";ordinal="0";digest'
-                     '="EQPIVlWCS1lcYscr2qD9E7na5oa-uneaNMZTlCdIN0zs";kind="CESR";0'
+                     '="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
                      '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
                      '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
                      '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})

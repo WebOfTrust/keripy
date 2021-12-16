@@ -70,8 +70,8 @@ def test_issuing():
                        b'67PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21:26:21.233257+00'
                        b':00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRerXG3S'
                        b'91Xs2ESrLgtBPlXkrQfw"},"p":[]}-VA0-FABEeBZcaNdy0ZkuquN367PMj4Plg'
-                       b'1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEYRfCauuDh038vUxvDg_HH'
-                       b'7dY3k82Vn6MYvIbmEBwP78-AABAA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7'
+                       b'1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEeBZcaNdy0ZkuquN367PMj'
+                       b'4Plg1201MSevpLREfB3Pxs-AABAA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7'
                        b'T_khiIgqSV_9QFBLwMNwkzWZ9RkVu-V1KxIUNc64f5-4bJ_mCQ')
 
         # Create the issue credential payload
@@ -227,9 +227,9 @@ def test_proving():
         assert len(vcs) == 1
 
         proof = (
-            "-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAECt"
-            "-hFBmiTBZFJgKIhQ29BYtcAXyxg9XErDUAd2Nu5Cc-AABAACh-lXY9RhTOTsEiX1A8PSMcACFwSeS4Ba8wg2mZtfYVg"
-            "-ah6iRHBPwyDS40hQJ2w9-NCemL_JgvG2-ohIU5zCQ")
+            "-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny"
+            "-6AfglVOKnJje8-vqyKTlh0nc-AABAACh-lXY9RhTOTsEiX1A8PSMcACFwSeS4Ba8wg2mZtfYVg-ah6iRHBPwyDS40hQJ2w9"
+            "-NCemL_JgvG2-ohIU5zCQ")
 
         assert vcs[0]["proof"] == proof
 

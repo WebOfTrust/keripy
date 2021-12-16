@@ -12,7 +12,7 @@ from dataclasses import dataclass, astuple
 from .. import kering
 from .. import help
 from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, Dater, Verfer,
-                     Diger,  Prefixer, Serder, )
+                     Diger, Prefixer, Serder, Saider, )
 
 
 logger = help.ogler.getLogger()
@@ -659,24 +659,24 @@ class Parser:
                         # ssnu is sn of signer's est evt when signed
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
-                        for i in range(ctr.count): # extract each attached quadruple
-                            prefixer = yield from  self._extractor(ims,
-                                                                   klas=Prefixer,
-                                                                   cold=cold,
-                                                                   abort=pipelined)
-                            seqner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
+                        for i in range(ctr.count):  # extract each attached quadruple
+                            prefixer = yield from self._extractor(ims,
+                                                                  klas=Prefixer,
+                                                                  cold=cold,
+                                                                  abort=pipelined)
+                            seqner = yield from self._extractor(ims,
+                                                                klas=Seqner,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            saider = yield from self._extractor(ims,
+                                                                klas=Saider,
                                                                 cold=cold,
                                                                 abort=pipelined)
                             siger = yield from self._extractor(ims=ims,
                                                                klas=Siger,
                                                                cold=cold,
                                                                abort=pipelined)
-                            trqs.append((prefixer, seqner, diger, siger))
+                            trqs.append((prefixer, seqner, saider, siger))
 
                     elif ctr.code == CtrDex.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
@@ -686,17 +686,17 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        for i in range(ctr.count): # extract each attached groups
-                            prefixer = yield from  self._extractor(ims,
-                                                                   klas=Prefixer,
-                                                                   cold=cold,
-                                                                   abort=pipelined)
-                            seqner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
+                        for i in range(ctr.count):  # extract each attached groups
+                            prefixer = yield from self._extractor(ims,
+                                                                  klas=Prefixer,
+                                                                  cold=cold,
+                                                                  abort=pipelined)
+                            seqner = yield from self._extractor(ims,
+                                                                klas=Seqner,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            saider = yield from self._extractor(ims,
+                                                                klas=Saider,
                                                                 cold=cold,
                                                                 abort=pipelined)
                             ictr = ctr = yield from self._extractor(ims=ims,
@@ -714,7 +714,7 @@ class Parser:
                                                                     cold=cold,
                                                                     abort=pipelined)
                                 isigers.append(isiger)
-                            tsgs.append((prefixer, seqner, diger, isigers))
+                            tsgs.append((prefixer, seqner, saider, isigers))
 
                     elif ctr.code == CtrDex.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
@@ -767,14 +767,14 @@ class Parser:
                         # dig is digest of event
                         for i in range(ctr.count): # extract each attached quadruple
                             seqner = yield from  self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            sscs.append((seqner, diger))
+                                                                 klas=Seqner,
+                                                                 cold=cold,
+                                                                 abort=pipelined)
+                            saider = yield from  self._extractor(ims,
+                                                                 klas=Saider,
+                                                                 cold=cold,
+                                                                 abort=pipelined)
+                            sscs.append((seqner, saider))
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
@@ -811,7 +811,7 @@ class Parser:
         ilk = serder.ked["t"]  # dispatch abased on ilk
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
-            seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
+            seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
             if not sigers:
                 raise kering.ValidationError("Missing attached signature(s) for evt "
                                       "= {}.".format(serder.ked))
@@ -820,7 +820,7 @@ class Parser:
                                  sigers=sigers,
                                  wigers=wigers,
                                  seqner=seqner,
-                                 diger=diger,
+                                 saider=saider,
                                  firner=firner,
                                  dater=dater)
 
@@ -842,7 +842,7 @@ class Parser:
                     kvy.processReceipt(serder=serder, cigars=cigars)
 
                 if wigers:
-                    kvy.processReceiptWitness(serder=serder, wigers=wigers )
+                    kvy.processReceiptWitness(serder=serder, wigers=wigers)
 
                 if tsgs:
                     kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
@@ -925,9 +925,9 @@ class Parser:
 
         elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
             # TEL msg
-            seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
+            seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
             try:
-                tvy.processEvent(serder=serder, seqner=seqner, diger=diger, wigers=wigers)
+                tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
 
             except AttributeError:
                 raise kering.ValidationError("No tevery to process so dropped msg"

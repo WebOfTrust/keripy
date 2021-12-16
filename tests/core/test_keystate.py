@@ -87,7 +87,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
 
         # Get ksn from Wes and verify
@@ -95,7 +95,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobKeverFromWes.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
@@ -119,7 +119,7 @@ def test_keystate(mockHelpingNowUTC):
 
         keys = (bobHab.pre, wesHab.pre)
         saider = bamDB.knas.get(keys=keys)
-        assert saider.qb64 == bobHab.kever.serder.dig
+        assert saider.qb64 == bobHab.kever.serder.said
 
     # Bob is the controller
     # Bam is verifying the key state for Bob from Wes
@@ -148,7 +148,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
 
         # Get ksn from Wes and verify
@@ -156,7 +156,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobKeverFromWes.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
@@ -187,7 +187,7 @@ def test_keystate(mockHelpingNowUTC):
 
         keys = (bobHab.pre, wesHab.pre)
         saider = bamDB.knas.get(keys=keys)
-        assert saider.qb64 == bobHab.kever.serder.dig
+        assert saider.qb64 == bobHab.kever.serder.said
 
 
     # Bob is the controller
@@ -217,14 +217,14 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         # Get ksn from Wes and verify
         bobKeverFromWes = wesHab.kevers[bobHab.pre]
         ksn = bobKeverFromWes.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
@@ -248,7 +248,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         for _ in range(3):
             bobHab.rotate()
@@ -257,7 +257,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 3
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
 
@@ -274,7 +274,7 @@ def test_keystate(mockHelpingNowUTC):
         ksn = bobHab.kever.state()
         assert ksn.pre == bobHab.pre
         assert ksn.sn == 8
-        assert ksn.ked["d"] == bobHab.kever.serder.dig
+        assert ksn.ked["d"] == bobHab.kever.serder.said
 
         liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
         parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy)
@@ -292,7 +292,7 @@ def test_keystate(mockHelpingNowUTC):
 
         keys = (bobHab.pre, bobHab.pre)
         saider = bamDB.knas.get(keys=keys)
-        assert saider.qb64 == bobHab.kever.serder.dig
+        assert saider.qb64 == bobHab.kever.serder.said
         latest = bamDB.ksns.get(keys=(saider.qb64,))
         assert latest.sn == 8
 

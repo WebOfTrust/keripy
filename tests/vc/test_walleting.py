@@ -46,8 +46,8 @@ def test_wallet():
                        b'ny-6AfglVOKnJje8-vqyKTlh0nc","dt":"2021-06-27T21:26:21.233257+00'
                        b':00","LEI":"254900OPPU84GM83MG36","ri":"ERAY2VjFALVZAAuC3GDM-36q'
                        b'KD8ZhUaKF55MWtITBFnc"},"p":[]}-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglV'
-                       b'OKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAECt-hFBmiTBZFJgKIhQ29B'
-                       b'YtcAXyxg9XErDUAd2Nu5Cc-AABAAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEp'
+                       b'OKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny-6A'
+                       b'fglVOKnJje8-vqyKTlh0nc-AABAAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEp'
                        b'H2WO14Xu5zZisw9cgJV5ZIAaJx3JJ-zMd8sLpkKXYyrZQuB4Dg')
 
         ser = (b'{"v":"KERI10JSON00019e_","d":"EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3XaN0GGw-aVQ",'

@@ -417,7 +417,7 @@ def backerRevoke(
 
 
 def state(pre,
-          dig,
+          said,
           sn,
           ri,
           eilk,
@@ -438,7 +438,7 @@ def state(pre,
     Parameters:
         pre (str): identifier prefix qb64
         sn (int): int sequence number of latest event
-        dig (str): digest of latest event
+        said (str): digest of latest event
         ri (str): qb64 AID of credential registry
         eilk (str): message type (ilk) oflatest event
         br (list): witness remove list (cuts)
@@ -520,7 +520,7 @@ def state(pre,
     ksd = dict(v=vs,  # version string
                i=ri,  # qb64 SAID of the registry
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
-               d=dig,
+               d=said,
                ii=pre,
                dt=dts,
                et=eilk,
@@ -536,7 +536,7 @@ def state(pre,
 
 
 def vcstate(vcpre,
-            dig,
+            said,
             sn,
             ri,
             eilk,
@@ -552,7 +552,7 @@ def vcstate(vcpre,
 
     Parameters:
         vcpre (str): is qb64 SAID of the credential
-        dig (str): is qb64 digest of latest event
+        said (str): is qb64 digest of latest event
         sn (int): sequence number of latest event
         ri (str): registry identifier
         ra (dict): optional registry seal for registries with backers
@@ -594,7 +594,7 @@ def vcstate(vcpre,
     ksd = dict(v=vs,  # version string
                i=vcpre,  # qb64 prefix
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
-               d=dig,
+               d=said,
                ri=ri,
                ra=ra,
                a=a,
@@ -658,6 +658,7 @@ def query(regk,
                                version=version,
                                kind=kind)
 
+
 class Tever:
     """
     Tever is KERI transaction event verifier class
@@ -690,7 +691,7 @@ class Tever:
     """
     NoBackers = False
 
-    def __init__(self, cues=None, stt=None, serder=None, seqner=None, diger=None, bigers=None, db=None,
+    def __init__(self, cues=None, stt=None, serder=None, seqner=None, saider=None, bigers=None, db=None,
                  reger=None, noBackers=None, regk=None, local=False):
         """ Create incepting tever and state from registry inception serder
 
@@ -700,7 +701,7 @@ class Tever:
             serder (Serder): instance of registry inception event
             stt (Serder): transaction state notice state message Serder
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event said from controlling KEL.
             bigers (list): list of Siger instances of indexed backer signatures of
                 event. Index is offset into baks list of latest est event
             db (Baser): instance of baser lmdb database
@@ -750,7 +751,7 @@ class Tever:
 
         bigers = self.valAnchorBigs(serder=serder,
                                     seqner=seqner,
-                                    diger=diger,
+                                    saider=saider,
                                     bigers=bigers,
                                     toad=self.toad,
                                     baks=self.baks)
@@ -759,7 +760,7 @@ class Tever:
                       sn=0,
                       serder=serder,
                       seqner=seqner,
-                      diger=diger,
+                      saider=saider,
                       bigers=bigers,
                       baks=self.baks)
 
@@ -821,14 +822,14 @@ class Tever:
         if self.noBackers:
             cnfg.append(TraitDex.NoBackers)
 
-        dgkey = dbing.dgKey(self.regk, self.serder.dig)
+        dgkey = dbing.dgKey(self.regk, self.serder.said)
         couple = self.reger.getAnc(dgkey)
         ancb = bytearray(couple)
         seqner = coring.Seqner(qb64b=ancb, strip=True)
         diger = coring.Diger(qb64b=ancb, strip=True)
 
         return (state(pre=self.pre,
-                      dig=self.serder.dig,
+                      said=self.serder.said,
                       sn=self.sn,
                       ri=self.regk,
                       dts=None,
@@ -906,7 +907,7 @@ class Tever:
         if TraitDex.NoBackers in cnfg:
             self.noBackers = True
 
-    def update(self, serder, seqner=None, diger=None, bigers=None):
+    def update(self, serder, seqner=None, saider=None, bigers=None):
         """ Process registry non-inception events.
 
         Process non-inception registry and credential events and update local
@@ -915,7 +916,7 @@ class Tever:
         Parameters:
             serder (Serder): instance of issuance or backer issuance event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
@@ -939,7 +940,7 @@ class Tever:
 
             bigers = self.valAnchorBigs(serder=serder,
                                         seqner=seqner,
-                                        diger=diger,
+                                        saider=saider,
                                         bigers=bigers,
                                         toad=toad,
                                         baks=baks)
@@ -956,7 +957,7 @@ class Tever:
                           sn=sn,
                           serder=serder,
                           seqner=seqner,
-                          diger=diger,
+                          saider=saider,
                           bigers=bigers,
                           baks=self.baks)
             self.reger.states.pin(keys=self.regk, val=self.state())
@@ -964,9 +965,9 @@ class Tever:
             return
 
         elif ilk in (Ilks.iss, Ilks.bis):
-            self.issue(serder, seqner=seqner, diger=diger, sn=sn, bigers=bigers)
+            self.issue(serder, seqner=seqner, saider=saider, sn=sn, bigers=bigers)
         elif ilk in (Ilks.rev, Ilks.brv):
-            self.revoke(serder, seqner=seqner, diger=diger, sn=sn, bigers=bigers)
+            self.revoke(serder, seqner=seqner, saider=saider, sn=sn, bigers=bigers)
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
@@ -997,10 +998,10 @@ class Tever:
             raise ValidationError("Invalid sn = {} expecting = {} for evt "
                                   "= {}.".format(sn, self.sn + 1, ked))
 
-        if not self.serder.compare(dig=dig):  # prior event dig not match
+        if not self.serder.compare(said=dig):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
-                                                               self.serder.diger.qb64,
+                                                               self.serder.saider.qb64,
                                                                ked))
 
         witset = oset(self.baks)
@@ -1049,7 +1050,7 @@ class Tever:
 
         return toad, baks, cuts, adds
 
-    def issue(self, serder, seqner, diger, sn, bigers=None):
+    def issue(self, serder, seqner, saider, sn, bigers=None):
         """ Process VC TEL issuance events (iss, bis)
 
         Validate and process credential issuance events.  If valid, event is persisted
@@ -1058,7 +1059,7 @@ class Tever:
         Parameters
             serder (Serder): instance of issuance or backer issuance event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event SAID from controlling KEL.
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
@@ -1091,14 +1092,14 @@ class Tever:
                                                                    ked))
 
             # check if fully anchored
-            if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-                if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger):
+            if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
+                if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider):
                     self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked,
                                                    ))
 
-            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger)
+            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider)
 
         elif ilk == Ilks.bis:  # backer issue
             if self.noBackers is True:
@@ -1108,17 +1109,17 @@ class Tever:
             rtoad, baks = self.getBackerState(ked)
             bigers = self.valAnchorBigs(serder=serder,
                                         seqner=seqner,
-                                        diger=diger,
+                                        saider=saider,
                                         bigers=bigers,
                                         toad=rtoad,
                                         baks=baks)
 
-            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger, bigers=bigers)
+            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider, bigers=bigers)
 
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
-    def revoke(self, serder, seqner, diger, sn, bigers=None):
+    def revoke(self, serder, seqner, saider, sn, bigers=None):
         """ Process VC TEL revocation events (rev, brv)
 
         Validate and process credential revocation events.  If valid, event is persisted
@@ -1127,7 +1128,7 @@ class Tever:
         Parameters
             serder (Serder): instance of issuance or backer issuance event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event digest from controlling KEL.
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
@@ -1156,10 +1157,10 @@ class Tever:
 
         ievt = bytes(ievt)
         iserder = Serder(raw=ievt)
-        if not iserder.compare(dig=ked["p"]):  # prior event dig not match
+        if not iserder.compare(said=ked["p"]):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
-                                                               self.serder.diger.qb64,
+                                                               self.serder.saider.qb64,
                                                                ked))
 
         if ilk in (Ilks.rev,):  # simple revoke
@@ -1168,13 +1169,13 @@ class Tever:
                                       format(ked, self.regk))
 
             # check if fully anchored
-            if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-                if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger):
+            if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
+                if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider):
                     self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked))
 
-            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger)
+            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider)
 
         elif ilk in (Ilks.brv,):  # backer revoke
             if self.noBackers is True:
@@ -1184,12 +1185,12 @@ class Tever:
             rtoad, baks = self.getBackerState(ked)
             bigers = self.valAnchorBigs(serder=serder,
                                         seqner=seqner,
-                                        diger=diger,
+                                        saider=saider,
                                         bigers=bigers,
                                         toad=rtoad,
                                         baks=baks)
 
-            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger, bigers=bigers)
+            self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider, bigers=bigers)
 
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1232,15 +1233,15 @@ class Tever:
         couple = self.reger.getAnc(dgkey)
         ancb = bytearray(couple)
         seqner = coring.Seqner(qb64b=ancb, strip=True)
-        diger = coring.Diger(qb64b=ancb, strip=True)
+        saider = coring.Saider(qb64b=ancb, strip=True)
 
         return vcstate(vcpre=vcpre,
-                       dig=vcdig.decode("utf-8"),
+                       said=vcdig.decode("utf-8"),
                        sn=vcsn,
                        ri=self.prefixer.qb64,
                        eilk=vcilk,
                        ra=ra,
-                       a=dict(s=seqner.sn, d=diger.qb64),
+                       a=dict(s=seqner.sn, d=saider.qb64),
                        )
 
     def vcSn(self, vcpre):
@@ -1260,7 +1261,7 @@ class Tever:
 
         return None if cnt == 0 else cnt - 1
 
-    def logEvent(self, pre, sn, serder, seqner, diger, bigers=None, baks=None):
+    def logEvent(self, pre, sn, serder, seqner, saider, bigers=None, baks=None):
         """ Update associated logs for verified event.
 
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -1274,14 +1275,14 @@ class Tever:
                 If cloned mode then seqner maybe provided (not None)
                 When seqner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): is optional list of Siger instance of indexed backer sigs
             baks (list): is optional list of qb64 non-trans identifiers of backers
         """
 
-        dig = serder.diger.qb64b
+        dig = serder.saider.qb64b
         key = dgKey(pre, dig)
-        sealet = seqner.qb64b + diger.qb64b
+        sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
@@ -1294,7 +1295,7 @@ class Tever:
         logger.info("Tever state: %s Added to TEL valid event=\n%s\n",
                     pre, json.dumps(serder.ked, indent=1))
 
-    def valAnchorBigs(self, serder, seqner, diger, bigers, toad, baks):
+    def valAnchorBigs(self, serder, seqner, saider, bigers, toad, baks):
         """ Validate anchor and backer signatures (bigers) when provided.
 
         Validates sigers signatures by validating indexes, verifying signatures, and
@@ -1306,7 +1307,7 @@ class Tever:
         Parameters:
             serder (Serder): instance of event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event said from controlling KEL.
             bigers (list)  Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
@@ -1326,8 +1327,8 @@ class Tever:
         # each biger now has werfer of corresponding wit
 
         # check if fully anchored
-        if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
-            if self.escrowALEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers, baks=baks):
+        if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
+            if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers, baks=baks):
                 self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
             raise MissingAnchorError("Failure verify event = {} "
                                      "".format(serder.ked))
@@ -1344,7 +1345,7 @@ class Tever:
                                       " = {}.".format(toad, baks, serder.ked))
 
             if len(bindices) < toad:  # not fully witnessed yet
-                self.escrowPWEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers)
+                self.escrowPWEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers)
 
                 raise MissingWitnessSignatureError("Failure satisfying toad = {} "
                                                    "on witness sigs for {} for evt = {}.".format(toad,
@@ -1353,7 +1354,7 @@ class Tever:
                                                                                                  serder.ked))
         return bigers
 
-    def verifyAnchor(self, serder, seqner, diger):
+    def verifyAnchor(self, serder, seqner, saider):
         """ Retrieve specified anchoring event and verify seal
 
         Retrieve event from db using anchor, get seal from event eserder and
@@ -1362,7 +1363,7 @@ class Tever:
         Parameters:
             serder (Serder): anchored TEL event
             seqner (Seqner): sequence number of anchoring event
-            diger (Diger): digest of anchoring event
+            saider (Saider): digest of anchoring event
 
         Returns:
              bool: True is anchoring event exists in database and seal is valid against
@@ -1385,7 +1386,7 @@ class Tever:
 
         eserder = Serder(raw=raw)  # deserialize event raw
 
-        if eserder.dig != diger.qb64:
+        if eserder.said != saider.qb64:
             return False
 
         seal = eserder.ked["a"]
@@ -1398,37 +1399,37 @@ class Tever:
         sdig = seal["d"]
 
         if spre == serder.ked["i"] and ssn == serder.ked["s"] \
-                and serder.dig == sdig:
+                and serder.said == sdig:
             return True
 
         return False
 
-    def escrowPWEvent(self, serder, seqner, diger, bigers=None):
+    def escrowPWEvent(self, serder, seqner, saider, bigers=None):
         """ Update associated logs for escrow of partially witnessed event
 
         Parameters:
             serder (Serder): instance of  event
             seqner (Seqner): sequence number for anchor seal
-            diger (Diger): digest of anchor
+            saider (Saider): digest of anchor
             bigers (list): Siger instance of indexed witness sigs
 
         """
-        dgkey = dgKey(serder.preb, serder.digb)
-        sealet = seqner.qb64b + diger.qb64b
+        dgkey = dgKey(serder.preb, serder.saidb)
+        sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(dgkey, sealet)
         self.reger.putTibs(dgkey, [biger.qb64b for biger in bigers])
         self.reger.putTvt(dgkey, serder.raw)
-        self.reger.putTwe(snKey(serder.preb, serder.sn), serder.digb)
+        self.reger.putTwe(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("Tever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
 
-    def escrowALEvent(self, serder, seqner, diger, bigers=None, baks=None):
+    def escrowALEvent(self, serder, seqner, saider, bigers=None, baks=None):
         """ Update associated logs for escrow of anchorless event
 
         Parameters:
             serder (Serder): instance of  event
             seqner (Seqner): sequence number for anchor seal
-            diger (Diger): digest of anchor
+            saider (Saider): SAID of anchor
             bigers (list): Siger instance of indexed witness sigs
             baks (list): qb64 of new backers
 
@@ -1436,9 +1437,9 @@ class Tever:
             bool: True if escrow is successful, False otherwith (eg. already escrowed)
 
         """
-        key = dgKey(serder.preb, serder.digb)
-        if seqner and diger:
-            sealet = seqner.qb64b + diger.qb64b
+        key = dgKey(serder.preb, serder.saidb)
+        if seqner and saider:
+            sealet = seqner.qb64b + saider.qb64b
             self.reger.putAnc(key, sealet)
         if bigers:
             self.reger.putTibs(key, [biger.qb64b for biger in bigers])
@@ -1448,7 +1449,7 @@ class Tever:
         self.reger.putTvt(key, serder.raw)
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
-        return self.reger.putTae(snKey(serder.preb, serder.sn), serder.digb)
+        return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
         """ Calculate and return the current list of backers for event dict
@@ -1539,7 +1540,7 @@ class Tevery:
 
         return self.db.kevers
 
-    def processEvent(self, serder, seqner, diger, wigers=None):
+    def processEvent(self, serder, seqner, saider, wigers=None):
         """ Process one event serder with attached indexde signatures sigers
 
         Validates event against current state of registry or credential, creating registry
@@ -1549,7 +1550,7 @@ class Tevery:
         Parameters:
             serder (Serder): event to process
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            diger (Diger): issuing event digest from controlling KEL.
+            saider (Saider): issuing event digest from controlling KEL.
             wigers (list): optional list of Siger instances of attached witness indexed sigs
 
         """
@@ -1563,6 +1564,7 @@ class Tevery:
         regk = self.registryKey(serder)
         pre = serder.pre
         ked = serder.ked
+        said = serder.said
         sn = ked["s"]
         ilk = ked["t"]
 
@@ -1586,7 +1588,7 @@ class Tevery:
                 # incepting a new registry, Tever create will validate anchor, etc.
                 tever = Tever(serder=serder,
                               seqner=seqner,
-                              diger=diger,
+                              saider=saider,
                               bigers=wigers,
                               reger=self.reger,
                               db=self.db,
@@ -1601,7 +1603,7 @@ class Tevery:
                     pass
             else:
                 # out of order, need to escrow
-                self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
+                self.escrowOOEvent(serder=serder, seqner=seqner, saider=saider)
                 raise OutOfOrderError("escrowed out of order event {}".format(ked))
 
         else:
@@ -1618,12 +1620,15 @@ class Tevery:
                 esn = tever.vcSn(pre)
                 sno = 0 if esn is None else esn + 1
 
+            if not serder.saider.verify(sad=serder.ked):
+                raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
+
             if sn > sno:  # sn later than sno so out of order escrow
                 # escrow out-of-order event
-                self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
+                self.escrowOOEvent(serder=serder, seqner=seqner, saider=saider)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
-                tever.update(serder=serder, seqner=seqner, diger=diger, bigers=wigers)
+                tever.update(serder=serder, seqner=seqner, saider=saider, bigers=wigers)
 
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
@@ -1828,18 +1833,17 @@ class Tevery:
 
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
 
-        diger = coring.Diger(qb64=ked["d"])
+        tsaider = coring.Saider(qb64=ked["d"])
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
         sserder = Serder(raw=bytes(sraw))
 
-        if not sserder.compare(dig=diger.qb64b):  # mismatch events problem with replay
+        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
                                   "".format(ked["s"]))
 
-        tsaider = coring.Saider(qb64=diger.qb64)
         self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", serder=tserder))
 
@@ -1977,7 +1981,7 @@ class Tevery:
 
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
 
-        diger = coring.Diger(qb64=ked["d"])
+        tsaider = coring.Saider(qb64=ked["d"])
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
@@ -1988,11 +1992,10 @@ class Tevery:
             raise ValidationError("Stale txn state at sn = {} with db."
                                   "".format(ked["s"]))
 
-        if not sserder.compare(dig=diger.qb64b):  # mismatch events problem with replay
+        if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch txn state at sn = {} with db."
                                   "".format(ked["s"]))
 
-        tsaider = coring.Saider(qb64=diger.qb64)
         self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", serder=tserder))
 
@@ -2019,7 +2022,7 @@ class Tevery:
         else:
             raise ValidationError("invalid ilk {} for tevery event = {}".format(ilk, serder.ked))
 
-    def escrowOOEvent(self, serder, seqner, diger):
+    def escrowOOEvent(self, serder, seqner, saider):
         """ Escrow out-of-order TEL events.
 
         Saves the serialized event, anchor and event digest in escrow for any
@@ -2032,15 +2035,15 @@ class Tevery:
         Parameters:
             serder (Serder): serder of event message
             seqner (Seqner): sequence number of anchoring TEL event
-            diger (Diger) digest of anchoring TEL event
+            saider (Diger) digest of anchoring TEL event
 
 
         """
-        key = dgKey(serder.preb, serder.digb)
+        key = dgKey(serder.preb, serder.saidb)
         self.reger.putTvt(key, serder.raw)
-        sealet = seqner.qb64b + diger.qb64b
+        sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
-        self.reger.putOot(snKey(serder.preb, serder.sn), serder.digb)
+        self.reger.putOot(snKey(serder.preb, serder.sn), serder.saidb)
         logger.info("Tever state: Escrowed our of order TEL event "
                     "event = %s\n", serder.ked)
 
@@ -2121,9 +2124,9 @@ class Tevery:
                                           "".format(bytes(digb)))
                 ancb = bytearray(couple)
                 seqner = coring.Seqner(qb64b=ancb, strip=True)
-                diger = coring.Diger(qb64b=ancb, strip=True)
+                saider = coring.Saider(qb64b=ancb, strip=True)
 
-                self.processEvent(serder=tserder, seqner=seqner, diger=diger, wigers=bigers)
+                self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
 
             except MissingAnchorError as ex:
                 # still waiting on missing prior event to validate

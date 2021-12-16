@@ -289,7 +289,7 @@ class Revery:
             accepted = True
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
+        for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
             if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.info("Kevery process: skipped own attachment"
@@ -327,7 +327,7 @@ class Revery:
                 # signer's est event not yet in signer's KEL
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
-                                 diger=diger, sigers=sigers)
+                                 ssaider=ssaider, sigers=sigers)
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
                 continue
 
@@ -335,7 +335,7 @@ class Revery:
             sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = coring.Serder(raw=bytes(sraw))
-            if not sserder.compare(diger=diger):  # signer's dig not match est evt
+            if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")
             # verify sigs
@@ -345,7 +345,7 @@ class Revery:
 
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
-            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
+            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
             sigers, valid = eventing.validateSigs(serder=serder,
@@ -357,14 +357,14 @@ class Revery:
             if valid:  # meet threshold so save
                 # All constraints satisfied so update
                 self.updateReply(serder=serder, saider=saider, dater=dater,
-                                 prefixer=prefixer, seqner=seqner, diger=diger,
+                                 prefixer=prefixer, seqner=seqner, diger=ssaider,
                                  sigers=sigers)
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in eventing.fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
                     if ((snr.sn < seqner.sn) or
-                            (snr.sn == seqner.sn and dgr.qb64 != diger.qb64)):
+                            (snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64)):
                         self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
 
                 accepted = True
@@ -372,7 +372,7 @@ class Revery:
             else:  # not meet threshold so escrow
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
-                                 diger=diger, sigers=sigers)
+                                 ssaider=ssaider, sigers=sigers)
 
         return accepted
 
@@ -422,7 +422,7 @@ class Revery:
             self.db.sdts.rem(keys=keys)
 
     def escrowReply(self, *, serder, saider, dater, route, prefixer, seqner,
-                    diger, sigers):
+                    ssaider, sigers):
         """
         Escrow reply by route
 
@@ -434,7 +434,7 @@ class Revery:
 
             prefixer (Prefixer): is pre of trans endorser
             seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
-            diger (Diger) is digest of trans endorser's est evt for keys for sigs
+            ssaider (Saider) is said of trans endorser's est evt for keys for sigs
             sigers (list): is indexed sigs from trans endorser's key from est evt
         """
         if not sigers:
@@ -442,7 +442,7 @@ class Revery:
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
-        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
+        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 

@@ -152,7 +152,7 @@ class Exchanger(doing.DoDoer):
             source is Prefixer of the origin of the exn
             sigers is list of Siger instances of indexed controller sigs
         """
-        dig = serder.digb
+        dig = serder.saidb
         self.hab.db.epse.put(keys=dig, val=serder)
         self.hab.db.esigs.put(keys=dig, vals=sigers)
         self.hab.db.esrc.put(keys=dig, val=source)

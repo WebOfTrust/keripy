@@ -48,7 +48,7 @@ def test_parser():
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
                         nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -70,10 +70,10 @@ def test_parser():
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
                         sn=1)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -88,10 +88,10 @@ def test_parser():
         # Event 2 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
                         sn=2)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -105,9 +105,9 @@ def test_parser():
 
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=3)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -121,9 +121,9 @@ def test_parser():
 
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=4)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -138,10 +138,10 @@ def test_parser():
         # Event 5 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
                         sn=5)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -155,9 +155,9 @@ def test_parser():
 
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=6)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -173,10 +173,10 @@ def test_parser():
         # nxt digest is empty
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt="",
                         sn=7)
-        event_digs.append(serder.dig)
+        event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization
@@ -190,7 +190,7 @@ def test_parser():
 
         # Event 8 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -207,7 +207,7 @@ def test_parser():
         # Event 8 Rotation
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
                         sn=8)
         # create sig counter

@@ -95,7 +95,7 @@ class WitnessReceiptor(doing.DoDoer):
 
             _ = (yield self.tock)
 
-        dgkey = dbing.dgKey(ser.preb, ser.digb)
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
         while True:
             wigs = self.hab.db.getWigs(dgkey)
             if len(wigs) == len(wits):
@@ -106,7 +106,7 @@ class WitnessReceiptor(doing.DoDoer):
         wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=ser.pre,
                                    sn=sn,
-                                   dig=ser.dig)
+                                   said=ser.said)
         rctMsg = eventing.messagize(serder=rserder, wigers=wigers)
 
         # this is a little brute forcey and can be improved by gathering receipts
@@ -1132,7 +1132,7 @@ class KiwiServer(doing.DoDoer):
         if group:
             kever = self.hab.kevers[group.gid]
             ser = kever.serder
-            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            dgkey = dbing.dgKey(ser.preb, ser.saidb)
             wigs = self.hab.db.getWigs(dgkey)
 
             gd = dict(
@@ -1250,7 +1250,7 @@ class KiwiServer(doing.DoDoer):
         for (name,), habr in habs:
             kever = self.hab.kevers[habr.prefix]
             ser = kever.serder
-            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            dgkey = dbing.dgKey(ser.preb, ser.saidb)
             wigs = self.hab.db.getWigs(dgkey)
 
             gd = dict(
