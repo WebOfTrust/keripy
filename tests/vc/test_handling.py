@@ -32,7 +32,7 @@ def test_issuing():
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
                                  wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
         sidPre = sidHab.pre
-        assert sidPre == "EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM"
+        assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
 
         redKvy = eventing.Kevery(db=redDB)
 
@@ -59,20 +59,20 @@ def test_issuing():
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EDS25tLS65M0TCFufzPrB6LGbPMD-94uZeNMoHwYMiEs"
+        assert creder.said == "EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3KUhWbyavJpI"
 
         issuer.issue(creder=creder)
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EDS25tLS65M0TCFufzPrB6LGbPMD-94uZe'
-                       b'NMoHwYMiEs","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
-                       b'i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"E6wo'
-                       b'-DkpRamjRdofuOvuN5GFj3Eo2SJMRyzkzbxZqTv4","i":"EWJuxKtF-w3DD9RuH'
-                       b'IO0zcIo7eakSkcUT6XBfGU_sAqM","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EQNgVMXpmIWmPLoNgPxj1-xC'
-                       b'MTm0-K8f3sBlUckNZSTY"},"p":[]}-VA0-FABEWJuxKtF-w3DD9RuHIO0zcIo7e'
-                       b'akSkcUT6XBfGU_sAqM0AAAAAAAAAAAAAAAAAAAAAAAEK29DLvJwcxTSkPvaBJttJ'
-                       b'kuzZ3NUgBKyx_eV2k7bcZs-AABAAOqKy8SbNPYKbIniRlBXu6Q_WX8w4mpgLornU'
-                       b'--u-cI89A9nKbhbh7rvYwbJ_n1d5t-J08Qhl7UdMLqDO4IwMCQ')
+        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3K'
+                       b'UhWbyavJpI","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+                       b'i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6X'
+                       b'brY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a6-Vc","i":"EeBZcaNdy0ZkuquN3'
+                       b'67PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21:26:21.233257+00'
+                       b':00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRerXG3S'
+                       b'91Xs2ESrLgtBPlXkrQfw"},"p":[]}-VA0-FABEeBZcaNdy0ZkuquN367PMj4Plg'
+                       b'1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEeBZcaNdy0ZkuquN367PMj'
+                       b'4Plg1201MSevpLREfB3Pxs-AABAA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7'
+                       b'T_khiIgqSV_9QFBLwMNwkzWZ9RkVu-V1KxIUNc64f5-4bJ_mCQ')
 
         # Create the issue credential payload
         pl = dict(
@@ -90,14 +90,14 @@ def test_issuing():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"KERI10JSON00019e_","d":"EDS25tLS65M0TCFufzPrB6LGbPMD-94uZeNMoHwYMiEs",'
-               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EWJuxKtF-w3DD9RuHIO0'
-               b'zcIo7eakSkcUT6XBfGU_sAqM","a":{"d":"E6wo-DkpRamjRdofuOvuN5GFj3Eo2SJMRyzkzbxZ'
-               b'qTv4","i":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EQNgVMXpmIWmPLoNgPxj'
-               b'1-xCMTm0-K8f3sBlUckNZSTY"},"p":[]}')
-        sig0 = (b'AAOqKy8SbNPYKbIniRlBXu6Q_WX8w4mpgLornU--u-cI89A9nKbhbh7rvYwbJ_n1d5t-J08Qhl7U'
-                b'dMLqDO4IwMCQ')
+        ser = (b'{"v":"KERI10JSON00019e_","d":"EO7O-BNnOmo2hAJ8Sn0mdGzgsbcBzyeu3KUhWbyavJpI",'
+               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EeBZcaNdy0ZkuquN367P'
+               b'Mj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6XbrY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a'
+               b'6-Vc","i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRer'
+               b'XG3S91Xs2ESrLgtBPlXkrQfw"},"p":[]}')
+        sig0 = (b'AA84sX0uWFDGe5SOvjmnommgxTwnNGp76K8Qy7T_khiIgqSV_9QFBLwMNwkzWZ9RkVu-V1KxIUNc'
+                b'64f5-4bJ_mCQ')
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
@@ -132,7 +132,7 @@ def test_proving():
         doist = doing.Doist(limit=limit, tock=tock)
 
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
-        assert sidHab.pre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
+        assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
         sidIcpMsg = sidHab.makeOwnInception()
 
         hanKvy = eventing.Kevery(db=hanDB)
@@ -140,7 +140,7 @@ def test_proving():
         assert hanKvy.kevers[sidHab.pre].sn == 0  # accepted event
 
         hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
-        assert hanHab.pre == "EKDWzykRd45o5UQyprm_9e8UcltXGo1tZCrdfGBTA8tc"
+        assert hanHab.pre == "EXs465M4avETtnmCD2cd02CDwE5K-1vyTnyfk15_PRPs"
         hanIcpMsg = hanHab.makeOwnInception()
 
         vicKvy = eventing.Kevery(db=vicDB)
@@ -148,7 +148,7 @@ def test_proving():
         assert vicKvy.kevers[hanHab.pre].sn == 0  # accepted event
 
         vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
-        assert vicHab.pre == "E8HQASAgOnZnQ4T7rv3dcvj0-UydrTTtyCprhEASk__o"
+        assert vicHab.pre == "EvOnXBWyrNJbR4wf__Qn79YAf-u3GynE3ychvkuiGnEI"
         vicIcpMsg = vicHab.makeOwnInception()
 
         parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
@@ -172,7 +172,7 @@ def test_proving():
                             status=issuer.regk,
                             )
 
-        assert creder.said == "EFsACDhPR9UOxiYwHPgZOAEpORwZLSpaWcUIQDAYUlK0"
+        assert creder.said == "E6-urcXGcMqAttS_vhTIhnDfVNyrRpD4a4H-tljMlFuc"
 
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(reger=hanPDB)
@@ -212,7 +212,7 @@ def test_proving():
         respSer = coring.Serder(raw=resp["rep"].raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/presentation/proof"
-        data = respSer.ked['d']
+        data = respSer.ked['a']
         assert "presentation_submission" in data
 
         pe = data["presentation_submission"]
@@ -227,9 +227,9 @@ def test_proving():
         assert len(vcs) == 1
 
         proof = (
-            "-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE"
-            "-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI"
-            "-AABAAfWUIcCddbWKkmUeZLeqoAGBvezE5NWWZ6MQkgxp6EMxDrhpUWUrpnDabsvmLJ67R5znLb24G59p2f-MIygF9Dg")
+            "-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny"
+            "-6AfglVOKnJje8-vqyKTlh0nc-AABAACh-lXY9RhTOTsEiX1A8PSMcACFwSeS4Ba8wg2mZtfYVg-ah6iRHBPwyDS40hQJ2w9"
+            "-NCemL_JgvG2-ohIU5zCQ")
 
         assert vcs[0]["proof"] == proof
 

@@ -78,9 +78,8 @@ class GroupMultisigInteract(doing.DoDoer):
             yield self.tock
 
         rep = self.rotr.cues.popleft()
-        print(rep)
         print()
-        print("Group Identifier Rotation Complete:")
+        print("Group Identifier Interaction Complete:")
         displaying.printIdentifier(self.hab, rep["pre"])
 
         self.remove(self.toRemove)

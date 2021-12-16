@@ -25,7 +25,7 @@ def test_watcher_rotate_handler(mockGetWitnessByPrefixOneWitness):
         ctrlIcp = ctrl.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(ctrlIcp), kvy=watKvy)
         assert wat.pre == "BZg042qyBYoNC4rII1qdn7sPJPSh5vp5y0xnVYbJPujw"
-        assert ctrl.pre == "EXVHM9bcTrQS0uOGCRPPQCHZGghFAs2tvUQbYt4_nnT4"
+        assert ctrl.pre == "EWXKVEUufqmaOdCV27o51QPfvQR5s9qmOIG20HCL5Ebc"
 
         habr = ctrl.db.habs.get(ctrl.name)
         habr.watchers = list([wat.pre])

@@ -49,7 +49,7 @@ def test_directing_basic():
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
+    assert bob == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
 
     # set of secrets (seeds for private keys)
     eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -75,7 +75,7 @@ def test_directing_basic():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
     with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
             basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
@@ -93,7 +93,7 @@ def test_directing_basic():
                                  temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert bobHab.iserder.dig == bobSerder.dig
+        assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
@@ -126,7 +126,7 @@ def test_directing_basic():
                                  temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.iserder.dig == eveSerder.dig
+        assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)

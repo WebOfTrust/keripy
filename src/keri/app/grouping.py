@@ -136,7 +136,7 @@ class Groupy:
                                                                            mssrdr.ked))
 
             #  Add this group identifier prefix to my list of group identifiers I participate in
-            group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.dig, cst=nsith, aids=aids)
+            group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
             self.db.gids.pin(self.hab.pre, group)
 
             self.cues.append(dict(
@@ -202,7 +202,7 @@ class Groupy:
                 mskeys, msdigers = self.extractKeysDigs(group.aids)
                 wits = gkev.wits
                 mssrdr = eventing.rotate(pre=gkev.prefixer.qb64,
-                                         dig=gkev.serder.dig,
+                                         dig=gkev.serder.said,
                                          sn=sno,
                                          keys=[mskey.qb64 for mskey in mskeys],
                                          sith=group.cst,  # the previously committed to signing threshold
@@ -225,7 +225,7 @@ class Groupy:
                                                                            mssrdr.ked))
 
             group.cst = sith
-            group.dig = mssrdr.dig
+            group.said = mssrdr.said
             self.hab.db.gids.pin(self.hab.pre, group)
 
             self.cues.append(dict(
@@ -264,7 +264,7 @@ class Groupy:
 
             if mssrdr is None:
                 mssrdr = eventing.interact(pre=gkev.prefixer.qb64,
-                                           dig=gkev.serder.dig,
+                                           dig=gkev.serder.said,
                                            sn=sno,
                                            data=data)
                 sigers = self.signAndPropagate(mssrdr, group.aids)
@@ -327,7 +327,7 @@ class Groupy:
 
         """
         msg["pre"] = mssrdr.pre
-        msg["dig"] = mssrdr.dig
+        msg["dig"] = mssrdr.said
         dat = json.dumps(msg).encode("utf-8")
         self.db.gpse.add(self.hab.pre, dat)
 
@@ -384,7 +384,7 @@ class Groupy:
             eraw = self.db.getEvt(dgkey)
             mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-            dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+            dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
             sigs = self.hab.db.getSigs(dgkey)
             sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
 

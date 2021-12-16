@@ -32,18 +32,18 @@ def test_weighted():
 
         # create inception event for Wes with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
-        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        sith = ["1/2", "1/2", "1/2"]  # 2 of 3 but with weighted threshold
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers, cst, nst = wesMgr.incept(icount=3, isith=sith,
-                                               ncount=3, nsith=nxtsith,
-                                               stem='wes', temp=True)
+                                                  ncount=3, nsith=nxtsith,
+                                                  stem='wes', temp=True)
         assert cst == nst == sith
 
         wesSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                   sith=sith,
-                                 nxt=coring.Nexter(sith=nxtsith,
-                                                   digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.MtrDex.Blake3_256)
+                                  nxt=coring.Nexter(sith=nxtsith,
+                                                    digs=[diger.qb64 for diger in digers]).qb64,
+                                  code=coring.MtrDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
 
@@ -53,77 +53,79 @@ def test_weighted():
 
         msg = bytearray(wesSrdr.raw)
         counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
-                                    count=len(sigers))
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON00015b_","i":"EX0WJtv6vc0IWzOqa92Pv9v9pgs1f0BfIV'
-                                b'rSch648Zf0","s":"0","t":"icp","kt":["1/2","1/2","1/2"],"k":["DK4'
-                                b'OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c","D1RZLgYke0GmfZm-CH8A'
-                                b'sW4HoTU4m-2mFgu8kbwp8jQU","DBVwzum-jPfuUXUcHEWdplB4YcoL3BWGXK0TM'
-                                b'oF_NeFU"],"n":"EhJGhyJQTpSlZ9oWfQT-lHNl1woMazLC42O89fRHocTI","bt'
-                                b'":"0","b":[],"c":[],"a":[]}-AADAAKWMK8k4Po2A0rBrUBjBom73DfTCNg_b'
-                                b'iwR-_LWm6DMHZHGDfCuOmEyR8sEdp7cPxhsavq4istIZ_QQ42yyUcDAABeTClYkN'
-                                b'-yjbW3Kz3ot6MvAt5Se-jmcjhu-Cfsv4m_GKYgc_qwel1SbAcqF0TiY0EHFdjNKv'
-                                b'Ikg3q19KlhSbuBgACA6QMnsnZuy66xrZVg3c84mTodZCEvOFrAIDQtm8jeXeCTg7'
-                                b'yFauoQECZyNIlUnnxVHuk2_Fqi5xK_Lu9Pt76Aw')
+        assert msg == bytearray(b'{"v":"KERI10JSON00018e_","t":"icp","d":"EZgXYINAQWXFpxAmWI9AwOwj'
+                                b'VOYXzjyEE_-DdTfkEk8s","i":"EZgXYINAQWXFpxAmWI9AwOwjVOYXzjyEE_-Dd'
+                                b'TfkEk8s","s":"0","kt":["1/2","1/2","1/2"],"k":["DK4OJI8JOr6oEEUM'
+                                b'eSF_X-SbKysfwpKwW-ho5KARvH5c","D1RZLgYke0GmfZm-CH8AsW4HoTU4m-2mF'
+                                b'gu8kbwp8jQU","DBVwzum-jPfuUXUcHEWdplB4YcoL3BWGXK0TMoF_NeFU"],"n"'
+                                b':"EhJGhyJQTpSlZ9oWfQT-lHNl1woMazLC42O89fRHocTI","bt":"0","b":[],'
+                                b'"c":[],"a":[]}-AADAAo74mzRNAT5WEVRYaUWs4apfEY9oblVL2MtNSORwsEVFN'
+                                b'oyH8Vh_w_WC9TGfH-_zqN8dISIy102JtmBwllvHnBAABYQAmtsf2yhqi0zvF--TV'
+                                b'Wp7kfzVRy3BQkTdYmJrfOZFnvp0kbXlG-PCXPO7OXbKM0ZLJ1Ga_qVJ_y-ERIMac'
+                                b'CwACInxprKSzFp2-LNPn7eVAAc8z0XO0KbUE26vv_PXt5IMwyx6S5A1nCC4DQrv6'
+                                b'bYHmmXP0YQpkOIm-tRHrPCOuDg')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
-        assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
+        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
 
         # create interaction event for Wes
         wesSrdr = eventing.interact(pre=wesK.prefixer.qb64,
-                                    dig=wesK.serder.diger.qb64,
-                                    sn=wesK.sn+1,
+                                    dig=wesK.serder.saider.qb64,
+                                    sn=wesK.sn + 1,
                                     data=[])
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
         msg = bytearray(wesSrdr.raw)
         counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
-                                    count=len(sigers))
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000098_","i":"EX0WJtv6vc0IWzOqa92Pv9v9pgs1f0BfIV'
-                                b'rSch648Zf0","s":"1","t":"ixn","p":"EInuqF20s1O0JhVJaOuKCZZDDyw6D'
-                                b'YxATbiuC5Hv3WXs","a":[]}-AADAAmg8UoBCTlnENiySBpn6j7mR1w0gdkfC8Ai'
-                                b'aYL5NCFfePp5ZK3CmnP7oQdj_ggiNp9FZNE0Q69A99wNK5FrwzDgABQZZunmJr2X'
-                                b'3BYgX34-6SOpzkHZQS99ZL0tDsDyUIL7jZhD1e1203Fh6BnkDjzum2au2dGHJcIP'
-                                b'giFGfDsrI5DwACwwYqqYYdEXeLpx_o6LTSKU-Fz_WF2gebP9Z72bZ75atg7_ZM3H'
-                                b'g6hhztstGt8TthRQ0TJn6rkvatkbn6yzRjBw')
+        assert msg == bytearray(b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"E8LhfiGHj_YPjzZWu7xxMrla'
+                                b'8Bz3Fn-L6tJFlQcgeA_0","i":"EZgXYINAQWXFpxAmWI9AwOwjVOYXzjyEE_-Dd'
+                                b'TfkEk8s","s":"1","p":"EZgXYINAQWXFpxAmWI9AwOwjVOYXzjyEE_-DdTfkEk'
+                                b'8s","a":[]}-AADAAvVH0h_W7QuioTt0OmcRgtZSksfQ7MOTYMd4Nc14rdJ9U6j1'
+                                b'ycr06YCtuGTM-J34d0ADnG3f_0F3t3dX_lZacBQAB5LMjFgsQe_k-dxRgGcIBbEa'
+                                b'30rPKkCOCNyqnjw56vl-V7RtOlAGIJ_KsyBrF0GD5vZp1NSGsmgTM5Ww36pqQAgA'
+                                b'C077aW784R0cRErpzhndWsrbFs32lmhOdJ0QyAQ4MlKE0Li6dR20XtEoRLtGCcPo'
+                                b'i6C188Gu1TwzmYOPlUjW2Bw')
 
         # apply msg to wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
+        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
-        nxtsith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]  # 2 of 3 but with weighted threshold
         verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=3, sith=nxtsith, temp=True)
         assert nst == nxtsith
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   sith=sith,
-                                  dig=wesK.serder.diger.qb64,
+                                  dig=wesK.serder.saider.qb64,
                                   nxt=coring.Nexter(sith=nxtsith,
                                                     digs=[diger.qb64 for diger in digers]).qb64,
-                                  sn=wesK.sn+1,
+                                  sn=wesK.sn + 1,
                                   data=[])
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
         counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
-                                    count=len(sigers))
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -143,13 +145,13 @@ def test_weighted():
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
+        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
-        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
         verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
         assert cst == sith
         assert nst == nxtsith
@@ -157,87 +159,86 @@ def test_weighted():
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   sith=sith,
-                                  dig=wesK.serder.diger.qb64,
+                                  dig=wesK.serder.saider.qb64,
                                   nxt=coring.Nexter(sith=nxtsith,
                                                     digs=[diger.qb64 for diger in digers]).qb64,
-                                  sn=wesK.sn+1,
+                                  sn=wesK.sn + 1,
                                   data=[])
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
         counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
-                                    count=len(sigers))
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000190_","i":"EX0WJtv6vc0IWzOqa92Pv9v9pgs1f0BfIV'
-                                b'rSch648Zf0","s":"3","t":"rot","p":"EK1BTah7lTyaaol7sLdg9uObplAjP'
-                                b'o_JOz1m4WPaLJBw","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAj'
-                                b'DceIEs66xPMY4Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM'
-                                b'61BA-s0A5F4","DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"n"'
-                                b':"EcM4iw7fElXWhad8V-za4Px7nBKjndxoh3XZRkohghKY","bt":"0","br":[]'
-                                b',"ba":[],"a":[]}-AADAAl6FtC6Ynm8RAoa2utkIqJX5xW1ZxIkEH7I_MUCXL0p'
-                                b'OUT8P0lCgPzn9dvmUagHbzZ4GIwOBqGI-lQJbeESnZBQAB_nJLQJTf9t1NJxNoP5'
-                                b'gve9QEQbHFkn2aX6O78_bzOGUf01y8KSl-ugi0_B9-w0dk4J7gjYbv7RhG-TmFPE'
-                                b'mEAAACEpJiOTGarwK4jWZ9ZKue05uYPDW5wp4HC8VIt6R93h7WHLqqLVH1m3n5jd'
-                                b'AkiM4RFdhUqBwt-jKBfHQmVoBBCA')
-
+        assert msg == bytearray(b'{"v":"KERI10JSON0001c3_","t":"rot","d":"Ebhb0Fnink_-r0JfJQIVr15G'
+                                b'0Ew8upPjo94-cT3SzdlU","i":"EZgXYINAQWXFpxAmWI9AwOwjVOYXzjyEE_-Dd'
+                                b'TfkEk8s","s":"3","p":"EzkHD4jwDn4EGqEvQtPnt6iWj0zwDCTj8zbM6tBCGH'
+                                b'Ng","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAjDceIEs66xPMY4'
+                                b'Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM61BA-s0A5F4",'
+                                b'"DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"n":"EcM4iw7fElX'
+                                b'Whad8V-za4Px7nBKjndxoh3XZRkohghKY","bt":"0","br":[],"ba":[],"a":'
+                                b'[]}-AADAAR0IDqMweOsLfeTDzXo6kPPjoBwAGJNRm9MuYNA07_ky8vNJ5d-0Fcln'
+                                b'yHjnJcRN26DRIjyfVh5tAzgv9PuhIBAABiB2hbNyJ6oCKNSF4akuxF4fbuwVUsCn'
+                                b'YhW9n9LjFxO8GCkcfKdeDllLkGjhMCCrTV_HI5-5SWQUvLlOGsxolAgAC9Yw0Kt_'
+                                b'uYktLvZQIBq-eGNx7kJNvKxsedaOkY-j1yrjtfyOHEwY65JsQ7dG-anckc0KfhPC'
+                                b'ld47DBRtVPSjLAQ')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
+        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
-        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
         verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
         assert cst == nst == nxtsith
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   sith=sith,
-                                  dig=wesK.serder.diger.qb64,
+                                  dig=wesK.serder.saider.qb64,
                                   nxt=coring.Nexter(sith=nxtsith,
                                                     digs=[diger.qb64 for diger in digers]).qb64,
-                                  sn=wesK.sn+1,
+                                  sn=wesK.sn + 1,
                                   data=[])
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
         counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
-                                    count=len(sigers))
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0001fe_","i":"EX0WJtv6vc0IWzOqa92Pv9v9pgs1f0BfIV'
-                                b'rSch648Zf0","s":"4","t":"rot","p":"EVfMO5GK8tg4KE8XCelX1s_TG_Hqr'
-                                b'_kzb3ghIBYvzC6U","kt":[["1/2","1/2","1/2"],["1/1","1/1"]],"k":["'
-                                b'DToUWoemnetqJoLFIqDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMD'
-                                b'IW6n-0NGFubbXiZhzWZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9'
-                                b'b6QhPS8IkQ","Dxj5pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5z'
-                                b'r5eH8EUVQXyAaxWfQUWkGCId-QDCvvxMT77ibj2Q"],"n":"E3in3Z14va0kk4Wq'
-                                b'd3vcCAojKNtQq7ZTrQaavR8x0yu4","bt":"0","br":[],"ba":[],"a":[]}-A'
-                                b'AFAAdxx4UfoNYdXckLY9nSYvqYLJzvIRhixshBbqkQ6uwvqaVmwPqmvck0V9xl5x'
-                                b'3ssVclasm8Ga3FTkcbmbV2jXDgABBWUhku-qDq8wYn5XMQuKzidAsA6bth8-EsCx'
-                                b'9WwTIqWBR-AecW-3X1haAyJshqplDsS9MnZfVgmSHokwdLnRCQACp2tB0pFRv_C7'
-                                b'nUXPf9rFKvlWUllrsY6Y1_F4bAOMvyCU-PES4HwyUQv3kQnLxEqnf0fbOYdHJNGo'
-                                b'sXi-UqL9BAADW89YpsS5m3IASAtXvXEPez-0y11JRP8bAiUUBdIxGB9ms79jPZnQ'
-                                b'tF3045byf3m0Dvi91Y9d4sh-xkzZ15v9DAAE6QR9qNXnHXLisg4Mbadav9AdMjS4'
-                                b'uz6jNG1AL6UCa7P90Y53v1V6VRaOPu_RTWXcXYRGqA9BHJ2rLNYWJTJTBA')
-
+        assert msg == bytearray(b'{"v":"KERI10JSON000231_","t":"rot","d":"EDK-dx1__PH_ZJXeZBfxVnod'
+                                b'jUsaczSocKCNluEV6Cec","i":"EZgXYINAQWXFpxAmWI9AwOwjVOYXzjyEE_-Dd'
+                                b'TfkEk8s","s":"4","p":"Ebhb0Fnink_-r0JfJQIVr15G0Ew8upPjo94-cT3Szd'
+                                b'lU","kt":[["1/2","1/2","1/2"],["1/1","1/1"]],"k":["DToUWoemnetqJ'
+                                b'oLFIqDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMDIW6n-0NGFubbX'
+                                b'iZhzWZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9b6QhPS8IkQ","'
+                                b'Dxj5pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5zr5eH8EUVQXyAa'
+                                b'xWfQUWkGCId-QDCvvxMT77ibj2Q"],"n":"E3in3Z14va0kk4Wqd3vcCAojKNtQq'
+                                b'7ZTrQaavR8x0yu4","bt":"0","br":[],"ba":[],"a":[]}-AAFAAt2EjEPyJO'
+                                b'MqtUdrp2EaRenlwriXviQ0hJ4Wx0agCok1sU3QMFS5hRdwX_NEFca9OnKGVjOag6'
+                                b'K_F4yOs1BiuDQABN30bxBTVoemwfv6bPMqi9aIBKAuqm5IjcXFpS6vdnSdcQiz5V'
+                                b'Wb5DzpjhBztZyTiBbmxihl4tGyJ8xMTlIcmAwACq5YQaTJ45Smm2UwhyX5YLVkvx'
+                                b'eJxt9oewmGAhOxyp-_tu0KAe2mehFHa6s9BlcqE-401mQh5EcniFbdHx3eAAQADR'
+                                b'8Mtsn-7UKC-LjWq45-tKJfV8QVTaAXGiQsXye6DC7cf5iKQeUw7NXIcuxb-CXLL3'
+                                b'AIMg3ZfhYy44-wW6pq6BgAEPtQg63EnWDfhwQjqgIlAHGupkeE_2hZhEp2Lcx0m5'
+                                b'x4w0S6XqR9_Lx86RMnrzc3G9W3CJ_V5iEJhNQAqdTFqCw')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-
+        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
 
     assert not os.path.exists(wesKS.path)
     assert not os.path.exists(wesDB.path)

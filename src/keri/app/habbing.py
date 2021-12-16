@@ -524,7 +524,7 @@ class Habitat:
         if kever.delegator is not None:
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=[verfer.qb64 for verfer in verfers],
-                                      dig=kever.serder.diger.qb64,
+                                      dig=kever.serder.saider.qb64,
                                       sn=kever.sn + 1,
                                       sith=cst,
                                       nxt=nxt,
@@ -536,7 +536,7 @@ class Habitat:
         else:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=[verfer.qb64 for verfer in verfers],
-                                     dig=kever.serder.diger.qb64,
+                                     dig=kever.serder.saider.qb64,
                                      sn=kever.sn + 1,
                                      sith=cst,
                                      nxt=nxt,
@@ -570,7 +570,7 @@ class Habitat:
         """
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
-                                   dig=kever.serder.diger.qb64,
+                                   dig=kever.serder.saider.qb64,
                                    sn=kever.sn + 1,
                                    data=data)
 
@@ -580,7 +580,7 @@ class Habitat:
         seal = data if isinstance(data, eventing.SealEvent) else None
         msg = eventing.messagize(serder, sigers=sigers, seal=seal)
         self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
-        if kever.serder.dig != serder.dig:
+        if kever.serder.said != serder.said:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
 
@@ -613,7 +613,7 @@ class Habitat:
         ked = serder.ked
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
-                                    dig=serder.dig)
+                                    said=serder.said)
 
         # sign serder event
         if self.kever.prefixer.transferable:
@@ -658,7 +658,7 @@ class Habitat:
 
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
-                                    dig=serder.dig)
+                                    said=serder.said)
         # sign serder event
         wigers = self.mgr.sign(ser=serder.raw,
                                pubs=[self.pre],
@@ -687,7 +687,7 @@ class Habitat:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign
             group = self.db.gids.get(self.pre)  # is it a group ID
-            if group is None:  # not a group use own kever
+            if group is None or group.gid not in self.kevers:  # not a group use own kever
                 kever = self.kever
                 indices = None  # use default order
             else:  # group so use gid kever
@@ -751,7 +751,7 @@ class Habitat:
             sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = Serder(raw=bytes(sraw))
-            if dig is not None and not sserder.compare(diger=coring.Diger(qb64=dig)):  # endorser's dig not match event
+            if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise ValidationError("Bad proof sig group at sn = {}"
                                       " for ksn = {}."
                                       "".format(sn, sserder.ked))
@@ -1165,7 +1165,7 @@ class Habitat:
                             json.dumps(cuedKed, indent=1))
 
                 if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.pre, self.iserder.dig)
+                    dgkey = dbing.dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for quadruple in self.db.getVrcsIter(dgkey):

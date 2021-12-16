@@ -67,7 +67,7 @@ class Exchanger(doing.DoDoer):
         """
 
         route = serder.ked["r"]
-        payload = serder.ked["d"]
+        payload = serder.ked["a"]
         dts = serder.ked["dt"]
 
         if route not in self.routes:
@@ -152,7 +152,7 @@ class Exchanger(doing.DoDoer):
             source is Prefixer of the origin of the exn
             sigers is list of Siger instances of indexed controller sigs
         """
-        dig = serder.digb
+        dig = serder.saidb
         self.hab.db.epse.put(keys=dig, val=serder)
         self.hab.db.esigs.put(keys=dig, vals=sigers)
         self.hab.db.esrc.put(keys=dig, val=source)
@@ -210,11 +210,13 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
 
     ked = dict(v=vs,
                t=ilk,
+               d="",
                dt=dt,
                r=route,
-               d=payload,
-               q=modifiers
+               q=modifiers,
+               a=payload
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     if modifiers is None:
         del ked["q"]

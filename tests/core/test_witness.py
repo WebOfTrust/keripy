@@ -130,7 +130,7 @@ def test_indexed_witness_replay():
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
-            assert len(rctMsg) == 566
+            assert len(rctMsg) == 617
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
@@ -143,13 +143,13 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
         wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
-                                   dig=camHab.kever.serder.dig)
+                                   said=camHab.kever.serder.said)
         camIcpWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
@@ -195,13 +195,13 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
         wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
-                                   dig=camHab.kever.serder.dig)
+                                   said=camHab.kever.serder.said)
         camIxnWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
@@ -226,7 +226,7 @@ def test_indexed_witness_replay():
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 1831
+        assert len(camReplayMsg) == 1933
         parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
         # wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
@@ -270,13 +270,13 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
         wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
-                                   dig=camHab.kever.serder.dig)
+                                   said=camHab.kever.serder.said)
         camRotWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
@@ -431,7 +431,7 @@ def test_nonindexed_witness_receipts():
             assert kvy.kevers[camHab.pre].sn == 0
             assert len(kvy.cues) == 1  # queued receipt cue
             rctMsg = camWitHabs[i].processCues(kvy.cues)  # process cue returns rct msg
-            assert len(rctMsg) == 566
+            assert len(rctMsg) == 617
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # Cam process rct msgs from all witnesses
@@ -442,7 +442,7 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow. Van not yet recieved
         # icp event from Cam so not accepted Cam's pre
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's icp message
         for i, msg in enumerate(rctMsgs):
@@ -501,7 +501,7 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow.
         # Van not yet recieved ixn event from Cam but has accept icp event
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
@@ -539,7 +539,7 @@ def test_nonindexed_witness_receipts():
         #    Cam update Wil all event witnessed events for Cam by replay
         #    Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 1831
+        assert len(camReplayMsg) == 1933
         parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
 
         assert camHab.pre in wilKvy.kevers
@@ -582,7 +582,7 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow.
         # Van not yet recieved rot event from Cam but has accepted icp & ixn events
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
@@ -649,7 +649,7 @@ def test_out_of_order_witnessed_events():
 
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
                                  wits=[wesHab.pre], temp=True)
-        assert bobHab.pre == "ERcQaCHYX-RyXFAzF1d6arcuyFlehM2NJuUeCD_KhHgA"
+        assert bobHab.pre == "EgJtvKj2tUD9K-t92Y_xkf0AGHIHwOmMqTZTy6dxrPUs"
 
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
@@ -678,11 +678,11 @@ def test_out_of_order_witnessed_events():
         # Ensure the rot ended up in out-of-order escrow
         assert bobHab.pre not in bamKvy.kevers
         oodig = bamDB.getOoes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
-        assert bobRot.digb == bytes(oodig[0])
+        assert bobRot.saidb == bytes(oodig[0])
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
-        msg = wesDB.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.digb)
+        msg = wesDB.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb)
 
         parsing.Parser().parse(ims=msg, kvy=bamKvy)
         bamKvy.processEscrows()

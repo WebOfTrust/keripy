@@ -17,7 +17,7 @@ def test_wallet():
     with basing.openDB(name="sid") as sidDB, \
             keeping.openKS(name="sid") as sidKS:
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
-        assert sidHab.pre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
+        assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
 
         schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
         credSubject = dict(
@@ -34,31 +34,31 @@ def test_wallet():
                             schema=schema,
                             subject=credSubject,
                             status=issuer.regk)
-        assert creder.said == "EdVcIiMggOn14NQGaZos_jpE2pXxer-AvKpMLlwDxIls"
+        assert creder.said == "EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3XaN0GGw-aVQ"
 
         issuer.issue(creder=creder)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EdVcIiMggOn14NQGaZos_jpE2pXxer-AvK'
-                       b'pMLlwDxIls","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
-                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"ENVs'
-                       b'WQ93HnvS7G4fIQiA_fR8DNGu66v8fqSdJw_PYcF0","i":"E4YPqsEOaPNaZxVIb'
-                       b'Y-Gx2bJgP-c7AH_K7pEE-YfcI9E","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EGZHiBoV8v5tWAt7yeTTln-C'
-                       b'uefIGPhajTT78Tt2r9M4"},"p":[]}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP'
-                       b'-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNB'
-                       b'bUNTBYzLYw-AxDNI7_ZmaI-AABAAwt0BCpOWyDsP34Gz6cGDpaPho7QOSP4wo7yA'
-                       b'JLUEfGGltGqI__wsyvJtGUyNod8bxKFwIXJKGzgLI9-7ZGVrAQ')
+        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3X'
+                       b'aN0GGw-aVQ","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+                       b'i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"EKEo'
+                       b'g6cZnQv8kcaWJ02670LEKGVTIMzXdXYlXRc2B3Ws","i":"EPmpiN6bEM8EI0Mct'
+                       b'ny-6AfglVOKnJje8-vqyKTlh0nc","dt":"2021-06-27T21:26:21.233257+00'
+                       b':00","LEI":"254900OPPU84GM83MG36","ri":"ERAY2VjFALVZAAuC3GDM-36q'
+                       b'KD8ZhUaKF55MWtITBFnc"},"p":[]}-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglV'
+                       b'OKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny-6A'
+                       b'fglVOKnJje8-vqyKTlh0nc-AABAAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEp'
+                       b'H2WO14Xu5zZisw9cgJV5ZIAaJx3JJ-zMd8sLpkKXYyrZQuB4Dg')
 
-        ser = (b'{"v":"KERI10JSON00019e_","d":"EdVcIiMggOn14NQGaZos_jpE2pXxer-AvKpMLlwDxIls",'
-               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"E4YPqsEOaPNaZxVIbY-G'
-               b'x2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"ENVsWQ93HnvS7G4fIQiA_fR8DNGu66v8fqSdJw_P'
-               b'YcF0","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EGZHiBoV8v5tWAt7yeTT'
-               b'ln-CuefIGPhajTT78Tt2r9M4"},"p":[]}')
+        ser = (b'{"v":"KERI10JSON00019e_","d":"EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3XaN0GGw-aVQ",'
+               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EPmpiN6bEM8EI0Mctny-'
+               b'6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"EKEog6cZnQv8kcaWJ02670LEKGVTIMzXdXYlXRc2'
+               b'B3Ws","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"ERAY2VjFALVZAAuC3GDM'
+               b'-36qKD8ZhUaKF55MWtITBFnc"},"p":[]}')
 
-        sig0 = (b'AAwt0BCpOWyDsP34Gz6cGDpaPho7QOSP4wo7yAJLUEfGGltGqI__wsyvJtGUyNod'
-                b'8bxKFwIXJKGzgLI9-7ZGVrAQ')
+        sig0 = (b'AAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEpH2WO14Xu5zZisw9cgJV5ZIAaJx'
+                b'3JJ-zMd8sLpkKXYyrZQuB4Dg')
 
         parseCredential(ims=msg, verifier=verifier)
 

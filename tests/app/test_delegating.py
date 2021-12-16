@@ -32,8 +32,8 @@ def test_delegating():
 
         danpre = danHab.pre
         debpre = debHab.pre
-        assert danpre == "EqueYwA9skz3SLqOYe8Lu4vzYDIJZSU984yrK3l1bEvw"
-        assert debpre == "Exd3lO6YoAhP7CP2zCu2h1thLzl1_ux7IzuUrAbCIvoc"
+        assert danpre == "EqiimbkL1F-G8WkXXhsptPI555JJB81mXBEQZxayqm4U"
+        assert debpre == "EJlZWmnwtLyHCsZiKEk0GTfBhVbdfIq0ThyHbchWRL84"
 
         delsrdr = delegatey.posts[0]["srdr"]
         delsigers = delegatey.posts[0]["sigers"]
@@ -59,7 +59,7 @@ def test_delegating():
 
         # business logic outstanding, approve delegation automagically with interact
         msg = danHab.interact(data=[
-            dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.dig)
+            dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.said)
         ])
 
         isrdr = coring.Serder(raw=msg)
@@ -67,7 +67,7 @@ def test_delegating():
         assert isrdr.ked["t"] == "ixn"
         assert isrdr.ked["a"][0]["i"] == debpre
         assert isrdr.ked["a"][0]["s"] == "0"
-        assert isrdr.ked["a"][0]["d"] == "EXYtHVmEoXMboHOBfaZ-BEsStcQ9E2YQ8zqR6CSaCpK4"
+        assert isrdr.ked["a"][0]["d"] == "EJlZWmnwtLyHCsZiKEk0GTfBhVbdfIq0ThyHbchWRL84"
 
         danHab.kvy.processEscrows()
         # after process interact and escrow, ensure we have the out of escrow event

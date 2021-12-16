@@ -1713,11 +1713,11 @@ def test_clean_baser():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
+        assert natHab.kever.serder.said == 'EafakcO2q8Rz7LoXJrhTmtLu4h0wUAgcjhxKNAI0Fl_s'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-        assert ldig == natHab.kever.serder.digb
+        assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-        assert serder.dig == natHab.kever.serder.dig
+        assert serder.said == natHab.kever.serder.said
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.sn == 6
         assert state.ked["f"] == '6'
@@ -1727,9 +1727,9 @@ def test_clean_baser():
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-            assert ldig == natHab.kever.serder.digb
+            assert ldig == natHab.kever.serder.saidb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-            assert serder.dig == natHab.kever.serder.dig
+            assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] == 43
 
             # verify name pre kom in db
@@ -1738,17 +1738,17 @@ def test_clean_baser():
 
             # add garbage event to corrupt database
             badsrdr = eventing.rotate(pre=natHab.pre,
-                                       keys=[verfer.qb64 for verfer in natHab.kever.verfers],
-                                       dig=natHab.kever.serder.dig,
-                                       sn=natHab.kever.sn+1,
-                                       sith=2,
-                                       nxt=natHab.kever.nexter.qb64)
+                                      keys=[verfer.qb64 for verfer in natHab.kever.verfers],
+                                      dig=natHab.kever.serder.said,
+                                      sn=natHab.kever.sn+1,
+                                      sith=2,
+                                      nxt=natHab.kever.nexter.qb64)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
 
             assert fn == 7
             # verify garbage event in database
-            assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
             assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
 
@@ -1768,7 +1768,7 @@ def test_clean_baser():
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
+        assert natHab.kever.serder.said == 'EafakcO2q8Rz7LoXJrhTmtLu4h0wUAgcjhxKNAI0Fl_s'
         assert natHab.pre in natHab.prefixes
         assert natHab.pre in natHab.kevers
 
@@ -1776,13 +1776,13 @@ def test_clean_baser():
         with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-            assert ldig == natHab.kever.serder.digb
+            assert ldig == natHab.kever.serder.saidb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-            assert serder.dig == natHab.kever.serder.dig
+            assert serder.said == natHab.kever.serder.said
             assert natHab.db.env.stat()['entries'] >= 18
 
             # confirm bad event missing from database
-            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.sn == 6
@@ -1955,7 +1955,7 @@ def test_usebaser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
                         sith=sith,
-                        dig=kever.serder.diger.qb64,
+                        dig=kever.serder.saider.qb64,
                         nxt=Nexter(keys=nxtkeys).qb64,
                         sn=1)
 
@@ -1967,7 +1967,7 @@ def test_usebaser():
 
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
+                          dig=kever.serder.saider.qb64,
                           sn=2)
 
         # sign serialization  (keys don't change for signing)
@@ -2032,16 +2032,16 @@ def test_dbdict():
                                       ba=[])
 
         state = eventing.state(pre=pre,
-                                 sn=4,
-                                 pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
-                                 dig=serder.dig,
-                                 fn=4,
-                                 eilk=coring.Ilks.ixn,
-                                 keys=[pre],
-                                 eevt=eevt,
-                                 )
+                               sn=4,
+                               pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                               dig=serder.said,
+                               fn=4,
+                               eilk=coring.Ilks.ixn,
+                               keys=[pre],
+                               eevt=eevt,
+                               )
 
-        dgkey = eventing.dgKey(pre=pre, dig=serder.dig)
+        dgkey = eventing.dgKey(pre=pre, dig=serder.said)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
         db.states.pin(keys=pre, val=state)  # put state in database

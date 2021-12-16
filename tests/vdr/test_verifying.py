@@ -26,19 +26,20 @@ def test_verifier_query(mockHelpingNowUTC):
         msg = verfer.query(issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000'
-                       b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
-                       b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
-                       b'8Tt2r9M4"}}-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-'
-                       b'AABAA4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ'
-                       b'_FOcTo9R0krY25tQvpBOzfT0aDA')
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"Efp5Surn_KGO6S4G6ZnExhK8'
+                  b'3kCEIpVQA3QihDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                  b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
+                  b'KXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc"}}-V'
+                  b'Aj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPkuS'
+                  b'zu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDwx9'
+                  b'iBO55UL94q0CAQ')
 
 
 def test_verifier():
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
             habbing.openHab(name="recp", transferable=True, temp=True) as recp, \
             viring.openReg(temp=True) as reger:
-        assert hab.pre == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
+        assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
         verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger, tevers=issuer.tevers)
@@ -107,7 +108,7 @@ def test_verifier_multisig():
             habbing.openHab(name="verfer", transferable=True, temp=True) as verfer, \
             viring.openReg(temp=True) as reger:
 
-        gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
+        gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
         group1 = hab1.group()
         assert group1.gid == gid
 
@@ -153,7 +154,7 @@ def test_verifier_multisig():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -230,7 +231,7 @@ def test_verifier_multisig():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -290,10 +291,10 @@ def test_verifier_chained_credential():
             viring.openReg(temp=True, name="ian") as ianreg, \
             viring.openReg(temp=True, name="vic") as vicreg:
 
-        assert ron.pre == "Ea3bJPQxG2p31BjpjuNz4w9bGO4LUBrL8pZIJQSs5JFg"
-        assert ian.pre == "Et2DOOu4ivLsjpv89vgv6auPntSLx4CvOhGUxMhxPS24"
-        assert han.pre == "ESS6Ep6l0QpbLXLBMdZMxt1NX4AzHO5yJoTm_uMEX58o"
-        assert vic.pre == "EV3GzB-qIh4fmO5RKUuEtE8WcPqZHDUBseEYDUNZiLqo"
+        assert ron.pre == "EoovZ8CJiavhb1hpjcmCjUUPglFR3AdRA9VUhXu-Px_4"
+        assert ian.pre == "EbgpwKmMagky9SvCGXrcsT0-YlbPnmAXqRSK1an7IzvI"
+        assert han.pre == "EmQqEDpWMGGt-zmXxe7vEbyWIZOm4XwUU0J177rUMhRw"
+        assert vic.pre == "E-1sk6rrObrEjysK7gsfbNyr4V4qFJsnrFiU5EDBO2Vo"
 
         roniss = issuing.Issuer(hab=ron, reger=ronreg, noBackers=True, estOnly=True, temp=True)
         ronverfer = verifying.Verifier(hab=ron, reger=ronreg, tevers=roniss.tevers)
