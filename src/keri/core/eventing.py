@@ -649,9 +649,10 @@ def incept(keys,
     # see compact labels in KID0003.md
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",   # qb64 SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
@@ -671,6 +672,7 @@ def incept(keys,
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -741,9 +743,10 @@ def delcept(keys,
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
@@ -765,6 +768,7 @@ def delcept(keys,
                          " digestive".format(prefixer.code))
 
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -865,9 +869,10 @@ def rotate(pre,
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
@@ -877,6 +882,7 @@ def rotate(pre,
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -973,9 +979,10 @@ def deltate(pre,
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
@@ -985,6 +992,7 @@ def deltate(pre,
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals ordered mappings may be empty
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -1017,12 +1025,14 @@ def interact(pre,
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                p=dig,  # qb64 digest of prior event
                a=data,  # list of seals
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -1051,10 +1061,10 @@ def receipt(pre,
         raise ValueError("Invalid sn = {} for rct.".format(sn))
 
     ked = dict(v=vs,  # version string
-               i=pre,  # qb64 prefix
-               s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,  # Ilks.rct
                d=dig,  # qb64 digest of receipted event
+               i=pre,  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -1251,11 +1261,13 @@ def query(route="",
 
     ked = dict(v=vs,  # version string
                t=ilk,
+               d="",
                dt=stamp if stamp is not None else helping.nowIso8601(),
                r=route,  # resource type for single item request
                rr=replyRoute,
                q=query,
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 

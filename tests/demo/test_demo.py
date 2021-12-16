@@ -51,7 +51,7 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
+    assert bob == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
 
 
     # set of secrets (seeds for private keys)
@@ -78,7 +78,7 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
     with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
          basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
@@ -221,7 +221,7 @@ def test_direct_mode_sam_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
-    assert sam == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
+    assert sam == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
 
 
     # set of secrets (seeds for private keys)
@@ -248,7 +248,7 @@ def test_direct_mode_sam_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
 
 
@@ -560,7 +560,7 @@ def test_indirect_mode_sam_cam_wit_demo():
                                     code=coring.MtrDex.Blake3_256)
 
         cam = camSerder.ked["i"]
-        assert cam == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+        assert cam == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
         # sam inception transferable (nxt digest not empty)
         samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
@@ -568,7 +568,7 @@ def test_indirect_mode_sam_cam_wit_demo():
                                     code=coring.MtrDex.Blake3_256)
 
         sam = samSerder.ked["i"]
-        assert sam == 'EhnaYUqhHoo8kZaXJuTDCZ-h5ZDx3st4NemgqSITWp48'
+        assert sam == 'EU2vtu6GkN2UmI8H2_fi961IGnYcat6Hk9Di5S8GcAvs'
 
 
         samHab = habbing.Habitat(name='Sam',

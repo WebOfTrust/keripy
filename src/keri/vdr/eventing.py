@@ -106,10 +106,11 @@ def incept(
     # seedqb64 = coring.Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i="",  # qb64 prefix
                ii=pre,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
-               t=ilk,
                c=cnfg,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=baks,  # list of qb64 may be empty
@@ -118,6 +119,7 @@ def incept(
 
     prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
+    ked["d"] = prefixer.qb64
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -208,14 +210,16 @@ def rotate(
                              "".format(toad, list(newbakset)))
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i=regk,  # qb64 prefix
                p=dig,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -246,12 +250,14 @@ def issue(
 
     vs = Versify(version=version, kind=kind, size=0)
     ked = dict(v=vs,  # version string
+               t=Ilks.iss,
+               d="",
                i=vcdig,  # qb64 prefix
                s="{:x}".format(0),  # hex string no leading zeros lowercase
-               t=Ilks.iss,
                ri=regk,
                dt=helping.nowIso8601()
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
@@ -290,13 +296,15 @@ def revoke(
     ilk = Ilks.rev
 
     ked = dict(v=vs,
+               t=ilk,
+               d="",
                i=vcdig,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
-               t=ilk,
                ri=regk,
                p=dig,
                dt=helping.nowIso8601()
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
@@ -339,13 +347,15 @@ def backerIssue(
     seal = SealEvent(regk, regsn, regd)
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
                i=vcdig,  # qb64 prefix
                ii=regk,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
-               t=ilk,
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
@@ -390,13 +400,15 @@ def backerRevoke(
     seal = SealEvent(regk, regsn, regd)
 
     ked = dict(v=vs,
+               t=ilk,
+               d="",
                i=vcdig,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
-               t=ilk,
                p=dig,
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt

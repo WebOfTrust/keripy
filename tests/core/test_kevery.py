@@ -59,12 +59,12 @@ def test_kevery():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert msgs == bytearray(b'{"v":"KERI10JSON0000ed_","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOo'
-                                 b'eKtWTOunRA","s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5t'
-                                 b'zHn2N46wRCG_ZOoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIy'
-                                 b'a3slgCOyOtlqU","bt":"0","b":[],"c":[],"a":[]}-AABAAmagesCSY8QhYY'
-                                 b'HCJXEWpsGD62qoLt2uyT0_Mq5lZPR88JyS5UrwFKFdcjPqyKc_SKaKDJhkGWCk07'
-                                 b'k_kVkjyCA')
+        assert msgs == bytearray(b'{"v":"KERI10JSON000120_","t":"icp","d":"EG4EuTsxPiRM7soX10XXzNsS'
+                                 b'1KqXKUp8xsQ-kW_tWHoI","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
+                                 b'WTOunRA","s":"0","kt":"1","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
+                                 b'OoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
+                                 b'","bt":"0","b":[],"c":[],"a":[]}-AABAA0aSisI4ZZTH_6JCqsvAsEpuf_J'
+                                 b'q6bDbvPWj_eCDnAGbSARqYHipNs-9W7MHnwnMfIXwLpcoJkKGrQ-SiaklhAw')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -221,7 +221,7 @@ def test_kevery():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert len(msgs) == 3171
+        assert len(msgs) == 3681
 
         pre = kever.prefixer.qb64
 
@@ -275,32 +275,38 @@ def test_witness_state():
 
         ixn0 = hab.interact()
         assert ixn0 == (
-            b'{"v":"KERI10JSON000098_","i":"E1LbpWWhVBqV-9zIw5m8mJS7H9GQk9kPOUXPzaxCr3K4","s":"1","t":"ixn",'
-            b'"p":"E62XcaRtiuo-BV8FH3IYwKdFv1RQaN6_vmqyQbB-6pAc",'
-            b'"a":[]}-AABAATVbzN1wojYaWjOk-NtzzRAqb6R6jxM2ZSx3ngjlh7OQugZ96eeR_dToZvNEUXgWNzMr78SqNh8enNLFqrHsXAg')
+            b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EExqNbGiqFpLAHvBCWGCtxQ5'
+            b'8Y3r-M90ouzHbNX8LDDI","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"1","p":"EpE9oW_x8h7dRNXCsYUSZ7VrJcA3LrnfBwmpf6nyRG'
+            b'Fw","a":[]}-AABAAp4EFNIIWtLxaMm23eYc1Q0fwpQLR6OPIzvD_aCZTx9bOVJ5'
+            b'qOPaDo3waav2QWCu-NK-MTv2FFwe4TgDnNPsHCQ')
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
         rot1 = hab.rotate()
         assert rot1 == (
-            b'{"v":"KERI10JSON000122_","i":"E1LbpWWhVBqV-9zIw5m8mJS7H9GQk9kPOUXPzaxCr3K4","s":"2","t":"rot",'
-            b'"p":"EWcTuZ-tqCAjJna6Mv2HyDhQgcvcvrKwtkYLpUQmI0AI","kt":"1",'
-            b'"k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"],'
-            b'"n":"E7giSjZhH8qC_oXAqUoA8JoOlal15MsEtTr30JTMwgi0","bt":"2","br":[],"ba":[],'
-            b'"a":[]}-AABAAUpqRgrsdJ6vh9Be5J89I_K82W0MQxyVx5p4HSu9rCihGMoaGT9c-RZzAkHDTu7XNRhvewlApMcbxk6o3MoWkAA')
+            b'{"v":"KERI10JSON000155_","t":"rot","d":"ETaqQode3grs5cCTCVXwCo5H'
+            b'qL-wmn1YpSUtzTvn-BZs","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"2","p":"EExqNbGiqFpLAHvBCWGCtxQ58Y3r-M90ouzHbNX8LD'
+            b'DI","kt":"1","k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"'
+            b'],"n":"E7giSjZhH8qC_oXAqUoA8JoOlal15MsEtTr30JTMwgi0","bt":"2","b'
+            b'r":[],"ba":[],"a":[]}-AABAAp0DgBKauupHZjzSwbdr0ml4l2XbP9VwU6xknZ'
+            b'3OmwHIE741F-iCPFqeXbIgSGJk6C7TAwm8KZ65lp18l4D9RCw')
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
         rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
         assert rot2 == (
-            b'{"v":"KERI10JSON0001dc_","i":"E1LbpWWhVBqV-9zIw5m8mJS7H9GQk9kPOUXPzaxCr3K4","s":"3","t":"rot",'
-            b'"p":"EgtUMcQQH5Sdjeb4tL3Zg5kr2qvozUtRu3nIwHUKqjYY","kt":"1",'
-            b'"k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"],'
-            b'"n":"EhAly7aOUUvArcUdJgqag1K4nf7mODsgDnZhJGQnOBzE","bt":"3",'
-            b'"br":["BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],'
-            b'"ba":["B7ejskZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BnfnWbP3CTkWapC7rQxSkpioxkb-nbmhs-JoHbiwU5q4",'
-            b'"BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXNOKSu0"],'
-            b'"a":[]}-AABAAaiYKw3F5UVNeHSngVa8iX76XsIw87hIt0bzVewxPNSDhMUfu6yHUil7z5rHMSVEDPA6cajaOaUBE4xrr4cHZAg')
+            b'{"v":"KERI10JSON00020f_","t":"rot","d":"EN7d31o5U4TRFfSqfAlg7X2_'
+            b'gmUqKZBNEk5Ry3R0z0MI","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
+            b'A91WPHA","s":"3","p":"ETaqQode3grs5cCTCVXwCo5HqL-wmn1YpSUtzTvn-B'
+            b'Zs","kt":"1","k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"'
+            b'],"n":"EhAly7aOUUvArcUdJgqag1K4nf7mODsgDnZhJGQnOBzE","bt":"3","b'
+            b'r":["BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"ba":["B7ejs'
+            b'kZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BnfnWbP3CTkWapC7rQxSkp'
+            b'ioxkb-nbmhs-JoHbiwU5q4","BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXN'
+            b'OKSu0"],"a":[]}-AABAAMEgdHsqJq-thHKh6qWarZSnuzJyFxp20a-mN_AY6W4T'
+            b'RacAJVkziRKRVcjEugYLAQINqOCAzq2hijEcBXMEAAw')
         wit3 = hab.kvy.fetchWitnessState(hab.pre, 3)
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
@@ -337,10 +343,10 @@ def test_stale_event_receipts():
     # Wes, Wil and Wan are his witnesses
     # Bam is verifying the key events with receipts from Bob
     with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         basing.openDB(name="wan") as wanDB, keeping.openKS(name="wan") as wanKS, \
-         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS, \
-         basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-         basing.openDB(name="bam") as bamDB:
+            basing.openDB(name="wan") as wanDB, keeping.openKS(name="wan") as wanKS, \
+            basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS, \
+            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+            basing.openDB(name="bam") as bamDB:
 
         # setup Wes's habitat nontrans
         wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
@@ -364,8 +370,8 @@ def test_stale_event_receipts():
         awits = [wesHab, wilHab, wanHab]
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
                                  wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
-        assert bobHab.pre == "ElW9qSk_RNt9bhRVtw315BpLMoHuA5gLs3NuYZUQpF1U"
-        
+        assert bobHab.pre == "EDRGkqe1-ZvMzy8SRx-KMNrC_KmbJWe2EgAyD9q3nBgQ"
+
         bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
@@ -404,7 +410,6 @@ def test_stale_event_receipts():
         wigs = bamDB.getWigs(dgkey)
         assert len(wigs) == 2
 
-
         # Rotate out Wil, pass to witnesses, receipted event to bam.
         rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
         parsing.Parser().parse(ims=bytearray(rot1), kvy=bamKvy)
@@ -430,6 +435,5 @@ def test_stale_event_receipts():
         # Validate that bam has 3 receipts in DB for event 1
         wigs = bamDB.getWigs(dgkey)
         assert len(wigs) == 3
-
 
         """ Done Test """

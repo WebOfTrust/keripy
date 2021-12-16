@@ -190,14 +190,14 @@ def test_habitat_with_delegation():
     """
     delhab = habbing.Habitat(name="del", temp=True)
     delpre = delhab.pre
-    assert delpre == "E5R24em6RjYzygDkAqM2Sr3cYkFJIObwxc7bvJ68w0rU"
+    assert delpre == "E-kwM1vdZf63KAnw0SbS3Jrq1cKavuM8z2fXz2tMA8KA"
 
     bobhab = habbing.Habitat(name="bob", temp=True, delpre=delpre)
-    assert bobhab.pre == "EP5Mtq4GUNpSerefl7gyFzEth1IHslD8yPUd5TqxCIDk"
+    assert bobhab.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
 
-    assert bobhab.delserder.pre == "EP5Mtq4GUNpSerefl7gyFzEth1IHslD8yPUd5TqxCIDk"
+    assert bobhab.delserder.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
     assert bobhab.delserder.ked["s"] == '0'
-    assert bobhab.delserder.dig == "EInoiW2u40h0bgm3gu2C4xFXW-QVrDeJ3VG97QjbCKFQ"
+    assert bobhab.delserder.dig == "E02P9urPad7b2DHSjXUygfEMHR2umpHA1sioOQtPBU0I"
 
     assert bobhab.accepted is False
 

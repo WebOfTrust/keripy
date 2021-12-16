@@ -80,21 +80,22 @@ def test_create_cesr_request(mockHelpingNowUTC):
 
         assert client.args["method"] == "POST"
         assert client.args["path"] == "/qry/tels"
-        assert client.args["body"] == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
-                                       b'r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","r'
-                                       b'i":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4"}}')
+        assert client.args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"Efp5Surn_KGO6S4G6ZnExhK83kCEIpVQA3Qi'
+                                       b'hDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
+                                       b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-'
+                                       b'36qKD8ZhUaKF55MWtITBFnc"}}')
 
         q = client.args["qargs"]
-        assert q == dict(i='Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4',
-                         ri='EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4')
+        assert q == {'i': 'Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4',
+                     'ri': 'ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc'}
 
         headers = client.args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
-        assert headers["Content-Length"] == 203
+        assert headers["Content-Length"] == 254
         assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAA4WmPtN'
-                                              b'JALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ_FOcTo9R0kr'
-                                              b'Y25tQvpBOzfT0aDA')
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPk'
+                                              b'uSzu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDw'
+                                              b'x9iBO55UL94q0CAQ')
 
         msg = hab.query(pre=hab.pre, route="mbx", query=dict(s=0))
         client = MockClient()
@@ -103,17 +104,17 @@ def test_create_cesr_request(mockHelpingNowUTC):
 
         assert client.args["method"] == "POST"
         assert client.args["path"] == "/qry/mbx"
-        assert client.args["body"] == (b'{"v":"KERI10JSON00009c_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
-                                       b'r":"mbx","rr":"","q":{"s":0,"i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9'
-                                       b'E"}}')
+        assert client.args["body"] == (b'{"v":"KERI10JSON0000cf_","t":"qry","d":"EpYeo95qxKGAtIdCeOYEaSmKSLl0Tgs9s31o'
+                                       b'i1sdQBHs","dt":"2021-01-01T00:00:00.000000+00:00","r":"mbx","rr":"","q":{"s"'
+                                       b':0,"i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"}}')
 
         headers = client.args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
-        assert headers["Content-Length"] == 156
+        assert headers["Content-Length"] == 207
         assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAMX88af'
-                                              b'PpEfF_HF-E-1uZKyv8b_TdILi2x8vC3Yi7Q7yzHn2fR6Bkl2yn-ZxPqmsTfV3f-H'
-                                              b'_VQwMgk7jYEukVCA')
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAA0ThN4-'
+                                              b'h1mJSFkI6H5e_Z4We_VE44MeV8gBWmI-pw-CS8HZ0947Z6h_1hmwrvTfR16HlxWu'
+                                              b'wK_i8NA-cxdg45Bg')
 
 
 if __name__ == '__main__':

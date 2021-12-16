@@ -73,7 +73,7 @@ def test_keystate(mockHelpingNowUTC):
 
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
                                  wits=[wesHab.pre], temp=True)
-        assert bobHab.pre == "E4BsxCYUtUx3d6UkDVIQ9Ke3CLQfqWBfICSmjIzkS1u4"
+        assert bobHab.pre == "ECJTKtR-GlybCmn1PCiVwIuGBjaOUXI09XWDdXkrJNj0"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
@@ -136,7 +136,7 @@ def test_keystate(mockHelpingNowUTC):
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True, temp=True)
-        assert bobHab.pre == "Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI"
+        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
@@ -205,7 +205,7 @@ def test_keystate(mockHelpingNowUTC):
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True, temp=True)
-        assert bobHab.pre == "Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI"
+        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
@@ -242,7 +242,7 @@ def test_keystate(mockHelpingNowUTC):
 
         bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
                                  wits=[], temp=True)
-        assert bobHab.pre == "Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI"
+        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         # Get ksn from Bob and verify
         ksn = bobHab.kever.state()

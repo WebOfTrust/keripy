@@ -67,7 +67,7 @@ def test_postman(mockGetWitnessByPrefixOneWitness):
         serder = coring.Serder(raw=msgs[0])
         assert serder.ked["t"] == coring.Ilks.exn
         assert serder.ked["r"] == "/echo"
-        assert serder.ked["d"] == dict(msg="test")
+        assert serder.ked["a"] == dict(msg="test")
 
 
 def test_forward():

@@ -12,7 +12,6 @@ from falcon import testing
 
 import pytest
 
-
 from hio.base import tyming, doing
 from hio.core import wiring, http
 
@@ -24,6 +23,7 @@ from keri.core import coring
 from keri.end import ending
 
 logger = help.ogler.getLogger()
+
 
 def test_mimes():
     """
@@ -60,18 +60,18 @@ def test_signature_designature():
 
     # setup databases  for dependency injection
     ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
-    db = basing.Baser(name=name, temp=temp,  reopen=reopen)
+    db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # setup habitat
     hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
-    assert hab.pre == 'EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY'
+    assert hab.pre == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
     digest = hab.kever.serder.dig
-    assert digest == 'EbsKIirK4vRK4vBDiKoDFsfvzD3vQVbMf6Hj9MqYTPac'
+    assert digest == 'EQPIVlWCS1lcYscr2qD9E7na5oa-uneaNMZTlCdIN0zs'
 
     # example body text
     text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
-                    b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
-                    b'8080,"path":"/witness"}')
+            b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
+            b'8080,"path":"/witness"}')
 
     sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
 
@@ -79,10 +79,12 @@ def test_signature_designature():
     signage = ending.Signage(markers=sigers)
     header = ending.signature([signage])  # put it in a list
     assert header == ({'Signature':
-                       'indexed="?1";'
-                       '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+                           'indexed="?1";'
+                           '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
+                           '-2jAQ";'
+                           '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                           '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                           '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
     # test designature
     signages = ending.designature(header["Signature"])
@@ -103,15 +105,12 @@ def test_signature_designature():
                              digest=digest,
                              kind="CESR")
     header = ending.signature([signage])  # put it in a list
-    assert header == ({'Signature':
-                       'indexed="?1";'
-                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                       'ordinal="0";'
-                       'digest="EbsKIirK4vRK4vBDiKoDFsfvzD3vQVbMf6Hj9MqYTPac";'
-                       'kind="CESR";'
-                       '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+    assert header == ({
+        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";ordinal="0";digest'
+                     '="EQPIVlWCS1lcYscr2qD9E7na5oa-uneaNMZTlCdIN0zs";kind="CESR";0'
+                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
+                     '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
+                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
     # test designature
     signages = ending.designature(header["Signature"])
@@ -131,13 +130,14 @@ def test_signature_designature():
     signage = ending.Signage(markers=cigars)
     header = ending.signature([signage])
     assert header == ({'Signature':
-                       'indexed="?0";'
-                       'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-                       '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-                       '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
-                       '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+                           'indexed="?0";'
+                           'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
+                           '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                           'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
+                           '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                           'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
+                           '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ'
+                           '"'})
 
     # test designature
     signages = ending.designature(header["Signature"])
@@ -149,7 +149,6 @@ def test_signature_designature():
         assert marker.qb64 == cigars[i].qb64
         assert tag == cigars[i].verfer.qb64
 
-
     #  now combine into one header
     signages = []
     signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
@@ -158,22 +157,18 @@ def test_signature_designature():
                                    kind="CESR"))
 
     header = ending.signature(signages)
-    assert header == ({'Signature':
-                       'indexed="?1";'
-                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                       'kind="CESR";'
-                       '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                       'indexed="?0";'
-                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                       'kind="CESR";'
-                       'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-                       '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-                       '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
-                       '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+    assert header == ({
+        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
+                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
+                     '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
+                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
+                     'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR'
+                     '";DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7'
+                     '-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                     '";D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0'
+                     '="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ'
+                     '";DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM'
+                     '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
     # test designature
     signages = ending.designature(header["Signature"])
@@ -185,7 +180,6 @@ def test_signature_designature():
     for i, (tag, marker) in enumerate(markers.items()):
         assert marker.qb64 == sigers[i].qb64
         assert int(tag) == marker.index == sigers[i].index
-
 
     signage = signages[1]
     assert not signage.indexed
@@ -206,19 +200,17 @@ def test_signature_designature():
                                    kind="CESR"))
 
     header = ending.signature(signages)
-    assert header == ({'Signature':
-                       'indexed="?1";'
-                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                       'kind="CESR";'
-                       'wit0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       'wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       'wit2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                       'indexed="?0";'
-                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                       'kind="CESR";'
-                       'wit0="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                       'wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                       'wit2="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+    assert header == ({
+        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
+                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                     '";wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                     '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
+                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
+                     'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
+                     '="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                     '";wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                     '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
+                     '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
     # test designature
     signages = ending.designature(header["Signature"])
 
@@ -229,7 +221,6 @@ def test_signature_designature():
     for i, (tag, marker) in enumerate(markers.items()):
         assert marker.qb64 == sigers[i].qb64
         assert tag == tags[i]
-
 
     signage = signages[1]
     assert not signage.indexed
@@ -252,29 +243,29 @@ def test_get_static_sink():
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)
 
-    myapp = falcon.App() # falcon.App instances are callable WSGI apps
+    myapp = falcon.App()  # falcon.App instances are callable WSGI apps
     ending.loadEnds(myapp, tymth=tymist.tymen())
 
     client = testing.TestClient(app=myapp)
 
     index = ('<html>\n'
-            '    <head>\n'
-            '        <title>Demo</title>\n'
-            '        <!--\n'
-            '        <link rel="stylesheet" type="text/css" '
-            'href="semantic/dist/semantic.min.css">\n'
-            '        <script src="node_modules/jquery/dist/jquery.min.js"></script>\n'
-            '        <script src="semantic/dist/semantic.min.js"></script>\n'
-            '        -->\n'
-            '    </head>\n'
-            '    <body>\n'
-            '        <!--\n'
-            '        <script src="bin/app.js"></script>\n'
-            '        <button class="ui button">Follow</button>\n'
-            '        -->\n'
-            '        <p>Hello World.</p>\n'
-            '    </body>\n'
-            '</html>\n')
+             '    <head>\n'
+             '        <title>Demo</title>\n'
+             '        <!--\n'
+             '        <link rel="stylesheet" type="text/css" '
+             'href="semantic/dist/semantic.min.css">\n'
+             '        <script src="node_modules/jquery/dist/jquery.min.js"></script>\n'
+             '        <script src="semantic/dist/semantic.min.js"></script>\n'
+             '        -->\n'
+             '    </head>\n'
+             '    <body>\n'
+             '        <!--\n'
+             '        <script src="bin/app.js"></script>\n'
+             '        <button class="ui button">Follow</button>\n'
+             '        -->\n'
+             '        <p>Hello World.</p>\n'
+             '    </body>\n'
+             '</html>\n')
 
     # get default at  /  which is index.html
     rep = client.simulate_get('/')
@@ -337,13 +328,12 @@ def setupTestHab(name='testia', temp=True, reopen=True):
     """
     # setup databases  for dependency injection
     ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
-    db = basing.Baser(name=name, temp=temp,  reopen=reopen)
+    db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # setup habitat
     hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp)
 
     return hab
-
 
 
 def test_seid_api():
@@ -354,13 +344,13 @@ def test_seid_api():
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)
 
-    app = falcon.App() # falcon.App instances are callable WSGI apps
+    app = falcon.App()  # falcon.App instances are callable WSGI apps
     ending.loadEnds(app, tymth=tymist.tymen(), hab=hab)
 
     client = testing.TestClient(app=app)
 
     aid0 = hab.pre
-    assert aid0 == 'E6vI-DyZz1TVj2M5yQrHneBT_l16Z8McxUOVWfTKB16Y'
+    assert aid0 == 'E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4'
     wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
     wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
     wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
@@ -369,7 +359,7 @@ def test_seid_api():
     role = "witness"
     aid = aid0
     role = 'witness'
-    seid = wit0 # identifier prefix of service endpoint
+    seid = wit0  # identifier prefix of service endpoint
     name = 'wit0'  # user friendly name of endpoint
     dts = '2021-01-01T00:00:00.000000+00:00'  # ISO-8601 datetime string of latest update
 
@@ -388,21 +378,21 @@ def test_seid_api():
     signage = ending.Signage(markers=sigers)
     header = ending.signature([signage])
     assert header == ({'Signature':
-                        'indexed="?1";'
-                        '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
+                           'indexed="?1";'
+                           '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
 
     endpath = "/end/{}/{}".format(aid, role)
-    assert endpath == '/end/E6vI-DyZz1TVj2M5yQrHneBT_l16Z8McxUOVWfTKB16Y/witness'
+    assert endpath == '/end/E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4/witness'
     rep = client.simulate_post(path=endpath,
                                content_type=falcon.MEDIA_JSON,
                                headers=header,
                                body=text)  # accepts bytes
     assert rep.status == falcon.HTTP_OK
     assert rep.json == dict(aid=aid, role=role, data=data)
-    assert rep.text == ('{"aid": "E6vI-DyZz1TVj2M5yQrHneBT_l16Z8McxUOVWfTKB16Y", "role": "witness", '
-                    '"data": {"seid": "B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
-                    '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
-                    '"localhost", "port": 8080, "path": "/witness"}}')
+    assert rep.text == ('{"aid": "E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4", "role": "witness", '
+                        '"data": {"seid": "B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
+                        '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
+                        '"localhost", "port": 8080, "path": "/witness"}}')
 
     """Done Test"""
 
@@ -416,7 +406,7 @@ def test_get_admin():
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)
 
-    myapp = falcon.App() # falcon.App instances are callable WSGI apps
+    myapp = falcon.App()  # falcon.App instances are callable WSGI apps
     ending.loadEnds(myapp, tymth=tymist.tymen(), hab=hab)
 
     client = testing.TestClient(app=myapp)

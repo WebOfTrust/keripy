@@ -126,6 +126,52 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
+
+def Sizeify(ked,  kind=None):
+    """
+    ked is key event dict
+    kind is serialization if given else use one given in ked
+    Returns tuple of (raw, kind, ked, version) where:
+        raw is serialized event as bytes of kind
+        kind is serialzation kind
+        ked is key event dict
+        version is Versionage instance
+
+    Assumes only supports Version
+    """
+    if "v" not in ked:
+        raise ValueError("Missing or empty version string in key event "
+                         "dict = {}".format(ked))
+
+    knd, version, size = Deversify(ked["v"])  # extract kind and version
+    if version != Version:
+        raise ValueError("Unsupported version = {}.{}".format(version.major,
+                                                              version.minor))
+
+    if not kind:
+        kind = knd
+
+    if kind not in Serials:
+        raise ValueError("Invalid serialization kind = {}".format(kind))
+
+    raw = dumps(ked, kind)
+    size = len(raw)
+
+    match = Rever.search(raw)  # Rever's regex takes bytes
+    if not match or match.start() > 12:
+        raise ValueError("Invalid version string in raw = {}".format(raw))
+
+    fore, back = match.span()  # full version string
+    # update vs with latest kind version size
+    vs = Versify(version=version, kind=kind, size=size)
+    # replace old version string in raw with new one
+    raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
+    if size != len(raw):  # substitution messed up
+        raise ValueError("Malformed version string size = {}".format(vs))
+    ked["v"] = vs  # update ked
+
+    return raw, kind, ked, version
+
 # Base64 utilities
 BASE64_PAD = b'='
 
@@ -306,6 +352,7 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
+            print(ex)
             raise DeserializationError("Error deserializing JSON: {}"
                     "".format(raw[:size].decode("utf-8")))
 
@@ -2674,9 +2721,9 @@ class Prefixer(Matter):
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
-        serder = Serder(ked=ked)  # serder with dummy for 'i' also updates version size
-        ked = serder.ked  # use updated ked with valid 'v' version string field
-        dig =  blake3.blake3(serder.raw).digest()  # digest with dummy 'i'
+        ked["d"] = ked["i"]
+        raw, kind, ked, version = Sizeify(ked=ked)
+        dig =  blake3.blake3(raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
 
 
@@ -2882,17 +2929,20 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            sad = Serder(ked=sad, kind=kind).ked  # version string now has correct size
+            raw, kind, sad, version = Sizeify(ked=sad, kind=kind)
+
+        # string now has
+        # correct size
         klas, size, length = clas.Digests[code]
         # sad as 'v' verision string then use its kind otherwise passed in kind
         cpa = [clas._serialize(sad, kind=kind)]  # raw pos arg class
         ckwa = dict()  # class keyword args
         if size:
             ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict() # digest keyword args
+        dkwa = dict()  # digest keyword args
         if length:
             dkwa.update(length=length)
-        return (klas(*cpa, **ckwa).digest(**dkwa),sad)  # raw digest and sad
+        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):
@@ -3890,38 +3940,7 @@ class Serder:
 
         Assumes only supports Version
         """
-        if "v" not in ked:
-            raise ValueError("Missing or empty version string in key event "
-                             "dict = {}".format(ked))
-
-        knd, version, size = Deversify(ked["v"])  # extract kind and version
-        if version != Version:
-            raise ValueError("Unsupported version = {}.{}".format(version.major,
-                                                                    version.minor))
-
-        if not kind:
-            kind = knd
-
-        if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-
-        raw = dumps(ked, kind)
-        size = len(raw)
-
-        match = Rever.search(raw)  #  Rever's regex takes bytes
-        if not match or match.start() > 12:
-            raise ValueError("Invalid version string in raw = {}".format(raw))
-
-        fore, back = match.span()  #  full version string
-        # update vs with latest kind version size
-        vs = Versify(version=version, kind=kind, size=size)
-        # replace old version string in raw with new one
-        raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
-        if size != len(raw):  # substitution messed up
-            raise ValueError("Malformed version string size = {}".format(vs))
-        ked["v"] = vs  #  update ked
-
-        return (raw, kind, ked, version)
+        return Sizeify(ked=ked, kind=kind)
 
 
     def compare(self, dig=None, diger=None):
@@ -3947,7 +3966,19 @@ class Serder:
         Else recalcs both digests using each one's code to verify they
             they are both digests of ser regardless of matching codes.
         """
-        return (self.diger.compare(ser=self.raw, dig=dig, diger=diger))
+
+        if dig is not None:
+            if hasattr(dig, "encode"):
+                dig = dig.encode('utf-8')  # makes bytes
+
+            return dig == self.saidb  # matching
+
+        elif diger is not None:
+            return diger.qb64b == self.saidb
+
+        else:
+            raise ValueError("Both dig and diger may not be None.")
+
 
 
     @property
@@ -3965,7 +3996,7 @@ class Serder:
         self._kind = kind
         self._version = version
         self._size = size
-        self._diger = Diger(ser=self._raw, code=self._code)
+        self._diger = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -3984,7 +4015,7 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
-        self._diger = Diger(ser=self._raw, code=self._code)
+        self._diger = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -4003,7 +4034,7 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
-        self._diger = Diger(ser=self._raw, code=self._code)
+        self._diger = Saider(qb64=ked["d"], code=self._code)
 
 
     @property
@@ -4132,7 +4163,7 @@ class Serder:
         Returns str qb64  of .ked["d"] (said when ked is SAD)
         said (self-addressing identifier) property getter
         """
-        return self.ked["d"]
+        return self.dig
 
 
     @property
@@ -4141,7 +4172,7 @@ class Serder:
         Returns bytes qb64b of .ked["d"] (said when ked is SAD)
         said (self-addressing identifier) property getter
         """
-        return self.said.encode("utf-8")
+        return self.digb
 
     @property
     def est(self):  # establishative

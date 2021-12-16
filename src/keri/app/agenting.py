@@ -940,6 +940,8 @@ class KiwiServer(doing.DoDoer):
 
             issuer.revoke(creder=creder)
         except kering.ValidationError as ex:
+            print()
+            print(ex)
             rep.status = falcon.HTTP_CONFLICT
             rep.text = ex.args[0]
             return

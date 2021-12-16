@@ -49,7 +49,7 @@ def test_directing_basic():
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
+    assert bob == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
 
     # set of secrets (seeds for private keys)
     eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -75,7 +75,7 @@ def test_directing_basic():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
     with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
             basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
