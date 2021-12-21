@@ -586,7 +586,7 @@ Initage = namedtuple("Initage", 'aeid pidx salt tier')
 
 
 class Manager:
-    """
+    """Manages key pairs creation, storage, and signing
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
@@ -648,6 +648,7 @@ class Manager:
                 is initialized. Its presence acts as an authentication, authorization,
                 and decryption secret for the Manager and must be stored on
                 another device from the device that runs the Manager.
+                Currently only code MtrDex.Ed25519_Seed is supported.
 
         Parameters: Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for

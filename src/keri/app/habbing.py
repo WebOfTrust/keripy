@@ -65,6 +65,193 @@ def existingHab(name="test", **kwa):
         yield hab
 
 
+class Habery:
+    """Habery class provides shared database environments for all its Habitats
+    Key controller and identifier controller shared configuration file, keystore
+    and KEL databases.
+
+
+    Attributes:
+        name (str): alias of databases
+        temp (bool): True for testing it modifies tier of salty key
+            generation algorithm and persistence of db and ks
+        erase (bool): If True erase old private keys, Otherwise not.
+        db (basing.Baser): lmdb data base for KEL etc
+        ks (keeping.Keeper): lmdb key store
+        cf (configing.Configer): config file instance
+        kvy (eventing.Kevery): instance for local processing of local msgs
+        psr (parsing.Parser):  parses local messages for .kvy
+        mgr (keeping.Manager): creates and rotates keys in key store
+
+        inited (bool): True means fully initialized wrt databases.
+                          False means not yet fully initialized
+
+
+    Properties:
+        kever (Kever): instance of key state of local controller
+        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
+        prefixes (OrderedSet): local prefixes for .db
+
+    """
+
+    def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
+                 temp=False, erase=True, **kwa):
+        """
+        Initialize instance.
+
+        Parameters:
+            name (str): alias name for shared environment config databases etc.
+            base (str): optional directory path segment inserted before name
+                that allows further differentation with a hierarchy. "" means
+                optional.
+            ks (Keeper):  keystore lmdb subclass instance
+            db (Baser): database lmdb subclass instance
+            cf (Configer): config file instance
+            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
+            erase (bool): True means erase private keys once stale
+
+        Parameters: Passed through via kwa to setup for later init
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            secrecies (list): of list of secrets to preload key pairs if any
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt
+
+        """
+        self.name = name
+        self.temp = temp
+        self.erase = erase
+        self.db = db if db is not None else basing.Baser(name=base if base else name,
+                                                         temp=self.temp,
+                                                         reopen=True)
+        self.ks = ks if ks is not None else keeping.Keeper(name=base if base else name,
+                                                           temp=self.temp,
+                                                           reopen=True)
+        self.cf = cf if cf is not None else configing.Configer(name=name,
+                                                               base=base,
+                                                               temp=self.temp,
+                                                               reopen=True)
+
+        self.rtr = routing.Router()
+        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
+        self.kvy.registerReplyRoutes(router=self.rtr)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
+        self.mgr = None  # wait to setup until after ks is known to be opened
+        self.inited = False
+        self.accepted = False
+
+
+        # save init kwy word arg parameters as ._inits in order to later finish
+        # init setup elseqhere after databases are opened if not below
+        self._inits = kwa
+
+        if self.db.opened and self.ks.opened:
+            self.setup(**self._inits)  # finish setup later
+
+    def setup(self, *, seed=None, aeid=None, pidx=None, algo=None, salt=None,
+              tier=None, ):
+        """
+        Setup Habery. Assumes that both .db and .ks have been opened.
+        This allows dependency injection of .db and .ks into Habery instance
+        prior to .db and .kx being opened to accomodate asynchronous process
+        setup of these resources. Putting the .db and .ks associated
+        initialization here enables asynchronous opening .db and .ks after
+        Baser and Keeper instances are instantiated. First call to .setup will
+        initialize databases (vacuous initialization).
+
+        Parameters:
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            pidx (int): Initial prefix index for vacuous ks
+            algo (str): algorithm (randy or salty) for creating key pairs
+                default is root algo which defaults to salty
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt (Tierage)
+        """
+        if not (self.ks.opened and self.db.opened):
+            raise kering.ClosedError("Attempt to setup Habitat with closed "
+                                     "database, .ks or .db.")
+
+        if salt is None:
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
+                                   algo=algo, salt=salt, tier=tier)
+
+        #config file is meant to be read only at init not changed by app at
+        # run time. Any dynamic app changes must go in database not config file
+        # that way we don't have to worry about multiple writers of cf. All
+        # dynamic changes go in databases  and we use config file to preload
+        # database not as a database.
+        # Habitats are managed by Habery. So if .habs the Habery inits Habitats
+        # if no .habs then Habery ends init and waits for API call to create
+        # Habitat.
+        # load habitats from db?
+        # load prefixes
+        #  should config files by habitat specific
+        # should we have a config file just for Habery? Or shoud the config
+        #  file have sections for Habery and Habitats so its one file but
+        # get read more than one and applied
+        # read in self.cf config file and process any oobis or endpoints
+        # self.reconfigure()  # depends on prefixes and habitats
+
+        self.inited = True
+
+
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self.db.kevers
+
+    @property
+    def kever(self):
+        """
+        Returns kever for its .pre
+        """
+        return self.kevers[self.pre]
+
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
+
+    def group(self):
+        return self.db.gids.get(self.pre)
+
+
+
+
 class Habitat:
     """
     Habitat class provides direct mode controller's local shared habitat
@@ -351,7 +538,8 @@ class Habitat:
         self.inited = True
 
     def delegationAccepted(self):
-        # process escrow
+        """Process all escrows in kvy in response to delegation acceptance
+        """
         self.kvy.processEscrows()
         if self.pre not in self.kevers:
             raise Exception()
@@ -359,7 +547,8 @@ class Habitat:
         self.accepted = True
 
     def delegatedRotationAccepted(self):
-        # process escrow
+        """Process all escrows in kvy in response to delegation acceptance
+        """
         self.kvy.processEscrows()
         if self.pre not in self.kevers:
             raise Exception()
@@ -367,6 +556,8 @@ class Habitat:
         self.ridx += 1
 
     def reinitialize(self):
+        """
+        """
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
@@ -422,6 +613,9 @@ class Habitat:
 
 
     def recreate(self, serder, opre, verfers):
+        """
+
+        """
 
         self.pre = serder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
