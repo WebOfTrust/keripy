@@ -118,13 +118,13 @@ class DelegateRotateDoer(doing.DoDoer):
         verfers, digers, cst, nst = self.hab.interact(pre=delK.prefixer.qb64, temp=False)
         rotSrdr = eventing.deltate(pre=delK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
-                                   dig=delK.serder.diger.qb64,
+                                   dig=delK.serder.saider.qb64,
                                    sn=delK.sn + 1,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
         seal = dict(i=rotSrdr.pre,
                     s=rotSrdr.ked["s"],
-                    d=rotSrdr.dig)
+                    d=rotSrdr.said)
 
         with open(self.sealFile, "w") as f:
             f.write(json.dumps(seal, indent=4))
@@ -152,7 +152,7 @@ class DelegateRotateDoer(doing.DoDoer):
         event = self.hab.kevers[rotSrdr.pre]
         seqner = coring.Seqner(sn=event.sn)
         msg.extend(seqner.qb64b)
-        msg.extend(event.serder.diger.qb64b)
+        msg.extend(event.serder.saider.qb64b)
 
         delKvy = eventing.Kevery(db=self.hab.db, lax=True)
         parsing.Parser().parseOne(ims=bytearray(msg), kvy=delKvy)

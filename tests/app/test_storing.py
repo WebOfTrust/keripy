@@ -92,7 +92,7 @@ def test_mailboxing():
 
         for idx, msg in msgs:
             exn = coring.Serder(raw=msg)
-            d = exn.ked["d"]
+            d = exn.ked["a"]
             assert d["b"] == idx
 
         msgs = []

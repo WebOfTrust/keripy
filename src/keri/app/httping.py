@@ -155,7 +155,7 @@ def createCESRRequest(msg, client, date=None):
         body = json.dumps(serder.ked["a"]).encode("utf-8")
     elif ilk in (Ilks.exn,):
         resource = "/" + ilk + serder.ked['r']
-        body = json.dumps(serder.ked["d"]).encode("utf-8")
+        body = json.dumps(serder.ked["a"]).encode("utf-8")
         dt = serder.ked["dt"]
     elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
         resource = "/tel"

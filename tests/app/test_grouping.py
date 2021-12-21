@@ -77,7 +77,7 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -104,11 +104,11 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 def test_multisig_rotate():
     with openMutlsig(prefix="test") as (hab1, hab2, hab3):
 
-        assert hab1.pre == "ELQoqCOdxWcd3zhQTW7io5XJYAJLmhpbY8YqQF0sxZLo"
-        assert hab2.pre == "EH-i-vxKSbaJQtal3V_ltrtjs7O1nuCHn4iqxdvdGOj0"
-        assert hab3.pre == "EuK3T40uWRDXGZF9YApOjoTkLeDjjr7UPUqfCp5B04Fo"
+        assert hab1.pre == "El5WIVmMSnNIsa3Oqib-g5BNkK8uwKOrFvxxPJ_jM5I8"
+        assert hab2.pre == "ESXQU9TMcdFiuVNRxe6YrbeYlwZJn04UyJUEJxR36Qyw"
+        assert hab3.pre == "EHDoHoAMCI4iRgOjNKYuSLdxsATl9mWCN3HlzOptd2XA"
 
-        gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
+        gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
         group1 = hab1.db.gids.get(hab1.pre)
         assert group1.gid == gid
 
@@ -165,7 +165,7 @@ def test_multisig_rotate():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))
@@ -194,11 +194,11 @@ def test_multisig_rotate():
 def test_multisig_interact():
     with openMutlsig(prefix="test") as (hab1, hab2, hab3):
 
-        assert hab1.pre == "ELQoqCOdxWcd3zhQTW7io5XJYAJLmhpbY8YqQF0sxZLo"
-        assert hab2.pre == "EH-i-vxKSbaJQtal3V_ltrtjs7O1nuCHn4iqxdvdGOj0"
-        assert hab3.pre == "EuK3T40uWRDXGZF9YApOjoTkLeDjjr7UPUqfCp5B04Fo"
+        assert hab1.pre == "El5WIVmMSnNIsa3Oqib-g5BNkK8uwKOrFvxxPJ_jM5I8"
+        assert hab2.pre == "ESXQU9TMcdFiuVNRxe6YrbeYlwZJn04UyJUEJxR36Qyw"
+        assert hab3.pre == "EHDoHoAMCI4iRgOjNKYuSLdxsATl9mWCN3HlzOptd2XA"
 
-        gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
+        gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
         group1 = hab1.db.gids.get(hab1.pre)
         assert group1.gid == gid
 
@@ -231,7 +231,7 @@ def test_multisig_interact():
         eraw = hab1.db.getEvt(dgkey)
         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
         sigs = hab1.db.getSigs(dgkey)
         sigs.extend(hab2.db.getSigs(dgkey))
         sigs.extend(hab3.db.getSigs(dgkey))

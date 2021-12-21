@@ -392,12 +392,12 @@ def test_build_proof():
         sigers = sigHab.mgr.sign(ser=creder.raw, verfers=sigHab.kever.verfers, indexed=True)
 
         proof = viring.buildProof(prefixer, seqner, diger, sigers)
-        assert proof == (b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAA'
-                         b'AAAAAABAECc96yX1sYswnD6LXEcoNuJ0ehi8gkFMEGedqURhXMBU-AADAA8jPya7'
-                         b'QXiXZRPIYrtoel7cAhN2dS57ejZBEE501Cr4i5kBMDFu6qEPK9l1CBtZU2Djeh0T'
-                         b'8ZI1wyUqTeQgrpAgAB031v3FUTPZoPY19kv7xrf49HyPSukG7qhrZJEltiMcuzTQ'
-                         b'mAYsHIJzygD9XleyA3HcsTgB9pObBPTqPOfv7ZCgACzLFfAe0YvpKU5Lslt78f_H'
-                         b'SgdZJPca1tCTt0bPC00TWg11HbI_t0vdGNQkogIVzcoZnsK4FVZe1CeveRZym2BA')
+        assert proof == (b'-FABEBQmzPGqnkRXCHrfRHDdy0eS5hIsTD9peCfhavXoxhXI0AAAAAAAAAAAAAAA'
+                         b'AAAAAABAExDuNKMkRvMZG8ITkX3gRAVfsRvImCtsMTplKcqKpvQE-AADAAI-OMaF'
+                         b'IvZVUmLSAApfmJnoRBtsyuXYX0ge9Xc_r6ckChqICYuScxvof4qJ_tWfwutNqbxM'
+                         b'9_hv5Ux12oTx9rCAABwVkDWD_jemXddSaBdgDU4QYvW_2eLiPCvG95gEBLu-alA3'
+                         b'4NfC5HJKL5y9m7FD2d5eXE13jgMoYv-eRYx5J4BgACpZv8RxdMD4N4HUyFTe0R_A'
+                         b'ot5gaGCQEvlAC6ELbkhJ5EcrM-GBmuegm7tMQyfcOFO0nZTYO4YVDc3NAHsu6iDQ')
 
         prefixer, seqner, diger, isigers = proving.parseProof(proof)
         assert prefixer.qb64 == sigHab.pre

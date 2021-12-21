@@ -78,7 +78,7 @@ class CommandDoer(doing.DoDoer):
         self.remove([sigr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
+            assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "icp"
             assert hab.kever.sn == 0
             assert hab.kever.tholder.sith == "1"
@@ -99,7 +99,7 @@ class CommandDoer(doing.DoDoer):
         self.remove([rotr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
+            assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "rot"
             assert hab.kever.sn == 1
             assert hab.kever.tholder.sith == "1"
@@ -121,7 +121,7 @@ class CommandDoer(doing.DoDoer):
         self.remove([ixnr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
+            assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "ixn"
             assert hab.kever.sn == 2
             assert hab.kever.tholder.sith == "1"

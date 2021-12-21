@@ -22,7 +22,7 @@ def test_proving():
     with basing.openDB(name="sid") as sidDB, \
             keeping.openKS(name="sid") as sidKS:
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
-        assert sidHab.pre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
+        assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
@@ -41,7 +41,7 @@ def test_proving():
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             d="",
-            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
+            i="EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -54,16 +54,16 @@ def test_proving():
                             subject=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON000174_","d":"EID77B8V8O60IHFCiB6R93BisHHQ-L9CC_'
-                       b'Et2w1Zb1Ww","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
-                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"Evfz'
-                       b'9lXZM_uFnNM1wJhdmyjt4lbtyt5ulmPwNvtL2w6A","i":"E4YPqsEOaPNaZxVIb'
-                       b'Y-Gx2bJgP-c7AH_K7pEE-YfcI9E","lei":"254900OPPU84GM83MG36","issua'
-                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0-FABE4YP'
-                       b'qsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAA'
-                       b'ElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAk9ST4uE4G1lIVB'
-                       b'UiTDal2v-xa2E_vB2UUbXSueLl470LAkum9L6E4s4rt-3XprStZceTchjmJ_FRTI'
-                       b'-Q1wrPAQ')
+        assert msg == (b'{"v":"KERI10JSON000174_","d":"EFIx30Jqj0xmCe9t46L0Go0kkNjASWEXE1'
+                       b'24SsB4U3fc","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
+                       b'i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"E6wI'
+                       b'oXUVrUsFm4pHAFDMbLloniDNvEWizHO8BNPwcyBA","i":"EPmpiN6bEM8EI0Mct'
+                       b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
+                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0-FABEPmp'
+                       b'iN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAA'
+                       b'EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAApdXwNj-5ilQhG'
+                       b'HeTqnnCoXKSoSNHRb9VGp_tFFvTQBqikZrYhwmGCmiOhIs4koaH7NUOXrOlXEq3i'
+                       b'NbeoI3BQ')
 
         creder = Credentialer(raw=msg)
         proof = msg[creder.size:]
@@ -86,7 +86,7 @@ def test_proving():
         assert seqner.sn == sidHab.kever.sn
 
         diger = Diger(qb64b=proof, strip=True)
-        assert diger.qb64 == sidHab.kever.serder.dig
+        assert diger.qb64 == sidHab.kever.serder.said
 
         ictr = Counter(qb64b=proof, strip=True)
         assert ictr.code == CtrDex.ControllerIdxSigs
@@ -268,7 +268,7 @@ def test_parse_proof():
 def test_credential_parsator():
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
             viring.openReg() as reg:
-        assert hab.pre == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
+        assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
         issuer = issuing.Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
 

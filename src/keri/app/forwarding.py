@@ -121,9 +121,11 @@ def forward(pre, serder, topic=None, version=coring.Version, kind=coring.Serials
 
     ked = dict(v=vs,
                t=ilk,
+               d="",
                r=r,
                a=serder.ked,
                )
+    _, ked = coring.Saider.saidify(sad=ked)
 
 
     return eventing.Serder(ked=ked)  # return serialized ked

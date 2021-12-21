@@ -31,8 +31,8 @@ def printGroup(hab, group):
         group (GroupIdentifier): the local identifier and list of participants
 
     """
-    print("Group: ", group.gid)
-    printIdentifier(hab, group.gid)
+    print("Local Identifier:", group.lid)
+    printIdentifier(hab, group.gid, label="Group Identifier")
 
     aids = group.aids
     parts = "Participants: \n" + ("\t{}\n" * len(aids))
@@ -40,7 +40,7 @@ def printGroup(hab, group):
     print()
 
 
-def printIdentifier(hab, pre):
+def printIdentifier(hab, pre, label="Identifier"):
     """
     Print current state information for the identifier prefix pre
 
@@ -51,10 +51,10 @@ def printIdentifier(hab, pre):
     """
     kever = hab.kevers[pre]
     ser = kever.serder
-    dgkey = dbing.dgKey(ser.preb, ser.digb)
+    dgkey = dbing.dgKey(ser.preb, ser.saidb)
     wigs = hab.db.getWigs(dgkey)
 
-    print("Prefix:\t{}".format(pre))
+    print("{}: {}".format(label, pre))
     print("Seq No:\t{}".format(kever.sn))
     if kever.delegated:
         print("Delegated Identifier")

@@ -86,7 +86,6 @@ class GroupMultisigRotate(doing.DoDoer):
             yield self.tock
 
         rep = self.rotr.cues.popleft()
-        print(rep)
         print()
         print("Group Identifier Rotation Complete:")
         displaying.printIdentifier(self.hab, rep["pre"])

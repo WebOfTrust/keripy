@@ -302,7 +302,7 @@ class AdminCueHandler(doing.DoDoer):
                 if cueKin in ("delegating",):
                     srdr = cue["serder"]
                     msg = self.hab.interact(data=[
-                        dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.dig)
+                        dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.said)
                     ])
                     witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg)
                     self.extend([witRctDoer])

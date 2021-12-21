@@ -87,7 +87,7 @@ def test_exchanger():
         respSer = coring.Serder(raw=resp['rep'].raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/test/messageResp"
-        assert respSer.ked['d'] == dict(req=pl)
+        assert respSer.ked['a'] == dict(req=pl)
 
 
 class EchoDoer(doing.Doer):
@@ -111,7 +111,7 @@ class EchoDoer(doing.Doer):
                 sigers = msg["sigers"]
 
                 assert payload == dict(x="y")
-                assert pre.qb64 == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
+                assert pre.qb64 == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
                 assert len(verfers) == 1
                 assert verfers[0].qb64 == "Djy1swBRlUIR5m16EUkc-Aj_WFCzAEbs0YpOh5IWt7kM"
                 assert len(sigers) == 1
