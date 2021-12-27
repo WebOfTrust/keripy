@@ -1835,13 +1835,13 @@ class Habitat:
         try:
             verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
                                                         ridx=self.ridx + 1,
-                                                        erase=erase)
+                                                        erase=self.erase)
         except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                         count=count,  # old next is new current
                                                         sith=sith,
                                                         temp=self.temp,
-                                                        erase=erase)
+                                                        erase=self.erase)
 
         if digers:
             nxt = coring.Nexter(sith=nst,
