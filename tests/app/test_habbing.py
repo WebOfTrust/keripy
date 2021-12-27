@@ -20,12 +20,43 @@ def test_habery():
     """
     Test Habery class
     """
+    # test default
     hby = habbing.Habery(temp=True)
     assert hby.name == "test"
+    assert hby.base == ""
+    assert hby.temp
+    assert hby.inited
+
+    assert hby.db.name == "test" == hby.name
+    assert hby.db.base == "" == hby.base
+    assert not hby.db.filed
+    assert hby.db.path.endswith("/keri/db/test")
+    assert hby.db.opened
+
+    assert hby.ks.name == "test" == hby.name
+    assert hby.ks.base == "" == hby.base
+    assert not hby.ks.filed
+    assert hby.ks.path.endswith("/keri/ks/test")
+    assert hby.ks.opened
+
+    assert hby.cf.name == "test" == hby.name
+    assert hby.cf.base == "" == hby.base
+    assert hby.cf.filed
+    assert hby.cf.path.endswith("/keri/cf/test.json")
+    assert hby.cf.opened
+    assert not hby.cf.file.closed
+
+
 
     hby.cf.close(clear=True)
     hby.ks.close(clear=True)
     hby.db.close(clear=True)
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.ks.path)
+    assert not os.path.exists(hby.db.path)
+
+    # test precreate
 
 
     """End Test"""

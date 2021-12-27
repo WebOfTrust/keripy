@@ -95,7 +95,7 @@ class Habery:
     """
 
     def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
-                 temp=False, erase=True, **kwa):
+                 temp=False, **kwa):
         """
         Initialize instance.
 
@@ -108,7 +108,6 @@ class Habery:
             db (Baser): database lmdb subclass instance
             cf (Configer): config file instance
             temp (bool): True means store .ks, .db, and .cf in /tmp for testing
-            erase (bool): True means erase private keys once stale
 
         Parameters: Passed through via kwa to setup for later init
             seed (str): qb64 private-signing key (seed) for the aeid from which
@@ -131,17 +130,19 @@ class Habery:
             tier (str): security tier for generating keys from salt
 
         """
-        self.name = name
-        self.temp = temp
-        self.erase = erase
-        self.db = db if db is not None else basing.Baser(name=base if base else name,
+        self.name = name  # maybe don't need attribute
+        self.base = base  # maybe don't need attribute
+        self.temp = temp  # maybe don't need attribute
+        self.db = db if db is not None else basing.Baser(name=self.name,
+                                                         base=self.base,
                                                          temp=self.temp,
                                                          reopen=True)
-        self.ks = ks if ks is not None else keeping.Keeper(name=base if base else name,
+        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
+                                                           base=self.base,
                                                            temp=self.temp,
                                                            reopen=True)
-        self.cf = cf if cf is not None else configing.Configer(name=name,
-                                                               base=base,
+        self.cf = cf if cf is not None else configing.Configer(name=self.name,
+                                                               base=self.base,
                                                                temp=self.temp,
                                                                reopen=True)
 
@@ -152,8 +153,6 @@ class Habery:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.inited = False
-        self.accepted = False
-
 
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below
