@@ -253,15 +253,15 @@ class Habery:
 
 class Hab:
     """
-    Habitat class provides direct mode controller's local shared habitat
-       e.g. context or environment
+    Hab class provides a given idetnifier controller's local resource environment
+    i.e. hab or habitat. Includes dependency injection of database, keystore,
+    configuration file as well as Kevery and key store Manager..
 
     Attributes:
         name (str): alias of controller
         transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-        temp (bool): True for testing it modifies tier of salty key
-            generation algorithm and persistence of db and ks
+
         erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store

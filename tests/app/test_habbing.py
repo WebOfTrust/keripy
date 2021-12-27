@@ -16,6 +16,21 @@ from keri.db import basing
 from keri.core import coring, eventing, parsing
 
 
+def test_habery():
+    """
+    Test Habery class
+    """
+    hby = habbing.Habery(temp=True)
+    assert hby.name == "test"
+
+    hby.cf.close(clear=True)
+    hby.ks.close(clear=True)
+    hby.db.close(clear=True)
+
+
+    """End Test"""
+
+
 def test_habitat():
     """
     Test Habitat class
@@ -370,5 +385,6 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    test_habitat_reinitialization_reload()
+    test_habery()
+    # test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])
