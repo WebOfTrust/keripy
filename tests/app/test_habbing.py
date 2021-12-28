@@ -46,7 +46,12 @@ def test_habery():
     assert hby.cf.opened
     assert not hby.cf.file.closed
 
-
+    assert hby.mgr.seed == ""
+    assert hby.mgr.aeid == ""
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
 
     hby.cf.close(clear=True)
     hby.ks.close(clear=True)
@@ -56,7 +61,32 @@ def test_habery():
     assert not os.path.exists(hby.ks.path)
     assert not os.path.exists(hby.db.path)
 
-    # test precreate
+    # test bran to seed
+    bran = "MyPasscodeIsRealSecret"
+    assert len(bran) == 22
+    hby = habbing.Habery(bran=bran, temp=True)
+    assert hby.name == "test"
+    assert hby.base == ""
+    assert hby.temp
+    assert hby.inited
+
+    assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    hby.cf.close(clear=True)
+    hby.ks.close(clear=True)
+    hby.db.close(clear=True)
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.ks.path)
+    assert not os.path.exists(hby.db.path)
+
+
+    # test pre-create
 
 
     """End Test"""

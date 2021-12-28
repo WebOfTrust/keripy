@@ -655,8 +655,8 @@ class Manager:
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
                 all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
+                provided seed must not be empty. A change in aeid should require
+                a second authentication mechanism besides the seed.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             salt (str): qb64 of root salt. Makes random root salt if not provided
@@ -692,8 +692,8 @@ class Manager:
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
                 all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
+                provided seed must not be empty. A change in aeid should require
+                a second authentication mechanism besides the secret.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             algo (str): root algorithm (randy or salty) for creating key pairs

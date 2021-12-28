@@ -451,7 +451,7 @@ class MatterCodex:
     Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
-    Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
+    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
     Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
@@ -1603,7 +1603,8 @@ class Signer(Matter):
     Attributes:
 
     Properties:
-        .verfer is Verfer object instance
+        .verfer is Verfer object instance of public key derived from private key
+            seed which is .raw
 
     Methods:
         sign: create signature
