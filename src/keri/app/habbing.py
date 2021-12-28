@@ -25,16 +25,35 @@ logger = help.ogler.getLogger()
 
 
 @contextmanager
-def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
+def openHabery(name="test", base="", temp=True, salt=b'0123456789abcdef', **kwa):
     """
-    Context manager wrapper for Habitat instance.
-    Defaults to temporary database and keeper.
+    Context manager wrapper for Habery instance.
     Context 'with' statements call .close on exit of 'with' block
+    Defaults to temporary config file, database, and key store.
 
     Parameters:
-        name(str): name of habitat to create
-        salt(bytes): passed to habitat to use for inception
-        temp(bool): indicates if this uses temporary databases
+        name (str): name of habery to create
+        base (str): path base of habery to create
+        temp (bool): indicates if this uses temporary databases
+
+    Parameters: pass through to init
+        seed (str): qb64 private-signing key (seed) for the aeid from which
+            the private decryption key may be derived. If aeid stored in
+            database is not empty then seed may required to do any key
+            management operations. The seed value is memory only and MUST NOT
+            be persisted to the database for the manager with which it is used.
+            It MUST only be loaded once when the process that runs the Manager
+            is initialized. Its presence acts as an authentication, authorization,
+            and decryption secret for the Manager and must be stored on
+            another device from the device that runs the Manager.
+        aeid (str): qb64 of non-transferable identifier prefix for
+            authentication and encryption of secrets in keeper. If provided
+            aeid (not None) and different from aeid stored in database then
+            all secrets are re-encrypted using new aeid. In this case the
+            provided prikey must not be empty. A change in aeid should require
+            a second authentication mechanism besides the prikey.
+        salt (str): qb64 salt for creating key pairs
+        tier (str): security tier for generating keys from salt
 
     """
 
@@ -42,27 +61,86 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
             keeping.openKS(name=base if base else name, temp=temp) as ks, \
             configing.openCF(name=name, base=base, temp=temp) as cf:
         salt = coring.Salter(raw=salt).qb64
-        hab = Habitat(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
-                      salt=salt, icount=1, isith=1, ncount=1, nsith=1, **kwa)
+        habery = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                      salt=salt, **kwa)
 
-        yield hab
+        yield habery
 
 
-@contextmanager
-def existingHab(name="test", **kwa):
+def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
+                    curls=None, remote="eve", iurls=None):
     """
-    Context manager wrapper for existing Habitat instance.
-    Will raise exception if Habitat and database has not already been created.
-    Context 'with' statements call .close on exit of 'with' block
+    Setup and return doers list to run controller
 
     Parameters:
-        name(str): name of habitat to create
+        name is the name used for a specific habitat
+        base is the name used for shared resources i.e. Baser and Keeper
+               The habitat specific config file will be in base/name
+        curls (list[str]): local controller's service endpoint urls
+        remote (str): name of remote direct mode target
+        iurls (list[str]):  oobi  urls
+
+    Load endpoint database with named target urls including http not just tcp
+
+
+    conf file json
+    {
+      dt: "isodatetime",
+      curls: ["tcp://localhost:5620/"],
+      iurls: ["tcp://localhost:5621/?name=eve"],
+    }
     """
 
-    with basing.openDB(name=name, temp=False, reload=True) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False, **kwa)
-        yield hab
+
+    if not curls:
+        curls = ["ftp://localhost:5620/"]
+
+    if not iurls:  # blind oobi
+        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name={remote}"]
+
+    # setup databases  for dependency injection and config file
+    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    cf = configing.Configer(name=name, base=base, temp=temp)
+    conf = cf.get()
+    if not conf: # setup config file
+        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        cf.put(conf)
+
+
+    # setup habery
+    hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp )
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
+                        reopen=True, headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
+
+    localPort = 5620
+    remotePort = 5621
+    # setup local directmode tcp server
+    server = serving.Server(host="", port=localPort, wl=wl)
+    serverDoer = serving.ServerDoer(server=server)  # setup doer
+    directant = directing.Directant(hab=hby, server=server)
+    # Reactants created on demand by directant
+
+
+    # setup default remote direct mode client to remote party
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = clienting.ClientDoer(client=client)  # setup doer
+    director = directing.Director(hab=hby, client=client, tock=0.125)
+    reactor = directing.Reactor(hab=hby, client=client)
+
+    logger.info("\nController resources at %s/%s\nListening on TCP port %s to "
+                "port %s.\n\n", hby.base, hby.name, localPort, remotePort)
+
+    return [ksDoer, dbDoer, hbyDoer, wireDoer, clientDoer, director, reactor,
+            serverDoer, directant]
 
 
 class Habery:
@@ -125,7 +203,6 @@ class Habery:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
-            secrecies (list): of list of secrets to preload key pairs if any
             salt (str): qb64 salt for creating key pairs
             tier (str): security tier for generating keys from salt
 
@@ -248,6 +325,65 @@ class Habery:
     def group(self):
         return self.db.gids.get(self.pre)
 
+
+
+class HaberyDoer(doing.Doer):
+    """
+    Basic Habery Doer  to initialize habery databases and config file.
+    .cf, .ks, .db
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .habery is Habery subclass
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, habery, **kwa):
+        """
+        Parameters:
+           habery (Habery): instance
+        """
+        super(HaberyDoer, self).__init__(**kwa)
+        self.habery = habery
+
+    def enter(self):
+        """"""
+        if not self.habery.inited:
+            self.habery.setup(**self.habery._inits)
+
+    def exit(self):
+        """"""
+        pass
 
 
 class Hab:
@@ -1384,6 +1520,49 @@ class Hab:
                 route = cue["route"]
                 msg = self.reply(data=data, route=route)
                 yield msg
+
+
+
+@contextmanager
+def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
+    """
+    Context manager wrapper for Habitat instance.
+    Defaults to temporary database and keeper.
+    Context 'with' statements call .close on exit of 'with' block
+
+    Parameters:
+        name(str): name of habitat to create
+        salt(bytes): passed to habitat to use for inception
+        temp(bool): indicates if this uses temporary databases
+
+    """
+
+    with basing.openDB(name=base if base else name, temp=temp) as db, \
+            keeping.openKS(name=base if base else name, temp=temp) as ks, \
+            configing.openCF(name=name, base=base, temp=temp) as cf:
+        salt = coring.Salter(raw=salt).qb64
+        hab = Habitat(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                      salt=salt, icount=1, isith=1, ncount=1, nsith=1, **kwa)
+
+        yield hab
+
+
+@contextmanager
+def existingHab(name="test", **kwa):
+    """
+    Context manager wrapper for existing Habitat instance.
+    Will raise exception if Habitat and database has not already been created.
+    Context 'with' statements call .close on exit of 'with' block
+
+    Parameters:
+        name(str): name of habitat to create
+    """
+
+    with basing.openDB(name=name, temp=False, reload=True) as db, \
+            keeping.openKS(name=name, temp=False) as ks:
+        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False, **kwa)
+        yield hab
+
 
 
 class Habitat:
