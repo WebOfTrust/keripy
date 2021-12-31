@@ -111,8 +111,8 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
 
 
     # setup habery
-    hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp )
-    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    hby = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp )
+    hbyDoer = HaberyDoer(habery=hby)  # setup doer
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -210,14 +210,15 @@ class Habery:
         self.name = name  # maybe don't need attribute
         self.base = base  # maybe don't need attribute
         self.temp = temp  # maybe don't need attribute
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True)
+
         self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
                                                            base=self.base,
                                                            temp=self.temp,
                                                            reopen=True)
+        self.db = db if db is not None else basing.Baser(name=self.name,
+                                                         base=self.base,
+                                                         temp=self.temp,
+                                                         reopen=True)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
@@ -238,6 +239,7 @@ class Habery:
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
+
 
     def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
               salt=None, tier=None, temp=None ):

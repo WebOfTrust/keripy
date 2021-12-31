@@ -54,12 +54,12 @@ def test_habery():
     assert hby.mgr.tier == coring.Tiers.low
 
     hby.cf.close(clear=True)
-    hby.ks.close(clear=True)
     hby.db.close(clear=True)
+    hby.ks.close(clear=True)
 
     assert not os.path.exists(hby.cf.path)
-    assert not os.path.exists(hby.ks.path)
     assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
 
     # test bran to seed
     bran = "MyPasscodeIsRealSecret"
@@ -78,16 +78,60 @@ def test_habery():
     assert hby.mgr.tier == coring.Tiers.low
 
     hby.cf.close(clear=True)
-    hby.ks.close(clear=True)
     hby.db.close(clear=True)
+    hby.ks.close(clear=True)
 
     assert not os.path.exists(hby.cf.path)
-    assert not os.path.exists(hby.ks.path)
     assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
 
 
     # test pre-create
+    base = "keep"
+    name = "main"
+    bran = "MyPasscodeIsRealSecret"
+    temp = True
 
+    # setup databases  for dependency injection and config file
+    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    cf = configing.Configer(name=name, base=base, temp=temp)
+    conf = cf.get()
+    if not conf: # setup config file
+        curls = ["ftp://localhost:5620/"]
+        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name=Bob"]
+        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        cf.put(conf)
+
+    # setup habery
+    hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                         bran=bran )
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
+    assert hby.name == "main"
+    assert hby.base == "keep"
+    assert hby.temp
+    assert not hby.inited
+    assert hby.mgr is None
+
+    # need to run doers to open databases so can finish init
+
+    #assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    #assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    #assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    #assert hby.mgr.pidx == 0
+    #assert hby.mgr.algo == keeping.Algos.salty
+    #assert hby.mgr.tier == coring.Tiers.low
+
+    hby.cf.close(clear=True)
+    hby.db.close(clear=True)
+    hby.ks.close(clear=True)
+
+    #assert not os.path.exists(hby.cf.path)
+    #assert not os.path.exists(hby.db.path)
+    #assert not os.path.exists(hby.ks.path)
 
     """End Test"""
 
