@@ -291,8 +291,8 @@ class Habery:
                                                      tier=tier,
                                                      temp=temp)
             seed = signer.qb64
-            if not aeid:
-                aeid = signer.verfer.qb64
+            if not aeid:  # aeid must not be empty event on initial creation
+                aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
             salt = coring.Salter(raw=b'0123456789abcdef').qb64

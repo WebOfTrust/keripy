@@ -694,6 +694,9 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided seed must not be empty. A change in aeid should require
                 a second authentication mechanism besides the secret.
+                aeid same as current aeid no change innocuous
+                aeid different but empty which unencrypts and removes aeid
+                aeid different not empty which reencrypts and updates aeid
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             algo (str): root algorithm (randy or salty) for creating key pairs
@@ -744,6 +747,9 @@ class Manager:
 
         Parameters:
             aeid (str): qb64 of new auth encrypt id  (public signing key)
+                        aeid may match current aeid no change innocuous
+                        aeid may be empty which unencrypts and removes aeid
+                        aeid may be different not empty which reencrypts
             seed (str): qb64 of new seed from which new aeid is derived (private signing
                         key seed)
         """
