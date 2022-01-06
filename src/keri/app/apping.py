@@ -9,7 +9,6 @@ import os
 from hio.base import doing
 from hio.core import wiring
 from hio.core.serial import serialing
-from hio.core.tcp import clienting, serving
 
 from .. import kering
 from .. import help

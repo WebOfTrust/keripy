@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from hio.base import doing
 from hio.help import hicting
+from hio.core.tcp import clienting, serving
 
 
 from .. import help
@@ -104,6 +105,7 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
     cf = configing.Configer(name=name, base=base, temp=temp)
+    cfDoer = configing.ConfigerDoer(configer=cf)
     conf = cf.get()
     if not conf: # setup config file
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
@@ -139,8 +141,67 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     logger.info("\nController resources at %s/%s\nListening on TCP port %s to "
                 "port %s.\n\n", hby.base, hby.name, localPort, remotePort)
 
-    return [ksDoer, dbDoer, hbyDoer, wireDoer, clientDoer, director, reactor,
+    return [ksDoer, dbDoer, cfDoer, hbyDoer, wireDoer, clientDoer, director, reactor,
             serverDoer, directant]
+
+
+class HaberyDoer(doing.Doer):
+    """
+    Basic Habery Doer  to initialize habery databases and config file.
+    .cf, .ks, .db
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .habery is Habery subclass
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, habery, **kwa):
+        """
+        Parameters:
+           habery (Habery): instance
+        """
+        super(HaberyDoer, self).__init__(**kwa)
+        self.habery = habery
+
+    def enter(self):
+        """"""
+        if not self.habery.inited:
+            self.habery.setup(**self.habery._inits)
+
+    def exit(self):
+        """"""
+        pass
 
 
 class Habery:
@@ -303,9 +364,8 @@ class Habery:
 
         #config file is meant to be read only at init not changed by app at
         # run time. Any dynamic app changes must go in database not config file
-        # that way we don't have to worry about multiple writers of cf. All
-        # dynamic changes go in databases  and we use config file to preload
-        # database not as a database.
+        # that way we don't have to worry about multiple writers of cf.
+        # Use config file to preload database not as a database.
         # Habitats are managed by Habery. So if .habs the Habery inits Habitats
         # if no .habs then Habery ends init and waits for API call to create
         # Habitat.
@@ -345,65 +405,6 @@ class Habery:
     def group(self):
         return self.db.gids.get(self.pre)
 
-
-
-class HaberyDoer(doing.Doer):
-    """
-    Basic Habery Doer  to initialize habery databases and config file.
-    .cf, .ks, .db
-
-    Inherited Attributes:
-        .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
-
-    Attributes:
-        .habery is Habery subclass
-
-    Inherited Properties:
-        .tyme is float relative cycle time of associated Tymist .tyme obtained
-            via injected .tymth function wrapper closure.
-        .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
-        .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Methods:
-        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
-        .__call__ makes instance callable
-            Appears as generator function that returns generator
-        .do is generator method that returns generator
-        .enter is enter context action method
-        .recur is recur context action method or generator method
-        .exit is exit context method
-        .close is close context method
-        .abort is abort context method
-
-    Hidden:
-        ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-        ._tock is hidden attribute for .tock property
-    """
-
-    def __init__(self, habery, **kwa):
-        """
-        Parameters:
-           habery (Habery): instance
-        """
-        super(HaberyDoer, self).__init__(**kwa)
-        self.habery = habery
-
-    def enter(self):
-        """"""
-        if not self.habery.inited:
-            self.habery.setup(**self.habery._inits)
-
-    def exit(self):
-        """"""
-        pass
 
 
 class Hab:

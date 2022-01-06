@@ -6,8 +6,9 @@ tests.app.apping module
 
 import os
 import shutil
+import time
 
-from hio.help.hicting import Mict
+from hio.base import doing, tyming
 
 from keri import kering
 from keri import help
@@ -86,7 +87,7 @@ def test_habery():
     assert not os.path.exists(hby.ks.path)
 
 
-    # test pre-create
+    # test pre-create of injected resources
     base = "keep"
     name = "main"
     bran = "MyPasscodeIsRealSecret"
@@ -98,6 +99,7 @@ def test_habery():
     db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
     cf = configing.Configer(name=name, base=base, temp=temp)
+    cfDoer = configing.ConfigerDoer(configer=cf)
     conf = cf.get()
     if not conf: # setup config file
         curls = ["ftp://localhost:5620/"]
@@ -117,21 +119,41 @@ def test_habery():
     assert hby.mgr is None
 
     # need to run doers to open databases so can finish init
+    doers = [ksDoer, dbDoer, cfDoer, hbyDoer]
 
-    #assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
-    #assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
-    #assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    #assert hby.mgr.pidx == 0
-    #assert hby.mgr.algo == keeping.Algos.salty
-    #assert hby.mgr.tier == coring.Tiers.low
+    # run components
+    tock = 0.03125
+    limit =  1.0
+    doist = doing.Doist(limit=limit, tock=tock, real=True)
+    tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
-    hby.cf.close(clear=True)
-    hby.db.close(clear=True)
-    hby.ks.close(clear=True)
+    # doist.do(doers=doers)
+    deeds = doist.enter(doers=doers)
+    doist.recur(deeds=deeds)
 
-    #assert not os.path.exists(hby.cf.path)
-    #assert not os.path.exists(hby.db.path)
-    #assert not os.path.exists(hby.ks.path)
+    assert hby.inited
+    assert hby.mgr is not None
+    assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    #time.sleep(doist.tock)
+    #while not tymer.expired:
+        #doist.recur(deeds=deeds)
+        #time.sleep(doist.tock)
+    #assert doist.limit == limit  # already exited?
+    doist.exit(deeds=deeds)
+
+    assert not cf.opened
+    assert not db.opened
+    assert not ks.opened
+
+    assert not os.path.exists(cf.path)
+    assert not os.path.exists(db.path)
+    assert not os.path.exists(ks.path)
 
     """End Test"""
 
