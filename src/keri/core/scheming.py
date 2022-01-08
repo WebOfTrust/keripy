@@ -86,7 +86,29 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'Credential","description":"A vLEI Role Credential issued by a '
                                                     b'Qualified vLEI issuer to official representatives of a Legal '
                                                     b'Entity",'
-                                                    b'"credentialType":"LegalEntityOfficialOrganizationalRolevLEICredential","properties":{"v":{"type":"string"},"d":{"type":"string"},"i":{"type":"string"},"s":{"description":"schema SAID","type":"string"},"a":{"description":"data block","properties":{"d":{"type":"string"},"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time","type":"string"},"ri":{"description":"credential status registry","type":"string"},"LEI":{"type":"string"},"personLegalName":{"type":"string"},"officialRole":{"type":"string"}},"additionalProperties":false,"required":["i","dt","ri","LEI","personLegalName","officialRole"],"type":"object"},"p":{"contains":{"type":"object"},"description":"source block","items":{"properties":{"legalEntityvLEICredential":{"description":"chain to issuer credential","properties":{"d":{"type":"string"},"i":{"type":"string"}},"additionalProperties":false,"type":"object"}},"additionalProperties":false,"required":["legalEntityvLEICredential"],"type":"object"},"maxItems":1,"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},"description":"rules block","type":"array"}},"additionalProperties":false,"required":["i","s","d","r"],"type":"object"}',
+                                                    b'"credentialType":"LegalEntityOfficialOrganizationalRolevLEICreden'
+                                                    b'tial","properties":{"v":{"type":"string"},'
+                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
+                                                    b'"s":{"description":"schema SAID","type":"string"},'
+                                                    b'"a":{"description":"data block","properties":{"d":{'
+                                                    b'"type":"string"},"i":{"type":"string"},'
+                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
+                                                    b'"type":"string"},"ri":{"description":"credential status '
+                                                    b'registry","type":"string"},"LEI":{"type":"string"},'
+                                                    b'"personLegalName":{"type":"string"},"officialRole":{'
+                                                    b'"type":"string"}},"additionalProperties":false,"required":["i",'
+                                                    b'"dt","ri","LEI","personLegalName","officialRole"],'
+                                                    b'"type":"object"},"p":{"contains":{"type":"object"},'
+                                                    b'"description":"source block","items":{"properties":{'
+                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
+                                                    b'credential","properties":{"d":{"type":"string"},'
+                                                    b'"i":{"type":"string"}},"additionalProperties":false,'
+                                                    b'"type":"object"}},"additionalProperties":false,"required":['
+                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
+                                                    b'"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},'
+                                                    b'"description":"rules block","type":"array"}},'
+                                                    b'"additionalProperties":false,"required":["i","s","d","r"],'
+                                                    b'"type":"object"}',
     "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0": b'{"$id":"EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"Legal Entity vLEI Credential","description":"A vLEI '
@@ -117,7 +139,29 @@ jsonSchemaCache = CacheResolver(cache={
                                                     b'"description":"A vLEI Role Credential issued to representatives '
                                                     b'of a Legal Entity in other than official roles but in '
                                                     b'functional or other context of engagement",'
-                                                    b'"credentialType":"LegalEntityEngagementContextRolevLEICredential","properties":{"v":{"type":"string"},"d":{"type":"string"},"i":{"type":"string"},"s":{"description":"schema SAID","type":"string"},"n":{"description":"one time use nonce","type":"string"},"a":{"description":"data block","properties":{"d":{"type":"string"},"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time","type":"string"},"ri":{"description":"credential status registry","type":"string"},"LEI":{"type":"string"},"personLegalName":{"type":"string"},"engagementContextRole":{"type":"string"}},"additionalProperties":false,"required":["i","dt","ri","LEI","personLegalName","engagementContextRole"],"type":"object"},"p":{"contains":{"type":"object"},"description":"source block","items":{"properties":{"legalEntityvLEICredential":{"description":"chain to issuer credential","properties":{"d":{"type":"string"},"i":{"type":"string"}},"additionalProperties":false,"type":"object"}},"additionalProperties":false,"required":["legalEntityvLEICredential"],"type":"object"},"maxItems":1,"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},"description":"rules block","type":"array"}},"additionalProperties":false,"required":["v","i","s","d","r","a"],"type":"object"}',
+                                                    b'"credentialType":"LegalEntityEngagementContextRolevLEICredential",'
+                                                    b'"properties":{"v":{"type":"string"},"d":{"type":"string"},'
+                                                    b'"i":{"type":"string"},"s":{"description":"schema SAID",'
+                                                    b'"type":"string"},"n":{"description":"one time use nonce",'
+                                                    b'"type":"string"},"a":{"description":"data block","properties":{'
+                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
+                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
+                                                    b'"type":"string"},"ri":{"description":"credential status '
+                                                    b'registry","type":"string"},"LEI":{"type":"string"},'
+                                                    b'"personLegalName":{"type":"string"},"engagementContextRole":{'
+                                                    b'"type":"string"}},"additionalProperties":false,"required":["i",'
+                                                    b'"dt","ri","LEI","personLegalName","engagementContextRole"],'
+                                                    b'"type":"object"},"p":{"contains":{"type":"object"},'
+                                                    b'"description":"source block","items":{"properties":{'
+                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
+                                                    b'credential","properties":{"d":{"type":"string"},'
+                                                    b'"i":{"type":"string"}},"additionalProperties":false,'
+                                                    b'"type":"object"}},"additionalProperties":false,"required":['
+                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
+                                                    b'"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},'
+                                                    b'"description":"rules block","type":"array"}},'
+                                                    b'"additionalProperties":false,"required":["v","i","s","d","r",'
+                                                    b'"a"],"type":"object"}',
     "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg": b'{"$id":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",'
                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
                                                     b'"title":"GLEIF vLEI Credential","description":"The vLEI '
@@ -255,12 +299,15 @@ class JSONSchema:
             d = json.loads(raw)
             jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
         except jsonschema.exceptions.ValidationError as ex:
+            print(ex)
             logger.error(f'jsonschema.exceptions.ValidationError {ex}')
             return False
         except jsonschema.exceptions.SchemaError as ex:
+            print(ex)
             logger.error(f'jsonschema.exceptions.SchemaError {ex}')
             return False
         except json.decoder.JSONDecodeError as ex:
+            print(ex)
             logger.error(f'json.decoder.JSONDecodeError {ex}')
             return False
         except Exception:

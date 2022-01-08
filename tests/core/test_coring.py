@@ -20,14 +20,13 @@ from fractions import Fraction
 
 from keri.kering import Version, Versionage
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ValidationError, ShortageError, InvalidCodeSizeError)
+                         ShortageError, InvalidCodeSizeError)
 
 from keri.help import helping
-from keri.help.helping import sceil
 
 from keri.core import coring
-from keri.core.coring import Ilkage, Ilks, Ids
-from keri.core.coring import (Sizage, MtrDex, Matter, SmallVrzDex, LargeVrzDex,
+from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
+from keri.core.coring import (Sizage, MtrDex, Matter,
                               IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
@@ -231,11 +230,11 @@ def test_b64_conversions():
     p = nabSextets(b, 1)
     assert p == b'\xf8'
 
-    assert B64_CHARS == ('A','B','C','D','E','F','G','H','I','J','K','L','M','N',
-                         'O','P','Q','R','S','T','U','V','W','X','Y','Z',
-                         'a','b','c','d','e','f','g','h','i','j','k','l','m','n',
-                         'o','p','q','r','s','t','u','v','w','x','y','z',
-                         '0','1','2','3','4','5','6','7','8','9','-','_')
+    assert B64_CHARS == ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+                         'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                         'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_')
     assert '@' not in B64_CHARS
     assert 'A' in B64_CHARS
 
@@ -1658,6 +1657,8 @@ def test_counter():
         'Keys': '-k',
         'LocationSealQuadlets': '-l',
         'RootDigestSealQuadlets': '-r',
+        'SadPathSig': '-J',
+        'SadPathSigGroup': '-K',
         'Witnesses': '-w',
         'BigMessageDataGroups': '-0U',
         'BigAttachedMaterialQuadlets': '-0V',
@@ -1694,6 +1695,8 @@ def test_counter():
         '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -2238,6 +2241,7 @@ def test_dater():
 
     """ Done Test """
 
+
 def test_texter():
     """
     Test Texter variable sized Base64 text subclass of Matter
@@ -2295,6 +2299,89 @@ def test_texter():
     assert texter.text == text
 
     """ Done Test """
+
+
+def test_pather():
+    sad = dict(a=dict(z="value", b=dict(x=1, y=2, c="test")))
+    path = []
+    pather = coring.Pather(path=path)
+    assert pather.text == "-"
+    assert pather.qb64 == "6AABAAA-"
+    assert pather.raw == b'>'
+    assert pather.resolve(sad) == sad
+    assert pather.path == path
+
+    path = ["a", "b", "c"]
+    pather = coring.Pather(path=path)
+    assert pather.text == "-a-b-c"
+    assert pather.qb64 == "5AACAA-a-b-c"
+    assert pather.raw == b'\x0f\x9a\xf9\xbf\x9c'
+    assert pather.resolve(sad) == "test"
+    assert pather.path == path
+
+    path = ["0", "1", "2"]
+    pather = coring.Pather(path=path)
+    assert pather.text == "-0-1-2"
+    assert pather.qb64 == "5AACAA-0-1-2"
+    assert pather.raw == b'\x0f\xb4\xfb_\xb6'
+    assert pather.resolve(sad) == "test"
+    assert pather.path == path
+
+    sad = dict(field0=dict(z="value", field1=dict(field2=1, field3=2, c="test")))
+    path = ["field0"]
+    pather = coring.Pather(path=path)
+    assert pather.text == "-field0"
+    assert pather.qb64 == "4AACA-field0"
+    assert pather.raw == b'\x03\xe7\xe2zWt'
+    assert pather.resolve(sad) == {'field1': {'c': 'test', 'field2': 1, 'field3': 2}, 'z': 'value'}
+    assert pather.path == path
+
+    path = ["field0", "field1", "field3"]
+    pather = coring.Pather(path=path)
+    assert pather.text == "-field0-field1-field3"
+    assert pather.qb64 == "6AAGAAA-field0-field1-field3"
+    assert pather.raw == b">~'\xa5wO\x9f\x89\xe9]\xd7\xe7\xe2zWw"
+    assert pather.resolve(sad) == 2
+    assert pather.path == path
+
+    path = ["field0", "1", "0"]
+    pather = coring.Pather(path=path)
+    assert pather.text == "-field0-1-0"
+    assert pather.qb64 == "4AADA-field0-1-0"
+    assert pather.raw == b'\x03\xe7\xe2zWt\xfb_\xb4'
+    assert pather.resolve(sad) == 1
+    assert pather.path == path
+
+    sad = dict(field0=dict(z=dict(field2=1, field3=2, c="test"), field1="value"))
+    text = "-0-z-2"
+    pather = coring.Pather(text=text)
+    assert pather.text == text
+    assert pather.qb64 == "5AACAA-0-z-2"
+    assert pather.raw == b'\x0f\xb4\xfb?\xb6'
+    assert pather.resolve(sad) == "test"
+    assert pather.path == ["0", "z", "2"]
+
+    text = "-0-a"
+    pather = coring.Pather(text=text)
+    assert pather.text == text
+    assert pather.qb64 == "4AAB-0-a"
+    assert pather.raw == b'\xfbO\x9a'
+    with pytest.raises(KeyError):
+        pather.resolve(sad)
+    assert pather.path == ["0", "a"]
+
+    text = "-0-field1-0"
+    pather = coring.Pather(text=text)
+    assert pather.text == text
+    assert pather.qb64 == "4AADA-0-field1-0"
+    assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
+    with pytest.raises(ValueError):
+        pather.resolve(sad)
+    assert pather.path == ["0", "field1", "0"]
+
+    """ Done Test """
+
+
 def test_verfer():
     """
     Test the support functionality for verifier subclass of crymat
@@ -3612,7 +3699,8 @@ def test_versify():
     vs = Versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 0
@@ -3620,15 +3708,26 @@ def test_versify():
     vs = Versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 65
 
+    vs = Versify(ident=Idents.acdc, kind=Serials.json, size=86)
+    assert vs == "ACDC10JSON000056_"
+    assert len(vs) == VERFULLSIZE
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.acdc
+    assert kind == Serials.json
+    assert version == Version
+    assert size == 86
+
     vs = Versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 0
@@ -3636,7 +3735,8 @@ def test_versify():
     vs = Versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 65
@@ -3644,7 +3744,8 @@ def test_versify():
     vs = Versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 0
@@ -3652,7 +3753,8 @@ def test_versify():
     vs = Versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VERFULLSIZE
-    kind, version, size = Deversify(vs)
+    ident, kind, version, size = Deversify(vs)
+    assert ident == Idents.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 65
@@ -3704,18 +3806,21 @@ def test_serder():
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     with pytest.raises(ShortageError):  # test too short
-        kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
+        ident1, kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
 
-    kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
+    ident1, kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
+    assert ident1 == Idents.keri
     assert kind1 == Serials.json
     assert size1 == 111
 
-    kind1, vers1, size1 = sniff(e1s)
+    ident1, kind1, vers1, size1 = sniff(e1s)
+    assert ident1 == Idents.keri
     assert kind1 == Serials.json
     assert size1 == 111
     e1ss = e1s + b'extra attached at the end.'
-    ked1, knd1, vrs1, siz1 = serder._inhale(e1ss)
+    ked1, idnt1, knd1, vrs1, siz1 = serder._inhale(e1ss)
     assert ked1 == e1
+    assert idnt1 == Idents.keri
     assert knd1 == kind1
     assert vrs1 == vers1
     assert siz1 == size1
@@ -3723,8 +3828,9 @@ def test_serder():
     with pytest.raises(ShortageError):  # test too short
         ked1, knd1, vrs1, siz1 = serder._inhale(e1ss[:size1 - 1])
 
-    raw1, knd1, ked1, ver1 = serder._exhale(ked=e1)
+    raw1, idnt1, knd1, ked1, ver1 = serder._exhale(ked=e1)
     assert raw1 == e1s
+    assert idnt1 == Idents.keri
     assert knd1 == kind1
     assert ked1 == e1
     assert vrs1 == vers1
@@ -3741,18 +3847,21 @@ def test_serder():
     e2s = msgpack.dumps(e2)
 
     with pytest.raises(ShortageError):  # test too short
-        kind2, vers2, size2 = sniff(e2s[:VERFULLSIZE])
+        ident2, kind2, vers2, size2 = sniff(e2s[:VERFULLSIZE])
 
-    kind2, vers2, size2 = sniff(e2s[:MINSNIFFSIZE])
+    ident2, kind2, vers2, size2 = sniff(e2s[:MINSNIFFSIZE])
+    assert ident2 == Idents.keri
     assert kind2 == Serials.mgpk
     assert size2 == 92
 
-    kind2, vers2, size2 = sniff(e2s)
+    ident2, kind2, vers2, size2 = sniff(e2s)
+    assert ident1 == Idents.keri
     assert kind2 == Serials.mgpk
     assert size2 == 92
     e2ss = e2s + b'extra attached  at the end.'
-    ked2, knd2, vrs2, siz2 = serder._inhale(e2ss)
+    ked2, idnt2, knd2, vrs2, siz2 = serder._inhale(e2ss)
     assert ked2 == e2
+    assert idnt2 == Idents.keri
     assert knd2 == kind2
     assert vrs2 == vers2
     assert siz2 == size2
@@ -3760,8 +3869,9 @@ def test_serder():
     with pytest.raises(ShortageError):  # test too short
         ked2, knd2, vrs2, siz2 = serder._inhale(e2ss[:size2 - 1])
 
-    raw2, knd2, ked2, ver2 = serder._exhale(ked=e2)
+    raw2, idnt2, knd2, ked2, ver2 = serder._exhale(ked=e2)
     assert raw2 == e2s
+    assert idnt2 == Idents.keri
     assert knd2 == kind2
     assert ked2 == e2
     assert vrs2 == vers2
@@ -3778,18 +3888,21 @@ def test_serder():
     e3s = cbor.dumps(e3)
 
     with pytest.raises(ShortageError):  # test too short
-        kind3, vers3, size3 = sniff(e3s[:VERFULLSIZE])
+        ident3, kind3, vers3, size3 = sniff(e3s[:VERFULLSIZE])
 
-    kind3, vers3, size3 = sniff(e3s[:MINSNIFFSIZE])
+    ident3, kind3, vers3, size3 = sniff(e3s[:MINSNIFFSIZE])
+    assert ident1 == Idents.keri
     assert kind3 == Serials.cbor
     assert size3 == 92
 
-    kind3, vers3, size3 = sniff(e3s)
+    ident3, kind3, vers3, size3 = sniff(e3s)
+    assert ident3 == Idents.keri
     assert kind3 == Serials.cbor
     assert size3 == 92
     e3ss = e3s + b'extra attached  at the end.'
-    ked3, knd3, vrs3, siz3 = serder._inhale(e3ss)
+    ked3, idnt3, knd3, vrs3, siz3 = serder._inhale(e3ss)
     assert ked3 == e3
+    assert idnt3 == Idents.keri
     assert knd3 == kind3
     assert vrs3 == vers3
     assert siz3 == size3
@@ -3797,11 +3910,50 @@ def test_serder():
     with pytest.raises(ShortageError):  # test too short
         ked3, knd3, vrs3, siz3 = serder._inhale(e3ss[:size3 - 1])
 
-    raw3, knd3, ked3, ver3 = serder._exhale(ked=e3)
+    raw3, idnt3, knd3, ked3, ver3 = serder._exhale(ked=e3)
     assert raw3 == e3s
+    assert idnt3 == Idents.keri
     assert knd3 == kind3
     assert ked3 == e3
     assert vrs3 == vers3
+
+    e4 = dict(v=Versify(ident=Idents.acdc, kind=Serials.json, size=0),
+              d="",
+              i="ABCDEFG",
+              s="0001",
+              t="rot")
+    _, e4 = coring.Saider.saidify(sad=e4)
+    print()
+    print(e4)
+    e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EwXDowQGbBZTbz7vArhInaRqxLNWAsqQAzuLCioknTtk",'
+                   b'"i":"ABCDEFG","s":"0001","t":"rot"}')
+    vs = Versify(ident=Idents.acdc, kind=Serials.json, size=len(e4s))  # use real length
+    assert vs == 'ACDC10JSON00006f_'
+    e4["v"] = vs  # has real length
+    serder = Sadder(ked=e4)
+    pretty = serder.pretty()
+    assert pretty == ('{\n'
+                      ' "v": "ACDC10JSON00006f_",\n'
+                      ' "d": "EwXDowQGbBZTbz7vArhInaRqxLNWAsqQAzuLCioknTtk",\n'
+                      ' "i": "ABCDEFG",\n'
+                      ' "s": "0001",\n'
+                      ' "t": "rot"\n'
+                      '}')
+
+    e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    with pytest.raises(ShortageError):  # test too short
+        ident4, kind4, vers4, size4 = sniff(e4s[:VERFULLSIZE])
+
+    ident4, kind4, vers4, size4 = sniff(e4s[:MINSNIFFSIZE])
+    assert ident4 == Idents.acdc
+    assert kind4 == Serials.json
+    assert size4 == 111
+
+    ident4, kind4, vers4, size4 = sniff(e4s)
+    assert ident4 == Idents.acdc
+    assert kind4 == Serials.json
+    assert size4 == 111
 
     evt1 = Serder(raw=e1ss)
     assert evt1.kind == kind1
@@ -3811,8 +3963,6 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
     assert evt1.sn == 1
-    assert serder.pre == "ABCDEFG"
-    assert serder.preb == b"ABCDEFG"
 
     # test digest properties .diger and .dig
     assert evt1.saider.qb64 == evt1.said
@@ -3831,9 +3981,6 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
     assert evt1.saider.code == MtrDex.Blake3_256
-    assert serder.sn == 1
-    assert serder.pre == "ABCDEFG"
-    assert serder.preb == b"ABCDEFG"
 
     evt2 = Serder(raw=e2ss)
     assert evt2.kind == kind2
@@ -3914,7 +4061,8 @@ def test_serder():
     assert evt2.kind == Serials.cbor
     evt2.kind = Serials.json
     assert evt2.kind == Serials.json
-    knd, version, size = Deversify(evt2.ked["v"])
+    ident, knd, version, size = Deversify(evt2.ked["v"])
+    assert ident == Idents.keri
     assert knd == Serials.json
 
     #  Test diger code

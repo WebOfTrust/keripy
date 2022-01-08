@@ -12,8 +12,10 @@ from dataclasses import dataclass
 from keri.db import koming, subing, escrowing
 
 from .. import kering
+from ..app import signing
 from ..core import coring
 from ..db import dbing
+from ..help import helping
 from ..vc import proving
 
 
@@ -186,36 +188,6 @@ class Registry(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        self.tvts = None
-        self.tels = None
-        self.ancs = None
-        self.tibs = None
-        self.baks = None
-        self.oots = None
-        self.twes = None
-        self.taes = None
-        self.regs = None
-        self.tets = None
-
-        self.creds = None
-        self.cdts = None
-        self.cpse = None
-        self.seals = None
-        self.saved = None
-        self.issus = None
-        self.subjs = None
-        self.schms = None
-
-        self.mre = None
-        self.mie = None
-        self.pse = None
-        self.mce = None
-        self.mse = None
-        self.mase = None
-        self.txnsb = None
-        self.credsb = None
-        self.states = None  # key states
-
 
         if "db" in kwa:
             self._tevers = regerdict()
@@ -261,12 +233,17 @@ class Registry(dbing.LMDBer):
         # Holds the credential
         self.creds = proving.CrederSuber(db=self, subkey="creds.")
 
-        # Credential signature anchors for proof
-        self.seals = subing.CatCesrIoSetSuber(db=self, subkey='seals.',
-                                              klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+        # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
+        # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
+        # of credential and trans signer's key state est evt to val Siger for each
+        # signature.
+        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs', klas=coring.Siger)
 
-        # Partially signed credential escrow
-        self.cpse = subing.CesrSuber(db=self, subkey='cpse.', klas=coring.Saider)
+        # all sad path scgs  (sad pathed non-indexed signature serializations) maps
+        # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
+        # nontrans qb64 of Prefixer is same as Verfer
+        self.spcgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
+                                              klas=(coring.Verfer, coring.Cigar))
 
         # Index of credentials processed and saved.  Indicates fully verified (even if revoked)
         self.saved = subing.CesrSuber(db=self, subkey='saved.', klas=coring.Saider)
@@ -302,7 +279,7 @@ class Registry(dbing.LMDBer):
         return self.env
 
 
-    def get_credentials(self, saids):
+    def cloneCreds(self, saids):
         """
         Returns fully expanded credential with chained credentials attached.
 
@@ -313,39 +290,102 @@ class Registry(dbing.LMDBer):
         creds = []
         for saider in saids:
             key = saider.qb64b
-            creder = self.creds.get(keys=key)
-            if creder is None:
-                continue
-
-            seals = self.seals.get(keys=key)
-            prefixer = None
-            seqner = None
-            diger = None
-            sigers = []
-            for seal in seals:
-                (prefixer, seqner, diger, siger) = seal
-                sigers.append(siger)
+            creder, sadsigers, sadcigars = self.cloneCred(said=key)
 
             chainSaids = []
             for p in creder.crd["p"]:
                 v = list(p.values()).pop()
                 chainSaids.append(coring.Saider(qb64=v["d"]))
-            chains = self.get_credentials(chainSaids)
+            chains = self.cloneCreds(chainSaids)
 
             regk = creder.status
             status = self.tevers[regk].vcState(saider.qb64)
             cred = dict(
                 sad=creder.crd,
-                pre=prefixer.qb64,
-                sn=seqner.sn,
-                dig=diger.qb64,
-                sigers=[sig.qb64 for sig in sigers],
+                pre=creder.issuer,
+                sadsigers=[dict(
+                    path=pather.text,
+                    pre=prefixer.qb64,
+                    sn=seqner.sn,
+                    d=saider.qb64
+                ) for (pather, prefixer, seqner, saider) in sadsigers],
+                sadcigars=[dict(path=pather.text, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
                 chains=chains,
                 status=status.ked,
             )
 
             creds.append(cred)
         return creds
+
+
+    def logCred(self, creder, sadsigers=None, sadcigars=None):
+        """
+        Save the base credential and seals (est evt+sigs quad) with no indices.
+
+        Parameters:
+            creder (Credentialer) that contains the credential to process
+            sadsigers (list) sad path signatures from transferable identifier
+            sadcigars (list) sad path signatures from non-transferable identifier
+
+        """
+        key = creder.saider.qb64b
+        self.creds.put(keys=key, val=creder)
+
+        if sadcigars:
+            for (pather, cigar) in sadcigars:
+                keys = (creder.saider.qb64, pather.qb64)
+                self.spcgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
+        if sadsigers:  # want sn in numerical order so use hex
+            for (pather, prefixer, seqner, saider, sigers) in sadsigers:
+                quinkeys = (creder.saider.qb64, pather.qb64, prefixer.qb64, f"{seqner.sn:032x}", saider.qb64)
+                for siger in sigers:
+                    self.spsgs.add(keys=quinkeys, val=siger)
+
+
+    def cloneCred(self, said, root=None):
+        """
+        Load base credential and CESR proof signatures from database.
+
+        Parameters:
+            said(str or bytes): qb64 SAID of credential
+            root (Pather): a target path transposition location for all signatures
+
+        """
+
+        creder = self.creds.get(keys=(said,))
+        sadcigars = []  # transferable signature groups
+        sadsigers = []  # transferable signature groups
+
+        for keys, cigar in self.spcgs.getItemIter(keys=(creder.saider.qb64, "")):
+            pather = coring.Pather(qb64=keys[1])
+            if root is not None:
+                pather = pather.root(root)
+            sadcigars.append((pather, cigar))
+
+        klases = (coring.Pather, coring.Prefixer, coring.Seqner, coring.Saider)
+        args = ("qb64", "qb64", "snh", "qb64")
+        sigers = []
+        old = None  # empty keys
+        for keys, siger in self.spsgs.getItemIter(keys=(creder.saider.qb64, "")):
+            quad = keys[1:]
+            if quad != old:  # new tsg
+                if sigers:  # append tsg made for old and sigers
+                    pather, prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+                    if root is not None:
+                        pather = pather.root(root)
+
+                    sadsigers.append((pather, prefixer, seqner, saider, sigers))
+                    sigers = []
+                old = quad
+            sigers.append(siger)
+        if sigers and old:
+            pather, prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+            if root is not None:
+                pather = pather.root(root)
+
+            sadsigers.append((pather, prefixer, seqner, saider, sigers))
+
+        return creder, sadsigers, sadcigars
 
 
     def clonePreIter(self, pre, fn=0):
@@ -360,15 +400,15 @@ class Registry(dbing.LMDBer):
         for fn, dig in self.getTelItemPreIter(pre, fn=fn):
             msg = bytearray()  # message
             atc = bytearray()  # attachments
-            dgkey = dbing.dgKey(pre, dig) # get message
+            dgkey = dbing.dgKey(pre, dig)  # get message
             if not (raw := self.getTvt(key=dgkey)):
                 raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
             msg.extend(raw)
 
             # add indexed backer signatures to attachments
-            if (tibs := self.getTibs(key=dgkey)):
+            if tibs := self.getTibs(key=dgkey):
                 atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                                  count=len(tibs) ).qb64b)
+                                          count=len(tibs)).qb64b)
                 for tib in tibs:
                     atc.extend(tib)
 
@@ -384,7 +424,7 @@ class Registry(dbing.LMDBer):
                 raise ValueError("Invalid attachments size={}, nonintegral"
                                  " quadlets.".format(len(atc)))
             pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64b
+                                  count=(len(atc) // 4)).qb64b
             msg.extend(pcnt)
             msg.extend(atc)
             yield msg
@@ -406,16 +446,7 @@ class Registry(dbing.LMDBer):
         sources = []
         for said in saids:
             key = said.encode("utf-8")
-            screder = self.creds.get(keys=key)
-
-            seals = self.seals.get(keys=key)
-            prefixer = None
-            seqner = None
-            diger = None
-            sigers = []
-            for seal in seals:
-                (prefixer, seqner, diger, siger) = seal
-                sigers.append(siger)
+            screder, sadsigers, sadcigars = self.cloneCred(said=key)
 
             regk = screder.status
             vci = nsKey([regk, said])
@@ -431,8 +462,7 @@ class Registry(dbing.LMDBer):
             for msg in self.clonePreIter(pre=vci):
                 msgs.extend(msg)
 
-            proof = buildProof(prefixer=prefixer, seqner=seqner, diger=diger, sigers=sigers)
-            craw = messagize(creder=screder, proof=proof)
+            craw = signing.provision(serder=screder, sadsigers=sadsigers, sadcigars=sadcigars)
             sources.append((craw, msgs))
             sources.extend(self.sources(db, screder))
             
@@ -840,7 +870,7 @@ def nsKey(comps):
 def buildProof(prefixer, seqner, diger, sigers):
     """
     Create CESR proof attachment from the quadlet of seal plus signatures on the credential
-    
+
     Parameters:
         prefixer (Prefixer) Identifier of the issuer of the credential
         seqner (Seqner) is the sequence number of the event used to sign the credential
@@ -865,13 +895,13 @@ def buildProof(prefixer, seqner, diger, sigers):
 def messagize(creder, proof):
     """
     Create a CESR message format with proof attachment for credential
-    
+
     Parameters
-        creder is Credentialer instance of credential 
-        proof is str CESR proof attachment 
-    :return: 
+        creder is Credentialer instance of credential
+        proof is str CESR proof attachment
+    :return:
     """
-    
+
     craw = bytearray(creder.raw)
     if len(proof) % 4:
         raise ValueError("Invalid attachments size={}, nonintegral"

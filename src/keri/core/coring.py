@@ -5,7 +5,6 @@ keri.core.coring module
 """
 import re
 import json
-import types
 from typing import Union
 
 from dataclasses import dataclass, astuple
@@ -21,7 +20,6 @@ import pysodium
 import blake3
 import hashlib
 
-
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       InvalidSizeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
@@ -33,7 +31,6 @@ from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
 from ..kering import Versionage, Version
 from ..help import helping
 from ..help.helping import sceil
-
 
 """
 ilk is short for message type
@@ -69,38 +66,44 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
+Identage = namedtuple("Identage", "keri acdc")
+
+Idents = Identage(keri="KERI", acdc="ACDC")
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
-VERFMT = "KERI{:x}{:x}{}{:0{}x}_"  #  version format string
+VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def Versify(version=None, kind=Serials.json, size=0):
+def Versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
+    if ident not in Idents:
+        raise ValueError("Invalid message identifier = {}".format(ident))
     if kind not in Serials:
-        raise  ValueError("Invalid serialization kind = {}".format(kind))
+        raise ValueError("Invalid serialization kind = {}".format(kind))
     version = version if version else Version
-    return VERFMT.format(version[0], version[1], kind, size, VERRAWSIZE)
+    return VERFMT.format(ident, version[0], version[1], kind, size, VERRAWSIZE)
 
 
 Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
                      mgpk=Versify(kind=Serials.mgpk, size=0),
                      cbor=Versify(kind=Serials.cbor, size=0))
 
-
-VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
-Rever = re.compile(VEREX) #compile is faster
+VEREX = b'(?P<ident>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
 def Deversify(vs):
     """
-    Returns tuple(kind, version, size)
+    Returns tuple(ident, kind, version, size)
       Where:
+        ident is event type identifier one of Idents
+                   acdc='ACDC', keri='KERI'
         kind is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
         version is version tuple of type Version
@@ -110,24 +113,29 @@ def Deversify(vs):
       vs is version string str
 
     Uses regex match to extract:
+        event type identifier
         serialization kind
         keri version
         serialization size
     """
-    match = Rever.match(vs.encode("utf-8"))  #  match takes bytes
+    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
     if match:
-        major, minor, kind, size = match.group("major", "minor", "kind", "size")
+        ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
         version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        ident = ident.decode("utf-8")
         kind = kind.decode("utf-8")
+
+        if ident not in Idents:
+            raise ValueError("Invalid message identifier = {}".format(ident))
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
-        return(kind, version, size)
+        return ident, kind, version, size
 
     raise ValueError("Invalid version string = {}".format(vs))
 
 
-def Sizeify(ked,  kind=None):
+def Sizeify(ked, kind=None):
     """
     ked is key event dict
     kind is serialization if given else use one given in ked
@@ -143,7 +151,7 @@ def Sizeify(ked,  kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    knd, version, size = Deversify(ked["v"])  # extract kind and version
+    ident, knd, version, size = Deversify(ked["v"])  # extract kind and version
     if version != Version:
         raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                               version.minor))
@@ -163,14 +171,15 @@ def Sizeify(ked,  kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = Versify(version=version, kind=kind, size=size)
+    vs = Versify(ident=ident, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
         raise ValueError("Malformed version string size = {}".format(vs))
     ked["v"] = vs  # update ked
 
-    return raw, kind, ked, version
+    return raw, ident, kind, ked, version
+
 
 # Base64 utilities
 BASE64_PAD = b'='
@@ -189,7 +198,8 @@ B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
 
 B64REX = b'^[A-Za-z0-9\-\_]*\Z'
-Reb64 = re.compile(B64REX) #compile is faster
+Reb64 = re.compile(B64REX)  # compile is faster
+
 
 def intToB64(i, l=1):
     """
@@ -203,11 +213,11 @@ def intToB64(i, l=1):
         i = i // 64
         if not i:
             break
-        #d.appendleft(B64ChrByIdx[i % 64])
-        #i = i // 64
+        # d.appendleft(B64ChrByIdx[i % 64])
+        # i = i // 64
     for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
         d.appendleft("A")
-    return ( "".join(d))
+    return ("".join(d))
 
 
 def intToB64b(i, l=1):
@@ -262,7 +272,7 @@ def b2ToB64(b, l):
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
     i = int.from_bytes(b[:n], 'big')
-    i >>= 2 * (l % 4)  #  shift out padding bits make right aligned
+    i >>= 2 * (l % 4)  # shift out padding bits make right aligned
     return (intToB64(i, l))
 
 
@@ -280,8 +290,8 @@ def nabSextets(b, l):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
     i = int.from_bytes(b[:n], 'big')
     p = 2 * (l % 4)
-    i >>= p  #  strip of last bits
-    i <<= p  #  pad with empty bits
+    i >>= p  # strip of last bits
+    i <<= p  # pad with empty bits
     return (i.to_bytes(n, 'big'))
 
 
@@ -297,17 +307,19 @@ def sniff(raw):
     if len(raw) < MINSNIFFSIZE:
         raise ShortageError("Need more bytes.")
 
-    match = Rever.search(raw)  #  Rever's regex takes bytes
+    match = Rever.search(raw)  # Rever's regex takes bytes
     if not match or match.start() > 12:
         raise VersionError("Invalid version string in raw = {}".format(raw))
 
-    major, minor, kind, size = match.group("major", "minor", "kind", "size")
+    ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
     version = Versionage(major=int(major, 16), minor=int(minor, 16))
     kind = kind.decode("utf-8")
+    ident = ident.decode("utf-8")
     if kind not in Serials:
         raise DeserializationError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
-    return(kind, version, size)
+
+    return ident, kind, version, size
 
 
 def dumps(ked, kind=Serials.json):
@@ -354,25 +366,25 @@ def loads(raw, size=None, kind=Serials.json):
         except Exception as ex:
             print(ex)
             raise DeserializationError("Error deserializing JSON: {}"
-                    "".format(raw[:size].decode("utf-8")))
+                                       "".format(raw[:size].decode("utf-8")))
 
     elif kind == Serials.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
             raise DeserializationError("Error deserializing MGPK: {}"
-                    "".format(raw[:size]))
+                                       "".format(raw[:size]))
 
-    elif kind ==  Serials.cbor:
+    elif kind == Serials.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
             raise DeserializationError("Error deserializing CBOR: {}"
-                    "".format(raw[:size]))
+                                       "".format(raw[:size]))
 
     else:
         raise DeserializationError("Invalid deserialization kind: {}"
-                    "".format(kind))
+                                   "".format(kind))
 
     return ked
 
@@ -420,7 +432,8 @@ def generateSecrets(salt=None, count=8):
     """
     signers = generateSigners(salt=salt, count=count)
 
-    return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
+    return [signer.qb64 for signer in signers]  # fetch the qb64 as secret
+
 
 # secret derivation security tier
 Tierage = namedtuple("Tierage", 'low med high')
@@ -435,57 +448,58 @@ class MatterCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Seed:         str = 'A'  # Ed25519 256 bit random seed for private key
-    Ed25519N:             str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519.
-    Ed25519:              str = 'D'  # Ed25519 verification key basic derivation
-    Blake3_256:           str = 'E'  # Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:          str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:          str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:             str = 'H'  # SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:             str = 'I'  # SHA2 256 bit digest self-addressing derivation.
-    ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
-    Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
-    X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
-    Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
-    Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
-    X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
-    Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
-    Ed25519_Sig:          str = '0B'  # Ed25519 signature.
-    ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
-    Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
-    Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
-    SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
-    SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-    Long:                 str = '0H'  # Long 4 byte b2 number or 6 char b54 str
-    ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
-    Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
-    Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
-    DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
-    TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
-    TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
-    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
-    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
-    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-    Str_L0:               str = '4B'    # String Leader Size 0
-    Str_L1:               str = '5B'    # String Leader Size 1
-    Str_L2:               str = '6B'    # String Leader Size 2
-    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
-    Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
-    Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
-    Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
+    Ed25519_Seed: str = 'A'  # Ed25519 256 bit random seed for private key
+    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    X25519: str = 'C'  # X25519 public encryption key, converted from Ed25519.
+    Ed25519: str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1_Seed: str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
+    Ed448_Seed: str = 'K'  # Ed448 448 bit random Seed for private key
+    X448: str = 'L'  # X448 public encryption key, converted from Ed448
+    Short: str = 'M'  # Short 2 byte b2 number or 3 char b64 str
+    Big: str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    X25519_Private: str = 'O'  # X25519 private decryption key converted from Ed25519
+    X25519_Cipher_Seed: str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
+    Salt_128: str = '0A'  # 128 bit random seed or 128 bit number
+    Ed25519_Sig: str = '0B'  # Ed25519 signature.
+    ECDSA_256k1_Sig: str = '0C'  # ECDSA secp256k1 signature.
+    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+    Long: str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1: str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
+    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    Ed448: str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
+    Ed448_Sig: str = '1AAE'  # Ed448 signature. Self-signing derivation.
+    Tag: str = '1AAF'  # Base64 4 char tag or 3 byte number.
+    DateTime: str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
+    X25519_Cipher_Salt: str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
+    TBD1: str = '2AAA'  # Testing purposes only of 1 lead size
+    TBD2: str = '3AAA'  # Testing purposes only of 2 lead size
+    StrB64_L0: str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1: str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2: str = '6A'  # String Base64 Only Leader Size 2
+    Str_L0: str = '4B'  # String Leader Size 0
+    Str_L1: str = '5B'  # String Leader Size 1
+    Str_L2: str = '6B'  # String Leader Size 2
+    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Str_Big_L0: str = '7AAB'  # String Big Leader Size 0
+    Str_Big_L1: str = '8AAB'  # String Big Leader Size 1
+    Str_Big_L2: str = '9AAB'  # String Big Leader Size 2
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
 
-MtrDex = MatterCodex()  #  Make instance
+
+MtrDex = MatterCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -498,14 +512,15 @@ class SmallVarRawSizeCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Lead0:      str = '4'  # First Selector Character for all ls == 0 codes
-    Lead1:      str = '5'  # First Selector Character for all ls == 1 codes
-    Lead2:      str = '6'  # First Selector Character for all ls == 2 codes
+    Lead0: str = '4'  # First Selector Character for all ls == 0 codes
+    Lead1: str = '5'  # First Selector Character for all ls == 1 codes
+    Lead2: str = '6'  # First Selector Character for all ls == 2 codes
 
     def __iter__(self):
         return iter(astuple(self))
 
-SmallVrzDex = SmallVarRawSizeCodex()  #  Make instance
+
+SmallVrzDex = SmallVarRawSizeCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -518,14 +533,15 @@ class LargeVarRawSizeCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Lead0_Big:      str = '7'  # First Selector Character for all ls == 0 codes
-    Lead1_Big:      str = '8'  # First Selector Character for all ls == 1 codes
-    Lead2_Big:      str = '9'  # First Selector Character for all ls == 2 codes
+    Lead0_Big: str = '7'  # First Selector Character for all ls == 0 codes
+    Lead1_Big: str = '8'  # First Selector Character for all ls == 1 codes
+    Lead2_Big: str = '9'  # First Selector Character for all ls == 2 codes
 
     def __iter__(self):
         return iter(astuple(self))
 
-LargeVrzDex = LargeVarRawSizeCodex()  #  Make instance
+
+LargeVrzDex = LargeVarRawSizeCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -535,14 +551,15 @@ class NonTransCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519N:      str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N:  str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N:        str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
 
     def __iter__(self):
         return iter(astuple(self))
 
-NonTransDex = NonTransCodex()  #  Make instance
+
+NonTransDex = NonTransCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -554,20 +571,21 @@ class DigCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
-    Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
-    SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
-    SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
 
     def __iter__(self):
         return iter(astuple(self))
 
-DigDex =DigCodex()  #  Make instance
+
+DigDex = DigCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -577,19 +595,18 @@ class TextCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
-    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
-    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
+    StrB64_L0: str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1: str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2: str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
 
     def __iter__(self):
         return iter(astuple(self))
 
-TexDex =TextCodex()  #  Make instance
 
-
+TexDex = TextCodex()  # Make instance
 
 # namedtuple for size entries in matter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
@@ -597,6 +614,7 @@ TexDex =TextCodex()  #  Make instance
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Sizage = namedtuple("Sizage", "hs ss fs ls")
+
 
 class Matter:
     """
@@ -640,8 +658,8 @@ class Matter:
     # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter
     # unless fs is None which allows for variable size multiple of 4, i.e.
     # not (hs + ss) % 4.
-    Hards = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
-    Hards.update({chr(c): 1 for c in range(97, 97+26)})
+    Hards = ({chr(c): 1 for c in range(65, 65 + 26)})  # size of hard part of code
+    Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
     Hards.update([('0', 2), ('1', 4), ('2', 4), ('3', 4), ('4', 2), ('5', 2),
                   ('6', 2), ('7', 4), ('8', 4), ('9', 4)])
     # Sizes table maps from value of hs chars of code to Sizage namedtuple of
@@ -650,57 +668,56 @@ class Matter:
     # soft size, ss, should always be 0 for Matter unless fs is None which allows
     # for variable size multiple of 4, i.e. not (hs + ss) % 4.
     Sizes = {
-                'A': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'B': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'C': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'D': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'E': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'F': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'G': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'H': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'I': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'J': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'K': Sizage(hs=1, ss=0, fs=76, ls=0),
-                'L': Sizage(hs=1, ss=0, fs=76, ls=0),
-                'M': Sizage(hs=1, ss=0, fs=4, ls=0),
-                'N': Sizage(hs=1, ss=0, fs=12, ls=0),
-                'O': Sizage(hs=1, ss=0, fs=44, ls=0),
-                'P': Sizage(hs=1, ss=0, fs=124, ls=0),
-                '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
-                '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
-                '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
-                '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
-                '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
-                '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
-                '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
-                '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
-                '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
-                '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
-                '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
-                '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
-                '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
-                '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
-                '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
-                '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-                '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-                '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-                '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
-                '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
-                '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
-                '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
-                '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
-                '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
-                '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
-            }
+        'A': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'B': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'C': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'D': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'E': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'F': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'G': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'H': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'I': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'J': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'K': Sizage(hs=1, ss=0, fs=76, ls=0),
+        'L': Sizage(hs=1, ss=0, fs=76, ls=0),
+        'M': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'N': Sizage(hs=1, ss=0, fs=12, ls=0),
+        'O': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
+        '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0D': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0E': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
+        '1AAD': Sizage(hs=4, ss=0, fs=80, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, fs=56, ls=0),
+        '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
+        '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
+        '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
+        '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+    }
     # Bards table maps first code char. converted to binary sextext  to hard size,
     # hs. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
-
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
@@ -728,7 +745,7 @@ class Matter:
 
         """
         size = None  # variable raw binary size including leader in quadlets
-        if raw is not None:  #  raw provided
+        if raw is not None:  # raw provided
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
                                          f"(raw and code) or qb64b or qb64 or qb2.")
@@ -757,7 +774,7 @@ class Matter:
                     elif size <= (64 ** 4 - 1):  # make big version of code
                         hs = 4
                         s = astuple(LargeVrzDex)[ls]
-                        code = f"{s}{'A'*(hs-2)}{code[1]}"
+                        code = f"{s}{'A' * (hs - 2)}{code[1]}"
                     else:
                         raise InvalidVarRawSizeError(r"Unsupported raw size for "
                                                      f"code={code}.")
@@ -777,7 +794,7 @@ class Matter:
                 hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
                 if fs is None:  # invalid
                     raise InvalidVarSizeError(r"Unsupported variable size "
-                                                 f"code={code}.")
+                                              f"code={code}.")
                 rize = Matter._rawSize(code)
 
             raw = raw[:rize]  # copy only exact size from raw stream
@@ -786,7 +803,7 @@ class Matter:
                                        f"expected {rize} got {len(raw)}.")
 
             self._code = code  # hard value part of code
-            self._size = size  #  soft value part of code in int
+            self._size = size  # soft value part of code in int
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64b is not None:
@@ -800,12 +817,11 @@ class Matter:
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
-                del qb2[:self.fullSize*3//4]
+                del qb2[:self.fullSize * 3 // 4]
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
                                      f"(raw and code) or qb64b or qb64 or qb2.")
-
 
     @classmethod
     def _rawSize(cls, code):
@@ -817,9 +833,8 @@ class Matter:
         hs, ss, fs, ls = cls.Sizes[code]  # get sizes
         cs = hs + ss  # both hard + soft code size
         if fs is None:
-            raise  InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
-        return (((fs - cs ) * 3 // 4) - ls)
-
+            raise InvalidCodeSizeError(f"Non-fixed raw size code {code}.")
+        return (((fs - cs) * 3 // 4) - ls)
 
     @classmethod
     def _leadSize(cls, code):
@@ -839,7 +854,6 @@ class Matter:
         """
         return self._code
 
-
     @property
     def size(self):
         """
@@ -849,7 +863,6 @@ class Matter:
         """
         return self._size
 
-
     @property
     def both(self):
         """
@@ -857,7 +870,6 @@ class Matter:
         """
         _, ss, _, _ = self.Sizes[self.code]
         return (f"{self.code}{intToB64(self.size, l=ss)}")
-
 
     @property
     def fullSize(self):
@@ -872,7 +884,6 @@ class Matter:
             fs = hs + ss + (self.size * 4)
         return fs
 
-
     @property
     def raw(self):
         """
@@ -880,7 +891,6 @@ class Matter:
         Makes .raw read only
         """
         return self._raw
-
 
     @property
     def qb64b(self):
@@ -891,7 +901,6 @@ class Matter:
         """
         return self._infil()
 
-
     @property
     def qb64(self):
         """
@@ -901,7 +910,6 @@ class Matter:
         """
         return self.qb64b.decode("utf-8")
 
-
     @property
     def qb2(self):
         """
@@ -910,7 +918,6 @@ class Matter:
         """
         return self._binfil()
 
-
     @property
     def transferable(self):
         """
@@ -918,8 +925,7 @@ class Matter:
         Returns True if identifier does not have non-transferable derivation code,
                 False otherwise
         """
-        return(self.code not in NonTransDex)
-
+        return (self.code not in NonTransDex)
 
     @property
     def digestive(self):
@@ -928,8 +934,7 @@ class Matter:
         Returns True if identifier has digest derivation code,
                 False otherwise
         """
-        return(self.code in DigDex)
-
+        return (self.code in DigDex)
 
     def _infil(self):
         """
@@ -938,18 +943,18 @@ class Matter:
         """
         code = self.code  # hard size codex value
         size = self.size  # size if variable length, None otherwise
-        raw = self.raw  #  bytes or bytearray
+        raw = self.raw  # bytes or bytearray
 
         hs, ss, fs, ls = self.Sizes[code]
         if fs is None:  # compute code ss value from .size
             cs = hs + ss  # both hard + soft size
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
+                                           "variable length material. cs={}.".format(cs))
 
             if size < 0 or size > (64 ** ss - 1):
                 raise InvalidVarSizeError("Invalid size={} for code={}."
-                                            "".format(size, code))
+                                          "".format(size, code))
             # both is hard code + converted size
             both = f"{code}{intToB64(size, l=ss)}"
         else:
@@ -961,8 +966,7 @@ class Matter:
             raise InvalidCodeSizeError("Invalid code = {} for converted raw "
                                        "pad size= {}.".format(both, ps))
         # prepend derivation code and strip off trailing pad characters
-        return (both.encode("utf-8") + encodeB64(bytes([0]*ls) + raw)[:-ps if ps else None])
-
+        return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw)[:-ps if ps else None])
 
     def _exfil(self, qb64b):
         """
@@ -980,13 +984,13 @@ class Matter:
                                                "while extracing Matter.")
             elif first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+                                            "while extracing Matter.")
             else:
                 raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
 
         hs = self.Hards[first]  # get hard code size
         if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs-len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
         code = qb64b[:hs]  # extract hard code
         if hasattr(code, "decode"):
@@ -1001,7 +1005,7 @@ class Matter:
             if cs % 4:
                 raise ValidationError("Whole code size not multiple of 4 for "
                                       "variable length material. cs={}.".format(cs))
-            size = qb64b[hs:hs+ss]  # extract size chars
+            size = qb64b[hs:hs + ss]  # extract size chars
             if hasattr(size, "decode"):
                 size = size.decode("utf-8")
             size = b64ToInt(size)  # compute int size
@@ -1013,7 +1017,7 @@ class Matter:
         # fs is None
 
         if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
+            raise ShortageError("Need {} more chars.".format(fs - len(qb64b)))
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
@@ -1029,7 +1033,6 @@ class Matter:
         self._size = size
         self._raw = raw
 
-
     def _binfil(self):
         """
         Returns bytes of fully qualified base2 bytes, that is .qb2
@@ -1038,7 +1041,7 @@ class Matter:
         """
         code = self.code  # codex value
         size = self.size  # optional size if variable length
-        raw = self.raw  #  bytes or bytearray
+        raw = self.raw  # bytes or bytearray
 
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
@@ -1047,11 +1050,11 @@ class Matter:
             cs = hs + ss  # both hard + soft size
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
+                                           "variable length material. cs={}.".format(cs))
 
             if size < 0 or size > (64 ** ss - 1):
                 raise InvalidVarSizeError("Invalid size={} for code={}."
-                                            "".format(size, code))
+                                          "".format(size, code))
             # both is hard code + converted index
             both = f"{code}{intToB64(size, l=ss)}"
             fs = hs + ss + (size * 4)
@@ -1060,19 +1063,18 @@ class Matter:
 
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                          .format(cs, len(code)))
+                                       .format(cs, len(code)))
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
-        bcode = b64ToInt(both).to_bytes(n,'big')  # right aligned b2 code
+        bcode = b64ToInt(both).to_bytes(n, 'big')  # right aligned b2 code
 
-        full = bcode + bytes([0]*ls) + raw
+        full = bcode + bytes([0] * ls) + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
-                                          .format(both, len(raw)))
+                                       .format(both, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (cs % 4))  # left shift in pad bits
         return (i.to_bytes(bfs, 'big'))
-
 
     def _bexfil(self, qb2):
         """
@@ -1086,16 +1088,16 @@ class Matter:
             if first[0] == b'\xf8':  # b64ToB2('-')
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
-            elif first[0] == b'\xfc':  #  b64ToB2('_')
+            elif first[0] == b'\xfc':  # b64ToB2('_')
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+                                            "while extracing Matter.")
             else:
                 raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
         bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
         code = b2ToB64(qb2, hs)  # extract and convert hard part of code
         if code not in self.Sizes:
@@ -1110,10 +1112,10 @@ class Matter:
                                       "variable length material. cs={}.".format(cs))
             bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
             if len(qb2) < bcs:  # need more bytes
-                raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+                raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
             both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-            size = b64ToInt(both[hs:hs+ss])  # get size
+            size = b64ToInt(both[hs:hs + ss])  # get size
             fs = (size * 4) + cs
 
         # assumes that unit tests on Matter and MatterCodex ensure that
@@ -1122,14 +1124,14 @@ class Matter:
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bfs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
         qb2 = qb2[:bfs]  # fully qualified primitive code plus material
 
         # right shift to right align raw material
         i = int.from_bytes(qb2, 'big') >> (2 * (cs % 4))
         # i >>= 2 * (cs % 4)
         bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
-        raw = i.to_bytes(bfs, 'big')[(bcs+ls):]  # extract raw strip leader bytes
+        raw = i.to_bytes(bfs, 'big')[(bcs + ls):]  # extract raw strip leader bytes
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
             raise ConversionError("Improperly qualified material = {}".format(qb2))
@@ -1180,6 +1182,7 @@ class Seqner(Matter):
 
 
     """
+
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, sn=None, snh=None, **kwa):
         """
@@ -1207,7 +1210,7 @@ class Seqner(Matter):
             raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
         super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                         code=code, **kwa)
+                                     code=code, **kwa)
 
         if self.code != MtrDex.Salt_128:
             raise ValidationError("Invalid code = {} for SeqNumber."
@@ -1312,7 +1315,7 @@ class Dater(Matter):
             qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
 
         super(Dater, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                         code=code, **kwa)
+                                    code=code, **kwa)
         if self.code != MtrDex.DateTime:
             raise ValidationError("Invalid code = {} for Dater date time."
                                   "".format(self.code))
@@ -1340,7 +1343,6 @@ class Dater(Matter):
         Returns datetime.datetime instance converted from .dts
         """
         return helping.fromIso8601(self.dts)
-
 
 
 class Texter(Matter):
@@ -1373,10 +1375,12 @@ class Texter(Matter):
 
     Example uses: pathing for nested SADs and SAIDs
 
+
     Attributes:
 
     Inherited Properties:  (See Matter)
         .pad  is int number of pad chars given raw
+
         .code is  str derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
         .index is int count of attached crypto material by context (receipts)
@@ -1399,7 +1403,6 @@ class Texter(Matter):
     Methods:
 
     """
-
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.StrB64_L0, text=None, **kwa):
@@ -1425,7 +1428,7 @@ class Texter(Matter):
             raw = self._rawify(text)
 
         super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                         code=code, **kwa)
+                                     code=code, **kwa)
         if self.code not in TexDex:
             raise ValidationError("Invalid code = {} for Texter."
                                   "".format(self.code))
@@ -1451,7 +1454,7 @@ class Texter(Matter):
         Returns the value portion of .qb64 with text code and leader removed
         """
         _, _, _, ls = self.Sizes[self.code]
-        text = encodeB64(bytes([0]*ls) + self.raw)
+        text = encodeB64(bytes([0] * ls) + self.raw)
         ws = 0
         if ls == 0 and text:
             if text[0] == ord(b'A'):  # strip leading 'A' zero pad
@@ -1459,6 +1462,199 @@ class Texter(Matter):
         else:
             ws = (ls + 1) % 4
         return text.decode('utf-8')[ws:]
+
+
+class Pather(Texter):
+    """
+    Pather is a subclass of Texter that provides SAD Path language specific functionality
+    for variable length strings that only contain Base64 URL safe characters.  Pather allows
+    the specification of SAD Paths as a list of field components which will be converted to the
+    Base64 URL safe character representation.
+
+    Additionally, Pather provides .rawify for extracting and serializing the content targeted by
+    .path for a SAD, represented as an instance of Serder.  Pather enforces Base64 URL character
+    safety by leveraging the fact that SADs must have static field ordering.  Any field label can
+    be replaced by its field ordinal to allow for path specification and traversal for any field
+    labels that contain non-Base64 URL safe characters.
+
+
+    Examples: strings:
+        path = []
+        text = "-"
+        qb64 = '6AABAAA-'
+
+        path = ["A"]
+        text = "-A"
+        qb64 = '5AABAA-A'
+
+        path = ["A", "B"]
+        text = "-A-B"
+        qb64 = '4AAB-A-B'
+
+        path = ["A", 1, "B", 3]
+        text = "-A-1-B-3"
+        qb64 = '4AAC-A-1-B-3'
+
+    """
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None, text=None,
+                 code=MtrDex.StrB64_L0, path=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            path (list): array of path field components
+        """
+
+        if raw is None and text is None and qb64b is None and qb64 is None and qb2 is None:
+            if path is None:
+                raise EmptyMaterialError("Missing path list.")
+
+            text = self._textify(path)
+
+        super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2, text=text,
+                                     code=code, **kwa)
+
+    @property
+    def path(self):
+        """ Path property is an array of path elements
+
+        Path property is an array of path elements.  Empty path represents the top level.
+
+        Returns:
+            list: array of field specs of the path
+
+        """
+        if not self.text.startswith("-"):
+            raise Exception("invalid SAD ptr")
+
+        path = self.text.strip("-").split("-")
+        return path if path[0] != '' else []
+
+    def root(self, root):
+        """ Returns a new Pather anchored at new root
+
+        Returns a new Pather anchoring this path at the new root specified by root.
+
+        Args:
+            root(Pather): the new root to apply to this path
+
+        Returns:
+            Pather: new path anchored at root
+        """
+        return Pather(path=root.path + self.path)
+
+    def resolve(self, sad):
+        """ Recurses thru value following ptr
+
+        Parameters:
+            sad(dict or list): the next component
+
+        Returns:
+            Value at the end of the path
+        """
+        return self._resolve(sad, self.path)
+
+    def rawify(self, serder):
+        """ Recurses thru value following .path and returns terminal value
+
+        Finds the value at this path and applies the version string rules of the serder
+        to serialize the value at ptr.
+
+        Parameters:
+            serder(Serder): the versioned dict to in which to resolve .path
+
+        Returns:
+            bytes: Value at the end of the path
+        """
+        val = self.resolve(sad=serder.ked)
+        if isinstance(val, str):
+            saider = Saider(qb64=val)
+            return saider.qb64b
+        elif isinstance(val, dict):
+            return dumps(val, serder.kind)
+        else:
+            raise ValueError("Non-rawifiable value at {} of {}"
+                             .format(self.path, serder.ked))
+
+    @staticmethod
+    def _textify(path):
+        """ Returns raw value equivalent of array of path field components.
+
+        Suitable for variable sized matter
+
+        Parameters:
+            path (list): array of path field components
+
+        Returns:
+            str:  textual representation of SAD path
+
+        """
+        text = "-"
+        if not path:
+            return text
+
+        for p in path:
+            if isinstance(p, str):
+                text += p
+            elif hasattr(p, "decode"):
+                text += p.decode("utf-8")
+            elif isinstance(p, int):
+                text += str(p)
+            else:
+                raise ValueError("Invalid Path.")
+
+            text += "-"
+
+        return text[:-1]
+
+    def _resolve(self, val, ptr):
+        """ Recurses thru value following ptr
+
+        Parameters:
+            val(dict or list): the next component
+            ptr(list): list of path components
+
+        Returns:
+            Value at the end of the chain
+        """
+
+        if len(ptr) == 0:
+            return val
+
+        idx = ptr.pop(0)
+
+        if isinstance(val, dict):
+            if idx.isdigit():
+                i = int(idx)
+
+                keys = list(val)
+                if i >= len(keys):
+                    raise Exception(f"invalid dict pointer index {i} for keys {keys}")
+
+                cur = val[list(val)[i]]
+            elif idx == "":
+                return val
+            else:
+                cur = val[idx]
+
+        elif isinstance(val, list):
+            i = int(idx)
+            if i >= len(val):
+                raise Exception(f"invalid array pointer index {i} for array {val}")
+
+            cur = val[i]
+
+        else:
+            raise ValueError("invalid traversal type")
+
+        return self._resolve(cur, ptr)
 
 
 class Verfer(Matter):
@@ -1476,6 +1672,7 @@ class Verfer(Matter):
         verify: verifies signature
 
     """
+
     def __init__(self, **kwa):
         """
         Assign verification cipher suite function to ._verify
@@ -1488,7 +1685,6 @@ class Verfer(Matter):
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
-
     def verify(self, sig, ser):
         """
         Returns True if bytes signature sig verifies on bytes serialization ser
@@ -1500,7 +1696,6 @@ class Verfer(Matter):
             ser is bytes serialization
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
-
 
     @staticmethod
     def _ed25519(sig, ser, key):
@@ -1564,6 +1759,7 @@ class Cigar(Matter):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
+
     def __init__(self, verfer=None, **kwa):
         """
         Assign verfer to ._verfer attribute
@@ -1571,7 +1767,6 @@ class Cigar(Matter):
         """
         super(Cigar, self).__init__(**kwa)
         self._verfer = verfer
-
 
     @property
     def verfer(self):
@@ -1581,7 +1776,6 @@ class Cigar(Matter):
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
-
 
     @verfer.setter
     def verfer(self, verfer):
@@ -1609,7 +1803,8 @@ class Signer(Matter):
         sign: create signature
 
     """
-    def __init__(self,raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
+
+    def __init__(self, raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -1633,13 +1828,12 @@ class Signer(Matter):
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
             verfer = Verfer(raw=verkey,
-                                code=MtrDex.Ed25519 if transferable
-                                                    else MtrDex.Ed25519N )
+                            code=MtrDex.Ed25519 if transferable
+                            else MtrDex.Ed25519N)
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
         self._verfer = verfer
-
 
     @property
     def verfer(self):
@@ -1649,7 +1843,6 @@ class Signer(Matter):
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
-
 
     def sign(self, ser, index=None):
         """
@@ -1670,7 +1863,6 @@ class Signer(Matter):
                            verfer=self.verfer,
                            index=index))
 
-
     @staticmethod
     def _ed25519(ser, seed, verfer, index):
         """
@@ -1689,9 +1881,9 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
-                          code=IdrDex.Ed25519_Sig,
-                          index=index,
-                          verfer=verfer)
+                         code=IdrDex.Ed25519_Sig,
+                         index=index,
+                         verfer=verfer)
 
 
 class Salter(Matter):
@@ -1751,11 +1943,10 @@ class Salter(Matter):
             else:
                 raise ValueError("Unsupported salter code = {}.".format(code))
 
-        if self.code not in (MtrDex.Salt_128, ):
+        if self.code not in (MtrDex.Salt_128,):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
         self.tier = tier if tier is not None else self.Tier
-
 
     def stretch(self, *, size=32, path="", tier=None, temp=False):
         """
@@ -1787,7 +1978,7 @@ class Salter(Matter):
             else:
                 raise ValueError("Unsupported security tier = {}.".format(tier))
 
-         # stretch algorithm is argon2id
+        # stretch algorithm is argon2id
         seed = pysodium.crypto_pwhash(outlen=size,
                                       passwd=path,
                                       salt=self.raw,
@@ -1795,7 +1986,6 @@ class Salter(Matter):
                                       memlimit=memlimit,
                                       alg=pysodium.crypto_pwhash_ALG_DEFAULT)
         return (seed)
-
 
     def signer(self, *, code=MtrDex.Ed25519_Seed, transferable=True, path="",
                tier=None, temp=False):
@@ -1834,6 +2024,7 @@ class Cipher(Matter):
     See Matter for inherited attributes and properties
 
     """
+
     def __init__(self, raw=None, code=None, **kwa):
         """
         Parmeters:
@@ -1853,7 +2044,6 @@ class Cipher(Matter):
 
         if self.code not in (MtrDex.X25519_Cipher_Salt, MtrDex.X25519_Cipher_Seed):
             raise ValueError("Unsupported cipher code = {}.".format(self.code))
-
 
     def decrypt(self, prikey=None, seed=None):
         """
@@ -1899,6 +2089,7 @@ class Encrypter(Matter):
         encrypt: returns cipher text
 
     """
+
     def __init__(self, raw=None, code=MtrDex.X25519, verkey=None, **kwa):
         """
         Assign encrypting cipher suite function to ._encrypt
@@ -1925,7 +2116,6 @@ class Encrypter(Matter):
         else:
             raise ValueError("Unsupported encrypter code = {}.".format(self.code))
 
-
     def verifySeed(self, seed):
         """
         Returns:
@@ -1941,7 +2131,6 @@ class Encrypter(Matter):
         verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
         pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
         return (pubkey == self.raw)
-
 
     def encrypt(self, ser=None, matter=None):
         """
@@ -1970,7 +2159,6 @@ class Encrypter(Matter):
         # encrypting fully qualified qb64 version of plain text ensures its
         # derivation code round trips through eventual decryption
         return (self._encrypt(ser=matter.qb64b, pubkey=self.raw, code=code))
-
 
     @staticmethod
     def _x25519(ser, pubkey, code):
@@ -2015,6 +2203,7 @@ class Decrypter(Matter):
         decrypt: create cipher text
 
     """
+
     def __init__(self, code=MtrDex.X25519_Private, seed=None, **kwa):
         """
         Assign decrypting cipher suite function to ._decrypt
@@ -2047,7 +2236,6 @@ class Decrypter(Matter):
         else:
             raise ValueError("Unsupported decrypter code = {}.".format(self.code))
 
-
     def decrypt(self, ser=None, cipher=None, transferable=False):
         """
         Returns:
@@ -2072,7 +2260,6 @@ class Decrypter(Matter):
         return (self._decrypt(cipher=cipher,
                               prikey=self.raw,
                               transferable=transferable))
-
 
     @staticmethod
     def _x25519(cipher, prikey, transferable=False):
@@ -2129,6 +2316,7 @@ class Diger(Matter):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
+
     def __init__(self, raw=None, ser=None, code=MtrDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
@@ -2180,7 +2368,6 @@ class Diger(Matter):
         else:
             raise ValueError("Unsupported code = {} for digester.".format(self.code))
 
-
     def verify(self, ser):
         """
         Returns True if digest of bytes serialization ser matches .raw
@@ -2191,7 +2378,6 @@ class Diger(Matter):
             ser is bytes serialization
         """
         return (self._verify(ser=ser, raw=self.raw))
-
 
     def compare(self, ser, dig=None, diger=None):
         """
@@ -2216,9 +2402,9 @@ class Diger(Matter):
         """
         if dig is not None:
             if hasattr(dig, "encode"):
-                dig = dig.encode('utf-8')  #  makes bytes
+                dig = dig.encode('utf-8')  # makes bytes
 
-            if dig == self.qb64b:  #  matching
+            if dig == self.qb64b:  # matching
                 return True
 
             diger = Diger(qb64b=dig)  # extract code
@@ -2230,14 +2416,13 @@ class Diger(Matter):
         else:
             raise ValueError("Both dig and diger may not be None.")
 
-        if diger.code == self.code: # digest not match but same code
+        if diger.code == self.code:  # digest not match but same code
             return False
 
         if diger.verify(ser=ser) and self.verify(ser=ser):  # both verify on ser
             return True
 
         return (False)
-
 
     @staticmethod
     def _blake3_256(ser, raw):
@@ -2249,7 +2434,7 @@ class Diger(Matter):
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(blake3.blake3(ser).digest() == raw)
+        return (blake3.blake3(ser).digest() == raw)
 
     @staticmethod
     def _blake2b_256(ser, raw):
@@ -2261,7 +2446,7 @@ class Diger(Matter):
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.blake2b(ser, digest_size=32).digest() == raw)
+        return (hashlib.blake2b(ser, digest_size=32).digest() == raw)
 
     @staticmethod
     def _blake2s_256(ser, raw):
@@ -2273,7 +2458,7 @@ class Diger(Matter):
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.blake2s(ser, digest_size=32).digest() == raw)
+        return (hashlib.blake2s(ser, digest_size=32).digest() == raw)
 
     @staticmethod
     def _sha3_256(ser, raw):
@@ -2285,7 +2470,7 @@ class Diger(Matter):
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.sha3_256(ser).digest() == raw)
+        return (hashlib.sha3_256(ser).digest() == raw)
 
     @staticmethod
     def _sha2_256(ser, raw):
@@ -2297,8 +2482,7 @@ class Diger(Matter):
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.sha256(ser).digest() == raw)
-
+        return (hashlib.sha256(ser).digest() == raw)
 
 
 class Nexter(Matter):
@@ -2329,6 +2513,7 @@ class Nexter(Matter):
 
 
     """
+
     def __init__(self, limen=None, sith=None, digs=None, keys=None, ked=None,
                  code=MtrDex.Blake3_256, **kwa):
         """
@@ -2378,7 +2563,7 @@ class Nexter(Matter):
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
             raw = self._derive(code=code, limen=limen, sith=sith, digs=digs,
-                               keys=keys, ked=ked)  #  derive nxt raw
+                               keys=keys, ked=ked)  # derive nxt raw
             super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
 
         else:
@@ -2386,7 +2571,6 @@ class Nexter(Matter):
                 self._digest = self._blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
-
 
     def verify(self, raw=b'', limen=None, sith=None, digs=None, keys=None, ked=None):
         """
@@ -2411,7 +2595,6 @@ class Nexter(Matter):
                                keys=keys, ked=ked)
 
         return (raw == self.raw)
-
 
     def _derive(self, code, limen=None, sith=None, digs=None, keys=None, ked=None):
         """
@@ -2456,7 +2639,6 @@ class Nexter(Matter):
 
         return (sint.to_bytes(Matter._rawSize(code), 'big'))
 
-
     @staticmethod
     def _blake3_256(raw):
         """
@@ -2465,8 +2647,7 @@ class Nexter(Matter):
         Parameters:
             raw is bytes serialization of nxt raw
         """
-        return(blake3.blake3(raw).digest())
-
+        return (blake3.blake3(raw).digest())
 
 
 class Prefixer(Matter):
@@ -2526,8 +2707,8 @@ class Prefixer(Matter):
         try:
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not  ked or (not code and "i" not in ked):
-                raise  ex
+            if not ked or (not code and "i" not in ked):
+                raise ex
 
             if not code:  # get code from pre in ked
                 super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
@@ -2558,7 +2739,6 @@ class Prefixer(Matter):
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
 
-
     def derive(self, ked):
         """
         Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
@@ -2573,7 +2753,6 @@ class Prefixer(Matter):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
         return (self._derive(ked=ked))
 
-
     def verify(self, ked, prefixed=False):
         """
         Returns True if derivation from ked for .code matches .qb64 and
@@ -2586,7 +2765,6 @@ class Prefixer(Matter):
         if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
-
 
     def _derive_ed25519N(self, ked):
         """
@@ -2629,7 +2807,6 @@ class Prefixer(Matter):
 
         return (verfer.raw, verfer.code)
 
-
     def _verify_ed25519N(self, ked, pre, prefixed=False):
         """
         Returns True if verified  False otherwise
@@ -2658,7 +2835,6 @@ class Prefixer(Matter):
 
         return True
 
-
     def _derive_ed25519(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
@@ -2680,7 +2856,6 @@ class Prefixer(Matter):
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
-
 
     def _verify_ed25519(self, ked, pre, prefixed=False):
         """
@@ -2708,7 +2883,6 @@ class Prefixer(Matter):
 
         return True
 
-
     def _derive_blake3_256(self, ked):
         """
         Returns tuple (raw, code) of pre (qb64) as blake3 digest
@@ -2722,10 +2896,9 @@ class Prefixer(Matter):
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
         ked["d"] = ked["i"]
-        raw, kind, ked, version = Sizeify(ked=ked)
-        dig =  blake3.blake3(raw).digest()  # digest with dummy 'i'
+        raw, ident, kind, ked, version = Sizeify(ked=ked)
+        dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
-
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):
         """
@@ -2738,7 +2911,7 @@ class Prefixer(Matter):
             pre is Base64 fully qualified default to .qb64
         """
         try:
-            raw, code =  self._derive_blake3_256(ked=ked)  # replace with dummy 'i'
+            raw, code = self._derive_blake3_256(ked=ked)  # replace with dummy 'i'
             crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
             if crymat.qb64 != pre:  # derived raw with dummy 'i' must match pre
                 return False
@@ -2793,17 +2966,16 @@ class Saider(Matter):
     # should be same set of codes as in coring.DigestCodex coring.DigDex so
     # .digestive property works. Unit test ensures code sets match
     Digests = {
-                MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
-                MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
-                MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
-                MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
-                MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
-                MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
-                MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
-                MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
-                MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
-              }
-
+        MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
+        MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
+        MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
+        MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
+        MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
+        MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
+        MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
+        MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
+        MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
+    }
 
     def __init__(self, raw=None, *, code=None, sad=None,
                  kind=None, label=Ids.d, **kwa):
@@ -2841,11 +3013,10 @@ class Saider(Matter):
 
         if not self.digestive:
             raise ValueError("Unsupported digest code = {}."
-                                 "".format(self.code))
-
+                             "".format(self.code))
 
     @classmethod
-    def _serialize(clas, sad: dict, kind: str=None):
+    def _serialize(clas, sad: dict, kind: str = None):
         """
         Serialize sad with serialization kind if provided else use
             use embedded 'v', version string if provided else use default
@@ -2863,19 +3034,18 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            knd, _, _ = Deversify(sad['v'])
+            _, knd, _, _ = Deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
 
         return dumps(sad, kind=kind)
 
-
     @classmethod
     def saidify(clas, sad: dict, *,
-                code: str=MtrDex.Blake3_256,
-                kind: str=None,
-                label: str=Ids.d, **kwa):
+                code: str = MtrDex.Blake3_256,
+                kind: str = None,
+                label: str = Ids.d, **kwa):
         """
         Derives said from sad and injects it into copy of sad and said and
         injected sad
@@ -2902,12 +3072,11 @@ class Saider(Matter):
         sad[label] = saider.qb64
         return (saider, sad)
 
-
     @classmethod
     def _derive(clas, sad: dict, *,
-                code:str=MtrDex.Blake3_256,
-                kind:str=None,
-                label:str=Ids.d,):
+                code: str = MtrDex.Blake3_256,
+                kind: str = None,
+                label: str = Ids.d, ):
         """
         Derives raw said from sad with .Dummy filled sad[label]
 
@@ -2922,14 +3091,14 @@ class Saider(Matter):
                         otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
         """
-        if code not in DigDex or code not  in clas.Digests:
+        if code not in DigDex or code not in clas.Digests:
             raise ValueError("Unsupported digest code = {}.".format(code))
 
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, kind, sad, version = Sizeify(ked=sad, kind=kind)
+            raw, ident, kind, sad, version = Sizeify(ked=sad, kind=kind)
 
         # string now has
         # correct size
@@ -2943,7 +3112,6 @@ class Saider(Matter):
         if length:
             dkwa.update(length=length)
         return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
-
 
     def derive(self, sad, code=None, **kwa):
         """
@@ -2961,7 +3129,6 @@ class Saider(Matter):
         """
         code = code if code is not None else self.code
         return self._derive(sad=sad, code=code, **kwa)
-
 
     def verify(self, sad, *, prefixed=False, versioned=True, code=None,
                kind=None, label=Ids.d, **kwa):
@@ -3015,13 +3182,14 @@ class IndexerCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig:        str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig:          str = '0A'  # Ed448 signature.
-    Label:              str = '0B'  # Variable len label L=N*4 <= 4095 char quadlets
+    Ed25519_Sig: str = 'A'  # Ed25519 signature.
+    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0A'  # Ed448 signature.
+    Label: str = '0B'  # Variable len label L=N*4 <= 4095 char quadlets
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
+
 
 IdrDex = IndexerCodex()
 
@@ -3033,14 +3201,15 @@ class IndexedSigCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig:        str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig:          str = '0A'  # Ed448 signature.
+    Ed25519_Sig: str = 'A'  # Ed25519 signature.
+    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0A'  # Ed448 signature.
 
     def __iter__(self):
         return iter(astuple(self))
 
-IdxSigDex = IndexedSigCodex()  #  Make instance
+
+IdxSigDex = IndexedSigCodex()  # Make instance
 
 
 class Indexer:
@@ -3075,18 +3244,18 @@ class Indexer:
     Codex = IdrDex
     # Hards table maps from bytes Base64 first code char to int of hard size, hs,
     # (stable) of code. The soft size, ss, (unstable) is always > 0 for Indexer.
-    Hards = ({chr(c): 1 for c in range(65, 65+26)})
-    Hards.update({chr(c): 1 for c in range(97, 97+26)})
+    Hards = ({chr(c): 1 for c in range(65, 65 + 26)})
+    Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
     Hards.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 for Indexer
     Sizes = {
-                'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-                'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-                '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-                '0B': Sizage(hs=2, ss=2, fs=None, ls=0),
-            }
+        'A': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
+        '0B': Sizage(hs=2, ss=2, fs=None, ls=0),
+    }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
@@ -3113,7 +3282,7 @@ class Indexer:
         .raw and .code and .index
 
         """
-        if raw is not None:  #  raw provided
+        if raw is not None:  # raw provided
             if not code:
                 raise EmptyMaterialError("Improper initialization need either "
                                          "(raw and code) or qb64b or qb64 or qb2.")
@@ -3123,7 +3292,7 @@ class Indexer:
             if code not in self.Sizes:
                 raise UnexpectedCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs, ls = self.Sizes[code] # get sizes for code
+            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
             if index < 0 or index > (64 ** ss - 1):
                 raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
@@ -3131,7 +3300,7 @@ class Indexer:
             if not fs:  # compute fs from index
                 if cs % 4:
                     raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                          "variable length material. cs={}.".format(cs))
+                                               "variable length material. cs={}.".format(cs))
                 fs = (index * 4) + cs
 
             rawsize = (fs - cs) * 3 // 4
@@ -3139,8 +3308,8 @@ class Indexer:
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
                 raise RawMaterialError("Not enougth raw bytes for code={}"
-                                             "and index={} ,expected {} got {}."
-                                      "".format(code, index, rawsize, len(raw)))
+                                       "and index={} ,expected {} got {}."
+                                       "".format(code, index, rawsize, len(raw)))
 
             self._code = code
             self._index = index
@@ -3170,8 +3339,7 @@ class Indexer:
         Returns raw size in bytes for a given code
         """
         hs, ss, fs, ls = cls.Sizes[code]  # get sizes
-        return ( (fs - (hs + ss)) * 3 // 4 )
-
+        return ((fs - (hs + ss)) * 3 // 4)
 
     @property
     def code(self):
@@ -3181,7 +3349,6 @@ class Indexer:
         """
         return self._code
 
-
     @property
     def raw(self):
         """
@@ -3190,7 +3357,6 @@ class Indexer:
         """
         return self._raw
 
-
     @property
     def index(self):
         """
@@ -3198,7 +3364,6 @@ class Indexer:
         Makes .index read only
         """
         return self._index
-
 
     @property
     def qb64b(self):
@@ -3209,7 +3374,6 @@ class Indexer:
         """
         return self._infil()
 
-
     @property
     def qb64(self):
         """
@@ -3219,7 +3383,6 @@ class Indexer:
         """
         return self.qb64b.decode("utf-8")
 
-
     @property
     def qb2(self):
         """
@@ -3227,7 +3390,6 @@ class Indexer:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
-
 
     def _infil(self):
         """
@@ -3242,19 +3404,18 @@ class Indexer:
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidVarIndexError("Invalid index={} for code={}."
-                                        "".format(index, code))
+                                       "".format(index, code))
 
         # both is hard code + converted index
-        both =  "{}{}".format(code, intToB64(index, l=ss))
+        both = "{}{}".format(code, intToB64(index, l=ss))
 
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
             raise InvalidCodeSizeError("Invalid code = {} for converted raw pad size = {}."
-                                  .format(both, ps))
+                                       .format(both, ps))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
-
 
     def _exfil(self, qb64b):
         """
@@ -3272,15 +3433,15 @@ class Indexer:
                                                "while extracing Indexer.")
             elif first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Indexer.")
+                                            "while extracing Indexer.")
             else:
                 raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
 
         hs = self.Hards[first]  # get hard code size
         if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs-len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
-        hard = qb64b[:hs] # get hard code
+        hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
             hard = hard.decode("utf-8")
         if hard not in self.Sizes:
@@ -3293,9 +3454,9 @@ class Indexer:
         # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
 
         if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(cs - len(qb64b)))
 
-        index = qb64b[hs:hs+ss]  # extract index chars
+        index = qb64b[hs:hs + ss]  # extract index chars
         if hasattr(index, "decode"):
             index = index.decode("utf-8")
         index = b64ToInt(index)  # compute int index
@@ -3307,7 +3468,7 @@ class Indexer:
             fs = (index * 4) + cs
 
         if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
+            raise ShortageError("Need {} more chars.".format(fs - len(qb64b)))
 
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
@@ -3324,7 +3485,6 @@ class Indexer:
         self._index = index
         self._raw = raw
 
-
     def _binfil(self):
         """
         Returns bytes of fully qualified base2 bytes, that is .qb2
@@ -3333,38 +3493,37 @@ class Indexer:
         """
         code = self.code  # codex chars hard code
         index = self.index  # index value int used for soft
-        raw = self.raw  #  bytes or bytearray
+        raw = self.raw  # bytes or bytearray
 
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
         if not fs:  # compute fs from index
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
+                                           "variable length material. cs={}.".format(cs))
             fs = (index * 4) + cs
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
-        both =  "{}{}".format(code, intToB64(index, l=ss))
+        both = "{}{}".format(code, intToB64(index, l=ss))
 
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                          .format(cs, len(both)))
+                                       .format(cs, len(both)))
 
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code + index
-        bcode = b64ToInt(both).to_bytes(n,'big')  # right aligned b2 code
+        bcode = b64ToInt(both).to_bytes(n, 'big')  # right aligned b2 code
 
         full = bcode + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
-                                          .format(both, len(raw)))
+                                       .format(both, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (cs % 4))  # left shift in pad bits
         return (i.to_bytes(bfs, 'big'))
-
 
     def _bexfil(self, qb2):
         """
@@ -3378,16 +3537,16 @@ class Indexer:
             if first[0] == b'\xf8':  # b64ToB2('-')
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
-            elif first[0] == b'\xfc':  #  b64ToB2('_')
+            elif first[0] == b'\xfc':  # b64ToB2('_')
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+                                            "while extracing Matter.")
             else:
                 raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
         bhs = sceil(hs * 3 / 4)  # bcs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
         hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
@@ -3401,16 +3560,16 @@ class Indexer:
 
         bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         if len(qb2) < bcs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        index = b64ToInt(both[hs:hs+ss])  # get index
+        index = b64ToInt(both[hs:hs + ss])  # get index
         if not fs:
             fs = (index * 4) + cs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bfs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
         qb2 = qb2[:bfs]  # fully qualified primitive code plus material
 
@@ -3445,6 +3604,7 @@ class Siger(Indexer):
 
 
     """
+
     def __init__(self, verfer=None, **kwa):
         """
         Assign verfer to ._verfer
@@ -3482,39 +3642,41 @@ class CounterCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
 
-    ControllerIdxSigs:              str =  '-A'  # Qualified Base64 Indexed Signature.
-    WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu+dts.
-    TransIdxSigGroups:              str =  '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
-    SealSourceCouples:              str =  '-G'  # Composed Base64 couple, snu+dig of given delegator's or issuer's event
-    TransLastIdxSigGroups:          str =  '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
-    SealSourceTriples:              str =  '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
-    MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
-    AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
-    CombinedMaterialQuadlets:       str =  '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
-    MaterialGroups:                 str =  '-Y'  # Composed Generic Material Group or Primitive
-    MaterialQuadlets:               str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
-    AnchorSealGroups:               str =  '-a'  # Composed Anchor Seal Material Group
-    ConfigTraits:                   str =  '-c'  # Composed Config Trait Material Group
-    DigestSealQuadlets:             str =  '-d'  # Composed Digest Seal Quadlet (4 char each)
-    EventSealQuadlets:              str =  '-e'  # Composed Event Seal Quadlet (4 char each)
-    Keys:                           str =  '-k'  # Composed Key Material Primitive
-    LocationSealQuadlets:           str =  '-l'  # Composed Location Seal Quadlet (4 char each)
-    RootDigestSealQuadlets:         str =  '-r'  # Composed Root Digest Seal Quadlet (4 char each)
-    Witnesses:                      str =  '-w'  # Composed Witness Prefix Material Primitive
-    BigMessageDataGroups:           str =  '-0U'  # Composed Message Data Group or Primitive
-    BigAttachedMaterialQuadlets:    str =  '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    BigMessageDataMaterialQuadlets: str =  '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
-    BigCombinedMaterialQuadlets:    str =  '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
-    BigMaterialGroups:              str =  '-0Y'  # Composed Generic Material Group or Primitive
-    BigMaterialQuadlets:            str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
-
+    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
+    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
+    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
+    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
+    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegators or issuers event
+    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
+    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    MessageDataGroups: str = '-U'  # Composed Message Data Group or Primitive
+    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    MessageDataMaterialQuadlets: str = '-W'  # Composed Grouped Message Data Quadlet (4 char each)
+    CombinedMaterialQuadlets: str = '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
+    MaterialGroups: str = '-Y'  # Composed Generic Material Group or Primitive
+    MaterialQuadlets: str = '-Z'  # Composed Generic Material Quadlet (4 char each)
+    AnchorSealGroups: str = '-a'  # Composed Anchor Seal Material Group
+    ConfigTraits: str = '-c'  # Composed Config Trait Material Group
+    DigestSealQuadlets: str = '-d'  # Composed Digest Seal Quadlet (4 char each)
+    EventSealQuadlets: str = '-e'  # Composed Event Seal Quadlet (4 char each)
+    Keys: str = '-k'  # Composed Key Material Primitive
+    LocationSealQuadlets: str = '-l'  # Composed Location Seal Quadlet (4 char each)
+    RootDigestSealQuadlets: str = '-r'  # Composed Root Digest Seal Quadlet (4 char each)
+    Witnesses: str = '-w'  # Composed Witness Prefix Material Primitive
+    BigMessageDataGroups: str = '-0U'  # Composed Message Data Group or Primitive
+    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigMessageDataMaterialQuadlets: str = '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
+    BigCombinedMaterialQuadlets: str = '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
+    BigMaterialGroups: str = '-0Y'  # Composed Generic Material Group or Primitive
+    BigMaterialQuadlets: str = '-0Z'  # Composed Generic Material Quadlet (4 char each)
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
+
 
 CtrDex = CounterCodex()
 
@@ -3552,47 +3714,48 @@ class Counter:
     # Hards table maps from bytes Base64 first two code chars to int of
     # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
     # is always > 0 and hs + ss = fs always
-    Hards = ({('-' +  chr(c)): 2 for c in range(65, 65+26)})
-    Hards.update({('-' + chr(c)): 2 for c in range(97, 97+26)})
+    Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
+    Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
     Sizes = {
-                '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
-                '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-                '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
-            }
+        '-A': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-B': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-C': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-D': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-E': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-F': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-G': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-H': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+    }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
-
 
     def __init__(self, code=None, count=1, qb64b=None, qb64=None,
                  qb2=None, strip=False):
@@ -3615,15 +3778,15 @@ class Counter:
         .code and .count
 
         """
-        if code is not None:  #  code provided
+        if code is not None:  # code provided
             if code not in self.Sizes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs, ls = self.Sizes[code] # get sizes for code
+            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
             if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
                 raise InvalidCodeSizeError("Whole code size not full size or not "
-                                      "multiple of 4. cs={} fs={}.".format(cs, fs))
+                                           "multiple of 4. cs={} fs={}.".format(cs, fs))
 
             if count < 0 or count > (64 ** ss - 1):
                 raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
@@ -3642,13 +3805,12 @@ class Counter:
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._bexfil(qb2)
             if strip:  # assumes bytearray
-                del qb2[:self.Sizes[self.code].fs*3//4]
+                del qb2[:self.Sizes[self.code].fs * 3 // 4]
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
-
 
     @property
     def code(self):
@@ -3658,7 +3820,6 @@ class Counter:
         """
         return self._code
 
-
     @property
     def count(self):
         """
@@ -3666,7 +3827,6 @@ class Counter:
         Makes ._count read only
         """
         return self._count
-
 
     @property
     def qb64b(self):
@@ -3677,7 +3837,6 @@ class Counter:
         """
         return self._infil()
 
-
     @property
     def qb64(self):
         """
@@ -3686,7 +3845,6 @@ class Counter:
         Assumes self.raw and self.code are correctly populated
         """
         return self.qb64b.decode("utf-8")
-
 
     @property
     def qb2(self):
@@ -3708,7 +3866,7 @@ class Counter:
         cs = hs + ss  # both hard + soft size
         if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
             raise InvalidCodeSizeError("Whole code size not full size or not "
-                                  "multiple of 4. cs={} fs={}.".format(cs, fs))
+                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
         if count < 0 or count > (64 ** ss - 1):
             raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
@@ -3718,10 +3876,9 @@ class Counter:
         # check valid pad size for whole code size
         if len(both) % 4:  # no pad
             raise InvalidCodeSizeError("Invalid size = {} of {} not a multiple of 4."
-                                  .format(len(both), both))
+                                       .format(len(both), both))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8"))
-
 
     def _exfil(self, qb64b):
         """
@@ -3736,13 +3893,13 @@ class Counter:
         if first not in self.Hards:
             if first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected op code start"
-                                               "while extracing Counter.")
+                                            "while extracing Counter.")
             else:
                 raise UnexpectedCodeError("Unsupported code start ={}.".format(first))
 
         hs = self.Hards[first]  # get hard code size
         if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs-len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
         hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
@@ -3758,16 +3915,15 @@ class Counter:
         # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
 
         if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(cs - len(qb64b)))
 
-        count = qb64b[hs:hs+ss]  # extract count chars
+        count = qb64b[hs:hs + ss]  # extract count chars
         if hasattr(count, "decode"):
             count = count.decode("utf-8")
         count = b64ToInt(count)  # compute int count
 
         self._code = hard
         self._count = count
-
 
     def _binfil(self):
         """
@@ -3782,19 +3938,18 @@ class Counter:
         cs = hs + ss
         if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
             raise InvalidCodeSizeError("Whole code size not full size or not "
-                                  "multiple of 4. cs={} fs={}.".format(cs, fs))
+                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
 
         if count < 0 or count > (64 ** ss - 1):
             raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
-        both =  "{}{}".format(code, intToB64(count, l=ss))
+        both = "{}{}".format(code, intToB64(count, l=ss))
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                          .format(cs, len(both)))
+                                       .format(cs, len(both)))
 
         return (b64ToB2(both))  # convert to b2 left shift if any
-
 
     def _bexfil(self, qb2):
         """
@@ -3805,16 +3960,16 @@ class Counter:
 
         first = nabSextets(qb2, 2)  # extract first two sextets as code selector
         if first not in self.Bards:
-            if first[0] == b'\xfc':  #  b64ToB2('_')
+            if first[0] == b'\xfc':  # b64ToB2('_')
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+                                            "while extracing Matter.")
             else:
                 raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
         bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
         hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
@@ -3828,16 +3983,268 @@ class Counter:
 
         bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         if len(qb2) < bcs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        count = b64ToInt(both[hs:hs+ss])  # get count
+        count = b64ToInt(both[hs:hs + ss])  # get count
 
         self._code = hard
         self._count = count
 
 
-class Serder:
+
+class Sadder:
+    """
+    Sadder is KERI key event serializer-deserializer class
+    Only supports current version VERSION
+
+    Has the following public properties:
+
+    Properties:
+        .raw is bytes of serialized event only
+        .ked is key event dict
+        .kind is serialization kind string value (see namedtuple coring.Serials)
+        .version is Versionage instance of event version
+        .size is int of number of bytes in serialed event only
+        .diger is Diger instance of digest of .raw
+        .dig  is qb64 digest from .diger
+        .digb is qb64b digest from .diger
+        .verfers is list of Verfers converted from .ked["k"]
+        .werfers is list of Verfers converted from .ked["b"]
+        .tholder is Tholder instance from .ked["kt'] else None
+        .sn is int sequence number converted from .ked["s"]
+        .pre is qb64 str of identifier prefix from .ked["i"]
+        .preb is qb64b bytes of identifier prefix from .ked["i"]
+        .said is qb64 of .ked['d'] if present
+        .saidb is qb64b of .ked['d'] of present
+
+    Hidden Attributes:
+          ._raw is bytes of serialized event only
+          ._ked is key event dict
+          ._kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ._version is Versionage instance of event version
+          ._size is int of number of bytes in serialed event only
+          ._code is default code for .diger
+          ._diger is Diger instance of digest of .raw
+
+    Note:
+        loads and jumps of json use str whereas cbor and msgpack use bytes
+
+    """
+
+    def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=MtrDex.Blake3_256):
+        """
+        Deserialize if raw provided
+        Serialize if ked provided but not raw
+        When serilaizing if kind provided then use kind instead of field in ked
+
+        Parameters:
+          raw is bytes of serialized event plus any attached signatures
+          ked is key event dict or None
+            if None its deserialized from raw
+          kind is serialization kind string value or None (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+            if kind is None then its extracted from ked or raw
+          code is .diger default digest code
+
+        """
+        self._code = code  # need default code for .saider
+        if raw:  # deserialize raw using property setter
+            self.raw = raw  # raw property setter does the deserialization
+        elif ked:  # serialize ked using property setter
+            self._kind = kind
+            self.ked = ked  # ked property setter does the serialization
+        elif sad:
+            self._clone(sad=sad)
+        else:
+            raise ValueError("Improper initialization need sad, raw or ked.")
+
+    def _inhale(self, raw):
+        """
+        Parses serilized event ser of serialization kind and assigns to
+        instance attributes.
+
+        Parameters:
+          raw is bytes of serialized event
+          kind is str of raw serialization kind (see namedtuple Serials)
+          size is int size of raw to be deserialized
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+
+        """
+        ident, kind, version, size = sniff(raw)
+        if version != Version:
+            raise VersionError("Unsupported version = {}.{}, expected {}."
+                               "".format(version.major, version.minor, Version))
+        if len(raw) < size:
+            raise ShortageError("Need more bytes.")
+
+        ked = loads(raw=raw, size=size, kind=kind)
+
+        return ked, ident, kind, version, size
+
+
+    def _exhale(self, ked, kind=None):
+        """
+        ked is key event dict
+        kind is serialization if given else use one given in ked
+        Returns tuple of (raw, kind, ked, version) where:
+            raw is serialized event as bytes of kind
+            kind is serialzation kind
+            ked is key event dict
+            version is Versionage instance
+
+        Assumes only supports Version
+        """
+        return Sizeify(ked=ked, kind=kind)
+
+    def compare(self, said=None):
+        """
+        Returns True  if said and either .saider.qb64 or .saider.qb64b match
+
+        Convenience method to allow comparison of own .saider digest self.raw
+        with some other purported said of self.raw
+
+        Parameters:
+            said is qb64b or qb64 SAID of ser to compare with .said
+
+        """
+
+        if said is not None:
+            if hasattr(said, "encode"):
+                said = said.encode('utf-8')  # makes bytes
+
+            return said == self.saidb  # matching
+
+        else:
+            raise ValueError("Both said and saider may not be None.")
+
+
+    def _clone(self, sad):
+        self._raw = sad.raw
+        self._ked = sad.ked
+        self._ident = sad.ident
+        self._kind = sad.kind
+        self._size = sad.size
+        self._version = sad.version
+        self._saider = sad.saider
+
+
+    @property
+    def raw(self):
+        """ raw property getter """
+        return self._raw
+
+    @raw.setter
+    def raw(self, raw):
+        """ raw property setter """
+        ked, ident, kind, version, size = self._inhale(raw=raw)
+        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
+        self._ked = ked
+        self._ident = ident
+        self._kind = kind
+        self._version = version
+        self._size = size
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+    @property
+    def ked(self):
+        """ ked property getter"""
+        return self._ked
+
+    @ked.setter
+    def ked(self, ked):
+        """ ked property setter  assumes ._kind """
+        raw, ident, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._ident = ident
+        self._kind = kind
+        self._size = size
+        self._version = version
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+    @property
+    def kind(self):
+        """ kind property getter"""
+        return self._kind
+
+    @kind.setter
+    def kind(self, kind):
+        """ kind property setter Assumes ._ked """
+        raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ident = ident
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+        self._version = version
+        self._saider = Saider(qb64=ked["d"], code=self._code)
+
+
+    @property
+    def ident(self):
+        """ ident property getter
+
+        Returns:
+            (Identage)
+        """
+        return self._ident
+
+    @property
+    def version(self):
+        """
+        version property getter
+
+        Returns:
+            (Versionage)
+        """
+        return self._version
+
+    @property
+    def size(self):
+        """ size property getter"""
+        return self._size
+
+    @property
+    def saider(self):
+        """
+        Returns Diger of digest of self.raw
+        diger (digest material) property getter
+        """
+        return self._saider
+
+    @property
+    def said(self):
+        """
+        Returns str qb64  of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.saider.qb64
+
+    @property
+    def saidb(self):
+        """
+        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.saider.qb64b
+
+    def pretty(self, *, size=1024):
+        """
+        Returns str JSON of .ked with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
+        """
+        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
+
+
+class Serder(Sadder):
     """
     Serder is KERI key event serializer-deserializer class
     Only supports current version VERSION
@@ -3876,7 +4283,8 @@ class Serder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
-    def __init__(self, raw=b'', ked=None, kind=None, code=MtrDex.Blake3_256):
+
+    def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=MtrDex.Blake3_256):
         """
         Deserialize if raw provided
         Serialize if ked provided but not raw
@@ -3886,184 +4294,17 @@ class Serder:
           raw is bytes of serialized event plus any attached signatures
           ked is key event dict or None
             if None its deserialized from raw
+          sad (Sadder) is clonable base class
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
           code is .diger default digest code
 
         """
-        self._code = code  # need default code for .diger
-        if raw:  # deserialize raw using property setter
-            self.raw = raw  # raw property setter does the deserialization
-        elif ked: # serialize ked using property setter
-            self._kind = kind
-            self.ked = ked  # ked property setter does the serialization
-        else:
-            raise ValueError("Improper initialization need raw or ked.")
+        super(Serder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-
-    def _inhale(self, raw):
-        """
-        Parses serilized event ser of serialization kind and assigns to
-        instance attributes.
-
-        Parameters:
-          raw is bytes of serialized event
-          kind is str of raw serialization kind (see namedtuple Serials)
-          size is int size of raw to be deserialized
-
-        Note:
-          loads and jumps of json use str whereas cbor and msgpack use bytes
-
-        """
-        kind, version, size = sniff(raw)
-        if version != Version:
-            raise VersionError("Unsupported version = {}.{}, expected {}."
-                               "".format(version.major, version.minor, Version))
-        if len(raw) < size:
-            raise ShortageError("Need more bytes.")
-
-        ked = loads(raw=raw, size=size, kind=kind)
-
-        return (ked, kind, version, size)
-
-
-    def _exhale(self, ked,  kind=None):
-        """
-        ked is key event dict
-        kind is serialization if given else use one given in ked
-        Returns tuple of (raw, kind, ked, version) where:
-            raw is serialized event as bytes of kind
-            kind is serialzation kind
-            ked is key event dict
-            version is Versionage instance
-
-        Assumes only supports Version
-        """
-        return Sizeify(ked=ked, kind=kind)
-
-
-    def compare(self, said=None):
-        """
-        Returns True  if said and either .saider.qb64 or .saider.qb64b match
-
-        Convenience method to allow comparison of own .saider digest self.raw
-        with some other purported said of self.raw
-
-        Parameters:
-            said is qb64b or qb64 SAID of ser to compare with .said
-
-        """
-
-        if said is not None:
-            if hasattr(said, "encode"):
-                said = said.encode('utf-8')  # makes bytes
-
-            return said == self.saidb  # matching
-
-        else:
-            raise ValueError("Both dig and diger may not be None.")
-
-
-
-    @property
-    def raw(self):
-        """ raw property getter """
-        return self._raw
-
-
-    @raw.setter
-    def raw(self, raw):
-        """ raw property setter """
-        ked, kind, version, size = self._inhale(raw=raw)
-        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-        self._ked = ked
-        self._kind = kind
-        self._version = version
-        self._size = size
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-
-    @property
-    def ked(self):
-        """ ked property getter"""
-        return self._ked
-
-
-    @ked.setter
-    def ked(self, ked):
-        """ ked property setter  assumes ._kind """
-        raw, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
-        size = len(raw)
-        self._raw = raw[:size]
-        self._ked = ked
-        self._kind = kind
-        self._size = size
-        self._version = version
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-
-    @property
-    def kind(self):
-        """ kind property getter"""
-        return self._kind
-
-
-    @kind.setter
-    def kind(self, kind):
-        """ kind property setter Assumes ._ked """
-        raw, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
-        size = len(raw)
-        self._raw = raw[:size]
-        self._ked = ked
-        self._kind = kind
-        self._size = size
-        self._version = version
-        self._saider = Saider(qb64=ked["d"], code=self._code)
-
-
-    @property
-    def version(self):
-        """
-        version property getter
-
-        Returns:
-            (Versionage)
-        """
-        return self._version
-
-
-    @property
-    def size(self):
-        """ size property getter"""
-        return self._size
-
-
-    @property
-    def saider(self):
-        """
-        Returns Diger of digest of self.raw
-        diger (digest material) property getter
-        """
-        return self._saider
-
-
-    @property
-    def said(self):
-        """
-        Returns str qb64  of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.saider.qb64
-
-
-    @property
-    def saidb(self):
-        """
-        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
-        said (self-addressing identifier) property getter
-        """
-        return self.saider.qb64b
+        if self._ident != Idents.keri:
+            raise ValueError("Invalid ident {}, must be KERI".format(self._ident))
 
 
     @property
@@ -4076,10 +4317,9 @@ class Serder:
         if "k" in self.ked:  # establishment event
             keys = self.ked["k"]
         else:  # non-establishment event
-            keys =  []
+            keys = []
 
         return [Verfer(qb64=key) for key in keys]
-
 
     @property
     def werfers(self):
@@ -4091,10 +4331,9 @@ class Serder:
         if "b" in self.ked:  # inception establishment event
             wits = self.ked["b"]
         else:  # non-establishment event
-            wits =  []
+            wits = []
 
         return [Verfer(qb64=wit) for wit in wits]
-
 
     @property
     def tholder(self):
@@ -4103,7 +4342,6 @@ class Serder:
 
         """
         return (Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None)
-
 
     @property
     def sn(self):
@@ -4119,10 +4357,9 @@ class Serder:
 
         sn = int(sn, 16)
         if sn < 0:
-                raise ValueError("Negative sn={}.".format(sn))
+            raise ValueError("Negative sn={}.".format(sn))
 
         return (sn)
-
 
     @property
     def pre(self):
@@ -4132,7 +4369,6 @@ class Serder:
         """
         return self.ked["i"]
 
-
     @property
     def preb(self):
         """
@@ -4141,12 +4377,10 @@ class Serder:
         """
         return self.pre.encode("utf-8")
 
-
     @property
     def est(self):  # establishative
         """ Returns True if Serder represents an establishment event """
         return self.ked["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
-
 
     def pretty(self, *, size=1024):
         """
@@ -4205,7 +4439,6 @@ class Tholder:
                 sith.append(clause.split(','))
         return sith
 
-
     def __init__(self, sith=''):
         """
         Parse threshold
@@ -4255,7 +4488,7 @@ class Tholder:
             for clause in sith:  # convert string fractions to Fractions
                 thold.append([Fraction(w) for w in clause])  # append list of Fractions
 
-            for clause in thold:  #  sum of fractions in clause must be >= 1
+            for clause in thold:  # sum of fractions in clause must be >= 1
                 if not (sum(clause) >= 1):
                     raise ValueError("Invalid sith clause = {}, all clause weight "
                                      "sums must be >= 1.".format(thold))
@@ -4295,8 +4528,6 @@ class Tholder:
         """ limen property getter """
         return self._limen
 
-
-
     def satisfy(self, indices):
         """
         Returns True if indices list of verified signature key indices satisfies
@@ -4307,7 +4538,6 @@ class Tholder:
         """
         return (self._satisfy(indices=indices))
 
-
     def _satisfy_numeric(self, indices):
         """
         Returns True if satisfies numeric threshold False otherwise
@@ -4316,14 +4546,13 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         try:
-            if self.thold >  0 and len(indices) >= self.thold:  # at least one
+            if self.thold > 0 and len(indices) >= self.thold:  # at least one
                 return True
 
         except Exception as ex:
             return False
 
         return False
-
 
     def _satisfy_weighted(self, indices):
         """
@@ -4335,7 +4564,7 @@ class Tholder:
 
         """
         try:
-            if not indices:  #  empty indices
+            if not indices:  # empty indices
                 return False
 
             # remove duplicates with set, sort low to high

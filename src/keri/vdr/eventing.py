@@ -1513,7 +1513,7 @@ class Tevery:
         Parameters:
             reger (Registry): local LMDB credential database
             db (Baser):  local LMDB identifier database
-            regk (str): local or own identifier prefix. Some restriction if present
+            regk (Union[str,None]): local or own identifier prefix. Some restriction if present
             local (bool): True means only process msgs for own events if .regk
                         False means only process msgs for not own events if .regk
             cues (Deck): notices generated from processing events

@@ -69,25 +69,24 @@ def test_credential_handlers(mockHelpingNowUTC):
         result = client.simulate_post(path="/credential/issue", body=b)
         assert result.status == falcon.HTTP_200
 
-        tevt = (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EfZ4XAxBDq7ByJgutFqgK_S9'
-                b'lsxQvbdRadsVCPCSqg40","i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_E'
-                b'pa1AKKg","s":"0","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
+        tevt = (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EkkObJoLZkhWlH5rNMAGNwXz'
+                b'u9NrJ5VymB8S8faa91ok","i":"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_'
+                b'b9sw8NQ","s":"0","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
                 b'yyo","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-                b'AAAAAAAAgEVgkg5sqEmZvTnlCBQSSrxUAmb48q-MKI7aqK7b2mx1Y')
-        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EVgkg5sqEmZvTnlCBQSSrxUA'
-                b'mb48q-MKI7aqK7b2mx1Y","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
+                b'AAAAAAAAgEc-gQ4RwkHHO0AWmnDD5A2tMIzNv_F9W1rYxCrjbcG7c')
+        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"Ec-gQ4RwkHHO0AWmnDD5A2tM'
+                b'IzNv_F9W1rYxCrjbcG7c","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
                 b'KTlh0nc","s":"2","p":"EUEfHVjhRI0f5WmNPF6PxLJigCxQn73ijikUzO9p42'
-                b'f8","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
-                b':"0","d":"EfZ4XAxBDq7ByJgutFqgK_S9lsxQvbdRadsVCPCSqg40"}]}-AABAA'
-                b'kD43aLawYAwhCAQUTJSveKzJaiKPO2KoKfrU4tThbKb0O78kqd_x4G-F0SwGIYID'
-                b'-axzzJzOwDu1XeEtD_m3Aw')
+                b'f8","a":[{"i":"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_b9sw8NQ","s"'
+                b':"0","d":"EkkObJoLZkhWlH5rNMAGNwXzu9NrJ5VymB8S8faa91ok"}]}-AABAA'
+                b'dzceG1ISVULhZWVUOA_jFwp-aC8uTJQuAaG9Fl--jXdm8pUC1KFHIDoMGjoNiCzS'
+                b'jn4PlTyX_5QKgWeQkTYmCQ')
         cred = (
-            b'{"v":"KERI10JSON00019b_","d":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg",'
-            b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"EPmpiN6bEM8EI0Mctny-'
-            b'6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"EX68IGyVlJbavp7mMFUqDUtZ6M0QVhAI-hZvwEoE'
-            b'ZzaM","i":"Eo-yqSHYEN7C1T7fQLiRCkB_yObnXLpMNXaqBe4-uwBc","dt":"2021-01-01T00'
-            b':00:00.000000+00:00","LEI":"1234567890abcdefg","ri":"EUmNxM911ZUMWSdndXCq8kS'
-            b'Jq6ILtWt7oZBn27iOQyyo"},"p":[]}')
+            b'{"v":"ACDC10JSON00019b_","d":"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_b9sw8NQ",'
+            b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc",'
+            b'"a":{"d":"EX68IGyVlJbavp7mMFUqDUtZ6M0QVhAI-hZvwEoEZzaM",'
+            b'"i":"Eo-yqSHYEN7C1T7fQLiRCkB_yObnXLpMNXaqBe4-uwBc","dt":"2021-01-01T00:00:00.000000+00:00",'
+            b'"LEI":"1234567890abcdefg","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQyyo"},"p":[]}')
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -98,7 +97,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         assert evt == tevt
 
         creder = proving.Credentialer(raw=cred)
-        assert reger.creds.get(b'EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg').raw == creder.raw
+        assert reger.creds.get(b'EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_b9sw8NQ').raw == creder.raw
 
         # Try to revoke a credential that doesn't exist and get the appropriate error
         result = client.simulate_post(path="/credential/revoke",
@@ -110,23 +109,23 @@ def test_credential_handlers(mockHelpingNowUTC):
         # Now revoke the actual credential
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQyyo", "said": '
-                                           b'"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg"}')
+                                           b'"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_b9sw8NQ"}')
         assert result.status == falcon.HTTP_202
 
-        rev = (b'{"v":"KERI10JSON000120_","t":"rev","d":"EaVOPw17fC1KO_DaEh4p1PbF'
-               b'Js9ZApQDIezlcY3SDRtk","i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_E'
-               b'pa1AKKg","s":"1","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
-               b'yyo","p":"EfZ4XAxBDq7ByJgutFqgK_S9lsxQvbdRadsVCPCSqg40","dt":"20'
-               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwELsa'
-               b'CvnKHrn29YjPZhi39BJ5cc13Ll4XMdZq26ptjPBA')
-        rkevt = (
-            b'{"v":"KERI10JSON00013a_","t":"ixn","d":"ELsaCvnKHrn29YjPZhi39BJ5'
-            b'cc13Ll4XMdZq26ptjPBA","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
-            b'KTlh0nc","s":"3","p":"EVgkg5sqEmZvTnlCBQSSrxUAmb48q-MKI7aqK7b2mx'
-            b'1Y","a":[{"i":"EAGNYbo_llzaafSd3GdJsApSwBJuO-vYviS_Epa1AKKg","s"'
-            b':"1","d":"EaVOPw17fC1KO_DaEh4p1PbFJs9ZApQDIezlcY3SDRtk"}]}-AABAA'
-            b'j0A10hxN0xmyPtUnJJVppeCSXNIjTkPEwSl-jmIzG0rv7GUDfNy3jh2GOW9FgbSn'
-            b'ldpmTXF4sbltRygpx_HbCA')
+        rev = (b'{"v":"KERI10JSON000120_","t":"rev","d":"EAeIinuz-droPXota2YFXZ16'
+               b'm4-Gyq-yjo56Av0ckoMg","i":"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_'
+               b'b9sw8NQ","s":"1","ri":"EUmNxM911ZUMWSdndXCq8kSJq6ILtWt7oZBn27iOQ'
+               b'yyo","p":"EkkObJoLZkhWlH5rNMAGNwXzu9NrJ5VymB8S8faa91ok","dt":"20'
+               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwEmAa'
+               b'D4PJNioOn-jUo96EuN0rz7GalszG_pz90EKR_1qc')
+        rkevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EmAaD4PJNioOn-jUo96EuN0r'
+                 b'z7GalszG_pz90EKR_1qc","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqy'
+                 b'KTlh0nc","s":"3","p":"Ec-gQ4RwkHHO0AWmnDD5A2tMIzNv_F9W1rYxCrjbcG'
+                 b'7c","a":[{"i":"EeBiAoXWrs5fCo0km-8GlPHctMkoSAcQ7DWP_b9sw8NQ","s"'
+                 b':"1","d":"EAeIinuz-droPXota2YFXZ16m4-Gyq-yjo56Av0ckoMg"}]}-AABAA'
+                 b'0gBlBfu1q-vKDi2nn318dJ8Cmbrzg5We80Sg4OgkkBzUvNMSb3xu7NreG5vMRJSb'
+                 b'NQMc9FB2t-efuWbg1YuTAA')
+
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
         evt = cue["msg"]
@@ -273,7 +272,7 @@ def test_issue_credential_full_multisig():
         result = client.simulate_post(path="/credential/issue", body=b)
         assert result.status == falcon.HTTP_200
 
-        creder = proving.Credentialer(crd=result.json, kind=coring.Serials.json)
+        creder = proving.Credentialer(ked=result.json, kind=coring.Serials.json)
 
         # The Issuer will have cue'd up a multisig request to be processed
         assert len(issuer.cues) == 1
