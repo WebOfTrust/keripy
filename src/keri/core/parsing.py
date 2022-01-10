@@ -708,8 +708,10 @@ class Parser:
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
         sscs = []  # each converted couple is (seqner, diger) for delegating/issuing event
-        sadsigs = []  # TODO: add comment
-        sadcigs = []  # TODO: add comment
+        # List of tuples from extracted SAD path sig groups from transferable identifiers
+        sadsigs = []  # each converted group is tuple of (path, i, s, d) quad plus list of sigs
+        # List of tuples from extracted SAD path sig groups from non-trans identifiers
+        sadcigs = []  # each converted group is path plus list of non-trans sigs
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream

@@ -343,8 +343,12 @@ class Registry(dbing.LMDBer):
 
 
     def cloneCred(self, said, root=None):
-        """
-        Load base credential and CESR proof signatures from database.
+        """ Load base credential and CESR proof signatures from database.
+
+        Base credential and all signatures are returned from the credential
+        data store.  If root is specified, all signatures are transposed to have
+        that path as the root.  This is used to embed the credential in another SAD
+        at the location of the specified root.
 
         Parameters:
             said(str or bytes): qb64 SAID of credential
