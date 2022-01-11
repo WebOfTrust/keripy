@@ -44,7 +44,7 @@ def test_sad_signature():
                                   subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
         paths = [[], ["a"], ["a", "personal"]]
 
-        # Sign with non-transferable identifier
+        # Sign with non-transferable identifier, default to entire SAD
         sig0 = signing.ratify(wanHab, cred)
         assert sig0 == (b'{"v":"ACDC10JSON0002af_","d":"E25eYAS69RFUAJSaTf_hjYNx-IZJdv--FJ'
                         b'fNIaW7RkL0","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","'
@@ -60,6 +60,8 @@ def test_sad_signature():
                         b'BtKPeN9p4lum6qDRa28fDfVShFk6c39FlBgHBsCq1480B-EmK-iwW0gMYKY6Yw5v'
                         b'EjAXvxy9MvIlR0MR6XOrBWWnBoNGHCYbyK3Olxoq1T9MjCBlQNIK-q8vUbltKzEJ'
                         b'RDQ')
+
+        # sign with non-trans identifer with a specific set of paths
         sig1 = signing.ratify(wanHab, cred, paths=paths)
         assert sig1 == (b'{"v":"ACDC10JSON0002af_","d":"E25eYAS69RFUAJSaTf_hjYNx-IZJdv--FJ'
                         b'fNIaW7RkL0","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","'
@@ -80,7 +82,7 @@ def test_sad_signature():
                         b'eN9p4lum6qDRa28fDfVShFk6c39FlBgHBsCq1480BJdTjYZ2A0kXZX7tLxKgju6Z'
                         b'P31-21J5Pl_VUmE-QGtl1h_GJb-aUox-UQLx_rum18xWhHi9zLSqFv5lY39FfBw')
 
-        # Sign with transferable identifier
+        # Sign with transferable identifier defaults to single signature on entire SAD
         sig2 = signing.ratify(sidHab, cred)
         assert sig2 == (b'{"v":"ACDC10JSON0002af_","d":"E25eYAS69RFUAJSaTf_hjYNx-IZJdv--FJ'
                         b'fNIaW7RkL0","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","'
@@ -98,8 +100,8 @@ def test_sad_signature():
                         b'UnqzTQF_r35WgwcmtfM-U5vbJapBX3lZlLd_bZr1bSLV7CTnQ8GMXLp5ocx1boO0'
                         b'mn81roT8XDg')
 
+        # Sign with transferable identifier with specific set of paths
         sig3 = signing.ratify(sidHab, cred, paths=paths)
-
         assert sig3 == (b'{"v":"ACDC10JSON0002af_","d":"E25eYAS69RFUAJSaTf_hjYNx-IZJdv--FJ'
                         b'fNIaW7RkL0","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","'
                         b'i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"Ecea'
@@ -143,6 +145,7 @@ def test_sad_signature():
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
                                   issuer=hab.pre, subject=md, source=[], status=issuer.regk)
 
+        # Sign with multisig transferable identifier defaults to single signature on entire SAD
         sig1 = signing.ratify(hab=hab, serder=cred)
         assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"ElnunisdNcMdaIypzfn3_9l2E8rsLk_2Q1'
                         b'Mrdqb8igFA","s":"ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo","'
@@ -183,7 +186,7 @@ def test_signature_transposition():
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
                                   issuer=hab.pre, subject=d, source=[], status=issuer.regk)
 
-        # Sign with non-transferable identifier
+        # Sign with non-transferable identifier, defaults to single signature on entire SAD
         sig0 = signing.ratify(hab=hab, serder=cred)
         assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"E1x9hWR5ypCrhgqMaIUlALI1Id_Y8IgDli'
                         b'PbP0h11tOs","s":"ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo","'
@@ -254,7 +257,10 @@ def test_signature_transposition():
                        b'GGLwLpuRBkZ8w-AABAADe5tx0Jxn2kpwoiZh47Wkoez4lOgoG-E6lvjn_IXDIF4o'
                        b'7Oan_fNC22k6WzQKj8mewUcvhhvw-6mmzno2eR4DQ')
 
+        # issue the credential
         issuer.issue(creder=cred)
+
+        # parse the credential and verify it is saved in the credential store
         parsing.Parser().parse(ims=sig0, vry=verifier)
 
         saider = verifier.reger.saved.get(keys=cred.said)
@@ -268,6 +274,7 @@ def test_signature_transposition():
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
                                   issuer=hab.pre, subject=d, source=[], status=issuer.regk)
 
+        # sign with single sig transferable identfier with multiple specified paths
         sig1 = signing.ratify(hab=hab, serder=cred, paths=[[], ["a"], ["a", "ri"]])
         assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"E1x9hWR5ypCrhgqMaIUlALI1Id_Y8IgDli'
                         b'PbP0h11tOs","s":"ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo","'
@@ -287,16 +294,25 @@ def test_signature_transposition():
                         b'J3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w-AABAAMww_ANw37teZaMDD69pY'
                         b'1370mw5q0JnBEadHs1n2svQeydApgrvB0ofb2XWeFXquwkzj7fitH2M2nvivNm9tBA')
 
+        # Issue the credential and parse into credential store
         issuer.issue(creder=cred)
         parsing.Parser().parse(ims=sig1, vry=verifier)
 
+        # verify the credential is saved
         saider = verifier.reger.saved.get(keys=cred.said)
         assert saider is not None
 
+        # cloneCred tales a root parameter for transposing the signatures to a base path
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a"]))
         assert len(sadsigers) == 3
+
+        # create a new exn message with the credential as the payload
         exn = exchanging.exchange(route="/credential/issue", payload=scre.crd, date="2022-01-04T11:58:55.154502+00:00")
+
+        # sign the exn message
         msg = hab.endorse(serder=exn)
+
+        # attach the transposed signatures for the embedded credential
         msg.extend(eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars))
         assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"ELiFf9jptP0iYqy16cStp9W3'
                        b'plaGIj3cqX8g8JtWKzmI","dt":"2022-01-04T11:58:55.154502+00:00","r'
