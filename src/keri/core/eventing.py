@@ -2299,7 +2299,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
             self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
-            self.db.firsts.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                         serder.preb, fn, dtsb.decode("utf-8"), serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.saidb)

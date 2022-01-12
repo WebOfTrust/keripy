@@ -502,7 +502,7 @@ class Baser(dbing.LMDBer):
             the associated event. So one can lookup event digest, get its fn here
             and then use fn to fetch event by fn from .fels.
 
-        .stts is named subDB instance of SerderSuber that maps a prefix
+        .states (stts) is named subDB instance of SerderSuber that maps a prefix
             to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
@@ -657,7 +657,9 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.firsts = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        # events as ordered by first seen ordinals
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        # Kever state
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 

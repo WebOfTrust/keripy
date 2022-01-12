@@ -171,9 +171,7 @@ class Habery:
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
-
     Properties:
-        kever (Kever): instance of key state of local controller
         kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
         prefixes (OrderedSet): local prefixes for .db
 
@@ -332,32 +330,39 @@ class Habery:
 
         self.inited = True
 
-    def load(self):
+    def loadHabs(self):
         """Load Habs from db
 
         """
+        for name, habord in self.db.habs.getItemIter():
+            prefix = habord.prefix
 
-        ex = self.db.habs.get(keys=self.name)
-        if ex is not None:
-            existing = True  # found existing habitat
-            self.pre = ex.prefix
-
-            prms = self.ks.prms.get(ex.prefix)  # get persisted values from db
+            prms = self.ks.prms.get(prefix)  # get persisted values from db
             algo = prms.algo
             salt = prms.salt
             tier = prms.tier
             pidx = prms.pidx
 
 
-        if not existing and not self.create:
-            raise kering.ConfigurationError("Improper Habitat creating for create")
+            # if it's delegated, and not accepted, and not in kevers, no error
+            # if it's delegated and accepted and not in kevers, error
+            # if it's not delegated and not in kevers, error
+            if (self.delpre and self.accepted) and self.pre not in self.kevers \
+                    or not self.delpre and self.pre not in self.kevers:
+                raise kering.ConfigurationError("Missing Habitat KEL for "
+                                                "pre={}.".format(self.pre))
 
-        if salt is None:
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+            self.prefixes.add(self.pre)  # ordered set so add is idempotent
+            self.accepted = self.pre in self.kevers
 
-        if existing:
-            self.reinitialize()
+            # ridx for replay may be an issue when loading from existing
+            self.ridx = self.ks.sits.get(self.pre).new.ridx
 
+
+
+    def makeHab(self, name):
+        """Make new Hab
+        """
 
     def close(self, clear=False):
         """Close resources.
@@ -377,26 +382,16 @@ class Habery:
     @property
     def kevers(self):
         """
-        Returns .db.kevers
+        Returns .db.kevers of all Kevers
         """
         return self.db.kevers
 
     @property
-    def kever(self):
-        """
-        Returns kever for its .pre
-        """
-        return self.kevers[self.pre]
-
-    @property
     def prefixes(self):
         """
-        Returns .db.prefixes
+        Returns .db.prefixes of local prefixes
         """
         return self.db.prefixes
-
-    def group(self):
-        return self.db.gids.get(self.pre)
 
 
 class HaberyDoer(doing.Doer):
@@ -563,10 +558,10 @@ class Hab:
 
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below
-        self._inits = kwa
+        #self._inits = kwa
 
-        if self.db.opened and self.ks.opened and self.cf.opened:
-            self.setup(**self._inits)  # finish setup now
+        #if self.db.opened and self.ks.opened and self.cf.opened:
+            #self.setup(**self._inits)  # finish setup now
         # otherwise finish setup later
 
     def setup(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
@@ -704,23 +699,7 @@ class Hab:
 
         self.inited = True
 
-    def delegationAccepted(self):
-        """Process all escrows in kvy in response to delegation acceptance
-        """
-        self.kvy.processEscrows()
-        if self.pre not in self.kevers:
-            raise Exception()
 
-        self.accepted = True
-
-    def delegatedRotationAccepted(self):
-        """Process all escrows in kvy in response to delegation acceptance
-        """
-        self.kvy.processEscrows()
-        if self.pre not in self.kevers:
-            raise Exception()
-
-        self.ridx += 1
 
     def reinitialize(self):
         """
@@ -737,6 +716,7 @@ class Hab:
                                             "pre={}.".format(self.pre))
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
+        self.accepted = self.pre in self.kevers
 
         # ridx for replay may be an issue when loading from existing
         self.ridx = self.ks.sits.get(self.pre).new.ridx
@@ -801,6 +781,25 @@ class Hab:
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
+
+
+    def delegationAccepted(self):
+        """Process all escrows in kvy in response to delegation acceptance
+        """
+        self.kvy.processEscrows()
+        if self.pre not in self.kevers:
+            raise Exception()
+
+        self.accepted = True
+
+    def delegatedRotationAccepted(self):
+        """Process all escrows in kvy in response to delegation acceptance
+        """
+        self.kvy.processEscrows()
+        if self.pre not in self.kevers:
+            raise Exception()
+
+        self.ridx += 1
 
     @property
     def iserder(self):
@@ -1908,6 +1907,7 @@ class Habitat:
                                             "pre={}.".format(self.pre))
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
+        self.accepted = self.pre in self.kevers
 
         # ridx for replay may be an issue when loading from existing
         self.ridx = self.ks.sits.get(self.pre).new.ridx

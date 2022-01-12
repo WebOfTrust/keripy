@@ -1556,7 +1556,7 @@ def test_kever(mockHelpingNowUTC):
         assert kever.nexter.qb64 == nexter.qb64
         state = kever.db.states.get(keys=kever.prefixer.qb64)
         assert state.sn == kever.sn == 0
-        feqner = kever.db.firsts.get(keys=(kever.prefixer.qb64, kever.serder.said))
+        feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
         assert feqner.sn == kever.sn
 
         serderK = kever.state()
