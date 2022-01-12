@@ -145,6 +145,235 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
             serverDoer, directant]
 
 
+class Habery:
+    """Habery class provides shared database environments for all its Habitats
+    Key controller and identifier controller shared configuration file, keystore
+    and KEL databases.
+
+
+    Attributes:
+        name (str): alias of databases
+        base (str): optional directory path segment inserted before name
+                    that allows further differentation with a hierarchy.
+                    "" means optional.
+        temp (bool): True for testing it modifies tier of salty key
+            generation algorithm and persistence of db and ks
+
+        ks (keeping.Keeper): lmdb key store
+        db (basing.Baser): lmdb data base for KEL etc
+        cf (configing.Configer): config file instance
+        mgr (keeping.Manager): creates and rotates keys in key store
+        rtr (routing.Router): routes reply 'rpy' messages
+        rvy (routing.Revery): factory that processes reply 'rpy' messages
+        kvy (eventing.Kevery): factory for local processing of local event msgs
+        psr (parsing.Parser):  parses local messages for .kvy .rvy
+
+        inited (bool): True means fully initialized wrt databases.
+                          False means not yet fully initialized
+
+
+    Properties:
+        kever (Kever): instance of key state of local controller
+        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
+        prefixes (OrderedSet): local prefixes for .db
+
+    """
+
+    def __init__(self, *, name='test', base="", temp=False,
+                 ks=None, db=None, cf=None, **kwa):
+        """
+        Initialize instance.
+
+        Parameters:
+            name (str): alias name for shared environment config databases etc.
+            base (str): optional directory path segment inserted before name
+                that allows further differentation with a hierarchy. "" means
+                optional.
+            ks (Keeper):  keystore lmdb subclass instance
+            db (Baser): database lmdb subclass instance
+            cf (Configer): config file instance
+            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
+
+
+        Parameters: Passed through via kwa to setup for later init
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt
+            free (bool): free resources by closing on Doer exit
+
+        """
+        self.name = name  # maybe don't need attribute
+        self.base = base  # maybe don't need attribute
+        self.temp = temp  # maybe don't need attribute
+
+        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
+                                                           base=self.base,
+                                                           temp=self.temp,
+                                                           reopen=True)
+        self.db = db if db is not None else basing.Baser(name=self.name,
+                                                         base=self.base,
+                                                         temp=self.temp,
+                                                         reopen=True)
+        self.cf = cf if cf is not None else configing.Configer(name=self.name,
+                                                               base=self.base,
+                                                               temp=self.temp,
+                                                               reopen=True)
+
+        self.mgr = None  # wait to setup until after ks is known to be opened
+        self.rtr = routing.Router()
+        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
+        self.kvy.registerReplyRoutes(router=self.rtr)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
+
+        self.inited = False
+
+        # save init kwy word arg parameters as ._inits in order to later finish
+        # init setup elseqhere after databases are opened if not below
+        self._inits = kwa
+        self._inits['temp'] = temp  # add temp for seed from bran tier override
+
+        if self.db.opened and self.ks.opened:
+            self.setup(**self._inits)  # finish setup later
+
+
+    def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
+              salt=None, tier=None, free=False, temp=None, ):
+        """
+        Setup Habery. Assumes that both .db and .ks have been opened.
+        This allows dependency injection of .db and .ks into Habery instance
+        prior to .db and .kx being opened to accomodate asynchronous process
+        setup of these resources. Putting the .db and .ks associated
+        initialization here enables asynchronous opening .db and .ks after
+        Baser and Keeper instances are instantiated. First call to .setup will
+        initialize databases (vacuous initialization).
+
+        Parameters:
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            bran (str): Base64 22 char string that is used as base material for
+                seed. bran allows alphanumeric passcodes generated by key managers
+                like 1password to be key store for seed.
+            pidx (int): Initial prefix index for vacuous ks
+            algo (str): algorithm (randy or salty) for creating key pairs
+                default is root algo which defaults to salty
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt (Tierage)
+            free (boo): free resources by closing on Doer exit if any
+            temp (bool): True means use quick method to stretch bran salt to seed
+                    for testing only, Otherwise use more resources to stretch
+        """
+        if not (self.ks.opened and self.db.opened):
+            raise kering.ClosedError("Attempt to setup Habitat with closed "
+                                     "database, .ks or .db.")
+
+        if bran and not seed:  # create seed from stretch of bran as salt
+            if len(bran) < 22:
+                raise ValueError(f"Bran (passcode seed material) too short.")
+            bran = coring.MtrDex.Salt_128 + bran[:22]  # qb64 salt for seed
+            signer = coring.Salter(qb64=bran).signer(transferable=False,
+                                                     tier=tier,
+                                                     temp=temp)
+            seed = signer.qb64
+            if not aeid:  # aeid must not be empty event on initial creation
+                aeid = signer.verfer.qb64  # lest it remove encryption
+
+        if salt is None:  # salt for signing keys not aeid seed
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+
+        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
+                                   algo=algo, salt=salt, tier=tier)
+
+        self.free = True if free else False
+
+        #config file is meant to be read only at init not changed by app at
+        # run time. Any dynamic app changes must go in database not config file
+        # that way we don't have to worry about multiple writers of cf.
+        # Use config file to preload database not as a database.
+        # Habitats are managed by Habery. So if .habs the Habery inits Habitats
+        # if no .habs then Habery ends init and waits for API call to create
+        # Habitat.
+        # load habitats from db?
+        # load prefixes
+        #  should config files by habitat specific
+        # should we have a config file just for Habery? Or shoud the config
+        #  file have sections for Habery and Habitats so its one file but
+        # get read more than one and applied
+        # read in self.cf config file and process any oobis or endpoints
+        # self.reconfigure()  # depends on prefixes and habitats
+
+        self.inited = True
+
+
+    def close(self, clear=False):
+        """
+        Close resources.
+        Parameters:
+           clear is boolean, True means clear resource directories
+        """
+        if self.ks:
+            self.ks.close(clear=self.ks.temp or clear)
+
+        if self.db:
+            self.db.close(clear=self.db.temp or clear)
+
+        if self.cf:
+            self.cf.close(clear=self.cf.temp or clear)
+
+
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self.db.kevers
+
+    @property
+    def kever(self):
+        """
+        Returns kever for its .pre
+        """
+        return self.kevers[self.pre]
+
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
+
+    def group(self):
+        return self.db.gids.get(self.pre)
+
+
 class HaberyDoer(doing.Doer):
     """
     Basic Habery Doer  to initialize habery databases and config file.
@@ -201,209 +430,9 @@ class HaberyDoer(doing.Doer):
 
     def exit(self):
         """"""
-        pass
+        if self.habery.inited and self.habery.free:
+            self.habery.close(clear=self.habery.temp)
 
-
-class Habery:
-    """Habery class provides shared database environments for all its Habitats
-    Key controller and identifier controller shared configuration file, keystore
-    and KEL databases.
-
-
-    Attributes:
-        name (str): alias of databases
-        temp (bool): True for testing it modifies tier of salty key
-            generation algorithm and persistence of db and ks
-        erase (bool): If True erase old private keys, Otherwise not.
-        db (basing.Baser): lmdb data base for KEL etc
-        ks (keeping.Keeper): lmdb key store
-        cf (configing.Configer): config file instance
-        kvy (eventing.Kevery): instance for local processing of local msgs
-        psr (parsing.Parser):  parses local messages for .kvy
-        mgr (keeping.Manager): creates and rotates keys in key store
-
-        inited (bool): True means fully initialized wrt databases.
-                          False means not yet fully initialized
-
-
-    Properties:
-        kever (Kever): instance of key state of local controller
-        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
-        prefixes (OrderedSet): local prefixes for .db
-
-    """
-
-    def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
-                 temp=False, **kwa):
-        """
-        Initialize instance.
-
-        Parameters:
-            name (str): alias name for shared environment config databases etc.
-            base (str): optional directory path segment inserted before name
-                that allows further differentation with a hierarchy. "" means
-                optional.
-            ks (Keeper):  keystore lmdb subclass instance
-            db (Baser): database lmdb subclass instance
-            cf (Configer): config file instance
-            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
-
-        Parameters: Passed through via kwa to setup for later init
-            seed (str): qb64 private-signing key (seed) for the aeid from which
-                the private decryption key may be derived. If aeid stored in
-                database is not empty then seed may required to do any key
-                management operations. The seed value is memory only and MUST NOT
-                be persisted to the database for the manager with which it is used.
-                It MUST only be loaded once when the process that runs the Manager
-                is initialized. Its presence acts as an authentication, authorization,
-                and decryption secret for the Manager and must be stored on
-                another device from the device that runs the Manager.
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper. If provided
-                aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
-            salt (str): qb64 salt for creating key pairs
-            tier (str): security tier for generating keys from salt
-
-        """
-        self.name = name  # maybe don't need attribute
-        self.base = base  # maybe don't need attribute
-        self.temp = temp  # maybe don't need attribute
-
-        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
-                                                           base=self.base,
-                                                           temp=self.temp,
-                                                           reopen=True)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True)
-        self.cf = cf if cf is not None else configing.Configer(name=self.name,
-                                                               base=self.base,
-                                                               temp=self.temp,
-                                                               reopen=True)
-
-        self.rtr = routing.Router()
-        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
-        self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
-        self.mgr = None  # wait to setup until after ks is known to be opened
-        self.inited = False
-
-        # save init kwy word arg parameters as ._inits in order to later finish
-        # init setup elseqhere after databases are opened if not below
-        self._inits = kwa
-        self._inits['temp'] = temp  # add temp for seed from bran tier override
-
-        if self.db.opened and self.ks.opened:
-            self.setup(**self._inits)  # finish setup later
-
-
-    def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
-              salt=None, tier=None, temp=None ):
-        """
-        Setup Habery. Assumes that both .db and .ks have been opened.
-        This allows dependency injection of .db and .ks into Habery instance
-        prior to .db and .kx being opened to accomodate asynchronous process
-        setup of these resources. Putting the .db and .ks associated
-        initialization here enables asynchronous opening .db and .ks after
-        Baser and Keeper instances are instantiated. First call to .setup will
-        initialize databases (vacuous initialization).
-
-        Parameters:
-            seed (str): qb64 private-signing key (seed) for the aeid from which
-                the private decryption key may be derived. If aeid stored in
-                database is not empty then seed may required to do any key
-                management operations. The seed value is memory only and MUST NOT
-                be persisted to the database for the manager with which it is used.
-                It MUST only be loaded once when the process that runs the Manager
-                is initialized. Its presence acts as an authentication, authorization,
-                and decryption secret for the Manager and must be stored on
-                another device from the device that runs the Manager.
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper. If provided
-                aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
-            bran (str): Base64 22 char string that is used as base material for
-                seed. bran allows alphanumeric passcodes generated by key managers
-                like 1password to be key store for seed.
-            pidx (int): Initial prefix index for vacuous ks
-            algo (str): algorithm (randy or salty) for creating key pairs
-                default is root algo which defaults to salty
-            salt (str): qb64 salt for creating key pairs
-            tier (str): security tier for generating keys from salt (Tierage)
-            temp (bool): True means use quick method to stretch bran salt to seed
-                    for testing only, Otherwise use more resources to stretch
-        """
-        if not (self.ks.opened and self.db.opened):
-            raise kering.ClosedError("Attempt to setup Habitat with closed "
-                                     "database, .ks or .db.")
-
-        if bran and not seed:  # create seed from stretch of bran as salt
-            if len(bran) < 22:
-                raise ValueError(f"Bran (passcode seed material) too short.")
-            bran = coring.MtrDex.Salt_128 + bran[:22]  # qb64 salt for seed
-            signer = coring.Salter(qb64=bran).signer(transferable=False,
-                                                     tier=tier,
-                                                     temp=temp)
-            seed = signer.qb64
-            if not aeid:  # aeid must not be empty event on initial creation
-                aeid = signer.verfer.qb64  # lest it remove encryption
-
-        if salt is None:  # salt for signing keys not aeid seed
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
-
-
-        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
-                                   algo=algo, salt=salt, tier=tier)
-
-        #config file is meant to be read only at init not changed by app at
-        # run time. Any dynamic app changes must go in database not config file
-        # that way we don't have to worry about multiple writers of cf.
-        # Use config file to preload database not as a database.
-        # Habitats are managed by Habery. So if .habs the Habery inits Habitats
-        # if no .habs then Habery ends init and waits for API call to create
-        # Habitat.
-        # load habitats from db?
-        # load prefixes
-        #  should config files by habitat specific
-        # should we have a config file just for Habery? Or shoud the config
-        #  file have sections for Habery and Habitats so its one file but
-        # get read more than one and applied
-        # read in self.cf config file and process any oobis or endpoints
-        # self.reconfigure()  # depends on prefixes and habitats
-
-        self.inited = True
-
-
-    @property
-    def kevers(self):
-        """
-        Returns .db.kevers
-        """
-        return self.db.kevers
-
-    @property
-    def kever(self):
-        """
-        Returns kever for its .pre
-        """
-        return self.kevers[self.pre]
-
-    @property
-    def prefixes(self):
-        """
-        Returns .db.prefixes
-        """
-        return self.db.prefixes
-
-    def group(self):
-        return self.db.gids.get(self.pre)
 
 
 
@@ -413,20 +442,26 @@ class Hab:
     i.e. hab or habitat. Includes dependency injection of database, keystore,
     configuration file as well as Kevery and key store Manager..
 
-    Attributes:
+    Attributes: (Injected)
+        ks (keeping.Keeper): lmdb key store
+        db (basing.Baser): lmdb data base for KEL etc
+        cf (configing.Configer): config file instance
+        mgr (keeping.Manager): creates and rotates keys in key store
+        rtr (routing.Router): routes reply 'rpy' messages
+        rvy (routing.Revery): factory that processes reply 'rpy' messages
+        kvy (eventing.Kevery): factory for local processing of local event msgs
+        psr (parsing.Parser):  parses local messages for .kvy .rvy
+
+     Attributes:
         name (str): alias of controller
         transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
 
         erase (bool): If True erase old private keys, Otherwise not.
-        db (basing.Baser): lmdb data base for KEL etc
-        ks (keeping.Keeper): lmdb key store
-        cf (configing.Configer): config file instance
+        create (bool): True means create if identifier doesn't already exist
         ridx (int): rotation index (inception == 0) needed for key replay
-        kvy (eventing.Kevery): instance for local processing of local msgs
-        psr (parsing.Parser):  parses local messages for .kvy
-        mgr (keeping.Manager): creates and rotates keys in key store
         pre (str): qb64 prefix of own local controller
+
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
@@ -439,42 +474,29 @@ class Hab:
 
     """
 
-    def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
-                 transferable=True, temp=False, erase=True, create=True,
-                 **kwa):
+    def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, name='test',
+                 transferable=True, erase=True, create=True, **kwa):
         """
         Initialize instance.
 
+        Parameters:  (injected)
+            ks (keeping.Keeper): lmdb key store
+            db (basing.Baser): lmdb data base for KEL etc
+            cf (configing.Configer): config file instance
+            mgr (keeping.Manager): creates and rotates keys in key store
+            rtr (routing.Router): routes reply 'rpy' messages
+            rvy (routing.Revery): factory that processes reply 'rpy' messages
+            kvy (eventing.Kevery): factory for local processing of local event msgs
+            psr (parsing.Parser):  parses local messages for .kvy .rvy
+
         Parameters:
             name (str): alias name for local controller of habitat
-            base (str): optional directory path segment inserted before name
-                that allows further differentation with a hierarchy. "" means
-                optional.
-            ks (Keeper):  keystore lmdb subclass instance
-            db (Baser): database lmdb subclass instance
-            cf (Configer): config file instance
             transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
             erase (bool): True means erase private keys once stale
             create (bool): True means create if identifier doesn't already exist
 
         Parameters: Passed through via kwa to setup for later init
-            seed (str): qb64 private-signing key (seed) for the aeid from which
-                the private decryption key may be derived. If aeid stored in
-                database is not empty then seed may required to do any key
-                management operations. The seed value is memory only and MUST NOT
-                be persisted to the database for the manager with which it is used.
-                It MUST only be loaded once when the process that runs the Manager
-                is initialized. Its presence acts as an authentication, authorization,
-                and decryption secret for the Manager and must be stored on
-                another device from the device that runs the Manager.
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper. If provided
-                aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
             secrecies (list): of list of secrets to preload key pairs if any
             code (str): prefix derivation code
             isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
@@ -487,72 +509,46 @@ class Hab:
             tier (str): security tier for generating keys from salt
 
         """
+        self.db = db  # injected
+        self.ks = ks  # injected
+        self.cf = cf  # injected
+        self.mgr = mgr  # injected
+        self.rtr = rtr  # injected
+        self.rvy = rvy  # injected
+        self.kvy = kvy  # injected
+        self.psr = psr  # injected
+
         self.name = name
         self.transferable = transferable
-        self.temp = temp
         self.erase = erase
         self.create = create
-        self.db = db if db is not None else basing.Baser(name=base if base else name,
-                                                         temp=self.temp,
-                                                         reopen=True)
-        self.ks = ks if ks is not None else keeping.Keeper(name=base if base else name,
-                                                           temp=self.temp,
-                                                           reopen=True)
-        self.cf = cf if cf is not None else configing.Configer(name=name,
-                                                               base=base,
-                                                               temp=self.temp,
-                                                               reopen=True)
+
         self.ridx = 0  # rotation index of latest establishment event
-        self.rtr = routing.Router()
-        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
-        self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
-        self.mgr = None  # wait to setup until after ks is known to be opened
         self.pre = None  # wait to setup until after db is known to be opened
-        self.delpre = None
-        self.inited = False
-        self.accepted = False
         self.delpre = None
         self.delserder = None
         self.delverfers = None
         self.delsigers = None
 
+        self.inited = False
+        self.accepted = False
+
+
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below
         self._inits = kwa
 
-        if self.db.opened and self.ks.opened:
+        if self.db.opened and self.ks.opened and  self.cf.opened:
             self.setup(**self._inits)  # finish setup later
 
-    def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
+    def setup(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
               isith=None, icount=1, nsith=None, ncount=None,
-              toad=None, wits=None, algo=None, salt=None, tier=None, delpre=None, estOnly=False):
+              toad=None, wits=None, delpre=None, estOnly=False,
+              algo=None, salt=None, tier=None, ):
         """
-        Setup habitat. Assumes that both .db and .ks have been opened.
-        This allows dependency injection of .db and .ks into habitat instance
-        prior to .db and .kx being opened to accomodate asynchronous process
-        setup of these resources. Putting the .db and .ks associated
-        initialization here enables asynchronous opening .db and .ks after
-        Baser and Keeper instances are instantiated. First call to .setup will
-        initialize databases (vacuous initialization).
+        Setup habitat. Assumes injected dependencies are already setup.
 
         Parameters:
-            seed (str): qb64 private-signing key (seed) for the aeid from which
-                the private decryption key may be derived. If aeid stored in
-                database is not empty then seed may required to do any key
-                management operations. The seed value is memory only and MUST NOT
-                be persisted to the database for the manager with which it is used.
-                It MUST only be loaded once when the process that runs the Manager
-                is initialized. Its presence acts as an authentication, authorization,
-                and decryption secret for the Manager and must be stored on
-                another device from the device that runs the Manager.
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper. If provided
-                aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
             secrecies is list of list of secrets to preload key pairs if any
             code is prefix derivation code
             isith is incepting signing threshold as int, str hex, or list
@@ -566,9 +562,9 @@ class Hab:
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
         """
-        if not (self.ks.opened and self.db.opened):
-            raise kering.ClosedError("Attempt to setup Habitat with closed "
-                                     "database, .ks or .db.")
+        if not (self.ks.opened and self.db.opened and self.cf.opened):
+            raise kering.ClosedError("Attempt to setup Habitat with unopened "
+                                     "resources.")
         if nsith is None:
             nsith = isith
         if ncount is None:
@@ -583,35 +579,25 @@ class Hab:
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
-        if not self.temp:
-            ex = self.db.habs.get(keys=self.name)
-            if ex is not None:  # replace params with persisted values from db
+        ex = self.db.habs.get(keys=self.name)
+        if ex is not None:  # replace params with persisted values from db
+            # have to check if we are a group identifier and if so, we need to load the
+            # keys from our local identifier that's in the group, not the group itself.
 
-                # have to check if we are a group identifier and if so, we need to load the
-                # keys from our local identifier that's in the group, not the group itself.
-                gid = self.db.gids.get(keys=ex.prefix)
-                if gid is not None:
-                    prefix = gid.lid
-                else:
-                    prefix = ex.prefix
-
-                # found existing habitat, otherwise leave __init__ to incept a new one.
-                prms = self.ks.prms.get(prefix)
-                algo = prms.algo
-                salt = prms.salt
-                tier = prms.tier
-                pidx = prms.pidx
-                self.pre = ex.prefix
-                existing = True
+            # found existing habitat, otherwise leave __init__ to incept a new one.
+            prms = self.ks.prms.get(ex.prefix)
+            algo = prms.algo
+            salt = prms.salt
+            tier = prms.tier
+            pidx = prms.pidx
+            self.pre = ex.prefix
+            existing = True
 
         if not existing and not self.create:
             raise kering.ConfigurationError("Improper Habitat creating for create")
 
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
-
-        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
-                                   algo=algo, salt=salt, tier=tier)
 
         if existing:
             self.reinitialize()
@@ -1041,7 +1027,7 @@ class Hab:
                 indices = None  # use default order
             else:  # group so use gid kever
                 kever = self.kevers[group.gid]
-                indices = [group.aids.index(group.lid)]  # use group order
+                indices = [group.aids.index(self.pre)]  # use group order
 
             if last:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)
@@ -1768,14 +1754,14 @@ class Habitat:
 
                 # have to check if we are a group identifier and if so, we need to load the
                 # keys from our local identifier that's in the group, not the group itself.
-                gid = self.db.gids.get(keys=ex.prefix)
-                if gid is not None:
-                    prefix = gid.lid
-                else:
-                    prefix = ex.prefix
+                #gid = self.db.gids.get(keys=ex.prefix)
+                #if gid is not None:
+                    #prefix = gid.lid
+                #else:
+                    #prefix = ex.prefix
 
                 # found existing habitat, otherwise leave __init__ to incept a new one.
-                prms = self.ks.prms.get(prefix)
+                prms = self.ks.prms.get(ex.prefix)
                 algo = prms.algo
                 salt = prms.salt
                 tier = prms.tier
@@ -2220,7 +2206,7 @@ class Habitat:
                 indices = None  # use default order
             else:  # group so use gid kever
                 kever = self.kevers[group.gid]
-                indices = [group.aids.index(group.lid)]  # use group order
+                indices = [group.aids.index(self.pre)]  # use group order
 
             if last:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)

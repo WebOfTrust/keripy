@@ -143,7 +143,7 @@ class GroupIdRecord:  # baser.gids
     Track group identifiers that we are participating in
     Database Key is the identifier prefix of the group identifier
     """
-    lid: str  # local identifier that contributes to the group
+    # lid: str  # local identifier that contributes to the group
     gid: str  # group identifier prefix
     dig: str  # qb64 of latest digest in the group
     cst: str  # group signing threshold of the next key commitment

@@ -136,7 +136,8 @@ class Groupy:
                                                                            mssrdr.ked))
 
             #  Add this group identifier prefix to my list of group identifiers I participate in
-            group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
+            # group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
+            group = basing.GroupIdRecord(gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
             self.db.gids.pin(self.hab.pre, group)
 
             self.cues.append(dict(
@@ -163,7 +164,7 @@ class Groupy:
                 raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
 
             others = list(group.aids)
-            others.remove(group.lid)
+            others.remove(self.hab.pre)
 
             if sith is None:
                 sith = "{:x}".format(max(0, math.ceil(len(group.aids) / 2)))
@@ -247,7 +248,7 @@ class Groupy:
                 raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
 
             others = list(group.aids)
-            others.remove(group.lid)
+            others.remove(self.hab.pre)
 
             gkev = self.hab.kevers[group.gid]
             sno = gkev.sn + 1
