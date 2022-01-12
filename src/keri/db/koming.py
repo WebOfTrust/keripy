@@ -113,7 +113,7 @@ class KomerBase():
     def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
+            items (Iterator): of (key, val) tuples  over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
@@ -462,10 +462,10 @@ class IoSetKomer(KomerBase):
 
     def getLast(self, keys: Union[str, Iterable]):
         """
-        Gets last dup val at key made from keys
+        Gets last effective dup val at effective dup key made from keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (tuple): of key strs to be combined to form effective key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
@@ -480,15 +480,15 @@ class IoSetKomer(KomerBase):
 
     def getIter(self, keys: Union[str, Iterable]):
         """
-        Gets dup vals iterator at key made from keys
-
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Gets vals iterator at effecive key made from keys and hidden ordinal suffix.
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            iterator:  vals each of type self.schema. Raises StopIteration when done
+            vals (Iterator):  str values. Raises StopIteration when done
 
         """
         for val in self.db.getIoSetValsIter(db=self.sdb,
@@ -500,7 +500,7 @@ class IoSetKomer(KomerBase):
 
     def cnt(self, keys: Union[str, Iterable]):
         """
-        Return count of dup values at key made from keys, zero otherwise
+        Return count of effective dup values at key made from keys, zero otherwise
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -516,7 +516,7 @@ class IoSetKomer(KomerBase):
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (dataclass):  instance of dup val at key to delete
+            val (dataclass):  instance of effective dup val at key to delete
                               if val is None then remove all values at key
 
         Returns:
@@ -535,19 +535,21 @@ class IoSetKomer(KomerBase):
                                        sep=self.sep)
 
 
-    def getAllItemIter(self, keys: Union[str, Iterable]=b""):
-        """
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """Get items iterator
         Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
+            items (Iterator): of (key, val) tuples over the all the items in
+            subdb whose effective key startswith key made from keys.
+            Keys may be keyspace prefix in order to return branches of key space.
+            When keys is empty then returns all items in subdb.
+            Returned key in each item has ordinal suffix removed.
 
         Parameters:
             keys (Iterator): tuple of bytes or strs that may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
-                all items in database.
+                all items in database. Append "" to end of keys Iterable to
+                ensure get properly separated top branch key.
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
@@ -557,17 +559,18 @@ class IoSetKomer(KomerBase):
 
     def getIoSetItem(self, keys: Union[str, Iterable]):
         """
-        Gets ioitems list at key made from keys where key is apparent effective key
-        and items all have same apparent effective key
+        Gets (iokeys, val) ioitems list at key made from keys where key is
+        apparent effective key and ioitems all have same apparent effective key
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            items (list):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual keys tuple with hidden suffix and each val is
-                    instance of type self.schema
+            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
+                    iokeys is actual key tuple including hidden suffix and
+                    each val is str
                     empty list if no entry at keys
+
 
         """
         return ([(self._tokeys(iokey), self.deserializer(val)) for iokey, val
@@ -578,18 +581,18 @@ class IoSetKomer(KomerBase):
 
     def getIoSetItemIter(self, keys: Union[str, Iterable]):
         """
-        Gets ioitems iterator Gets items list at key made from keys where key is
+        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            iterator:  each item iterated is tuple (iokeys, val) where each
-                    iokeys is actual keys tuple with hidden suffix and each val is
-                    instance of type self.schema
-                    empty list if no entry at keys.
-                    Raises StopIteration when done
+            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
+                each iokeys is actual keys tuple including hidden suffix and
+                each val is str
+                empty list if no entry at keys.
+                Raises StopIteration when done
 
         """
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
@@ -598,19 +601,21 @@ class IoSetKomer(KomerBase):
             yield (self._tokeys(iokey), self.deserializer(val))
 
 
-    def getAllIoItemIter(self, keys: Union[str, Iterable]=b""):
+    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
+            items (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith effective key made from keys.
+            Keys may be keyspace prefix to return branches of key space.
+            When keys is empty then returns all items in subdb.
+
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (Iterable): tuple of bytes or strs that may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
-                all items in database.
+                all items in database. Append "" to end of keys Iterable to
+                ensure get properly separated top branch key.
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):

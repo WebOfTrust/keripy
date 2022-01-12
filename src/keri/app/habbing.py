@@ -332,10 +332,35 @@ class Habery:
 
         self.inited = True
 
+    def load(self):
+        """Load Habs from db
+
+        """
+
+        ex = self.db.habs.get(keys=self.name)
+        if ex is not None:
+            existing = True  # found existing habitat
+            self.pre = ex.prefix
+
+            prms = self.ks.prms.get(ex.prefix)  # get persisted values from db
+            algo = prms.algo
+            salt = prms.salt
+            tier = prms.tier
+            pidx = prms.pidx
+
+
+        if not existing and not self.create:
+            raise kering.ConfigurationError("Improper Habitat creating for create")
+
+        if salt is None:
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+        if existing:
+            self.reinitialize()
+
 
     def close(self, clear=False):
-        """
-        Close resources.
+        """Close resources.
         Parameters:
            clear is boolean, True means clear resource directories
         """
@@ -475,7 +500,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, name='test',
-                 transferable=True, erase=True, create=True, **kwa):
+                 transferable=True, erase=True, create=True, temp=False, **kwa):
         """
         Initialize instance.
 
@@ -495,6 +520,8 @@ class Hab:
                     False means pre is nontransferable
             erase (bool): True means erase private keys once stale
             create (bool): True means create if identifier doesn't already exist
+            temp (bool): True means testing so use weak tier when salty algo for
+                key createion for incept and rotate of keys for this hab.pre
 
         Parameters: Passed through via kwa to setup for later init
             secrecies (list): of list of secrets to preload key pairs if any
@@ -519,9 +546,10 @@ class Hab:
         self.psr = psr  # injected
 
         self.name = name
-        self.transferable = transferable
-        self.erase = erase
-        self.create = create
+        self.transferable = True if transferable else False
+        self.erase = True if erase else False
+        self.create = True if create else False
+        self.temp = True if temp else False
 
         self.ridx = 0  # rotation index of latest establishment event
         self.pre = None  # wait to setup until after db is known to be opened
@@ -533,13 +561,13 @@ class Hab:
         self.inited = False
         self.accepted = False
 
-
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below
         self._inits = kwa
 
-        if self.db.opened and self.ks.opened and  self.cf.opened:
-            self.setup(**self._inits)  # finish setup later
+        if self.db.opened and self.ks.opened and self.cf.opened:
+            self.setup(**self._inits)  # finish setup now
+        # otherwise finish setup later
 
     def setup(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
               isith=None, icount=1, nsith=None, ncount=None,
@@ -580,18 +608,16 @@ class Hab:
         # one we can restart from otherwise initialize a new one
         existing = False
         ex = self.db.habs.get(keys=self.name)
-        if ex is not None:  # replace params with persisted values from db
-            # have to check if we are a group identifier and if so, we need to load the
-            # keys from our local identifier that's in the group, not the group itself.
+        if ex is not None:
+            existing = True  # found existing habitat
+            self.pre = ex.prefix
 
-            # found existing habitat, otherwise leave __init__ to incept a new one.
-            prms = self.ks.prms.get(ex.prefix)
+            prms = self.ks.prms.get(ex.prefix)  # get persisted values from db
             algo = prms.algo
             salt = prms.salt
             tier = prms.tier
             pidx = prms.pidx
-            self.pre = ex.prefix
-            existing = True
+
 
         if not existing and not self.create:
             raise kering.ConfigurationError("Improper Habitat creating for create")
@@ -1751,14 +1777,6 @@ class Habitat:
         if not self.temp:
             ex = self.db.habs.get(keys=self.name)
             if ex is not None:  # replace params with persisted values from db
-
-                # have to check if we are a group identifier and if so, we need to load the
-                # keys from our local identifier that's in the group, not the group itself.
-                #gid = self.db.gids.get(keys=ex.prefix)
-                #if gid is not None:
-                    #prefix = gid.lid
-                #else:
-                    #prefix = ex.prefix
 
                 # found existing habitat, otherwise leave __init__ to incept a new one.
                 prms = self.ks.prms.get(ex.prefix)

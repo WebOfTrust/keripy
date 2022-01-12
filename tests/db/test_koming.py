@@ -781,13 +781,13 @@ def test_ioset_komer():
         # test getAllItemIter
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getAllItemIter():
+        for keys, end in endDB.getItemIter():
             assert end == ends[i]
             assert keys in  (keys0, keys1)
             i += 1
 
         i = 0
-        for keys, end in endDB.getAllItemIter(keys=(cid0, "")):
+        for keys, end in endDB.getItemIter(keys=(cid0, "")):
             assert end == ends[i]
             i += 1
 
@@ -821,13 +821,13 @@ def test_ioset_komer():
                                 '00000000000000000000000000000000')]
 
         i = 0
-        for iokeys, end in endDB.getAllIoItemIter(keys=(cid0, "")):
+        for iokeys, end in endDB.getIoItemIter(keys=(cid0, "")):
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
 
         i = 0
-        for iokeys, end in endDB.getAllIoItemIter():
+        for iokeys, end in endDB.getIoItemIter():
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1

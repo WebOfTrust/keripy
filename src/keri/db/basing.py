@@ -124,7 +124,6 @@ class HabitatRecord:  # baser.habs
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
-    #
 
 
 @dataclass
