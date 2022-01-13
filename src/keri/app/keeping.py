@@ -187,7 +187,7 @@ class Keeper(dbing.LMDBer):
         prms (koming.Komer): named sub DB whose values are serialized dicts of
             PrePrm instance
             Key is identifier prefix (fully qualified qb64)
-            Value is  serialized parameter dict (JSON) of public key parameters
+            Value is  serialized parameter dict of public key parameters
             {
                 pidx: ,
                 algo: ,
@@ -198,7 +198,7 @@ class Keeper(dbing.LMDBer):
         sits (koming.Komer): named sub DB whose values are serialized dicts of
             PreSit instance
             Key is identifer prefix (fully qualified qb64)
-            Value is  serialized parameter dict (JSON) of public key situation
+            Value is  serialized parameter dict of public key situation
                 {
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
@@ -1125,23 +1125,23 @@ class Manager:
         Store the updated dictified PreSit in the keeper under pre
 
         Parameters:
-            pre is str qb64 of prefix
-            codes is list of private key derivation codes qb64 str
+            pre (str) qb64 of prefix
+            codes (list): of private key derivation codes qb64 str
                 one per next key pair
-            count is int count of next public keys when icodes not provided
-            code is str derivation code qb64  of all ncount next public keys
+            count (int): count of next public keys when icodes not provided
+            code (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            sith is next signing threshold as:
+            sith (Union[int, str, list]): next signing threshold as:
                 int, str hex, or list of weights
-            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
-            transferable is Boolean, True means each public key uses transferable
+            dcode i(str): derivation code qb64 of digers. Default is MtrDex.Blake3_256
+            transferable (bool): True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
                 Normally no use case for rotation to use transferable = False.
                 When the derivation process of the identifier prefix is
                 transferable then one should not use transferable = False for the
                 associated public key(s).
-            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
-            erase is Boolean. True means erase old private keys made stale by rotation
+            temp (bool): True is temporary for testing. It modifies tier of salty algorithm
+            erase (bool): True means erase old private keys made stale by rotation
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
@@ -1158,13 +1158,13 @@ class Manager:
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
             raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
 
-        old = ps.old  # save old so can clean out if rotate successful
-        ps.old = ps.new  # move new to old
-        ps.new = ps.nxt  # move nxt to new
+        old = ps.old  # save prior old so can clean out if rotate successful
+        ps.old = ps.new  # move prior new to old so save previous one step
+        ps.new = ps.nxt  # move prior nxt to new which new is now current signer
 
-        verfers = []  # assign verfers from new nxt was old nxt now new nxt.
-        for pub in ps.new.pubs:  # maybe should rethink this
-            if self.aeid and not self.decrypter:
+        verfers = []  # assign verfers from current new was prior nxt
+        for pub in ps.new.pubs:
+            if self.aeid and not self.decrypter:  # maybe should rethink this
                 raise kering.DecryptError("Unauthorized decryption attempt. "
                                           "Aeid but no decrypter.")
 
@@ -1173,7 +1173,7 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold
+        cst = ps.new.st  # get new current signing threshold (cst)
 
         salt = pp.salt
         if salt:
@@ -1220,7 +1220,7 @@ class Manager:
         self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), val=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
-            for pub in old.pubs:  # remove old prikeys
+            for pub in old.pubs:  # remove prior old prikeys not current old
                 self.ks.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
@@ -1469,9 +1469,10 @@ class Manager:
             pubs then raises IndexError.
 
         Parameters:
-            pre is str fully qualified qb64 identifier prefix
-            ridx is integer rotation index
-            code is str derivation code for digers. Default is MtrDex.Blake3_256
+            pre (str): fully qualified qb64 identifier prefix
+            ridx (int): rotation index
+            code (str): derivation code for digers. Default is MtrDex.Blake3_256
+            erase (bool): True means erase old private keys made stale by rotation
 
         """
         oldps = None

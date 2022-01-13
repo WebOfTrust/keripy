@@ -512,7 +512,6 @@ class Hab:
         pre (str): qb64 prefix of own local controller or None if new
         ridx (int): rotation index (inception == 0) needed for mgr to replay
                 secrecies to starting point
-        erase (bool): If True erase old private keys, Otherwise not.
         temp (bool):
 
         inited (bool): True means fully initialized wrt databases.
@@ -528,8 +527,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, create=False,
-                 name='test', pre=None, ridx=0, erase=True,
-                 temp=False, **kwa):
+                 name='test', pre=None, ridx=0, temp=False, **kwa):
         """
         Initialize instance.
 
@@ -551,7 +549,6 @@ class Hab:
 
             ridx (int): rotation index (inception == 0) needed for mgr to replay
                 secrecies to starting point
-            erase (bool): True means erase private keys once stale
             temp (bool): True means testing so use weak tier when salty algo for
                 key createion for incept and rotate of keys for this hab.pre
 
@@ -569,9 +566,6 @@ class Hab:
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
         self.ridx = ridx  # rotation index of latest establishment event
-        self.erase = True if erase else False
-        # erase should be field in .habs so that its an application state value
-        # .habs is for application state
         self.temp = True if temp else False
 
         self.delpre = None
@@ -812,8 +806,8 @@ class Hab:
     def group(self):
         return self.db.gids.get(self.pre)
 
-    def rotate(self, sith=None, count=None, erase=None,
-               toad=None, cuts=None, adds=None, data=None):
+    def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
+               data=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -821,16 +815,12 @@ class Hab:
         Parameters:
             sith is next signing threshold as int or str hex or list of str weights
             count is int next number of signing keys
-            erase is Boolean True means erase stale keys
             toad is int or str hex of witness threshold after cuts and adds
             cuts is list of qb64 pre of witnesses to be removed from witness list
             adds is list of qb64 pre of witnesses to be added to witness list
             data is list of dicts of committed data such as seals
 
         """
-        if erase is not None:
-            self.erase = erase
-
         kever = self.kever  # kever.pre == self.pre
         if sith is None:
             sith = kever.tholder.sith  # use previous sith
@@ -839,14 +829,12 @@ class Hab:
 
         try:
             verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
-                                                        ridx=self.ridx + 1,
-                                                        erase=erase)
+                                                        ridx=self.ridx + 1)
         except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                         count=count,  # old next is new current
                                                         sith=sith,
-                                                        temp=self.temp,
-                                                        erase=erase)
+                                                        temp=self.temp)
 
         if digers:
             nxt = coring.Nexter(sith=nst,
@@ -1582,7 +1570,6 @@ class Habitat:
                     False means pre is nontransferable
         temp (bool): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
-        erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
         cf (configing.Configer): config file instance
@@ -1604,8 +1591,7 @@ class Habitat:
     """
 
     def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
-                 transferable=True, temp=False, erase=True, create=True,
-                 **kwa):
+                 transferable=True, temp=False, create=True, **kwa):
         """
         Initialize instance.
 
@@ -1620,7 +1606,6 @@ class Habitat:
             transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
             temp (bool): True means store .ks, .db, and .cf in /tmp for testing
-            erase (bool): True means erase private keys once stale
             create (bool): True means create if identifier doesn't already exist
 
         Parameters: Passed through via kwa to setup for later init
@@ -1654,7 +1639,6 @@ class Habitat:
         self.name = name
         self.transferable = transferable
         self.temp = temp
-        self.erase = erase
         self.create = create
         self.db = db if db is not None else basing.Baser(name=base if base else name,
                                                          temp=self.temp,
@@ -1984,8 +1968,8 @@ class Habitat:
     def group(self):
         return self.db.gids.get(self.pre)
 
-    def rotate(self, sith=None, count=None, erase=None,
-               toad=None, cuts=None, adds=None, data=None):
+    def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
+               data=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -1993,16 +1977,12 @@ class Habitat:
         Parameters:
             sith is next signing threshold as int or str hex or list of str weights
             count is int next number of signing keys
-            erase is Boolean True means erase stale keys
             toad is int or str hex of witness threshold after cuts and adds
             cuts is list of qb64 pre of witnesses to be removed from witness list
             adds is list of qb64 pre of witnesses to be added to witness list
             data is list of dicts of committed data such as seals
 
         """
-        if erase is not None:
-            self.erase = erase
-
         kever = self.kever  # kever.pre == self.pre
         if sith is None:
             sith = kever.tholder.sith  # use previous sith
@@ -2011,14 +1991,12 @@ class Habitat:
 
         try:
             verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
-                                                        ridx=self.ridx + 1,
-                                                        erase=self.erase)
+                                                        ridx=self.ridx + 1)
         except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                         count=count,  # old next is new current
                                                         sith=sith,
-                                                        temp=self.temp,
-                                                        erase=self.erase)
+                                                        temp=self.temp)
 
         if digers:
             nxt = coring.Nexter(sith=nst,

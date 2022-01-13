@@ -120,7 +120,7 @@ class OobiQueryRecord:  # information for responding to OOBI query
 @dataclass
 class HabitatRecord:  # baser.habs
     """
-    Habitat information keyed by habitat name (baser.habs)
+    Habitat application state information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
@@ -506,7 +506,8 @@ class Baser(dbing.LMDBer):
             to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
-        .habs is named subDB instance of Komer that maps habitat names to prefixes
+        .habs is named subDB instance of Komer that maps habitat names to habitat
+            application state. Includes habitat identifier prefix
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
@@ -658,7 +659,7 @@ class Baser(dbing.LMDBer):
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 
-        # habitat prefixes keyed by habitat name
+        # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
                                  schema=HabitatRecord, )
