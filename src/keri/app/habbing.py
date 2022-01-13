@@ -169,7 +169,8 @@ class Habery:
         psr (parsing.Parser):  parses local messages for .kvy .rvy
 
         habs (dict): Hab instances keyed by prefix.
-            To look up Hab by name get prefix from db.habs .prefix field
+            To look up Hab by name get prefix from db.habs .prefix field using
+            .habByName
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -240,6 +241,7 @@ class Habery:
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy)
+        self.habs = {}  # empty .habs
 
         self.inited = False
 
@@ -335,38 +337,47 @@ class Habery:
 
 
     def loadHabs(self):
-        """Load Habs from db
+        """Load Habs instance from db
+
+        .db.reopen calls .db.reload which loads .db.kevers from key state in
+        .db.states and loads  associated .db.prefixes.
+        It also removes any bare .habs without key state
+        Thus by now know that .habs are valid so can create Hab instances
 
         """
         for name, habord in self.db.habs.getItemIter():
-            prefix = habord.prefix
-            self.prefixes.add(prefix)  # ordered set so add is idempotent
+            pre = habord.prefix
+            # create Hab instance and inject dependencies
+            hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                      rtr=self.rtr, rvy=self.rvy, kvy=self.kby, psr=self.psr,
+                      name=name, pre=pre, )
 
 
-            # rules for acceptance
+            # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
             #    delegator has not sealed it
+
 
 
             # if it's delegated, and not accepted, and not in kevers, no error
             # if it's delegated and accepted and not in kevers, error
             # if it's not delegated and not in kevers, error
-            if (self.delpre and self.accepted) and prefix not in self.kevers \
-                    or not self.delpre and prefix not in self.kevers:
-                raise kering.ConfigurationError("Missing Habitat KEL for "
-                                                "pre={}.".format(prefix))
+            #if (self.delpre and self.accepted) and pre not in self.kevers \
+                    #or not self.delpre and pre not in self.kevers:
+                #raise kering.ConfigurationError("Missing Habitat KEL for "
+                                                #"pre={}.".format(pre))
 
 
-            self.accepted = prefix in self.kevers
+            hab.accepted = pre in self.db.kevers
+            if not hab.accepted:
+                raise kering.ConfigurationError(f"Problem loading Hab pre="
+                                                f"{pre} name={name} from db.")
 
-            # ridx for replay may be an issue when loading from existing
-            self.ridx = self.ks.sits.get(self.pre).new.ridx
+            # ridx for mag to replay to secrecies start may be an issue when
+            # loading from existing
+            hab.ridx = self.ks.sits.get(self.pre).new.ridx
 
-            prms = self.ks.prms.get(prefix)  # get persisted values from db
-            algo = prms.algo
-            salt = prms.salt
-            tier = prms.tier
-            pidx = prms.pidx
+            hab.inited = True
 
 
 
@@ -498,13 +509,11 @@ class Hab:
 
      Attributes:
         name (str): alias of controller
-        transferable (bool): True means pre is transferable (default)
-                    False means pre is nontransferable
-
+        pre (str): qb64 prefix of own local controller or None if new
+        ridx (int): rotation index (inception == 0) needed for mgr to replay
+                secrecies to starting point
         erase (bool): If True erase old private keys, Otherwise not.
-        create (bool): True means create if identifier doesn't already exist
-        ridx (int): rotation index (inception == 0) needed for key replay
-        pre (str): qb64 prefix of own local controller
+        temp (bool):
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -518,12 +527,13 @@ class Hab:
 
     """
 
-    def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, name='test',
-                 transferable=True, erase=True, create=True, temp=False, **kwa):
+    def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, create=False,
+                 name='test', pre=None, ridx=0, erase=True,
+                 temp=False, **kwa):
         """
         Initialize instance.
 
-        Parameters:  (injected)
+        Parameters:  (injected dependencies)
             ks (keeping.Keeper): lmdb key store
             db (basing.Baser): lmdb data base for KEL etc
             cf (configing.Configer): config file instance
@@ -534,25 +544,17 @@ class Hab:
             psr (parsing.Parser):  parses local messages for .kvy .rvy
 
         Parameters:
+            create (bool): True means create new local Hab from parameters
+                           False means preexisting in db
             name (str): alias name for local controller of habitat
-            transferable (bool): True means pre is transferable (default)
-                    False means pre is nontransferable
+            pre (str): qb64 identifier prefix of own local controller else None
+
+            ridx (int): rotation index (inception == 0) needed for mgr to replay
+                secrecies to starting point
             erase (bool): True means erase private keys once stale
-            create (bool): True means create if identifier doesn't already exist
             temp (bool): True means testing so use weak tier when salty algo for
                 key createion for incept and rotate of keys for this hab.pre
 
-        Parameters: Passed through via kwa to setup for later init
-            secrecies (list): of list of secrets to preload key pairs if any
-            code (str): prefix derivation code
-            isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
-            icount (int): incepting key count for number of keys
-            nsith (Union[int, str, list]): next signing threshold as int, str hex or list
-            ncount (int): next key count for number of next keys
-            toad (Union[int,str]): int or str hex of witness threshold
-            wits (list): of qb64 prefixes of witnesses
-            salt (str): qb64 salt for creating key pairs
-            tier (str): security tier for generating keys from salt
 
         """
         self.db = db  # injected
@@ -565,13 +567,13 @@ class Hab:
         self.psr = psr  # injected
 
         self.name = name
-        self.transferable = True if transferable else False
+        self.pre = pre  # wait to setup until after db is known to be opened
+        self.ridx = ridx  # rotation index of latest establishment event
         self.erase = True if erase else False
-        self.create = True if create else False
+        # erase should be field in .habs so that its an application state value
+        # .habs is for application state
         self.temp = True if temp else False
 
-        self.ridx = 0  # rotation index of latest establishment event
-        self.pre = None  # wait to setup until after db is known to be opened
         self.delpre = None
         self.delserder = None
         self.delverfers = None
@@ -580,170 +582,118 @@ class Hab:
         self.inited = False
         self.accepted = False
 
-        # save init kwy word arg parameters as ._inits in order to later finish
-        # init setup elseqhere after databases are opened if not below
-        #self._inits = kwa
 
-        #if self.db.opened and self.ks.opened and self.cf.opened:
-            #self.setup(**self._inits)  # finish setup now
-        # otherwise finish setup later
-
-    def setup(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
-              isith=None, icount=1, nsith=None, ncount=None,
+    def make(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
+              transferable=True, isith=None, icount=1,
+              nsith=None, ncount=None,
               toad=None, wits=None, delpre=None, estOnly=False,
               algo=None, salt=None, tier=None, ):
         """
-        Setup habitat. Assumes injected dependencies are already setup.
+        Make new Hab. Assumes injected dependencies are already setup.
 
         Parameters:
-            secrecies is list of list of secrets to preload key pairs if any
-            code is prefix derivation code
-            isith is incepting signing threshold as int, str hex, or list
-            icount is incepting key count for number of keys
-            nsith is next signing threshold as int, str hex or list
-            ncount is next key count for number of next keys
-            toad is int or str hex of witness threshold
-            wits is list of qb64 prefixes of witnesses
-            salt is str for algorithm (randy or salty) for creating key pairs
-                default is root algo which defaults to salty
-            salt is qb64 salt for creating key pairs
-            tier is security tier for generating keys from salt
+            secrecies (list): of list of secrets to preload key pairs if any
+            code (str): prefix derivation code
+            transferable (bool): True means pre is transferable (default)
+                    False means pre is nontransferable
+            isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
+            icount (int): incepting key count for number of keys
+            nsith (Union[int, str, list]): next signing threshold as int, str hex or list
+            ncount (int): next key count for number of next keys
+            toad (Union[int,str]): int or str hex of witness threshold
+            wits (list): of qb64 prefixes of witnesses
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
-            raise kering.ClosedError("Attempt to setup Habitat with unopened "
+            raise kering.ClosedError("Attempt to setup Hab with unopened "
                                      "resources.")
         if nsith is None:
             nsith = isith
         if ncount is None:
             ncount = icount
-        if not self.transferable:
+        if not transferable:
             ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
         pidx = None
-        if delpre is not None:
-            self.delpre = delpre
 
-        # for persisted Habitats, check the KOM first to see if there is an existing
-        # one we can restart from otherwise initialize a new one
-        existing = False
-        ex = self.db.habs.get(keys=self.name)
-        if ex is not None:
-            existing = True  # found existing habitat
-            self.pre = ex.prefix
+        self.delpre = delpre
 
-            prms = self.ks.prms.get(ex.prefix)  # get persisted values from db
-            algo = prms.algo
-            salt = prms.salt
-            tier = prms.tier
-            pidx = prms.pidx
-
-
-        if not existing and not self.create:
-            raise kering.ConfigurationError("Improper Habitat creating for create")
-
-        if salt is None:
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
-
-        if existing:
-            self.reinitialize()
+        if secrecies:
+            verferies, digers = self.mgr.ingest(secrecies,
+                                                ncount=ncount,
+                                                stem=self.name,
+                                                transferable=transferable,
+                                                temp=self.temp)
+            opre = verferies[0][0].qb64  # old pre default needed for .replay
+            verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
-            if secrecies:
-                verferies, digers = self.mgr.ingest(secrecies,
-                                                    ncount=ncount,
-                                                    stem=self.name,
-                                                    transferable=self.transferable,
-                                                    temp=self.temp)
-                opre = verferies[0][0].qb64  # old pre default needed for .replay
-                verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
-            else:
-                verfers, digers, cst, nst = self.mgr.incept(icount=icount,
-                                                            isith=isith,
-                                                            ncount=ncount,
-                                                            nsith=nsith,
-                                                            stem=self.name,
-                                                            transferable=self.transferable,
-                                                            temp=self.temp)
+            verfers, digers, cst, nst = self.mgr.incept(icount=icount,
+                                                        isith=isith,
+                                                        ncount=ncount,
+                                                        nsith=nsith,
+                                                        stem=self.name,
+                                                        transferable=transferable,
+                                                        temp=self.temp)
 
-            opre = verfers[0].qb64  # old pre default move below to new pre from incept
-            if digers:
-                nxt = coring.Nexter(sith=nst,
-                                    digs=[diger.qb64 for diger in digers]).qb64
-            else:
-                nxt = ""
+        opre = verfers[0].qb64  # old pre default move below to new pre from incept
+        if digers:
+            nxt = coring.Nexter(sith=nst,
+                                digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
 
-            cnfg = []
-            if estOnly:
-                cnfg.append(eventing.TraitCodex.EstOnly)
+        cnfg = []
+        if estOnly:
+            cnfg.append(eventing.TraitCodex.EstOnly)
 
-            if self.delpre:
-                serder = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
-                                          delpre=self.delpre,
-                                          wits=wits,
-                                          toad=toad,
-                                          cnfg=cnfg,
-                                          nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
-                # save off serder and verfers for delegation acceptance
-                self.delserder = serder
-                self.delverfers = verfers
-            else:
-                serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                         sith=cst,
-                                         nxt=nxt,
-                                         toad=toad,
-                                         wits=wits,
-                                         cnfg=cnfg,
-                                         code=code)
+        if self.delpre:
+            serder = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                      delpre=self.delpre,
+                                      wits=wits,
+                                      toad=toad,
+                                      cnfg=cnfg,
+                                      nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+            # save off serder and verfers for delegation acceptance
+            self.delserder = serder
+            self.delverfers = verfers
+        else:
+            serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                     sith=cst,
+                                     nxt=nxt,
+                                     toad=toad,
+                                     wits=wits,
+                                     cnfg=cnfg,
+                                     code=code)
 
-            self.pre = serder.ked["i"]  # new pre
-            self.mgr.move(old=opre, new=self.pre)
+        self.pre = serder.ked["i"]  # new pre
+        self.mgr.move(old=opre, new=self.pre)
 
-            # may want db method that updates .habs. and .prefixes together
-            self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre))
-            self.prefixes.add(self.pre)
+        # may want db method that updates .habs. and .prefixes together
+        self.db.habs.put(keys=self.name,
+                         val=basing.HabitatRecord(prefix=self.pre))
+        self.prefixes.add(self.pre)
 
-            # create inception event
-            sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-            if self.delpre:
-                self.delsigers = sigers
-            # during delegation initialization of a habitat we ignore the MissingDelegationError and
-            # MissingSignatureError
-            try:
-                self.kvy.processEvent(serder=serder, sigers=sigers)
-            except MissingDelegationError or MissingSignatureError:
-                pass
-            except Exception as ex:
-                raise kering.ConfigurationError("Improper Habitat inception for "
-                                                "pre={} {}".format(self.pre, ex))
+        # create inception event
+        sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
+        if self.delpre:
+            self.delsigers = sigers
+        # during delegation initialization of a habitat we ignore the MissingDelegationError and
+        # MissingSignatureError
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingDelegationError or MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={} {}".format(self.pre, ex))
 
-            self.accepted = self.pre in self.kevers
-
-            # read in self.cf config file and process any oobis or endpoints
-            self.reconfigure()
-
-        self.inited = True
-
-
-
-    def reinitialize(self):
-        """
-        """
-        if self.pre is None:
-            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
-
-        # if it's delegated, and not accepted, and not in kevers, no error
-        # if it's delegated and accepted and not in kevers, error
-        # if it's not delegated and not in kevers, error
-        if (self.delpre and self.accepted) and self.pre not in self.kevers \
-                or not self.delpre and self.pre not in self.kevers:
-            raise kering.ConfigurationError("Missing Habitat KEL for "
-                                            "pre={}.".format(self.pre))
-
-        self.prefixes.add(self.pre)  # ordered set so add is idempotent
         self.accepted = self.pre in self.kevers
 
-        # ridx for replay may be an issue when loading from existing
-        self.ridx = self.ks.sits.get(self.pre).new.ridx
+        # read in self.cf config file and process any oobis or endpoints
+        self.reconfigure()
+
+        self.inited = True
 
 
     def reconfigure(self):
