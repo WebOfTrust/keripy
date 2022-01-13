@@ -1046,7 +1046,9 @@ def test_manager():
         assert manager.pidx == 6
         assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert manager.tier == coring.Tiers.low
-        verferies, digers = manager.ingest(secrecies=secrecies)
+
+        ipre, verferies = manager.ingest(secrecies=secrecies)
+        assert ipre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
@@ -1087,7 +1089,7 @@ def test_manager():
         pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
-        assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
+        # assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
 
         for i in range(len(publicies)):
             verfers, digers, cst, nst = manager.replay(ipre, i)
@@ -1126,7 +1128,9 @@ def test_manager():
         assert manager.pidx == 7
         assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert manager.tier == coring.Tiers.low
-        verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
+        # verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
+        ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)
+        assert ipre == 'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
@@ -1178,9 +1182,9 @@ def test_manager():
         pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
-        assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
-                                                    'EhwPuWbyrJRyU5HpJaoJrq04biTLWx3heNY3TvQrlbU8',
-                                                    'EJKLXis7QLnodqvtkbkTUKdciTuM-yzhEPUzS9jtxS6Y']
+        #assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
+                                                    #'EhwPuWbyrJRyU5HpJaoJrq04biTLWx3heNY3TvQrlbU8',
+                                                    #'EJKLXis7QLnodqvtkbkTUKdciTuM-yzhEPUzS9jtxS6Y']
 
         for i in range(len(publicies)):
             verfers, digers, cst, nst = manager.replay(ipre, i)

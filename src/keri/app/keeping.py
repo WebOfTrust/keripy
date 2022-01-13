@@ -1300,7 +1300,7 @@ class Manager:
             return cigars
 
 
-    def ingest(self, secrecies, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+    def ingest(self, secrecies, ridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None,
                      rooted=True, transferable=True, temp=False):
@@ -1308,10 +1308,14 @@ class Manager:
         Ingest secrecies as a list of lists of secrets organized in event order
         to register the sets of secrets of associated externally generated keypair
         lists into the database.
-        Returns tuple of (verferies, digers) where verferies is a list of lists
-        of the corresponding public keys from secrecies and digers is the list
-        of digers for the digest of the newly created next keys after the last
-        entry in secrecies. Essentially ingest ends with the current keys as the
+
+        Returns:
+            ret (tuple): (ipre, veferies) where ipre is prefix index of ingested
+                key pairs needed to fetch later for replay and veferies is list
+                of lists of all the corresponding public keys from secrecies in
+                order.
+
+        Essentially ingest ends with the current keys as the
         last key list in secrecies and the nxt keys are newly created as if a
         rotation to the last set of keys was performed. Unlike rotate, however,
         ingest does not delete any of the private keys it ingests. This must be
@@ -1326,14 +1330,16 @@ class Manager:
         May be used for import or recovery from backup.
         Method parameters specify the policy for generating new keys pairs for
         rotations that follow the ingested list of lists. The parameters are used
-        to define how torotate to new key pairs that follow the ingested sequence.
+        to define how to rotate to new key pairs that follow the ingested sequence.
+
+
 
         Parameters:
             secrecies is list of lists of fully qualified secrets (private keys)
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
+            dcode is str derivation code qb64 of next digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
             stem is path modifier used with salt to derive private keys when using
@@ -1361,7 +1367,7 @@ class Manager:
         pidx = self.pidx  # get next pidx
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
-
+        ipre = ""
         dt = ""
         pubs = []
         oridx = 0
@@ -1381,6 +1387,7 @@ class Manager:
             verferies.append([signer.verfer for signer in csigners])
 
             if first:
+                ipre = verferies[0][0].qb64
                 # Secret to encrypt here
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
@@ -1395,7 +1402,7 @@ class Manager:
                 if not self.ks.prms.put(pre, val=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-                self.pidx = pidx + 1  # increment for next inception
+                self.pidx = pidx + 1  # increment so unique
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
@@ -1423,7 +1430,7 @@ class Manager:
                                   pidx=pidx, ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
 
-        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
+        # digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
@@ -1448,7 +1455,7 @@ class Manager:
         ps = PreSit(old=old, new=new, nxt=nxt)
         if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
-        return (verferies, digers)
+        return (ipre, verferies) #
 
 
     def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):

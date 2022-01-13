@@ -614,13 +614,13 @@ class Hab:
         self.delpre = delpre
 
         if secrecies:
-            verferies, digers = self.mgr.ingest(secrecies,
+            ipre, _ = self.mgr.ingest(secrecies,
                                                 ncount=ncount,
                                                 stem=self.name,
                                                 transferable=transferable,
                                                 temp=self.temp)
-            opre = verferies[0][0].qb64  # old pre default needed for .replay
-            verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
+            # repre = verferies[0][0].qb64  # default repre needed to get .replay
+            verfers, digers, cst, nst = self.mgr.replay(pre=ipre, ridx=self.ridx)
         else:
             verfers, digers, cst, nst = self.mgr.incept(icount=icount,
                                                         isith=isith,
@@ -630,7 +630,7 @@ class Hab:
                                                         transferable=transferable,
                                                         temp=self.temp)
 
-        opre = verfers[0].qb64  # old pre default move below to new pre from incept
+        opre = verfers[0].qb64  # default original pre from key store move below
         if digers:
             nxt = coring.Nexter(sith=nst,
                                 digs=[diger.qb64 for diger in digers]).qb64
@@ -661,7 +661,7 @@ class Hab:
                                      code=code)
 
         self.pre = serder.ked["i"]  # new pre
-        self.mgr.move(old=opre, new=self.pre)
+        self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
         self.db.habs.put(keys=self.name,
@@ -805,6 +805,7 @@ class Hab:
 
     def group(self):
         return self.db.gids.get(self.pre)
+
 
     def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
                data=None):
@@ -1757,13 +1758,13 @@ class Habitat:
             self.reinitialize()
         else:
             if secrecies:
-                verferies, digers = self.mgr.ingest(secrecies,
+                ipre, _ = self.mgr.ingest(secrecies,
                                                     ncount=ncount,
                                                     stem=self.name,
                                                     transferable=self.transferable,
                                                     temp=self.temp)
-                opre = verferies[0][0].qb64  # old pre default needed for .replay
-                verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
+                # repre = verferies[0][0].qb64  # repre indexes keys for .replay
+                verfers, digers, cst, nst = self.mgr.replay(pre=ipre, ridx=self.ridx)
             else:
                 verfers, digers, cst, nst = self.mgr.incept(icount=icount,
                                                             isith=isith,
