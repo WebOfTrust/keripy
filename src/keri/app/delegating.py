@@ -77,7 +77,7 @@ class InceptDoer(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
         self.ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=self.ks)  # doer do reopens if not opened and closes
-        self.db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+        self.db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=self.db)  # doer do reopens if not opened and closes
 
         doers = [
@@ -197,7 +197,7 @@ class RotateDoer(doing.DoDoer):
 
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+        db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)

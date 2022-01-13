@@ -34,7 +34,7 @@ class SenderDoer(doing.DoDoer):
     def __init__(self, name, target: int, **kwa):
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+        db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
         self.hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)

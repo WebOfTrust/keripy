@@ -103,7 +103,7 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
     db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db, reload=True)  # doer do reopens if not opened and closes
     cf = configing.Configer(name=name, base=base, temp=temp)
     cfDoer = configing.ConfigerDoer(configer=cf)
     conf = cf.get()
@@ -152,9 +152,9 @@ class Habery:
 
 
     Attributes:
-        name (str): alias of databases
+        name (str): name of associated databases
         base (str): optional directory path segment inserted before name
-                    that allows further differentation with a hierarchy.
+                    that allows further hierarchical differentation of databases.
                     "" means optional.
         temp (bool): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
@@ -167,6 +167,9 @@ class Habery:
         rvy (routing.Revery): factory that processes reply 'rpy' messages
         kvy (eventing.Kevery): factory for local processing of local event msgs
         psr (parsing.Parser):  parses local messages for .kvy .rvy
+
+        habs (dict): Hab instances keyed by prefix.
+            To look up Hab by name get prefix from db.habs .prefix field
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -330,12 +333,34 @@ class Habery:
 
         self.inited = True
 
+
     def loadHabs(self):
         """Load Habs from db
 
         """
         for name, habord in self.db.habs.getItemIter():
             prefix = habord.prefix
+            self.prefixes.add(prefix)  # ordered set so add is idempotent
+
+
+            # rules for acceptance
+            #  if its delegated its accepted into its own local KEL even if the
+            #    delegator has not sealed it
+
+
+            # if it's delegated, and not accepted, and not in kevers, no error
+            # if it's delegated and accepted and not in kevers, error
+            # if it's not delegated and not in kevers, error
+            if (self.delpre and self.accepted) and prefix not in self.kevers \
+                    or not self.delpre and prefix not in self.kevers:
+                raise kering.ConfigurationError("Missing Habitat KEL for "
+                                                "pre={}.".format(prefix))
+
+
+            self.accepted = prefix in self.kevers
+
+            # ridx for replay may be an issue when loading from existing
+            self.ridx = self.ks.sits.get(self.pre).new.ridx
 
             prms = self.ks.prms.get(prefix)  # get persisted values from db
             algo = prms.algo
@@ -343,20 +368,6 @@ class Habery:
             tier = prms.tier
             pidx = prms.pidx
 
-
-            # if it's delegated, and not accepted, and not in kevers, no error
-            # if it's delegated and accepted and not in kevers, error
-            # if it's not delegated and not in kevers, error
-            if (self.delpre and self.accepted) and self.pre not in self.kevers \
-                    or not self.delpre and self.pre not in self.kevers:
-                raise kering.ConfigurationError("Missing Habitat KEL for "
-                                                "pre={}.".format(self.pre))
-
-            self.prefixes.add(self.pre)  # ordered set so add is idempotent
-            self.accepted = self.pre in self.kevers
-
-            # ridx for replay may be an issue when loading from existing
-            self.ridx = self.ks.sits.get(self.pre).new.ridx
 
 
 
@@ -392,6 +403,19 @@ class Habery:
         Returns .db.prefixes of local prefixes
         """
         return self.db.prefixes
+
+    def habByName(self, name):
+        """
+        Returns:
+            hab (Hab): instance from .habs by name if any otherwise None
+
+        Parameters:
+           name (str): alias of Hab
+
+        """
+        if (habord := self.db.habs.get(name)) is not None:
+            return self.habs[habord.prefix] if habord.prefix in self.habs else None
+        return None
 
 
 class HaberyDoer(doing.Doer):

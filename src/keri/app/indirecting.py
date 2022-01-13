@@ -34,7 +34,7 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
         # setup databases  for dependency injection
         ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
         ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=temp, reload=True)  # default is to not reopen
+        db = basing.Baser(name=name, temp=temp)  # default is to not reopen
         dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=True, transferable=False)

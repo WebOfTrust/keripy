@@ -313,8 +313,8 @@ def test_habitat_reinitialization():
     with basing.openDB(name=name, temp=False) as db, \
             keeping.openKS(name=name, temp=False) as ks:
 
-        assert opre not in db.prefixes
-        assert opre in db.kevers  # write through cache
+        assert opre in db.kevers  # read through cache
+        assert opre in db.prefixes
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         assert hab.pre == opre

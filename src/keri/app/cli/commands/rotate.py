@@ -19,7 +19,7 @@ parser.add_argument('--name', '-n', help='Human readable reference', required=Tr
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="tcp")
 parser.add_argument('--erase', '-e', help='if this option is provided stale keys will be erased', default=False)
-parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).', 
+parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).',
                     default=None, type=int, required=False)
 rotating.addRotationArgs(parser)
 
@@ -103,7 +103,7 @@ class RotateDoer(doing.DoDoer):
 
         ks = keeping.Keeper(name=self.name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=self.name, temp=False, reload=True)  # not opened by default, doer opens
+        db = basing.Baser(name=self.name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
         self.hab = habbing.Habitat(name=self.name, ks=ks, db=db, temp=False, create=False)

@@ -80,7 +80,7 @@ class InteractDoer(doing.DoDoer):
 
         ks = keeping.Keeper(name=self.name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=self.name, temp=False, reload=True)  # not opened by default, doer opens
+        db = basing.Baser(name=self.name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
         self.hab = habbing.Habitat(name=self.name, ks=ks, db=db, temp=False, create=False)

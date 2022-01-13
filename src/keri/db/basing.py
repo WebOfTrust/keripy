@@ -580,7 +580,7 @@ class Baser(dbing.LMDBer):
 
     """
 
-    def __init__(self, headDirPath=None, reopen=False, reload=False, **kwa):
+    def __init__(self, headDirPath=None, reopen=False, **kwa):
         """
         Setup named sub databases.
 
@@ -595,7 +595,25 @@ class Baser(dbing.LMDBer):
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
             reopen (bool): True means database will be reopened by this init
-            reload (bool): True means load habitat prefixes and kevers from .habs
+
+
+        """
+        self.prefixes = oset()
+        self._kevers = dbdict()
+        self._kevers.db = self  # assign db for read thorugh cache of kevers
+
+        super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self._kevers
+
+    def reopen(self, **kwa):
+        """
+        Open sub databases
 
         Notes:
 
@@ -608,29 +626,6 @@ class Baser(dbing.LMDBer):
 
         Duplicates are inserted in lexocographic order by value, insertion order.
 
-        """
-        self.prefixes = oset()
-        self._kevers = dbdict()
-        self._kevers.db = self  # assign db for read thorugh cache of kevers
-
-        if reload:  # reload requires reopen first
-            reopen = True
-
-        super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
-
-        if reload:
-            self.reload()
-
-    @property
-    def kevers(self):
-        """
-        Returns .db.kevers
-        """
-        return self._kevers
-
-    def reopen(self, **kwa):
-        """
-        Open sub databases
         """
         super(Baser, self).reopen(**kwa)
 
@@ -770,13 +765,15 @@ class Baser(dbing.LMDBer):
         # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
 
+        self.reload()
+
         return self.env
+
 
     def reload(self):
         """
-        Load stored prefixes and Kevers from .habs
+        Reload stored prefixes and Kevers from .habs
 
-        make .kevers a read through cache
         """
         removes = []
         for keys, data in self.habs.getItemIter():
@@ -791,10 +788,11 @@ class Baser(dbing.LMDBer):
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
             else:  # in .habs but no corresponding key state so remove
-                removes.append(keys)  # removes
+                removes.append(keys)  # no key state or KEL event for .hab record
 
-        for keys in removes:  # remove bare .habs without key state or KEL event
+        for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
+
 
     def clean(self):
         """

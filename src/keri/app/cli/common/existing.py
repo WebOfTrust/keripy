@@ -5,7 +5,7 @@ from keri.db import basing
 def openHabitat(name="test", **kwa):
     ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+    db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
