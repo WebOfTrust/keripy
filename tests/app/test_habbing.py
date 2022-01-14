@@ -426,7 +426,6 @@ def test_make_load_hab_with_habery():
         assert len(hby.habs) == 2
 
 
-
     assert not hby.cf.opened
     assert not hby.db.opened
     assert not hby.ks.opened
@@ -434,6 +433,35 @@ def test_make_load_hab_with_habery():
     assert os.path.exists(hby.cf.path)
     assert os.path.exists(hby.db.path)
     assert os.path.exists(hby.ks.path)
+
+    # test load from database
+    suePre = 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
+    bobPre = 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+    base = "hold"
+    with habbing.openHab(base=base, temp=False) as hby:  # default is temp=True on openHab
+        assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
+        assert hby.db.path == '/usr/local/var/keri/db/hold/test'
+        assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'
+
+        assert hby.inited
+        assert len(hby.habs) == 2
+
+        assert suePre in hby.kevers
+        assert suePre in hby.prefixes
+        assert suePre in hby.habs
+        sueHab = hby.habByName("Sue")
+        assert sueHab.pre == suePre
+        assert sueHab.accepted
+        assert sueHab.inited
+
+        assert bobPre in hby.kevers
+        assert bobPre in hby.prefixes
+        assert bobPre in hby.habs
+        bobHab = hby.habByName("Bob")
+        assert bobHab.pre == bobPre
+        assert bobHab.accepted
+        assert bobHab.inited
+
 
     hby.close(clear=True)
     assert not os.path.exists(hby.cf.path)

@@ -356,7 +356,7 @@ class Habery:
             pre = habord.prefix
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                      rtr=self.rtr, rvy=self.rvy, kvy=self.kby, psr=self.psr,
+                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                       name=name, pre=pre, temp=self.temp)
 
             # Rules for acceptance
