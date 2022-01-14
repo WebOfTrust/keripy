@@ -577,7 +577,7 @@ class Hab:
         self.accepted = False
 
 
-    def make(self, *, secrecies=None, code=coring.MtrDex.Blake3_256,
+    def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
               transferable=True, isith=None, icount=1,
               nsith=None, ncount=None,
               toad=None, wits=None, delpre=None, estOnly=False,
@@ -587,6 +587,7 @@ class Hab:
 
         Parameters:
             secrecies (list): of list of secrets to preload key pairs if any
+            iridx (int): initial rotation index after ingestion of secrecies
             code (str): prefix derivation code
             transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
@@ -615,12 +616,12 @@ class Hab:
 
         if secrecies:
             ipre, _ = self.mgr.ingest(secrecies,
-                                                ncount=ncount,
-                                                stem=self.name,
-                                                transferable=transferable,
-                                                temp=self.temp)
-            # repre = verferies[0][0].qb64  # default repre needed to get .replay
-            verfers, digers, cst, nst = self.mgr.replay(pre=ipre, ridx=self.ridx)
+                                      iridx=iridx,
+                                      ncount=ncount,
+                                      stem=self.name,
+                                      transferable=transferable,
+                                      temp=self.temp)
+            verfers, digers, cst, nst = self.mgr.replay(pre=ipre, advance=False)
         else:
             verfers, digers, cst, nst = self.mgr.incept(icount=icount,
                                                         isith=isith,
@@ -829,8 +830,7 @@ class Hab:
             count = len(kever.verfers)  # use previous count
 
         try:
-            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
-                                                        ridx=self.ridx + 1)
+            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre)
         except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                         count=count,  # old next is new current
@@ -1674,7 +1674,8 @@ class Habitat:
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
 
-    def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
+    def setup(self, *, seed=None, aeid=None, secrecies=None, iridx=0,
+              code=coring.MtrDex.Blake3_256,
               isith=None, icount=1, nsith=None, ncount=None,
               toad=None, wits=None, algo=None, salt=None, tier=None, delpre=None, estOnly=False):
         """
@@ -1703,6 +1704,7 @@ class Habitat:
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
             secrecies is list of list of secrets to preload key pairs if any
+            iridx (int): initial rotation index after ingestion of secrecies
             code is prefix derivation code
             isith is incepting signing threshold as int, str hex, or list
             icount is incepting key count for number of keys
@@ -1759,12 +1761,12 @@ class Habitat:
         else:
             if secrecies:
                 ipre, _ = self.mgr.ingest(secrecies,
-                                                    ncount=ncount,
-                                                    stem=self.name,
-                                                    transferable=self.transferable,
-                                                    temp=self.temp)
-                # repre = verferies[0][0].qb64  # repre indexes keys for .replay
-                verfers, digers, cst, nst = self.mgr.replay(pre=ipre, ridx=self.ridx)
+                                          iridx=iridx,
+                                          ncount=ncount,
+                                          stem=self.name,
+                                          transferable=self.transferable,
+                                          temp=self.temp)
+                verfers, digers, cst, nst = self.mgr.replay(pre=ipre, advance=False)
             else:
                 verfers, digers, cst, nst = self.mgr.incept(icount=icount,
                                                             isith=isith,
@@ -1992,8 +1994,7 @@ class Habitat:
             count = len(kever.verfers)  # use previous count
 
         try:
-            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
-                                                        ridx=self.ridx + 1)
+            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre)
         except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                         count=count,  # old next is new current
