@@ -351,16 +351,18 @@ def test_make_load_hab_with_habery():
     name = "Sue"
     with habbing.openHab() as hby:  # default is temp=True on openHab
         hab = hby.makeHab(name=name)
-        assert id(hby.habByName(hab.name)) == id(hab)
-
         assert isinstance(hab, habbing.Hab)
         assert hab.pre in hby.habs
+        assert id(hby.habByName(hab.name)) == id(hab)
 
         assert hab.name == name
         assert hab.pre == 'ELB4zp-m8ogjBI02KCHQlc-vYvsqOhi7VkqjIY0fpkwo'
         assert hab.temp
         assert hab.accepted
         assert hab.inited
+
+        assert hab.pre in hby.kevers
+        assert hab.pre in hby.prefixes
 
         hab.db = hby.db  # injected
         hab.ks = hby.ks  # injected
@@ -371,8 +373,7 @@ def test_make_load_hab_with_habery():
         hab.kvy = hby.kvy  # injected
         hab.psr = hby.psr  # injected
 
-        assert hab.pre in hby.kevers
-        assert hab.pre in hby.prefixes
+
 
     assert not hby.cf.opened
     assert not hby.db.opened
@@ -391,11 +392,39 @@ def test_make_load_hab_with_habery():
         shutil.rmtree('/usr/local/var/keri/ks/hold/test')
 
     base = "hold"
-    name = "Sue"
     with habbing.openHab(base=base, temp=False) as hby:  # default is temp=True on openHab
         assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
         assert hby.db.path == '/usr/local/var/keri/db/hold/test'
         assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'
+
+        sueHab = hby.makeHab(name='Sue')
+        assert isinstance(sueHab, habbing.Hab)
+        assert sueHab.pre in hby.habs
+        assert id(hby.habByName(sueHab.name)) == id(sueHab)
+
+        assert sueHab.name == "Sue"
+        assert sueHab.pre == 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
+        assert not sueHab.temp
+        assert sueHab.accepted
+        assert sueHab.inited
+        assert sueHab.pre in hby.kevers
+        assert sueHab.pre in hby.prefixes
+
+        bobHab = hby.makeHab(name='Bob')
+        assert isinstance(bobHab, habbing.Hab)
+        assert bobHab.pre in hby.habs
+        assert id(hby.habByName(bobHab.name)) == id(bobHab)
+
+        assert bobHab.name == "Bob"
+        assert bobHab.pre == 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+        assert not bobHab.temp
+        assert bobHab.accepted
+        assert bobHab.inited
+        assert bobHab.pre in hby.kevers
+        assert bobHab.pre in hby.prefixes
+
+        assert len(hby.habs) == 2
+
 
 
     assert not hby.cf.opened
