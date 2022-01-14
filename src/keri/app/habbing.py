@@ -290,8 +290,10 @@ class Habery:
             salt (str): qb64 salt for creating key pairs
             tier (str): security tier for generating keys from salt (Tierage)
             free (boo): free resources by closing on Doer exit if any
-            temp (bool): True means use quick method to stretch bran salt to seed
-                    for testing only, Otherwise use more resources to stretch
+            temp (bool): True means use shortcuts for testing.
+                    Use quick method to stretch salts for seeds such as
+                    bran salt to seed or key creation of Habs.
+                    Otherwise use more resources set by tier to stretch
         """
         if not (self.ks.opened and self.db.opened):
             raise kering.ClosedError("Attempt to setup Habitat with closed "
@@ -350,37 +352,29 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kby, psr=self.psr,
-                      name=name, pre=pre, )
-
+                      name=name, pre=pre, temp=self.temp)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
             #    delegator has not sealed it
-
-
-
-            # if it's delegated, and not accepted, and not in kevers, no error
-            # if it's delegated and accepted and not in kevers, error
-            # if it's not delegated and not in kevers, error
-            #if (self.delpre and self.accepted) and pre not in self.kevers \
-                    #or not self.delpre and pre not in self.kevers:
-                #raise kering.ConfigurationError("Missing Habitat KEL for "
-                                                #"pre={}.".format(pre))
-
-
-            hab.accepted = pre in self.db.kevers
+            hab.accepted = pre in self.kevers
             if not hab.accepted:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
 
+            # read in config file and process any oobis or endpoints for hab
+            hab.reconfigure()
             hab.inited = True
 
 
-
-
-    def makeHab(self, name):
-        """Make new Hab
+    def makeHab(self, name, **kwa):
+        """Make new Hab with name, pre is generated from **kwa
         """
+        hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                  rtr=self.rtr, rvy=self.rvy, kvy=self.kby, psr=self.psr,
+                  name=name, temp=self.temp)
+
+        hab.make(**kwa)
 
     def close(self, clear=False):
         """Close resources.
@@ -485,8 +479,6 @@ class HaberyDoer(doing.Doer):
             self.habery.close(clear=self.habery.temp)
 
 
-
-
 class Hab:
     """
     Hab class provides a given idetnifier controller's local resource environment
@@ -507,10 +499,8 @@ class Hab:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
         temp (bool):
-
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
-
 
     Properties:
         kever (Kever): instance of key state of local controller
@@ -520,7 +510,7 @@ class Hab:
 
     """
 
-    def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, create=False,
+    def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
                  name='test', pre=None, temp=False, **kwa):
         """
         Initialize instance.
@@ -540,8 +530,9 @@ class Hab:
                            False means preexisting in db
             name (str): alias name for local controller of habitat
             pre (str): qb64 identifier prefix of own local controller else None
-            temp (bool): True means testing so use weak tier when salty algo for
-                key createion for incept and rotate of keys for this hab.pre
+            temp (bool): True means testing:
+                use weak time when salty algo for stretching in key creation
+                for incept and rotate of keys for this hab.pre
 
 
         """
@@ -573,7 +564,8 @@ class Hab:
               toad=None, wits=None, delpre=None, estOnly=False,
               algo=None, salt=None, tier=None, ):
         """
-        Make new Hab. Assumes injected dependencies are already setup.
+        Finish setting up or making Hab from parameters.
+        Assumes injected dependencies were already setup.
 
         Parameters:
             secrecies (list): of list of secrets to preload key pairs if any
@@ -591,7 +583,7 @@ class Hab:
             tier (str): security tier for generating keys from salt
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
-            raise kering.ClosedError("Attempt to setup Hab with unopened "
+            raise kering.ClosedError("Attempt to make Hab with unopened "
                                      "resources.")
         if nsith is None:
             nsith = isith
@@ -600,7 +592,6 @@ class Hab:
         if not transferable:
             ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
-        pidx = None
 
         self.delpre = delpre
 
@@ -1107,6 +1098,7 @@ class Hab:
             msgs.extend(msg)
         return msgs
 
+
     def makeOtherEvent(self, pre, sn):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -1133,6 +1125,7 @@ class Hab:
             msg.extend(sig)  # attach sig
         return (msg)
 
+
     def fetchEnd(self, cid: str, role: str, eid: str):
         """
         Returns:
@@ -1140,12 +1133,14 @@ class Hab:
         """
         return self.db.ends.get(keys=(cid, role, eid))
 
+
     def fetchLoc(self, eid: str, scheme: str = kering.Schemes.http):
         """
         Returns:
             location (basing.LocationRecord): instance or None
         """
         return self.db.locs.get(keys=(eid, scheme))
+
 
     def fetchEndAllowed(self, cid: str, role: str, eid: str):
         """
@@ -1161,6 +1156,7 @@ class Hab:
         end = self.db.ends.get(keys=(cid, role, eid))
         return (end.allowed if end else None)
 
+
     def fetchEndEnabled(self, cid: str, role: str, eid: str):
         """
         Returns:
@@ -1174,6 +1170,7 @@ class Hab:
         """
         end = self.db.ends.get(keys=(cid, role, eid))
         return (end.enabled if end else None)
+
 
     def fetchEndAuthzed(self, cid: str, role: str, eid: str):
         """
@@ -1189,6 +1186,7 @@ class Hab:
         end = self.db.ends.get(keys=(cid, role, eid))
         return ((end.enabled or end.allowed) if end else None)
 
+
     def fetchUrl(self, eid: str, scheme: str = kering.Schemes.http):
         """
         Returns:
@@ -1198,6 +1196,7 @@ class Hab:
         """
         loc = self.db.locs.get(keys=(eid, scheme))
         return (loc.url if loc else loc)
+
 
     def fetchUrls(self, eid: str, scheme: str = ""):
         """
@@ -1212,6 +1211,7 @@ class Hab:
         """
         return hicting.Mict([(keys[1], loc.url) for keys, loc in
                              self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
+
 
     def fetchRoleUrls(self, cid: str, *, role: str = "", scheme: str = "",
                       eids=None, enabled: bool = True, allowed: bool = True):
@@ -1254,6 +1254,7 @@ class Hab:
                         rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
 
+
     def fetchWitnessUrls(self, cid: str, scheme: str = "", eids=None,
                          enabled: bool = True, allowed: bool = True):
         """
@@ -1280,6 +1281,7 @@ class Hab:
                                    eids=eids,
                                    enabled=enabled,
                                    allowed=allowed))
+
 
     def reply(self, **kwa):
         """
@@ -1315,6 +1317,7 @@ class Hab:
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
 
+
     def makeLocScheme(self, url, scheme="http", stamp=None):
         """
         Returns:
@@ -1330,6 +1333,7 @@ class Hab:
         """
         data = data = dict(eid=self.pre, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
+
 
     def replyLocScheme(self, eid, scheme=None):
         """
@@ -1351,6 +1355,7 @@ class Hab:
             eid (str): endpoint provider id
             scheme (str): url scheme
         """
+
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=None):
         """
@@ -1389,6 +1394,7 @@ class Hab:
         if eids is None:
             eids = []
 
+
     def replyToOobi(self, aid):
         """
         Returns a reply message stream composed of entries authed by the given
@@ -1406,6 +1412,7 @@ class Hab:
         # default logic is that if self.pre is witness of aid and has a loc url
         # for self then reply with loc scheme for all witnesses even if self
         # not permiteed in .habs.oobis
+
 
     def makeOwnEvent(self, sn):
         """
@@ -1658,6 +1665,7 @@ class Habitat:
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
 
+
     def setup(self, *, seed=None, aeid=None, secrecies=None, iridx=0,
               code=coring.MtrDex.Blake3_256,
               isith=None, icount=1, nsith=None, ncount=None,
@@ -1892,6 +1900,7 @@ class Habitat:
 
     def recreate(self, serder, opre, verfers):
         """
+        Why?
 
         """
 
@@ -1926,12 +1935,14 @@ class Habitat:
                                             "Habitat pre={}.".format(self.pre))
         return coring.Serder(raw=bytes(raw))
 
+
     @property
     def kevers(self):
         """
         Returns .db.kevers
         """
         return self.db.kevers
+
 
     @property
     def kever(self):
@@ -1940,12 +1951,14 @@ class Habitat:
         """
         return self.kevers[self.pre]
 
+
     @property
     def prefixes(self):
         """
         Returns .db.prefixes
         """
         return self.db.prefixes
+
 
     def group(self):
         return self.db.gids.get(self.pre)

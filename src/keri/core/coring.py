@@ -1768,7 +1768,7 @@ class Salter(Matter):
             path (str): unique chars used in derivation of seed (secret)
             tier (str): value from Tierage for security level of stretch
             temp is Boolean, True means use quick method to stretch salt
-                    for testing only, Otherwise use more time to stretch
+                    for testing only, Otherwise use time set by tier to stretch
         """
         tier = tier if tier is not None else self.tier
 

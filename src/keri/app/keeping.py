@@ -510,7 +510,8 @@ class SaltyCreator(Creator):
             ridx is int rotation index for key pair set
             kidx is int starting key index for key pair set
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
-            temp is Boolean True means use temp level for testing
+            temp is Boolean True means use temp stretch otherwise use time set
+                 by tier for streching
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -1360,7 +1361,8 @@ class Manager:
                 When the derivation process of the identifier prefix is
                 transferable then one should not use non-transferable for the
                 associated public key(s).
-            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
+            temp is Boolean. True is temporary for testing. It modifies strech
+                time of salty algorithm
 
         """
         if iridx > len(secrecies):
