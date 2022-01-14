@@ -1133,7 +1133,8 @@ class Manager:
                 when ncodes not provided
             sith (Union[int, str, list]): next signing threshold as:
                 int, str hex, or list of weights
-            dcode i(str): derivation code qb64 of digers. Default is MtrDex.Blake3_256
+            dcode i(str): derivation code qb64 of digers to make next xor digest.
+                Default is MtrDex.Blake3_256
             transferable (bool): True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
                 Normally no use case for rotation to use transferable = False.
@@ -1300,7 +1301,7 @@ class Manager:
             return cigars
 
 
-    def ingest(self, secrecies, ridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+    def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None,
                      rooted=True, transferable=True, temp=False):
@@ -1310,10 +1311,11 @@ class Manager:
         lists into the database.
 
         Returns:
-            ret (tuple): (ipre, veferies) where ipre is prefix index of ingested
-                key pairs needed to fetch later for replay and veferies is list
-                of lists of all the corresponding public keys from secrecies in
-                order.
+            ret (tuple): (ipre, veferies) where:
+                ipre is prefix index of ingested key pairs needed to fetch later
+                   for replay
+                veferies is list of lists of all the verfers for the  public keys
+                from the private keys in secrecies in order of appearance.
 
         Essentially ingest ends with the current keys as the
         last key list in secrecies and the nxt keys are newly created as if a
@@ -1335,13 +1337,17 @@ class Manager:
 
 
         Parameters:
-            secrecies is list of lists of fully qualified secrets (private keys)
-            ncount is int count of next public keys when ncodes not provided
-            ncode is str derivation code qb64  of all ncount next public keys
-                when ncodes not provided
-            dcode is str derivation code qb64 of next digers. Default is MtrDex.Blake3_256
-            algo is str key creation algorithm code
+            secrecies (list): list of lists of fully qualified secrets (private keys)
+            iridx (int): initial ridx at where set PubSit after ingestion
+                enables database to store where initial replay should start from
+            ncount (int): count of next public keys for next after end of secrecies
+            ncode (str): derivation code qb64  of all ncount next public keys
+                after end of secrecies
+            dcode is str derivation code qb64 of next digers after end of secrecies
+                Default is MtrDex.Blake3_256
+            algo is str key creation algorithm code for next after end of secrecies
             salt is str qb64 salt for randomization when salty algorithm used
+                for next after end of secrecies
             stem is path modifier used with salt to derive private keys when using
                 salty agorithms. if stem is None then uses pidx
             tier is str security criticality tier code when using salty algorithm
@@ -1357,6 +1363,9 @@ class Manager:
             temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         """
+        if iridx > len(secrecies):
+            raise ValueError(f"Initial ridx={iridx} beyond last secrecy.")
+
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
             salt = self.salt
@@ -1368,14 +1377,11 @@ class Manager:
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
         ipre = ""
-        dt = ""
+        dt = ""  # empty for incept of old
         pubs = []
-        oridx = 0
-        okidx = 0
-        cridx = 0
-        ckidx = 0
         ridx = 0
         kidx = 0
+
         verferies = []  # list of lists of verfers
         first = True
         secrecies = deque(secrecies)
@@ -1387,7 +1393,6 @@ class Manager:
             verferies.append([signer.verfer for signer in csigners])
 
             if first:
-                ipre = verferies[0][0].qb64
                 # Secret to encrypt here
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
@@ -1396,6 +1401,7 @@ class Manager:
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
+                ipre = csigners[0].verfer.qb64
                 if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
@@ -1409,56 +1415,158 @@ class Manager:
                 self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                                  encrypter=self.encrypter)
 
-            self.ks.pubs.put(riKey(pre, ri=ridx),
-                                val=PubSet(pubs=[signer.verfer.qb64
-                                        for signer in csigners]))
-
-            odt = dt
-            dt = helping.nowIso8601()
-            opubs = pubs
             pubs = [signer.verfer.qb64 for signer in csigners]
-            okidx = ckidx  # old kidx
-            oridx = cridx  # old ridx
-            ckidx = kidx  # current kidx
-            cridx = ridx  # currrent ridx
+            self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
+
+            dt = helping.nowIso8601()
+            if ridx == max(iridx - 1, 0):  # setup ps.old at this ridx
+                if iridx == 0:
+                    old = PubLot()  # defaults ok
+                else:
+                    osigners = csigners
+                    osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
+                    ost = coring.Tholder(sith=osith).sith
+                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=ost, dt=dt)
+                ps = PreSit(old=old)  # .new and .nxt are default
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+
+            if ridx == iridx:  # setup ps.new at this ridx
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+                csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
+                cst = coring.Tholder(sith=csith).sith
+                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=cst, dt=dt)
+                ps.new = new
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+            if ridx == iridx + 1:  # set up ps.nxt at this ridx
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+                nsigners = csigners
+                nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
+                nst = coring.Tholder(sith=nsith).sith
+                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                ps.nxt = nxt
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
             ridx += 1  # next ridx
             kidx += csize  # next kidx
-
 
         # create nxt signers after ingested signers
         nsigners = creator.create(count=ncount, code=ncode,
                                   pidx=pidx, ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
 
-        # digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.ks.pubs.put(riKey(pre, ri=ridx),
-                             val=PubSet(pubs=[signer.verfer.qb64
-                                               for signer in nsigners]))
+        pubs = [signer.verfer.qb64 for signer in nsigners]
+        self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
 
-        csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
-        cst = coring.Tholder(sith=csith).sith
+        if ridx == iridx + 1:  # want to set up ps.next at this ridx
+            dt = helping.nowIso8601()
+            if (ps := self.ks.sits.get(pre)) is None:
+                raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
+            nst = coring.Tholder(sith=nsith).sith
+            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+            ps.nxt = nxt
+            if not self.ks.sits.pin(pre, val=ps):
+                raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
-        nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
-        nst = coring.Tholder(sith=nsith).sith
-
-        dt = helping.nowIso8601()
-        old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, st='0', dt=odt)
-        new=PubLot(pubs=[signer.verfer.qb64 for signer in csigners],
-                           ridx=cridx, kidx=ckidx, st=cst, dt=dt)
-        nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                           ridx=ridx, kidx=kidx, st=nst, dt=dt)
-
-        ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.ks.sits.pin(pre, val=ps):
-            raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
         return (ipre, verferies) #
 
 
-    def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
+    def replay(self, pre, dcode=coring.MtrDex.Blake3_256, advance=True, erase=True):
+        """
+        Returns duple (verfers, digers) associated with public key set from
+        the key sequence for identifier prefix pre at rotation index ridx stored
+        in db .pubs. Inception is at ridx == 0.
+        Enables replay of preexisting public key sequence.
+        In returned duple:
+            verfers is list of current public key verfers
+                public key is verfer.qb64
+            digers is list of next public key digers
+                digest to xor is diger.raw
+
+        If key sequence at ridx does already exist in .pubs database for pre then
+            raises ValueError.
+        If  preexisting pubs for pre exist but .ridx is two large for preexisting
+            pubs then raises IndexError.
+
+        Parameters:
+            pre (str): fully qualified qb64 identifier prefix
+            dcode (str): derivation code for digers for next xor digest.
+                Default is MtrDex.Blake3_256
+            advance (bool): True means advance to next set of keys for replay
+            erase (bool): True means erase old private keys made stale by
+                advancement when advance is True otherwise ignore
+
+        """
+        if (pp := self.ks.prms.get(pre)) is None:
+            raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
+
+        if (ps := self.ks.sits.get(pre)) is None:
+            raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
+
+
+        if advance:
+            old = ps.old  # save prior old so can clean out if rotate successful
+            ps.old = ps.new  # move prior new to old so save previous one step
+            ps.new = ps.nxt  # move prior nxt to new which new is now current signer
+            ridx = ps.new.ridx
+            kidx = ps.new.kidx
+            csize = len(ps.new.pubs)
+
+            # Usually when next keys are null then aid is effectively non-transferable
+            # but when replaying injected keys reaching null next pub keys or
+            # equivalently default empty is the sign that we have reached the
+            # end of the replay so need to raise an IndexError
+            if not (pubset := self.ks.pubs.get(riKey(pre, ridx+1))):
+                # empty nxt public keys so end of replay
+                raise IndexError(f"Invalid replay attempt of pre={pre} at "
+                                 f"ridx={ridx}.")
+            pubs = pubset.pubs  # create nxt from pubs
+            dt = helping.nowIso8601()
+            nsith = "{:x}".format(max(0, math.ceil(len(pubs) / 2)))
+            nst = coring.Tholder(sith=nsith).sith
+            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, st=nst, dt=dt)
+            ps.nxt = nxt
+
+
+        verfers = []  # assign verfers from current new was prior nxt
+        for pub in ps.new.pubs:
+            if self.aeid and not self.decrypter:  # maybe should rethink this
+                raise kering.DecryptError("Unauthorized decryption attempt. "
+                                          "Aeid but no decrypter.")
+
+            if ((signer := self.ks.pris.get(pub.encode("utf-8"),
+                                           decrypter=self.decrypter)) is None):
+                raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+            verfers.append(signer.verfer)
+
+        cst = ps.new.st  # get new current signing threshold (cst)
+
+        digers = [coring.Diger(ser=pub.encode("utf-8"), code=dcode)
+                    for pub in ps.nxt.pubs]
+        nst = ps.nxt.st
+
+        if advance:
+            if not self.ks.sits.pin(pre, val=ps):
+                raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+            if erase:
+                for pub in old.pubs:  # remove prior old prikeys not current old
+                    self.ks.pris.rem(pub)
+
+        return (verfers, digers, cst, nst)
+
+
+    def replayOld(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
         """
         Returns duple (verfers, digers) associated with public key set from
         the key sequence for identifier prefix pre at rotation index ridx stored

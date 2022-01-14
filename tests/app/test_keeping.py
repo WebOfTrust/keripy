@@ -1029,7 +1029,7 @@ def test_manager():
 
         assert wit0pre != wit1pre
 
-        # test .ingest of sequences of keys
+        # test .ingest of sequences of keys at default iridx == 0
         secrecies = [
                         ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
                         ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
@@ -1046,8 +1046,8 @@ def test_manager():
         assert manager.pidx == 6
         assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert manager.tier == coring.Tiers.low
-
-        ipre, verferies = manager.ingest(secrecies=secrecies)
+        iridx =  0
+        ipre, verferies = manager.ingest(secrecies=secrecies)  # use default iridx
         assert ipre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
         publicies = []
         for verfers in verferies:
@@ -1063,8 +1063,6 @@ def test_manager():
                                 ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
                             ]
 
-        ipre = publicies[0][0]
-
         # test .pris db
         for i, pubs in enumerate(publicies):
             pri0 = manager.ks.pris.get(pubs[0]).qb64b
@@ -1077,7 +1075,8 @@ def test_manager():
         assert manager.pidx == 7
 
         ps = manager.ks.sits.get(ipre)
-        assert ps.new.ridx == 7
+        assert ps.new.ridx == 0 # 7
+        assert ps.new.kidx == 0
         assert ps.new.pubs == publicies[ps.new.ridx]
 
         # test .pubs db
@@ -1089,21 +1088,176 @@ def test_manager():
         pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
-        # assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
+        assert cst == nst == '1'
 
-        for i in range(len(publicies)):
-            verfers, digers, cst, nst = manager.replay(ipre, i)
-            assert verfers[0].qb64 == publicies[i][0]
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
             assert cst == nst == '1'
 
         with pytest.raises(IndexError):  # Test end of replay
-            verfers, digers = manager.replay(ipre, i+1)
+            verfers, digers = manager.replay(ipre)
 
-        with pytest.raises(ValueError):  # Test past end of replay
-            verfers, digers = manager.replay(ipre, i+2)
+        # test .ingest of sequences of keys at iridx == 3
 
-        # test .ingest multi-sig of sequences of keys
+        secrecies = [
+                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                    ]
+
+        # verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 7
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
+
+        iridx = 3
+        ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
+        assert ipre == 'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
+                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
+                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
+                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
+                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
+                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
+                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
+                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                            ]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                assert manager.ks.pris.get(pub) is not None
+
+        pp = manager.ks.prms.get(ipre)
+        assert pp.pidx == 7
+        assert manager.pidx == 8
+
+        ps = manager.ks.sits.get(ipre)
+        assert ps.new.ridx == 3
+        assert ps.new.kidx == 3
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
+
+        # nxt pubs
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        assert pl
+
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
+        assert cst == nst == '1'
+
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
+            assert digers
+            assert cst == nst == '1'
+
+        with pytest.raises(IndexError):  # Test end of replay
+            verfers, digers = manager.replay(ipre)
+
+        # test .ingest of sequences of keys at iridx == len(secrecies -1) == 7
+        secrecies = [
+                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                    ]
+
+        # verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 8
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
+
+        iridx = 7
+        ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
+        assert ipre == 'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
+                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
+                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
+                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
+                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
+                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
+                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
+                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                            ]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                assert manager.ks.pris.get(pub) is not None
+
+        pp = manager.ks.prms.get(ipre)
+        assert pp.pidx == 8
+        assert manager.pidx == 9
+
+        ps = manager.ks.sits.get(ipre)
+        assert ps.new.ridx == 7
+        assert ps.new.kidx == 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
+
+        # nxt pubs
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        assert pl
+
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
+        assert cst == nst == '1'
+
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
+            assert digers
+            assert cst == nst == '1'
+
+        with pytest.raises(IndexError):  # Test end of replay
+            verfers, digers = manager.replay(ipre)
+
+        # test .ingest multi-sig of sequences of keys at default iridx == 0
         secrecies = [
                         [
                             'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -1125,11 +1279,12 @@ def test_manager():
 
         #  verify current state
         assert manager.aeid == ''
-        assert manager.pidx == 7
+        assert manager.pidx == 9
         assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert manager.tier == coring.Tiers.low
-        # verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
-        ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)
+
+        iridx = 0
+        ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)  # default iridx
         assert ipre == 'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         publicies = []
         for verfers in verferies:
@@ -1153,7 +1308,6 @@ def test_manager():
                                 ]
                             ]
 
-        ipre = publicies[0][0]
 
         # test .pris db
         for i, pubs in enumerate(publicies):
@@ -1163,8 +1317,194 @@ def test_manager():
                 assert manager.ks.pris.get(pub) is not None
 
         pp = manager.ks.prms.get(ipre)
-        assert pp.pidx == 7
-        assert manager.pidx == 8
+        assert pp.pidx == 9
+        assert manager.pidx == 10
+
+        ps = manager.ks.sits.get(ipre)
+        assert ps.new.ridx == 0 # 3
+        assert ps.new.kidx == 0 # 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        assert len(ps.nxt.pubs) == 1
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
+
+        #  nxt pubs
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        assert pl
+
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
+
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
+            assert digers
+
+        with pytest.raises(IndexError):  # Test end of replay
+            verfers, digers = manager.replay(ipre)
+
+
+        # test .ingest multi-sig of sequences of keys at iridx == 1
+        secrecies = [
+                        [
+                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
+                        ],
+                        [
+                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                        ],
+                        [
+                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                        ],
+                        [
+                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                        ]
+                    ]
+
+        #  verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 10
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
+        iridx = 1
+        ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
+        assert ipre == 'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI'
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                [
+                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
+                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
+                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+                                ],
+                                [
+                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                ],
+                                [
+                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
+                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
+                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                ],
+                                [
+                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                ]
+                            ]
+
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                assert manager.ks.pris.get(pub) is not None
+
+        pp = manager.ks.prms.get(ipre)
+        assert pp.pidx == 10
+        assert manager.pidx == 11
+
+        ps = manager.ks.sits.get(ipre)
+        assert ps.new.ridx == 1
+        assert ps.new.kidx == 3
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        assert len(ps.nxt.pubs) == 3
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
+
+        #  nxt pubs
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        assert pl
+
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
+
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
+            assert digers
+
+        with pytest.raises(IndexError):  # Test end of replay
+            verfers, digers = manager.replay(ipre)
+
+        # test .ingest multi-sig of sequences of keys at
+        # iridx == len(secrecies) -1 == 3
+        secrecies = [
+                        [
+                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                        ],
+                        [
+                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                        ],
+                        [
+                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                        ],
+                        [
+                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                        ]
+                    ]
+
+        #  verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 11
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
+        iridx =  3
+        ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
+        assert ipre == 'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                [
+                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s',
+                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
+                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
+                                ],
+                                [
+                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                ],
+                                [
+                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
+                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
+                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                ],
+                                [
+                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                ]
+                            ]
+
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                assert manager.ks.pris.get(pub) is not None
+
+        pp = manager.ks.prms.get(ipre)
+        assert pp.pidx == 11
+        assert manager.pidx == 12
 
         ps = manager.ks.sits.get(ipre)
         assert ps.new.ridx == 3
@@ -1182,20 +1522,20 @@ def test_manager():
         pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
-        #assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
-                                                    #'EhwPuWbyrJRyU5HpJaoJrq04biTLWx3heNY3TvQrlbU8',
-                                                    #'EJKLXis7QLnodqvtkbkTUKdciTuM-yzhEPUzS9jtxS6Y']
+        # test replay as incept i.e. advance == False
+        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        assert verfers[0].qb64 == publicies[iridx][0]
+        assert digers
 
-        for i in range(len(publicies)):
-            verfers, digers, cst, nst = manager.replay(ipre, i)
-            assert verfers[0].qb64 == publicies[i][0]
+        # test replay as rotate i.e. advance == True default
+        for i in range(iridx, len(publicies) - 1):
+            verfers, digers, cst, nst = manager.replay(ipre)
+            assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
 
         with pytest.raises(IndexError):  # Test end of replay
-            verfers, digers = manager.replay(ipre, i+1)
+            verfers, digers = manager.replay(ipre)
 
-        with pytest.raises(ValueError):  # Test past end of replay
-            verfers, digers = manager.replay(ipre, i+2)
 
     assert not os.path.exists(manager.ks.path)
     assert not manager.ks.opened
@@ -1449,4 +1789,4 @@ def test_manager_with_aeid():
 
 
 if __name__ == "__main__":
-    test_manager_with_aeid()
+    test_manager()

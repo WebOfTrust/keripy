@@ -1969,6 +1969,7 @@ class Habitat:
     def group(self):
         return self.db.gids.get(self.pre)
 
+
     def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
                data=None):
         """
