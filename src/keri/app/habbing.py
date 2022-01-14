@@ -758,8 +758,6 @@ class Hab:
         if self.pre not in self.kevers:
             raise Exception()
 
-        # self.ridx += 1
-
     @property
     def iserder(self):
         """
@@ -870,8 +868,6 @@ class Hab:
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
-        #else:
-            #self.ridx += 1  # successful rotate so increment for next time
 
         return msg
 
@@ -1640,7 +1636,6 @@ class Habitat:
                                                                base=base,
                                                                temp=self.temp,
                                                                reopen=True)
-        self.ridx = 0  # rotation index of latest establishment event
         self.rtr = routing.Router()
         self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
@@ -1840,8 +1835,6 @@ class Habitat:
         if self.pre not in self.kevers:
             raise Exception()
 
-        # self.ridx += 1
-
     def reinitialize(self):
         """
         """
@@ -1858,9 +1851,6 @@ class Habitat:
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
         self.accepted = self.pre in self.kevers
-
-        # ridx for replay may be an issue when loading from existing
-        # self.ridx = self.ks.sits.get(self.pre).new.ridx
 
 
     def reconfigure(self):
@@ -2033,8 +2023,6 @@ class Habitat:
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
-        #else:
-            #self.ridx += 1  # successful rotate so increment for next time
 
         return msg
 
