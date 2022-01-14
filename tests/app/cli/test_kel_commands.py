@@ -17,9 +17,9 @@ def test_kel_commands():
         if os.path.exists('/usr/local/var/keri/ks/{}'.format(name)):
             shutil.rmtree('/usr/local/var/keri/ks/{}'.format(name))
 
-    with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False, temp=False) as wanHab, \
-            habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False, temp=False) as wilHab, \
-            habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False, temp=False) as wesHab:
+    with habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False, temp=False) as wanHab, \
+            habbing.openHabitat(name="wil", salt=b'will-the-witness', transferable=False, temp=False) as wilHab, \
+            habbing.openHabitat(name="wes", salt=b'wess-the-witness', transferable=False, temp=False) as wesHab:
 
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=False, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=False, tcpPort=5633, httpPort=5643)
@@ -77,7 +77,7 @@ class CommandDoer(doing.DoDoer):
 
         self.remove([sigr])
 
-        with habbing.existingHab(name="test") as hab:
+        with habbing.existingHabitat(name="test") as hab:
             assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "icp"
             assert hab.kever.sn == 0
@@ -98,7 +98,7 @@ class CommandDoer(doing.DoDoer):
 
         self.remove([rotr])
 
-        with habbing.existingHab(name="test") as hab:
+        with habbing.existingHabitat(name="test") as hab:
             assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "rot"
             assert hab.kever.sn == 1
@@ -120,7 +120,7 @@ class CommandDoer(doing.DoDoer):
 
         self.remove([ixnr])
 
-        with habbing.existingHab(name="test") as hab:
+        with habbing.existingHabitat(name="test") as hab:
             assert hab.pre == "ElAcfm6Zbrtf5Gy7zBFsUWvNpEpn08icv-bSW1DOALzU"
             assert hab.kever.ilk == "ixn"
             assert hab.kever.sn == 2

@@ -24,7 +24,7 @@ def handler(args):
     sigers = [coring.Siger(qb64=sig) for sig in args.signature]
 
     try:
-        with habbing.existingHab(name=name) as hab:
+        with habbing.existingHabitat(name=name) as hab:
 
             kever = hab.kevers[args.prefix]
 

@@ -59,7 +59,7 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
     """
 
     try:
-        with habbing.existingHab(name=name, transferable=False) as hab:
+        with habbing.existingHabitat(name=name, transferable=False) as hab:
             print("Watcher Identifier: {}".format(hab.pre))
             if hab.kever.prefixer.transferable:
                 raise kering.ConfigurationError("watchers can only have a non-transferable identifier")

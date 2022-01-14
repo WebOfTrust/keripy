@@ -21,7 +21,7 @@ def test_issuing():
     with basing.openDB(name="sid") as sidDB, \
             keeping.openKS(name="sid") as sidKS, \
             basing.openDB(name="red") as redDB, \
-            habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
             viring.openReg(name="red") as redPDB:
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
 

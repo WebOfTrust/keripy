@@ -14,8 +14,8 @@ from keri.core import eventing, parsing, coring
 
 
 def test_watcher_rotate_handler(mockGetWitnessByPrefixOneWitness):
-    with habbing.openHab(name="watcher", transferable=False, temp=True) as wat, \
-            habbing.openHab(name="ctrl", transferable=True, temp=True) as ctrl:
+    with habbing.openHabitat(name="watcher", transferable=False, temp=True) as wat, \
+            habbing.openHabitat(name="ctrl", transferable=True, temp=True) as ctrl:
 
         kiwi = watching.KiwiServer(hab=wat, controller=ctrl.pre)
         server = http.Server(port=5644, app=kiwi.app)

@@ -20,7 +20,7 @@ def sign(args):
     name = args.name
 
     try:
-        with habbing.existingHab(name=name) as hab:
+        with habbing.existingHabitat(name=name) as hab:
 
             txt = args.text
             if txt.startswith("@"):

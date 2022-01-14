@@ -25,7 +25,7 @@ def handler(args):
 
     name = args.name
     try:
-        with habbing.existingHab(name=name) as hab:
+        with habbing.existingHabitat(name=name) as hab:
 
             displaying.printIdentifier(hab, hab.pre)
 

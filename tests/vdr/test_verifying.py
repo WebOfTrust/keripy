@@ -19,7 +19,7 @@ from ..app import test_grouping
 
 
 def test_verifier_query(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
+    with habbing.openHabitat(name="test", transferable=True, temp=True) as hab:
         issuer = issuing.Issuer(hab=hab, name="test", temp=True)
 
         verfer = verifying.Verifier(hab=hab)
@@ -36,8 +36,8 @@ def test_verifier_query(mockHelpingNowUTC):
 
 
 def test_verifier():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
-            habbing.openHab(name="recp", transferable=True, temp=True) as recp, \
+    with habbing.openHabitat(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
+            habbing.openHabitat(name="recp", transferable=True, temp=True) as recp, \
             viring.openReg(temp=True) as reger:
         assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
@@ -104,8 +104,8 @@ def test_verifier():
 
 def test_verifier_multisig():
     with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
-            habbing.openHab(name="recp", transferable=True, temp=True) as recp, \
-            habbing.openHab(name="verfer", transferable=True, temp=True) as verfer, \
+            habbing.openHabitat(name="recp", transferable=True, temp=True) as recp, \
+            habbing.openHabitat(name="verfer", transferable=True, temp=True) as verfer, \
             viring.openReg(temp=True) as reger:
 
         gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
@@ -283,10 +283,10 @@ def test_verifier_chained_credential():
     qviSchema = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
     vLeiSchema = "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0"
 
-    with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as ron, \
-            habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as ian, \
-            habbing.openHab(name="han", transferable=True, temp=True) as han, \
-            habbing.openHab(name="vic", transferable=True, temp=True) as vic, \
+    with habbing.openHabitat(name="ron", temp=True, salt=b'0123456789abcdef') as ron, \
+            habbing.openHabitat(name="ian", temp=True, salt=b'0123456789abcdef') as ian, \
+            habbing.openHabitat(name="han", transferable=True, temp=True) as han, \
+            habbing.openHabitat(name="vic", transferable=True, temp=True) as vic, \
             viring.openReg(temp=True, name="ron") as ronreg, \
             viring.openReg(temp=True, name="ian") as ianreg, \
             viring.openReg(temp=True, name="vic") as vicreg:

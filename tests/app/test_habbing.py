@@ -3,6 +3,7 @@
 tests.app.apping module
 
 """
+import pytest
 
 import os
 import shutil
@@ -27,6 +28,7 @@ def test_habery():
     assert hby.base == ""
     assert hby.temp
     assert hby.inited
+    assert hby.habs == {}
 
     assert hby.db.name == "test" == hby.name
     assert hby.db.base == "" == hby.base
@@ -70,6 +72,7 @@ def test_habery():
     assert hby.base == ""
     assert hby.temp
     assert hby.inited
+    assert hby.habs == {}
 
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
@@ -138,6 +141,7 @@ def test_habery():
     doist.recur(deeds=deeds)
 
     assert hby.inited
+    assert hby.habs == {}
     assert hby.mgr is not None
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
@@ -207,6 +211,7 @@ def test_habery():
     doist.recur(deeds=deeds)
 
     assert hby.inited
+    assert hby.habs == {}
     assert hby.mgr is not None
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
@@ -236,10 +241,177 @@ def test_habery():
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
 
+    with habbing.openHab() as hby:
+        assert hby.name == "test"
+        assert hby.base == ""
+        assert hby.temp
+        assert hby.inited
+
+        assert hby.db.name == "test" == hby.name
+        assert hby.db.base == "" == hby.base
+        assert not hby.db.filed
+        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.opened
+
+        assert hby.ks.name == "test" == hby.name
+        assert hby.ks.base == "" == hby.base
+        assert not hby.ks.filed
+        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.opened
+
+        assert hby.cf.name == "test" == hby.name
+        assert hby.cf.base == "" == hby.base
+        assert hby.cf.filed
+        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.opened
+        assert not hby.cf.file.closed
+
+        assert hby.mgr.seed == ""
+        assert hby.mgr.aeid == ""
+        assert hby.mgr.salt == habbing.SALT
+        assert hby.mgr.pidx == 0
+        assert hby.mgr.algo == keeping.Algos.salty
+        assert hby.mgr.tier == coring.Tiers.low
+
+        assert hby.rtr.routes
+        assert hby.rvy.rtr == hby.rtr
+        assert hby.kvy.rvy == hby.rvy
+        assert hby.psr.kvy == hby.kvy
+        assert hby.psr.rvy == hby.rvy
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+
+    bran = "MyPasscodeIsRealSecret"
+    with habbing.openHab(bran=bran) as hby:
+        assert hby.name == "test"
+        assert hby.base == ""
+        assert hby.temp
+        assert hby.inited
+        assert hby.habs == {}
+
+        assert hby.db.name == "test" == hby.name
+        assert hby.db.base == "" == hby.base
+        assert not hby.db.filed
+        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.opened
+
+        assert hby.ks.name == "test" == hby.name
+        assert hby.ks.base == "" == hby.base
+        assert not hby.ks.filed
+        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.opened
+
+        assert hby.cf.name == "test" == hby.name
+        assert hby.cf.base == "" == hby.base
+        assert hby.cf.filed
+        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.opened
+        assert not hby.cf.file.closed
+
+        # test bran to seed
+        assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+        assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+        assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert hby.mgr.pidx == 0
+        assert hby.mgr.algo == keeping.Algos.salty
+        assert hby.mgr.tier == coring.Tiers.low
+
+        assert hby.rtr.routes
+        assert hby.rvy.rtr == hby.rtr
+        assert hby.kvy.rvy == hby.rvy
+        assert hby.psr.kvy == hby.kvy
+        assert hby.psr.rvy == hby.rvy
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
 
 
     """End Test"""
 
+
+def test_make_load_hab_with_habery():
+    """
+    Test creation methods for Hab instances with Habery
+    """
+    with pytest.raises(TypeError):  # missing required dependencies
+        hab = habbing.Hab()  # defaults
+
+    name = "Sue"
+    with habbing.openHab() as hby:  # default is temp=True on openHab
+        hab = hby.makeHab(name=name)
+        assert id(hby.habByName(hab.name)) == id(hab)
+
+        assert isinstance(hab, habbing.Hab)
+        assert hab.pre in hby.habs
+
+        assert hab.name == name
+        assert hab.pre == 'ELB4zp-m8ogjBI02KCHQlc-vYvsqOhi7VkqjIY0fpkwo'
+        assert hab.temp
+        assert hab.accepted
+        assert hab.inited
+
+        hab.db = hby.db  # injected
+        hab.ks = hby.ks  # injected
+        hab.cf = hby.cf  # injected
+        hab.mgr = hby.mgr  # injected
+        hab.rtr = hby.rtr  # injected
+        hab.rvy = hby.rvy  # injected
+        hab.kvy = hby.kvy  # injected
+        hab.psr = hby.psr  # injected
+
+        assert hab.pre in hby.kevers
+        assert hab.pre in hby.prefixes
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    # create not temp and then reload from not temp
+    if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
+        os.remove('/usr/local/var/keri/cf/hold/test.json')
+    if os.path.exists('/usr/local/var/keri/db/hold/test'):
+        shutil.rmtree('/usr/local/var/keri/db/hold/test')
+    if os.path.exists('/usr/local/var/keri/ks/hold/test'):
+        shutil.rmtree('/usr/local/var/keri/ks/hold/test')
+
+    base = "hold"
+    name = "Sue"
+    with habbing.openHab(base=base, temp=False) as hby:  # default is temp=True on openHab
+        assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
+        assert hby.db.path == '/usr/local/var/keri/db/hold/test'
+        assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'
+
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert os.path.exists(hby.cf.path)
+    assert os.path.exists(hby.db.path)
+    assert os.path.exists(hby.ks.path)
+
+    hby.close(clear=True)
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    """End Test"""
 
 def test_habitat():
     """
@@ -585,6 +757,6 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    test_habery()
+    test_make_load_hab_with_habery()
     # test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])

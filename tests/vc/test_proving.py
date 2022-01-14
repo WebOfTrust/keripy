@@ -266,7 +266,7 @@ def test_parse_proof():
 
 
 def test_credential_parsator():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
+    with habbing.openHabitat(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
             viring.openReg() as reg:
         assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 

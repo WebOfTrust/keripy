@@ -16,8 +16,8 @@ from keri.vdr import viring, issuing, verifying
 
 
 def test_credential_handlers(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True) as hab, \
-            habbing.openHab(name="recp", transferable=True) as recp:
+    with habbing.openHabitat(name="test", transferable=True) as hab, \
+            habbing.openHabitat(name="recp", transferable=True) as recp:
         app = falcon.App()
 
         ims = bytearray()
@@ -138,7 +138,7 @@ def test_credential_handlers(mockHelpingNowUTC):
 
 def test_credential_handlers_singlesig(mockHelpingNowUTC):
     with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
-            habbing.openHab(name="recp", transferable=True) as recp:
+            habbing.openHabitat(name="recp", transferable=True) as recp:
         app = falcon.App()
 
         ims = bytearray()
@@ -203,7 +203,7 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
 
 def test_issue_credential_full_multisig():
     with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
-            habbing.openHab(name="recp", transferable=True) as recp:
+            habbing.openHabitat(name="recp", transferable=True) as recp:
         # Verify the group identifier was incepted properly and matches the identifiers
         assert hab1.pre == "El5WIVmMSnNIsa3Oqib-g5BNkK8uwKOrFvxxPJ_jM5I8"
         assert hab2.pre == "ESXQU9TMcdFiuVNRxe6YrbeYlwZJn04UyJUEJxR36Qyw"
