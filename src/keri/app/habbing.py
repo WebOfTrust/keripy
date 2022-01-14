@@ -373,10 +373,6 @@ class Habery:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
 
-            # ridx for mag to replay to secrecies start may be an issue when
-            # loading from existing
-            hab.ridx = self.ks.sits.get(self.pre).new.ridx
-
             hab.inited = True
 
 
@@ -510,8 +506,6 @@ class Hab:
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        ridx (int): rotation index (inception == 0) needed for mgr to replay
-                secrecies to starting point
         temp (bool):
 
         inited (bool): True means fully initialized wrt databases.
@@ -527,7 +521,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *, create=False,
-                 name='test', pre=None, ridx=0, temp=False, **kwa):
+                 name='test', pre=None, temp=False, **kwa):
         """
         Initialize instance.
 
@@ -546,9 +540,6 @@ class Hab:
                            False means preexisting in db
             name (str): alias name for local controller of habitat
             pre (str): qb64 identifier prefix of own local controller else None
-
-            ridx (int): rotation index (inception == 0) needed for mgr to replay
-                secrecies to starting point
             temp (bool): True means testing so use weak tier when salty algo for
                 key createion for incept and rotate of keys for this hab.pre
 
@@ -565,7 +556,6 @@ class Hab:
 
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
-        self.ridx = ridx  # rotation index of latest establishment event
         self.temp = True if temp else False
 
         self.delpre = None
@@ -768,7 +758,7 @@ class Hab:
         if self.pre not in self.kevers:
             raise Exception()
 
-        self.ridx += 1
+        # self.ridx += 1
 
     @property
     def iserder(self):
@@ -880,8 +870,8 @@ class Hab:
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
-        else:
-            self.ridx += 1  # successful rotate so increment for next time
+        #else:
+            #self.ridx += 1  # successful rotate so increment for next time
 
         return msg
 
@@ -1574,7 +1564,6 @@ class Habitat:
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
         cf (configing.Configer): config file instance
-        ridx (int): rotation index (inception == 0) needed for key replay
         kvy (eventing.Kevery): instance for local processing of local msgs
         psr (parsing.Parser):  parses local messages for .kvy
         mgr (keeping.Manager): creates and rotates keys in key store
@@ -1851,7 +1840,7 @@ class Habitat:
         if self.pre not in self.kevers:
             raise Exception()
 
-        self.ridx += 1
+        # self.ridx += 1
 
     def reinitialize(self):
         """
@@ -1871,7 +1860,7 @@ class Habitat:
         self.accepted = self.pre in self.kevers
 
         # ridx for replay may be an issue when loading from existing
-        self.ridx = self.ks.sits.get(self.pre).new.ridx
+        # self.ridx = self.ks.sits.get(self.pre).new.ridx
 
 
     def reconfigure(self):
@@ -2044,8 +2033,8 @@ class Habitat:
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
-        else:
-            self.ridx += 1  # successful rotate so increment for next time
+        #else:
+            #self.ridx += 1  # successful rotate so increment for next time
 
         return msg
 

@@ -1431,7 +1431,6 @@ class Manager:
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
-
             if ridx == iridx:  # setup ps.new at this ridx
                 if (ps := self.ks.sits.get(pre)) is None:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
