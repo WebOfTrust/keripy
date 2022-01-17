@@ -27,7 +27,7 @@ logger = help.ogler.getLogger()
 SALT = '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
 @contextmanager
-def openHab(*, name="test", base="", temp=True, salt=SALT, **kwa):
+def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
     """
     Context manager wrapper for Habery instance.
     Context 'with' statements call .close on exit of 'with' block

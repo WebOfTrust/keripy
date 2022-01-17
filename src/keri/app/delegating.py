@@ -15,7 +15,7 @@ from hio.help import decking
 
 from . import keeping, habbing, agenting, obtaining
 from .forwarding import forward
-from .habbing import Habitat
+from .habbing import Habitat, Hab
 from .. import kering
 from ..core import eventing, coring, parsing
 from ..db import basing

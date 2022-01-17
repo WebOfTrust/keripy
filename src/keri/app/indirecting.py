@@ -31,15 +31,23 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
     doers = []
     # setup habitat
     if hab is None:
-        # setup databases  for dependency injection
-        ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
-        ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=temp)  # default is to not reopen
-        dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+        # setup habery with resources
+        hby = habbing.Habery(name=name, base="wit", temp=True, free=True)
+        hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        doers.extend([hbyDoer])
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=True, transferable=False)
-        habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        doers.extend([ksDoer, dbDoer, habDoer])
+        # make hab
+        hab = hby.makeHab(name=name, transferable=False)
+
+        ## setup databases  for dependency injection
+        #ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
+        #ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+        #db = basing.Baser(name=name, temp=temp)  # default is to not reopen
+        #dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+        #hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=True, transferable=False)
+        #habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+        #doers.extend([ksDoer, dbDoer, habDoer])
 
     reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(name=name, hab=hab, reger=reger)
@@ -699,7 +707,7 @@ class HttpMessageHandler(doing.DoDoer):
     This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
     """
 
-    def __init__(self, hab: habbing.Habitat, rep, verifier=None, exchanger=None, mbx=None, app=None, **kwa):
+    def __init__(self, hab: habbing.Hab, rep, verifier=None, exchanger=None, mbx=None, app=None, **kwa):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.

@@ -688,4 +688,4 @@ def test_indirect_mode_sam_cam_wit_demo():
 
 
 if __name__ == "__main__":
-    test_indirect_mode_sam_cam_wit_demo()
+    test_run_bob_eve_demo()

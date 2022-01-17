@@ -427,15 +427,13 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
     """
     Setup and return doers list to run controller
     """
-    # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=temp)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    # setup habery with resources
+    hby = habbing.Habery(name=name, base="endo", temp=True, free=True)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
-    # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, isith=sith, icount=count)
-    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+    # make hab
+    hab = hby.makeHab(name=name, isith=sith, icount=count)
+
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -467,5 +465,5 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
     #return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
             #serverDoer, directant, webServerDoer]
 
-    return ([ksDoer, dbDoer, habDoer, wireDoer, webServerDoer])
+    return ([hbyDoer, wireDoer, webServerDoer])
 
