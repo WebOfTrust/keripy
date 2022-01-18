@@ -80,8 +80,11 @@ def test_direct_mode_bob_eve_demo():
     eve = eveSerder.ked["i"]
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
-    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    with habbing.openHby(name="eve", base="test") as eveHby, \
+         habbing.openHby(name="bob", base="test") as bobHby:
+
 
         limit = 1.0
         tock = 0.03125
@@ -91,13 +94,15 @@ def test_direct_mode_bob_eve_demo():
         evePort = 5621  # eve's TCP listneing port for server
 
         # setup bob
-        bobHab = habbing.Habitat(name='Bob',
-                                 ks=bobKS,
-                                 db=bobDB,
-                                secrecies=bobSecrecies,
-                                temp=True)
-        assert bobHab.ks == bobKS
-        assert bobHab.db == bobDB
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
+
+        #bobHab = habbing.Habitat(name='Bob',
+                                 #ks=bobKS,
+                                 #db=bobDB,
+                                #secrecies=bobSecrecies,
+                                #temp=True)
+        #assert bobHab.ks == bobKS
+        #assert bobHab.db == bobDB
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -108,14 +113,14 @@ def test_direct_mode_bob_eve_demo():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert id(bobDirector.hab.kvy.kevers) == id(bobHab.kevers)
-        assert bobDirector.hab.kvy.db == bobDB
+        assert bobDirector.hab.kvy.db == bobHby.db # bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobHab.kevers)
-        assert bobReactor.hab.kvy.db == bobDB
+        assert bobReactor.hab.kvy.db == bobHby.db  # bobDB
         assert bobReactor.hab.psr.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -127,14 +132,15 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(name='Eve',
-                                 ks=eveKS,
-                                 db=eveDB,
-                                secrecies=eveSecrecies,
-                                temp=True)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        #eveHab = habbing.Habitat(name='Eve',
+                                 #ks=eveKS,
+                                 #db=eveDB,
+                                #secrecies=eveSecrecies,
+                                #temp=True)
 
-        assert eveHab.ks == eveKS
-        assert eveHab.db == eveDB
+        #assert eveHab.ks == eveKS
+        #assert eveHab.db == eveDB
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
@@ -145,13 +151,13 @@ def test_direct_mode_bob_eve_demo():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveDirector.hab.kvy.db == eveDB
+        assert eveDirector.hab.kvy.db == eveHby.db  # eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveReactor.hab.kvy.db == eveDB
+        assert eveReactor.hab.kvy.db == eveHby.db # eveDB
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
@@ -181,8 +187,8 @@ def test_direct_mode_bob_eve_demo():
 
         #  verify final event states
 
-    assert not os.path.exists(eveDB.path)
-    assert not os.path.exists(bobDB.path)
+    assert not os.path.exists(eveHby.db.path)
+    assert not os.path.exists(bobHby.db.path)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
@@ -688,4 +694,4 @@ def test_indirect_mode_sam_cam_wit_demo():
 
 
 if __name__ == "__main__":
-    test_run_bob_eve_demo()
+    test_direct_mode_bob_eve_demo()
