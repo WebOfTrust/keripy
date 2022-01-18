@@ -77,8 +77,11 @@ def test_directing_basic():
     eve = eveSerder.ked["i"]
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
-    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+            #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    with habbing.openHby(name="eve", base="test") as eveHby, \
+         habbing.openHby(name="bob", base="test") as bobHby:
+
 
         limit = 0.125
         tock = 0.03125
@@ -89,10 +92,11 @@ def test_directing_basic():
         eveKevers = dict()
 
         # setup bob
-        bobHab = habbing.Habitat(ks=bobKS, db=bobDB, secrecies=bobSecrecies,
-                                 temp=True)
-        assert bobHab.ks == bobKS
-        assert bobHab.db == bobDB
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
+        #bobHab = habbing.Habitat(ks=bobKS, db=bobDB, secrecies=bobSecrecies,
+                                 #temp=True)
+        #assert bobHab.ks == bobKS
+        #assert bobHab.db == bobDB
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -103,13 +107,13 @@ def test_directing_basic():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert id(bobDirector.hab.kvy.kevers) == id(bobHab.kevers)
-        assert bobDirector.hab.kvy.db == bobDB
+        assert bobDirector.hab.kvy.db == bobHby.db
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobHab.kevers)
-        assert bobReactor.hab.kvy.db == bobDB
+        assert bobReactor.hab.kvy.db == bobHby.db
         assert id(bobReactor.parser.ims) == id(bobReactor.client.rxbs)
         assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
@@ -122,10 +126,11 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(ks=eveKS, db=eveDB, secrecies=eveSecrecies,
-                                 temp=True)
-        assert eveHab.ks == eveKS
-        assert eveHab.db == eveDB
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        #eveHab = habbing.Habitat(ks=eveKS, db=eveDB, secrecies=eveSecrecies,
+                                 #temp=True)
+        #assert eveHab.ks == eveKS
+        #assert eveHab.db == eveDB
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
@@ -136,13 +141,13 @@ def test_directing_basic():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveDirector.hab.kvy.db == eveDB
+        assert eveDirector.hab.kvy.db == eveHby.db
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveReactor.hab.kvy.db == eveDB
+        assert eveReactor.hab.kvy.db == eveHby.db
         assert id(eveReactor.parser.ims) == id(eveReactor.client.rxbs)
         assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)
 
@@ -182,8 +187,8 @@ def test_directing_basic():
         assert bobMsgRx == b''
         # assert bobMsgRx == eveMsgTx
 
-    assert not os.path.exists(eveDB.path)
-    assert not os.path.exists(bobDB.path)
+    assert not os.path.exists(eveHby.db.path)
+    assert not os.path.exists(bobHby.db.path)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""

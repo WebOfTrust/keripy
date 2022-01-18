@@ -14,12 +14,20 @@ from keri.peer import exchanging
 
 
 def test_exchanger():
+    """
+    XXX Some assumptions here need to be updated since Habery creates all
+    the shared resource dependencies
+    """
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-    with basing.openDB(name="sid") as sidDB, \
-            keeping.openKS(name="sid") as sidKS, \
-            basing.openDB(name="red") as redDB, \
-            keeping.openKS(name="red") as redKS:
+    #with basing.openDB(name="sid") as sidDB, \
+            #keeping.openKS(name="sid") as sidKS, \
+            #basing.openDB(name="red") as redDB, \
+            #keeping.openKS(name="red") as redKS:
+
+
+    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
+         habbing.openHby(name="red", base="test") as redHby:
 
         limit = 1.0
         tock = 0.03125
@@ -28,13 +36,14 @@ def test_exchanger():
         # should instead create sidHab here so can use it later more aligned with
         # normal use case
 
-        # Init key pair managers
-        sidMgr = keeping.Manager(ks=sidKS, salt=sidSalt)
+        # Init key pair managers XXX this may now be wrong use sidHby.mgr instead
+        sidMgr = keeping.Manager(ks=sidHby.ks, salt=sidSalt)
 
         # Init Keverys
-        sidKvy = eventing.Kevery(db=sidDB)
-        redHab = habbing.Habitat(ks=redKS, db=redDB, temp=True)
-        redKvy = eventing.Kevery(db=redDB)
+        sidKvy = eventing.Kevery(db=sidHby.db)
+        redHab = redHby.makeHab(name='red')
+        # redHab = habbing.Habitat(ks=redKS, db=redDB, temp=True)
+        redKvy = eventing.Kevery(db=redHby.db)
 
         # Setup sid by creating inception event
         verfers, digers, cst, nst = sidMgr.incept(stem='sid', temp=True)  # algo default salty and rooted

@@ -55,182 +55,188 @@ def test_signature_designature():
     Test headerize function that creates signature header item
     """
     name = "Hilga"
+    base = "test"
     temp = True
     reopen = True
 
     # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
-    db = basing.Baser(name=name, temp=temp, reopen=reopen)
+    #ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
+    #db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
-    # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
-    assert hab.pre == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
-    digest = hab.kever.serder.said
-    assert digest == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
+    # Setup Habery and Hab
+    with habbing.openHby(name=name, base=base) as hby:
+        # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
+        hab = hby.makeHab(name=name, icount=3)
 
-    # example body text
-    text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
-            b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
-            b'8080,"path":"/witness"}')
+        # setup habitat
+        #hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
+        assert hab.pre == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
+        digest = hab.kever.serder.said
+        assert digest == 'EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk'
 
-    sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
+        # example body text
+        text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
+                b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
+                b'8080,"path":"/witness"}')
 
-    # test signature with list markers as indexed sigers and defaults for indexed and signer
-    signage = ending.Signage(markers=sigers)
-    header = ending.signature([signage])  # put it in a list
-    assert header == ({'Signature':
-                           'indexed="?1";'
-                           '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
-                           '-2jAQ";'
-                           '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                           '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                           '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
 
-    # test designature
-    signages = ending.designature(header["Signature"])
-    signage = signages[0]
-    assert signage.indexed
-    assert not signage.signer
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == sigers[i].qb64
-        assert int(tag) == marker.index == sigers[i].index
+        # test signature with list markers as indexed sigers and defaults for indexed and signer
+        signage = ending.Signage(markers=sigers)
+        header = ending.signature([signage])  # put it in a list
+        assert header == ({'Signature':
+                               'indexed="?1";'
+                               '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
+                               '-2jAQ";'
+                               '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                               '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
-    # include signer ordinal digest and kind
-    # test signature with list markers as indexed sigers and defaults for indexed and signer
-    signage = ending.Signage(markers=sigers,
-                             indexed=True,
-                             signer=hab.pre,
-                             ordinal="0",
-                             digest=digest,
-                             kind="CESR")
-    header = ending.signature([signage])  # put it in a list
-    assert header == ({
-        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";ordinal="0";digest'
-                     '="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
-                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
-                     '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
-                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        # test designature
+        signages = ending.designature(header["Signature"])
+        signage = signages[0]
+        assert signage.indexed
+        assert not signage.signer
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == sigers[i].qb64
+            assert int(tag) == marker.index == sigers[i].index
 
-    # test designature
-    signages = ending.designature(header["Signature"])
-    signage = signages[0]
-    assert signage.indexed
-    assert signage.signer == hab.pre
-    assert signage.ordinal == "0"
-    assert signage.digest == digest
-    assert signage.kind == "CESR"
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == sigers[i].qb64
-        assert int(tag) == marker.index == sigers[i].index
+        # include signer ordinal digest and kind
+        # test signature with list markers as indexed sigers and defaults for indexed and signer
+        signage = ending.Signage(markers=sigers,
+                                 indexed=True,
+                                 signer=hab.pre,
+                                 ordinal="0",
+                                 digest=digest,
+                                 kind="CESR")
+        header = ending.signature([signage])  # put it in a list
+        assert header == ({
+            'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";ordinal="0";digest'
+                         '="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
+                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
+                         '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
+                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
-    # test signature with list markers as nonindexed cigars and defaults for indexed and signer
-    cigars = hab.mgr.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
-    signage = ending.Signage(markers=cigars)
-    header = ending.signature([signage])
-    assert header == ({'Signature':
-                           'indexed="?0";'
-                           'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-                           '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                           'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-                           '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                           'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
-                           '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ'
-                           '"'})
+        # test designature
+        signages = ending.designature(header["Signature"])
+        signage = signages[0]
+        assert signage.indexed
+        assert signage.signer == hab.pre
+        assert signage.ordinal == "0"
+        assert signage.digest == digest
+        assert signage.kind == "CESR"
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == sigers[i].qb64
+            assert int(tag) == marker.index == sigers[i].index
 
-    # test designature
-    signages = ending.designature(header["Signature"])
-    signage = signages[0]
-    assert not signage.indexed
-    assert not signage.signer
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == cigars[i].qb64
-        assert tag == cigars[i].verfer.qb64
+        # test signature with list markers as nonindexed cigars and defaults for indexed and signer
+        cigars = hab.mgr.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
+        signage = ending.Signage(markers=cigars)
+        header = ending.signature([signage])
+        assert header == ({'Signature':
+                               'indexed="?0";'
+                               'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
+                               '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                               'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
+                               '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                               'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
+                               '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ'
+                               '"'})
 
-    #  now combine into one header
-    signages = []
-    signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
-                                   kind="CESR"))
-    signages.append(ending.Signage(markers=cigars, indexed=False, signer=hab.pre,
-                                   kind="CESR"))
+        # test designature
+        signages = ending.designature(header["Signature"])
+        signage = signages[0]
+        assert not signage.indexed
+        assert not signage.signer
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == cigars[i].qb64
+            assert tag == cigars[i].verfer.qb64
 
-    header = ending.signature(signages)
-    assert header == ({
-        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
-                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
-                     '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
-                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                     'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR'
-                     '";DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7'
-                     '-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                     '";D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0'
-                     '="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ'
-                     '";DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM'
-                     '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        #  now combine into one header
+        signages = []
+        signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
+                                       kind="CESR"))
+        signages.append(ending.Signage(markers=cigars, indexed=False, signer=hab.pre,
+                                       kind="CESR"))
 
-    # test designature
-    signages = ending.designature(header["Signature"])
+        header = ending.signature(signages)
+        assert header == ({
+            'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";0'
+                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
+                         '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
+                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
+                         'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR'
+                         '";DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7'
+                         '-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                         '";D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0'
+                         '="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ'
+                         '";DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM'
+                         '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
-    signage = signages[0]
-    assert signage.indexed
-    assert signage.signer == hab.pre
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == sigers[i].qb64
-        assert int(tag) == marker.index == sigers[i].index
+        # test designature
+        signages = ending.designature(header["Signature"])
 
-    signage = signages[1]
-    assert not signage.indexed
-    assert signage.signer == hab.pre
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == cigars[i].qb64
-        assert tag == cigars[i].verfer.qb64
+        signage = signages[0]
+        assert signage.indexed
+        assert signage.signer == hab.pre
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == sigers[i].qb64
+            assert int(tag) == marker.index == sigers[i].index
 
-    # Test with dict markers
-    tags = ["wit0", "wit1", "wit2"]
-    signages = []
-    markers = {tags[i]: marker for i, marker in enumerate(sigers)}
-    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True,
-                                   kind="CESR"))
-    markers = {tags[i]: marker for i, marker in enumerate(cigars)}
-    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False,
-                                   kind="CESR"))
+        signage = signages[1]
+        assert not signage.indexed
+        assert signage.signer == hab.pre
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == cigars[i].qb64
+            assert tag == cigars[i].verfer.qb64
 
-    header = ending.signature(signages)
-    assert header == ({
-        'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
-                     '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                     '";wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                     '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
-                     '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                     'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
-                     '="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                     '";wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                     '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
-                     '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
-    # test designature
-    signages = ending.designature(header["Signature"])
+        # Test with dict markers
+        tags = ["wit0", "wit1", "wit2"]
+        signages = []
+        markers = {tags[i]: marker for i, marker in enumerate(sigers)}
+        signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True,
+                                       kind="CESR"))
+        markers = {tags[i]: marker for i, marker in enumerate(cigars)}
+        signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False,
+                                       kind="CESR"))
 
-    signage = signages[0]
-    assert signage.indexed
-    assert signage.signer == hab.pre
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == sigers[i].qb64
-        assert tag == tags[i]
+        header = ending.signature(signages)
+        assert header == ({
+            'Signature': 'indexed="?1";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
+                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                         '";wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                         '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
+                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
+                         'indexed="?0";signer="EGgvuN8lsYvxc0OU0v-sTHXR24ibVZKN5Mf_-artOAMk";kind="CESR";wit0'
+                         '="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
+                         '";wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                         '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
+                         '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        # test designature
+        signages = ending.designature(header["Signature"])
 
-    signage = signages[1]
-    assert not signage.indexed
-    assert signage.signer == hab.pre
-    markers = signage.markers
-    for i, (tag, marker) in enumerate(markers.items()):
-        assert marker.qb64 == cigars[i].qb64
-        assert tag == tags[i]
+        signage = signages[0]
+        assert signage.indexed
+        assert signage.signer == hab.pre
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == sigers[i].qb64
+            assert tag == tags[i]
 
-    # do with non-transferable hab
+        signage = signages[1]
+        assert not signage.indexed
+        assert signage.signer == hab.pre
+        markers = signage.markers
+        for i, (tag, marker) in enumerate(markers.items()):
+            assert marker.qb64 == cigars[i].qb64
+            assert tag == tags[i]
+
+        # do with non-transferable hab
 
     """Done Test"""
 
@@ -322,77 +328,69 @@ def test_get_static_sink():
     assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
 
-def setupTestHab(name='testia', temp=True, reopen=True):
-    """
-    Setup shared resources for testing of ReST APIs
-    """
-    # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
-    db = basing.Baser(name=name, temp=temp, reopen=reopen)
-
-    # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp)
-
-    return hab
-
 
 def test_seid_api():
     """
     Test the eid endpoint api using falcon TestClient
     """
-    hab = setupTestHab(name='zoe')
-    # must do it here to inject into Falcon endpoint resource instances
-    tymist = tyming.Tymist(tyme=0.0)
+    # Setup Habery and Hab
+    name = 'zoe'
+    base = 'test'
+    with habbing.openHby(name=name, base=base) as hby:
+        hab = hby.makeHab(name=name)
+        # hab = setupTestHab(name='zoe')
+        # must do it here to inject into Falcon endpoint resource instances
+        tymist = tyming.Tymist(tyme=0.0)
 
-    app = falcon.App()  # falcon.App instances are callable WSGI apps
-    ending.loadEnds(app, tymth=tymist.tymen(), hab=hab)
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        ending.loadEnds(app, tymth=tymist.tymen(), hab=hab)
 
-    client = testing.TestClient(app=app)
+        client = testing.TestClient(app=app)
 
-    aid0 = hab.pre
-    assert aid0 == 'E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4'
-    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
-    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
-    wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
-    wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
+        aid0 = hab.pre
+        assert aid0 == 'E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4'
+        wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+        wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+        wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
+        wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
 
-    role = "witness"
-    aid = aid0
-    role = 'witness'
-    seid = wit0  # identifier prefix of service endpoint
-    name = 'wit0'  # user friendly name of endpoint
-    dts = '2021-01-01T00:00:00.000000+00:00'  # ISO-8601 datetime string of latest update
+        role = "witness"
+        aid = aid0
+        role = 'witness'
+        seid = wit0  # identifier prefix of service endpoint
+        name = 'wit0'  # user friendly name of endpoint
+        dts = '2021-01-01T00:00:00.000000+00:00'  # ISO-8601 datetime string of latest update
 
-    scheme = 'http'
-    host = 'localhost'
-    port = 8080
-    path = '/witness'
+        scheme = 'http'
+        host = 'localhost'
+        port = 8080
+        path = '/witness'
 
-    data = dict(seid=seid, name=name, dts=dts, scheme=scheme, host=host, port=port, path=path)
-    text = coring.dumps(data)  # default is kind=coring.Serials.json
-    assert text == (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
-                    b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
-                    b'8080,"path":"/witness"}')
-    # sign here  check for non-transferable
-    sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
-    signage = ending.Signage(markers=sigers)
-    header = ending.signature([signage])
-    assert header == ({'Signature':
-                           'indexed="?1";'
-                           '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
+        data = dict(seid=seid, name=name, dts=dts, scheme=scheme, host=host, port=port, path=path)
+        text = coring.dumps(data)  # default is kind=coring.Serials.json
+        assert text == (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
+                        b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
+                        b'8080,"path":"/witness"}')
+        # sign here  check for non-transferable
+        sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
+        signage = ending.Signage(markers=sigers)
+        header = ending.signature([signage])
+        assert header == ({'Signature':
+                               'indexed="?1";'
+                               '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
 
-    endpath = "/end/{}/{}".format(aid, role)
-    assert endpath == '/end/E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4/witness'
-    rep = client.simulate_post(path=endpath,
-                               content_type=falcon.MEDIA_JSON,
-                               headers=header,
-                               body=text)  # accepts bytes
-    assert rep.status == falcon.HTTP_OK
-    assert rep.json == dict(aid=aid, role=role, data=data)
-    assert rep.text == ('{"aid": "E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4", "role": "witness", '
-                        '"data": {"seid": "B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
-                        '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
-                        '"localhost", "port": 8080, "path": "/witness"}}')
+        endpath = "/end/{}/{}".format(aid, role)
+        assert endpath == '/end/E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4/witness'
+        rep = client.simulate_post(path=endpath,
+                                   content_type=falcon.MEDIA_JSON,
+                                   headers=header,
+                                   body=text)  # accepts bytes
+        assert rep.status == falcon.HTTP_OK
+        assert rep.json == dict(aid=aid, role=role, data=data)
+        assert rep.text == ('{"aid": "E71ij5aKAiPAlMPnj_UA2SNnJrlxEDuWvmptGw1VDvV4", "role": "witness", '
+                            '"data": {"seid": "B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
+                            '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
+                            '"localhost", "port": 8080, "path": "/witness"}}')
 
     """Done Test"""
 
@@ -401,7 +399,12 @@ def test_get_admin():
     """
     Uses falcon TestClient
     """
-    hab = setupTestHab(name='zoe')
+    # Setup Habery and Hab
+    name = 'zoe'
+    base = 'test'
+    with habbing.openHby(name=name, base=base) as hby:
+        hab = hby.makeHab(name=name)
+        # hab = setupTestHab(name='zoe')
 
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)

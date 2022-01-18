@@ -17,24 +17,46 @@ from keri.vdr import viring, verifying, issuing
 
 def test_issuing():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
+    assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
 
-    with basing.openDB(name="sid") as sidDB, \
-            keeping.openKS(name="sid") as sidKS, \
-            basing.openDB(name="red") as redDB, \
-            habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            viring.openReg(name="red") as redPDB:
+    #with basing.openDB(name="sid") as sidDB, \
+            #keeping.openKS(name="sid") as sidKS, \
+            #basing.openDB(name="red") as redDB, \
+            #habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            #viring.openReg(name="red") as redPDB:
+
+    with viring.openReg(name="red") as redPDB, \
+         habbing.openHby(name="red", base="test") as redHby, \
+         habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
+         habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
+
+        wanHab = wanHby.makeHab(name="wan", transferable=False)
+
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
 
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
-        sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
-                                 wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
+        sidHab = sidHby.makeHab(name="test",
+                                wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
         sidPre = sidHab.pre
         assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
 
-        redKvy = eventing.Kevery(db=redDB)
+        #sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
+                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
+        #sidPre = sidHab.pre
+        #assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
+
+        #sidHab = habbing.Habitat(ks=sidHby.ks, db=sidHby.db,name="sid", salt=sidSalt, temp=True,
+                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
+        #sidPre = sidHab.pre
+        #assert sidPre == 'ErMoeFWa5WNC6hxy3EeFpcDYYOGilu0CSZvmckmNHeOQ'
+
+
+        redKvy = eventing.Kevery(db=redHby.db)
 
         verifier = verifying.Verifier(hab=sidHab, reger=redPDB)
         issuer = issuing.Issuer(hab=sidHab, reger=verifier.reger)
@@ -120,34 +142,43 @@ def test_proving():
     hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
 
-    with basing.openDB(name="sid") as sidDB, \
-            keeping.openKS(name="sid") as sidKS, \
-            basing.openDB(name="vic") as vicDB, \
-            keeping.openKS(name="vic") as vicKS, \
-            basing.openDB(name="han") as hanDB, \
-            keeping.openKS(name="han") as hanKS, \
-            viring.openReg(name="han") as hanPDB:
+    #with basing.openDB(name="sid") as sidDB, \
+            #keeping.openKS(name="sid") as sidKS, \
+            #basing.openDB(name="vic") as vicDB, \
+            #keeping.openKS(name="vic") as vicKS, \
+            #basing.openDB(name="han") as hanDB, \
+            #keeping.openKS(name="han") as hanKS, \
+            #viring.openReg(name="han") as hanPDB:
+
+    with viring.openReg(name="han") as hanPDB, \
+         habbing.openHby(name="han", base="test", salt=hanSalt) as hanHby, \
+         habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
+         habbing.openHby(name="vic", base="test", salt=vicSalt) as vicHby:
+
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
-        sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
+        # sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
+        sidHab = sidHby.makeHab(name="test")
         assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
         sidIcpMsg = sidHab.makeOwnInception()
 
-        hanKvy = eventing.Kevery(db=hanDB)
+        hanKvy = eventing.Kevery(db=hanHby.db)
         parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=hanKvy)
         assert hanKvy.kevers[sidHab.pre].sn == 0  # accepted event
 
-        hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
+        # hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
+        hanHab = hanHby.makeHab(name="test")
         assert hanHab.pre == "EXs465M4avETtnmCD2cd02CDwE5K-1vyTnyfk15_PRPs"
         hanIcpMsg = hanHab.makeOwnInception()
 
-        vicKvy = eventing.Kevery(db=vicDB)
+        vicKvy = eventing.Kevery(db=vicHby.db)
         parsing.Parser().parse(ims=bytearray(hanIcpMsg), kvy=vicKvy)
         assert vicKvy.kevers[hanHab.pre].sn == 0  # accepted event
 
-        vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
+        # vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
+        vicHab = vicHby.makeHab(name="test")
         assert vicHab.pre == "EvOnXBWyrNJbR4wf__Qn79YAf-u3GynE3ychvkuiGnEI"
         vicIcpMsg = vicHab.makeOwnInception()
 

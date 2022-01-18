@@ -408,7 +408,7 @@ def test_tever_escrow():
 
     # registry with no backers, invalid anchor
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
                               toad=0,
@@ -428,7 +428,7 @@ def test_tever_escrow():
 
     # registry with no backers
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
                               toad=0,
@@ -453,7 +453,7 @@ def test_tever_escrow():
 
     # registry with backers, no signatures.  should escrow
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=["BoOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
                               toad=1,
@@ -493,7 +493,7 @@ def test_tever_no_backers(mockHelpingNowUTC):
     # registry with no backers
     # registry with backer and receipt
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -594,7 +594,7 @@ def test_tever_backers(mockHelpingNowUTC):
         valpre = valPrefixer.qb64
         assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
                               baks=[valpre],
@@ -679,7 +679,7 @@ def test_tever_backers(mockHelpingNowUTC):
 
 def test_tevery():
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -745,7 +745,7 @@ def test_tevery():
 
 def test_tevery_process_escrow():
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -778,7 +778,11 @@ def test_tevery_process_escrow():
         assert tev.sn == 0
 
 
-def buildHab(db, kpr):
+def buildHab(db, ks, name="test"):
+    """Utility to setup Habery and Hab for testing purposes
+    Returns:
+       tuple (Habery, Hab):
+    """
     secrets = [
         'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
         'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
@@ -793,8 +797,10 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = habbing.Habitat(ks=kpr, db=db, secrecies=secrecies, temp=True)
-    return hab
+    hby = habbing.Habery(name=name, temp=True, ks=ks, db=db)
+    hab = hby.makeHab(name=name, secrecies=secrecies)
+    # hab = habbing.Habitat(ks=ks, db=db, secrecies=secrecies, temp=True)
+    return (hby, hab)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ from . import keeping, configing
 
 logger = help.ogler.getLogger()
 
-SALT = '0AMDEyMzQ1Njc4OWFiY2RlZg'
+SALT = '0AMDEyMzQ1Njc4OWFiY2RlZg'  # coring.Salter(raw=b'0123456789abcdef').qb64
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
@@ -336,6 +336,9 @@ class Habery:
 
         if salt is None:  # salt for signing keys not aeid seed
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
+        # force salt to be qb64
+        # else:
+        #  salt = coring.Salter(qb64=salt).qb64
 
         self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
                                    algo=algo, salt=salt, tier=tier)
@@ -390,8 +393,9 @@ class Habery:
             ncount (int): next key count for number of next keys
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
-            salt (str): qb64 salt for creating key pairs
-            tier (str): security tier for generating keys from salt
+            delpre (str): qb64 of delegator identifier prefix
+            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+                events allowed in KEL for this Hab
         """
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -612,8 +616,7 @@ class Hab:
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
               transferable=True, isith=None, icount=1,
               nsith=None, ncount=None,
-              toad=None, wits=None, delpre=None, estOnly=False,
-              algo=None, salt=None, tier=None, ):
+              toad=None, wits=None, delpre=None, estOnly=False):
         """
         Finish setting up or making Hab from parameters.
         Assumes injected dependencies were already setup.
@@ -630,8 +633,9 @@ class Hab:
             ncount (int): next key count for number of next keys
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
-            salt (str): qb64 salt for creating key pairs
-            tier (str): security tier for generating keys from salt
+            delpre (str): qb64 of delegator identifier prefix
+            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+                events allowed in KEL for this Hab
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
             raise kering.ClosedError("Attempt to make Hab with unopened "
@@ -1579,7 +1583,7 @@ def openHabitat(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa
 
     Parameters:
         name(str): name of habitat to create
-        salt(bytes): passed to habitat to use for inception
+        salt(bytes): passed to habitat to use for inception raw salt
         temp(bool): indicates if this uses temporary databases
 
     """

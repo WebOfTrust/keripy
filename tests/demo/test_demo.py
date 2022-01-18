@@ -256,10 +256,11 @@ def test_direct_mode_sam_eve_demo():
     eve = eveSerder.ked["i"]
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
+    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         #basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
 
-
-    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
+    with habbing.openHby(name="eve", base="test") as eveHby, \
+         habbing.openHby(name="sam", base="test") as samHby:
 
         limit = 1.0
         tock = 0.03125
@@ -269,14 +270,15 @@ def test_direct_mode_sam_eve_demo():
         evePort = 5621  # eve's TCP listneing port for server
 
         # setup Sam
-        samHab = habbing.Habitat(name='Sam',
-                                 ks=samKS,
-                                 db=samDB,
-                                 secrecies=samSecrecies,
-                                 temp=True)
+        samHab = samHby.makeHab(name="Sam", secrecies=samSecrecies)
+        #samHab = habbing.Habitat(name='Sam',
+                                 #ks=samKS,
+                                 #db=samDB,
+                                 #secrecies=samSecrecies,
+                                 #temp=True)
 
-        assert samHab.ks == samKS
-        assert samHab.db == samDB
+        #assert samHab.ks == samKS
+        #assert samHab.db == samDB
         assert samHab.iserder.said == samSerder.said
         assert samHab.pre == sam
 
@@ -287,14 +289,14 @@ def test_direct_mode_sam_eve_demo():
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
         assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
-        assert samDirector.hab.kvy.db == samDB
+        assert samDirector.hab.kvy.db == samHby.db
         assert samDirector.tock == 0.125
 
         samReactor = directing.Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
         assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
-        assert samReactor.hab.kvy.db == samDB
+        assert samReactor.hab.kvy.db == samHby.db
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
         samServer = serving.Server(host="", port=samPort)
@@ -306,12 +308,13 @@ def test_direct_mode_sam_eve_demo():
         # Sam's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(name='Eve',
-                                 ks=eveKS,
-                                 db=eveDB,
-                                 secrecies=eveSecrecies, temp=True)
-        assert eveHab.ks == eveKS
-        assert eveHab.db == eveDB
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        #eveHab = habbing.Habitat(name='Eve',
+                                 #ks=eveKS,
+                                 #db=eveDB,
+                                 #secrecies=eveSecrecies, temp=True)
+        #assert eveHab.ks == eveKS
+        #assert eveHab.db == eveDB
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
@@ -322,13 +325,13 @@ def test_direct_mode_sam_eve_demo():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveDirector.hab.kvy.db == eveDB
+        assert eveDirector.hab.kvy.db == eveHby.db
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
-        assert eveReactor.hab.kvy.db == eveDB
+        assert eveReactor.hab.kvy.db == eveHby.db
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
@@ -359,8 +362,8 @@ def test_direct_mode_sam_eve_demo():
         #  verify final event states
 
 
-    assert not os.path.exists(eveDB.path)
-    assert not os.path.exists(samDB.path)
+    assert not os.path.exists(eveHby.db.path)
+    assert not os.path.exists(samHby.db.path)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
@@ -535,24 +538,33 @@ def test_indirect_mode_sam_cam_wit_demo():
     samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
     assert [signer.qb64 for signer in samSigners] == samSecrets
 
-    with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
-         basing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
+
+    #with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         #basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
+         #basing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
+
+    with habbing.openHby(name="cam", base="test") as camHby, \
+         habbing.openHby(name="sam", base="test") as samHby,  \
+         habbing.openHby(name="wit", base="test") as witHby:
 
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listneing port for server
 
         # setup the witness
-        witHab = habbing.Habitat(name='Wit',
-                                 ks=witKS,
-                                 db=witDB,
+        witHab = witHby.makeHab(name="Wit",
                                  isith=1,
                                  icount=1,
-                                 temp=True,
                                  transferable=False)
+        #witHab = habbing.Habitat(name='Wit',
+                                 #ks=witKS,
+                                 #db=witDB,
+                                 #isith=1,
+                                 #icount=1,
+                                 #temp=True,
+                                 #transferable=False)
         wit = witHab.pre
-        assert witHab.ks == witKS
-        assert witHab.db == witDB
+        #assert witHab.ks == witKS
+        #assert witHab.db == witDB
         witServer = serving.Server(host="", port=witPort)
         witServerDoer = serving.ServerDoer(server=witServer)
         witDirectant = directing.Directant(hab=witHab, server=witServer)
@@ -576,15 +588,15 @@ def test_indirect_mode_sam_cam_wit_demo():
         sam = samSerder.ked["i"]
         assert sam == 'EU2vtu6GkN2UmI8H2_fi961IGnYcat6Hk9Di5S8GcAvs'
 
-
-        samHab = habbing.Habitat(name='Sam',
-                                 ks=samKS,
-                                 db=samDB,
-                                 wits=[wit],
-                                 secrecies=samSecrecies,
-                                 temp=True)
-        assert samHab.ks == samKS
-        assert samHab.db == samDB
+        samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies)
+        #samHab = habbing.Habitat(name='Sam',
+                                 #ks=samKS,
+                                 #db=samDB,
+                                 #wits=[wit],
+                                 #secrecies=samSecrecies,
+                                 #temp=True)
+        #assert samHab.ks == samKS
+        #assert samHab.db == samDB
         assert samHab.iserder.said == samSerder.said
         assert samHab.pre == sam
 
@@ -595,14 +607,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
         assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
-        assert samDirector.hab.kvy.db == samDB
+        assert samDirector.hab.kvy.db == samHby.db
         assert samDirector.tock == 0.125
 
         samReactor = directing.Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
         assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
-        assert samReactor.hab.kvy.db == samDB
+        assert samReactor.hab.kvy.db == samHby.db
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
         samServer = serving.Server(host="", port=samPort)
@@ -616,14 +628,15 @@ def test_indirect_mode_sam_cam_wit_demo():
         samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
         # setup cam
-        camHab = habbing.Habitat(name='Cam',
-                                 ks=camKS,
-                                 db=camDB,
-                                 secrecies=camSecrecies,
-                                 temp=True)
+        camHab = camHby.makeHab(name="Cam", secrecies=camSecrecies)
+        #camHab = habbing.Habitat(name='Cam',
+                                 #ks=camKS,
+                                 #db=camDB,
+                                 #secrecies=camSecrecies,
+                                 #temp=True)
 
-        assert camHab.ks == camKS
-        assert camHab.db == camDB
+        #assert camHab.ks == camKS
+        #assert camHab.db == camDB
         assert camHab.iserder.said == camSerder.said
         assert camHab.pre == cam
 
@@ -634,14 +647,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camDirector.hab == camHab
         assert camDirector.client == camClient
         assert id(camDirector.hab.kvy.kevers) == id(camHab.kevers)
-        assert camDirector.hab.kvy.db == camDB
+        assert camDirector.hab.kvy.db == camHby.db
         assert camDirector.tock == 0.125
 
         camReactor = directing.Reactor(hab=camHab, client=camClient, indirect=True)
         assert camReactor.hab == camHab
         assert camReactor.client == camClient
         assert id(camReactor.hab.kvy.kevers) == id(camHab.kevers)
-        assert camReactor.hab.kvy.db == camDB
+        assert camReactor.hab.kvy.db == camHby.db
         assert camReactor.hab.psr.ims == camReactor.client.rxbs
 
         camDoers = [camClientDoer, camDirector, camReactor]
@@ -686,8 +699,9 @@ def test_indirect_mode_sam_cam_wit_demo():
 
 
 
-    assert not os.path.exists(camDB.path)
-    assert not os.path.exists(samDB.path)
+    assert not os.path.exists(camHby.db.path)
+    assert not os.path.exists(samHby.db.path)
+    assert not os.path.exists(witHby.db.path)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""

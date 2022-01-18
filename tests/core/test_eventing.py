@@ -4159,18 +4159,20 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    with habbing.openHby(name="nat", base="test") as natHby:
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
-                                 isith=2, icount=3, temp=True)
+        natHab = natHby.makeHab(name="nat", isith=2, icount=3)
+        #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
+                                 #isith=2, icount=3, temp=True)
         assert natHab.name == 'nat'
-        assert natHab.ks == natKS
-        assert natHab.db == natDB
+        assert natHab.ks == natHby.ks
+        assert natHab.db == natHby.db
         assert natHab.kever.prefixer.transferable
         assert natHab.db.opened
         assert natHab.pre in natHab.kevers
         assert natHab.pre in natHab.prefixes
-        assert natHab.db.path.endswith("/keri/db/nat")
+        assert natHab.db.path.endswith("/keri/db/test/nat")
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
@@ -4205,7 +4207,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert state.ked == nstate.ked
 
         # now create new Kever with state
-        kever = eventing.Kever(state=state, db=natDB)
+        kever = eventing.Kever(state=state, db=natHby.db)
         assert kever.sn == 6
         assert kever.fn == 6
         assert kever.serder.ked == natHab.kever.serder.ked
@@ -4223,8 +4225,8 @@ def test_reload_kever(mockHelpingNowUTC):
             b':"0","b":[],"c":[],"ee":{"s":"2","d":"E7aJm3kFAe7qWgoMFXKlaiMZDfxVjgoMHctI3Z'
             b'LUdGAQ","br":[],"ba":[]},"di":""}')
 
-    assert not os.path.exists(natKS.path)
-    assert not os.path.exists(natDB.path)
+    assert not os.path.exists(natHby.ks.path)
+    assert not os.path.exists(natHby.db.path)
 
     """End Test"""
 
