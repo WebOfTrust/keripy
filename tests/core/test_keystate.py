@@ -60,9 +60,6 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
-    #with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-         #basing.openDB(name="bam") as bamDB:
 
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby, \
@@ -130,9 +127,6 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob from Wes
     # Wes is Bam's watcher
-    #with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-         #basing.openDB(name="bam") as bamDB, keeping.openKS(name="bam") as bamKS:
 
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby, \
@@ -207,22 +201,28 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob from Wes
     # Wes is no one
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-         basing.openDB(name="bam") as bamDB, keeping.openKS(name="bam") as bamKS:
+    #with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+         #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+         #basing.openDB(name="bam") as bamDB, keeping.openKS(name="bam") as bamKS:
+
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby, \
+         habbing.openHby(name="wes", base="test",  salt=salt) as wesHby:
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=1, icount=1,
-                                 salt=salt, transferable=False, temp=True)
-
+        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 #isith=1, icount=1,
+                                 #salt=salt, transferable=False, temp=True)
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True, temp=True)
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
+                                 #transferable=True, temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = eventing.Kevery(db=wesDB, lax=False, local=False)
+        wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
         bobIcp = bobHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
@@ -242,20 +242,25 @@ def test_keystate(mockHelpingNowUTC):
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
+        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
         parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 
         assert len(bamKvy.cues) == 0
-        saider = bamDB.knas.get(keys=keys)
+        saider = bamHby.db.knas.get(keys=keys)
         assert saider is None
 
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-         basing.openDB(name="bam") as bamDB:
+    #with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
+         #basing.openDB(name="bam") as bamDB:
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
+
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
+                                 #transferable=True,
+                                 #wits=[], temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         # Get ksn from Bob and verify
@@ -276,8 +281,8 @@ def test_keystate(mockHelpingNowUTC):
         staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
 
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamKvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy)
 
@@ -294,7 +299,7 @@ def test_keystate(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy)
 
         msgs = bytearray()  # outgoing messages
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
@@ -305,9 +310,9 @@ def test_keystate(mockHelpingNowUTC):
         bamKvy.processEscrows()
 
         keys = (bobHab.pre, bobHab.pre)
-        saider = bamDB.knas.get(keys=keys)
+        saider = bamHby.db.knas.get(keys=keys)
         assert saider.qb64 == bobHab.kever.serder.said
-        latest = bamDB.ksns.get(keys=(saider.qb64,))
+        latest = bamHby.db.ksns.get(keys=(saider.qb64,))
         assert latest.sn == 8
 
     """End Test"""
