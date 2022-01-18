@@ -761,7 +761,6 @@ class Baser(dbing.LMDBer):
         # Routes such as /ksn/{aid}
         self.knes = subing.CesrIoSetSuber(db=self, subkey='knes', klas=coring.Saider)
 
-
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
