@@ -392,7 +392,7 @@ def test_make_load_hab_with_habery():
         shutil.rmtree('/usr/local/var/keri/ks/hold/test')
 
     base = "hold"
-    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True on openHab
+    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
         assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
         assert hby.db.path == '/usr/local/var/keri/db/hold/test'
         assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'
@@ -438,7 +438,7 @@ def test_make_load_hab_with_habery():
     suePre = 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
     bobPre = 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
     base = "hold"
-    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True on openHab
+    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
         assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
         assert hby.db.path == '/usr/local/var/keri/db/hold/test'
         assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'

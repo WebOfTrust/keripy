@@ -81,6 +81,29 @@ def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
             habery.close(clear=habery.temp)
 
 
+@contextmanager
+def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
+    """
+    Context manager wrapper for Hab instance.
+    Defaults to temporary resources
+    Context 'with' statements call .close on exit of 'with' block
+
+    Parameters:
+        name(str): name of habitat to create
+        salt(bytes): passed to habitat to use for inception raw salt
+        temp(bool): indicates if this uses temporary databases
+
+    """
+
+    salt = coring.Salter(raw=salt).qb64
+
+    with openHby(name=name, base=base, salt=salt, temp=temp) as hby:
+        if (hab := hby.habByName(name)) is None:
+            hab = hby.makeHab(name=name, icount=1, isith=1, ncount=1, nsith=1, **kwa)
+
+        yield hab
+
+
 def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
                     curls=None, remote="eve", iurls=None):
     """
@@ -539,6 +562,7 @@ class HaberyDoer(doing.Doer):
         """"""
         if self.habery.inited and self.habery.free:
             self.habery.close(clear=self.habery.temp)
+
 
 
 class Hab:
@@ -1581,29 +1605,6 @@ class Hab:
                 yield msg
 
 
-
-@contextmanager
-def openHabitat(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
-    """
-    Context manager wrapper for Habitat instance.
-    Defaults to temporary database and keeper.
-    Context 'with' statements call .close on exit of 'with' block
-
-    Parameters:
-        name(str): name of habitat to create
-        salt(bytes): passed to habitat to use for inception raw salt
-        temp(bool): indicates if this uses temporary databases
-
-    """
-
-    with basing.openDB(name=base if base else name, temp=temp) as db, \
-            keeping.openKS(name=base if base else name, temp=temp) as ks, \
-            configing.openCF(name=name, base=base, temp=temp) as cf:
-        salt = coring.Salter(raw=salt).qb64
-        hab = Habitat(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
-                      salt=salt, icount=1, isith=1, ncount=1, nsith=1, **kwa)
-
-        yield hab
 
 
 @contextmanager

@@ -15,10 +15,10 @@ from keri.vdr import eventing, viring, issuing
 
 
 def test_withness_receiptor(mockGetWitnessByPrefix):
-    with habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            habbing.openHabitat(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
-            habbing.openHabitat(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
-            habbing.openHabitat(name="pal", salt=b'0123456789abcdef', transferable=True,
+    with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
+            habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
+            habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                             wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as palHab:
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, tcpPort=5633, httpPort=5643)
@@ -45,10 +45,10 @@ def test_withness_receiptor(mockGetWitnessByPrefix):
 
 
 def test_witness_sender(mockGetWitnessByPrefix):
-    with habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            habbing.openHabitat(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
-            habbing.openHabitat(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
-            habbing.openHabitat(name="pal", salt=b'0123456789abcdef', transferable=True,
+    with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
+            habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
+            habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                             wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as palHab:
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, tcpPort=5633, httpPort=5643)
@@ -77,12 +77,12 @@ def test_witness_sender(mockGetWitnessByPrefix):
 
 
 def test_witness_inquisitor(mockGetWitnessByPrefix, mockHelpingNowUTC):
-    with habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            habbing.openHabitat(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
-            habbing.openHabitat(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
-            habbing.openHabitat(name="pal", salt=b'0123456789abcdef', transferable=True,
+    with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
+            habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
+            habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                             wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as palHab, \
-            habbing.openHabitat(name="qin", salt=b'abcdef0123456789', transferable=True,
+            habbing.openHab(name="qin", salt=b'abcdef0123456789', transferable=True,
                             wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as qinHab:
         wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, tcpPort=5633, httpPort=5643)

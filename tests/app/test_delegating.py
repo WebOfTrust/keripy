@@ -6,7 +6,7 @@ from keri.db import basing
 def test_delegating():
     # Dan is the delegator
     # Deb is the delegatee, or the entity "requesting" delegation of an identifier
-    with habbing.openHabitat(name="dan", salt=b'0123456789abcdef', transferable=True, temp=True) as danHab:
+    with habbing.openHab(name="dan", salt=b'0123456789abcdef', transferable=True, temp=True) as danHab:
         # delegatee
         ks = keeping.Keeper(name="deb", temp=True)
         ks.reopen()

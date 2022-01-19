@@ -28,9 +28,9 @@ def test_digest_ungrouping():
 
 @contextmanager
 def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    with habbing.openHabitat(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as hab1, \
-            habbing.openHabitat(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as hab2, \
-            habbing.openHabitat(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as hab3:
+    with habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as hab1, \
+            habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as hab2, \
+            habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as hab3:
 
         # Keverys so we can process each other's inception messages.
         kev1 = eventing.Kevery(db=hab1.db, lax=False, local=False)

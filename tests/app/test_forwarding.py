@@ -16,9 +16,9 @@ from keri.peer import exchanging
 
 
 def test_postman(mockGetWitnessByPrefixOneWitness):
-    with habbing.openHabitat(name="test", transferable=True, temp=True) as hab, \
-            habbing.openHabitat(name="wes", transferable=False, temp=True) as wesHab, \
-            habbing.openHabitat(name="repTest", transferable=True, temp=True, wits=[wesHab.pre]) as recpHab:
+    with habbing.openHab(name="test", transferable=True, temp=True) as hab, \
+            habbing.openHab(name="wes", transferable=False, temp=True) as wesHab, \
+            habbing.openHab(name="repTest", transferable=True, temp=True, wits=[wesHab.pre]) as recpHab:
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
@@ -91,7 +91,7 @@ def test_forward():
     assert ked == icp.ked
 
 
-    with habbing.openHabitat(name="test", transferable=True, temp=True) as hab:
+    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
         icp = hab.makeOwnEvent(sn=0)
         serder = coring.Serder(raw=bytearray(icp))
 
