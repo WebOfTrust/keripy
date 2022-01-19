@@ -80,8 +80,7 @@ def test_direct_mode_bob_eve_demo():
     eve = eveSerder.ked["i"]
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
-    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+
     with habbing.openHby(name="eve", base="test") as eveHby, \
          habbing.openHby(name="bob", base="test") as bobHby:
 

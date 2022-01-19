@@ -10,11 +10,11 @@ from keri.vdr import viring, issuing, eventing
 def test_tsn_message_out_of_order(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
+
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         reger = viring.Registry(name=bobHab.name, temp=True)
@@ -24,13 +24,13 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         # pass key event log to Bam
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
 
         tever = issuer.tevers[issuer.regk]
@@ -45,7 +45,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
         bamReger = viring.Registry(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
@@ -76,11 +76,10 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
 def test_tsn_message_missing_anchor(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         reger = viring.Registry(name=bobHab.name, temp=True)
@@ -90,8 +89,8 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
 
         # pass key event log to Bam
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
 
         tever = issuer.tevers[issuer.regk]
         tsn = tever.state()
@@ -105,7 +104,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
         bamReger = viring.Registry(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
@@ -118,7 +117,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
@@ -159,19 +158,15 @@ def test_tsn_from_witness(mockHelpingNowUTC):
     salt = salter.qb64
     assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
+    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=1, icount=1,
-                                 salt=salt, transferable=False, temp=True)
-
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1,transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[wesHab.pre], temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, wits=[wesHab.pre])
         assert bobHab.pre == "ECJTKtR-GlybCmn1PCiVwIuGBjaOUXI09XWDdXkrJNj0"
 
         reger = viring.Registry(name=bobHab.name, temp=True)
@@ -180,9 +175,9 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         assert issuer.regk == "E83bZ5DV-FSe8WeldHfVBGmvJ1LBnV8RBXUyNzrTClZ8"
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = Kevery(db=wesDB, lax=False, local=False)
+        wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
             iserder = coring.Serder(raw=bytearray(msg))
             wesHab.receipt(serder=iserder)
@@ -196,8 +191,8 @@ def test_tsn_from_witness(mockHelpingNowUTC):
 
         wesReger = viring.Registry(name="wes", temp=True)
         wesRtr = routing.Router()
-        wesRvy = routing.Revery(db=bamDB, rtr=wesRtr)
-        wesTvy = eventing.Tevery(reger=wesReger, db=wesDB, lax=False, local=False, rvy=wesRvy)
+        wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
+        wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
         wesTvy.registerReplyRoutes(router=wesRtr)
         parsing.Parser().parse(ims=bytearray(tmsgs), tvy=wesTvy, rvy=wesRvy)
 
@@ -215,10 +210,10 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamReger = viring.Registry(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
@@ -231,14 +226,14 @@ def test_tsn_from_witness(mockHelpingNowUTC):
 
         wesIcp = wesHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(wesIcp), kvy=bamKvy)
-        assert wesHab.pre in bamDB.kevers
+        assert wesHab.pre in bamHby.db.kevers
 
         msgs = bytearray()
-        for msg in wesDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
-        assert bobHab.pre in bamDB.kevers
+        assert bobHab.pre in bamHby.db.kevers
 
         bamTvy.processEscrows()
 
@@ -272,19 +267,15 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
     salt = salter.qb64
     assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
+    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=1, icount=1,
-                                 salt=salt, transferable=False, temp=True)
-
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1,transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         reger = viring.Registry(name=bobHab.name, temp=True)
@@ -293,9 +284,9 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         assert issuer.regk == "E_dyu0_yRduOU-KjhNvgCCmvBwoCPjdXozcvfglcrUvU"
 
         # Create Bob's icp, pass to Wes.
-        wesKvy = Kevery(db=wesDB, lax=False, local=False)
+        wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
 
         assert bobHab.pre in wesHab.kevers
@@ -307,8 +298,8 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
 
         wesReger = viring.Registry(name="wes", temp=True)
         wesRtr = routing.Router()
-        wesRvy = routing.Revery(db=bamDB, rtr=wesRtr)
-        wesTvy = eventing.Tevery(reger=wesReger, db=wesDB, lax=False, local=False, rvy=wesRvy)
+        wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
+        wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
         wesTvy.registerReplyRoutes(router=wesRtr)
         parsing.Parser().parse(ims=bytearray(tmsgs), tvy=wesTvy, rvy=wesRvy)
 
@@ -326,18 +317,18 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamReger = viring.Registry(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
 
         msgs = bytearray()
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
-        assert bobHab.pre in bamDB.kevers
+        assert bobHab.pre in bamHby.db.kevers
 
         # Parse TSN from someone who is not authorized to provide it
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -353,11 +344,12 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
 def test_credential_tsn_message(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
 
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby:
+
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
 
         reger = viring.Registry(name=bobHab.name, temp=True)
@@ -368,8 +360,8 @@ def test_credential_tsn_message(mockHelpingNowUTC):
 
         # pass key event log to Bam
         bamRtr = routing.Router()
-        bamRvy = routing.Revery(db=bamDB, rtr=bamRtr)
-        bamKvy = Kevery(db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
 
         credSubject = dict(
             d="",
@@ -404,7 +396,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
 
         bamReger = viring.Registry(name="bam", temp=True)
-        bamTvy = eventing.Tevery(reger=bamReger, db=bamDB, lax=False, local=False, rvy=bamRvy)
+        bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
@@ -417,7 +409,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobDB.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
