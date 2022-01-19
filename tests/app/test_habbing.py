@@ -470,17 +470,17 @@ def test_make_load_hab_with_habery():
 
     """End Test"""
 
-def test_habitat():
-    """
-    Test Habitat class
-    """
-    hab = habbing.Habitat(temp=True)
-    assert hab.name == "test"
+#def test_habitat():
+    #"""
+    #Test Habitat class
+    #"""
+    #hab = habbing.Habitat(temp=True)
+    #assert hab.name == "test"
 
-    hab.db.close(clear=True)
-    hab.ks.close(clear=True)
+    #hab.db.close(clear=True)
+    #hab.ks.close(clear=True)
 
-    """End Test"""
+    #"""End Test"""
 
 
 def test_habitat_rotate_with_witness():
@@ -651,6 +651,7 @@ def test_habitat_with_delegation():
     delhab.ks.close(clear=True)
 
     """End Test"""
+
 
 def test_habitat_reconfigure(mockHelpingNowUTC):
     """

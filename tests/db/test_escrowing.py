@@ -28,10 +28,9 @@ def test_broker_nontrans():
             #basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
 
     with dbing.openLMDB() as brokerdb, \
-        habbing.openHby(name="wes", base="test") as wesHby:
+        habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
 
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, salt=salt,
-                                transferable=False)
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False)
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
                                  #isith=1, icount=1,
                                  #salt=salt, transferable=False, temp=True)
