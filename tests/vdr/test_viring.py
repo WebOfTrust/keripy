@@ -349,9 +349,9 @@ def test_clone():
 def test_build_proof():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-    with basing.openDB(name="sid") as sigDB, \
-            keeping.openKS(name="sid") as sigKS:
-        sigHab = habbing.Habitat(ks=sigKS, db=sigDB, salt=sidSalt, icount=3, ncount=3, temp=True)
+    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+
+        sidHab = sidHby.makeHab(name="test", icount=3, ncount=3)
 
         sed = dict()
         sed["$id"] = ""
@@ -376,20 +376,20 @@ def test_build_proof():
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
-        creder = proving.credential(issuer=sigHab.pre,
+        creder = proving.credential(issuer=sidHab.pre,
                                     schema=schemer.said,
                                     subject=credSubject)
 
-        sigHab.rotate()
-        sigHab.rotate()
-        sigHab.rotate()
-        sigHab.rotate()
+        sidHab.rotate()
+        sidHab.rotate()
+        sidHab.rotate()
+        sidHab.rotate()
 
-        prefixer = coring.Prefixer(qb64=sigHab.kever.prefixer.qb64)
-        seqner = coring.Seqner(sn=sigHab.kever.lastEst.s)
-        diger = coring.Diger(qb64=sigHab.kever.lastEst.d)
+        prefixer = coring.Prefixer(qb64=sidHab.kever.prefixer.qb64)
+        seqner = coring.Seqner(sn=sidHab.kever.lastEst.s)
+        diger = coring.Diger(qb64=sidHab.kever.lastEst.d)
 
-        sigers = sigHab.mgr.sign(ser=creder.raw, verfers=sigHab.kever.verfers, indexed=True)
+        sigers = sidHab.mgr.sign(ser=creder.raw, verfers=sidHab.kever.verfers, indexed=True)
 
         proof = viring.buildProof(prefixer, seqner, diger, sigers)
         assert proof == (b'-FABEBQmzPGqnkRXCHrfRHDdy0eS5hIsTD9peCfhavXoxhXI0AAAAAAAAAAAAAAA'
@@ -400,8 +400,8 @@ def test_build_proof():
                          b'ot5gaGCQEvlAC6ELbkhJ5EcrM-GBmuegm7tMQyfcOFO0nZTYO4YVDc3NAHsu6iDQ')
 
         prefixer, seqner, diger, isigers = proving.parseProof(proof)
-        assert prefixer.qb64 == sigHab.pre
-        assert diger.qb64 == sigHab.kever.lastEst.d
+        assert prefixer.qb64 == sidHab.pre
+        assert diger.qb64 == sidHab.kever.lastEst.d
         assert seqner.sn == 4
         assert len(isigers) == 3
 

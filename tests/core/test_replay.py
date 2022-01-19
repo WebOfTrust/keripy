@@ -489,10 +489,7 @@ def test_replay_all():
 
     """
     artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    #with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
-            #basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-            #basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
-            #basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+
 
     with habbing.openHby(name="deb", base="test") as debHby, \
          habbing.openHby(name="cam", base="test") as camHby, \
