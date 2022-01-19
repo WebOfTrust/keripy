@@ -95,13 +95,6 @@ def test_direct_mode_bob_eve_demo():
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
 
-        #bobHab = habbing.Habitat(name='Bob',
-                                 #ks=bobKS,
-                                 #db=bobDB,
-                                #secrecies=bobSecrecies,
-                                #temp=True)
-        #assert bobHab.ks == bobKS
-        #assert bobHab.db == bobDB
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -132,14 +125,6 @@ def test_direct_mode_bob_eve_demo():
 
         # setup eve
         eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
-        #eveHab = habbing.Habitat(name='Eve',
-                                 #ks=eveKS,
-                                 #db=eveDB,
-                                #secrecies=eveSecrecies,
-                                #temp=True)
-
-        #assert eveHab.ks == eveKS
-        #assert eveHab.db == eveDB
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 

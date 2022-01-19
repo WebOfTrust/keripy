@@ -196,7 +196,7 @@ class Habery:
     """
 
     def __init__(self, *, name='test', base="", temp=False,
-                 ks=None, db=None, cf=None, **kwa):
+                 ks=None, db=None, cf=None, clear=False, **kwa):
         """
         Initialize instance.
 
@@ -205,14 +205,19 @@ class Habery:
             base (str): optional directory path segment inserted before name
                 that allows further differentation with a hierarchy. "" means
                 optional.
-            ks (Keeper):  keystore lmdb subclass instance
-            db (Baser): database lmdb subclass instance
-            cf (Configer): config file instance
             temp (bool): True means use temporary or limited resources testing.
                 Store .ks, .db, and .cf in /tmp
                 Use quick method to stretch salts for seeds such as
                     bran salt to seed or key creation of Habs.
                     Otherwise use more resources set by tier to stretch
+            ks (Keeper):  keystore lmdb subclass instance
+            db (Baser): database lmdb subclass instance
+            cf (Configer): config file instance
+            clear (bool): True means remove resource directory upon close when
+                            reopening
+                          False means do not remove directory upon close when
+                            reopening
+
 
         Parameters: Passed through via kwa to setup for later init
             seed (str): qb64 private-signing key (seed) for the aeid from which
@@ -248,15 +253,18 @@ class Habery:
         self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
                                                            base=self.base,
                                                            temp=self.temp,
-                                                           reopen=True)
+                                                           reopen=True,
+                                                           clear=clear)
         self.db = db if db is not None else basing.Baser(name=self.name,
                                                          base=self.base,
                                                          temp=self.temp,
-                                                         reopen=True)
+                                                         reopen=True,
+                                                         clear=clear)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
-                                                               reopen=True)
+                                                               reopen=True,
+                                                               clear=clear)
 
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.rtr = routing.Router()
