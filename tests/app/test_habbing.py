@@ -393,9 +393,9 @@ def test_make_load_hab_with_habery():
 
     base = "hold"
     with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
-        assert hby.cf.path == '/usr/local/var/keri/cf/hold/test.json'
-        assert hby.db.path == '/usr/local/var/keri/db/hold/test'
-        assert hby.ks.path == '/usr/local/var/keri/ks/hold/test'
+        assert hby.cf.path.endswith("keri/cf/hold/test.json")
+        assert hby.db.path.endswith("keri/db/hold/test")
+        assert hby.ks.path.endswith('keri/ks/hold/test')
 
         sueHab = hby.makeHab(name='Sue')
         assert isinstance(sueHab, habbing.Hab)
