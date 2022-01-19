@@ -4159,12 +4159,9 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
     with habbing.openHby(name="nat", base="test") as natHby:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = natHby.makeHab(name="nat", isith=2, icount=3)
-        #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
-                                 #isith=2, icount=3, temp=True)
         assert natHab.name == 'nat'
         assert natHab.ks == natHby.ks
         assert natHab.db == natHby.db

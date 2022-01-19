@@ -57,15 +57,6 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
 
-    ## setup databases for dependency injection
-    #ks = keeping.Keeper(name=name, temp=True)  # not opened by default, doer opens
-    #ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    #db = basing.Baser(name=name, temp=True)  # not opened by default, doer opens
-    #dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-    ## setup habitat
-    #hab = habbing.Habitat(name=name, ks=ks, db=db, temp=True, secrecies=secrecies)
-    #habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
     # setup habery with resources
     hby = habbing.Habery(name=name, base="demo", temp=True, free=True)
@@ -106,9 +97,6 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
 
     logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
                 hab.pre, hab.name, witnessPort)
-
-    #return [ksDoer, dbDoer, habDoer, issDoer, regDoer, wireDoer, witnessClientDoer,
-            #director, reactor, peerClientDoer, peerReactor]
 
     return [hbyDoer, issDoer, regDoer, wireDoer, witnessClientDoer,
             director, reactor, peerClientDoer, peerReactor]

@@ -77,8 +77,6 @@ def test_directing_basic():
     eve = eveSerder.ked["i"]
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
-    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-            #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
     with habbing.openHby(name="eve", base="test") as eveHby, \
          habbing.openHby(name="bob", base="test") as bobHby:
 
@@ -93,10 +91,6 @@ def test_directing_basic():
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
-        #bobHab = habbing.Habitat(ks=bobKS, db=bobDB, secrecies=bobSecrecies,
-                                 #temp=True)
-        #assert bobHab.ks == bobKS
-        #assert bobHab.db == bobDB
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -127,10 +121,6 @@ def test_directing_basic():
 
         # setup eve
         eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
-        #eveHab = habbing.Habitat(ks=eveKS, db=eveDB, secrecies=eveSecrecies,
-                                 #temp=True)
-        #assert eveHab.ks == eveKS
-        #assert eveHab.db == eveDB
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 

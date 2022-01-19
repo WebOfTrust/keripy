@@ -366,10 +366,9 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
-        # force salt to be qb64
-        # else:
-        #  salt = coring.Salter(qb64=salt).qb64
+            salt = SALT
+        else:
+            salt = coring.Salter(qb64=salt).qb64
 
         self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
                                    algo=algo, salt=salt, tier=tier)
@@ -386,6 +385,8 @@ class Habery:
         Thus by now know that .habs are valid so can create Hab instances
 
         """
+        self.reconfigure()  # pre hab load reconfiguration
+
         for name, habord in self.db.habs.getItemIter():
             pre = habord.prefix
             # create Hab instance and inject dependencies
@@ -406,7 +407,7 @@ class Habery:
             hab.inited = True
             self.habs[hab.pre] = hab
 
-        self.reconfigure()
+        self.reconfigure()  # post hab load reconfiguration
 
 
     def makeHab(self, name, **kwa):
