@@ -67,42 +67,46 @@ def test_reply(mockHelpingNowUTC):
     salt = salter.qb64
     assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-            basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-            basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
-            basing.openDB(name="tam") as tamDB, keeping.openKS(name="tam") as tamKS, \
-            basing.openDB(name="wat") as watDB, keeping.openKS(name="wat") as watKS, \
-            basing.openDB(name="wel") as welDB, keeping.openKS(name="wel") as welKS, \
-            basing.openDB(name="nel") as nelDB, keeping.openKS(name="nel") as nelKS:
+    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHby(name="wok", base="test", salt=salt) as wokHby, \
+         habbing.openHby(name="wam", base="test", salt=salt) as wamHby,  \
+         habbing.openHby(name="tam", base="test", salt=salt) as tamHby,  \
+         habbing.openHby(name="wat", base="test", salt=salt) as watHby,  \
+         habbing.openHby(name="wel", base="test", salt=salt) as welHby, \
+         habbing.openHby(name="nel", base="test", salt=salt) as nelHby:
+
         # witnesses first so can setup inception event for tam
         wsith = 1
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert wesHab.ks == wesKS
-        assert wesHab.db == wesDB
+        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        #assert wesHab.ks == wesKS
+        #assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
         wesPrs = parsing.Parser(kvy=wesKvy)
 
         # setup Wok's habitat nontrans
-        wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert wokHab.ks == wokKS
-        assert wokHab.db == wokDB
+        #wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        #assert wokHab.ks == wokKS
+        #assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
         wokPrs = parsing.Parser(kvy=wokKvy)
 
         # setup Wam's habitat nontrans
-        wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert wamHab.ks == wamKS
-        assert wamHab.db == wamDB
+        #wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        #assert wamHab.ks == wamKS
+        #assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
         wamPrs = parsing.Parser(kvy=wamKvy)
@@ -110,12 +114,13 @@ def test_reply(mockHelpingNowUTC):
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         tsith = 2  # hex str of threshold int
-        tamHab = habbing.Habitat(name='cam', ks=tamKS, db=tamDB,
-                                 isith=tsith, icount=3,
-                                 toad=2, wits=wits,
-                                 salt=salt, temp=True)  # stem is .name
-        assert tamHab.ks == tamKS
-        assert tamHab.db == tamDB
+        #tamHab = habbing.Habitat(name='cam', ks=tamKS, db=tamDB,
+                                 #isith=tsith, icount=3,
+                                 #toad=2, wits=wits,
+                                 #salt=salt, temp=True)  # stem is .name
+        tamHab = tamHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits,)
+        #assert tamHab.ks == tamKS
+        #assert tamHab.db == tamDB
         assert tamHab.kever.prefixer.transferable
         assert len(tamHab.iserder.werfers) == len(wits)
         for werfer in tamHab.iserder.werfers:
@@ -128,35 +133,38 @@ def test_reply(mockHelpingNowUTC):
         tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
         # create non-local parer for Tam to process non-local msgs
         rtr = routing.Router()
-        rvy = routing.Revery(db=tamDB, rtr=rtr)
-        kvy = eventing.Kevery(db=tamDB, lax=False, local=True, rvy=rvy)
+        rvy = routing.Revery(db=tamHby.db, rtr=rtr)
+        kvy = eventing.Kevery(db=tamHby.db, lax=False, local=True, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
         tamPrs = parsing.Parser(kvy=tamKvy, rvy=rvy)
 
         # setup Wat's habitat nontrans
-        watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert watHab.ks == watKS
-        assert watHab.db == watDB
+        #watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        watHab = watHby.makeHab(name='wat', isith=wsith, icount=1, transferable=False)
+        #assert watHab.ks == watKS
+        #assert watHab.db == watDB
         assert not watHab.kever.prefixer.transferable
         watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
 
         # setup Wel's habitat nontrans
-        welHab = habbing.Habitat(name='wel', ks=welKS, db=welDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert welHab.ks == welKS
-        assert welHab.db == welDB
+        #welHab = habbing.Habitat(name='wel', ks=welKS, db=welDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        welHab = welHby.makeHab(name='wel', isith=wsith, icount=1, transferable=False)
+        #assert welHab.ks == welKS
+        #assert welHab.db == welDB
         assert not welHab.kever.prefixer.transferable
         welKvy = eventing.Kevery(db=welHab.db, lax=False, local=False)
 
         # setup Nel's habitat nontrans
-        nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB,
-                                 isith=wsith, icount=1,
-                                 salt=salt, transferable=False, temp=True)  # stem is .name
-        assert nelHab.ks == nelKS
-        assert nelHab.db == nelDB
+        #nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB,
+                                 #isith=wsith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)  # stem is .name
+        nelHab = nelHby.makeHab(name='nel', isith=wsith, icount=1, transferable=False)
+        #assert nelHab.ks == nelKS
+        #assert nelHab.db == nelDB
         assert not nelHab.kever.prefixer.transferable
         nelRtr = routing.Router()
         nelRvy = routing.Revery(db=nelHab.db, rtr=nelRtr)
@@ -1261,20 +1269,21 @@ def test_reply(mockHelpingNowUTC):
         assert items == [(('BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI', 'http'),
                           'http://localhost:8080/watcher/wel')]
 
-    assert not os.path.exists(nelKS.path)
-    assert not os.path.exists(nelDB.path)
-    assert not os.path.exists(watKS.path)
-    assert not os.path.exists(watDB.path)
-    assert not os.path.exists(welKS.path)
-    assert not os.path.exists(welDB.path)
-    assert not os.path.exists(wamKS.path)
-    assert not os.path.exists(wamDB.path)
-    assert not os.path.exists(wokKS.path)
-    assert not os.path.exists(wokDB.path)
-    assert not os.path.exists(wesKS.path)
-    assert not os.path.exists(wesDB.path)
-    assert not os.path.exists(tamKS.path)
-    assert not os.path.exists(tamDB.path)
+
+    assert not os.path.exists(nelHby.ks.path)
+    assert not os.path.exists(nelHby.db.path)
+    assert not os.path.exists(watHby.ks.path)
+    assert not os.path.exists(watHby.db.path)
+    assert not os.path.exists(welHby.ks.path)
+    assert not os.path.exists(welHby.db.path)
+    assert not os.path.exists(wamHby.ks.path)
+    assert not os.path.exists(wamHby.db.path)
+    assert not os.path.exists(wokHby.ks.path)
+    assert not os.path.exists(wokHby.db.path)
+    assert not os.path.exists(wesHby.ks.path)
+    assert not os.path.exists(wesHby.db.path)
+    assert not os.path.exists(tamHby.ks.path)
+    assert not os.path.exists(tamHby.db.path)
     """Done Test"""
 
 
