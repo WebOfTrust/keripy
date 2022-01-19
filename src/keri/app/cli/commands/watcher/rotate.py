@@ -31,7 +31,7 @@ class WatcherRotate(doing.DoDoer):
 
     def __init__(self, name, wat, **kwa):
         self.watcher = wat
-        self.hab, doers = existing.openHabitat(name=name)
+        self.hab, doers = existing.setupHabitat(name=name)
         self.rotr = watching.WatcherClientRotateDoer(hab=self.hab)
         doers.extend([self.rotr])
         self.toRemove = list(doers)

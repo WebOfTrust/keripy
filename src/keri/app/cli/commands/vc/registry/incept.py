@@ -52,7 +52,7 @@ class RegistryInceptor(doing.DoDoer):
         """
         self.name = name
         self.registryName = registryName
-        self.hab, doers = existing.openHabitat(name=self.name)
+        self.hab, doers = existing.setupHabitat(name=self.name)
 
         mbx = indirecting.MailboxDirector(hab=self.hab, topics=["/receipt", "/multisig", "/replay"])
         self.icpr = registering.RegistryInceptDoer(hab=self.hab)

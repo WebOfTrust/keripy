@@ -70,7 +70,7 @@ class CredentialIssuer(doing.DoDoer):
              data: (dict) credential data dict
         """
         self.name = name
-        self.hab, doers = existing.openHabitat(name=self.name)
+        self.hab, doers = existing.setupHabitat(name=self.name)
 
         self.msg = dict(
             registryName=registryName,

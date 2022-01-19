@@ -705,33 +705,27 @@ def test_habery_reconfigure(mockHelpingNowUTC):
 
 
 
-def test_habitat_with_delegation():
+def test_hab_with_delegation():
     """
     Test Habitat class
     """
-    delhab = habbing.Habitat(name="del", temp=True)
-    delpre = delhab.pre
-    assert delpre == "E-kwM1vdZf63KAnw0SbS3Jrq1cKavuM8z2fXz2tMA8KA"
+    with habbing.openHby(name='delegation', base="test") as hby:
+        torHab = hby.makeHab(name='tor')
+        assert torHab.pre == 'Eg0Vs54AiRvxoKvZn6QyddH8VN0IAr2-UR1DbJSUKy80'
 
-    bobhab = habbing.Habitat(name="bob", temp=True, delpre=delpre)
-    assert bobhab.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
+        teeHab = hby.makeHab(name='tee', delpre=torHab.pre)
+        assert teeHab.pre == 'EyR1tMhddjSLESCkYLil-6XqgDr4yiZdVuWioTbCTlmg'
+        assert teeHab.delserder.pre == teeHab.pre
+        assert teeHab.delserder.ked["s"] == '0'
+        assert teeHab.delserder.said == teeHab.delserder.pre == teeHab.pre
+        assert teeHab.accepted is False  # need to fix this when redo logic
 
-    assert bobhab.delserder.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
-    assert bobhab.delserder.ked["s"] == '0'
-    assert bobhab.delserder.said == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
-
-    assert bobhab.accepted is False
-
-    bobhab.db.close(clear=True)
-    bobhab.ks.close(clear=True)
-    delhab.db.close(clear=True)
-    delhab.ks.close(clear=True)
 
     """End Test"""
 
 
 
 if __name__ == "__main__":
-    pass
+    test_hab_with_delegation()
     # test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])

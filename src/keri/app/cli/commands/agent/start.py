@@ -84,7 +84,7 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     Setup and run one agent
     """
 
-    hab, doers = existing.openHabitat(name=name)
+    hab, doers = existing.setupHabitat(name=name)
 
     # setup doers
     server = tcpServing.Server(host="", port=tcp)

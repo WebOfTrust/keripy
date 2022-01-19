@@ -53,7 +53,7 @@ def runWallet(name="wallet"):
     Setup and run one wallet
     """
 
-    hab, doers = existing.openHabitat(name=name)
+    hab, doers = existing.setupHabitat(name=name)
     verifier = verifying.Verifier(hab=hab, name=name)
     wallet = walleting.Wallet(reger=verifier.reger, name=name)
     walletDoer = walleting.WalletDoer(hab=hab, verifier=verifier)

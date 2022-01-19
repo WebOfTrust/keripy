@@ -67,7 +67,7 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         sys.exit(-1)
 
-    hab, doers = existing.openHabitat(name=name, transferable=False)
+    hab, doers = existing.setupHabitat(name=name, transferable=False)
     app = falcon.App(cors_enable=True)
 
     mbx = storing.Mailboxer(name=name)
