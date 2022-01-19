@@ -59,7 +59,7 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
     """
 
     try:
-        with habbing.existingHab(name=name, transferable=False) as hab:
+        with habbing.existingHabitat(name=name, transferable=False) as hab:
             print("Watcher Identifier: {}".format(hab.pre))
             if hab.kever.prefixer.transferable:
                 raise kering.ConfigurationError("watchers can only have a non-transferable identifier")
@@ -67,7 +67,7 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         sys.exit(-1)
 
-    hab, doers = existing.openHabitat(name=name, transferable=False)
+    hab, doers = existing.setupHabitat(name=name, transferable=False)
     app = falcon.App(cors_enable=True)
 
     mbx = storing.Mailboxer(name=name)

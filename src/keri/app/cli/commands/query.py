@@ -31,7 +31,7 @@ def query(args):
 class QueryDoer(doing.DoDoer):
 
     def __init__(self, name, wit, pre, **kwa):
-        hab, doers = existing.openHabitat(name=name)
+        hab, doers = existing.setupHabitat(name=name)
         self.hab = hab
 
         self.wit = wit

@@ -346,6 +346,7 @@ def test_clone():
             b'M9u2Edk-PLMZ1H4')
 
 
+
 if __name__ == "__main__":
     test_issuer()
     test_clone()

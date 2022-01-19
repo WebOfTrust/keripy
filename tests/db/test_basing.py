@@ -1688,14 +1688,16 @@ def test_clean_baser():
     """
     Test Baser db clean clone method
     """
-
-    with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    name = "nat"
+    # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    with habbing.openHby(name=name) as hby:  # default is temp=True
+        natHab = hby.makeHab(name=name, isith=2, icount=3)
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
-                                isith=2, icount=3, temp=True)
+        #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
+                                #isith=2, icount=3, temp=True)
         assert natHab.name == 'nat'
-        assert natHab.ks == natKS
-        assert natHab.db == natDB
+        assert natHab.ks == hby.ks # natKS
+        assert natHab.db == hby.db # natDB
         assert natHab.kever.prefixer.transferable
         assert natHab.db.opened
         assert natHab.pre in natHab.kevers
@@ -1793,8 +1795,8 @@ def test_clean_baser():
             assert data.prefix == natHab.pre
 
 
-    assert not os.path.exists(natKS.path)
-    assert not os.path.exists(natDB.path)
+    assert not os.path.exists(hby.ks.path)
+    assert not os.path.exists(hby.db.path)
 
     """End Test"""
 
@@ -2138,4 +2140,4 @@ def test_baserdoer():
 
 
 if __name__ == "__main__":
-    test_baser()
+    test_clean_baser()

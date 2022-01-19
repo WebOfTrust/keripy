@@ -17,7 +17,7 @@ def test_issuer(mockHelpingNowUTC):
     # help.ogler.resetLevel(level=logging.DEBUG)
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
         # setup issuer with defaults for allowBackers, backers and estOnly
         issuer = Issuer(hab=hab, name="bob", reger=reg, temp=True)
         kevt, tevt = events(issuer)
@@ -104,7 +104,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.saider.qb64 == 'ENjTuCK2EuiNXWJ0PmiyQ6BLz0DhYCBEcGEOue6VOyLc'
 
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-            hab = buildHab(db, kpr)
+            hby, hab = buildHab(db, kpr)
             # issuer, not allowed to issue backers
             issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg, temp=True)
             kevt, tevt = events(issuer)
@@ -128,7 +128,7 @@ def test_issuer(mockHelpingNowUTC):
                 issuer.rotate(adds=["EqoNZAX5Lu8RuHzwwyn5tCZTe-mDBq5zusCrRo5TDugs"])
 
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-            hab = buildHab(db, kpr)
+            hby, hab = buildHab(db, kpr)
             issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg, temp=True)
             events(issuer)
 
@@ -166,7 +166,7 @@ def test_issuer(mockHelpingNowUTC):
             assert seal["d"] == 'E6wRBgyoP-Gq0_VR6s8QWos-cTKyhAbfJlkcoHkWaZDU'
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         # issuer, allowed backers, initial set of backers
         issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], temp=True)
@@ -237,7 +237,7 @@ def test_issuer(mockHelpingNowUTC):
         assert seal["s"] == "1"
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         # issuer, no backers allowed, establishment events only
         issuer = Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
@@ -282,7 +282,7 @@ def test_issuer(mockHelpingNowUTC):
             issuer.rotate(adds=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
-        hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr)
 
         # issuer, backers allowed, initial backer, establishment events only
         issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], estOnly=True,
@@ -352,7 +352,11 @@ def test_issuer(mockHelpingNowUTC):
     """ End Test """
 
 
-def buildHab(db, kpr):
+def buildHab(db, ks, name="test"):
+    """Utility to setup Habery and Hab for testing purposes
+    Returns:
+       tuple (Habery, Hab):
+    """
     secrets = [
         'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
         'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
@@ -367,8 +371,10 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = habbing.Habitat(ks=kpr, db=db, secrecies=secrecies, temp=True)
-    return hab
+    hby = habbing.Habery(name=name, temp=True, ks=ks, db=db)
+    hab = hby.makeHab(name=name, secrecies=secrecies)
+    # hab = habbing.Habitat(ks=ks, db=db, secrecies=secrecies, temp=True)
+    return (hby, hab)
 
 
 def credential(hab, regk):

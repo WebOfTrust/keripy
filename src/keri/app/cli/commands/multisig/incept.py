@@ -69,7 +69,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
     def __init__(self, name, group, **kwa):
         self.name = name
-        self.hab, doers = existing.openHabitat(name=name)
+        self.hab, doers = existing.setupHabitat(name=name)
         self.msg = kwa
         self.msg["group"] = group
 

@@ -120,11 +120,10 @@ class OobiQueryRecord:  # information for responding to OOBI query
 @dataclass
 class HabitatRecord:  # baser.habs
     """
-    Habitat information keyed by habitat name (baser.habs)
+    Habitat application state information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
-    #
 
 
 @dataclass
@@ -143,7 +142,7 @@ class GroupIdRecord:  # baser.gids
     Track group identifiers that we are participating in
     Database Key is the identifier prefix of the group identifier
     """
-    lid: str  # local identifier that contributes to the group
+    # lid: str  # local identifier that contributes to the group
     gid: str  # group identifier prefix
     dig: str  # qb64 of latest digest in the group
     cst: str  # group signing threshold of the next key commitment
@@ -503,11 +502,12 @@ class Baser(dbing.LMDBer):
             the associated event. So one can lookup event digest, get its fn here
             and then use fn to fetch event by fn from .fels.
 
-        .stts is named subDB instance of SerderSuber that maps a prefix
+        .states (stts) is named subDB instance of SerderSuber that maps a prefix
             to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
-        .habs is named subDB instance of Komer that maps habitat names to prefixes
+        .habs is named subDB instance of Komer that maps habitat names to habitat
+            application state. Includes habitat identifier prefix
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
@@ -581,7 +581,7 @@ class Baser(dbing.LMDBer):
 
     """
 
-    def __init__(self, headDirPath=None, reopen=False, reload=False, **kwa):
+    def __init__(self, headDirPath=None, reopen=False, **kwa):
         """
         Setup named sub databases.
 
@@ -596,7 +596,25 @@ class Baser(dbing.LMDBer):
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
             reopen (bool): True means database will be reopened by this init
-            reload (bool): True means load habitat prefixes and kevers from .habs
+
+
+        """
+        self.prefixes = oset()
+        self._kevers = dbdict()
+        self._kevers.db = self  # assign db for read thorugh cache of kevers
+
+        super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self._kevers
+
+    def reopen(self, **kwa):
+        """
+        Open sub databases
 
         Notes:
 
@@ -609,29 +627,6 @@ class Baser(dbing.LMDBer):
 
         Duplicates are inserted in lexocographic order by value, insertion order.
 
-        """
-        self.prefixes = oset()
-        self._kevers = dbdict()
-        self._kevers.db = self  # assign db for read thorugh cache of kevers
-
-        if reload:  # reload requires reopen first
-            reopen = True
-
-        super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
-
-        if reload:
-            self.reload()
-
-    @property
-    def kevers(self):
-        """
-        Returns .db.kevers
-        """
-        return self._kevers
-
-    def reopen(self, **kwa):
-        """
-        Open sub databases
         """
         super(Baser, self).reopen(**kwa)
 
@@ -658,11 +653,13 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.firsts = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        # events as ordered by first seen ordinals
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        # Kever state
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 
-        # habitat prefixes keyed by habitat name
+        # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
                                  schema=HabitatRecord, )
@@ -764,18 +761,19 @@ class Baser(dbing.LMDBer):
         # Routes such as /ksn/{aid}
         self.knes = subing.CesrIoSetSuber(db=self, subkey='knes', klas=coring.Saider)
 
-
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
 
+        self.reload()
+
         return self.env
+
 
     def reload(self):
         """
-        Load stored prefixes and Kevers from .habs
+        Reload stored prefixes and Kevers from .habs
 
-        make .kevers a read through cache
         """
         removes = []
         for keys, data in self.habs.getItemIter():
@@ -790,10 +788,11 @@ class Baser(dbing.LMDBer):
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
             else:  # in .habs but no corresponding key state so remove
-                removes.append(keys)  # removes
+                removes.append(keys)  # no key state or KEL event for .hab record
 
-        for keys in removes:  # remove bare .habs without key state or KEL event
+        for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
+
 
     def clean(self):
         """

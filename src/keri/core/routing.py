@@ -104,13 +104,13 @@ class Router:
 
     def processRouteNotFound(self, *, serder, saider, route,
                              cigars=None, tsgs=None, **kwargs):
-        
+
         raise kering.ConfigurationError(f"Resource registered for route {route} in {coring.Ilks.rpy}"
                                         f"does not contain the correct processReply method")
 
 
 class Revery:
-    """
+    """Factory for processing reply 'rpy' messages
 
     """
 

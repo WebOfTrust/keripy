@@ -52,7 +52,7 @@ class GroupMultisigInteract(doing.DoDoer):
     """
 
     def __init__(self, name, **kwa):
-        self.hab, doers = existing.openHabitat(name=name)
+        self.hab, doers = existing.setupHabitat(name=name)
         self.rotr = grouping.MultiSigGroupDoer(hab=self.hab)
         self.msg = kwa
 

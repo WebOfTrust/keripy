@@ -156,7 +156,7 @@ class SuberBase():
     def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
+            items (Iterator): if (key, val) tuples over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
@@ -641,10 +641,11 @@ class IoSetSuber(SuberBase):
         keys may be truncation of full branch.
 
         Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
+            items (Iterator): of (key, val) tuples over the all the items in
+            subdb whose effective key startswith key made from keys.
+            Keys may be keyspace prefix in order to return branches of key space.
+            When keys is empty then returns all items in subdb.
+            Returned key in each item has ordinal suffix removed.
 
         Parameters:
             keys (Iterator): tuple of bytes or strs that may be a truncation of
@@ -662,14 +663,14 @@ class IoSetSuber(SuberBase):
     def getIoSetItem(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, val) ioitems list at key made from keys where key is
-        apparent effective key  and ioitems all have same apparent effective key
+        apparent effective key and ioitems all have same apparent effective key
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            items (Iterable):  each item in list is tuple (iokeys, val) where each
-                    iokeys is actual key tuple with hidden suffix and
+            ioitems (Iterable):  each item in list is tuple (iokeys, val) where each
+                    iokeys is actual key tuple including hidden suffix and
                     each val is str
                     empty list if no entry at keys
 
@@ -689,11 +690,11 @@ class IoSetSuber(SuberBase):
             keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            iterator (Iterator):  each item iterated is tuple (iokeys, val) where each
-                    iokeys is actual keys tuple with hidden suffix and
-                    each val is str
-                    empty list if no entry at keys.
-                    Raises StopIteration when done
+            ioitems (Iterator):  each item iterated is tuple (iokeys, val) where
+                each iokeys is actual keys tuple including hidden suffix and
+                each val is str
+                empty list if no entry at keys.
+                Raises StopIteration when done
 
         """
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
@@ -705,10 +706,10 @@ class IoSetSuber(SuberBase):
     def getIoItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb.
+            items (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith effective key made from keys.
+            Keys may be keyspace prefix to return branches of key space.
+            When keys is empty then returns all items in subdb.
 
 
         Parameters:

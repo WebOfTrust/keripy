@@ -57,15 +57,26 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
         secrecies.append([secret])
 
     # setup habitat
-    hab = habbing.Habitat(name="han", secrecies=secrecies, temp=True)
+    # hab = habbing.Habitat(name="han", secrecies=secrecies, temp=True)
+
+    name = "han"
+    # setup habery with resources
+    hby = habbing.Habery(name=name, base="demo", temp=True, free=True)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
+    # make hab
+    hab = hby.makeHab(name=name, secrecies=secrecies)
+
     logger.info("\nDirect Mode demo of %s:\nNamed %s listening on TCP port %s, witness on TCP Port %s.\n\n",
                 hab.pre, hab.name, localPort, witnessPort)
     reger = viring.Registry(name="han")
     wallet = walleting.Wallet(reger=reger, name="han")
 
-    # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    ## setup doers
+    #ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
+    #dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+
+
     pdbDoer = basing.BaserDoer(baser=wallet.reger)  # doer do reopens if not opened and closes
 
     path = os.path.dirname(__file__)
@@ -96,7 +107,10 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
     serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server, exchanger=excDoer)
 
-    return [ksDoer, dbDoer, pdbDoer, excDoer, wireDoer, witnessClientDoer, director, reactor, serverDoer, directant]
+    # return [ksDoer, dbDoer, pdbDoer, excDoer, wireDoer, witnessClientDoer,
+    # director, reactor, serverDoer, directant]
+    return [hbyDoer, pdbDoer, excDoer, wireDoer, witnessClientDoer, director,
+            reactor, serverDoer, directant]
 
 
 def parseArgs(version=__version__):

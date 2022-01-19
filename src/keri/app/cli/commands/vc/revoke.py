@@ -35,7 +35,7 @@ class RevokeDoer(doing.DoDoer):
     def __init__(self, name, said, registryName, **kwa):
         self.cues = decking.Deck()
         self.registryName = registryName
-        self.hab, doers = existing.openHabitat(name=name)
+        self.hab, doers = existing.setupHabitat(name=name)
         self.said = said
 
         reger = viring.Registry(name=self.registryName, db=self.hab.db)

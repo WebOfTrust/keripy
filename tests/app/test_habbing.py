@@ -3,11 +3,13 @@
 tests.app.apping module
 
 """
+import pytest
 
 import os
 import shutil
+import time
 
-from hio.help.hicting import Mict
+from hio.base import doing, tyming
 
 from keri import kering
 from keri import help
@@ -16,92 +18,540 @@ from keri.db import basing
 from keri.core import coring, eventing, parsing
 
 
-def test_habitat():
+def test_habery():
     """
-    Test Habitat class
+    Test Habery class
     """
-    hab = habbing.Habitat(temp=True)
-    assert hab.name == "test"
+    # test default
+    hby = habbing.Habery(temp=True)
+    assert hby.name == "test"
+    assert hby.base == ""
+    assert hby.temp
+    assert hby.inited
+    assert hby.habs == {}
 
-    hab.db.close(clear=True)
-    hab.ks.close(clear=True)
+    assert hby.db.name == "test" == hby.name
+    assert hby.db.base == "" == hby.base
+    assert not hby.db.filed
+    assert hby.db.path.endswith("/keri/db/test")
+    assert hby.db.opened
+
+    assert hby.ks.name == "test" == hby.name
+    assert hby.ks.base == "" == hby.base
+    assert not hby.ks.filed
+    assert hby.ks.path.endswith("/keri/ks/test")
+    assert hby.ks.opened
+
+    assert hby.cf.name == "test" == hby.name
+    assert hby.cf.base == "" == hby.base
+    assert hby.cf.filed
+    assert hby.cf.path.endswith("/keri/cf/test.json")
+    assert hby.cf.opened
+    assert not hby.cf.file.closed
+
+    assert hby.mgr.seed == ""
+    assert hby.mgr.aeid == ""
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    hby.cf.close(clear=True)
+    hby.db.close(clear=True)
+    hby.ks.close(clear=True)
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    # test bran to seed
+    bran = "MyPasscodeIsRealSecret"
+    assert len(bran) == 22
+    hby = habbing.Habery(bran=bran, temp=True)
+    assert hby.name == "test"
+    assert hby.base == ""
+    assert hby.temp
+    assert hby.inited
+    assert hby.habs == {}
+
+    assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    assert hby.rtr.routes
+    assert hby.rvy.rtr == hby.rtr
+    assert hby.kvy.rvy == hby.rvy
+    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.rvy == hby.rvy
+
+    hby.cf.close(clear=True)
+    hby.db.close(clear=True)
+    hby.ks.close(clear=True)
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+
+    # test pre-create of injected resources
+    base = "keep"
+    name = "main"
+    bran = "MyPasscodeIsRealSecret"
+    temp = True
+
+    # setup databases  for dependency injection and config file
+    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    cf = configing.Configer(name=name, base=base, temp=temp)
+    cfDoer = configing.ConfigerDoer(configer=cf)
+    conf = cf.get()
+    if not conf: # setup config file
+        curls = ["ftp://localhost:5620/"]
+        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name=Bob"]
+        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        cf.put(conf)
+
+    # setup habery
+    hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                         bran=bran )
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
+    assert hby.name == "main"
+    assert hby.base == "keep"
+    assert hby.temp
+    assert not hby.inited
+    assert hby.mgr is None
+
+    # need to run doers to open databases so can finish init
+    doers = [ksDoer, dbDoer, cfDoer, hbyDoer]
+
+    # run components
+    tock = 0.03125
+    limit =  1.0
+    doist = doing.Doist(limit=limit, tock=tock, real=True)
+    tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+    # doist.do(doers=doers)
+    deeds = doist.enter(doers=doers)
+    doist.recur(deeds=deeds)
+
+    assert hby.inited
+    assert hby.habs == {}
+    assert hby.mgr is not None
+    assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    assert hby.rtr.routes
+    assert hby.rvy.rtr == hby.rtr
+    assert hby.kvy.rvy == hby.rvy
+    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.rvy == hby.rvy
+
+
+    #time.sleep(doist.tock)
+    #while not tymer.expired:
+        #doist.recur(deeds=deeds)
+        #time.sleep(doist.tock)
+    #assert doist.limit == limit  # already exited?
+    doist.exit(deeds=deeds)
+
+    assert not cf.opened
+    assert not db.opened
+    assert not ks.opened
+
+    assert not os.path.exists(cf.path)
+    assert not os.path.exists(db.path)
+    assert not os.path.exists(ks.path)
+
+
+    # test pre-create using habery itself
+    base = "keep"
+    name = "main"
+    bran = "MyPasscodeIsRealSecret"
+    temp = True
+
+    # setup habery with resources
+    hby = habbing.Habery(name=name, base=base, temp=temp, bran=bran, free=True)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
+    conf = hby.cf.get()
+    if not conf: # setup config file
+        curls = ["ftp://localhost:5620/"]
+        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name=Bob"]
+        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        hby.cf.put(conf)
+
+
+    assert hby.name == "main"
+    assert hby.base == "keep"
+    assert hby.temp
+    assert hby.inited
+    assert hby.mgr is not None
+
+    # habery doer to free resources on exit
+    doers = [hbyDoer]
+
+    # run components
+    tock = 0.03125
+    limit =  1.0
+    doist = doing.Doist(limit=limit, tock=tock, real=True)
+    tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+    # doist.do(doers=doers)
+    deeds = doist.enter(doers=doers)
+    doist.recur(deeds=deeds)
+
+    assert hby.inited
+    assert hby.habs == {}
+    assert hby.mgr is not None
+    assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+    assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+    assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert hby.mgr.pidx == 0
+    assert hby.mgr.algo == keeping.Algos.salty
+    assert hby.mgr.tier == coring.Tiers.low
+
+    assert hby.rtr.routes
+    assert hby.rvy.rtr == hby.rtr
+    assert hby.kvy.rvy == hby.rvy
+    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.rvy == hby.rvy
+
+    #time.sleep(doist.tock)
+    #while not tymer.expired:
+        #doist.recur(deeds=deeds)
+        #time.sleep(doist.tock)
+    #assert doist.limit == limit  # already exited?
+    doist.exit(deeds=deeds)
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    with habbing.openHby() as hby:
+        assert hby.name == "test"
+        assert hby.base == ""
+        assert hby.temp
+        assert hby.inited
+
+        assert hby.db.name == "test" == hby.name
+        assert hby.db.base == "" == hby.base
+        assert not hby.db.filed
+        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.opened
+
+        assert hby.ks.name == "test" == hby.name
+        assert hby.ks.base == "" == hby.base
+        assert not hby.ks.filed
+        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.opened
+
+        assert hby.cf.name == "test" == hby.name
+        assert hby.cf.base == "" == hby.base
+        assert hby.cf.filed
+        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.opened
+        assert not hby.cf.file.closed
+
+        assert hby.mgr.seed == ""
+        assert hby.mgr.aeid == ""
+        assert hby.mgr.salt == habbing.SALT
+        assert hby.mgr.pidx == 0
+        assert hby.mgr.algo == keeping.Algos.salty
+        assert hby.mgr.tier == coring.Tiers.low
+
+        assert hby.rtr.routes
+        assert hby.rvy.rtr == hby.rtr
+        assert hby.kvy.rvy == hby.rvy
+        assert hby.psr.kvy == hby.kvy
+        assert hby.psr.rvy == hby.rvy
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+
+    bran = "MyPasscodeIsRealSecret"
+    with habbing.openHby(bran=bran) as hby:
+        assert hby.name == "test"
+        assert hby.base == ""
+        assert hby.temp
+        assert hby.inited
+        assert hby.habs == {}
+
+        assert hby.db.name == "test" == hby.name
+        assert hby.db.base == "" == hby.base
+        assert not hby.db.filed
+        assert hby.db.path.endswith("/keri/db/test")
+        assert hby.db.opened
+
+        assert hby.ks.name == "test" == hby.name
+        assert hby.ks.base == "" == hby.base
+        assert not hby.ks.filed
+        assert hby.ks.path.endswith("/keri/ks/test")
+        assert hby.ks.opened
+
+        assert hby.cf.name == "test" == hby.name
+        assert hby.cf.base == "" == hby.base
+        assert hby.cf.filed
+        assert hby.cf.path.endswith("/keri/cf/test.json")
+        assert hby.cf.opened
+        assert not hby.cf.file.closed
+
+        # test bran to seed
+        assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
+        assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
+        assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert hby.mgr.pidx == 0
+        assert hby.mgr.algo == keeping.Algos.salty
+        assert hby.mgr.tier == coring.Tiers.low
+
+        assert hby.rtr.routes
+        assert hby.rvy.rtr == hby.rtr
+        assert hby.kvy.rvy == hby.rvy
+        assert hby.psr.kvy == hby.kvy
+        assert hby.psr.rvy == hby.rvy
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
 
     """End Test"""
 
 
-def test_habitat_rotate_with_witness():
-    if os.path.exists('/usr/local/var/keri/db/phil-test'):
-        shutil.rmtree('/usr/local/var/keri/db/phil-test')
-    if os.path.exists('/usr/local/var/keri/ks/phil-test'):
-        shutil.rmtree('/usr/local/var/keri/ks/phil-test')
+def test_make_load_hab_with_habery():
+    """
+    Test creation methods for Hab instances with Habery
+    """
+    with pytest.raises(TypeError):  # missing required dependencies
+        hab = habbing.Hab()  # defaults
+
+    name = "Sue"
+    with habbing.openHby() as hby:  # default is temp=True on openHab
+        hab = hby.makeHab(name=name)
+        assert isinstance(hab, habbing.Hab)
+        assert hab.pre in hby.habs
+        assert id(hby.habByName(hab.name)) == id(hab)
+
+        assert hab.name == name
+        assert hab.pre == 'ELB4zp-m8ogjBI02KCHQlc-vYvsqOhi7VkqjIY0fpkwo'
+        assert hab.temp
+        assert hab.accepted
+        assert hab.inited
+
+        assert hab.pre in hby.kevers
+        assert hab.pre in hby.prefixes
+
+        hab.db = hby.db  # injected
+        hab.ks = hby.ks  # injected
+        hab.cf = hby.cf  # injected
+        hab.mgr = hby.mgr  # injected
+        hab.rtr = hby.rtr  # injected
+        hab.rvy = hby.rvy  # injected
+        hab.kvy = hby.kvy  # injected
+        hab.psr = hby.psr  # injected
+
+
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    # create not temp and then reload from not temp
+    if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
+        os.remove('/usr/local/var/keri/cf/hold/test.json')
+    if os.path.exists('/usr/local/var/keri/db/hold/test'):
+        shutil.rmtree('/usr/local/var/keri/db/hold/test')
+    if os.path.exists('/usr/local/var/keri/ks/hold/test'):
+        shutil.rmtree('/usr/local/var/keri/ks/hold/test')
+
+    base = "hold"
+    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
+        assert hby.cf.path.endswith("keri/cf/hold/test.json")
+        assert hby.db.path.endswith("keri/db/hold/test")
+        assert hby.ks.path.endswith('keri/ks/hold/test')
+
+        sueHab = hby.makeHab(name='Sue')
+        assert isinstance(sueHab, habbing.Hab)
+        assert sueHab.pre in hby.habs
+        assert id(hby.habByName(sueHab.name)) == id(sueHab)
+
+        assert sueHab.name == "Sue"
+        assert sueHab.pre == 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
+        assert not sueHab.temp
+        assert sueHab.accepted
+        assert sueHab.inited
+        assert sueHab.pre in hby.kevers
+        assert sueHab.pre in hby.prefixes
+
+        bobHab = hby.makeHab(name='Bob')
+        assert isinstance(bobHab, habbing.Hab)
+        assert bobHab.pre in hby.habs
+        assert id(hby.habByName(bobHab.name)) == id(bobHab)
+
+        assert bobHab.name == "Bob"
+        assert bobHab.pre == 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+        assert not bobHab.temp
+        assert bobHab.accepted
+        assert bobHab.inited
+        assert bobHab.pre in hby.kevers
+        assert bobHab.pre in hby.prefixes
+
+        assert len(hby.habs) == 2
+
+
+    assert not hby.cf.opened
+    assert not hby.db.opened
+    assert not hby.ks.opened
+
+    assert os.path.exists(hby.cf.path)
+    assert os.path.exists(hby.db.path)
+    assert os.path.exists(hby.ks.path)
+
+    # test load from database
+    suePre = 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
+    bobPre = 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+    base = "hold"
+    with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
+        assert hby.cf.path.endswith("keri/cf/hold/test.json")
+        assert hby.db.path.endswith("keri/db/hold/test")
+        assert hby.ks.path.endswith('keri/ks/hold/test')
+
+        assert hby.inited
+        assert len(hby.habs) == 2
+
+        assert suePre in hby.kevers
+        assert suePre in hby.prefixes
+        assert suePre in hby.habs
+        sueHab = hby.habByName("Sue")
+        assert sueHab.name == "Sue"
+        assert sueHab.pre == suePre
+        assert sueHab.accepted
+        assert sueHab.inited
+
+        assert bobPre in hby.kevers
+        assert bobPre in hby.prefixes
+        assert bobPre in hby.habs
+        bobHab = hby.habByName("Bob")
+        assert bobHab.name == "Bob"
+        assert bobHab.pre == bobPre
+        assert bobHab.accepted
+        assert bobHab.inited
+
+
+    hby.close(clear=True)
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    """End Test"""
+
+
+
+def test_hab_rotate_with_witness():
+    """
+    Reload from disk and rotate hab with witness
+    """
+
+    if os.path.exists('/usr/local/var/keri/cf/test/phil-test.json'):
+        os.remove('/usr/local/var/keri/cf/test/phil-test.json')
+    if os.path.exists('/usr/local/var/keri/db/test/phil-test'):
+        shutil.rmtree('/usr/local/var/keri/db/test/phil-test')
+    if os.path.exists('/usr/local/var/keri/ks/test/phil-test'):
+        shutil.rmtree('/usr/local/var/keri/ks/test/phil-test')
 
     name = "phil-test"
-    with basing.openDB(name=name, temp=False) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False,
-                              wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
+
+    with habbing.openHby(name=name, base="test", temp=False) as hby:
+        hab = hby.makeHab(name=name, icount=1, wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.said
 
-    with basing.openDB(name=name, temp=False, reload=True) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False,
-                              wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
 
+    with habbing.openHby(name=name, base="test", temp=False) as hby:
+        # hab = hby.makeHab(name=name, icount=1, wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
+        hab = hby.habByName(name)
         assert hab.pre == opre
-        assert hab.prefixes is db.prefixes
-        assert hab.kevers is db.kevers
+        assert hab.prefixes is hab.db.prefixes
+        assert hab.kevers is hab.db.kevers
         assert hab.pre in hab.prefixes
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
         hab.rotate(count=3)
-
-        assert hab.ridx == 1
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
+    hby.close(clear=True)
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
 
-def test_habitat_reinitialization():
+
+def test_habery_reinitialization():
+    """Test Reinitializing Habery and its Habs
     """
-    Test Reinitializing Habitat class
-    """
-    if os.path.exists('/usr/local/var/keri/db/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/db/bob-test')
-    if os.path.exists('/usr/local/var/keri/ks/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/ks/bob-test')
+
+    if os.path.exists('/usr/local/var/keri/cf/test/bob-test.json'):
+        os.remove('/usr/local/var/keri/cf/test/bob-test.json')
+    if os.path.exists('/usr/local/var/keri/db/test/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/db/test/bob-test')
+    if os.path.exists('/usr/local/var/keri/ks/test/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/ks/test/bob-test')
 
     name = "bob-test"
 
-    with basing.openDB(name=name, clear=True, temp=False) as db, \
-            keeping.openKS(name=name, clear=True, temp=False) as ks:
-
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+    with habbing.openHby(name=name, base="test", temp=False, clear=True) as hby:
+        hab = hby.makeHab(name=name, icount=1)
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.said
-        assert hab.ridx == 0
 
-    with basing.openDB(name=name, temp=False) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
 
-        assert opre not in db.prefixes
-        assert opre in db.kevers  # write through cache
+    with habbing.openHby(name=name, base="test", temp=False) as hby:
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+        assert opre in hby.db.kevers  # read through cache
+        assert opre in hby.db.prefixes
+
+        # hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+        hab = hby.habByName(name)
         assert hab.pre == opre
-        assert hab.prefixes is db.prefixes
-        assert hab.kevers is db.kevers
+        assert hab.prefixes is hab.db.prefixes
+        assert hab.kevers is hab.db.kevers
         assert hab.pre in hab.prefixes
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
         hab.rotate()
-
-        assert hab.ridx == 1
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
@@ -110,107 +560,21 @@ def test_habitat_reinitialization():
 
         assert opre == hab.pre
         assert hab.kever.verfers[0].qb64 == npub
-        assert hab.ridx == 1
-
         assert hab.kever.serder.said != odig
         assert hab.kever.serder.said == ndig
 
-        hab.ks.close(clear=True)
-        hab.db.close(clear=True)
-
-    assert not os.path.exists(hab.ks.path)
-    assert not os.path.exists(hab.db.path)
-    """End Test"""
-
-
-def test_habitat_reinitialization_reload():
-    if os.path.exists('/usr/local/var/keri/db/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/db/bob-test')
-    if os.path.exists('/usr/local/var/keri/ks/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/ks/bob-test')
-    if os.path.exists('/usr/local/var/keri/cf/bob-test.json'):
-        os.remove('/usr/local/var/keri/cf/bob-test.json')
-
-    name = "bob-test"
-
-    with basing.openDB(name=name, clear=True, temp=False) as db, \
-            keeping.openKS(name=name, clear=True, temp=False) as ks, \
-            configing.openCF(name=name, base="", clear=True, temp=False) as  cf:
-        hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, icount=1, temp=False)
-        oidig = hab.iserder.said
-        opre = hab.pre
-        opub = hab.kever.verfers[0].qb64
-        odig = hab.kever.serder.said
-        assert hab.ridx == 0
-
-    # openDB with reload=True which should reload .habs into db.kevers and db.prefixes
-    with basing.openDB(name=name, temp=False, reload=True) as db, \
-            keeping.openKS(name=name, temp=False) as ks, \
-            configing.openCF(name=name, base="", temp=False) as cf:
-        assert opre in db.prefixes
-        assert opre in db.kevers
-
-        hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, icount=1, temp=False)
-        assert hab.pre == opre
-        assert hab.prefixes is db.prefixes
-        assert hab.kevers is db.kevers
-        assert hab.pre in hab.prefixes
-        assert hab.pre in hab.kevers
-        assert hab.iserder.said == oidig
-
-        hab.rotate()
-
-        assert hab.ridx == 1
-        assert opub != hab.kever.verfers[0].qb64
-        assert odig != hab.kever.serder.said
-
-        npub = hab.kever.verfers[0].qb64
-        ndig = hab.kever.serder.said
-
-        assert opre == hab.pre
-        assert hab.kever.verfers[0].qb64 == npub
-        assert hab.ridx == 1
-
-        assert hab.kever.serder.said != odig
-        assert hab.kever.serder.said == ndig
-
-        hab.cf.close(clear=True)
-        hab.ks.close(clear=True)
-        hab.db.close(clear=True)
-
-    assert not os.path.exists(hab.cf.path)
-    assert not os.path.exists(hab.ks.path)
-    assert not os.path.exists(hab.db.path)
-    """End Test"""
-
-
-def test_habitat_with_delegation():
-    """
-    Test Habitat class
-    """
-    delhab = habbing.Habitat(name="del", temp=True)
-    delpre = delhab.pre
-    assert delpre == "E-kwM1vdZf63KAnw0SbS3Jrq1cKavuM8z2fXz2tMA8KA"
-
-    bobhab = habbing.Habitat(name="bob", temp=True, delpre=delpre)
-    assert bobhab.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
-
-    assert bobhab.delserder.pre == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
-    assert bobhab.delserder.ked["s"] == '0'
-    assert bobhab.delserder.said == "EXBwGj6s62ZGKUaiNlzaFeycxs-hwgbkD2hUR1aI-bGg"
-
-    assert bobhab.accepted is False
-
-    bobhab.db.close(clear=True)
-    bobhab.ks.close(clear=True)
-    delhab.db.close(clear=True)
-    delhab.ks.close(clear=True)
+    hby.close(clear=True)
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
 
     """End Test"""
 
-def test_habitat_reconfigure(mockHelpingNowUTC):
+
+
+def test_habery_reconfigure(mockHelpingNowUTC):
     """
-    Test Habitat  .reconfigure method using .cf for config file
+    Test   .reconfigure method using .cf for config file
 
      conf
     {
@@ -232,36 +596,24 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
     pname = "nel"  # nel peer name
     pbase = "head" # nel peer head shared
 
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         configing.openCF(name="wes") as wesCF, \
-         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         configing.openCF(name="wok") as wokCF, \
-         basing.openDB(name="main") as tamDB, keeping.openKS(name="main") as tamKS, \
-         configing.openCF(name="tam", base="main") as tamCF, \
-         basing.openDB(name="wat") as watDB, keeping.openKS(name="wat") as watKS, \
-         configing.openCF(name="wat") as watCF, \
-         basing.openDB(name="head") as nelDB, keeping.openKS(name="head") as nelKS, \
-         configing.openCF(name="nel", base="head") as nelCF:
+
+    with habbing.openHby(name='wes', base="test", salt=salt) as wesHby, \
+         habbing.openHby(name='wok', base="test", salt=salt) as wokHby, \
+         habbing.openHby(name='tam', base="test", salt=salt) as tamHby, \
+         habbing.openHby(name='wat', base="test", salt=salt) as watHby, \
+         habbing.openHby(name='nel', base="test", salt=salt) as nelHby:
 
         # witnesses first so can setup inception event for tam
         wsith = 1
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,  cf=wesCF,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
-        assert wesHab.ks == wesKS
-        assert wesHab.db == wesDB
+        wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
         wesPrs = parsing.Parser(kvy=wesKvy)
 
         # setup Wok's habitat nontrans
-        wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB, cf=wokCF,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
-        assert wokHab.ks == wokKS
-        assert wokHab.db == wokDB
+        wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False)
         assert not wokHab.kever.prefixer.transferable
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
         wokPrs = parsing.Parser(kvy=wokKvy)
@@ -269,24 +621,18 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
         # setup Tam's config
         curls = ["tcp://localhost:5620/"]
         iurls = [f"tcp://localhost:5621/?role={kering.Roles.peer}&name={pname}"]
-        assert (conf := tamCF.get()) == {}
+        assert (conf := tamHby.cf.get()) == {}
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
-        tamCF.put(conf)
+        tamHby.cf.put(conf)
 
-        assert tamCF.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
+        assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
                                 'curls': ['tcp://localhost:5620/'],
                                 'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre]
         tsith = 1  # hex str of threshold int
-        tamHab = habbing.Habitat(name='cam', ks=tamKS, db=tamDB, cf=tamCF,
-                                   isith=tsith, icount=3,
-                                   toad=2, wits=wits,
-                                   salt=salt, temp=True)  # stem is .name
-        assert tamHab.ks == tamKS
-        assert tamHab.db == tamDB
-        assert tamHab.cf == tamCF
+        tamHab = tamHby.makeHab(name="tam", isith=tsith, icount=3, toad=2, wits=wits)
         assert tamHab.kever.prefixer.transferable
         assert len(tamHab.iserder.werfers) == len(wits)
         for werfer in tamHab.iserder.werfers:
@@ -308,31 +654,23 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
         assert locer.url == 'tcp://localhost:5620/'
 
         # setup Wat's habitat nontrans
-        watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB, cf=watCF,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
-        assert watHab.ks == watKS
-        assert watHab.db == watDB
+        watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False,)
         assert not watHab.kever.prefixer.transferable
         watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
 
         # setup Nel's config
         curls = ["tcp://localhost:5621/"]
         iurls = [f"tcp://localhost:5620/?role={kering.Roles.peer}&name={cname}"]
-        assert (conf := nelCF.get()) == {}
+        assert (conf := nelHby.cf.get()) == {}
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
-        nelCF.put(conf)
+        nelHby.cf.put(conf)
 
-        assert nelCF.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
+        assert nelHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
                                 'curls': ['tcp://localhost:5621/'],
                                 'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
 
         # setup Nel's habitat nontrans
-        nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB, cf=nelCF,
-                                   isith=wsith, icount=1,
-                                   salt=salt, transferable=False, temp=True)  # stem is .name
-        assert nelHab.ks == nelKS
-        assert nelHab.db == nelDB
+        nelHab = nelHby.makeHab(name="nel", isith=wsith, icount=1, transferable=False)
         assert not nelHab.kever.prefixer.transferable
         nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False)
         # create non-local parer for Nel to process non-local msgs
@@ -350,25 +688,46 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
         assert locer.url == 'tcp://localhost:5621/'
 
 
-
-    assert not os.path.exists(nelCF.path)
-    assert not os.path.exists(nelKS.path)
-    assert not os.path.exists(nelDB.path)
-    assert not os.path.exists(watCF.path)
-    assert not os.path.exists(watKS.path)
-    assert not os.path.exists(watDB.path)
-    assert not os.path.exists(wokCF.path)
-    assert not os.path.exists(wokKS.path)
-    assert not os.path.exists(wokDB.path)
-    assert not os.path.exists(wesCF.path)
-    assert not os.path.exists(wesKS.path)
-    assert not os.path.exists(wesDB.path)
-    assert not os.path.exists(tamCF.path)
-    assert not os.path.exists(tamKS.path)
-    assert not os.path.exists(tamDB.path)
+    assert not os.path.exists(nelHby.cf.path)
+    assert not os.path.exists(nelHby.db.path)
+    assert not os.path.exists(nelHby.ks.path)
+    assert not os.path.exists(watHby.cf.path)
+    assert not os.path.exists(watHby.db.path)
+    assert not os.path.exists(watHby.ks.path)
+    assert not os.path.exists(wokHby.cf.path)
+    assert not os.path.exists(wokHby.db.path)
+    assert not os.path.exists(wokHby.ks.path)
+    assert not os.path.exists(wesHby.cf.path)
+    assert not os.path.exists(wesHby.db.path)
+    assert not os.path.exists(wesHby.ks.path)
+    assert not os.path.exists(tamHby.cf.path)
+    assert not os.path.exists(tamHby.db.path)
+    assert not os.path.exists(tamHby.ks.path)
     """Done Test"""
 
 
+
+def test_hab_with_delegation():
+    """
+    Test Habitat class
+    """
+    with habbing.openHby(name='delegation', base="test") as hby:
+        torHab = hby.makeHab(name='tor')
+        assert torHab.pre == 'Eg0Vs54AiRvxoKvZn6QyddH8VN0IAr2-UR1DbJSUKy80'
+
+        teeHab = hby.makeHab(name='tee', delpre=torHab.pre)
+        assert teeHab.pre == 'EyR1tMhddjSLESCkYLil-6XqgDr4yiZdVuWioTbCTlmg'
+        assert teeHab.delserder.pre == teeHab.pre
+        assert teeHab.delserder.ked["s"] == '0'
+        assert teeHab.delserder.said == teeHab.delserder.pre == teeHab.pre
+        assert teeHab.accepted is False  # need to fix this when redo logic
+
+
+    """End Test"""
+
+
+
 if __name__ == "__main__":
-    test_habitat_reinitialization_reload()
+    test_make_load_hab_with_habery()
+    # test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])

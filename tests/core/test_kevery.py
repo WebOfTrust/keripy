@@ -253,7 +253,12 @@ def test_kevery():
 
 
 def test_witness_state():
-    with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
+    """
+    """
+
+    # with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
+    with habbing.openHby(name="controller", base="test") as hby:
+
         wits = [
             "BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ",
             "BrCfvh5pSgaDJP9LzZwLYcVkygwqftkh0HJ4mTocHXec",
@@ -267,8 +272,10 @@ def test_witness_state():
             "BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXNOKSu0",
         ]
 
-        hab = habbing.Habitat(name="controller", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                              wits=[wits[0], wits[1]], temp=True)
+        #hab = habbing.Habitat(name="controller", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                              #wits=[wits[0], wits[1]], temp=True)
+        hab = hby.makeHab(name="controller", isith=1, icount=1, transferable=True,
+                              wits=[wits[0], wits[1]])
 
         wit0 = hab.kvy.fetchWitnessState(hab.pre, 0)
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
@@ -339,40 +346,45 @@ def test_witness_state():
 
 
 def test_stale_event_receipts():
-    # Bob is the controller
-    # Wes, Wil and Wan are his witnesses
-    # Bam is verifying the key events with receipts from Bob
-    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-            basing.openDB(name="wan") as wanDB, keeping.openKS(name="wan") as wanKS, \
-            basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS, \
-            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="bam") as bamDB:
+    """
+    Bob is the controller
+    Wes, Wil and Wan are his witnesses
+    Bam is verifying the key events with receipts from Bob
+    """
+
+    with habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHby(name="bam", base="test") as bamHby, \
+         habbing.openHby(name="wes", base="test") as wesHby, \
+         habbing.openHby(name="wan", base="test") as wanHby, \
+         habbing.openHby(name="wil", base="test") as wilHby:
 
         # setup Wes's habitat nontrans
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=1, icount=1, transferable=False, temp=True)
-
+        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 #isith=1, icount=1, transferable=False, temp=True)
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
         assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
 
         # setup Wan's habitat nontrans
-        wanHab = habbing.Habitat(name='wan', ks=wanKS, db=wanDB,
-                                 isith=1, icount=1, transferable=False, temp=True)
-
+        #wanHab = habbing.Habitat(name='wan', ks=wanKS, db=wanDB,
+                                 #isith=1, icount=1, transferable=False, temp=True)
+        wanHab = wanHby.makeHab(name="wan", isith=1, icount=1, transferable=False,)
         assert wanHab.pre == "BBtKPeN9p4lum6qDRa28fDfVShFk6c39FlBgHBsCq148"
 
         # setup Wil's habitat nontrans
-        wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                 isith=1, icount=1, transferable=False, temp=True)
-
+        #wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
+                                 #isith=1, icount=1, transferable=False, temp=True)
+        wilHab = wilHby.makeHab(name="wil", isith=1, icount=1, transferable=False,)
         assert wilHab.pre == "BRetJdWSxemd-ej8OLpEFfYuyv1VZECKGMuGjB-M05BA"
 
         # setup Bob's transferable habitat with wil, wes and wan as witnesses
         awits = [wesHab, wilHab, wanHab]
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                                 #wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True,
+                                wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
         assert bobHab.pre == "EDRGkqe1-ZvMzy8SRx-KMNrC_KmbJWe2EgAyD9q3nBgQ"
 
-        bamKvy = eventing.Kevery(db=bamDB, lax=False, local=False)
+        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
         bobIcp = bobHab.makeOwnEvent(sn=0)
@@ -407,7 +419,7 @@ def test_stale_event_receipts():
         # Validate that bam has 2 receipts in DB for event 1
         ser = coring.Serder(raw=rot0)
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = bamDB.getWigs(dgkey)
+        wigs = bamHby.db.getWigs(dgkey)
         assert len(wigs) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
@@ -433,7 +445,11 @@ def test_stale_event_receipts():
         parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
 
         # Validate that bam has 3 receipts in DB for event 1
-        wigs = bamDB.getWigs(dgkey)
+        wigs = bamHby.db.getWigs(dgkey)
         assert len(wigs) == 3
 
         """ Done Test """
+
+
+if __name__ == "__main__":
+    test_stale_event_receipts()

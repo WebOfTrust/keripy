@@ -24,13 +24,18 @@ def test_broker_nontrans():
     salt = salter.qb64
     assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    with dbing.openLMDB() as db, \
-            basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
-        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 isith=1, icount=1,
-                                 salt=salt, transferable=False, temp=True)
+    #with dbing.openLMDB() as db, \
+            #basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
 
-        bork = escrowing.Broker(db=db, subkey="test")
+    with dbing.openLMDB() as brokerdb, \
+        habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
+
+        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False)
+        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 #isith=1, icount=1,
+                                 #salt=salt, transferable=False, temp=True)
+
+        bork = escrowing.Broker(db=brokerdb, subkey="test")
 
         dts = helping.nowIso8601()
         typ = "test"
@@ -83,12 +88,17 @@ def test_broker_nontrans():
 
 
 def test_broker_trans():
-    with dbing.openLMDB() as db, \
-            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
-        bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
-                                 wits=[], temp=True)
+    #with dbing.openLMDB() as db, \
+            #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+                                 #wits=[], temp=True)
 
-        bork = escrowing.Broker(db=db, subkey="test")
+    with dbing.openLMDB() as brokerdb, \
+        habbing.openHby(name="bob", base="test") as bobHby:
+
+        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
+
+        bork = escrowing.Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
         typ = "test"
         ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',

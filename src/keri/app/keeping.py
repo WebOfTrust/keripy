@@ -187,7 +187,7 @@ class Keeper(dbing.LMDBer):
         prms (koming.Komer): named sub DB whose values are serialized dicts of
             PrePrm instance
             Key is identifier prefix (fully qualified qb64)
-            Value is  serialized parameter dict (JSON) of public key parameters
+            Value is  serialized parameter dict of public key parameters
             {
                 pidx: ,
                 algo: ,
@@ -198,7 +198,7 @@ class Keeper(dbing.LMDBer):
         sits (koming.Komer): named sub DB whose values are serialized dicts of
             PreSit instance
             Key is identifer prefix (fully qualified qb64)
-            Value is  serialized parameter dict (JSON) of public key situation
+            Value is  serialized parameter dict of public key situation
                 {
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
@@ -510,7 +510,8 @@ class SaltyCreator(Creator):
             ridx is int rotation index for key pair set
             kidx is int starting key index for key pair set
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
-            temp is Boolean True means use temp level for testing
+            temp is Boolean True means use temp stretch otherwise use time set
+                 by tier for streching
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -586,7 +587,7 @@ Initage = namedtuple("Initage", 'aeid pidx salt tier')
 
 
 class Manager:
-    """
+    """Manages key pairs creation, storage, and signing
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
@@ -648,14 +649,15 @@ class Manager:
                 is initialized. Its presence acts as an authentication, authorization,
                 and decryption secret for the Manager and must be stored on
                 another device from the device that runs the Manager.
+                Currently only code MtrDex.Ed25519_Seed is supported.
 
         Parameters: Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
                 all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
+                provided seed must not be empty. A change in aeid should require
+                a second authentication mechanism besides the seed.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             salt (str): qb64 of root salt. Makes random root salt if not provided
@@ -691,8 +693,11 @@ class Manager:
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
                 all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
+                provided seed must not be empty. A change in aeid should require
+                a second authentication mechanism besides the secret.
+                aeid same as current aeid no change innocuous
+                aeid different but empty which unencrypts and removes aeid
+                aeid different not empty which reencrypts and updates aeid
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             algo (str): root algorithm (randy or salty) for creating key pairs
@@ -724,6 +729,8 @@ class Manager:
 
         if self.salt is None:  # never before initialized
             self.salt = salt
+        # else force salt to be qb64
+        # salt =coring.Salter(qb64=salt).qb64
 
         if self.tier is None:  # never before initialized
             self.tier = tier  # init to default
@@ -743,6 +750,9 @@ class Manager:
 
         Parameters:
             aeid (str): qb64 of new auth encrypt id  (public signing key)
+                        aeid may match current aeid no change innocuous
+                        aeid may be empty which unencrypts and removes aeid
+                        aeid may be different not empty which reencrypts
             seed (str): qb64 of new seed from which new aeid is derived (private signing
                         key seed)
         """
@@ -1118,23 +1128,24 @@ class Manager:
         Store the updated dictified PreSit in the keeper under pre
 
         Parameters:
-            pre is str qb64 of prefix
-            codes is list of private key derivation codes qb64 str
+            pre (str) qb64 of prefix
+            codes (list): of private key derivation codes qb64 str
                 one per next key pair
-            count is int count of next public keys when icodes not provided
-            code is str derivation code qb64  of all ncount next public keys
+            count (int): count of next public keys when icodes not provided
+            code (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            sith is next signing threshold as:
+            sith (Union[int, str, list]): next signing threshold as:
                 int, str hex, or list of weights
-            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
-            transferable is Boolean, True means each public key uses transferable
+            dcode i(str): derivation code qb64 of digers to make next xor digest.
+                Default is MtrDex.Blake3_256
+            transferable (bool): True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
                 Normally no use case for rotation to use transferable = False.
                 When the derivation process of the identifier prefix is
                 transferable then one should not use transferable = False for the
                 associated public key(s).
-            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
-            erase is Boolean. True means erase old private keys made stale by rotation
+            temp (bool): True is temporary for testing. It modifies tier of salty algorithm
+            erase (bool): True means erase old private keys made stale by rotation
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
@@ -1151,13 +1162,13 @@ class Manager:
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
             raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
 
-        old = ps.old  # save old so can clean out if rotate successful
-        ps.old = ps.new  # move new to old
-        ps.new = ps.nxt  # move nxt to new
+        old = ps.old  # save prior old so can clean out if rotate successful
+        ps.old = ps.new  # move prior new to old so save previous one step
+        ps.new = ps.nxt  # move prior nxt to new which new is now current signer
 
-        verfers = []  # assign verfers from new nxt was old nxt now new nxt.
-        for pub in ps.new.pubs:  # maybe should rethink this
-            if self.aeid and not self.decrypter:
+        verfers = []  # assign verfers from current new was prior nxt
+        for pub in ps.new.pubs:
+            if self.aeid and not self.decrypter:  # maybe should rethink this
                 raise kering.DecryptError("Unauthorized decryption attempt. "
                                           "Aeid but no decrypter.")
 
@@ -1166,7 +1177,7 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold
+        cst = ps.new.st  # get new current signing threshold (cst)
 
         salt = pp.salt
         if salt:
@@ -1213,7 +1224,7 @@ class Manager:
         self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), val=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
-            for pub in old.pubs:  # remove old prikeys
+            for pub in old.pubs:  # remove prior old prikeys not current old
                 self.ks.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
@@ -1293,7 +1304,7 @@ class Manager:
             return cigars
 
 
-    def ingest(self, secrecies, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+    def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None,
                      rooted=True, transferable=True, temp=False):
@@ -1301,10 +1312,15 @@ class Manager:
         Ingest secrecies as a list of lists of secrets organized in event order
         to register the sets of secrets of associated externally generated keypair
         lists into the database.
-        Returns tuple of (verferies, digers) where verferies is a list of lists
-        of the corresponding public keys from secrecies and digers is the list
-        of digers for the digest of the newly created next keys after the last
-        entry in secrecies. Essentially ingest ends with the current keys as the
+
+        Returns:
+            ret (tuple): (ipre, veferies) where:
+                ipre is prefix index of ingested key pairs needed to fetch later
+                   for replay
+                veferies is list of lists of all the verfers for the  public keys
+                from the private keys in secrecies in order of appearance.
+
+        Essentially ingest ends with the current keys as the
         last key list in secrecies and the nxt keys are newly created as if a
         rotation to the last set of keys was performed. Unlike rotate, however,
         ingest does not delete any of the private keys it ingests. This must be
@@ -1319,16 +1335,22 @@ class Manager:
         May be used for import or recovery from backup.
         Method parameters specify the policy for generating new keys pairs for
         rotations that follow the ingested list of lists. The parameters are used
-        to define how torotate to new key pairs that follow the ingested sequence.
+        to define how to rotate to new key pairs that follow the ingested sequence.
+
+
 
         Parameters:
-            secrecies is list of lists of fully qualified secrets (private keys)
-            ncount is int count of next public keys when ncodes not provided
-            ncode is str derivation code qb64  of all ncount next public keys
-                when ncodes not provided
-            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
-            algo is str key creation algorithm code
+            secrecies (list): list of lists of fully qualified secrets (private keys)
+            iridx (int): initial ridx at where set PubSit after ingestion
+                enables database to store where initial replay should start from
+            ncount (int): count of next public keys for next after end of secrecies
+            ncode (str): derivation code qb64  of all ncount next public keys
+                after end of secrecies
+            dcode is str derivation code qb64 of next digers after end of secrecies
+                Default is MtrDex.Blake3_256
+            algo is str key creation algorithm code for next after end of secrecies
             salt is str qb64 salt for randomization when salty algorithm used
+                for next after end of secrecies
             stem is path modifier used with salt to derive private keys when using
                 salty agorithms. if stem is None then uses pidx
             tier is str security criticality tier code when using salty algorithm
@@ -1341,9 +1363,13 @@ class Manager:
                 When the derivation process of the identifier prefix is
                 transferable then one should not use non-transferable for the
                 associated public key(s).
-            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
+            temp is Boolean. True is temporary for testing. It modifies strech
+                time of salty algorithm
 
         """
+        if iridx > len(secrecies):
+            raise ValueError(f"Initial ridx={iridx} beyond last secrecy.")
+
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
             salt = self.salt
@@ -1354,15 +1380,12 @@ class Manager:
         pidx = self.pidx  # get next pidx
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
-
-        dt = ""
+        ipre = ""
+        dt = ""  # empty for incept of old
         pubs = []
-        oridx = 0
-        okidx = 0
-        cridx = 0
-        ckidx = 0
         ridx = 0
         kidx = 0
+
         verferies = []  # list of lists of verfers
         first = True
         secrecies = deque(secrecies)
@@ -1382,69 +1405,87 @@ class Manager:
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
+                ipre = csigners[0].verfer.qb64
                 if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
                 if not self.ks.prms.put(pre, val=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-                self.pidx = pidx + 1  # increment for next inception
+                self.pidx = pidx + 1  # increment so unique
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
                 self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                                  encrypter=self.encrypter)
 
-            self.ks.pubs.put(riKey(pre, ri=ridx),
-                                val=PubSet(pubs=[signer.verfer.qb64
-                                        for signer in csigners]))
-
-            odt = dt
-            dt = helping.nowIso8601()
-            opubs = pubs
             pubs = [signer.verfer.qb64 for signer in csigners]
-            okidx = ckidx  # old kidx
-            oridx = cridx  # old ridx
-            ckidx = kidx  # current kidx
-            cridx = ridx  # currrent ridx
+            self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
+
+            dt = helping.nowIso8601()
+            if ridx == max(iridx - 1, 0):  # setup ps.old at this ridx
+                if iridx == 0:
+                    old = PubLot()  # defaults ok
+                else:
+                    osigners = csigners
+                    osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
+                    ost = coring.Tholder(sith=osith).sith
+                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=ost, dt=dt)
+                ps = PreSit(old=old)  # .new and .nxt are default
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+            if ridx == iridx:  # setup ps.new at this ridx
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+                csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
+                cst = coring.Tholder(sith=csith).sith
+                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=cst, dt=dt)
+                ps.new = new
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+            if ridx == iridx + 1:  # set up ps.nxt at this ridx
+                if (ps := self.ks.sits.get(pre)) is None:
+                    raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+                nsigners = csigners
+                nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
+                nst = coring.Tholder(sith=nsith).sith
+                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                ps.nxt = nxt
+                if not self.ks.sits.pin(pre, val=ps):
+                    raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
             ridx += 1  # next ridx
             kidx += csize  # next kidx
-
 
         # create nxt signers after ingested signers
         nsigners = creator.create(count=ncount, code=ncode,
                                   pidx=pidx, ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
 
-        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.ks.pubs.put(riKey(pre, ri=ridx),
-                             val=PubSet(pubs=[signer.verfer.qb64
-                                               for signer in nsigners]))
+        pubs = [signer.verfer.qb64 for signer in nsigners]
+        self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
 
-        csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
-        cst = coring.Tholder(sith=csith).sith
+        if ridx == iridx + 1:  # want to set up ps.next at this ridx
+            dt = helping.nowIso8601()
+            if (ps := self.ks.sits.get(pre)) is None:
+                raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
+            nst = coring.Tholder(sith=nsith).sith
+            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+            ps.nxt = nxt
+            if not self.ks.sits.pin(pre, val=ps):
+                raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
-        nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
-        nst = coring.Tholder(sith=nsith).sith
-
-        dt = helping.nowIso8601()
-        old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, st='0', dt=odt)
-        new=PubLot(pubs=[signer.verfer.qb64 for signer in csigners],
-                           ridx=cridx, kidx=ckidx, st=cst, dt=dt)
-        nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                           ridx=ridx, kidx=kidx, st=nst, dt=dt)
-
-        ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.ks.sits.pin(pre, val=ps):
-            raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
-        return (verferies, digers)
+        return (ipre, verferies) #
 
 
-    def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
+    def replay(self, pre, dcode=coring.MtrDex.Blake3_256, advance=True, erase=True):
         """
         Returns duple (verfers, digers) associated with public key set from
         the key sequence for identifier prefix pre at rotation index ridx stored
@@ -1462,9 +1503,94 @@ class Manager:
             pubs then raises IndexError.
 
         Parameters:
-            pre is str fully qualified qb64 identifier prefix
-            ridx is integer rotation index
-            code is str derivation code for digers. Default is MtrDex.Blake3_256
+            pre (str): fully qualified qb64 identifier prefix
+            dcode (str): derivation code for digers for next xor digest.
+                Default is MtrDex.Blake3_256
+            advance (bool): True means advance to next set of keys for replay
+            erase (bool): True means erase old private keys made stale by
+                advancement when advance is True otherwise ignore
+
+        """
+        if (pp := self.ks.prms.get(pre)) is None:
+            raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
+
+        if (ps := self.ks.sits.get(pre)) is None:
+            raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
+
+
+        if advance:
+            old = ps.old  # save prior old so can clean out if rotate successful
+            ps.old = ps.new  # move prior new to old so save previous one step
+            ps.new = ps.nxt  # move prior nxt to new which new is now current signer
+            ridx = ps.new.ridx
+            kidx = ps.new.kidx
+            csize = len(ps.new.pubs)
+
+            # Usually when next keys are null then aid is effectively non-transferable
+            # but when replaying injected keys reaching null next pub keys or
+            # equivalently default empty is the sign that we have reached the
+            # end of the replay so need to raise an IndexError
+            if not (pubset := self.ks.pubs.get(riKey(pre, ridx+1))):
+                # empty nxt public keys so end of replay
+                raise IndexError(f"Invalid replay attempt of pre={pre} at "
+                                 f"ridx={ridx}.")
+            pubs = pubset.pubs  # create nxt from pubs
+            dt = helping.nowIso8601()
+            nsith = "{:x}".format(max(0, math.ceil(len(pubs) / 2)))
+            nst = coring.Tholder(sith=nsith).sith
+            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, st=nst, dt=dt)
+            ps.nxt = nxt
+
+
+        verfers = []  # assign verfers from current new was prior nxt
+        for pub in ps.new.pubs:
+            if self.aeid and not self.decrypter:  # maybe should rethink this
+                raise kering.DecryptError("Unauthorized decryption attempt. "
+                                          "Aeid but no decrypter.")
+
+            if ((signer := self.ks.pris.get(pub.encode("utf-8"),
+                                           decrypter=self.decrypter)) is None):
+                raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+            verfers.append(signer.verfer)
+
+        cst = ps.new.st  # get new current signing threshold (cst)
+
+        digers = [coring.Diger(ser=pub.encode("utf-8"), code=dcode)
+                    for pub in ps.nxt.pubs]
+        nst = ps.nxt.st
+
+        if advance:
+            if not self.ks.sits.pin(pre, val=ps):
+                raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+            if erase:
+                for pub in old.pubs:  # remove prior old prikeys not current old
+                    self.ks.pris.rem(pub)
+
+        return (verfers, digers, cst, nst)
+
+
+    def replayOld(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
+        """
+        Returns duple (verfers, digers) associated with public key set from
+        the key sequence for identifier prefix pre at rotation index ridx stored
+        in db .pubs. Inception is at ridx == 0.
+        Enables replay of preexisting public key sequence.
+        In returned duple:
+            verfers is list of current public key verfers
+                public key is verfer.qb64
+            digers is list of next public key digers
+                digest to xor is diger.raw
+
+        If key sequence at ridx does already exist in .pubs database for pre then
+            raises ValueError.
+        If  preexisting pubs for pre exist but .ridx is two large for preexisting
+            pubs then raises IndexError.
+
+        Parameters:
+            pre (str): fully qualified qb64 identifier prefix
+            ridx (int): rotation index
+            code (str): derivation code for digers. Default is MtrDex.Blake3_256
+            erase (bool): True means erase old private keys made stale by rotation
 
         """
         oldps = None

@@ -1015,7 +1015,7 @@ class KiwiServer(doing.DoDoer):
             adds = set(wits) - set(ewits)
 
         try:
-            rot = self.hab.rotate(sith=isith, count=count, erase=True, toad=toad,
+            rot = self.hab.rotate(sith=isith, count=count, toad=toad,
                                   cuts=list(cuts), adds=list(adds))
 
             if self.hab.kever.delegator is None:

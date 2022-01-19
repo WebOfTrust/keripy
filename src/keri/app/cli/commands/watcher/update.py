@@ -22,7 +22,7 @@ def updateWatchers(args):
     name = args.name
 
     try:
-        with habbing.existingHab(name=name) as hab:
+        with habbing.existingHabitat(name=name) as hab:
 
             habr = hab.db.habs.get(name)
 

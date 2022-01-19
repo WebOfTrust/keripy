@@ -31,7 +31,7 @@ def printGroup(hab, group):
         group (GroupIdentifier): the local identifier and list of participants
 
     """
-    print("Local Identifier:", group.lid)
+    print("Local Identifier:", hab.pre)
     printIdentifier(hab, group.gid, label="Group Identifier")
 
     aids = group.aids

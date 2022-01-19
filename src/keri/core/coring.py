@@ -448,52 +448,54 @@ class MatterCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Seed: str = 'A'  # Ed25519 256 bit random seed for private key
-    Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519: str = 'C'  # X25519 public encryption key, converted from Ed25519.
-    Ed25519: str = 'D'  # Ed25519 verification key basic derivation
-    Blake3_256: str = 'E'  # Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256: str = 'H'  # SHA3 256 bit digest self-addressing derivation.
-    SHA2_256: str = 'I'  # SHA2 256 bit digest self-addressing derivation.
-    ECDSA_256k1_Seed: str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
-    Ed448_Seed: str = 'K'  # Ed448 448 bit random Seed for private key
-    X448: str = 'L'  # X448 public encryption key, converted from Ed448
-    Short: str = 'M'  # Short 2 byte b2 number or 3 char b64 str
-    Big: str = 'N'  # Big 8 byte b2 number or 11 char b64 str
-    X25519_Private: str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed: str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
-    Salt_128: str = '0A'  # 128 bit random seed or 128 bit number
-    Ed25519_Sig: str = '0B'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = '0C'  # ECDSA secp256k1 signature.
-    Blake3_512: str = '0D'  # Blake3 512 bit digest self-addressing derivation.
-    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
-    SHA3_512: str = '0F'  # SHA3 512 bit digest self-addressing derivation.
-    SHA2_512: str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-    Long: str = '0H'  # Long 4 byte b2 number or 6 char b54 str
-    ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1: str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
-    Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    Ed448: str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
-    Ed448_Sig: str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag: str = '1AAF'  # Base64 4 char tag or 3 byte number.
-    DateTime: str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt: str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
-    TBD1: str = '2AAA'  # Testing purposes only of 1 lead size
-    TBD2: str = '3AAA'  # Testing purposes only of 2 lead size
-    StrB64_L0: str = '4A'  # String Base64 Only Leader Size 0
-    StrB64_L1: str = '5A'  # String Base64 Only Leader Size 1
-    StrB64_L2: str = '6A'  # String Base64 Only Leader Size 2
-    Str_L0: str = '4B'  # String Leader Size 0
-    Str_L1: str = '5B'  # String Leader Size 1
-    Str_L2: str = '6B'  # String Leader Size 2
-    StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
-    Str_Big_L0: str = '7AAB'  # String Big Leader Size 0
-    Str_Big_L1: str = '8AAB'  # String Big Leader Size 1
-    Str_Big_L2: str = '9AAB'  # String Big Leader Size 2
+
+    Ed25519_Seed:         str = 'A'  # Ed25519 256 bit random seed for private key
+    Ed25519N:             str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519.
+    Ed25519:              str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256:           str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
+    Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
+    X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
+    Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
+    Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
+    X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
+    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number
+    Ed25519_Sig:          str = '0B'  # Ed25519 signature.
+    ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
+    Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+    Long:                 str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
+    Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
+    Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
+    Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
+    DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
+    TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
+    TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
+    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
+    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
+    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
+    Str_L0:               str = '4B'    # String Leader Size 0
+    Str_L1:               str = '5B'    # String Leader Size 1
+    Str_L2:               str = '6B'    # String Leader Size 2
+    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
+    Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
+    Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
+    Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -1797,7 +1799,8 @@ class Signer(Matter):
     Attributes:
 
     Properties:
-        .verfer is Verfer object instance
+        .verfer is Verfer object instance of public key derived from private key
+            seed which is .raw
 
     Methods:
         sign: create signature
@@ -1958,7 +1961,7 @@ class Salter(Matter):
             path (str): unique chars used in derivation of seed (secret)
             tier (str): value from Tierage for security level of stretch
             temp is Boolean, True means use quick method to stretch salt
-                    for testing only, Otherwise use more time to stretch
+                    for testing only, Otherwise use time set by tier to stretch
         """
         tier = tier if tier is not None else self.tier
 
