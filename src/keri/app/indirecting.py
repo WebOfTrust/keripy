@@ -39,15 +39,6 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
         # make hab
         hab = hby.makeHab(name=name, transferable=False)
 
-        ## setup databases  for dependency injection
-        #ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
-        #ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        #db = basing.Baser(name=name, temp=temp)  # default is to not reopen
-        #dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-        #hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=True, transferable=False)
-        #habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        #doers.extend([ksDoer, dbDoer, habDoer])
 
     reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(name=name, hab=hab, reger=reger)

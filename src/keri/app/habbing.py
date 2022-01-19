@@ -390,6 +390,7 @@ class Habery:
         self.reconfigure()  # pre hab load reconfiguration
 
         for name, habord in self.db.habs.getItemIter():
+            name = name[0]
             pre = habord.prefix
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,

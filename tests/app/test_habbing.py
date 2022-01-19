@@ -450,6 +450,7 @@ def test_make_load_hab_with_habery():
         assert suePre in hby.prefixes
         assert suePre in hby.habs
         sueHab = hby.habByName("Sue")
+        assert sueHab.name == "Sue"
         assert sueHab.pre == suePre
         assert sueHab.accepted
         assert sueHab.inited
@@ -458,6 +459,7 @@ def test_make_load_hab_with_habery():
         assert bobPre in hby.prefixes
         assert bobPre in hby.habs
         bobHab = hby.habByName("Bob")
+        assert bobHab.name == "Bob"
         assert bobHab.pre == bobPre
         assert bobHab.accepted
         assert bobHab.inited
@@ -726,6 +728,6 @@ def test_hab_with_delegation():
 
 
 if __name__ == "__main__":
-    test_hab_with_delegation()
+    test_make_load_hab_with_habery()
     # test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])
