@@ -27,47 +27,35 @@ def test_replay():
     Deb replays Deb's events with both Cam's and  Bev's receipts to Cam
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
+    artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
-    with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
-            basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-            basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
-            basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+    with habbing.openHby(name="deb", base="test") as debHby, \
+         habbing.openHby(name="cam", base="test") as camHby, \
+         habbing.openHby(name="bev", base="test") as bevHby,  \
+         habbing.openHby(name="art", base="test", salt=artSalt) as artHby:
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = habbing.Habitat(name='deb', ks=debKS, db=debDB, isith=sith, icount=3,
-                                 temp=True)
-        assert debHab.ks == debKS
-        assert debHab.db == debDB
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
-        camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB, isith=sith, icount=3,
-                                 temp=True)
-        assert camHab.ks == camKS
-        assert camHab.db == camDB
+        camHab = camHby.makeHab(name="cam", isith=sith, icount=3)
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        bevHab = habbing.Habitat(name='bev', ks=bevKS, db=bevDB, isith=sith, icount=1,
-                                 transferable=False, temp=True)
-        assert bevHab.ks == bevKS
-        assert bevHab.db == bevDB
+        bevHab = bevHby.makeHab(name="bev", isith=sith, icount=1, transferable=False)
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
         # already incepts
         # Art's receipts will be rcts with a receipt couple attached
-        salt = coring.Salter(raw=b'abcdef0123456789').qb64
         sith = '1'  # hex str of threshold int
-        artHab = habbing.Habitat(name='art', ks=artKS, db=artDB, isith=sith, icount=1,
-                                 salt=salt, transferable=False, temp=True)
-        assert artHab.ks == artKS
-        assert artHab.db == artDB
+        artHab = artHby.makeHab(name="art", isith=sith, icount=1, transferable=False)
         assert not artHab.kever.prefixer.transferable
 
         # first setup disjoint replay then conjoint replay
@@ -480,14 +468,14 @@ def test_replay():
         artDebFelMsgs = artHab.replay(pre=debHab.pre)
         assert len(artDebFelMsgs) == 9396
 
-    assert not os.path.exists(artKS.path)
-    assert not os.path.exists(artDB.path)
-    assert not os.path.exists(bevKS.path)
-    assert not os.path.exists(bevDB.path)
-    assert not os.path.exists(camKS.path)
-    assert not os.path.exists(camDB.path)
-    assert not os.path.exists(debKS.path)
-    assert not os.path.exists(debDB.path)
+    assert not os.path.exists(artHby.ks.path)
+    assert not os.path.exists(artHby.db.path)
+    assert not os.path.exists(bevHby.ks.path)
+    assert not os.path.exists(bevHby.db.path)
+    assert not os.path.exists(camHby.ks.path)
+    assert not os.path.exists(camHby.db.path)
+    assert not os.path.exists(debHby.ks.path)
+    assert not os.path.exists(debHby.db.path)
 
     """End Test"""
 
@@ -500,35 +488,44 @@ def test_replay_all():
     Replay all the events in database.
 
     """
+    artSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    #with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
+            #basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+            #basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+            #basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
 
-    with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
-            basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-            basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
-            basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+    with habbing.openHby(name="deb", base="test") as debHby, \
+         habbing.openHby(name="cam", base="test") as camHby, \
+         habbing.openHby(name="bev", base="test") as bevHby,  \
+         habbing.openHby(name="art", base="test", salt=artSalt) as artHby:
+
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = habbing.Habitat(ks=debKS, db=debDB, isith=sith, icount=3,
-                                 temp=True)
-        assert debHab.ks == debKS
-        assert debHab.db == debDB
+        #debHab = habbing.Habitat(ks=debKS, db=debDB, isith=sith, icount=3,
+                                 #temp=True)
+        debHab = debHby.makeHab(name='test', isith=sith, icount=3)
+        #assert debHab.ks == debKS
+        #assert debHab.db == debDB
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
-        camHab = habbing.Habitat(ks=camKS, db=camDB, isith=sith, icount=3,
-                                 temp=True)
-        assert camHab.ks == camKS
-        assert camHab.db == camDB
+        #camHab = habbing.Habitat(ks=camKS, db=camDB, isith=sith, icount=3,
+                                 #temp=True)
+        camHab = camHby.makeHab(name='test', isith=sith, icount=3)
+        #assert camHab.ks == camKS
+        #assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        bevHab = habbing.Habitat(ks=bevKS, db=bevDB, isith=sith, icount=1,
-                                 transferable=False, temp=True)
-        assert bevHab.ks == bevKS
-        assert bevHab.db == bevDB
+        #bevHab = habbing.Habitat(ks=bevKS, db=bevDB, isith=sith, icount=1,
+                                 #transferable=False, temp=True)
+        bevHab = bevHby.makeHab(name='test', isith=sith, icount=1, transferable=False)
+        #assert bevHab.ks == bevKS
+        #assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
@@ -536,10 +533,11 @@ def test_replay_all():
         # Art's receipts will be rcts with a receipt couple attached
         salt = coring.Salter(raw=b'abcdef0123456789').qb64
         sith = '1'  # hex str of threshold int
-        artHab = habbing.Habitat(ks=artKS, db=artDB, isith=sith, icount=1,
-                                 salt=salt, transferable=False, temp=True)
-        assert artHab.ks == artKS
-        assert artHab.db == artDB
+        #artHab = habbing.Habitat(ks=artKS, db=artDB, isith=sith, icount=1,
+                                 #salt=salt, transferable=False, temp=True)
+        artHab = artHby.makeHab(name='test', isith=sith, icount=1, transferable=False)
+        #assert artHab.ks == artKS
+        #assert artHab.db == artDB
         assert not artHab.kever.prefixer.transferable
 
         # Create series of event for Deb
@@ -634,14 +632,14 @@ def test_replay_all():
         artAllFelMsgs = artHab.replayAll()
         assert len(artAllFelMsgs) == 10922
 
-    assert not os.path.exists(artKS.path)
-    assert not os.path.exists(artDB.path)
-    assert not os.path.exists(bevKS.path)
-    assert not os.path.exists(bevDB.path)
-    assert not os.path.exists(camKS.path)
-    assert not os.path.exists(camDB.path)
-    assert not os.path.exists(debKS.path)
-    assert not os.path.exists(debDB.path)
+    assert not os.path.exists(artHby.ks.path)
+    assert not os.path.exists(artHby.db.path)
+    assert not os.path.exists(bevHby.ks.path)
+    assert not os.path.exists(bevHby.db.path)
+    assert not os.path.exists(camHby.ks.path)
+    assert not os.path.exists(camHby.db.path)
+    assert not os.path.exists(debHby.ks.path)
+    assert not os.path.exists(debHby.db.path)
 
     """End Test"""
 

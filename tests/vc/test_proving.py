@@ -19,9 +19,8 @@ from keri.vdr import verifying, issuing, viring
 def test_proving():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-    with basing.openDB(name="sid") as sidDB, \
-            keeping.openKS(name="sid") as sidKS:
-        sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
+    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+        sidHab = sidHby.makeHab(name="test", )
         assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
         sed = dict()
         sed["$id"] = ""
