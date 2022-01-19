@@ -20,8 +20,6 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None)
 parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
                     default=None, required=True)
-parser.add_argument('--type', '-t', help='Human readable type name of credential to issue',
-                    default=None, required=True)
 parser.add_argument('--source', '-c', help='AC/DC Source links',
                     default=None)
 parser.add_argument('--recipient', '-R', help='qb64 identifier prefix of the recipient of the credential',
@@ -45,7 +43,7 @@ def issueCredential(args):
 
 
     issueDoer = CredentialIssuer(name=name, registryName=args.registry_name, schema=args.schema, source=args.source,
-                                 recipient=args.recipient, typ=args.type, data=data)
+                                 recipient=args.recipient, data=data)
 
     doers = [issueDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -57,7 +55,7 @@ class CredentialIssuer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, registryName, schema, source, recipient, typ, data):
+    def __init__(self, name, registryName, schema, source, recipient, data):
         """
 
         Parameters:
@@ -66,7 +64,6 @@ class CredentialIssuer(doing.DoDoer):
              schema:
              source:
              recipient:
-             typ: (str) human readable credential type name
              data: (dict) credential data dict
         """
         self.name = name
@@ -77,7 +74,6 @@ class CredentialIssuer(doing.DoDoer):
             schema=schema,
             source=source,
             recipient=recipient,
-            typ=typ,
             data=data
         )
 

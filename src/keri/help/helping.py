@@ -6,12 +6,15 @@ keri.help.helping module
 import base64
 import dataclasses
 import datetime
+import re
 from collections.abc import Iterable, Sequence, Mapping
 
 import pysodium
 from multidict import MultiDict  # base class for mdict defined below
 from orderedset import OrderedSet as oset
 
+B64REX = b'[A-Za-z-_]*'
+B64Rev = re.compile(B64REX) #compile is faster
 
 # Utilities
 def isign(i):
@@ -54,7 +57,6 @@ def dictify(val: dataclasses.dataclass):
     return dataclasses.asdict(val)
 
 
-
 def datify(cls, d):
     """
     Returns instance of dataclass cls converted from dict d. If the dataclass
@@ -76,7 +78,7 @@ def datify(cls, d):
         return d  # Not a dataclass.
 
 
-def klasify(sers: Iterable, klases: Iterable, args: Iterable=None):
+def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
     """
     Convert each qb64 serialization ser  in sers to instance of corresponding
     klas in klases modified by corresponding arg in args.
@@ -89,12 +91,26 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable=None):
         klases (Iterable): of class reference of CESR subclass
     """
     if not args:
-        args = ("qb64", ) * len(klases)
+        args = ("qb64",) * len(klases)
 
     return tuple(klas(**{arg: ser}) if arg is not None
-                                    else klas(ser) if klas is not None
-                                    else ser
-                            for ser, klas, arg in zip(sers, klases, args))
+                 else klas(ser) if klas is not None
+    else ser
+                 for ser, klas, arg in zip(sers, klases, args))
+
+
+def isBase64(sb):
+    try:
+        if hasattr(sb, "encode"):
+            sb = sb.encode("utf-8")
+
+        match =  B64Rev.fullmatch(sb)
+        if match:
+            return True
+        return False
+    except Exception as ex:
+        print(ex)
+        return False
 
 
 def keyToKey64u(key):
@@ -217,10 +233,12 @@ def extractValues(ked, labels):
 
     return values
 
+
 DTS_BASE_0 = "2021-01-01T00:00:00.000000+00:00"
 DTS_BASE_1 = "2021-01-01T00:00:01.000000+00:00"
 DTS_BASE_2 = "2021-01-01T00:01:00.000000+00:00"
 DTS_BASE_3 = "2021-01-01T01:00:00.000000+00:00"
+
 
 def nowUTC():
     """

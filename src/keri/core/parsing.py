@@ -12,8 +12,8 @@ from dataclasses import dataclass, astuple
 from .. import kering
 from .. import help
 from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, Dater, Verfer,
-                     Diger, Prefixer, Serder, Saider, )
-
+                     Prefixer, Serder, Saider, Pather, sniff, Idents, Sadder)
+from ..vc.proving import Credentialer
 
 logger = help.ogler.getLogger()
 
@@ -90,7 +90,7 @@ class Parser:
 
     """
 
-    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None):
+    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Initialize instance:
 
@@ -104,6 +104,7 @@ class Parser:
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
@@ -112,6 +113,7 @@ class Parser:
         self.tvy = tvy
         self.exc = exc
         self.rvy = rvy
+        self.vry = vry
 
     @staticmethod
     def sniff(ims):
@@ -181,7 +183,7 @@ class Parser:
 
         Usage:
 
-        instance = self._extractGen
+        instance = self._extractor
         """
         while True:
             try:
@@ -196,8 +198,117 @@ class Parser:
                     raise  # bad pipelined frame so abort by raising error
                 yield
 
+    def _sadPathSigGroup(self, ctr, ims, root=None, cold=Colds.txt, pipelined=False):
+        """
 
-    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
+        Args:
+            ctr:
+            ims:
+            root:
+            cold:
+            pipelined:
+
+        Returns:
+
+        """
+        if ctr.code != CtrDex.SadPathSig:
+            raise kering.UnexpectedCountCodeError("Wrong "
+                                                  "count code={}.Expected code={}."
+                                                  "".format(ctr.code, CtrDex.ControllerIdxSigs))
+
+        subpath = yield from self._extractor(ims,
+                                             klas=Pather,
+                                             cold=cold,
+                                             abort=pipelined)
+        if root is not None:
+            subpath = subpath.root(root=root)
+
+        sctr = yield from self._extractor(ims=ims,
+                                          klas=Counter,
+                                          cold=cold,
+                                          abort=pipelined)
+        if sctr.code == CtrDex.TransIdxSigGroups:
+            for prefixer, seqner, saider, isigers in self._transIdxSigGroups(sctr, ims, cold=cold, pipelined=pipelined):
+                yield sctr.code, (subpath, prefixer, seqner, saider, isigers)
+        elif sctr.code == CtrDex.NonTransReceiptCouples:
+            for cigar in self._nonTransReceiptCouples(ctr=sctr, ims=ims, cold=cold, pipelined=pipelined):
+                yield sctr.code, (subpath, cigar)
+        else:
+            raise kering.UnexpectedCountCodeError("Wrong "
+                                                  "count code={}.Expected code={}."
+                                                  "".format(ctr.code, CtrDex.ControllerIdxSigs))
+
+
+
+    def _transIdxSigGroups(self, ctr, ims, cold=Colds.txt, pipelined=False):
+        """
+
+        Parameters:
+            ctr:
+            ims:
+            cold:
+            pipelined:
+
+        Yields:
+
+        """
+        for i in range(ctr.count):  # extract each attached groups
+            prefixer = yield from self._extractor(ims,
+                                                  klas=Prefixer,
+                                                  cold=cold,
+                                                  abort=pipelined)
+            seqner = yield from self._extractor(ims,
+                                                klas=Seqner,
+                                                cold=cold,
+                                                abort=pipelined)
+            saider = yield from self._extractor(ims,
+                                                klas=Saider,
+                                                cold=cold,
+                                                abort=pipelined)
+            ictr = ctr = yield from self._extractor(ims=ims,
+                                                    klas=Counter,
+                                                    cold=cold,
+                                                    abort=pipelined)
+            if ctr.code != CtrDex.ControllerIdxSigs:
+                raise kering.UnexpectedCountCodeError("Wrong "
+                                                      "count code={}.Expected code={}."
+                                                      "".format(ictr.code, CtrDex.ControllerIdxSigs))
+            isigers = []
+            for i in range(ictr.count): # extract each attached signature
+                isiger = yield from self._extractor(ims=ims,
+                                                    klas=Siger,
+                                                    cold=cold,
+                                                    abort=pipelined)
+                isigers.append(isiger)
+
+            yield prefixer, seqner, saider, isigers
+
+    def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False):
+        """
+
+        Parameters:
+            ctr:
+            ims:
+            cold:
+            pipelined:
+
+        Yields:
+
+        """
+        for i in range(ctr.count):  # extract each attached couple
+            verfer = yield from self._extractor(ims=ims,
+                                                klas=Verfer,
+                                                cold=cold,
+                                                abort=pipelined)
+            cigar = yield from self._extractor(ims=ims,
+                                               klas=Cigar,
+                                               cold=cold,
+                                               abort=pipelined)
+            cigar.verfer = verfer
+
+            yield cigar
+
+    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -213,12 +324,13 @@ class Parser:
                 counted attachments instead of stream with multiple messages
 
             pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream incpyludes pipelined count codes.
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -230,7 +342,8 @@ class Parser:
                                     kvy=kvy,
                                     tvy=tvy,
                                     exc=exc,
-                                    rvy=rvy)
+                                    rvy=rvy,
+                                    vry=vry)
 
         while True:
             try:
@@ -280,7 +393,7 @@ class Parser:
                 break
 
 
-    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
+    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -301,6 +414,8 @@ class Parser:
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -327,7 +442,8 @@ class Parser:
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
-                                                   rvy=rvy)
+                                                   rvy=rvy,
+                                                   vry=vry)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -355,7 +471,7 @@ class Parser:
         return True
 
 
-    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
+    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
@@ -375,6 +491,7 @@ class Parser:
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -392,6 +509,7 @@ class Parser:
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
         rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
 
         done = False
         while not done:
@@ -402,7 +520,8 @@ class Parser:
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
-                                                   rvy=rvy)
+                                                   rvy=rvy,
+                                                   vry=vry)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -510,7 +629,7 @@ class Parser:
         return True  # should never return
 
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
@@ -536,6 +655,7 @@ class Parser:
             tvy (Tevery) route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
+            vry (Verifier) ACDC credential processor
 
         Logic:
             Currently only support couters on attachments not on combined or
@@ -566,13 +686,13 @@ class Parser:
             raise kering.ColdStartError("Expecting message counter tritet={}"
                                         "".format(cold))
         # Otherwise its a message cold start
-        while True:# extract and deserialize message from ims
+        while True:  # extract and deserialize message from ims
             try:
-                serder = Serder(raw=ims)
+                sadder = Sadder(raw=ims)
             except kering.ShortageError as ex:  # need more bytes
                 yield
             else:  # extracted successfully
-                del ims[:serder.size]  # strip off event from front of ims
+                del ims[:sadder.size]  # strip off event from front of ims
                 break
 
         sigers = []  # list of Siger instances of attached indexed controller signatures
@@ -588,6 +708,10 @@ class Parser:
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
         sscs = []  # each converted couple is (seqner, diger) for delegating/issuing event
+        # List of tuples from extracted SAD path sig groups from transferable identifiers
+        sadsigs = []  # each converted group is tuple of (path, i, s, d) quad plus list of sigs
+        # List of tuples from extracted SAD path sig groups from non-trans identifiers
+        sadcigs = []  # each converted group is path plus list of non-trans sigs
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -609,7 +733,7 @@ class Parser:
                     ims = pims  # now just process substream as one counted frame
 
                     if pipeline:
-                        pass  #  pass extracted ims to pipeline processor
+                        pass  # pass extracted ims to pipeline processor
                         return
 
                     ctr = yield from self._extractor(ims=ims,
@@ -639,17 +763,7 @@ class Parser:
                         # extract attached rct couplets into list of sigvers
                         # verfer property of cigar is the identifier prefix
                         # cigar itself has the attached signature
-
-                        for i in range(ctr.count): # extract each attached couple
-                            verfer = yield from self._extractor(ims=ims,
-                                                                klas=Verfer,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            cigar = yield from self._extractor(ims=ims,
-                                                               klas=Cigar,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            cigar.verfer = verfer
+                        for cigar in self._nonTransReceiptCouples(ctr=ctr, ims=ims, cold=cold, pipelined=pipelined):
                             cigars.append(cigar)
 
                     elif ctr.code == CtrDex.TransReceiptQuadruples:
@@ -686,34 +800,8 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        for i in range(ctr.count):  # extract each attached groups
-                            prefixer = yield from self._extractor(ims,
-                                                                  klas=Prefixer,
-                                                                  cold=cold,
-                                                                  abort=pipelined)
-                            seqner = yield from self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            saider = yield from self._extractor(ims,
-                                                                klas=Saider,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            ictr = ctr = yield from self._extractor(ims=ims,
-                                                                    klas=Counter,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                            if ctr.code != CtrDex.ControllerIdxSigs:
-                                raise kering.UnexpectedCountCodeError("Wrong "
-                                    "count code={}.Expected code={}."
-                                    "".format(ictr.code, CtrDex.ControllerIdxSigs))
-                            isigers = []
-                            for i in range(ictr.count): # extract each attached signature
-                                isiger = yield from self._extractor(ims=ims,
-                                                                    klas=Siger,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                                isigers.append(isiger)
+                        for (prefixer, seqner, saider, isigers) in self._transIdxSigGroups(ctr, ims, cold=cold,
+                                                                                           pipelined=pipelined):
                             tsgs.append((prefixer, seqner, saider, isigers))
 
                     elif ctr.code == CtrDex.TransLastIdxSigGroups:
@@ -765,20 +853,50 @@ class Parser:
                         # snu+dig
                         # snu is sequence number  of event
                         # dig is digest of event
-                        for i in range(ctr.count): # extract each attached quadruple
-                            seqner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            saider = yield from  self._extractor(ims,
-                                                                 klas=Saider,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
+                        for i in range(ctr.count):  # extract each attached quadruple
+                            seqner = yield from self._extractor(ims,
+                                                                klas=Seqner,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            saider = yield from self._extractor(ims,
+                                                                klas=Saider,
+                                                                cold=cold,
+                                                                abort=pipelined)
                             sscs.append((seqner, saider))
+
+                    elif ctr.code == CtrDex.SadPathSigGroup:
+                        path = yield from self._extractor(ims,
+                                                          klas=Pather,
+                                                          cold=cold,
+                                                          abort=pipelined)
+                        for i in range(ctr.count):
+                            ictr = yield from self._extractor(ims=ims,
+                                                              klas=Counter,
+                                                              cold=cold,
+                                                              abort=pipelined)
+                            for code, sigs in self._sadPathSigGroup(ctr=ictr,
+                                                                    ims=ims,
+                                                                    root=path,
+                                                                    cold=cold,
+                                                                    pipelined=pipelined):
+                                if code == CtrDex.TransIdxSigGroups:
+                                    sadsigs.append(sigs)
+                                else:
+                                    sadcigs.append(sigs)
+
+                    elif ctr.code == CtrDex.SadPathSig:
+                        for code, sigs in self._sadPathSigGroup(ctr=ctr,
+                                                                ims=ims,
+                                                                cold=cold,
+                                                                pipelined=pipelined):
+                            if code == CtrDex.TransIdxSigGroups:
+                                sadsigs.append(sigs)
+                            else:
+                                sadcigs.append(sigs)
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
-                                                    " code={}.".format(ctr.code))
+                                                              " code={}.".format(ctr.code))
 
                     if pipelined:  # process to end of stream (group)
                         if not ims:  # end of pipelined group frame
@@ -802,139 +920,169 @@ class Parser:
 
                     ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
-        except kering.ExtractionError as ex:
+        except kering.ExtractionError:
             if pipelined:  # extracted pipelined group is preflushed
                 raise kering.SizedGroupError("Error processing pipelined size"
-                                "attachment group of size={}.".format(pags))
+                                             "attachment group of size={}.".format(pags))
             raise  # no pipeline group so can't preflush, must flush stream
 
-        ilk = serder.ked["t"]  # dispatch abased on ilk
-        if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
-            seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
-            if not sigers:
-                raise kering.ValidationError("Missing attached signature(s) for evt "
-                                      "= {}.".format(serder.ked))
-            try:
-                kvy.processEvent(serder=serder,
-                                 sigers=sigers,
-                                 wigers=wigers,
-                                 seqner=seqner,
-                                 saider=saider,
-                                 firner=firner,
-                                 dater=dater)
+        if sadder.ident == Idents.keri:
+            serder = Serder(sad=sadder)
 
-                if cigars:
-                    kvy.processReceiptCouples(serder, cigars, firner=firner)
-                if trqs:
-                    kvy.processReceiptQuadruples(serder, trqs, firner=firner)
+            ilk = serder.ked["t"]  # dispatch abased on ilk
 
-            except AttributeError as e:
-                raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty()))
-
-        elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-            if not (cigars or wigers or tsgs):
-                raise kering.ValidationError("Missing attached signatures on receipt"
-                                      "msg = {}.".format(serder.ked))
-            try:
-                if cigars:
-                    kvy.processReceipt(serder=serder, cigars=cigars)
-
-                if wigers:
-                    kvy.processReceiptWitness(serder=serder, wigers=wigers)
-
-                if tsgs:
-                    kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
-
-            except AttributeError:
-                raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty()))
-
-        elif ilk in (Ilks.rpy, ):  # reply message
-            if not (cigars or tsgs):
-                raise kering.ValidationError("Missing attached endorser signature(s) "
-                       "to reply msg = {}.".format(serder.pretty()))
-
-            try:
-                if cigars:  # process separately so do not clash on errors
-                    rvy.processReply(serder, cigars=cigars)  # nontrans
-
-                if tsgs:  # process separately so do not clash on errors
-                    rvy.processReply(serder, tsgs=tsgs)  #  trans
-
-            except AttributeError as e:
-                raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty()))
-
-
-        elif ilk in (Ilks.qry, ):  # query message
-            args = dict(serder=serder)
-            if ssgs:
-                pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["source"] = pre.qb64
-                args["sigers"] = sigers
-
-            elif cigars:
-                args["cigars"] = cigars
-
-            else:
-                raise kering.ValidationError("Missing attached requester signature(s) "
-                                             "to key log query msg = {}.".format(serder.pretty()))
-
-            route = serder.ked["r"]
-            if route in ["logs", "ksn"]:
+            if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
+                firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
+                seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
+                if not sigers:
+                    raise kering.ValidationError("Missing attached signature(s) for evt "
+                                                 "= {}.".format(serder.ked))
                 try:
-                    kvy.processQuery(**args)
+                    kvy.processEvent(serder=serder,
+                                     sigers=sigers,
+                                     wigers=wigers,
+                                     seqner=seqner,
+                                     saider=saider,
+                                     firner=firner,
+                                     dater=dater)
+
+                    if cigars:
+                        kvy.processReceiptCouples(serder, cigars, firner=firner)
+                    if trqs:
+                        kvy.processReceiptQuadruples(serder, trqs, firner=firner)
+
+                except AttributeError as e:
+                    raise kering.ValidationError("No kevery to process so dropped msg"
+                                          "= {}.".format(serder.pretty()))
+
+            elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
+                if not (cigars or wigers or tsgs):
+                    raise kering.ValidationError("Missing attached signatures on receipt"
+                                          "msg = {}.".format(serder.ked))
+                try:
+                    if cigars:
+                        kvy.processReceipt(serder=serder, cigars=cigars)
+
+                    if wigers:
+                        kvy.processReceiptWitness(serder=serder, wigers=wigers)
+
+                    if tsgs:
+                        kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
+
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
+                                          "= {}.".format(serder.pretty()))
+
+            elif ilk in (Ilks.rpy, ):  # reply message
+                if not (cigars or tsgs):
+                    raise kering.ValidationError("Missing attached endorser signature(s) "
+                           "to reply msg = {}.".format(serder.pretty()))
+
+                try:
+                    if cigars:  # process separately so do not clash on errors
+                        rvy.processReply(serder, cigars=cigars)  # nontrans
+
+                    if tsgs:  # process separately so do not clash on errors
+                        rvy.processReply(serder, tsgs=tsgs)  #  trans
+
+                except AttributeError as e:
+                    raise kering.ValidationError("No kevery to process so dropped msg"
+                                          "= {}.".format(serder.pretty()))
+
+
+            elif ilk in (Ilks.qry, ):  # query message
+                args = dict(serder=serder)
+                if ssgs:
+                    pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
+                    args["source"] = pre.qb64
+                    args["sigers"] = sigers
+
+                elif cigars:
+                    args["cigars"] = cigars
+
+                else:
+                    raise kering.ValidationError("Missing attached requester signature(s) "
+                                                 "to key log query msg = {}.".format(serder.pretty()))
+
+                route = serder.ked["r"]
+                if route in ["logs", "ksn"]:
+                    try:
+                        kvy.processQuery(**args)
+                    except AttributeError:
+                        raise kering.ValidationError("No kevery to process so dropped msg"
+                                                     "= {}.".format(serder.pretty()))
+
+                elif route in ["tels", "tsn"]:
+                    try:
+                        tvy.processQuery(**args)
+                    except AttributeError as e:
+                        raise kering.ValidationError("No tevery to process so dropped msg"
+                                                     "= {} from {}.".format(serder.pretty(), e))
+
+                else:
+                    raise kering.ValidationError("Invalid resource type {} so dropped msg"
+                                                 "= {}.".format(route, serder.pretty()))
+
+            elif ilk in (Ilks.exn, ):
+                args = dict(serder=serder)
+                if ssgs:
+                    pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
+                    args["source"] = pre
+                    args["sigers"] = sigers
+
+                elif cigars:
+                    args["cigars"] = cigars
+
+                else:
+                    raise kering.ValidationError("Missing attached exchanger signature(s) "
+                                                 "to peer exchange msg = {}.".format(serder.pretty()))
+                if sadsigs:
+                    args["sadsigs"] = sadsigs
+
+                if sadcigs:
+                    args["sadcigs"] = sadcigs
+
+                try:
+                    exc.processEvent(**args)
+
+                except AttributeError as e:
+                    raise kering.ValidationError("No Exchange to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 
-            elif route in ["tels", "tsn"]:
+
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                # TEL msg
+                seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
                 try:
-                    tvy.processQuery(**args)
-                except AttributeError as e:
+                    tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
+
+                except AttributeError:
                     raise kering.ValidationError("No tevery to process so dropped msg"
-                                                 "= {} from {}.".format(serder.pretty(), e))
-
+                                                 "= {}.".format(serder.pretty()))
             else:
-                raise kering.ValidationError("Invalid resource type {} so dropped msg"
-                                             "= {}.".format(route, serder.pretty()))
+                raise kering.ValidationError("Unexpected message ilk = {} for evt ="
+                                             " {}.".format(ilk, serder.pretty()))
 
-        elif ilk in (Ilks.exn, ):
-            args = dict(serder=serder)
-            if ssgs:
-                pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["source"] = pre
-                args["sigers"] = sigers
+        elif sadder.ident == Idents.acdc:
+            creder = Credentialer(sad=sadder)
+            args = dict(creder=creder)
 
-            elif cigars:
-                args["cigars"] = cigars
+            if sadsigs:
+                args["sadsigers"] = sadsigs
 
-            else:
-                raise kering.ValidationError("Missing attached exchanger signature(s) "
-                                             "to peer exchange msg = {}.".format(serder.pretty()))
+            if sadcigs:
+                args["sadcigars"] = sadcigs
+
 
             try:
-                exc.processEvent(**args)
-
-            except AttributeError as e:
-                raise kering.ValidationError("No Exchange to process so dropped msg"
-                                             "= {}.".format(serder.pretty()))
-
-
-        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            # TEL msg
-            seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
-            try:
-                tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
-
-            except AttributeError:
-                raise kering.ValidationError("No tevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty()))
+                vry.processCredential(**args)
+            except Exception as e:
+                print(e)
+                raise kering.ValidationError("No verifier to process so dropped credential"
+                                             "= {}.".format(creder.pretty()))
 
         else:
-            raise kering.ValidationError("Unexpected message ilk = {} for evt ="
-                                  " {}.".format(ilk, serder.pretty()))
+            raise kering.ValidationError("Unexpected message ident = {} for evt ="
+                                         " {}.".format(serder.ident, serder.pretty()))
 
         return True  # done state

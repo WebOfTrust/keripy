@@ -4,10 +4,10 @@ tests.vc.walleting module
 
 """
 
-from keri.app import keeping, habbing
-from keri.core import coring, scheming
+from keri.app import keeping, habbing, signing
+from keri.core import coring, scheming, parsing
 from keri.db import basing
-from keri.vc.proving import credential, parseCredential
+from keri.vc.proving import credential
 from keri.vdr import verifying, issuing
 
 
@@ -33,51 +33,48 @@ def test_wallet():
                             schema=schema,
                             subject=credSubject,
                             status=issuer.regk)
-        assert creder.said == "EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3XaN0GGw-aVQ"
+        assert creder.said == "EQ7QPgGGZOKQHYCGp9Phm_EQzKHK1xMv_T9UwPhRwMBE"
 
         issuer.issue(creder=creder)
 
-        msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON00019e_","d":"EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3X'
-                       b'aN0GGw-aVQ","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+        msg = signing.ratify(sidHab, serder=creder)
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EQ7QPgGGZOKQHYCGp9Phm_EQzKHK1xMv_T'
+                       b'9UwPhRwMBE","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
                        b'i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"EKEo'
                        b'g6cZnQv8kcaWJ02670LEKGVTIMzXdXYlXRc2B3Ws","i":"EPmpiN6bEM8EI0Mct'
                        b'ny-6AfglVOKnJje8-vqyKTlh0nc","dt":"2021-06-27T21:26:21.233257+00'
                        b':00","LEI":"254900OPPU84GM83MG36","ri":"ERAY2VjFALVZAAuC3GDM-36q'
-                       b'KD8ZhUaKF55MWtITBFnc"},"p":[]}-VA0-FABEPmpiN6bEM8EI0Mctny-6AfglV'
-                       b'OKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny-6A'
-                       b'fglVOKnJje8-vqyKTlh0nc-AABAAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEp'
-                       b'H2WO14Xu5zZisw9cgJV5ZIAaJx3JJ-zMd8sLpkKXYyrZQuB4Dg')
+                       b'KD8ZhUaKF55MWtITBFnc"},"p":[]}-JAB6AABAAA--FABEPmpiN6bEM8EI0Mctn'
+                       b'y-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0'
+                       b'Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAArws9pEH-d7eDwd847W2TzFrxCfuc'
+                       b'rVxPC0AsEKpdcT4oWg3chxmdxydMNndFDFqSPSOnvsetBSLz_qYdPkG6Ag')
 
-        ser = (b'{"v":"KERI10JSON00019e_","d":"EGB4nGODlCPWJ2hKNwf7OowxNkotRZMZ3XaN0GGw-aVQ",'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EQ7QPgGGZOKQHYCGp9Phm_EQzKHK1xMv_T9UwPhRwMBE",'
                b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EPmpiN6bEM8EI0Mctny-'
                b'6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"EKEog6cZnQv8kcaWJ02670LEKGVTIMzXdXYlXRc2'
                b'B3Ws","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","dt":"2021-06-27T21'
                b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"ERAY2VjFALVZAAuC3GDM'
                b'-36qKD8ZhUaKF55MWtITBFnc"},"p":[]}')
 
-        sig0 = (b'AAaAW_sKvkNqYRtJjTPr3CdaTULDufko1ScBEpH2WO14Xu5zZisw9cgJV5ZIAaJx'
-                b'3JJ-zMd8sLpkKXYyrZQuB4Dg')
+        sig0 = (b'AArws9pEH-d7eDwd847W2TzFrxCfucrVxPC0AsEKpdcT4oWg3chxmdxydMNndFDFqSPSOnvsetBS'
+                b'Lz_qYdPkG6Ag')
 
-        parseCredential(ims=msg, verifier=verifier)
+        parsing.Parser().parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
-        key = creder.said.encode("utf-8")
-        assert verifier.reger.creds.get(key).raw == ser
+        creder, sadsigers, sadcigars = verifier.reger.cloneCred(said=creder.said)
+        assert creder.raw == ser
 
         # verify the signature
-        seals = verifier.reger.seals.get(keys=key)
-        assert len(seals) == 1
-        (prefixer, seqner, diger, siger) = seals[0]
-
-        assert bytearray(siger.qb64b) == sig0
-        # verify the seal
-        # assert sl == seal
+        assert len(sadsigers) == 1
+        (_, _, _, _, sigers) = sadsigers[0]
+        assert sigers[0].qb64b == sig0
+        assert len(sadcigars) == 0
 
         # verify we can look up credential by Schema SAID
         schema = verifier.reger.schms.get(schema)
         assert len(schema) == 1
-        assert schema[0].qb64b == key
+        assert schema[0].qb64 == creder.said
 
         if __name__ == '__main__':
             test_wallet()

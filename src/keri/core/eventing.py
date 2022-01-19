@@ -1402,11 +1402,11 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                 attach uniple pre made from (i,) of seal plus ControllerIdxSigs
                 plus attached indexed sigs in sigers
             Else use ControllerIdxSigs plus attached indexed sigs in sigers
-        wigers is optional list of Siger instances of witness index signatures
-        cigars is optional list of Cigars instances of non-transferable non indexed
+        wigers (list): optional list of Siger instances of witness index signatures
+        cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined is Boolean, True means prepend pipelining count code to attachemnts
+        pipelined (bool), True means prepend pipelining count code to attachemnts
             False means to not prepend pipelining count code
 
     Returns: bytearray KERI event message
@@ -1456,6 +1456,72 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                              " quadlets.".format(len(atc)))
         msg.extend(Counter(code=CtrDex.AttachedMaterialQuadlets,
                            count=(len(atc) // 4)).qb64b)
+
+    msg.extend(atc)
+    return msg
+
+
+def proofize(sadsigers=None, *, sadcigars=None, pipelined=False):
+    """
+
+    Args:
+        sadsigers (list) sad path signatures from transferable identifier
+        sadcigars (list) sad path signatures from non-transferable identifier
+        pipelined (bool), True means prepend pipelining count code to attachemnts
+            False means to not prepend pipelining count code
+
+    Returns:
+        bytes of CESR Proof Signature attachments
+    """
+    atc = bytearray()
+
+    if sadsigers is None and sadcigars is None:
+        return atc
+
+    sadsigers = [] if sadsigers is None else sadsigers
+    sadcigars = [] if sadcigars is None else sadcigars
+
+    count = 0
+    for (pather, prefixer, seqner, saider, sigers) in sadsigers:
+        count += 1
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(pather.qb64b)
+
+        atc.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+        atc.extend(prefixer.qb64b)
+        atc.extend(seqner.qb64b)
+        atc.extend(saider.qb64b)
+
+        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
+
+    for (pather, cigars) in sadcigars:
+        count += 1
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(pather.qb64b)
+
+        atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=len(sadcigars)).qb64b)
+        for cigar in cigars:
+            if cigar.verfer.code not in coring.NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(cigar.verfer.qb64))
+            atc.extend(cigar.verfer.qb64b)
+            atc.extend(cigar.qb64b)
+
+    msg = bytearray()
+
+    if pipelined:
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        msg.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                  count=(len(atc) // 4)).qb64b)
+
+    if count > 1:
+        root = coring.Pather(text="-")
+        msg.extend(coring.Counter(code=coring.CtrDex.SadPathSigGroup, count=count).qb64b)
+        msg.extend(root.qb64b)
 
     msg.extend(atc)
     return msg

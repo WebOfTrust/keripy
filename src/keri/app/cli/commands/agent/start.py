@@ -19,6 +19,7 @@ from keri import help
 from keri import kering
 from keri.app import directing, agenting, indirecting, storing, grouping, forwarding
 from keri.app.cli.common import existing
+from keri.core import parsing
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
@@ -204,14 +205,14 @@ class AdminProofHandler(doing.DoDoer):
                 self.ims.extend(msgs)
                 yield
 
-                creder = proving.Credentialer(crd=vc)
+                creder = proving.Credentialer(ked=vc)
 
                 # Remove credential from database so we revalidate it fully
                 self.verifier.reger.saved.rem(creder.said)
 
                 msg = bytearray(creder.raw)
                 msg.extend(vcproof)
-                proving.parseCredential(ims=msg, verifier=self.verifier)
+                parsing.Parser().parse(ims=msg, vry=self.verifier)
 
                 c = self.verifier.reger.saved.get(creder.said)
                 while c is None:
@@ -247,7 +248,7 @@ class AdminProofHandler(doing.DoDoer):
                     self.parsed.append((creder, vcproof))
 
                 else:
-                    creders = self.verifier.reger.get_credentials([creder.saider])
+                    creders = self.verifier.reger.cloneCreds([creder.saider])
                     cred = creders[0]
 
                     ser = exchanging.exchange(route="/cmd/presentation/proof", payload=cred)

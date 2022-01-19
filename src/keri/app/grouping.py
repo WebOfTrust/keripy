@@ -783,7 +783,7 @@ class MultisigEventHandler(doing.Doer):
                 parsing.Parser().parse(bytearray(evt), kvy=self.kvy)
                 if reason is not None:
                     craw = reason.encode("utf-8")
-                    proving.parseCredential(ims=craw, verifier=self.verifier)
+                    parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield
 

@@ -346,65 +346,6 @@ def test_clone():
             b'M9u2Edk-PLMZ1H4')
 
 
-def test_build_proof():
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-
-    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
-
-        sidHab = sidHby.makeHab(name="test", icount=3, ncount=3)
-
-        sed = dict()
-        sed["$id"] = ""
-        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-        sed.update(dict(
-            type="object",
-            properties=dict(
-                id=dict(
-                    type="string"
-                ),
-                lei=dict(
-                    type="string"
-                )
-            )
-        ))
-
-        schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
-        credSubject = dict(
-            d="",
-            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36",
-            issuanceDate="2021-06-27T21:26:21.233257+00:00",
-        )
-
-        creder = proving.credential(issuer=sidHab.pre,
-                                    schema=schemer.said,
-                                    subject=credSubject)
-
-        sidHab.rotate()
-        sidHab.rotate()
-        sidHab.rotate()
-        sidHab.rotate()
-
-        prefixer = coring.Prefixer(qb64=sidHab.kever.prefixer.qb64)
-        seqner = coring.Seqner(sn=sidHab.kever.lastEst.s)
-        diger = coring.Diger(qb64=sidHab.kever.lastEst.d)
-
-        sigers = sidHab.mgr.sign(ser=creder.raw, verfers=sidHab.kever.verfers, indexed=True)
-
-        proof = viring.buildProof(prefixer, seqner, diger, sigers)
-        assert proof == (b'-FABEBQmzPGqnkRXCHrfRHDdy0eS5hIsTD9peCfhavXoxhXI0AAAAAAAAAAAAAAA'
-                         b'AAAAAABAExDuNKMkRvMZG8ITkX3gRAVfsRvImCtsMTplKcqKpvQE-AADAAI-OMaF'
-                         b'IvZVUmLSAApfmJnoRBtsyuXYX0ge9Xc_r6ckChqICYuScxvof4qJ_tWfwutNqbxM'
-                         b'9_hv5Ux12oTx9rCAABwVkDWD_jemXddSaBdgDU4QYvW_2eLiPCvG95gEBLu-alA3'
-                         b'4NfC5HJKL5y9m7FD2d5eXE13jgMoYv-eRYx5J4BgACpZv8RxdMD4N4HUyFTe0R_A'
-                         b'ot5gaGCQEvlAC6ELbkhJ5EcrM-GBmuegm7tMQyfcOFO0nZTYO4YVDc3NAHsu6iDQ')
-
-        prefixer, seqner, diger, isigers = proving.parseProof(proof)
-        assert prefixer.qb64 == sidHab.pre
-        assert diger.qb64 == sidHab.kever.lastEst.d
-        assert seqner.sn == 4
-        assert len(isigers) == 3
-
 
 if __name__ == "__main__":
     test_issuer()

@@ -1,5 +1,3 @@
-start-demo.sh
-
 # GETTING STARTED
 rm -rf /usr/local/var/keri/*;
 
@@ -20,6 +18,8 @@ kli interact --name trans --data @./tests/app/cli/anchor.json
 
 kli rotate --name trans --next-count 3 --sith 2
 
+kli rotate --name trans --next-count 3 --sith 2
+
 kli sign --name trans --text @tests/app/cli/anchor.json
 
 kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature AAr6xD1YJW4fFJkoHU7JhtnixOjE8ubouxzUdoe1Hmc4GKnu7KoeZN1s4BD9ctaQVmyxTq0QszqZSzdJAQhDBACw
@@ -28,6 +28,7 @@ kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --
 
 kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDQ
 
+kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
 
 # ESTABLISHMENT ONLY
 kli incept --name est-only --file tests/app/cli/estonly-sample.json
@@ -36,6 +37,8 @@ kli interact --name est-only --data @./tests/app/cli/anchor.json
 
 kli rotate --name est-only
 
+kli rotate --name est-only --data @./tests/app/cli/anchor.json
+
 # WITNESSES
 kli witness start --name non-trans --http 5631 --tcp 5632
 
@@ -43,7 +46,9 @@ kli witness demo
 
 kli incept --name trans-wits --file ./tests/app/cli/trans-wits-sample.json
 
-kli query --name trans --prefix Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --witness BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw
+kli incept --name inquisitor --file ./tests/app/cli/inquisitor-sample.json
+
+kli query --name inquisitor --prefix Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --witness BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw
 
 kli rotate --name trans-wits --witness-cut Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c
 
@@ -54,13 +59,19 @@ kli incept --name reg --file ./tests/app/cli/holder-sample.json
 
 kli vc registry incept --name reg --registry-name reg
 
+kli vc issue --name reg --registry-name reg --schema ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo --recipient Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --data @../../test/gleif-vc.json
+
+kli vc query --name inquisitor --witness BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo --registry=E_kLIm0UdZUYFWKDEiSxP1Yvt3A3TUoo6TMaijR3voz0 --vc EoRRdOHzYDU0_fYE07MTYF3dPKMH00BJHYJUuKFhLRa0
+
+kli vc revoke --name reg --registry-name reg --said EoRRdOHzYDU0_fYE07MTYF3dPKMH00BJHYJUuKFhLRa0
+
 # DELEGATION
 
 scripts/demo/start-agent.sh
 
 kli delegate incept --name del --file tests/app/cli/commands/delegate/incept-sample.json
 
-kli rotate --name del
+kli delegate rotate --name del
 
 #MULTISIG
 

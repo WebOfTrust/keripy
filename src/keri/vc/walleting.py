@@ -50,18 +50,8 @@ class Wallet:
 
         creds = []
         for saider in saiders:
-            creder = self.reger.creds.get(keys=saider.qb64b)
-
-            seals = self.reger.seals.get(keys=saider.qb64b)
-            prefixer = None
-            seqner = None
-            diger = None
-            sigers = []
-            for seal in seals:
-                (prefixer, seqner, diger, siger) = seal
-                sigers.append(siger)
-
-            creds.append((creder, prefixer, seqner, diger, sigers))
+            creder, sadsigers, sadcigars = self.reger.cloneCred(said=saider.qb64)
+            creds.append((creder, sadsigers, sadcigars))
 
         return creds
 

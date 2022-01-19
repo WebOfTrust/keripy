@@ -13,7 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
-from keri.app import forwarding
+from keri.app import forwarding, signing
 from keri.vdr import viring
 from orderedset import OrderedSet as oset
 
@@ -676,7 +676,7 @@ class KiwiServer(doing.DoDoer):
 
                 if cueKin == "saved":
                     creder = cue["creder"]
-                    proof = cue["proof"]
+                    craw = cue["msg"]
 
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
@@ -699,7 +699,6 @@ class KiwiServer(doing.DoDoer):
                             msgs.extend(msg)
 
 
-                        craw = viring.messagize(creder, proof)
                         vcs = [handling.envelope(msg=craw)]
 
                         sources = self.verifier.reger.sources(self.hab.db, creder)
@@ -713,6 +712,7 @@ class KiwiServer(doing.DoDoer):
 
                         self.postman.send(recipient=recpt, topic="credential", msg=msgs)
                         exn = exchanging.exchange(route="/credential/issue", payload=pl)
+                        #  TODO:  Respondant must accept transposable signatures to add to the endorsed message
                         self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
 
                 elif cueKin == "query":
@@ -888,8 +888,10 @@ class KiwiServer(doing.DoDoer):
         except kering.MissingAnchorError:
             logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-        craw = self.hab.endorse(creder)
-        proving.parseCredential(ims=craw, verifier=self.verifier)
+        print()
+        print(creder.raw)
+        craw = signing.ratify(hab=self.hab, serder=creder)
+        parsing.Parser().parse(ims=craw, vry=self.verifier)
 
         if notify and group:
             for aid in group.aids:
@@ -1173,7 +1175,7 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         saids = issuer.reger.issus.get(keys=pre)
-        creds = self.verifier.reger.get_credentials(saids)
+        creds = self.verifier.reger.cloneCreds(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -1197,7 +1199,7 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         saids = self.verifier.reger.subjs.get(keys=pre)
-        creds = self.verifier.reger.get_credentials(saids)
+        creds = self.verifier.reger.cloneCreds(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

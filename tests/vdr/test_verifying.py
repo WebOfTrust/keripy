@@ -8,7 +8,7 @@ import json
 import pytest
 
 from keri import kering
-from keri.app import habbing, grouping
+from keri.app import habbing, grouping, signing
 from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring
 from keri.db import dbing
@@ -57,14 +57,11 @@ def test_verifier():
                                     subject=d,
                                     status=issuer.regk)
 
-        msg = hab.endorse(serder=creder)
-        del msg[:creder.size]
-        parsing.Parser.extract(ims=msg, klas=coring.Counter)
-        prefixer, seqner, diger, sigers = proving.parseProof(ims=msg)
 
+        sadsigers, sadcigars = signing.signPaths(hab=hab, serder=creder, paths=[[]])
         missing = False
         try:
-            verifier.processCredential(creder, prefixer, seqner, diger, sigers)
+            verifier.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
         except kering.MissingRegistryError:
             missing = True
 
@@ -84,15 +81,11 @@ def test_verifier():
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre = reger.creds.get(creder.saider.qb64b)
+
+        dcre, sadsigers, sadcigars = reger.cloneCred(said=creder.saider.qb64)
+
         assert dcre.raw == creder.raw
-        seals = reger.seals.get(creder.saider.qb64b)
-        assert len(seals) == 1
-        (pre, sn, dig, sig) = seals[0]
-        assert pre.qb64 == prefixer.qb64
-        assert sn.qb64 == seqner.qb64
-        assert dig.qb64 == diger.qb64
-        assert sig.qb64 == sigers[0].qb64
+        assert len(sadsigers) == 1
 
         saider = reger.issus.get(hab.pre)
         assert saider[0].qb64 == creder.said
@@ -100,6 +93,10 @@ def test_verifier():
         assert saider[0].qb64 == creder.said
         saider = reger.schms.get("EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg")
         assert saider[0].qb64 == creder.said
+
+
+    """End Test"""
+
 
 
 def test_verifier_multisig():
@@ -261,22 +258,31 @@ def test_verifier_multisig():
         assert status.ked["et"] == coring.Ilks.iss
 
         gkev = hab1.kevers[gid]
+        prefixer = coring.Prefixer(qb64=gid)
+        seqner = coring.Seqner(sn=gkev.lastEst.s)
+        saider = coring.Saider(qb64=gkev.lastEst.d)
+
         sigers = []
         for idx, hab in enumerate([hab1, hab2, hab3]):
-            sig = hab.mgr.sign(ser=creder.raw,
+            pather = coring.Pather(path=[])
+            data = pather.rawify(serder=creder)
+
+            sig = hab.mgr.sign(ser=data,
                                verfers=hab.kever.verfers,
                                indexed=True,
                                indices=[idx])
             sigers.extend(sig)
-        prefixer = coring.Prefixer(qb64=gid)
-        seqner = coring.Seqner(sn=gkev.lastEst.s)
-        diger = coring.Diger(qb64=gkev.lastEst.d)
 
-        verifier.processCredential(creder, prefixer, seqner, diger, sigers)
+        sadsigers = [(pather, prefixer, seqner, saider, sigers)]
+        verifier.processCredential(creder, sadsigers=sadsigers, sadcigars=[])
+
         assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
+
+    """End Test"""
+
 
 
 def test_verifier_chained_credential():
@@ -312,14 +318,11 @@ def test_verifier_chained_credential():
                                     subject=d,
                                     status=roniss.regk)
 
-        msg = ron.endorse(serder=creder)
-        del msg[:creder.size]
-        parsing.Parser.extract(ims=msg, klas=coring.Counter)
-        prefixer, seqner, diger, sigers = proving.parseProof(ims=msg)
+        sadsigers, sadcigars = signing.signPaths(hab=ron, serder=creder, paths=[[]])
 
         missing = False
         try:
-            ronverfer.processCredential(creder, prefixer, seqner, diger, sigers)
+            ronverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
         except kering.MissingRegistryError:
             missing = True
 
@@ -340,15 +343,18 @@ def test_verifier_chained_credential():
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre = ronreg.creds.get(creder.saider.qb64b)
+        dcre, sadsig, sadcig = ronreg.cloneCred(said=creder.said)
         assert dcre.raw == creder.raw
-        seals = ronreg.seals.get(creder.saider.qb64b)
-        assert len(seals) == 1
-        (pre, sn, dig, sig) = seals[0]
-        assert pre.qb64 == prefixer.qb64
-        assert sn.qb64 == seqner.qb64
-        assert dig.qb64 == diger.qb64
-        assert sig.qb64 == sigers[0].qb64
+        assert len(sadsig) == 1
+        assert len(sadcig) == 0
+
+        expect = [m.qb64 for m in sadsig[0][:-1]]
+        actual = [m.qb64 for m in sadsigers[0][:-1]]
+        assert expect == actual
+
+        sig0 =  sadsig[-1][0]
+        sig1 = sadsigers[-1][0]
+        assert sig0.qb64b == sig1.qb64b
 
         saider = ronreg.issus.get(ron.pre)
         assert saider[0].qb64 == creder.said
@@ -384,14 +390,11 @@ def test_verifier_chained_credential():
                                             usageDisclaimer="Use carefully."
                                         )])
 
-        msg = ian.endorse(serder=vLeiCreder)
-        del msg[:vLeiCreder.size]
-        parsing.Parser.extract(ims=msg, klas=coring.Counter)
-        vLeiPrefixer, vLeiSeqner, vLeiDiger, vLeiSigers = proving.parseProof(ims=msg)
+        vLeiSadsigers, vLeiSadcigars = signing.signPaths(hab=ian, serder=vLeiCreder, paths=[[]])
 
         missing = False
         try:
-            ianverfer.processCredential(vLeiCreder, vLeiPrefixer, vLeiSeqner, vLeiDiger, vLeiSigers)
+            ianverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
         except kering.MissingRegistryError:
             missing = True
 
@@ -407,15 +410,18 @@ def test_verifier_chained_credential():
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
 
-        dcre = ianreg.creds.get(vLeiCreder.saider.qb64b)
+        dcre, sadsig, sadcig = ianreg.cloneCred(said=vLeiCreder.said)
         assert dcre.raw == vLeiCreder.raw
-        seals = ianreg.seals.get(vLeiCreder.saider.qb64b)
-        assert len(seals) == 1
-        (pre, sn, dig, sig) = seals[0]
-        assert pre.qb64 == vLeiPrefixer.qb64
-        assert sn.qb64 == vLeiSeqner.qb64
-        assert dig.qb64 == vLeiDiger.qb64
-        assert sig.qb64 == vLeiSigers[0].qb64
+        assert len(sadsig) == 1
+        assert len(sadcig) == 0
+
+        expect = [m.qb64 for m in sadsig[0][:-1]]
+        actual = [m.qb64 for m in vLeiSadsigers[0][:-1]]
+        assert expect == actual
+
+        sig0 =  sadsig[-1][0]
+        sig1 = vLeiSadsigers[-1][0]
+        assert sig0.qb64b == sig1.qb64b
 
         dater = ianreg.mce.get(vLeiCreder.saider.qb64b)
         assert dater is not None
@@ -438,7 +444,7 @@ def test_verifier_chained_credential():
             msg = cue["msg"]
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
-        ianverfer.processCredential(creder, prefixer, seqner, diger, sigers)
+        ianverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
 
         # Process the escrows to get Ian's credential out of missing chain escrow
         ianverfer.processEscrows()
@@ -463,7 +469,7 @@ def test_verifier_chained_credential():
             msg = cue["msg"]
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
-        vicverfer.processCredential(creder, prefixer, seqner, diger, sigers)
+        vicverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
         assert cue["kin"] == "saved"
@@ -480,7 +486,7 @@ def test_verifier_chained_credential():
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
-        vicverfer.processCredential(vLeiCreder, vLeiPrefixer, vLeiSeqner, vLeiDiger, vLeiSigers)
+        vicverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
 
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
@@ -496,8 +502,7 @@ def test_verifier_chained_credential():
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(kering.RevokedChainError):
-            vicverfer.processCredential(vLeiCreder, vLeiPrefixer, vLeiSeqner, vLeiDiger, vLeiSigers)
+            vicverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
 
+    """End Test"""
 
-if __name__ == '__main__':
-    test_verifier_query()
