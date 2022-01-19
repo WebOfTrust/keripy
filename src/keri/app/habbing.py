@@ -4,6 +4,7 @@ KERI
 keri.app.habbing module
 
 """
+import os
 import json
 from contextlib import contextmanager
 from urllib.parse import urlsplit
@@ -11,6 +12,7 @@ from urllib.parse import urlsplit
 from hio.base import doing
 from hio.help import hicting
 from hio.core.tcp import clienting, serving
+from hio.core import wiring
 
 
 from .. import help
@@ -20,7 +22,7 @@ from ..core import coring, eventing, parsing, routing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from . import keeping, configing
+from . import keeping, configing, directing
 
 logger = help.ogler.getLogger()
 
