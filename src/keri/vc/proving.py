@@ -4,18 +4,14 @@ keri.vc.proving module
 
 """
 
-import json
 from collections.abc import Iterable
 from typing import Union
 
-import cbor2 as cbor
-import msgpack
-
-from .. import help, kering
+from .. import help
 from ..core import coring
-from ..core.coring import (Serials, sniff, Versify, Deversify, Rever, Saider, Ids)
+from ..core.coring import (Serials, Versify)
 from ..db import subing
-from ..kering import Version, VersionError, ShortageError, DeserializationError
+from ..kering import Version
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -30,14 +26,22 @@ def credential(schema,
                rules=None,
                version=Version,
                kind=Serials.json):
-    """
-    Returns Credentialer of new credential
-        schema is SAID of schema for this credential
-        issuer is the identifier prefix of the issuer
-        subject is dict of the values being assigned to the subject of this credential
-        source is list of source credentials to which this credential is chained
-        version is Version instance
-        kind is serialization kind
+    """ Returns Credentialer of new credential
+
+    Creates SAD for credential and Saidifyies it before creation.
+
+    Parameters:
+        schema (SAID): of schema for this credential
+        issuer (str): qb64 identifier prefix of the issuer
+        status (str): qb64 said of the credential registry
+        subject (dict): of the values being assigned to the subject of this credential
+        source (list): of source credentials to which this credential is chained
+        rules (list): ACDC rules section for credential
+        version (Version): version instance
+        kind (Serials): serialization kind
+
+    Returns:
+        Credentialer: credential instance
 
     """
     vs = Versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
@@ -68,25 +72,48 @@ def credential(schema,
 
 
 class Credentialer(coring.Sadder):
-    """
-    Credentialer is for creating a W3C Verifiable Credential embedded in a CESR Proof Format
-    proof
+    """ Credentialer is for creating ACDC chained credentials
+
+    Sub class of Sadder that adds credential specific validation and properties
+
+    Inherited Properties:
+        .raw is bytes of serialized event only
+        .ked is key event dict
+        .kind is serialization kind string value (see namedtuple coring.Serials)
+        .version is Versionage instance of event version
+        .size is int of number of bytes in serialed event only
+        .diger is Diger instance of digest of .raw
+        .dig  is qb64 digest from .diger
+        .digb is qb64b digest from .diger
+        .verfers is list of Verfers converted from .ked["k"]
+        .werfers is list of Verfers converted from .ked["b"]
+        .tholder is Tholder instance from .ked["kt'] else None
+        .sn is int sequence number converted from .ked["s"]
+        .pre is qb64 str of identifier prefix from .ked["i"]
+        .preb is qb64b bytes of identifier prefix from .ked["i"]
+        .said is qb64 of .ked['d'] if present
+        .saidb is qb64b of .ked['d'] of present
+
+    Properties:
+        .crd (dict): synonym for .ked
+        .issuer (str): qb64 identifier prefix of credential issuer
+        .schema (str): qb64 SAID of JSONSchema for credential
+        .subject (str): qb64 identfier prefix of credential subject
+        .status (str): qb64 identfier prefix of issuance / revocation registry
 
     """
 
     def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=coring.MtrDex.Blake3_256):
-        """
-        Creates a serializer/deserializer for a Verifiable Credential in CESR Proof Format
+        """ Creates a serializer/deserializer for a ACDC Verifiable Credential in CESR Proof Format
 
-        requires either raw or (crd and kind) to load credential from serialized form or in memory
+        Requires either raw or (crd and kind) to load credential from serialized form or in memory
 
         Parameters:
-            raw (bytes) is raw credential
-            ked (dict) is populated credential
-            sad (Sadder) is clonable base class
-            typ is schema type
-            version is Version instance
-            kind is serialization kind
+            raw (bytes): is raw credential
+            ked (dict): is populated credential
+            kind (is serialization kind
+            sad (Sadder): is clonable base class
+            code (MtrDex): is hashing codex
 
         """
         super(Credentialer, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
@@ -121,7 +148,8 @@ class Credentialer(coring.Sadder):
 
 
 class CrederSuber(subing.Suber):
-    """
+    """ Data serialization for Credentialer
+
     Sub class of Suber where data is serialized Credentialer instance
     Automatically serializes and deserializes using Credentialer methods
 
@@ -130,21 +158,21 @@ class CrederSuber(subing.Suber):
     def __init__(self, *pa, **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
+            *pa (list): list arguments passed through to Suber
+            **kwa (dict): keyword arguments passed through to Suber
+
         """
         super(CrederSuber, self).__init__(*pa, **kwa)
 
     def put(self, keys: Union[str, Iterable], val: Credentialer):
-        """
-        Puts val at key made from keys. Does not overwrite
+        """ Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Credentialer): instance
 
         Returns:
-            result (bool): True If successful, False otherwise, such as key
+            bool: True If successful, False otherwise, such as key
                               already in database.
         """
         return (self.db.putVal(db=self.sdb,
@@ -152,29 +180,27 @@ class CrederSuber(subing.Suber):
                                val=val.raw))
 
     def pin(self, keys: Union[str, Iterable], val: Credentialer):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
+        """ Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Credentialer): instance
 
         Returns:
-            result (bool): True If successful. False otherwise.
+            bool: True If successful. False otherwise.
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=val.raw))
 
     def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Serder at keys
+        """ Gets Credentialer at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            Credentialer:
+            Credentialer: instance at keys
             None: if no entry at keys
 
         Usage:
@@ -188,20 +214,21 @@ class CrederSuber(subing.Suber):
         return Credentialer(raw=bytes(val)) if val is not None else None
 
     def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
+        """ Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+           bool: True if key exists so delete successful. False otherwise
         """
         return self.db.delVal(db=self.sdb, key=self._tokey(keys))
 
     def getItemIter(self, keys: Union[str, Iterable] = b""):
-        """
-        Return iterator over the all the items in subdb
+        """ Return iterator over the all the items in subdb
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
 
         Returns:
             iterator: of tuples of keys tuple and val coring.Serder for
@@ -210,11 +237,3 @@ class CrederSuber(subing.Suber):
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield self._tokeys(key), Credentialer(raw=bytes(val))
-
-
-def findPath(said, sad):
-    if not isinstance(sad, dict) or 'd' not in sad:
-        raise kering.ValidationError("Not valid SAD")
-
-    if said == sad:
-        return "-"

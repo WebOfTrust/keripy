@@ -903,7 +903,7 @@ class KiwiDoer(doing.DoDoer):
         self.hab = hab
         self.rep = rep
         self.witq = witq
-        self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab, name=hab.name)
+        self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab)
         self.issuers = issuers if issuers is not None else dict()
 
         self.cues = cues if cues is not None else decking.Deck()

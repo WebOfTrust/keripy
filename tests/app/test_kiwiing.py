@@ -24,7 +24,7 @@ def test_credential_handlers(mockHelpingNowUTC):
 
         ims = bytearray()
         reger = viring.Registry(name=hab.name, temp=True)
-        verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab, reger=reger)
         issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
         gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=ims)
         witq = agenting.WitnessInquisitor(hab=hab, reger=verifier.reger, klas=agenting.HttpWitnesser)
@@ -142,7 +142,7 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
 
         ims = bytearray()
         reger = viring.Registry(name=hab1.name, temp=True)
-        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab1, reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
         gdoer = grouping.MultiSigGroupDoer(hab=hab1, ims=ims)
         witq = agenting.WitnessInquisitor(hab=hab1, reger=verifier.reger, klas=agenting.HttpWitnesser)
@@ -219,7 +219,7 @@ def test_issue_credential_full_multisig():
         app = falcon.App()
 
         reger = viring.Registry(name=hab1.name, temp=True)
-        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab1, reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
         witq = agenting.WitnessInquisitor(hab=hab1, reger=verifier.reger, klas=agenting.HttpWitnesser)
         issuerCues = decking.Deck()
@@ -310,7 +310,7 @@ def test_multisig_ends():
         app = falcon.App()
 
         reger = viring.Registry(name=hab1.name, temp=True)
-        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab1, reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
         witq = agenting.WitnessInquisitor(hab=hab1, reger=verifier.reger, klas=agenting.HttpWitnesser)
         issuerCues = decking.Deck()
@@ -365,7 +365,7 @@ def test_multisig_ends():
         app = falcon.App()
 
         reger = viring.Registry(name=hab1.name, temp=True)
-        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab1, reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
         witq = agenting.WitnessInquisitor(hab=hab1, reger=verifier.reger, klas=agenting.HttpWitnesser)
         issuerCues = decking.Deck()
@@ -422,7 +422,7 @@ def test_identifier_ends():
         app = falcon.App()
 
         reger = viring.Registry(name=hab.name, temp=True)
-        verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger)
+        verifier = verifying.Verifier(hab=hab, reger=reger)
         issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
 
         issuers = dict()

@@ -85,12 +85,12 @@ def test_signature_designature():
         signage = ending.Signage(markers=sigers)
         header = ending.signature([signage])  # put it in a list
         assert header == ({'Signature':
-                               'indexed="?1";'
-                               '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
-                               '-2jAQ";'
-                               '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                               '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+                           'indexed="?1";'
+                           '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
+                           '-2jAQ";'
+                           '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                           '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                           '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
         # test designature
         signages = ending.designature(header["Signature"])

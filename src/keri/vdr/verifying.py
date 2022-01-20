@@ -34,15 +34,16 @@ class Verifier:
 
     CredentialExpiry = 3600
 
-    def __init__(self, hab, reger=None, creds=None, cues=None, **kwa):
+    def __init__(self, hab, reger=None, creds=None, cues=None):
         """
         Initialize Verifier instance
 
         Parameters:
-            hab is Habitat for this verifier's context
-            name is user synonym for this verifier
-            reger is Registry database instance
-            tevers is dict of Tever instances keys by registry identifier
+            hab (Habitat): for this verifier's context
+            reger (Registry): database instance
+            creds (decking.Deck): inbound credentials for handler
+            cues (decking.Deck): outbound cue messages from handler
+
         """
         self.hab = hab
         self.reger = reger if reger is not None else Registry(name=hab.name, temp=True)
@@ -53,15 +54,16 @@ class Verifier:
         self.tvy = None
         self.psr = None
 
-        # save init kwy word arg parameters as ._inits in order to later finish
-        # init setup elseqhere after databases are opened if not below
-        self._inits = kwa
-
         if self.hab.inited:
             self.setup()
 
 
     def setup(self):
+        """ Delayed initialization of instance by createing .tvy and .psr.
+
+        Should not be called until .hab is initialized
+
+        """
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
@@ -70,17 +72,16 @@ class Verifier:
 
     @property
     def tevers(self):
-        """
-        Returns .db.tevers
+        """ Returns .db.tevers
         """
         return self.reger.tevers
 
 
     def processMessages(self, creds=None):
-        """
-        Process message dicts in msgs or if msgs is None in .msgs
+        """ Process message dicts in msgs or if msgs is None in .msgs
+
         Parameters:
-            creds (Deck): each entry is dict that matches call signature of
+            creds (decking.Deck): each entry is dict that matches call signature of
                 .processCredential
         """
         if creds is None:
@@ -91,14 +92,15 @@ class Verifier:
 
 
     def processCredential(self, creder, sadsigers=None, sadcigars=None):
-        """
+        """ Credential data and signature(s) verification
+        
         Verify the data of the credential against the schema, the SAID of the credential and
         the CESR Proof on the credential and if valid, store the credential
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         regk = creder.status
@@ -215,14 +217,12 @@ class Verifier:
         self.cues.append(dict(kin="saved", creder=creder, msg=msg))
 
     def escrowPSC(self, creder, sadsigers, sadcigars):
-        """
-        Credential Partial Signature Escrow
-
+        """ Credential Partial Signature Escrow
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         key = creder.saider.qb64b
@@ -231,14 +231,12 @@ class Verifier:
         return self.reger.pse.put(keys=key, val=coring.Dater())
 
     def escrowMRE(self, creder, sadsigers, sadcigars):
-        """
-        Missing Registry Escrow
-
+        """ Missing Registry Escrow
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         key = creder.saider.qb64b
@@ -248,14 +246,12 @@ class Verifier:
 
 
     def escrowMIE(self, creder, sadsigers, sadcigars):
-        """
-        Missing Issuer Escrow
-
+        """ Missing Issuer Escrow
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         key = creder.saider.qb64b
@@ -264,14 +260,12 @@ class Verifier:
         return self.reger.mie.put(keys=key, val=coring.Dater())
 
     def escrowMCE(self, creder, sadsigers, sadcigars):
-        """
-        Missing Issuer Escrow
-
+        """ Missing Issuer Escrow
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         key = creder.saider.qb64b
@@ -285,9 +279,9 @@ class Verifier:
 
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         key = creder.saider.qb64b
@@ -296,8 +290,7 @@ class Verifier:
         return self.reger.mse.put(keys=key, val=coring.Dater())
 
     def processEscrows(self):
-        """
-        Process all escrows once each
+        """ Process all escrows once each
 
         """
 
@@ -309,13 +302,12 @@ class Verifier:
 
 
     def _processEscrow(self, db, timeout, etype: Type[Exception]):
-        """
-        Generic credential escrow processing
+        """ Generic credential escrow processing
 
         Parameters:
-            db:
-            timeout:
-            etype:
+            db (LMDBer): escrow database table to process
+            timeout (float): escrow specific message timeout
+            etype (TypeOf(Exception)): exception class to catch and ignore
 
         """
         for (said,), dater in db.getItemIter():
@@ -353,13 +345,12 @@ class Verifier:
                             "creder=\n%s\n", creder.pretty())
 
     def saveCredential(self, creder, sadsigers, sadcigars):
-        """
-        Write the credential and associated indicies to the database
+        """ Write the credential and associated indicies to the database
 
         Parameters:
-            creder (Credentialer) that contains the credential to process
-            sadsigers (list) sad path signatures from transferable identifier
-            sadcigars (list) sad path signatures from non-transferable identifier
+            creder (Credentialer): that contains the credential to process
+            sadsigers (list): sad path signatures from transferable identifier
+            sadcigars (list): sad path signatures from non-transferable identifier
 
         """
         self.reger.logCred(creder, sadsigers, sadcigars)
@@ -377,8 +368,7 @@ class Verifier:
 
 
     def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
-        """
-        Returns query message for querying registry
+        """ Returns query message for querying registry
         """
 
         serder = eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
@@ -387,17 +377,14 @@ class Verifier:
 
 
     def verifyChain(self, nodeSubject, nodeSaid):
-        """
-        Verifies the node credential at the end of an edge
-
-        Returns: None if the credential is not found
-                 Expired if the state is issued and the date on the TEL event has expired
-                 Issued if the credential has been saved and issued
-                 Revoked if the credential has been revoked.
+        """ Verifies the node credential at the end of an edge
 
         Parameters:
             nodeSubject(str): qb64 of node credential subject
-            nodeSaid: (str) qb64 SAID of node credential
+            nodeSaid: (str): qb64 SAID of node credential
+
+        Returns:
+            Serder: transaction event state notification message
 
         """
         said = self.reger.saved.get(keys=nodeSaid)

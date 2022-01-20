@@ -42,7 +42,7 @@ def test_verifier():
         assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
-        verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger, tevers=issuer.tevers)
+        verifier = verifying.Verifier(hab=hab, reger=reger)
 
         credSubject = dict(
             d="",
@@ -180,7 +180,7 @@ def test_verifier_multisig():
         cue = issuer.cues.popleft()
         assert cue["kin"] == "logEvent"
 
-        verifier = verifying.Verifier(hab=verfer, name="verifier", reger=reger, tevers=issuer.tevers)
+        verifier = verifying.Verifier(hab=verfer, reger=reger)
 
         credSubject = dict(
             d="",
@@ -303,7 +303,7 @@ def test_verifier_chained_credential():
         assert vic.pre == "E-1sk6rrObrEjysK7gsfbNyr4V4qFJsnrFiU5EDBO2Vo"
 
         roniss = issuing.Issuer(hab=ron, reger=ronreg, noBackers=True, estOnly=True, temp=True)
-        ronverfer = verifying.Verifier(hab=ron, reger=ronreg, tevers=roniss.tevers)
+        ronverfer = verifying.Verifier(hab=ron, reger=ronreg)
 
         credSubject = dict(
             d="",

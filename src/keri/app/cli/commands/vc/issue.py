@@ -80,7 +80,7 @@ class CredentialIssuer(doing.DoDoer):
 
         reger = viring.Registry(name=registryName, db=self.hab.db)
         issuer = issuing.Issuer(hab=self.hab, name=registryName, reger=reger)
-        self.verifier = verifying.Verifier(hab=self.hab, name=registryName, reger=reger, tevers=issuer.tevers)
+        self.verifier = verifying.Verifier(hab=self.hab, reger=reger)
         meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
 
         handlers = [meh]

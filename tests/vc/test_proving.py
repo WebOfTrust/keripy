@@ -241,7 +241,7 @@ def test_credential_parsator():
 
         msg = hab.endorse(serder=creder)
 
-        verifier = verifying.Verifier(hab=hab, name="verifier")
+        verifier = verifying.Verifier(hab=hab)
         parsing.Parser().parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1

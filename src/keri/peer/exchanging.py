@@ -25,8 +25,7 @@ class Exchanger(doing.DoDoer):
     """
 
     def __init__(self, hab, handlers, controller=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
-        """
-        Initialize instance
+        """ Initialize instance
 
         Parameters:
             hab (Habitat): instance of local controller's
@@ -55,14 +54,12 @@ class Exchanger(doing.DoDoer):
         super(Exchanger, self).__init__(doers=doers, **kwa)
 
     def processEvent(self, serder, source, sigers):
-        """
-        Process one serder event with attached indexed signatures representing
-        a Peer to Peer exchange message.
+        """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
         Parameters:
-            serder (Serder) instance of event to process
-            source (Prefixer) identifier prefix of event sender
-            sigers (list) of Siger instances of attached controller indexed sigs
+            serder (Serder): instance of event to process
+            source (Prefixer): identifier prefix of event sender
+            sigers (list): of Siger instances of attached controller indexed sigs
 
         """
 
@@ -118,11 +115,7 @@ class Exchanger(doing.DoDoer):
         behavior.msgs.append(msg)
 
     def processResponseIter(self):
-        """
-        Iterate through cues and yields one or more responses for each cue.
-
-        Parameters:
-            cues is deque of cues
+        """ Iterate through cues and yields one or more responses for each cue.
 
         """
         responses = []
@@ -136,21 +129,19 @@ class Exchanger(doing.DoDoer):
             yield msg
 
     def processEscrow(self):
-        """
-        Process all escrows for `exn` messages
+        """ Process all escrows for `exn` messages
 
         """
         self.processEscrowPartialSigned()
 
 
     def escrowPSEvent(self, serder, source, sigers):
-        """
-        Escrow event that does not have enough signatures.
+        """ Escrow event that does not have enough signatures.
 
         Parameters:
-            serder is Serder instance of event
-            source is Prefixer of the origin of the exn
-            sigers is list of Siger instances of indexed controller sigs
+            serder (Serder): instance of event
+            source (Prefixer): of the origin of the exn
+            sigers (list): of Siger instances of indexed controller sigs
         """
         dig = serder.saidb
         self.hab.db.epse.put(keys=dig, val=serder)
@@ -159,6 +150,7 @@ class Exchanger(doing.DoDoer):
 
 
     def processEscrowPartialSigned(self):
+        """ Process escrow of partially signed messages """
         for (dig,), serder in self.hab.db.epse.getItemIter():
             sigers = self.hab.db.esigs.get(keys=dig)
             source = self.hab.db.esrc.get(keys=dig)
@@ -192,16 +184,16 @@ class Exchanger(doing.DoDoer):
 
 def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
              kind=coring.Serials.json):
-    """
-    Create an `exn` message with the specified route and payload
+    """ Create an `exn` message with the specified route and payload
+
     Parameters:
-        route (string) to destination route of the message
-        payload (dict) body of message to deliver to route
-        date (str) Iso8601 formatted date string to use for this request
-        modifiers (dict) equivalent of query string of uri, modifiers for the request that are not
+        route (str): to destination route of the message
+        payload (dict): body of message to deliver to route
+        date (str): Iso8601 formatted date string to use for this request
+        modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
-        version (Version) is Version instance
-        kind (Serials) is serialization kind
+        version (Version): is Version instance
+        kind (Serials): is serialization kind
 
     """
     vs = coring.Versify(version=version, kind=kind, size=0)
@@ -222,4 +214,3 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
         del ked["q"]
 
     return eventing.Serder(ked=ked)  # return serialized ked
-
