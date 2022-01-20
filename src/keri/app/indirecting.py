@@ -41,7 +41,7 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
 
 
     reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
-    verfer = verifying.Verifier(name=name, hab=hab, reger=reger)
+    verfer = verifying.Verifier(hab=hab, reger=reger)
     app = falcon.App(cors_enable=True)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=name, temp=temp)

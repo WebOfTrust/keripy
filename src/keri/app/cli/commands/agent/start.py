@@ -94,7 +94,7 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     directant = directing.Directant(hab=hab, server=server)
 
     reger = viring.Registry(name=hab.name, temp=False, db=hab.db)
-    verifier = verifying.Verifier(hab=hab, name=hab.name, reger=reger)
+    verifier = verifying.Verifier(hab=hab, reger=reger)
     wallet = walleting.Wallet(reger=verifier.reger, name=name)
 
     handlers = []
@@ -102,8 +102,7 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     proofs = decking.Deck()
     issuerCues = decking.Deck()
 
-    ims = bytearray()
-    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, ims=ims)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier)
     requestHandler = handling.RequestHandler(hab=hab, wallet=wallet)
     applyHandler = handling.ApplyHandler(hab=hab, verifier=verifier, name=name, issuerCues=issuerCues)
     proofHandler = handling.ProofHandler(proofs=proofs)

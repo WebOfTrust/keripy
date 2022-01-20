@@ -58,7 +58,7 @@ def incept(
 
     Parameters:
          pre (str): issuer identifier prefix qb64
-         toad (int): int or str hex of backer threshold
+         toad (Union(int,str)): int or str hex of backer threshold
          baks (list): the initial list of backers prefixes for VCs in the Registry
          cnfg (list): is list of strings TraitDex of configuration traits
 
@@ -546,7 +546,8 @@ def vcstate(vcpre,
             version=Version,
             kind=Serials.json,
             ):
-    """
+    """ Returns the credential transaction state notification
+
     Returns serder of credential transaction state notification message.
     Utility function to automate creation of tsn events.
 
@@ -556,10 +557,11 @@ def vcstate(vcpre,
         sn (int): sequence number of latest event
         ri (str): registry identifier
         ra (dict): optional registry seal for registries with backers
-        dig is digest of latest event
-        eilk is message type (ilk) oflatest event
-        version is Version instance
-        kind is serialization kind
+        eilk (str): is message type (ilk) oflatest event
+        a (dict): is seal for anchor to key event log
+        dts (str): iso8601 formatted date string of state
+        version (Version): is KERI version instance
+        kind (str): is serialization kind
 
     Credential Transaction State Dict
     {
@@ -622,22 +624,22 @@ def query(regk,
     Returns serder of query event message.
     Utility function to automate creation of interaction events.
 
-     Parameters:
-         regk (str): qb64 AID of credential registry
-         vcid (str): qb64 SAID of credential
-         route (str): namesapaced path, '/' delimited, that indicates data flow
-                      handler (behavior) to processs the query
-         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                      handler (behavior) to processs reply message to query if any.
-         dt (str): ISO 8601 formatted datetime query
-         dta (str): ISO 8601 formatted datetime after query
-         dtb (str): ISO 8601 formatted datetime before query
-         stamp (str): ISO 8601 formatted current datetime of query message
-         version (Versionage): the API version
-         kind (str): the event type
+    Parameters:
+        regk (str): qb64 AID of credential registry
+        vcid (str): qb64 SAID of credential
+        route (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs the query
+        replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs reply message to query if any.
+        dt (str): ISO 8601 formatted datetime query
+        dta (str): ISO 8601 formatted datetime after query
+        dtb (str): ISO 8601 formatted datetime before query
+        stamp (str): ISO 8601 formatted current datetime of query message
+        version (Versionage): the API version
+        kind (str): the event type
 
-     Returns:
-         Serder: query event message Serder
+    Returns:
+        Serder: query event message Serder
 
     """
     qry = dict(i=vcid, ri=regk)
@@ -1204,7 +1206,7 @@ class Tever:
           vcpre (str):  qb64 VC identifier
 
         Returns:
-            status (str): `issued` or `revoked` or None if credential identifier is not found
+            status (Serder): transaction event state notification message
         """
         vci = nsKey([self.prefixer.qb64, vcpre])
         digs = []
@@ -1226,7 +1228,7 @@ class Tever:
             ra = dict()
         else:
             vcilk = Ilks.bis if len(digs) == 1 else Ilks.brv
-            ra=serder.ked["ra"]
+            ra = serder.ked["ra"]
 
 
         dgkey = dbing.dgKey(vci, vcdig)

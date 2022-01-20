@@ -38,18 +38,17 @@ class Issuer:
 
     def __init__(self, hab, name="test", cues=None, reger=None, estOnly=False,
                  temp=False, **kwa):
-        """
-        Initialize Instance
+        """ Initialize Instance
 
         Parameters:
-            name is the alias for this issuer
-            hab is Habitat instance of local controller's context
-            reger is Registry database instance for controller's credentials
-            tevers is a dict of Tever instances keys by qb64 prefix of registry
-            noBackers is boolean True to allow specification of TEL specific backers
-            backers is the initial list of backer prefixes qb64 for VCs in the Registry
-            toad is int or str hex of witness threshold
-            estOnly is boolean True for forcing rotation events for every TEL event.
+            hab (Habitat): instance of local controller's context
+            name (str): alias for this issuer
+            reger (Registry): database instance for controller's credentials
+            tevers (dict): Tever instances keys by qb64 prefix of registry
+            noBackers (boolean): True to allow specification of TEL specific backers
+            backers (list): initial list of backer prefixes qb64 for VCs in the Registry
+            toad (str): hex of witness threshold
+            estOnly (boolean): True for forcing rotation events for every TEL event.
         """
 
         self.hab = hab
@@ -69,7 +68,17 @@ class Issuer:
             self.setup(**self._inits)
 
     def setup(self, *, noBackers=False, baks=None, toad=None, ):
+        """ Delayed initialization of Issuer.
 
+        Actual initialization of Issuer from properties or loaded from .reger.  Should
+        only be called after .hab is initied.
+
+        Parameters:
+            noBackers (boolean): True to allow specification of TEL specific backers
+            baks (list): initial list of backer prefixes qb64 for VCs in the Registry
+            toad (str): hex of witness threshold
+
+        """
         ex = self.reger.regs.get(keys=self.name)
         if ex is not None:
             self.regk = ex.registryKey
@@ -115,6 +124,7 @@ class Issuer:
                                                 "pre={}.".format(self.regk))
 
             tever = self.tevers[self.regk]
+            self.regser = tever.serder
             self.noBackers = tever.noBackers
             self.backers = tever.baks
             self.regi = int(tever.serder.ked["s"], 16)
@@ -123,19 +133,24 @@ class Issuer:
 
     @property
     def tevers(self):
-        """
-        Returns .db.tevers
+        """ tevers property
+
+        Returns .reger.tevers
+
         """
         return self.reger.tevers
 
     def rotate(self, toad=None, cuts=None, adds=None):
-        """
-        Rotate backer list for registry
+        """ Rotate backer list for registry
 
         Parameters:
-            toad is int or str hex of backer threshold after cuts and adds
-            cuts is list of qb64 pre of backers to be removed from witness list
-            adds is list of qb64 pre of backers to be added to witness list
+            toad (int): or str hex of backer threshold after cuts and adds
+            cuts (list): of qb64 pre of backers to be removed from witness list
+            adds (list): of qb64 pre of backers to be added to witness list
+
+        Returns:
+            boolean: True if rotation is successful
+
         """
 
         if self.noBackers:
@@ -155,11 +170,14 @@ class Issuer:
         return True
 
     def issue(self, creder, dt=None):
-        """
-        Create and process an iss or bis message event
+        """ Create and process an iss or bis message event
 
         Parameters:
-            creder is hash digest of vc content qb64
+            creder (Credentialer): instance of the credential to issue
+            dt (str): iso8601 formatted date time string of issuance
+
+        Returns:
+            boolean: True if issuance is successful
 
         """
         vcdig = creder.said
@@ -176,12 +194,16 @@ class Issuer:
         return True
 
     def revoke(self, creder, dt=None):
-        """
+        """ Perform revocation of credential
 
-        Create and process iss message event
+        Create and process rev or brv message event
 
         Parameters:
-            vcdig is hash digest of vc content qb64
+            creder (Credentialer): instance of the credential to revoke
+            dt (str): iso8601 formatted date time string of revocation
+
+        Returns:
+            boolean: True if revocation is successful.
 
         """
         vcdig = creder.said
@@ -205,6 +227,16 @@ class Issuer:
 
     @staticmethod
     def attachSeal(serder, seal):
+        """ Create serialization of event message with attached source seal.
+
+        Parameters:
+            serder (Serder): event message
+            seal (SealSource): {s, d} source seal couple of sequence number and digest of sealed event
+
+        Returns:
+            bytearray:  serialization of event message with attached source seal
+
+        """
         msg = bytearray(serder.raw)
         msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
         msg.extend(Seqner(sn=seal.s).qb64b)
@@ -213,6 +245,19 @@ class Issuer:
         return msg
 
     def anchorMsg(self, serder, subject=None, reason=None, seal=None):
+        """  Create key event with seal to serder anchored as data.
+
+        Performs a rotation or interaction event for single sig or multiple sig identifier
+        to anchor the provide regsitry event.  Inserts outbound cues for external processing
+        of resulting events or multisig handling.
+
+        Parameters:
+            serder (Serder): registry event message
+            subject (str): qb64 identfier prefix of issuer
+            reason (Optional(str)): optional string message for multisig notifications
+            seal (Optional(SealSource)): option seal provided to n > 1 participants of multsig registry
+
+        """
 
         group = self.hab.group()
 
@@ -257,8 +302,8 @@ class Issuer:
                 self.cues.append(dict(kin="logEvent", msg=tevt))
 
     def escrow(self, serder):
-        """
-        Save Issuer event for future process when anchor become available
+        """ Save Issuer event for future process when anchor becomes available
+
         Parameters:
            serder: (Serder) is event to escrow
 
@@ -267,7 +312,7 @@ class Issuer:
 
     def processEscrows(self):
         """
-        Process
+        Process credential registry missing anchor escrow:
 
         """
         for (regk,), raw in self.reger.mase.getItemIter():
@@ -321,7 +366,7 @@ class Issuer:
 
 class IssuerDoer(doing.DoDoer):
     """
-    Basic Issuer Doer  to initialize inception events of the registry
+    Basic Issuer Doer to perform credential issuance of the registry
 
     Inherited Attributes:
         .done is Boolean completion state:
@@ -360,9 +405,15 @@ class IssuerDoer(doing.DoDoer):
     """
 
     def __init__(self, hab, issuer, verifier, msgs=None, cues=None, **kwa):
-        """
+        """ Initialize DoDoer for issuing credentials.
+
         Parameters:
-           issuer (Issuer): instance
+            hab (Habitat): identifier environment
+            issuer (Issuer): instance to use to perform credential issuance
+            verifier (Verifier): credential verifier tied to local credential store for persistence.
+            msgs (decking.Deck): inbound cue messages for handler
+            cues (decking.Deck): outbound cue messages from handler
+            **kwa (dict): keyword args passed through to DoDoer
         """
         self.hab = hab
         self.issuer = issuer
@@ -383,17 +434,37 @@ class IssuerDoer(doing.DoDoer):
         super(IssuerDoer, self).__init__(doers=doers, **kwa)
 
     def enter(self, **kwargs):
+        """ Context initiation
+
+        Perform deferred initialization of issuer if needed.
+
+        Args:
+            **kwargs (dict): keyword arguments passed to issuer setup
+
+        Returns:
+            deque: deeds from super
+
+        """
         if not self.issuer.inited:
             self.issuer.setup(**self.issuer._inits)
         return super(IssuerDoer, self).enter(**kwargs)
 
-    def issueDo(self, tymth, tock=0.0, **kwa):
-        """
-        Returns:  doifiable Doist compatible generator method for creating a registry
-        and sending its inception and anchoring events to witnesses or backers
+    def issueDo(self, tymth, tock=0.0):
+        """ Generator method for issuing a credential from a registry
 
-        Usage:
-            add result of doify on this method to doers list
+
+        Creating issuance events and anchoring them to key state.
+        Propagates all events to witnesses or backers
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+
+        Returns:
+            Doist: doifiable Doist compatible generator
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -443,15 +514,13 @@ class IssuerDoer(doing.DoDoer):
 
             yield self.tock
 
-    def issuerDo(self, tymth, tock=0.0, **opts):
-        """
-        Process cues from credential issue coroutine
+    def issuerDo(self, tymth, tock=0.0):
+        """ Process cues from credential issue coroutine
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
+            tock (float): initial tock value
         """
         self.wind(tymth)
         self.tock = tock
@@ -499,32 +568,47 @@ class IssuerDoer(doing.DoDoer):
             yield self.tock
 
     def escrowDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
+        """ Processes .issuer and .verifier escrows.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Issuer escrow.
+        Returns:
+            Doist: doifiable Doist compatible generator method
 
         """
         # start enter context
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
         while True:
             self.issuer.processEscrows()
             self.verifier.processEscrows()
             yield
 
     def verifierDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
+        """ Processes the Verifier cues.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Verifier cues.
+        Returns:
+            Doist: doifiable Doist compatible generator method
 
         """
+        self.wind(tymth)
+        self.tock = tock
         yield self.tock
 
         while True:

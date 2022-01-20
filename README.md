@@ -2,7 +2,10 @@
 
 Project Name:  keripy
 
-![test](https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg)
+![https://pypi.org/project/keri/](https://img.shields.io/pypi/v/keri.svg)
+![GitHub Actions keripy](https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg)
+![https://codecov.io/github/WebOfTrust/keripy?branch=main](https://codecov.io/github/WebOfTrust/keripy/coverage.svg?branch=main)
+![https://pypi.org/project/keri/](https://img.shields.io/pypi/pyversions/keri.svg)
 
 ## Installation
 
@@ -56,6 +59,5 @@ $ pip3 install -U cbor2
 pytest tests/ --ignore tests/demo/
 pytest tests/demo/
 ```
-
 
 

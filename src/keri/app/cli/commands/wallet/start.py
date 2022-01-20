@@ -54,12 +54,12 @@ def runWallet(name="wallet"):
     """
 
     hab, doers = existing.setupHabitat(name=name)
-    verifier = verifying.Verifier(hab=hab, name=name)
+    verifier = verifying.Verifier(hab=hab)
     wallet = walleting.Wallet(reger=verifier.reger, name=name)
     walletDoer = walleting.WalletDoer(hab=hab, verifier=verifier)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier)
     requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
 

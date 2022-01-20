@@ -5,9 +5,8 @@ tests.vc.handling module
 """
 from hio.base import doing
 
-from keri.app import keeping, habbing, indirecting, signing
+from keri.app import habbing, indirecting, signing
 from keri.core import coring, scheming, eventing, parsing
-from keri.db import basing
 from keri.peer import exchanging
 from keri.vc.handling import IssueHandler, envelope, RequestHandler
 from keri.vc.proving import credential
@@ -20,12 +19,6 @@ def test_issuing():
     assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
-
-    #with basing.openDB(name="sid") as sidDB, \
-            #keeping.openKS(name="sid") as sidKS, \
-            #basing.openDB(name="red") as redDB, \
-            #habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            #viring.openReg(name="red") as redPDB:
 
     with viring.openReg(name="red") as redPDB, \
          habbing.openHby(name="red", base="test") as redHby, \
@@ -44,17 +37,6 @@ def test_issuing():
                                 wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
         sidPre = sidHab.pre
         assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
-
-        #sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
-                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
-        #sidPre = sidHab.pre
-        #assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
-
-        #sidHab = habbing.Habitat(ks=sidHby.ks, db=sidHby.db,name="sid", salt=sidSalt, temp=True,
-                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
-        #sidPre = sidHab.pre
-        #assert sidPre == 'ErMoeFWa5WNC6hxy3EeFpcDYYOGilu0CSZvmckmNHeOQ'
-
 
         redKvy = eventing.Kevery(db=redHby.db)
 
@@ -98,12 +80,12 @@ def test_issuing():
 
         # Create the issue credential payload
         pl = dict(
-            vc=[envelope(msg)]
+            vc=[envelope(msg=msg)]
         )
 
         # Create the `exn` message for issue credential
         sidExcSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
-        excMsg = bytearray(sidExcSrdr.raw)
+        excMsg = bytearray()
         excMsg.extend(sidHab.endorse(sidExcSrdr, last=True))
 
         # Parse the exn issue credential message on Red's side
