@@ -605,7 +605,7 @@ def presentation_exchange(db, reger, credentials):
     return d
 
 
-def credential_apply(issuer, schema, typ, formats, body):
+def credential_apply(issuer, schema, formats, body):
     """
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
@@ -639,7 +639,6 @@ def credential_apply(issuer, schema, typ, formats, body):
     d = dict(
         issuer=issuer,
         schema=schema,
-        type=typ,
         body=body
     )
 
