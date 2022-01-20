@@ -11,13 +11,14 @@ import os
 import sys
 
 import falcon
+from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import decking
 from keri import help
 from keri import kering
-from keri.app import directing, agenting, indirecting, storing, grouping, forwarding
+from keri.app import directing, agenting, indirecting, storing, grouping, forwarding, kiwiing, httping
 from keri.app.cli.common import existing
 from keri.core import parsing
 from keri.help import helping
@@ -143,16 +144,32 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
 
 def adminInterface(controller, hab, insecure, proofs, cues, issuerCues, mbx, mbd, verifier, adminHttpPort=5623,
                    path=STATIC_DIR_PATH):
-    app = falcon.App(middleware=falcon.CORSMiddleware(
-        allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
-    sink = http.serving.StaticSink(staticDirPath=path)
-    app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
 
     rep = storing.Respondant(hab=hab, mbx=mbx)
     gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=mbd.ims)
+    witq = agenting.WitnessInquisitor(hab=hab, reger=verifier.reger, klas=agenting.HttpWitnesser)
 
-    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, verifier=verifier, gdoer=gdoer.msgs, app=app,
-                                     rep=rep, issuerCues=issuerCues, insecure=insecure)
+
+    app = falcon.App(middleware=falcon.CORSMiddleware(
+        allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
+    if insecure:
+        app.add_middleware(httping.InsecureSignatureComponent())
+    else:
+        app.add_middleware(httping.SignatureValidationComponent(hab=hab, pre=controller))
+    app.req_options.media_handlers.update(media.Handlers())
+    app.resp_options.media_handlers.update(media.Handlers())
+
+    issuers = dict()
+    endDoers = kiwiing.loadEnds(app, path=path, hab=hab, rep=rep, witq=witq, verifier=verifier, gdoer=gdoer,
+                                issuerCues=issuerCues, issuers=issuers)
+
+    kiwiServer = kiwiing.KiwiDoer(hab=hab,
+                                  rep=rep,
+                                  verifier=verifier,
+                                  gdoer=gdoer.msgs,
+                                  witq=witq,
+                                  issuers=issuers,
+                                  issuerCues=issuerCues)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
 
@@ -162,7 +179,8 @@ def adminInterface(controller, hab, insecure, proofs, cues, issuerCues, mbx, mbd
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, rep, mbxer, proofHandler, cueHandler, gdoer, kiwiServer]
+    doers = [httpServerDoer, witq, rep, mbxer, proofHandler, cueHandler, gdoer, kiwiServer]
+    doers.extend(endDoers)
 
     return doers
 

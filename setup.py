@@ -29,7 +29,6 @@ from os.path import basename
 from os.path import splitext
 
 from setuptools import find_packages, setup
-
 setup(
     name='keri',
     version='0.6.4',  # also change in src/keri/__init__.py
@@ -84,6 +83,8 @@ setup(
                         'falcon>=3.0.1',
                         'daemonocle>=1.2.3',
                         'hjson>=3.0.2',
+                        'PyYaml>=6.0',
+                        'apispec>=5.1.1',
     ],
     extras_require={
     },
@@ -105,3 +106,4 @@ setup(
         ]
     },
 )
+

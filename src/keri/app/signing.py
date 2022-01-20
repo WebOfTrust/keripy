@@ -114,7 +114,7 @@ def transSeal(hab):
         indices = None  # use default order
     else:  # group so use gid kever
         kever = hab.kevers[group.gid]
-        indices = [group.aids.index(group.lid)]  # use group order*
+        indices = [group.aids.index(hab.pre)]  # use group order*
 
     prefixer = kever.prefixer
     seqner = coring.Seqner(sn=kever.lastEst.s)
