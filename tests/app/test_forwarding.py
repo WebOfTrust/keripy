@@ -3,7 +3,6 @@
 KERI
 tests.app.forwarding module
 
-
 """
 
 import time
@@ -15,10 +14,19 @@ from keri.core import coring, eventing, parsing
 from keri.peer import exchanging
 
 
-def test_postman(mockGetWitnessByPrefixOneWitness):
-    with habbing.openHab(name="test", transferable=True, temp=True) as hab, \
-            habbing.openHab(name="wes", transferable=False, temp=True) as wesHab, \
-            habbing.openHab(name="repTest", transferable=True, temp=True, wits=[wesHab.pre]) as recpHab:
+def test_postman(seeder):
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
+            habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
+            habbing.openHby(name="repTest",  temp=True) as recpHby:
+
+        seeder.seedWitEnds(hby.db)
+        seeder.seedWitEnds(wesHby.db)
+        seeder.seedWitEnds(recpHby.db)
+        mbx = storing.Mailboxer(name="wes", temp=True)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesHab = wesHby.habByName("wes")
+
+        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
@@ -34,14 +42,12 @@ def test_postman(mockGetWitnessByPrefixOneWitness):
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, mbx=mbx, temp=True, tcpPort=5634, httpPort=5644)
-        pman = forwarding.Postman(hab=hab)
+        pman = forwarding.Postman(hby=hby)
 
         exn = exchanging.exchange(route="/echo", payload=dict(msg="test"))
         msg = bytearray(exn.raw)
         msg.extend(hab.endorse(exn, last=True))
-        pman.send(recipient=recpHab.pre, topic="echo", msg=msg)
+        pman.send(sender=hab.pre, recipient=recpHab.pre, topic="echo", msg=msg)
 
         doers = wesDoers + [pman]
         limit = 1.0
@@ -90,8 +96,7 @@ def test_forward():
     ked = fwd.ked["a"]
     assert ked == icp.ked
 
-
-    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         icp = hab.makeOwnEvent(sn=0)
         serder = coring.Serder(raw=bytearray(icp))
 
@@ -121,15 +126,3 @@ def test_forward():
 
         ked = fwd.ked["a"]
         assert ked == serder.ked
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-    test_postman()
-    test_forward()
-

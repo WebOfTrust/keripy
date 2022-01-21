@@ -13,10 +13,11 @@ from keri.app import habbing, watching
 from keri.core import eventing, parsing, coring
 
 
-def test_watcher_rotate_handler(mockGetWitnessByPrefixOneWitness):
-    with habbing.openHab(name="watcher", transferable=False, temp=True) as wat, \
-            habbing.openHab(name="ctrl", transferable=True, temp=True) as ctrl:
+def test_watcher_rotate_handler(seeder):
+    with habbing.openHab(name="watcher", transferable=False, temp=True) as (watHby, wat), \
+            habbing.openHab(name="ctrl", transferable=True, temp=True) as (ctrlHby, ctrl):
 
+        seeder.seedWatcherEnds(ctrlHby.db)
         kiwi = watching.KiwiServer(hab=wat, controller=ctrl.pre)
         server = http.Server(port=5644, app=kiwi.app)
         httpServerDoer = http.ServerDoer(server=server)

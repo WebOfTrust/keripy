@@ -30,21 +30,21 @@ class RegistryInceptDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msgs=None, cues=None, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, **kwa):
         """ Initialize registry incept DoDoer.
 
         Parameters:
-            hab (Habitat): identifier environment
+            hby (Habery): identifier environment
             msgs (decking.Deck): inbound cue messages for handler
             cues (decking.Deck): outbound cue messages from handler
             **kwa (dict): keyword arguments passed to inceptDo
         """
 
-        self.hab = hab
+        self.hby = hby
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.issuer = None
-        self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
+        self.gdoer = grouping.MultiSigGroupDoer(hby=hby)
 
         doers = [self.gdoer, doing.doify(self.inceptDo, **kwa)]
         super(RegistryInceptDoer, self).__init__(doers=doers)
@@ -77,9 +77,11 @@ class RegistryInceptDoer(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 name = msg["name"]
+                pre = msg["pre"]
+                hab = self.hby.habs[pre]
 
-                reger = viring.Registry(name=self.hab.name, temp=False, db=self.hab.db)
-                self.issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, noBackers=True, **kwa)
+                reger = viring.Registry(name=hab.name, temp=False, db=self.hby.db)
+                self.issuer = issuing.Issuer(hab=hab, name=name, reger=reger, noBackers=True, **kwa)
                 self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
                 yield self.tock
 
@@ -109,9 +111,12 @@ class RegistryInceptDoer(doing.DoDoer):
             while self.issuer.cues:
                 cue = self.issuer.cues.popleft()
                 cueKin = cue['kin']
+                pre = cue["pre"]
+                hab = self.hby.habs[pre]
+
                 if cueKin == "send":
                     tevt = cue["msg"]
-                    witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
+                    witSender = agenting.WitnessPublisher(hab=hab, msg=tevt)
                     self.extend([witSender])
 
                     while not witSender.done:
@@ -122,7 +127,7 @@ class RegistryInceptDoer(doing.DoDoer):
 
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
+                    witDoer = agenting.WitnessReceiptor(hab=hab, msg=kevt)
                     self.extend([witDoer])
 
                     while not witDoer.done:

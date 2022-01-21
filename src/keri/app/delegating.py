@@ -13,9 +13,8 @@ from hio import help
 from hio.base import doing
 from hio.help import decking
 
-from . import keeping, habbing, agenting, obtaining
+from . import keeping, habbing, agenting, indirecting
 from .forwarding import forward
-from .habbing import Habitat, Hab
 from .. import kering
 from ..core import eventing, coring, parsing
 from ..db import basing
@@ -23,159 +22,74 @@ from ..db import basing
 logger = help.ogler.getLogger()
 
 
-class Delegatey:
-    def __init__(self, name, db, ks, msgs=None, posts=None):
-        self.msgs = msgs if msgs is not None else decking.Deck()
-        self.posts = posts if posts is not None else decking.Deck()
-        self.name = name
-        self.db = db
-        self.ks = ks
-        self.hab = None
-        self.notified = False
-
-    def processMessage(self, msg):
-        if len(msg["salt"]) != 16:
-            salt = coring.Salter().qb64
-        else:
-            salt = coring.Salter(raw=msg["salt"].encode("utf-8")).qb64
-
-        seed = msg["seed"] if "seed" in msg else None
-        wits = msg["wits"] if "wits" in msg else None
-        toad = msg["toad"] if "toad" in msg else None
-        icount = msg["icount"] if "icount" in msg else None
-        isith = msg["isith"] if "isith" in msg else None
-        ncount = msg["ncount"] if "ncount" in msg else None
-        nsith = msg["nsith"] if "nsith" in msg else None
-        delpre = msg["delpre"] if "delpre" in msg else None
-
-        if self.hab is None:
-            self.hab = Habitat(name=self.name, db=self.db, ks=self.ks, seed=seed, salt=salt, icount=icount, isith=isith,
-                               ncount=ncount, nsith=nsith, toad=toad, wits=wits, delpre=delpre, )
-
-        self.posts.append(dict(srdr=self.hab.delserder, sigers=self.hab.delsigers))
-
-    def genQuery(self, pre):
-        query = dict()
-        query['i'] = pre
-        serder = eventing.query(route="logs", query=query)
-
-        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(self.hab.delsigers))
-        msg.extend(counter.qb64b)
-        for siger in self.hab.delsigers:
-            msg.extend(siger.qb64b)
-        return msg
-
-
 class InceptDoer(doing.DoDoer):
-    def __init__(self, name, msgs=None, cues=None, ):
+    """ Delegating inception DoDoer
+
+    """
+
+    def __init__(self, hby, msgs=None, cues=None, ):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-        self.ksDoer = keeping.KeeperDoer(keeper=self.ks)  # doer do reopens if not opened and closes
-        self.db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
-        self.dbDoer = basing.BaserDoer(baser=self.db)  # doer do reopens if not opened and closes
+        self.hby = hby
 
         doers = [
-            self.ksDoer,
-            self.dbDoer,
             doing.doify(self.msgDo),
-            doing.doify(self.postDo),
         ]
-        self.delegatey = Delegatey(name=name, db=self.db, ks=self.ks, msgs=self.msgs)
         super(InceptDoer, self).__init__(doers=doers)
 
-    def escrowDo(self, tymth, tock=0.0):
+    def msgDo(self, tymth, tock=0.0):
+        """ Process messages to ikncept delegated identfiier
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
         self.wind(tymth)
         self.tock = tock
         yield self.tock
 
         while True:
-            self.delegatey.hab.kvy.processEscrows()
-            yield self.tock
+            while self.msgs:
+                msg = self.msgs.popleft()
+                try:
+                    alias = msg["alias"] if "alias" in msg else None
+                    msg.pop("alias")
 
-    def processKvyCues(self, tymth, tock=0.0):
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+                    hab = self.hby.makeHab(name=alias, **msg)
 
-        while True:
-            while self.delegatey.hab.kvy.cues:
-                cue = self.delegatey.hab.kvy.cues.popleft()
-                if cue["kin"] == "delegatage":
-                    delpre = cue["delpre"]
-                    delwits = obtaining.getwitnessesforprefix(delpre)
+                    delsrdr = hab.kever.serder
+                    fwd = forward(pre=delsrdr.ked["di"], topic="delegate", serder=delsrdr)
+                    evt = hab.endorse(serder=fwd)
+                    dkever = hab.kevers[delsrdr.ked["di"]]
+                    wit = random.choice(dkever.wits)
 
-                    qry = self.delegatey.genQuery(pre=delpre)
-                    witer = agenting.TCPWitnesser(self.delegatey.hab, random.choice(delwits), lax=True, local=False)
-                    witer.msgs.append(qry)
+                    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                    witer = agenting.HttpWitnesser(hab=hab, wit=wit, url=urls[kering.Schemes.http])
+                    witer.msgs.append(bytearray(evt))
                     self.extend([witer])
-                elif cue["kin"] == "psUnescrow":
-                    self.delegatey.hab.delegationAccepted()
-                    evt = self.delegatey.hab.makeOwnEvent(sn=0)
-                    witDoer = agenting.WitnessReceiptor(hab=self.delegatey.hab, msg=evt, klas=agenting.TCPWitnesser)
-                    self.extend([witDoer])
-                    while not witDoer.done:
+
+                    while len(witer.sent) == 0:
                         yield self.tock
 
-                    self.remove([witDoer])
-                    self.cues.append(dict(delegator=self.delegatey.hab.delpre, pre=self.delegatey.hab.pre))
+                    self.remove([witer])
+
+                    mbx = indirecting.MailboxDirector(hab=hab, topics=['/receipt'])
+                    witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.HttpWitnesser)
+                    self.extend([mbx, witDoer])
+
+                    while not witDoer.done:
+                        yield 1.0
+
+                    self.remove([mbx, witDoer])
 
 
-                yield self.tock
-            yield self.tock
-
-    def msgDo(self, tymth, tock=0.0):
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.delegatey.msgs:
-                msg = self.delegatey.msgs.popleft()
-                try:
-                    if "name" not in msg:
-                        msg["name"] = self.delegatey.name
-
-                    self.delegatey.processMessage(msg=msg)
                 except (kering.MissingAnchorError, Exception) as ex:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("delegation incept message error: %s\n", ex)
                     else:
                         logger.error("delegation incept message error: %s\n", ex)
-                yield self.tock
-            yield self.tock
-
-
-    def postDo(self, tymth, tock=0.0):
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.delegatey.posts:
-                post = self.delegatey.posts.popleft()
-                delsrdr = post["srdr"]
-                fwd = forward(pre=delsrdr.ked["di"], topic="delegate", serder=delsrdr)
-                evt = eventing.messagize(serder=fwd, sigers=post["sigers"])
-
-                delwits = obtaining.getwitnessesforprefix(delsrdr.ked["di"])
-                wit = random.choice(delwits)
-
-                witer = agenting.HttpWitnesser(hab=self.delegatey.hab, wit=wit)
-                witer.msgs.append(bytearray(evt))
-                self.extend([witer])
-
-                while len(witer.sent) == 0:
-                    yield self.tock
-
-                self.extend([doing.doify(self.processKvyCues), doing.doify(self.escrowDo), ])
-                # self.remove([witer])
-
                 yield self.tock
             yield self.tock
 
@@ -211,7 +125,18 @@ class RotateDoer(doing.DoDoer):
 
         super(RotateDoer, self).__init__(doers=doers)
 
-    def rotateDo(self, tymth, tock=0.0, **kwa):
+
+    def rotateDo(self, tymth, tock=0.0):
+        """ Co-routine for performing delegated rotation
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:
+
+        """
         # start enter context
         self.wind(tymth)
         self.tock = tock

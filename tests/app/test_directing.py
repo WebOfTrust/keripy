@@ -11,9 +11,8 @@ from hio.base import doing
 from hio.core.tcp import clienting, serving
 
 from keri import help  # logger support
-from keri.app import habbing, keeping, directing
+from keri.app import habbing, directing
 from keri.core import eventing, coring
-from keri.db import dbing, basing
 from keri.demo import demoing
 
 
@@ -78,16 +77,14 @@ def test_directing_basic():
     assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
 
     with habbing.openHby(name="eve", base="test") as eveHby, \
-         habbing.openHby(name="bob", base="test") as bobHby:
+            habbing.openHby(name="bob", base="test") as bobHby:
 
-
-        limit = 0.125
+        limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
-        eveKevers = dict()
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
@@ -160,10 +157,10 @@ def test_directing_basic():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        assert bobClient.opened == False
-        assert bobServer.opened == False
-        assert eveClient.opened == False
-        assert eveServer.opened == False
+        assert bobClient.opened is False
+        assert bobServer.opened is False
+        assert eveClient.opened is False
+        assert eveServer.opened is False
 
         assert not bobClient.txbs
         ca, ix = list(eveServer.ixes.items())[0]

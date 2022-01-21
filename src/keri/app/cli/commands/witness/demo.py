@@ -1,25 +1,42 @@
-import argparse
-import logging
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.kli.witness module
 
-from keri.app import habbing, indirecting, directing
-from keri import help
+Witness command line interface
+"""
+
+import argparse
+
+from keri.app import habbing, indirecting, directing, configing
+from keri.app.cli.common import oobiing
+from keri.core.coring import Salter
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))
+
 
 # help.ogler.level = logging.INFO
 # logger = help.ogler.getLogger()
 
 
-def demo(args):
+def demo(_):
+    """
+    Run set of three witnesses for demo
 
-    with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False, temp=False) as wanHab, \
-            habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False, temp=False) as wilHab, \
-            habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False, temp=False) as wesHab:
+    """
 
-        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=False, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=False, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, temp=False, tcpPort=5634, httpPort=5644)
+    wancf = configing.Configer(name="wan", headDirPath="scripts", temp=False, reopen=True, clear=False)
+    wilcf = configing.Configer(name="wil", headDirPath="scripts", temp=False, reopen=True, clear=False)
+    wescf = configing.Configer(name="wes", headDirPath="scripts", temp=False, reopen=True, clear=False)
+
+    with habbing.openHby(name="wan", salt=Salter(raw=b'wann-the-witness').qb64, temp=False, cf=wancf) as wanHby, \
+            habbing.openHby(name="wil", salt=Salter(raw=b'will-the-witness').qb64, temp=False, cf=wilcf) as wilHby, \
+            habbing.openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=False, cf=wescf) as wesHby:
+        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         doers = wanDoers + wilDoers + wesDoers
+
         directing.runController(doers, expire=0.0)

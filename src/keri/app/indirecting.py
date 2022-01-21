@@ -5,19 +5,21 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
+from urllib.parse import urlparse
+from orderedset import OrderedSet as oset
 
 import falcon
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
-from keri.app import agenting
 
-from . import habbing, keeping, directing, storing, httping
-from .. import help
-from ..app import obtaining
+from . import habbing, directing, storing, httping
+from .cli.common import oobiing
+from .. import help, kering
 from ..core import eventing, parsing, routing
 from ..db import basing
+from ..end import ending
 from ..peer import exchanging
 from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
@@ -25,30 +27,26 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 
-def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, httpPort=5632):
+def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     """
+    Setup witness controller and doers
+
     """
     doers = []
-    # setup habitat
-    if hab is None:
-        # setup habery with resources
-        hby = habbing.Habery(name=name, base="wit", temp=True, free=True)
-        hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        doers.extend([hbyDoer])
-
-        # make hab
-        hab = hby.makeHab(name=name, transferable=False)
-
+    # make hab
+    hab = hby.makeHab(name=alias, transferable=False)
 
     reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
-    verfer = verifying.Verifier(hab=hab, reger=reger)
+    verfer = verifying.Verifier(hby=hby, reger=reger)
     app = falcon.App(cors_enable=True)
+    ending.loadEnds(app=app, hby=hby)
 
-    mbx = mbx if mbx is not None else storing.Mailboxer(name=name, temp=temp)
+    mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
 
-    rep = storing.Respondant(hab=hab, mbx=mbx)
+    rep = storing.Respondant(hby=hby, mbx=mbx)
     httpHandler = HttpMessageHandler(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx)
-    mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
+    mailEnd = storing.MailEnd(mbx=mbx)
+    app.add_route("/qry/mbx", mailEnd)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -60,21 +58,33 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
     serverDoer = serving.ServerDoer(server=server)
 
     directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+    obl = oobiing.OobiLoader(db=hby.db, auto=True)
 
-    witStart = WitnessStart(name=name, hab=hab)
+    witStart = WitnessStart(name=alias, hab=hab)
 
-    doers.extend([regDoer, directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, witStart])
+    doers.extend([regDoer, directant, serverDoer, mailEnd, httpServerDoer, httpHandler, rep, obl, witStart])
 
     return doers
 
 
 class WitnessStart (doing.Doer):
+    """ Doer to print witness prefix after initialization
+
+    """
     def __init__(self, name, hab, **opts):
         self.hab = hab
         self.name = name
         super().__init__(**opts)
 
     def do(self,  tymth=None, tock=0.0, **opts):
+        """ Prints witness name and prefix
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
         while not self.hab.inited:
             yield self.tock
 
@@ -326,7 +336,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None, **kwa):
+    def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None, **kwa):
         """
         Initialize instance.
 
@@ -342,12 +352,13 @@ class MailboxDirector(doing.DoDoer):
                                False means indirect mode don't process cue'ed receipts
 
         """
-        self.hab = hab
+        self.hby = hby
         self.verifier = verifier
         self.exchanger = exc
         self.rep = rep
         self.topics = topics
-        self.pollers = []
+        self.pollers = list()
+        self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
 
         self.ims = ims if ims is not None else bytearray()
@@ -358,11 +369,11 @@ class MailboxDirector(doing.DoDoer):
                       doing.doify(self.escrowDo)])
 
         self.rtr = routing.Router()
-        self.rvy = rvy if rvy is not None else routing.Revery(db=self.hab.db, rtr=self.rtr,
+        self.rvy = rvy if rvy is not None else routing.Revery(db=self.hby.db, rtr=self.rtr,
                                                               lax=True, local=False)
 
         #  neeeds unique kevery with ims per remoter connnection
-        self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
+        self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hby.db,
                                                                cues=self.cues,
                                                                rvy=self.rvy,
                                                                lax=True,
@@ -372,15 +383,14 @@ class MailboxDirector(doing.DoDoer):
 
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,
-                                 db=self.hab.db, rvy=self.rvy,
+                                 db=self.hby.db, rvy=self.rvy,
                                  local=False, cues=self.cues)
             self.tevery.registerReplyRoutes(self.rtr)
         else:
             self.tevery = None
 
         if self.exchanger is not None:
-            self.witq = agenting.WitnessInquisitor(hab=hab)
-            doers.extend([self.witq, doing.doify(self.exchangerDo)])
+            doers.extend([doing.doify(self.exchangerDo)])
 
 
         self.parser = parsing.Parser(ims=self.ims,
@@ -399,7 +409,7 @@ class MailboxDirector(doing.DoDoer):
         """
         super(MailboxDirector, self).wind(tymth)
 
-    def pollDo(self, tymth=None, tock=0.0, **opts):
+    def pollDo(self, tymth=None, tock=0.0):
         """
         Returns:
            doifiable Doist compatible generator method
@@ -407,28 +417,49 @@ class MailboxDirector(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
 
-        wits = self.hab.kever.wits
-
-        group = self.hab.group()
-        for wit in wits:
-            poller = Poller(hab=self.hab, topics=self.topics, witness=wit)
-            self.pollers.append(poller)
-            self.extend([poller])
-
-            if group is not None:
-                poller = GroupPoller(hab=self.hab, group=group, topics=self.topics, witness=wit)
-                self.pollers.append(poller)
-                self.extend([poller])
-
+        for hab in self.hby.habs.values():
+            self.addPollers(hab)
             _ = (yield self.tock)
 
         while True:
+            pres = oset(self.hby.habs.keys())
+            if new := pres - self.prefixes:
+                for pre in new:
+                    hab = self.hby.habs[pre]
+                    self.addPollers(hab=hab)
+                    _ = (yield self.tock)
+
             for msg in self.processPollIter():
                 self.ims.extend(msg)
                 _ = (yield self.tock)
             _ = (yield self.tock)
+
+    def addPollers(self, hab):
+        """ add mailbox pollers for every witness for this prefix identifier
+
+        Parameters:
+            hab (Hab): the Hab of the prefix
+
+        """
+        wits = hab.kever.wits
+        group = hab.group()
+        for wit in wits:
+            poller = Poller(hab=hab, topics=self.topics, witness=wit)
+            self.pollers.append(poller)
+            self.extend([poller])
+
+            if group is not None:
+                poller = GroupPoller(hab=hab, group=group, topics=self.topics, witness=wit)
+                self.pollers.append(poller)
+                self.prefixes.add(group.gid)
+                self.extend([poller])
+
+        self.prefixes.add(hab.pre)
 
     def processPollIter(self):
         """
@@ -573,13 +604,17 @@ class Poller(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        loc = obtaining.getwitnessbyprefix(self.witness)
 
-        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        urls = self.hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.http)
+        if not urls:
+            raise kering.ConfigurationError(f"unable to query witness {self.witness}, no http endpoint")
+
+        up = urlparse(urls[kering.Schemes.http])
+        client = http.clienting.Client(hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=client)
         self.extend([clientDoer])
 
-        witrec = self.hab.db.tops.get(self.witness)
+        witrec = self.hab.db.tops.get((self.hab.pre, self.witness))
         if witrec is None:
             witrec = basing.TopicsRecord(topics=dict())
 
@@ -607,7 +642,7 @@ class Poller(doing.DoDoer):
                 self.msgs.append(msg.encode("utf=8"))
 
                 witrec.topics[tpc] = int(idx)
-                self.hab.db.tops.pin(self.witness, witrec)
+                self.hab.db.tops.pin((self.hab.pre, self.witness), witrec)
                 yield
             yield
 
@@ -648,13 +683,17 @@ class GroupPoller(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        loc = obtaining.getwitnessbyprefix(self.witness)
+        urls = self.hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.http)
+        if not urls:
+            raise kering.ConfigurationError(f"unable to query witness {self.witness}, no http endpoint")
 
-        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        up = urlparse(urls[kering.Schemes.http])
+        client = http.clienting.Client(hostname=up.hostname, port=up.port)
+
         clientDoer = http.clienting.ClientDoer(client=client)
         self.extend([clientDoer])
 
-        tkey = "{}.{}".format(self.group.gid, self.witness)
+        tkey = (self.group.gid, self.witness)
         witrec = self.hab.db.tops.get(tkey)
         if witrec is None:
             witrec = basing.TopicsRecord(topics=dict())

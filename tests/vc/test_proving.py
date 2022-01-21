@@ -223,7 +223,7 @@ def test_credential():
 
 
 def test_credential_parsator():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
             viring.openReg() as reg:
         assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
@@ -241,7 +241,7 @@ def test_credential_parsator():
 
         msg = hab.endorse(serder=creder)
 
-        verifier = verifying.Verifier(hab=hab)
+        verifier = verifying.Verifier(hby=hby)
         parsing.Parser().parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1

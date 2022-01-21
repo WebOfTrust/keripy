@@ -8,19 +8,35 @@ import argparse
 
 from keri import kering
 from keri.app import habbing
+from keri.app.cli.common import existing
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string')
 parser.set_defaults(handler=lambda args: sign(args))
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
 parser.add_argument('--text', '-t', help='Text or file (starts with "@") to sign', required=True)
 
 
 def sign(args):
+    """
+    Sign arbitrary data
+
+    Args:
+        args(Namespace): arguments object from command line
+    """
+
 
     name = args.name
+    alias = args.alias
+    base = args.base
+    bran = args.bran
 
     try:
-        with habbing.existingHabitat(name=name) as hab:
+        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
 
             txt = args.text
             if txt.startswith("@"):

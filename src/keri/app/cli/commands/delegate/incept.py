@@ -13,15 +13,22 @@ from json import JSONDecodeError
 from hio.base import doing
 
 from keri import help
-from keri.app import directing, delegating
+from keri.app import directing, delegating, habbing
+from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a seal for creating a delegated identifier')
 parser.set_defaults(handler=lambda args: incept(args))
-parser.add_argument('--name', '-n', help='Human readable environment reference', required=True)
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+
+
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
-parser.add_argument('--seal', '-s', help='Filename to write seal', default="", required=False)
 
 
 @dataclass
@@ -32,7 +39,6 @@ class DelegateOptions:
 
     """
     delpre: str
-    salt: str
     transferable: bool
     wits: list
     icount: int
@@ -63,10 +69,12 @@ def incept(args):
         sys.exit(-1)
 
     name = args.name
-    sealFile = args.seal
+    base = args.base
+    bran = args.bran
+    alias = args.alias
 
     kwa = opts.__dict__
-    icpDoer = DelegateInceptDoer(name=name, sealFile=sealFile, **kwa)
+    icpDoer = DelegateInceptDoer(name=name, base=base, alias=alias, bran=bran, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -78,7 +86,7 @@ class DelegateInceptDoer(doing.DoDoer):
     the inception event for a delegated identifier.
     """
 
-    def __init__(self, name, sealFile, **kwa):
+    def __init__(self, name, base, bran, **kwa):
         """
         Creates the DoDoer needed to create the seal for a delegated identifier.
 
@@ -87,15 +95,25 @@ class DelegateInceptDoer(doing.DoDoer):
 
         """
 
-        self.name = name
+        hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+
         self.msg = kwa
 
-        self.dcptr = delegating.InceptDoer(name=name)
+        self.dcptr = delegating.InceptDoer(hby=hby)
         doers = [doing.doify(self.inceptDo), self.dcptr]
         self.toRemove = list(doers)
         super(DelegateInceptDoer, self).__init__(doers=doers, **kwa)
 
-    def inceptDo(self, tymth, tock=0.0, **kwa):
+    def inceptDo(self, tymth, tock=0.0):
+        """ Pass delegated incept message to inbound cue for processing
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
         yield self.tock
         self.dcptr.msgs.append(self.msg)
 

@@ -2127,7 +2127,7 @@ class Encrypter(Matter):
                 encryption key.
 
         Parameters:
-            seed (Union[bytes,str]): qb64b or qb64 serialization of private
+            seed (Union(bytes,str)): qb64b or qb64 serialization of private
                 signing key seed
         """
         signer = Signer(qb64b=seed)

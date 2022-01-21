@@ -85,6 +85,7 @@ setup(
                         'hjson>=3.0.2',
                         'PyYaml>=6.0',
                         'apispec>=5.1.1',
+                        'mnemonic>=0.20'
     ],
     extras_require={
     },

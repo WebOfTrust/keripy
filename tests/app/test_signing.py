@@ -14,8 +14,8 @@ from keri.vdr import verifying, issuing
 
 
 def test_sad_signature():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as sidHab, \
-            habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as wanHab:
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (sigHby, sidHab), \
+            habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (wanHby, wanHab):
         personal = dict(
             d="",
             n="Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY",
@@ -126,12 +126,10 @@ def test_sad_signature():
                         b'5pHx8Y7TNUKsQFjK6-qxACA')
 
     # Test multisig identifier
-    with basing.openDB(name="mel", temp=True) as db, \
-            keeping.openKS(name="mel", temp=True) as ks, \
-            configing.openCF(name="mel", base="mel", temp=True) as cf:
-        salt = coring.Salter(raw=b'0123456789abcdef').qb64
-        hab = habbing.Habitat(name="mel", base="mel", ks=ks, db=db, cf=cf, temp=True,
-                              salt=salt, icount=3, isith=3, ncount=3, nsith=3)
+    with configing.openCF(name="mel", base="mel", temp=True) as cf, \
+        habbing.openHby(name="mel", temp=True, salt=coring.Salter(raw=b'0123456789abcdef').qb64b,
+                        base="mel", cf=cf) as hby:
+        hab = hby.makeHab(name="mel", icount=3, isith=3, ncount=3, nsith=3)
 
         md = dict(
             d="",
@@ -139,7 +137,7 @@ def test_sad_signature():
             dt="2021-06-09T17:35:54.169967+00:00",
             LEI="254900OPPU84GM83MG36"
         )
-        verifier = verifying.Verifier(hab=hab)
+        verifier = verifying.Verifier(hby=hby)
         issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
 
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
@@ -170,7 +168,6 @@ def test_sad_signature():
     """End Test"""
 
 
-
 def test_signature_transposition():
     d = dict(
         d="",
@@ -179,8 +176,8 @@ def test_signature_transposition():
         LEI="254900OPPU84GM83MG36"
     )
 
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab:
-        verifier = verifying.Verifier(hab=hab)
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        verifier = verifying.Verifier(hby=hby)
         issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
 
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
@@ -267,8 +264,8 @@ def test_signature_transposition():
         assert saider is not None
 
     # multiple path sigs
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab:
-        verifier = verifying.Verifier(hab=hab)
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        verifier = verifying.Verifier(hby=hby)
         issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
 
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
@@ -339,7 +336,7 @@ def test_signature_transposition():
                        b'1n2svQeydApgrvB0ofb2XWeFXquwkzj7fitH2M2nvivNm9tBA')
 
     # signing SAD with non-transferable identifier
-    with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as hab:
+    with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):
         cred = proving.credential(schema="ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",
                                   issuer=hab.pre, subject=d, source=[],
                                   status="Eg1H4eN7P5ndJAWtcymq3ZrYZwQsBRYd3-VuZ6wMAwxE")

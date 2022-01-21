@@ -34,19 +34,19 @@ class Verifier:
 
     CredentialExpiry = 3600
 
-    def __init__(self, hab, reger=None, creds=None, cues=None):
+    def __init__(self, hby, reger=None, creds=None, cues=None):
         """
         Initialize Verifier instance
 
         Parameters:
-            hab (Habitat): for this verifier's context
+            hby (Habery): for this verifier's context
             reger (Registry): database instance
             creds (decking.Deck): inbound credentials for handler
             cues (decking.Deck): outbound cue messages from handler
 
         """
-        self.hab = hab
-        self.reger = reger if reger is not None else Registry(name=hab.name, temp=True)
+        self.hby = hby
+        self.reger = reger if reger is not None else Registry(name=self.hby.name, temp=True)
         self.creds = creds if creds is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
@@ -54,7 +54,7 @@ class Verifier:
         self.tvy = None
         self.psr = None
 
-        if self.hab.inited:
+        if self.hby.inited:
             self.setup()
 
 
@@ -64,8 +64,8 @@ class Verifier:
         Should not be called until .hab is initialized
 
         """
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
-        self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
+        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, regk=None, local=False)
+        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
 
         self.inited = True
 
@@ -148,7 +148,7 @@ class Verifier:
                                                      .format(creder.said, schema))
 
         for (pather, cigar) in sadcigars:
-            tholder, verfers = self.hab.verifiage(pre=cigar.qb64)
+            tholder, verfers = self.hby.resolveVerifiers(pre=cigar.qb64)
             _, indices = core.eventing.verifySigs(creder, [cigar], verfers)
 
             if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
@@ -164,13 +164,13 @@ class Verifier:
                 continue
 
             rooted = True
-            if prefixer.qb64 not in self.hab.kevers or self.hab.kevers[prefixer.qb64].sn < seqner.sn:
+            if prefixer.qb64 not in self.hby.kevers or self.hby.kevers[prefixer.qb64].sn < seqner.sn:
                 if self.escrowMIE(creder, sadsigers, sadcigars):
                     self.cues.append(dict(kin="query", q=dict(pre=prefixer.qb64, sn=seqner.sn)))
                 raise kering.MissingIssuerError("issuer identifier {} not in Kevers".format(prefixer.qb64))
 
             # Verify the signatures are valid and that the signature threshold as of the signing event is met
-            tholder, verfers = self.hab.verifiage(pre=prefixer.qb64, sn=seqner.sn, dig=saider.qb64)
+            tholder, verfers = self.hby.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=saider.qb64)
             _, indices = core.eventing.verifySigs(creder, sigers, verfers)
 
             if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
@@ -366,15 +366,14 @@ class Verifier:
         self.reger.subjs.add(keys=subject, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-
-    def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
+    def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """ Returns query message for querying registry
         """
 
         serder = eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
                                 dtb=dtb, **kwa)
-        return self.hab.endorse(serder, last=True)
-
+        hab = self.hby.habs[pre]
+        return hab.endorse(serder, last=True)
 
     def verifyChain(self, nodeSubject, nodeSaid):
         """ Verifies the node credential at the end of an edge

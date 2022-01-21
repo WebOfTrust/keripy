@@ -12,34 +12,54 @@ from json import JSONDecodeError
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, keeping, directing, agenting, indirecting
-from keri.core import coring
-from keri.db import basing
+from keri.app import habbing, directing, agenting, indirecting, configing
+from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument("--config", "-c", help="directory override for configuration data")
+
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
-parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                          'http)', default="http")
+
+# Authentication for keystore
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
+                                   'and encryption of secrets in keystore', default=None)
+parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (seed) for the aeid from which the '
+                                         'private decryption key may be derived', default=None)
 
 
 @dataclass
 class InceptOptions:
-    salt: str
+    """ Options loaded from file parameter.
+
+    """
     transferable: bool
     wits: list
     icount: int
     isith: int
     ncount: int
     nsith: int
+    toad: int = 0
     estOnly: bool = False
 
 
 def handler(args):
+    """
+    Create KERI identifier prefix in specified key store with alias
+
+    Args:
+        args(Namespace): arguments object from command line
+    """
+
     try:
         f = open(args.file)
         config = json.load(f)
@@ -53,70 +73,72 @@ def handler(args):
         sys.exit(-1)
 
     name = args.name
+    base = args.base
+    bran = args.bran
+    alias = args.alias
+    config = args.config
 
     kwa = opts.__dict__
-    icpDoer = InceptDoer(name=name, proto=args.proto, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
 
 
-
 class InceptDoer(doing.DoDoer):
+    """ DoDoer for creating a new identifier prefix and Hab with an alias.
+    """
 
-    def __init__(self, name, proto, **kwa):
+    def __init__(self, name, base, alias, bran, config=None, **kwa):
 
-        ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-        self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
-        self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+        cf = None
+        if config is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
 
-        if len(kwa["salt"]) != 16:
-            kwa["salt"] = coring.Salter().qb64
-        else:
-            kwa["salt"] = coring.Salter(raw=kwa["salt"].encode("utf-8")).qb64
+        hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        doers = [self.hbyDoer, doing.doify(self.inceptDo)]
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, **kwa)
-        self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.inceptDo)]
-
-        if proto == "tcp":
-            self.mbx = None
-            self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser)
-            doers.extend([self.witDoer])
-        else:  # "http"
-            self.mbx = indirecting.MailboxDirector(hab=hab, topics=['/receipt'])
-            self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.HttpWitnesser)
-            doers.extend([self.mbx, self.witDoer])
-
-        self.hab = hab
-        super(InceptDoer, self).__init__(doers=doers, **kwa)
-
+        self.inits = kwa
+        self.alias = alias
+        self.hby = hby
+        super(InceptDoer, self).__init__(doers=doers)
 
     def inceptDo(self, tymth, tock=0.0):
         """
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
         Returns:  doifiable Doist compatible generator method
-        Usage:
-            add result of doify on this method to doers list
         """
         # enter context
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
 
-        while not self.witDoer.done:
-            _ = yield self.tock
+        hab = self.hby.makeHab(name=self.alias, **self.inits)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt'])
+        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.extend([self.witDoer, self.mbx])
 
+        if hab.kever.wits:
+            self.witDoer.msgs.append(dict(pre=hab.pre))
+            while not self.witDoer.cues:
+                _ = yield self.tock
 
-        print(f'Prefix  {self.hab.pre}')
-        for idx, verfer in enumerate(self.hab.kever.verfers):
-            print(f'\tPublic key {idx+1}:  {verfer.qb64}')
+        print(f'Prefix  {hab.pre}')
+        for idx, verfer in enumerate(hab.kever.verfers):
+            print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
         print()
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
-        if self.mbx:
-            toRemove.append(self.mbx)
-
+        toRemove = [self.hbyDoer, self.witDoer, self.mbx]
         self.remove(toRemove)
 
         return

@@ -10,6 +10,7 @@ import random
 
 from hio.base import doing
 from hio.help import decking
+from keri import kering
 
 from keri.app import agenting
 from keri.core import coring, eventing
@@ -23,15 +24,15 @@ class Postman(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, evts=None, klas=None, **kwa):
-        self.hab = hab
+    def __init__(self, hby, evts=None, klas=None, **kwa):
+        self.hby = hby
         self.evts = evts if evts is not None else decking.Deck()
         self.klas = klas if klas is not None else agenting.HttpWitnesser
 
         doers = [doing.doify(self.deliverDo)]
         super(Postman, self).__init__(doers=doers, **kwa)
 
-    def deliverDo(self, tymth=None, tock=0.0, **opts):
+    def deliverDo(self, tymth=None, tock=0.0):
         """
         Returns:  doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
@@ -47,17 +48,15 @@ class Postman(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if self.hab.kever.wits:
-            self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
-            self.extend([self.witq])
-
         while True:
             while self.evts:
                 evt = self.evts.popleft()
+                sender = evt["sender"]
                 recp = evt["recipient"]
                 tpc = evt["topic"]
                 srdr = evt["serder"]
                 act = evt["attachment"]
+                hab = self.hby.habs[sender]
 
                 # TODO: sign the forward message with a SAID signature and
                 #  combine it with the provided attachments on the envelope
@@ -67,14 +66,13 @@ class Postman(doing.DoDoer):
                 ims = bytearray(fwd.raw)
                 ims.extend(act)
 
-                while recp not in self.hab.kevers:
-                    self.witq.query(pre=recp)
-                    yield 1.0
-
-                kever = self.hab.kevers[recp]
+                kever = self.hby.kevers[recp]
                 wit = random.choice(kever.wits)
 
-                witer = self.klas(hab=self.hab, wit=wit)
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                print(wit, urls)
+                witer = agenting.HttpWitnesser(hab=hab, wit=wit, url=urls[kering.Schemes.http])
+
                 witer.msgs.append(bytearray(ims))  # make a copy
                 self.extend([witer])
 
@@ -85,7 +83,7 @@ class Postman(doing.DoDoer):
 
             yield self.tock
 
-    def send(self, recipient, topic, msg):
+    def send(self, sender, recipient, topic, msg):
         """
         Utility function to queue a msg on the Postman's buffer for
         enveloping and forwarding to a witness
@@ -98,7 +96,8 @@ class Postman(doing.DoDoer):
         serder = coring.Serder(raw=msg)
         del msg[:serder.size]
 
-        self.evts.append(dict(recipient=recipient, topic=topic, serder=serder, attachment=bytearray(msg)))
+        self.evts.append(
+            dict(sender=sender, recipient=recipient, topic=topic, serder=serder, attachment=bytearray(msg)))
 
 
 def forward(pre, serder, topic=None, version=coring.Version, kind=coring.Serials.json):
@@ -127,6 +126,4 @@ def forward(pre, serder, topic=None, version=coring.Version, kind=coring.Serials
                )
     _, ked = coring.Saider.saidify(sad=ked)
 
-
     return eventing.Serder(ked=ked)  # return serialized ked
-

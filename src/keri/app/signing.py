@@ -7,7 +7,6 @@ keri.app.signing module
 from keri.core import coring, eventing
 
 
-
 def ratify(hab, serder, paths=None, pipelined=False):
     """ Sign the SAD or SAIDs with the keys from the Habitat.
 

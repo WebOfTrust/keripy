@@ -343,7 +343,7 @@ def test_seid_api():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        ending.loadEnds(app, tymth=tymist.tymen(), hab=hab)
+        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby)
 
         client = testing.TestClient(app=app)
 
@@ -410,7 +410,7 @@ def test_get_admin():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    ending.loadEnds(myapp, tymth=tymist.tymen(), hab=hab)
+    ending.loadEnds(myapp, tymth=tymist.tymen(), hby=hby)
 
     client = testing.TestClient(app=myapp)
 

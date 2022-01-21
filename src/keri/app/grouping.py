@@ -20,7 +20,6 @@ from keri.app import agenting, forwarding
 from keri.core import coring, eventing, parsing
 from keri.db import dbing, basing
 from keri.peer import exchanging
-from keri.vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -35,21 +34,21 @@ class Groupy:
 
     """
 
-    def __init__(self, hab, msgs=None, cues=None):
+    def __init__(self, hby, msgs=None, cues=None):
         """
 
         Parameters:
-            hab(Habitat): environment of the local participant in multisig group
+            hby(Habery): environment of the local participant in multisig group
             msgs(decking.Deck): input messages of requests to perform operations on multisig group identifier
             cues(decking.Deck): output cues from processing messages
 
         """
         self.msgs = msgs if msgs is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
-        self.hab = hab
-        self.db = hab.db
+        self.hby = hby
+        self.db = self.hby.db
 
-        self.kvy = eventing.Kevery(db=hab.db,
+        self.kvy = eventing.Kevery(db=self.db,
                                    lax=False,
                                    local=False)
 
@@ -81,24 +80,30 @@ class Groupy:
         op = msg["op"]
         if op in (Ops.icp,):
             aids = list(msg['aids'])
-            if self.hab.pre not in aids:
-                raise kering.ConfigurationError("Local identifer {} must be member of aids ={}"
-                                                .format(self.hab.pre, aids))
+            hab = None
+            for aid in aids:
+                if aid in self.hby.habs:
+                    hab = self.hby.habs[aid]
+                    break
+
+            if hab is None:
+                raise kering.ConfigurationError("One local identifer must be member of aids ={}"
+                                                .format(aids))
 
             sith = msg["isith"]
             toad = msg["toad"]
             nsith = msg["nsith"]
-            wits = msg["witnesses"] if "witnesses" in msg is not None else self.hab.kever.wits
+            wits = msg["witnesses"] if "witnesses" in msg is not None else hab.kever.wits
             data = msg["data"] if "data" in msg else None
             delpre = msg["delpre"] if "delpre" in msg else None
 
             if mssrdr is None:
                 for aid in aids:
-                    if aid not in self.hab.kevers:
+                    if aid not in self.hby.kevers:
                         self.cues.append(dict(kin="query", aid=aid))
-                        self.escrowPAE(msg)
+                        self.escrowPAE(hab.pre, msg)
                         raise kering.MissingAidError(
-                            "group {} missing AID {}".format(self.hab.pre, aid))
+                            "group missing AID {}".format(aid))
 
                 mskeys, msdigers = self.extractKeysDigs(aids)
 
@@ -111,7 +116,7 @@ class Groupy:
                                               code=coring.MtrDex.Blake3_256,
                                               data=data,
                                               delpre=delpre)
-                    sigers = self.signAndPropagate(mssrdr, aids)
+                    sigers = self.signAndPropagate(hab, mssrdr, aids)
 
                 else:
 
@@ -124,12 +129,12 @@ class Groupy:
                                              code=coring.MtrDex.Blake3_256,
                                              data=data)
 
-                    sigers = self.signAndPropagate(mssrdr, aids)
+                    sigers = self.signAndPropagate(hab, mssrdr, aids)
 
             indices = [siger.index for siger in sigers]
             tholder = coring.Tholder(sith=sith)
             if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
-                self.escrowPSE(msg, mssrdr)
+                self.escrowPSE(hab.pre, msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -138,7 +143,7 @@ class Groupy:
             #  Add this group identifier prefix to my list of group identifiers I participate in
             # group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
             group = basing.GroupIdRecord(gid=mssrdr.pre, dig=mssrdr.said, cst=nsith, aids=aids)
-            self.db.gids.pin(self.hab.pre, group)
+            self.db.gids.pin(hab.pre, group)
 
             self.cues.append(dict(
                 kin="logEvent",
@@ -150,6 +155,7 @@ class Groupy:
             ))
 
         elif op in (Ops.rot,):
+            lid = msg["pre"]
             sith = msg["sith"]
             toad = msg["toad"]
             data = msg["data"]
@@ -158,13 +164,17 @@ class Groupy:
             cuts = msg["witness_cut"] if "witnesse_cut" in msg else []
             adds = msg["witness_add"] if "witnesse_add" in msg else []
 
-            group = self.hab.group()
+            if lid not in self.hby.habs:
+                print(f"Invalid identfier {lid}")
+
+            hab = self.hby.habs[lid]
+            group = hab.group()
             if group is None:
-                print("invalid group identifier {}\n".format(self.hab.pre))
-                raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
+                print("invalid group identifier {}\n".format(hab.pre))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(hab.pre))
 
             others = list(group.aids)
-            others.remove(self.hab.pre)
+            others.remove(hab.pre)
 
             if sith is None:
                 sith = "{:x}".format(max(0, math.ceil(len(group.aids) / 2)))
@@ -172,32 +182,32 @@ class Groupy:
             if wits:
                 if adds or cuts:
                     raise kering.ConfigurationError("you can only specify witnesses or cuts and adds")
-                ewits = self.hab.kever.lastEst.wits
+                ewits = hab.kever.lastEst.wits
 
                 cuts = set(wits) & set(ewits)
                 adds = set(wits) - set(ewits)
 
-            gkev = self.hab.kevers[group.gid]
+            gkev = hab.kevers[group.gid]
             sno = gkev.sn + 1
 
-            if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to rotate
-                rot = self.hab.rotate()
+            if hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to rotate
+                rot = hab.rotate()
                 self.cues.append(dict(kin="witness", msg=bytearray(rot)))
 
                 exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=rot.decode("utf-8"), reason=reason))
                 emsg = bytearray(exn.raw)
-                emsg.extend(self.hab.endorse(serder=exn, last=True))
+                emsg.extend(hab.endorse(serder=exn, last=True))
                 self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
                                       reason=reason))
 
             for aid in group.aids:
-                kever = self.hab.kevers[aid]
-                if aid != self.hab.pre:
-                    if kever.sn < self.hab.kever.sn:
+                kever = hab.kevers[aid]
+                if aid != hab.pre:
+                    if kever.sn < hab.kever.sn:
                         self.cues.append(dict(kin="query", aid=aid))
-                        self.escrowPAE(msg)
+                        self.escrowPAE(pre=hab.pre, msg=msg)
                         raise kering.MissingAidError(
-                            "Group {} - AID {} not at sn={}".format(self.hab.pre, aid, self.hab.kever.sn))
+                            "Group {} - AID {} not at sn={}".format(hab.pre, aid, hab.kever.sn))
 
             if mssrdr is None:
                 mskeys, msdigers = self.extractKeysDigs(group.aids)
@@ -215,11 +225,11 @@ class Groupy:
                                          nxt=coring.Nexter(sith=sith,  # the next digest previous calculated
                                                            digs=[diger.qb64 for diger in msdigers]).qb64)
 
-                sigers = self.signAndPropagate(mssrdr, group.aids)
+                sigers = self.signAndPropagate(hab, mssrdr, group.aids)
 
             indices = [siger.index for siger in sigers]
             if not mssrdr.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
-                self.escrowPSE(msg, mssrdr)
+                self.escrowPSE(hab.pre, msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(mssrdr.tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -227,7 +237,7 @@ class Groupy:
 
             group.cst = sith
             group.said = mssrdr.said
-            self.hab.db.gids.pin(self.hab.pre, group)
+            hab.db.gids.pin(hab.pre, group)
 
             self.cues.append(dict(
                 kin="logEvent",
@@ -239,24 +249,30 @@ class Groupy:
             ))
 
         elif op in (Ops.ixn,):
+            lid = msg["pre"]
             data = msg["data"]
             reason = msg["reason"] if "reason" in msg else ""
 
-            group = self.hab.group()
+            if lid not in self.hby.habs:
+                print(f"Invalid identfier {lid}")
+
+            hab = self.hby.habs[lid]
+
+            group = hab.group()
             if group is None:
-                print("invalid group identifier {}\n".format(self.hab.pre))
-                raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
+                print("invalid group identifier {}\n".format(hab.pre))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(hab.pre))
 
             others = list(group.aids)
-            others.remove(self.hab.pre)
+            others.remove(hab.pre)
 
-            gkev = self.hab.kevers[group.gid]
+            gkev = hab.kevers[group.gid]
             sno = gkev.sn + 1
-            if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to interact
-                ixn = self.hab.interact()
+            if hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to interact
+                ixn = hab.interact()
                 exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=ixn.decode("utf-8"), reason=reason))
                 emsg = bytearray(exn.raw)
-                emsg.extend(self.hab.endorse(serder=exn, last=True))
+                emsg.extend(hab.endorse(serder=exn, last=True))
 
                 self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
                                       reason=reason))
@@ -268,11 +284,11 @@ class Groupy:
                                            dig=gkev.serder.said,
                                            sn=sno,
                                            data=data)
-                sigers = self.signAndPropagate(mssrdr, group.aids)
+                sigers = self.signAndPropagate(hab, mssrdr, group.aids)
 
             indices = [siger.index for siger in sigers]
             if not gkev.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
-                self.escrowPSE(msg, mssrdr)
+                self.escrowPSE(hab.pre, msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(gkev.tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -286,43 +302,46 @@ class Groupy:
                 sn=mssrdr.ked["s"]
             ))
 
-    def signAndPropagate(self, mssrdr, aids):
+    def signAndPropagate(self, hab, mssrdr, aids):
         """
         Sign message and cue up message to send to participants of the group as identified by
         the list in aids
 
         Parameters:
+            hab (Hab): is environment of the identifier to use to sign with
             mssrdr(Serder): is event to sign and send to participants in aids
             aids(list): list of qb64 identifier prefix of group participants
 
         """
-        idx = aids.index(self.hab.pre)
-        sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
+        idx = aids.index(hab.pre)
+        sigers = hab.mgr.sign(ser=mssrdr.raw, verfers=hab.kever.verfers, indices=[idx])
         msg = eventing.messagize(mssrdr, sigers=sigers)
         parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
 
         others = list(aids)
-        others.remove(self.hab.pre)
+        others.remove(hab.pre)
         self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=bytearray(msg)))
 
         return sigers
 
-    def escrowPAE(self, msg):
+    def escrowPAE(self, pre, msg):
         """
         Partial AIDs Escrow
 
         Parameters:
+            pre(str): qb64 identifier prefix against which to escrow
             msg(dict): the request to incept/rotate/iteract this multisig group
 
         """
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpae.add(self.hab.pre, dat)
+        self.db.gpae.add(pre, dat)
 
-    def escrowPSE(self, msg, mssrdr):
+    def escrowPSE(self, pre, msg, mssrdr):
         """
         Partial Signature Escrow
 
         Parameters:
+            pre(str): qb64 identifier prefix against which to escrow
             msg(dict): the request to incept/rotate/iteract this multisig group
             mssrdr(Serder): the multisig KEL event for this request
 
@@ -330,7 +349,7 @@ class Groupy:
         msg["pre"] = mssrdr.pre
         msg["dig"] = mssrdr.said
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpse.add(self.hab.pre, dat)
+        self.db.gpse.add(pre, dat)
 
     def processEscrows(self):
         """
@@ -386,7 +405,7 @@ class Groupy:
             mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
 
             dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
-            sigs = self.hab.db.getSigs(dgkey)
+            sigs = self.hby.db.getSigs(dgkey)
             sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
 
             try:
@@ -420,7 +439,7 @@ class Groupy:
         mskeys = []
         msdigers = []
         for aid in aids:
-            kever = self.hab.kevers[aid]
+            kever = self.hby.kevers[aid]
             keys = kever.verfers
             if len(keys) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
@@ -464,7 +483,7 @@ class MultiSigGroupDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, ims=None, msgs=None, cues=None):
+    def __init__(self, hby, ims=None, msgs=None, cues=None):
         """
         Creates the DoDoer needed to modify a multisig group identifier.  Requires the
         name of the environment whose identifier is a member of the group being created.
@@ -475,18 +494,18 @@ class MultiSigGroupDoer(doing.DoDoer):
             name (str): Name of the local identifier environment
 
         """
-        self.hab = hab
+        self.hby = hby
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.groupy = Groupy(hab=self.hab)
+        self.groupy = Groupy(hby=self.hby)
         self.ims = ims if ims is not None else bytearray()
         self.msgToSend = None
 
-        self.postman = forwarding.Postman(hab=self.hab)
-        self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=hby)
 
         doers = [self.postman,
-                 self.witq,
+                 self.witDoer,
                  doing.doify(self.msgDo),
                  doing.doify(self.cueDo),
                  doing.doify(self.escrowDo),
@@ -554,13 +573,14 @@ class MultiSigGroupDoer(doing.DoDoer):
                     self.witq.query(cue["aid"])
                 elif cueKin == "send":
                     recpts = cue["recipients"]
+                    lid = cue["pre"]
                     for recpt in recpts:
-                        self.postman.send(recipient=recpt,
+                        self.postman.send(sender=lid, recipient=recpt,
                                           topic=cue["topic"],
                                           msg=bytearray(cue["evt"]))
                 elif cueKin == "witness":
                     msg = cue["msg"]
-                    witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.HttpWitnesser)
+                    witRctDoer = agenting.WitnessReceiptor(hby=self.hby, msg=msg, klas=agenting.HttpWitnesser)
                     self.extend([witRctDoer])
 
                     while not witRctDoer.done:
@@ -568,10 +588,16 @@ class MultiSigGroupDoer(doing.DoDoer):
                     self.remove([witRctDoer])
 
                 elif cueKin == "logEvent":
+                    lid = cue["pre"]
                     group = cue["group"]
                     mssrdr = cue["mssrdr"]
                     sigers = cue["sigers"]
-                    idx = group.aids.index(self.hab.pre)
+                    if lid not in self.hby.habs:
+                        print(f"Invalid identfier {lid}")
+
+                    hab = self.hby.habs[lid]
+
+                    idx = group.aids.index(hab.pre)
 
                     if idx == sigers[0].index:  # We are the first signer, elected to send to witnesses
 
@@ -581,13 +607,13 @@ class MultiSigGroupDoer(doing.DoDoer):
                             self.ims.extend(bytearray(self.msgToSend))
 
                             di = mssrdr.ked["di"]
-                            self.postman.send(recipient=di,
+                            self.postman.send(sender=hab.pre, recipient=di,
                                               topic="delegate",
                                               msg=bytearray(self.msgToSend))
                         else:
 
                             msg = eventing.messagize(mssrdr, sigers=sigers)
-                            witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
+                            witRctDoer = agenting.WitnessReceiptor(hby=self.hby, msg=msg, klas=agenting.TCPWitnesser)
                             self.extend([witRctDoer])
 
                             while not witRctDoer.done:
@@ -597,7 +623,7 @@ class MultiSigGroupDoer(doing.DoDoer):
                             self.cues.append(cue)
 
                     else:  # We are not the first signer, so we wait for the sigs and processed receipts
-                        while mssrdr.pre not in self.hab.kevers or self.hab.kevers[mssrdr.pre].sn < mssrdr.sn:
+                        while mssrdr.pre not in hab.kevers or hab.kevers[mssrdr.pre].sn < mssrdr.sn:
                             self.witq.query(mssrdr.pre)
                             _ = (yield self.tock)
                         self.cues.append(cue)
@@ -735,7 +761,7 @@ class MultisigEventHandler(doing.Doer):
 
     resource = "/multisig/event"
 
-    def __init__(self, hab, verifier, cues=None, **kwa):
+    def __init__(self, hby, verifier, cues=None, **kwa):
         """
 
         Parameters:
@@ -745,12 +771,12 @@ class MultisigEventHandler(doing.Doer):
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.hab = hab
+        self.hby = hby
         self.verifier = verifier
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.kvy = eventing.Kevery(db=self.hab.db, lax=False, local=False)
+        self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False)
 
         super(MultisigEventHandler, self).__init__(**kwa)
 

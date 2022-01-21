@@ -5,6 +5,7 @@ keri.app.agenting module
 
 """
 import random
+from urllib.parse import urlparse
 
 from hio.base import doing
 from hio.core import http
@@ -14,7 +15,6 @@ from hio.help import decking
 from . import httping
 from .. import help
 from .. import kering
-from ..app import obtaining
 from ..core import eventing, parsing, coring
 from ..db import dbing
 
@@ -33,20 +33,22 @@ class WitnessReceiptor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg=None, klas=None, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-            msg: is the message to send to all witnesses.
+            hab (Hab): Habitat of the identifier to populate witnesses
+            msg (bytes): is the message to send to all witnesses.
                  Defaults to sending the latest KEL event if msg is None
+            scheme (str): Scheme to favor if available
 
         """
-        self.hab = hab
-        self.msg = msg
-        self.klas = klas if klas is not None else HttpWitnesser
+        self.hby = hby
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
@@ -66,54 +68,78 @@ class WitnessReceiptor(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
-        sn = self.hab.kever.sn
-        wits = self.hab.kever.wits
 
-        if len(wits) == 0:
-            return True
-
-        msg = self.msg if self.msg is not None else self.hab.makeOwnEvent(sn=sn)
-        ser = coring.Serder(raw=msg)
-
-        witers = []
-        for wit in wits:
-            witer = self.klas(hab=self.hab, wit=wit)
-            witers.append(witer)
-            witer.msgs.append(bytearray(msg))  # make a copy
-            self.extend([witer])
-
-            _ = (yield self.tock)
-
-        dgkey = dbing.dgKey(ser.preb, ser.saidb)
         while True:
-            wigs = self.hab.db.getWigs(dgkey)
-            if len(wigs) == len(wits):
-                break
-            _ = yield self.tock
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pre = msg["pre"]
 
-        # generate all rct msgs to send to all witnesses
-        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
-        rserder = eventing.receipt(pre=ser.pre,
-                                   sn=sn,
-                                   said=ser.said)
-        rctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+                if pre not in self.hby.habs:
+                    continue
 
-        # this is a little brute forcey and can be improved by gathering receipts
-        # along the way and passing them out as we go and only sending the
-        # required ones here
-        for witer in witers:
-            witer.msgs.append(bytearray(rctMsg))
-            _ = (yield self.tock)
+                hab = self.hby.habs[pre]
 
-        total = len(witers) * 2
-        count = 0
-        while count < total:
-            for witer in witers:
-                count += len(witer.sent)
-            _ = (yield self.tock)
+                sn = msg["sn"] if "sn" in msg else hab.kever.sn
+                wits = hab.kever.wits
 
-        self.remove(witers)
-        return True
+                if len(wits) == 0:
+                    continue
+
+                msg = hab.makeOwnEvent(sn=sn)
+                ser = coring.Serder(raw=msg)
+
+                witers = []
+                for wit in wits:
+                    urls = hab.fetchUrls(eid=wit)
+                    if kering.Schemes.http in urls:
+                        url = urls[kering.Schemes.http]
+                        witer = HttpWitnesser(hab=hab, wit=wit, url=url)
+                    elif kering.Schemes.tcp in urls:
+                        url = urls[kering.Schemes.tcp]
+                        witer = TCPWitnesser(hab=hab, wit=wit, url=url)
+                    else:
+                        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
+
+                    witers.append(witer)
+                    witer.msgs.append(bytearray(msg))  # make a copy
+                    self.extend([witer])
+
+                    _ = (yield self.tock)
+
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+                while True:
+                    wigs = hab.db.getWigs(dgkey)
+                    if len(wigs) == len(wits):
+                        break
+                    _ = yield self.tock
+
+                # generate all rct msgs to send to all witnesses
+                wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+                rserder = eventing.receipt(pre=ser.pre,
+                                           sn=sn,
+                                           said=ser.said)
+                rctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+
+                # this is a little brute forcey and can be improved by gathering receipts
+                # along the way and passing them out as we go and only sending the
+                # required ones here
+                for witer in witers:
+                    witer.msgs.append(bytearray(rctMsg))
+                    _ = (yield self.tock)
+
+                total = len(witers) * 2
+                count = 0
+                while count < total:
+                    for witer in witers:
+                        count += len(witer.sent)
+                    _ = (yield self.tock)
+
+                self.remove(witers)
+
+                self.cues.append(msg)
+                yield self.tock
+
+            yield self.tock
 
 
 class WitnessInquisitor(doing.DoDoer):
@@ -134,7 +160,7 @@ class WitnessInquisitor(doing.DoDoer):
         send the msg and process all responses (KEL replays, RCTs, etc)
 
         Parameters:
-            hab: Habitat of the identifier to use to identify witnesses
+            hby (Habitat): Habitat of the identifier to use to identify witnesses
             msgs: is the message buffer to process and send to one random witness.
 
         """
@@ -163,7 +189,15 @@ class WitnessInquisitor(doing.DoDoer):
 
         witers = []
         for wit in wits:
-            witer = self.klas(hab=self.hab, wit=wit, lax=True, local=False)
+            urls = self.hab.fetchUrls(eid=wit)
+            if kering.Schemes.http in urls:
+                url = urls[kering.Schemes.http]
+                witer = HttpWitnesser(hab=self.hab, wit=wit, url=url)
+            elif kering.Schemes.tcp in urls:
+                url = urls[kering.Schemes.tcp]
+                witer = TCPWitnesser(hab=self.hab, wit=wit, url=url)
+            else:
+                raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
             witers.append(witer)
 
         self.extend(witers)
@@ -205,7 +239,7 @@ class WitnessPublisher(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg, wits=None, klas=None, **kwa):
+    def __init__(self, hab, msg, wits=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -219,7 +253,6 @@ class WitnessPublisher(doing.DoDoer):
         self.hab = hab
         self.msg = msg
         self.wits = wits if wits is not None else self.hab.kever.wits
-        self.klas = klas if klas is not None else HttpWitnesser
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
@@ -238,7 +271,16 @@ class WitnessPublisher(doing.DoDoer):
 
         witers = []
         for wit in self.wits:
-            witer = self.klas(hab=self.hab, wit=wit)
+            urls = self.hab.fetchUrls(eid=wit)
+            if kering.Schemes.http in urls:
+                url = urls[kering.Schemes.http]
+                witer = HttpWitnesser(hab=self.hab, wit=wit, url=url)
+            elif kering.Schemes.tcp in urls:
+                url = urls[kering.Schemes.tcp]
+                witer = TCPWitnesser(hab=self.hab, wit=wit, url=url)
+            else:
+                raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
+
             witers.append(witer)
             witer.msgs.append(bytearray(self.msg))  # make a copy so everyone munges their own
             self.extend([witer])
@@ -257,11 +299,11 @@ class WitnessPublisher(doing.DoDoer):
 
 
 class TCPWitnesser(doing.DoDoer):
-    """
+    """ Send events to witnesses for receipting using TCP direct connection
 
     """
 
-    def __init__(self, hab, wit, msgs=None, sent=None, doers=None, **kwa):
+    def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -272,6 +314,7 @@ class TCPWitnesser(doing.DoDoer):
         """
         self.hab = hab
         self.wit = wit
+        self.url = url
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -294,8 +337,12 @@ class TCPWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        loc = obtaining.getwitnessbyprefix(self.wit)
-        client = clienting.Client(host=loc.ip4, port=loc.tcp)
+
+        up = urlparse(self.url)
+        if up.scheme != kering.Schemes.tcp:
+            raise ValueError(f"invalid scheme {up.scheme} for TcpWitnesser")
+
+        client = clienting.Client(host=up.hostname, port=up.port)
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
                                      kvy=self.kevery)
@@ -346,7 +393,7 @@ class HttpWitnesser(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, wit, msgs=None, sent=None, doers=None, **kwa):
+    def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -367,9 +414,11 @@ class HttpWitnesser(doing.DoDoer):
                                       lax=False,
                                       local=True)
 
-        loc = obtaining.getwitnessbyprefix(self.wit)
+        up = urlparse(url)
+        if up.scheme != kering.Schemes.http:
+            raise ValueError(f"invalid scheme {up.scheme} for HttpWitnesser")
 
-        self.client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        self.client = http.clienting.Client(hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
@@ -434,7 +483,7 @@ class BackoffWitnessQuery(doing.DoDoer):
         """
         self.hab = hab
         self.wits = wits if wits is not None else self.hab.kever.wits
-        self.startType = startTyme
+        self.startTyme = startTyme
         self.maxTyme = maxTyme
 
         self.pre = pre
@@ -458,7 +507,7 @@ class BackoffWitnessQuery(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        tyme = self.startType
+        tyme = self.startTyme
         while tyme <= self.maxTyme:
 
             if self.pre in self.hab.kevers:
@@ -471,9 +520,12 @@ class BackoffWitnessQuery(doing.DoDoer):
                         break
 
             wit = random.choice(self.wits)
-            loc = obtaining.getwitnessbyprefix(wit)
+            urls = self.hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+            if not urls:
+                raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+            up = urlparse(urls[kering.Schemes.http])
+            client = http.clienting.Client(hostname=up.hostname, port=up.port)
             clientDoer = http.clienting.ClientDoer(client=client)
 
             self.extend([clientDoer])
@@ -546,9 +598,12 @@ class BackoffWitnessTelQuery(doing.DoDoer):
                     break
 
             wit = random.choice(self.wits)
-            loc = obtaining.getwitnessbyprefix(wit)
+            urls = self.hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+            if not urls:
+                raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+            up = urlparse(urls[kering.Schemes.http])
+            client = http.clienting.Client(hostname=up.hostname, port=up.port)
             clientDoer = http.clienting.ClientDoer(client=client)
 
             self.extend([clientDoer])

@@ -27,7 +27,6 @@ class Router:
 
     defaultResourceFunc = "processReply"
 
-
     def __init__(self, routes=None):
         """ Initialized instance with optiona list of existing routes
 
@@ -36,7 +35,6 @@ class Router:
 
         """
         self.routes = routes if routes is not None else list()
-
 
     def addRoute(self, routeTemplate, resource, suffix=None):
         """ Add a route between a route template and a resource
@@ -53,7 +51,6 @@ class Router:
 
         fields, regex = util.compile_uri_template(routeTemplate)
         self.routes.append(Route(regex=regex, fields=fields, resource=resource, suffix=suffix))
-
 
     def dispatch(self, serder, saider, cigars, tsgs):
         """
@@ -83,7 +80,6 @@ class Router:
             if name not in kwargs:
                 raise kering.ValidationError(f"parameter {name} not found in route {r}")
 
-
         fn = getattr(route.resource, fname, self.processRouteNotFound)
         fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
 
@@ -107,7 +103,6 @@ class Router:
                 return r, res
 
         return None, None
-
 
     def processRouteNotFound(self, *, serder, saider, route,
                              cigars=None, tsgs=None, **kwargs):
@@ -149,14 +144,12 @@ class Revery:
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions
 
-
     @property
     def prefixes(self):
         """
         Returns .db.prefixes
         """
         return self.db.prefixes
-
 
     def processReply(self, serder, cigars=None, tsgs=None):
         """
@@ -205,8 +198,6 @@ class Revery:
                                          f"msg={ked}.")
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
-
-
 
     def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):
@@ -460,7 +451,6 @@ class Revery:
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 
-
     def processEscrowReply(self):
         """ Process escrows for reply messages.
 
@@ -520,7 +510,6 @@ class Revery:
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
-
 
 
 class Route:
