@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 KERI
 keri.vdr.eventing module
