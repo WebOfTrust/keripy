@@ -6,6 +6,7 @@ Project Name:  keripy
 [![GitHub Actions keripy](https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg)](https://github.com/WebOfTrust/keripy/actions)
 [![codecov](https://codecov.io/github/WebOfTrust/keripy/coverage.svg?branch=main)](https://codecov.io/github/WebOfTrust/keripy?branch=main)
 [![https://pypi.org/project/keri/](https://img.shields.io/pypi/pyversions/keri.svg)](https://pypi.org/project/keri/)
+[![Documentation Status](https://readthedocs.org/projects/keripy/badge/?version=latest)](https://keripy.readthedocs.io/en/latest/?badge=latest)
 
 ## Installation
 

@@ -16,6 +16,10 @@ Python Implementation of the KERI Core Libraries
     :target: https://pypi.org/project/keri/
     :alt: Compatible Python Versions
 
+.. image:: https://readthedocs.org/projects/keripy/badge/?version=latest
+    :target: https://keripy.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
