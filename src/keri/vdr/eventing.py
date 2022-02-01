@@ -1,10 +1,4 @@
-"""
-KERI
-keri.vdr.eventing module
-
-VC TEL  support
-"""
-
+# -*- coding: utf-8 -*-
 import json
 import logging
 
