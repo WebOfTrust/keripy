@@ -9,8 +9,8 @@ Python Implementation of the KERI Core Libraries
 .. image:: https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg
     :target: https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg
 
-.. image:: https://codecov.io/github/WebOfTrust/keripy/coverage.svg?branch=main
-    :target: https://codecov.io/github/WebOfTrust/keripy?branch=main
+.. image:: https://codecov.io/gh/WebOfTrust/keripy/branch/master/graph/badge.svg?token=FR5CB2TPYG
+    :target: https://codecov.io/gh/WebOfTrust/keripy
 
 .. image:: https://img.shields.io/pypi/pyversions/keri.svg
     :target: https://pypi.org/project/keri/
