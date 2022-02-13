@@ -70,7 +70,7 @@ def test_exchanger():
         assert redKvy.kevers[sidPre].sn == 0  # accepted event
 
         echo = EchoDoer(tymth=doist.tymen())
-        redExc = exchanging.Exchanger(hab=redHab, tymth=doist.tymen(), handlers=[echo])
+        redExc = exchanging.Exchanger(hby=redHby, tymth=doist.tymen(), handlers=[echo])
 
         pl = dict(x="y")
         sidExcSrdr = exchanging.exchange(route="/test/message", payload=pl)

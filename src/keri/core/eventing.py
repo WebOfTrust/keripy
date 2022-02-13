@@ -2118,7 +2118,7 @@ class Kever:
                 raise ValidationError("Invalid toad = {} for wits = {} for evt "
                                       "= {}.".format(toad, wits, ked))
 
-        return (tholder, toad, wits, cuts, adds)
+        return tholder, toad, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
                        wigers, toad, wits, seqner=None, saider=None):
@@ -2205,7 +2205,7 @@ class Kever:
                                                                                                  [siger.qb64 for siger
                                                                                                   in wigers],
                                                                                                  serder.ked))
-        return (sigers, delegator, wigers)
+        return sigers, delegator, wigers
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
         """
@@ -2224,6 +2224,8 @@ class Kever:
                 If this event is not delegated then seqner is ignored
             saider is Saider instance of of delegating event digest.
                 If this event is not delegated then diger is ignored
+        Returns:
+            str: qb64 delegator prefix
 
         """
         if serder.ked['t'] not in (Ilks.dip, Ilks.drt):  # not delegated
@@ -2234,6 +2236,10 @@ class Kever:
             delegator = serder.ked["di"]
         else:
             delegator = self.delegator
+
+        # if we are the delegatee, accept the event without requiring the delegator validation
+        if delegator is not None and serder.pre in self.prefixes:
+            return delegator
 
         # during initial delegation we just escrow the delcept event
         if seqner is None and saider is None and delegator is not None:
@@ -2609,7 +2615,6 @@ class Kevery:
                 return wits
 
         return []
-
 
     def processEvents(self, evts=None):
         """
@@ -3535,7 +3540,6 @@ class Kevery:
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
         self.cues.append(dict(kin="keyStateSaved", serder=kserder))
-
 
     def updateEnd(self, keys, saider, allowed=None):
         """

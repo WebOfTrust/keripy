@@ -75,7 +75,6 @@ class WalletDoer(doing.DoDoer):
         doers = [doing.doify(self.escrowDo)]
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 
 

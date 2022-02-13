@@ -3,14 +3,12 @@
 keri.app.configing module
 
 """
-import os
 import json
+import os
 
+import cbor2 as cbor
 import hjson
 import msgpack
-import cbor2 as  cbor
-
-from hio.help import helping
 from hio.base import filing, doing
 
 from .. import help

@@ -5,79 +5,30 @@ keri.app.agenting module
 
 """
 import json
+import mnemonic
+from urllib.parse import urlparse
+from hio.help import helping, decking
 
 import falcon
 from apispec import APISpec
+from falcon import media
 from hio.base import doing
 from hio.core import http
-from hio.help import decking
-from keri.app import specing, forwarding, agenting, signing
+from hio.core.tcp import serving as tcpServing
+from keri.app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing
 from keri.db import dbing
 from keri.help import helping
 from keri.peer import exchanging
-from keri.vc import proving, handling
+from keri.vc import proving, handling, walleting
 from keri.vdr import registering, issuing, viring, verifying
 
 from . import grouping
 from .. import help
 from .. import kering
-from ..core import parsing
+from ..core import parsing, eventing
+from ..end import ending
 
 logger = help.ogler.getLogger()
-
-
-def loadEnds(app, *, path, hab, rep, witq, verifier, gdoer, issuerCues, issuers):
-    """
-    Load endpoints for KIWI admin interface into the provided Falcon app
-
-    Args:
-        app (falcon.App): falcon.App to register handlers with:
-        path (str): directory location of UI web app files to be served with this API server
-        hab (Habitat): the environment of the identifier prefix
-        rep (Respondant): that routes responses to the appropriate mailboxes
-        witq (WitnessInquisitor): used to request KEL resolution
-        verifier (Verifier): that process credentials
-        gdoer (Union(decking.Deck,None)): of msgs to send to a MultisigDoer
-        issuers (Union(dict,None)): of credential Issuers keyed by regk of credential Registry
-        issuerCues (Deck): from Kevery handling key events:
-
-    Returns:
-        array: doers from registering endpoints
-
-    """
-    sink = http.serving.StaticSink(staticDirPath=path)
-    app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
-
-    swagsink = http.serving.StaticSink(staticDirPath="./static")
-    app.add_sink(swagsink, prefix="/swaggerui")
-
-    identifierEnd = IdentifierEnd(hab=hab)
-    app.add_route("/id", identifierEnd)
-
-    registryEnd = RegistryEnd(hab=hab)
-    app.add_route("/registries", registryEnd)
-
-    credentialsEnd = CredentialsEnd(hab=hab, rep=rep,
-                                    verifier=verifier, witq=witq, issuers=issuers,
-                                    cues=issuerCues)
-    app.add_route("/credentials", credentialsEnd)
-
-    applicationsEnd = ApplicationsEnd(rep=rep)
-    app.add_route("/applications", applicationsEnd)
-
-    presentationEnd = PresentationEnd(rep=rep)
-    app.add_route("/presentation", presentationEnd)
-
-    multisigEnd = MultisigEnd(hab=hab, rep=rep, gdoer=gdoer)
-    app.add_route("/multisig", multisigEnd)
-
-    resources = [identifierEnd, registryEnd, applicationsEnd, credentialsEnd,
-                 presentationEnd, multisigEnd]
-
-    app.add_route("/spec.yaml", SpecResource(app=app, title='KERI Interactive Web Interface API',
-                                             resources=resources))
-
-    return [identifierEnd, registryEnd]
 
 
 class IdentifierEnd(doing.DoDoer):
@@ -85,20 +36,23 @@ class IdentifierEnd(doing.DoDoer):
     ReST API for admin of Identifiers
     """
 
-    def __init__(self, hab, **kwa):
-        self.hab = hab
+    def __init__(self, hby, **kwa):
+        self.hby = hby
 
-        self.postman = forwarding.Postman(hab=self.hab)
-        doers = [self.postman]
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+
+        doers = [self.witDoer, self.postman]
 
         super(IdentifierEnd, self).__init__(doers=doers, **kwa)
 
-    def on_get(self, _, rep):
+    def on_get(self, req, rep, alias=None):
         """ Identifier GET endpoint
 
         Parameters:
-            _: falcon.Request HTTP request
+            req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias: option route parameter for specific identifier to get
 
         ---
         summary:  Get list of agent identfiers
@@ -151,16 +105,15 @@ class IdentifierEnd(doing.DoDoer):
         """
         res = []
 
-        habs = self.hab.db.habs.getItemIter()
-        for (name,), habr in habs:
-            kever = self.hab.kevers[habr.prefix]
+        for pre, hab in self.hby.habs.items():
+            kever = hab.kevers[pre]
             ser = kever.serder
             dgkey = dbing.dgKey(ser.preb, ser.saidb)
-            wigs = self.hab.db.getWigs(dgkey)
+            wigs = hab.db.getWigs(dgkey)
 
             gd = dict(
-                name=name,
-                prefix=habr.prefix,
+                name=hab.name,
+                prefix=pre,
                 seq_no=kever.sn,
                 delegated=kever.delegated,
                 delegator=kever.delegator,
@@ -177,18 +130,98 @@ class IdentifierEnd(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post(self, req, rep):
-        """  Identifier POST endpoint
+    def on_post(self, req, rep, alias=None):
+        """ Identifier POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias (str): human readable name for Hab
+
+        ---
+        summary:  Create agent identifier
+        description:  Create agent identifier with the supplied parameters
+        tags:
+           - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   wits:
+                     type: array
+                     items:
+                        type: string
+                     description: human readable alias for the new identfier
+        responses:
+           200:
+              description: identifier information
+
+        """
+        body = req.get_media()
+
+        transferable = body.get("transferable") if "transferable" in body else True
+        wits = body.get("wits") if "wits" in body else []
+        toad = int(body.get("toad")) if "toad" in body else None
+        isith = int(body.get("isith")) if "isith" in body else "1"
+        icount = int(body.get("count")) if "count" in body else 1
+        nsith = int(body.get("nsith")) if "nsith" in body else "1"
+        ncount = int(body.get("ncount")) if "ncount" in body else 1
+        estOnly = int(body.get("estOnly")) if "estOnly" in body else False
+
+        kwa = dict(
+            transferable=transferable,
+            wits=wits,
+            toad=toad,
+            isith=isith,
+            icount=icount,
+            nsith=nsith,
+            ncount=ncount,
+            estOnly=estOnly
+        )
+
+        hab = self.hby.makeHab(name=alias, **kwa)
+        self.witDoer.msgs.append(dict(pre=hab.pre))
+
+        body = dict(
+            pre=hab.pre,
+            wits=hab.kever.wits,
+            keys=[verfer.qb64 for verfer in hab.kever.verfers]
+        )
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(body).encode("utf-8")
+
+    def on_put(self, req, rep, alias):
+        """  Identifier PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for Hab
 
         ---
         summary:  Rotate agent identifier
         description:  Perform a rotation on the agent's current identifier
         tags:
            - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
         requestBody:
            required: true
            content:
@@ -218,7 +251,13 @@ class IdentifierEnd(doing.DoDoer):
               description: Delegated rotation request initiated
 
         """
-        body = req.media
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.data = f"no matching Hab for alias {alias}"
+            return
+
+        body = req.get_media()
         wits = body.get("wits")
         toad = int(body.get("toad")) if "toad" in body else None
         isith = int(body.get("isith")) if "isith" in body else None
@@ -227,31 +266,29 @@ class IdentifierEnd(doing.DoDoer):
         adds = set()
 
         if wits:
-            ewits = self.hab.kever.wits
+            ewits = hab.kever.wits
 
             # wits= [a,b,c]  wits=[b, z]
             cuts = set(ewits) - set(wits)
             adds = set(wits) - set(ewits)
 
         try:
-            rot = self.hab.rotate(sith=isith, count=count, toad=toad, cuts=list(cuts), adds=list(adds))
+            rot = hab.rotate(sith=isith, count=count, toad=toad, cuts=list(cuts), adds=list(adds))
 
-            if self.hab.kever.delegator is None:
+            if hab.kever.delegator is None:
 
-                witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=rot)
-                self.extend(doers=[witDoer])
+                self.witDoer.msgs.append(dict(pre=hab.pre))
 
                 rep.status = falcon.HTTP_200
-                rep.text = "Successful rotate to event number {}".format(self.hab.kever.sn)
+                rep.text = "Successful rotate to event number {}".format(hab.kever.sn)
 
             else:
-                cloner = self.hab.db.clonePreIter(pre=self.hab.pre, fn=0)  # create iterator at 0
+                cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    self.postman.send(recipient=self.hab.kever.delegator, topic="delegate", msg=msg)
+                    self.postman.send(sender=hab.pre, recipient=hab.kever.delegator, topic="delegate", msg=msg)
 
-                self.postman.send(recipient=self.hab.kever.delegator, topic="delegate", msg=rot)
+                self.postman.send(sender=hab.pre, recipient=hab.kever.delegator, topic="delegate", msg=rot)
                 rep.status = falcon.HTTP_202
-
 
         except (ValueError, TypeError) as e:
             rep.status = falcon.HTTP_400
@@ -264,8 +301,8 @@ class RegistryEnd(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, **kwa):
-        self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
+    def __init__(self, hby, **kwa):
+        self.registryIcpr = registering.RegistryInceptDoer(hby=hby)
 
         super(RegistryEnd, self).__init__(doers=[self.registryIcpr], **kwa)
 
@@ -296,7 +333,7 @@ class RegistryEnd(doing.DoDoer):
               description:  registry inception request has been submitted
 
         """
-        body = req.media
+        body = req.get_media()
 
         if "name" not in body:
             rep.status = falcon.HTTP_400
@@ -332,11 +369,11 @@ class CredentialsEnd:
     ReST API for admin of credentials
 
     """
-    def __init__(self, hab, rep, verifier, witq, issuers, cues=None):
 
-        self.hab = hab
+    def __init__(self, hby, rep, verifier, issuers, cues=None):
+
+        self.hby = hby
         self.rep = rep
-        self.witq = witq
 
         self.verifier = verifier
         self.issuers = issuers
@@ -363,17 +400,25 @@ class CredentialsEnd:
 
         """
         typ = req.params("type")
+        alias = req.params("alias")
 
-        group = self.hab.group()
+        hab = self.hby.habByName(name=alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for credentials" \
+                       "".format(alias)
+            return
+
+        group = hab.group()
         if group is None:
-            pre = self.hab.pre
+            pre = hab.pre
         else:
             pre = group.gid
 
         creds = []
         if typ == "issued":
             registry = req.params["registry"]
-            issuer = self.getIssuer(registry)
+            issuer = self.getIssuer(registry, hab=hab)
 
             saids = issuer.reger.issus.get(keys=pre)
             creds = self.verifier.reger.cloneCreds(saids)
@@ -441,17 +486,28 @@ class CredentialsEnd:
 
 
         """
-        body = req.media
+        body = req.get_media()
+        alias = body.get("alias")
         registry = body.get("registry")
         schema = body.get("schema")
         source = body.get("source")
         recipientIdentifier = body.get("recipient")
         notify = body["notify"] if "notify" in body else True
 
-        if recipientIdentifier not in self.hab.kevers:
-            self.witq.query(recipientIdentifier)
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for credentials" \
+                       "".format(alias)
+            return
 
-        issuer = self.getIssuer(name=registry)
+        if recipientIdentifier not in hab.kevers:
+            rep.status = falcon.HTTP_400
+            rep.text = "Unable to issue credential to {}.  A connection to that identifier must already " \
+                       "be established".format(recipientIdentifier)
+            return
+
+        issuer = self.getIssuer(name=registry, hab=hab)
         if issuer is None:
             rep.status = falcon.HTTP_400
             rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
@@ -469,9 +525,9 @@ class CredentialsEnd:
 
         d |= data
 
-        group = self.hab.group()
+        group = hab.group()
         if group is None:
-            pre = self.hab.pre
+            pre = hab.pre
         else:
             pre = group.gid
 
@@ -487,14 +543,12 @@ class CredentialsEnd:
 
         print()
         print(creder.raw)
-        craw = signing.ratify(hab=self.hab, serder=creder)
+        craw = signing.ratify(hab=hab, serder=creder)
         parsing.Parser().parse(ims=craw, vry=self.verifier)
 
         if notify and group:
             for aid in group.aids:
-                if aid != self.hab.pre:
-                    if aid not in self.hab.kevers:
-                        self.witq.query(aid)
+                if aid != hab.pre:
                     msg = dict(
                         schema=schema,
                         source=source,
@@ -539,10 +593,16 @@ class CredentialsEnd:
               description: credential successfully revoked.
 
         """
+        alias = req.get_param("alias")
         registry = req.get_param("registry")
         said = req.get_param("said")
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"unknown local alias {alias}"
+            return
 
-        issuer = self.getIssuer(name=registry)
+        issuer = self.getIssuer(hab=hab, name=registry)
         if issuer is None:
             rep.status = falcon.HTTP_400
             rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
@@ -558,19 +618,18 @@ class CredentialsEnd:
 
             issuer.revoke(creder=creder)
         except kering.ValidationError as ex:
-            print()
-            print(ex)
             rep.status = falcon.HTTP_CONFLICT
             rep.text = ex.args[0]
             return
 
         rep.status = falcon.HTTP_202
 
-    def getIssuer(self, name):
+    def getIssuer(self, name, hab):
         """ returns an existing Issuer by name or creates a new one
 
         Parameters:
             name (str): name of registry to find or create
+            hab (Habitat): environment for issuer
 
         Returns:
             Issuer:  issuer object for credential registry
@@ -578,7 +637,7 @@ class CredentialsEnd:
         if name in self.issuers:
             issuer = self.issuers[name]
         else:
-            issuer = issuing.Issuer(hab=self.hab, name=name, reger=self.verifier.reger, cues=self.cues)
+            issuer = issuing.Issuer(hab=hab, name=name, reger=self.verifier.reger, cues=self.cues)
             self.issuers[name] = issuer
 
         return issuer
@@ -631,7 +690,7 @@ class ApplicationsEnd:
               description: Credential Apply request submitted.
 
         """
-        body = json.loads(req.context.raw)
+        body = req.get_media()
         schema = body.get("schema")
         issuer = body.get("issuer")
         values = body.get("values")
@@ -670,7 +729,7 @@ class PresentationEnd:
               description:  credential presentation request message sent
 
         """
-        body = json.loads(req.context.raw)
+        body = req.get_media()
         recipientIdentifier = body.get("recipient")
         if recipientIdentifier is None:
             rep.status = falcon.HTTP_400
@@ -700,12 +759,12 @@ class MultisigEnd:
     ReST API for admin of distributed multisig groups
 
     """
-    def __init__(self, hab, gdoer, rep):
 
-        self.hab = hab
+    def __init__(self, hby, gdoer, rep):
+
+        self.hby = hby
         self.gdoer = gdoer
         self.rep = rep
-
 
     def on_put(self, req, rep):
         """  Multisig PUT endpoint
@@ -724,7 +783,7 @@ class MultisigEnd:
               description:  rotation participation initiated
 
         """
-        body = req.media
+        body = req.get_media()
 
         msg = dict(
             sith=None,
@@ -762,7 +821,7 @@ class MultisigEnd:
               description:  multisig group inception initiated
 
         """
-        body = req.media
+        body = req.get_media()
 
         if "aids" not in body:
             rep.status = falcon.HTTP_400
@@ -813,31 +872,312 @@ class MultisigEnd:
         """
         res = []
 
-        group = self.hab.group()
-        if group:
-            kever = self.hab.kevers[group.gid]
-            ser = kever.serder
-            dgkey = dbing.dgKey(ser.preb, ser.saidb)
-            wigs = self.hab.db.getWigs(dgkey)
+        for hab in self.hby.habs.values():
+            group = hab.group()
+            if group:
+                kever = self.hby.kevers[group.gid]
+                ser = kever.serder
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+                wigs = self.hby.db.getWigs(dgkey)
 
-            gd = dict(
-                prefix=group.gid,
-                seq_no=kever.sn,
-                aids=group.aids,
-                delegated=kever.delegated,
-                delegator=kever.delegator,
-                witnesses=kever.wits,
-                public_keys=[verfer.qb64 for verfer in kever.verfers],
-                toad=kever.toad,
-                isith=kever.tholder.sith,
-                receipts=len(wigs)
-            )
+                gd = dict(
+                    prefix=group.gid,
+                    seq_no=kever.sn,
+                    aids=group.aids,
+                    delegated=kever.delegated,
+                    delegator=kever.delegator,
+                    witnesses=kever.wits,
+                    public_keys=[verfer.qb64 for verfer in kever.verfers],
+                    toad=kever.toad,
+                    isith=kever.tholder.sith,
+                    receipts=len(wigs)
+                )
 
-            res.append(gd)
+                res.append(gd)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
+
+
+class OobiResource(doing.DoDoer):
+    """
+    Resource for managing OOBIs
+
+    """
+
+    def __init__(self, hby):
+        self.hby = hby
+
+        self.oobiery = ending.Oobiery(db=self.hby.db)
+
+        doers = [self.oobiery, doing.doify(self.loadDo)]
+
+        super(OobiResource, self).__init__(doers=doers)
+
+    def on_get(self, req, rep, alias):
+        """ Identifier GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: option route parameter for specific identifier to get
+
+        ---
+        summary:  Get OOBI for specific identifier
+        description:  Generate OOBI for the identifier of the specified alias and role
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: human readable alias for the identifier generate OOBI for
+          - in: query
+            name: role
+            schema:
+              type: string
+            required: true
+            description: role for which to generate OOBI
+        responses:
+            200:
+              description: An array of Identifier key state information
+              content:
+                  application/json:
+                    schema:
+                        description: Key state information for current identifiers
+                        type: object
+        """
+
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias to generate OOBI"
+            return
+
+        role = req.params["role"]
+
+        res = dict(role=role)
+        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
+            oobis = []
+            for wit in hab.kever.wits:
+                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                if not urls:
+                    raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
+
+                up = urlparse(urls[kering.Schemes.http])
+                oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+            res["oobis"] = oobis
+        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
+            oobis = []
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            up = urlparse(urls[kering.Schemes.http])
+            oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+        else:
+            rep.status = falcon.HTTP_404
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+    def on_post(self, req, rep, alias):
+        """ Resolve OOBI endpoint.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: option route parameter for specific identifier to get
+
+        ---
+        summary: Resolve OOBI
+        description: Resolve OOBI URL or `rpy` message by process results of request
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the oobi to resolve
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: OOBI
+                    properties:
+                        url:
+                          type: string
+                          description:  URL OOBI
+                        rpy:
+                          type: object
+                          description: unsigned KERI `rpy` event message with endpoints
+        responses:
+           202:
+              description: OOBI resolution to key state successful
+
+        """
+        body = req.get_media()
+        if "url" in body:
+            oobi = body["url"]
+            self.oobiery.oobis.append(oobi)
+        elif "rpy" in body:
+            pass
+        else:
+            rep.status = falcon.HTTP_400
+            rep.data = "invalid OOBI request body, either 'rpy' or 'url' is required"
+
+    def loadDo(self, tymth, tock=0.0):
+        """ Load oobis
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:  doifiable Doist compatible generator method for loading oobis using
+        the Oobiery
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            if self.oobiery.cues:
+                cue = self.oobiery.cues.popleft()
+                kin = cue["kin"]
+                oobi = cue["oobi"]
+                if kin in ("resolved",):
+                    pass
+                if kin in ("failed",):
+                    pass
+
+                break
+
+            yield 1.0
+
+
+class ChallengeEnd:
+    """ Resource for Challange/Response Endpoints """
+
+    def __init__(self, hby, rep):
+        """ Initialize Challenge/Response Endpoint
+
+        Parameters:
+            hby (Habery): database and keystore environment
+            rep (Respondant): Doer capable of processing responses from endpoints
+
+        """
+        self.hby = hby
+        self.rep = rep
+
+    @staticmethod
+    def on_get(req, rep, alias=None):
+        """ Challenge GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign the challange/response
+
+        ---
+        summary:  Get list of agent identfiers
+        description:  Get the list of identfiers associated with this agent
+        tags:
+           - Challenge/Response
+        parameters:
+           - in: query
+             name: strength
+             schema:
+                type: int
+             description:  cryptographic strength of word list
+             required: false
+        responses:
+            200:
+              description: An array of Identifier key state information
+              content:
+                  application/json:
+                    schema:
+                        description: Randon word list
+                        type: object
+                        properties:
+                            words:
+                                type: array
+                                description: random challange word list
+                                items:
+                                    type: string
+
+        """
+        mnem = mnemonic.Mnemonic(language='english')
+        strength = int(req.params["strength"]) if "stength" in req.params else 128
+
+        words = mnem.generate(strength=strength)
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        msg = dict(words=words.split(" "))
+        rep.data = json.dumps(msg).encode("utf-8")
+
+    def on_post(self, req, rep, alias):
+        """ Challenge GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign the challange/response
+        ---
+        summary:  Sign challange message and forward to peer identfiier
+        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
+                      to recipient
+        tags:
+           - Challenge/Response
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Challenge response
+                    properties:
+                        recipient:
+                          type: string
+                          description: human readable alias recipient identifier to send signed challenge to
+                        words:
+                          type: array
+                          description:  challenge in form of word list
+                          items:
+                              type: string
+        responses:
+           202:
+              description: Success submission of signed challenge/response
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.data = f"no matching Hab for alias {alias}"
+            return
+
+        body = req.get_media()
+        if "words" not in body or "recipient" not in body:
+            rep.status = falcon.HTTP_400
+            rep.data = "challenge response requires 'words' and 'recipient'"
+            return
+
+        words = body["words"]
+        recpt = body["recipient"]
+        payload = dict(i=hab.pre, words=words)
+        exn = exchanging.exchange(route="/challange/response", payload=payload)
+        self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challange"))
 
 
 class SpecResource:
@@ -881,13 +1221,13 @@ class KiwiDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, rep, verifier, gdoer, witq, issuers=None, issuerCues=None, cues=None, **kwa):
+    def __init__(self, hby, rep, verifier, gdoer, issuers=None, issuerCues=None, cues=None, **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
         of an identifier.
 
         Parameters:
-            hab Habitat is the environment of the identifier prefix
+            hby (Habery): is the environment of the identifier prefix
             controller qb64 is the identifier prefix that can send commands to this web server:
             rep Respondant that routes responses to the appropriate mailboxes
             verifier is Verifier that process credentials
@@ -900,19 +1240,19 @@ class KiwiDoer(doing.DoDoer):
                 defaults to False
 
         """
-        self.hab = hab
+        self.hby = hby
         self.rep = rep
-        self.witq = witq
-        self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab)
+        self.verifier = verifier if verifier is not None else verifying.Verifier(hby=self.hby)
         self.issuers = issuers if issuers is not None else dict()
 
         self.cues = cues if cues is not None else decking.Deck()
         self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
         self.gdoer = gdoer
 
-        self.postman = forwarding.Postman(hab=self.hab)
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=hby)
 
-        doers = [self.postman, doing.doify(self.verifierDo), doing.doify(self.issuerDo),
+        doers = [self.postman, self.witDoer, doing.doify(self.verifierDo), doing.doify(self.issuerDo),
                  doing.doify(self.escrowDo)]
 
         super(KiwiDoer, self).__init__(doers=doers, **kwa)
@@ -924,7 +1264,7 @@ class KiwiDoer(doing.DoDoer):
             tymth is injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock is injected initial tock value
-            opts is dict of injected optional additional parameters
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -941,8 +1281,9 @@ class KiwiDoer(doing.DoDoer):
 
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
+                    hab = self.hby.habs[creder.issuer]
 
-                    if creder.crd["i"] == self.hab.pre:
+                    if hab is not None:
                         recpt = creder.subject["i"]
                         said = creder.said
                         regk = creder.status
@@ -950,7 +1291,7 @@ class KiwiDoer(doing.DoDoer):
                         issr = creder.crd["i"]
 
                         msgs = bytearray()
-                        for msg in self.hab.db.clonePreIter(pre=issr):
+                        for msg in hab.db.clonePreIter(pre=issr):
                             msgs.extend(msg)
 
                         for msg in self.verifier.reger.clonePreIter(pre=regk):
@@ -961,16 +1302,16 @@ class KiwiDoer(doing.DoDoer):
 
                         vcs = [handling.envelope(msg=craw)]
 
-                        sources = self.verifier.reger.sources(self.hab.db, creder)
+                        sources = self.verifier.reger.sources(self.hby.db, creder)
                         for craw, smsgs in sources:
-                            self.postman.send(recipient=recpt, topic="credential", msg=smsgs)
+                            self.postman.send(sender=issr, recipient=recpt, topic="credential", msg=smsgs)
                             vcs.extend([handling.envelope(msg=craw)])
 
                         pl = dict(
                             vc=vcs
                         )
 
-                        self.postman.send(recipient=recpt, topic="credential", msg=msgs)
+                        self.postman.send(sender=issr, recipient=recpt, topic="credential", msg=msgs)
                         exn = exchanging.exchange(route="/credential/issue", payload=pl)
                         #  TODO:  Respondant must accept transposable signatures to add to the endorsed message
                         self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
@@ -1030,10 +1371,14 @@ class KiwiDoer(doing.DoDoer):
             while self.issuerCues:
                 cue = self.issuerCues.popleft()
                 cueKin = cue['kin']
+                pre = cue["pre"]
+                hab = self.hby.habs[pre]
+
                 if cueKin == "send":
                     tevt = cue["msg"]
                     sub = cue["sub"]
-                    witSender = agenting.WitnessPublisher(hab=self.hab, msg=bytearray(tevt))
+
+                    witSender = agenting.WitnessPublisher(hab=hab, msg=bytearray(tevt))
                     self.extend([witSender])
 
                     while not witSender.done:
@@ -1042,16 +1387,12 @@ class KiwiDoer(doing.DoDoer):
                     self.remove([witSender])
 
                     if sub is not None:
-                        self.postman.send(recipient=sub["i"], topic="credential", msg=bytearray(tevt))
+                        self.postman.send(sender=pre, recipient=sub["i"], topic="credential", msg=bytearray(tevt))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=bytearray(kevt))
-                    self.extend([witDoer])
+                    serder = eventing.Serder(raw=bytearray(kevt))
+                    self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
-                    while not witDoer.done:
-                        yield self.tock
-
-                    self.remove([witDoer])
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
@@ -1061,6 +1402,345 @@ class KiwiDoer(doing.DoDoer):
                     self.gdoer.append(msg)
                 elif cueKin == "logEvent":
                     pass
+
+                yield self.tock
+            yield self.tock
+
+
+def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
+    """
+    Load endpoints for KIWI admin interface into the provided Falcon app
+
+    Args:
+        app (falcon.App): falcon.App to register handlers with:
+        path (str): directory location of UI web app files to be served with this API server
+        hby (Habery): database environment for all endpoints
+        rep (Respondant): that routes responses to the appropriate mailboxes
+        mbx (Mailboxer): mailbox storage class
+        verifier (Verifier): that process credentials
+        gdoer (Union(decking.Deck,None)): of msgs to send to a MultisigDoer
+        issuers (Union(dict,None)): of credential Issuers keyed by regk of credential Registry
+        issuerCues (Deck): from Kevery handling key events:
+
+    Returns:
+        list: doers from registering endpoints
+
+    """
+    sink = http.serving.StaticSink(staticDirPath=path)
+    app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
+
+    swagsink = http.serving.StaticSink(staticDirPath="./static")
+    app.add_sink(swagsink, prefix="/swaggerui")
+
+    identifierEnd = IdentifierEnd(hby=hby)
+    app.add_route("/ids", identifierEnd)
+    app.add_route("/ids/{alias}", identifierEnd)
+
+    registryEnd = RegistryEnd(hby=hby)
+    app.add_route("/registries", registryEnd)
+
+    credentialsEnd = CredentialsEnd(hby=hby, rep=rep,
+                                    verifier=verifier,
+                                    issuers=issuers,
+                                    cues=issuerCues)
+    app.add_route("/credentials", credentialsEnd)
+
+    applicationsEnd = ApplicationsEnd(rep=rep)
+    app.add_route("/applications", applicationsEnd)
+
+    presentationEnd = PresentationEnd(rep=rep)
+    app.add_route("/presentation", presentationEnd)
+
+    multisigEnd = MultisigEnd(hby=hby, rep=rep, gdoer=gdoer)
+    app.add_route("/multisig", multisigEnd)
+
+    oobiEnd = OobiResource(hby=hby)
+    app.add_route("/oobi/{alias}", oobiEnd)
+
+    chacha = ChallengeEnd(hby=hby, rep=rep)
+    app.add_route("/challenge", chacha)
+    app.add_route("/challenge/{alias}", chacha)
+
+    mailEnd = storing.MailEnd(mbx=mbx)
+    app.add_route("/qry/mbx", mailEnd)
+
+    resources = [identifierEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
+                 presentationEnd, multisigEnd, chacha, mailEnd]
+
+    app.add_route("/spec.yaml", SpecResource(app=app, title='KERI Interactive Web Interface API',
+                                             resources=resources))
+
+    return [identifierEnd, registryEnd]
+
+
+def setup(hby, servery, *, controller="", insecure=False, tcp=5621, staticPath=""):
+    """ Setup and run a KIWI agent
+
+    Parameters:
+        hby (Habery):
+        servery (Servery): HTTP server manager for stopping and restarting HTTP servers
+        controller:
+        insecure:
+        tcp:
+        staticPath:
+
+    Returns:
+
+    """
+
+    # setup doers
+    doers = [habbing.HaberyDoer(habery=hby)]
+
+    tcpServer = tcpServing.Server(host="", port=tcp)
+    tcpServerDoer = tcpServing.ServerDoer(server=tcpServer)
+
+    reger = viring.Registry(name=hby.name, temp=False, db=hby.db)
+    verifier = verifying.Verifier(hby=hby, reger=reger)
+    wallet = walleting.Wallet(reger=verifier.reger, name=hby.name)
+
+    handlers = []
+
+    proofs = decking.Deck()
+    issuerCues = decking.Deck()
+
+    issueHandler = handling.IssueHandler(hby=hby, verifier=verifier)
+    requestHandler = handling.RequestHandler(hby=hby, wallet=wallet)
+    applyHandler = handling.ApplyHandler(hby=hby, verifier=verifier, name=hby.name, issuerCues=issuerCues)
+    proofHandler = handling.ProofHandler(proofs=proofs)
+
+    mbx = storing.Mailboxer(name=hby.name)
+    mih = grouping.MultisigInceptHandler(controller=controller, mbx=mbx)
+    ish = grouping.MultisigIssueHandler(controller=controller, mbx=mbx)
+    meh = grouping.MultisigEventHandler(hby=hby, verifier=verifier)
+
+    handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler, mih, ish, meh])
+
+    exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
+
+    rep = storing.Respondant(hby=hby, mbx=mbx)
+    cues = decking.Deck()
+    mbd = indirecting.MailboxDirector(hby=hby,
+                                      exc=exchanger,
+                                      verifier=verifier,
+                                      rep=rep,
+                                      topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate"],
+                                      cues=cues)
+    # configure a kevery
+    doers.extend([exchanger, tcpServerDoer, mbd, rep])
+    doers.extend(adminInterface(servery=servery,
+                                controller=controller,
+                                hby=hby,
+                                insecure=insecure,
+                                proofs=proofs,
+                                cues=cues,
+                                issuerCues=issuerCues,
+                                verifier=verifier,
+                                mbx=mbx,
+                                mbd=mbd,
+                                staticPath=staticPath))
+
+    return doers
+
+
+def adminInterface(servery, controller, hby, insecure, proofs, cues, issuerCues, mbx, mbd, verifier,
+                   staticPath=""):
+    """ create admin interface for KIWI agent
+
+    Parameters:
+        servery (Servery): HTTP server manager for stopping and restarting HTTP servers
+        controller:
+        hby:
+        insecure:
+        proofs:
+        cues:
+        issuerCues:
+        mbx:
+        mbd:
+        verifier:
+        staticPath:
+
+    Returns:
+
+    """
+
+    rep = storing.Respondant(hby=hby, mbx=mbx)
+    gdoer = grouping.MultiSigGroupDoer(hby=hby, ims=mbd.ims)
+
+    app = falcon.App(middleware=falcon.CORSMiddleware(
+        allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
+    if not insecure:
+        app.add_middleware(httping.SignatureValidationComponent(hby=hby, pre=controller))
+    app.req_options.media_handlers.update(media.Handlers())
+    app.resp_options.media_handlers.update(media.Handlers())
+
+    issuers = dict()
+    endDoers = loadEnds(app, path=staticPath, hby=hby, rep=rep, mbx=mbx, verifier=verifier, gdoer=gdoer,
+                        issuerCues=issuerCues, issuers=issuers)
+
+    servery.msgs.append(dict(app=app))
+    kiwiServer = KiwiDoer(hby=hby,
+                          rep=rep,
+                          verifier=verifier,
+                          gdoer=gdoer.msgs,
+                          issuers=issuers,
+                          issuerCues=issuerCues)
+
+    proofHandler = AdminProofHandler(hby=hby, controller=controller, mbx=mbx, verifier=verifier, proofs=proofs,
+                                     ims=mbd.ims)
+    cuery = Cuery(hby=hby, controller=controller, mbx=mbx, cues=cues)
+
+    doers = [rep, proofHandler, cuery, gdoer, kiwiServer]
+    doers.extend(endDoers)
+
+    return doers
+
+
+class AdminProofHandler(doing.DoDoer):
+    def __init__(self, hby, controller, mbx, verifier, proofs=None, ims=None, **kwa):
+        self.hby = hby
+        self.controller = controller
+        self.mbx = mbx
+        self.verifier = verifier
+        self.presentations = proofs if proofs is not None else decking.Deck()
+        self.parsed = decking.Deck()
+
+        self.ims = ims if ims is not None else bytearray()
+
+        doers = [doing.doify(self.presentationDo), doing.doify(self.parsedDo)]
+
+        super(AdminProofHandler, self).__init__(doers=doers, **kwa)
+
+    def presentationDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle proofs presented externally
+
+        Parameters:
+            payload is dict representing the body of a /credential/issue message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        yield  # enter context
+
+        while True:
+            while self.presentations:
+                (pre, presentation) = self.presentations.popleft()
+                vc = presentation["vc"]
+                vcproof = bytearray(presentation["proof"].encode("utf-8"))
+                msgs = bytearray(presentation["msgs"].encode("utf-8"))
+                self.ims.extend(msgs)
+                yield
+
+                creder = proving.Credentialer(ked=vc)
+
+                # Remove credential from database so we revalidate it fully
+                self.verifier.reger.saved.rem(creder.said)
+
+                msg = bytearray(creder.raw)
+                msg.extend(vcproof)
+                parsing.Parser().parse(ims=msg, vry=self.verifier)
+
+                c = self.verifier.reger.saved.get(creder.said)
+                while c is None:
+                    c = self.verifier.reger.saved.get(creder.said)
+                    yield
+
+                self.parsed.append((creder, vcproof))
+
+                yield
+
+            yield
+
+    def parsedDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle proofs presented externally
+
+        Parameters:
+            payload is dict representing the body of a /credential/issue message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        yield  # enter context
+
+        while True:
+            while self.parsed:
+                (creder, vcproof) = self.parsed.popleft()
+                hab = self.hby.habs[creder.issuer]
+
+                c = self.verifier.reger.saved.get(creder.said)
+                if c is None:
+                    self.parsed.append((creder, vcproof))
+
+                else:
+                    creders = self.verifier.reger.cloneCreds([creder.saider])
+                    cred = creders[0]
+
+                    ser = exchanging.exchange(route="/cmd/presentation/proof", payload=cred)
+                    msg = bytearray(ser.raw)
+                    msg.extend(hab.endorse(ser))
+
+                    self.mbx.storeMsg(self.controller + "/presentation", msg)
+
+                yield
+            yield
+
+
+class Cuery(doing.DoDoer):
+    """ Handle cues from the admin
+
+    """
+
+    def __init__(self, controller, hby, mbx, cues=None, **kwa):
+        """
+
+        Parameters:
+            mbx is Mailboxer for saving messages for controller
+            cues is cues Deck from external mailbox to process
+
+        """
+        self.controller = controller
+        self.hby = hby
+        self.mbx = mbx
+        self.cues = cues if cues is not None else decking.Deck()
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=hby)
+
+        super(Cuery, self).__init__(doers=[self.postman, self.witDoer, doing.doify(self.cueDo)], **kwa)
+
+    def cueDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle cues coming out of our external Mailbox listener and forward to controller
+        mailbox if appropriate
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.cues:
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+                pre = cue["pre"]
+                if pre not in self.hby.habs:
+                    continue
+
+                hab = self.hby.habs[pre]
+                if cueKin in ("challenge",):
+                    signer = cue["signer"]
+                    words = cue["words"]
+                    ser = exchanging.exchange(route="/cmd/challenge/responsee",
+                                              payload=dict(signer=signer, words=words))
+                    msg = bytearray(ser.raw)
+                    msg.extend(hab.endorse(ser))
+
+                    self.mbx.storeMsg(self.controller + "/challenge", msg)
 
                 yield self.tock
             yield self.tock

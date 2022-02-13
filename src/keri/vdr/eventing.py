@@ -607,7 +607,6 @@ def vcstate(vcpre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-
 def query(regk,
           vcid,
           route="",

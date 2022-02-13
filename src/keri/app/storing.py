@@ -4,20 +4,20 @@ keri.app.storing module
 
 """
 import random
+from urllib.parse import urlparse
 
-import falcon
 from hio.base import doing
 from hio.core import http
-from hio.help import helping, Hict, decking
+from hio.help import decking, helping, Hict
+from orderedset import OrderedSet as oset
 
-from . import obtaining, forwarding, httping, agenting
-from .. import help
+from . import forwarding, httping
+from .. import help, kering
 from ..core import coring
 from ..core.coring import MtrDex
 from ..db import dbing, subing
 
 logger = help.ogler.getLogger()
-
 
 
 class Mailboxer(dbing.LMDBer):
@@ -136,33 +136,26 @@ class Mailboxer(dbing.LMDBer):
                 yield ion, topic, msg.encode("utf-8")
 
 
-
-class MailboxServer(doing.DoDoer):
+class MailEnd(doing.DoDoer):
     """
     Message storage for Witnesses.  Provides an inbox service for storing messages for an identifier.
 
     """
 
-    def __init__(self, mbx: Mailboxer, app=None, **kwa):
+    def __init__(self, mbx: Mailboxer, **kwa):
         """
         Create Mailbox server for storing messages on a Witness for a witnessed
         identifier.
 
         Parameters:
-             app(falcon.App): REST app to register routes with
+            mbx (Mailboxer): message storage for store and forward
 
         """
 
         self.mbx = mbx
-        self.rxbs = bytearray()
-
-        self.app = app if app is not None else falcon.App(cors_enable=True)
-
-        self.app.add_route("/qry/mbx", self)
-
         doers = []
 
-        super(MailboxServer, self).__init__(doers=doers, **kwa)
+        super(MailEnd, self).__init__(doers=doers, **kwa)
 
     def on_get(self, req, rep):
         """
@@ -199,7 +192,6 @@ class MailboxServer(doing.DoDoer):
         pre = query["pre"]
 
         rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
-
 
     @helping.attributize
     def mailboxGenerator(self, me, pre=None, topics=None, resp=None):
@@ -244,7 +236,7 @@ class Respondant(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, reps=None, cues=None, mbx=None, **kwa):
+    def __init__(self, hby, reps=None, cues=None, mbx=None, **kwa):
         """
         Creates Respondant that uses local environment to find the destination KEL and stores
         peer to peer messages in mbx, the mailboxer
@@ -257,14 +249,14 @@ class Respondant(doing.DoDoer):
         self.reps = reps if reps is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.hab = hab
-        self.mbx = mbx if mbx is not None else Mailboxer(name=hab.name)
+        self.hby = hby
+        self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
 
         doers = [doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
 
-    def responseDo(self, tymth=None, tock=0.0, **opts):
+    def responseDo(self, tymth=None, tock=0.0):
         """
         Doifiable Doist compatibile generator method to process response messages from `exn` handlers.
         If dest is not in local environment, ignore the response (for now).  If dest has witnesses,
@@ -281,41 +273,39 @@ class Respondant(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if self.hab.kever.wits:
-            self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
-            self.extend([self.witq])
-
         while True:
             while self.reps:
                 rep = self.reps.popleft()
+                # TODO: ADD SENDER TO ALL EXN RESPONSES
+                sender = rep["sender"]
                 recipient = rep["dest"]
                 exn = rep["rep"]
                 topic = rep["topic"]
 
-                while recipient not in self.hab.kevers:
-                    self.witq.query(pre=recipient)
-                    yield 1.0
-
-                kever = self.hab.kevers[recipient]
+                kever = self.hby.kevers[recipient]
                 if kever is None:
                     logger.Error("unable to reply, dest {} not found".format(recipient))
                     continue
 
+                hab = self.hby.habs[sender]
                 if len(kever.wits) == 0:
-                    msg = self.hab.endorse(exn, last=True)
+                    msg = hab.endorse(exn, last=True)
                     self.mbx.storeMsg(topic=recipient, msg=msg)
                 else:
                     wit = random.choice(kever.wits)
-                    loc = obtaining.getwitnessbyprefix(wit)
+                    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+                    if not urls:
+                        raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-                    client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+                    up = urlparse(urls[kering.Schemes.http])
+                    client = http.clienting.Client(hostname=up.hostname, port=up.port)
                     clientDoer = http.clienting.ClientDoer(client=client)
 
                     self.extend([clientDoer])
 
                     fwd = forwarding.forward(pre=recipient, serder=exn, topic=topic)
                     msg = bytearray(fwd.raw)
-                    atc = self.hab.endorse(exn, last=True)
+                    atc = hab.endorse(exn, last=True)
                     del atc[:exn.size]
                     msg.extend(atc)
 
@@ -329,9 +319,7 @@ class Respondant(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-
-
-    def cueDo(self, tymth=None, tock=0.0, **opts):
+    def cueDo(self, tymth=None, tock=0.0):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque
@@ -339,17 +327,29 @@ class Respondant(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield  # enter context
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
         while True:
             while self.cues:  # iteratively process each cue in cues
                 msg = bytearray()
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
-
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre
-                    msg.extend(self.hab.receipt(serder))
-                    self.mbx.storeMsg(topic=serder.preb+b'/receipt', msg=msg)
+                    cuedKed = serder.ked
+                    cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                    if cuedPrefixer.qb64 in self.hby.kevers:
+                        kever = self.hby.kevers[cuedPrefixer.qb64]
+                        owits = oset(kever.wits)
+                        if match := owits.intersection(self.hby.prefixes):
+                            pre = match.pop()
+                            hab = self.hby.habs[pre]
+                            msg.extend(hab.receipt(serder))
+                            self.mbx.storeMsg(topic=serder.preb+b'/receipt', msg=msg)
+
                 elif cueKin in ("replay",):
                     dest = cue["dest"]
                     msgs = cue["msgs"]
@@ -360,7 +360,7 @@ class Respondant(doing.DoDoer):
                     route = cue["route"]
                     dest = cue["dest"]
 
-                    msg = self.hab.reply(data=data, route=route+"/"+self.hab.pre)
+                    msg = hab.reply(data=data, route=route+"/"+hab.pre)
                     self.mbx.storeMsg(topic=dest+"/replay", msg=msg)
 
                 yield self.tock

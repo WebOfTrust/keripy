@@ -707,8 +707,8 @@ def test_matter():
     assert matter.fullSize == 12  # chars
     assert matter.qb64 == qb64
     assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
+    assert matter.transferable is True
+    assert matter.digestive is False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))

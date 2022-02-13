@@ -4,29 +4,29 @@ KERI
 keri.app.habbing module
 
 """
-import os
 import json
+import os
 from contextlib import contextmanager
 from urllib.parse import urlsplit
 
 from hio.base import doing
-from hio.help import hicting
-from hio.core.tcp import clienting, serving
 from hio.core import wiring
+from hio.core.tcp import clienting, serving
+from hio.help import hicting
 
-
+from . import keeping, configing, directing
 from .. import help
 from .. import kering
-from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
 from ..core import coring, eventing, parsing, routing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from . import keeping, configing, directing
+from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
 
 logger = help.ogler.getLogger()
 
 SALT = '0AMDEyMzQ1Njc4OWFiY2RlZg'  # coring.Salter(raw=b'0123456789abcdef').qb64
+
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
@@ -84,7 +84,7 @@ def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
 
 
 @contextmanager
-def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
+def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, **kwa):
     """
     Context manager wrapper for Hab instance.
     Defaults to temporary resources
@@ -92,29 +92,32 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
 
     Parameters:
         name(str): name of habitat to create
+        base(str): the name used for shared resources i.e. Baser and Keeper The habitat specific config file will be
+        in base/name
         salt(bytes): passed to habitat to use for inception raw salt
         temp(bool): indicates if this uses temporary databases
+        cf(Configer): optional configer for loading configuration data
 
     """
 
     salt = coring.Salter(raw=salt).qb64
 
-    with openHby(name=name, base=base, salt=salt, temp=temp) as hby:
+    with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
         if (hab := hby.habByName(name)) is None:
             hab = hby.makeHab(name=name, icount=1, isith=1, ncount=1, nsith=1, **kwa)
 
-        yield hab
+        yield hby, hab
 
 
-def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
-                    curls=None, remote="eve", iurls=None):
+def setupHabery(name="who", base="main", temp=False, curls=None, remote="eve", iurls=None):
     """
     Setup and return doers list to run controller
 
     Parameters:
-        name is the name used for a specific habitat
-        base is the name used for shared resources i.e. Baser and Keeper
+        name(str): is the name used for a specific habitat
+        base(str) is the name used for shared resources i.e. Baser and Keeper
                The habitat specific config file will be in base/name
+        temp(bool): True creates Habery in temp directory
         curls (list[str]): local controller's service endpoint urls
         remote (str): name of remote direct mode target
         iurls (list[str]):  oobi  urls
@@ -130,7 +133,6 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     }
     """
 
-
     if not curls:
         curls = ["ftp://localhost:5620/"]
 
@@ -145,13 +147,12 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     cf = configing.Configer(name=name, base=base, temp=temp)
     cfDoer = configing.ConfigerDoer(configer=cf)
     conf = cf.get()
-    if not conf: # setup config file
+    if not conf:  # setup config file
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
         cf.put(conf)
 
-
     # setup habery
-    hby = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp )
+    hby = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp)
     hbyDoer = HaberyDoer(habery=hby)  # setup doer
 
     # setup wirelog to create test vectors
@@ -168,7 +169,6 @@ def setupHabery(name="who", base="main", temp=False, sith=None, count=1,
     serverDoer = serving.ServerDoer(server=server)  # setup doer
     directant = directing.Directant(hab=hby, server=server)
     # Reactants created on demand by directant
-
 
     # setup default remote direct mode client to remote party
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
@@ -257,7 +257,7 @@ class Habery:
             aeid (str): qb64 of non-transferable identifier prefix for
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
+                all secrets Haberyare re-encrypted using new aeid. In this case the
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
             bran (str): Base64 22 char string that is used as base material for
@@ -308,7 +308,6 @@ class Habery:
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
-
 
     def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
               salt=None, tier=None, free=False, temp=None, ):
@@ -377,7 +376,6 @@ class Habery:
         self.loadHabs()
         self.inited = True
 
-
     def loadHabs(self):
         """Load Habs instance from db
 
@@ -412,7 +410,6 @@ class Habery:
 
         self.reconfigure()  # post hab load reconfiguration
 
-
     def makeHab(self, name, **kwa):
         """Make new Hab with name, pre is generated from **kwa
 
@@ -441,7 +438,6 @@ class Habery:
 
         return hab
 
-
     def close(self, clear=False):
         """Close resources.
         Parameters:
@@ -456,6 +452,46 @@ class Habery:
         if self.cf:
             self.cf.close(clear=self.cf.temp or clear)
 
+    def resolveVerifiers(self, pre=None, sn=0, dig=None):
+        """
+        Returns the Tholder and Verfers for the provided identifier prefix.
+        Default pre is own .pre
+
+        Parameters:
+            pre(str) is qb64 str of bytes of identifier prefix.
+            sn(int) is the sequence number of the est event
+            dig(str) is qb64 str of digest of est event
+
+        """
+
+        prefixer = coring.Prefixer(qb64=pre)
+        if prefixer.transferable:
+            # receipted event and receipter in database so get receipter est evt
+            # retrieve dig of last event at sn of est evt of receipter.
+            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
+                                               sn=sn))
+            if sdig is None:
+                # receipter's est event not yet in receipters's KEL
+                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
+                                      "".format(sn, pre))
+            # retrieve last event itself of receipter est evt from sdig
+            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
+                raise ValidationError("Bad proof sig group at sn = {}"
+                                      " for ksn = {}."
+                                      "".format(sn, sserder.ked))
+
+            verfers = sserder.verfers
+            tholder = sserder.tholder
+
+        else:
+            verfers = [coring.Verfer(qb64=pre)]
+            tholder = coring.Tholder(sith="1")
+
+        return tholder, verfers
+
 
     @property
     def kevers(self):
@@ -464,14 +500,12 @@ class Habery:
         """
         return self.db.kevers
 
-
     @property
     def prefixes(self):
         """
         Returns .db.prefixes of local prefixes
         """
         return self.db.prefixes
-
 
     def habByName(self, name):
         """
@@ -485,7 +519,6 @@ class Habery:
         if (habord := self.db.habs.get(name)) is not None:
             return self.habs[habord.prefix] if habord.prefix in self.habs else None
         return None
-
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Habery
@@ -506,6 +539,12 @@ class Habery:
 
         """
         conf = self.cf.get()
+        if "dt" in conf:  # datetime of config file
+            dt = help.fromIso8601(conf["dt"])  # raises error if not convert
+            if "iurls" in conf:  # process OOBI URLs
+                for oobi in conf["iurls"]:
+                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    self.db.oobis.put(keys=(oobi,), val=obr)
 
 
 class HaberyDoer(doing.Doer):
@@ -558,15 +597,14 @@ class HaberyDoer(doing.Doer):
         self.habery = habery
 
     def enter(self):
-        """"""
+        """ Enter context and set up Habery """
         if not self.habery.inited:
             self.habery.setup(**self.habery._inits)
 
     def exit(self):
-        """"""
+        """Exit context and close Habery """
         if self.habery.inited and self.habery.free:
             self.habery.close(clear=self.habery.temp)
-
 
 
 class Hab:
@@ -648,11 +686,10 @@ class Hab:
         self.delverfers = None
         self.delsigers = None
 
-
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
-              transferable=True, isith=None, icount=1,
-              nsith=None, ncount=None,
-              toad=None, wits=None, delpre=None, estOnly=False):
+             transferable=True, isith=None, icount=1,
+             nsith=None, ncount=None,
+             toad=None, wits=None, delpre=None, estOnly=False):
         """
         Finish setting up or making Hab from parameters.
         Assumes injected dependencies were already setup.
@@ -720,9 +757,6 @@ class Hab:
                                       toad=toad,
                                       cnfg=cnfg,
                                       nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
-            # save off serder and verfers for delegation acceptance
-            self.delserder = serder
-            self.delverfers = verfers
         else:
             serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                      sith=cst,
@@ -742,16 +776,15 @@ class Hab:
 
         # create inception event
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-        if self.delpre:
-            self.delsigers = sigers
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingDelegationError or MissingSignatureError:
+        except MissingSignatureError:
             pass
         except Exception as ex:
+            print(ex)
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
@@ -761,7 +794,6 @@ class Hab:
         self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
-
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
@@ -783,30 +815,29 @@ class Hab:
         """
 
         conf = self.cf.get()
-        if "dt" in conf: # datetime of config file
+        if "dt" in conf:  # datetime of config file
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             msgs = bytearray()
             msgs.extend(self.makeEndRole(eid=self.pre,
-                                       role=kering.Roles.controller,
-                                       stamp=help.toIso8601(dt=dt)))
+                                         role=kering.Roles.controller,
+                                         stamp=help.toIso8601(dt=dt)))
             if "curls" in conf:
                 curls = conf["curls"]
                 for url in curls:
                     splits = urlsplit(url)
                     scheme = (splits.scheme if splits.scheme in kering.Schemes
-                                            else kering.Schemes.http)
+                              else kering.Schemes.http)
                     msgs.extend(self.makeLocScheme(url=url,
-                                                 scheme=scheme,
-                                                 stamp=help.toIso8601(dt=dt)))
+                                                   scheme=scheme,
+                                                   stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
 
             if "iurls" in conf:  # process OOBI URLs
                 for url in conf["iurls"]:
                     splits = urlsplit(url)
 
-
     def recreate(self, serder, opre, verfers):
-        """
+        """ Recreate the Hab with new identifier prefix.
 
         """
 
@@ -827,7 +858,6 @@ class Hab:
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
-
 
     def delegationAccepted(self):
         """Process all escrows in kvy in response to delegation acceptance
@@ -881,7 +911,6 @@ class Hab:
 
     def group(self):
         return self.db.gids.get(self.pre)
-
 
     def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
                data=None):
@@ -952,12 +981,11 @@ class Hab:
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except MissingDelegationError or MissingSignatureError:
             pass
-        except Exception as ex:
+        except Exception:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
 
         return msg
-
 
     def interact(self, data=None):
         """
@@ -982,7 +1010,6 @@ class Hab:
 
         return msg
 
-
     def query(self, pre, query=None, **kwa):
         """
         Returns query message for querying at route for query parameter 'i' = pre
@@ -998,7 +1025,6 @@ class Hab:
         serder = eventing.query(query=query, **kwa)
 
         return self.endorse(serder, last=True)
-
 
     def receipt(self, serder):
         """
@@ -1028,7 +1054,6 @@ class Hab:
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
     def witness(self, serder):
         """
@@ -1063,7 +1088,6 @@ class Hab:
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
     def endorse(self, serder, last=False, pipelined=True):
         """
@@ -1118,50 +1142,6 @@ class Hab:
         return msg
 
 
-    def verifiage(self, pre=None, sn=0, dig=None):
-        """
-        Returns the Tholder and Verfers for the provided identifier prefix.
-        Default pre is own .pre
-
-        Parameters:
-            pre(str) is qb64 str of bytes of identifier prefix.
-                      default is own .pre
-            sn(int) is the sequence number of the est event
-            dig(str) is qb64 str of digest of est event
-
-        """
-        if not pre:
-            pre = self.pre
-
-        prefixer = coring.Prefixer(qb64=pre)
-        if prefixer.transferable:
-            # receipted event and receipter in database so get receipter est evt
-            # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
-                                               sn=sn))
-            if sdig is None:
-                # receipter's est event not yet in receipters's KEL
-                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
-                                      "".format(sn, pre))
-            # retrieve last event itself of receipter est evt from sdig
-            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
-            if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
-                raise ValidationError("Bad proof sig group at sn = {}"
-                                      " for ksn = {}."
-                                      "".format(sn, sserder.ked))
-
-            verfers = sserder.verfers
-            tholder = sserder.tholder
-
-        else:
-            verfers = [coring.Verfer(qb64=pre)]
-            tholder = coring.Tholder(sith="1")
-
-        return tholder, verfers
-
-
     def replay(self, pre=None, fn=0):
         """
         Returns replay of FEL first seen event log for pre starting from fn
@@ -1180,7 +1160,6 @@ class Hab:
             msgs.extend(msg)
         return msgs
 
-
     def replayAll(self, key=b''):
         """
         Returns replay of FEL first seen event log for all pre starting at key
@@ -1193,7 +1172,6 @@ class Hab:
         for msg in self.db.cloneAllPreIter(key=key):
             msgs.extend(msg)
         return msgs
-
 
     def makeOtherEvent(self, pre, sn):
         """
@@ -1219,8 +1197,7 @@ class Hab:
                                   count=self.db.cntSigs(key)).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
             msg.extend(sig)  # attach sig
-        return (msg)
-
+        return msg
 
     def fetchEnd(self, cid: str, role: str, eid: str):
         """
@@ -1229,14 +1206,12 @@ class Hab:
         """
         return self.db.ends.get(keys=(cid, role, eid))
 
-
     def fetchLoc(self, eid: str, scheme: str = kering.Schemes.http):
         """
         Returns:
             location (basing.LocationRecord): instance or None
         """
         return self.db.locs.get(keys=(eid, scheme))
-
 
     def fetchEndAllowed(self, cid: str, role: str, eid: str):
         """
@@ -1250,8 +1225,7 @@ class Hab:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return (end.allowed if end else None)
-
+        return end.allowed if end else None
 
     def fetchEndEnabled(self, cid: str, role: str, eid: str):
         """
@@ -1265,8 +1239,7 @@ class Hab:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return (end.enabled if end else None)
-
+        return end.enabled if end else None
 
     def fetchEndAuthzed(self, cid: str, role: str, eid: str):
         """
@@ -1280,8 +1253,7 @@ class Hab:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return ((end.enabled or end.allowed) if end else None)
-
+        return (end.enabled or end.allowed) if end else None
 
     def fetchUrl(self, eid: str, scheme: str = kering.Schemes.http):
         """
@@ -1291,8 +1263,7 @@ class Hab:
                        None when no location record
         """
         loc = self.db.locs.get(keys=(eid, scheme))
-        return (loc.url if loc else loc)
-
+        return loc.url if loc else loc
 
     def fetchUrls(self, eid: str, scheme: str = ""):
         """
@@ -1307,7 +1278,6 @@ class Hab:
         """
         return hicting.Mict([(keys[1], loc.url) for keys, loc in
                              self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
-
 
     def fetchRoleUrls(self, cid: str, *, role: str = "", scheme: str = "",
                       eids=None, enabled: bool = True, allowed: bool = True):
@@ -1333,7 +1303,7 @@ class Hab:
         rurls = hicting.Mict()
 
         if role == kering.Roles.witness:
-            if (kever := self.kevers[cid] if cid in self.kevers else None):
+            if kever := self.kevers[cid] if cid in self.kevers else None:
                 # latest key state for cid
                 for eid in kever.wits:
                     if not eids or eid in eids:
@@ -1349,7 +1319,6 @@ class Hab:
                     if surls:
                         rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
-
 
     def fetchWitnessUrls(self, cid: str, scheme: str = "", eids=None,
                          enabled: bool = True, allowed: bool = True):
@@ -1378,7 +1347,6 @@ class Hab:
                                    enabled=enabled,
                                    allowed=allowed))
 
-
     def reply(self, **kwa):
         """
         Returns:
@@ -1393,7 +1361,6 @@ class Hab:
             kind is serialization kind
         """
         return self.endorse(eventing.reply(**kwa))
-
 
     def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
         """
@@ -1413,7 +1380,6 @@ class Hab:
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
 
-
     def makeLocScheme(self, url, scheme="http", stamp=None):
         """
         Returns:
@@ -1427,9 +1393,8 @@ class Hab:
                           None means use now.
 
         """
-        data = data = dict(eid=self.pre, scheme=scheme, url=url)
+        data = dict(eid=self.pre, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
-
 
     def replyLocScheme(self, eid, scheme=None):
         """
@@ -1441,7 +1406,7 @@ class Hab:
         Future is to use identity constraint graph to constrain discovery
         of whom by whom.
 
-        eid and and not scheme then:
+        eid and not scheme then:
             loc url for all schemes at eid
 
         eid and scheme then:
@@ -1451,9 +1416,16 @@ class Hab:
             eid (str): endpoint provider id
             scheme (str): url scheme
         """
+        msgs = bytearray()
 
+        urls = self.fetchUrls(eid=eid, scheme=scheme)
+        for rscheme, url in urls.firsts():
+            msgs.extend(self.makeLocScheme(url=url, scheme=rscheme))
 
-    def replyEndRole(self, cid, role=None, eids=None, scheme=None):
+        return msgs
+
+    def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+
         """
         Returns a reply message stream composed of entries authed by the given
         cid from the appropriate reply database including associated attachments
@@ -1487,11 +1459,32 @@ class Hab:
             eids (list): when provided restrict returns to only eids in eids
             scheme (str): url scheme
         """
+        msgs = bytearray()
+
         if eids is None:
             eids = []
 
+        if role == kering.Roles.witness:
+            if kever := self.kevers[cid] if cid in self.kevers else None:
+                witness = self.pre in kever.wits  # see if we are cid's witness
 
-    def replyToOobi(self, aid):
+                # latest key state for cid
+                for eid in kever.wits:
+                    if not eids or eid in eids:
+                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                        if not witness:  # we are not witness, send auth records
+                            msgs.extend(self.makeEndRole(eid=eid, role=role))
+                if witness:  # we are witness, set KEL as authz
+                    msgs.extend(self.replay(cid))
+
+        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
+            if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
+                msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.makeEndRole(eid=eid, role=erole))
+
+        return msgs
+
+    def replyToOobi(self, aid, role, eids=None, scheme=""):
         """
         Returns a reply message stream composed of entries authed by the given
         aid from the appropriate reply database including associated attachments
@@ -1506,12 +1499,15 @@ class Hab:
 
         Parameters:
             aid (str): qb64 of identifier in oobi, may be cid or eid
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
 
         """
         # default logic is that if self.pre is witness of aid and has a loc url
         # for self then reply with loc scheme for all witnesses even if self
         # not permiteed in .habs.oobis
-
+        return self.replyEndRole(cid=aid, role=role, eids=eids)
 
     def makeOwnEvent(self, sn):
         """
@@ -1536,7 +1532,6 @@ class Hab:
             msg.extend(sig)  # attach sig
         return (msg)
 
-
     def makeOwnInception(self):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -1544,7 +1539,6 @@ class Hab:
                  from database.
         """
         return self.makeOwnEvent(sn=0)
-
 
     def processCues(self, cues):
         """
@@ -1557,7 +1551,6 @@ class Hab:
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
-
 
     def processCuesIter(self, cues):
         """
@@ -1602,31 +1595,11 @@ class Hab:
                 msgs = cue["msgs"]
                 yield msgs
 
-            elif cueKin in ("reply", ):
+            elif cueKin in ("reply",):
                 data = cue["data"]
                 route = cue["route"]
                 msg = self.reply(data=data, route=route)
                 yield msg
-
-
-
-
-@contextmanager
-def existingHabitat(name="test", **kwa):
-    """
-    Context manager wrapper for existing Habitat instance.
-    Will raise exception if Habitat and database has not already been created.
-    Context 'with' statements call .close on exit of 'with' block
-
-    Parameters:
-        name(str): name of habitat to create
-    """
-
-    with basing.openDB(name=name, temp=False, reload=True) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False, **kwa)
-        yield hab
-
 
 
 class Habitat:
@@ -1740,7 +1713,6 @@ class Habitat:
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
-
 
     def setup(self, *, seed=None, aeid=None, secrecies=None, iridx=0,
               code=coring.MtrDex.Blake3_256,
@@ -1920,7 +1892,8 @@ class Habitat:
             raise Exception()
 
     def reinitialize(self):
-        """
+        """ Reinitialize hab
+
         """
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
@@ -1935,7 +1908,6 @@ class Habitat:
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
         self.accepted = self.pre in self.kevers
-
 
     def reconfigure(self):
         """
@@ -1952,27 +1924,26 @@ class Habitat:
         """
 
         conf = self.cf.get()
-        if "dt" in conf: # datetime of config file
+        if "dt" in conf:  # datetime of config file
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             msgs = bytearray()
             msgs.extend(self.makeEndRole(eid=self.pre,
-                                       role=kering.Roles.controller,
-                                       stamp=help.toIso8601(dt=dt)))
+                                         role=kering.Roles.controller,
+                                         stamp=help.toIso8601(dt=dt)))
             if "curls" in conf:
                 curls = conf["curls"]
                 for url in curls:
                     splits = urlsplit(url)
                     scheme = (splits.scheme if splits.scheme in kering.Schemes
-                                            else kering.Schemes.http)
+                              else kering.Schemes.http)
                     msgs.extend(self.makeLocScheme(url=url,
-                                                 scheme=scheme,
-                                                 stamp=help.toIso8601(dt=dt)))
+                                                   scheme=scheme,
+                                                   stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
 
             if "iurls" in conf:  # process OOBI URLs
                 for url in conf["iurls"]:
                     splits = urlsplit(url)
-
 
     def recreate(self, serder, opre, verfers):
         """
@@ -2011,14 +1982,12 @@ class Habitat:
                                             "Habitat pre={}.".format(self.pre))
         return coring.Serder(raw=bytes(raw))
 
-
     @property
     def kevers(self):
         """
         Returns .db.kevers
         """
         return self.db.kevers
-
 
     @property
     def kever(self):
@@ -2027,7 +1996,6 @@ class Habitat:
         """
         return self.kevers[self.pre]
 
-
     @property
     def prefixes(self):
         """
@@ -2035,10 +2003,8 @@ class Habitat:
         """
         return self.db.prefixes
 
-
     def group(self):
         return self.db.gids.get(self.pre)
-
 
     def rotate(self, sith=None, count=None, toad=None, cuts=None, adds=None,
                data=None):
@@ -2115,7 +2081,6 @@ class Habitat:
 
         return msg
 
-
     def interact(self, data=None):
         """
         Perform interaction operation. Register interaction in database.
@@ -2139,7 +2104,6 @@ class Habitat:
 
         return msg
 
-
     def query(self, pre, query=None, **kwa):
         """
         Returns query message for querying at route for query parameter 'i' = pre
@@ -2155,7 +2119,6 @@ class Habitat:
         serder = eventing.query(query=query, **kwa)
 
         return self.endorse(serder, last=True)
-
 
     def receipt(self, serder):
         """
@@ -2185,7 +2148,6 @@ class Habitat:
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
     def witness(self, serder):
         """
@@ -2220,7 +2182,6 @@ class Habitat:
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
     def endorse(self, serder, last=False, pipelined=True):
         """
@@ -2274,51 +2235,6 @@ class Habitat:
 
         return msg
 
-
-    def verifiage(self, pre=None, sn=0, dig=None):
-        """
-        Returns the Tholder and Verfers for the provided identifier prefix.
-        Default pre is own .pre
-
-        Parameters:
-            pre(str) is qb64 str of bytes of identifier prefix.
-                      default is own .pre
-            sn(int) is the sequence number of the est event
-            dig(str) is qb64 str of digest of est event
-
-        """
-        if not pre:
-            pre = self.pre
-
-        prefixer = coring.Prefixer(qb64=pre)
-        if prefixer.transferable:
-            # receipted event and receipter in database so get receipter est evt
-            # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
-                                               sn=sn))
-            if sdig is None:
-                # receipter's est event not yet in receipters's KEL
-                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
-                                      "".format(sn, pre))
-            # retrieve last event itself of receipter est evt from sdig
-            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
-            if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
-                raise ValidationError("Bad proof sig group at sn = {}"
-                                      " for ksn = {}."
-                                      "".format(sn, sserder.ked))
-
-            verfers = sserder.verfers
-            tholder = sserder.tholder
-
-        else:
-            verfers = [coring.Verfer(qb64=pre)]
-            tholder = coring.Tholder(sith="1")
-
-        return tholder, verfers
-
-
     def replay(self, pre=None, fn=0):
         """
         Returns replay of FEL first seen event log for pre starting from fn
@@ -2336,7 +2252,6 @@ class Habitat:
         for msg in self.db.clonePreIter(pre=pre, fn=fn):
             msgs.extend(msg)
         return msgs
-
 
     def replayAll(self, key=b''):
         """
@@ -2540,7 +2455,6 @@ class Habitat:
         """
         return self.endorse(eventing.reply(**kwa))
 
-
     def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
         """
         Returns:
@@ -2674,7 +2588,6 @@ class Habitat:
             msg.extend(sig)  # attach sig
         return (msg)
 
-
     def makeOwnInception(self):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -2682,7 +2595,6 @@ class Habitat:
                  from database.
         """
         return self.makeOwnEvent(sn=0)
-
 
     def processCues(self, cues):
         """
@@ -2695,7 +2607,6 @@ class Habitat:
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
-
 
     def processCuesIter(self, cues):
         """
@@ -2740,7 +2651,7 @@ class Habitat:
                 msgs = cue["msgs"]
                 yield msgs
 
-            elif cueKin in ("reply", ):
+            elif cueKin in ("reply",):
                 data = cue["data"]
                 route = cue["route"]
                 msg = self.reply(data=data, route=route)

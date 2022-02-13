@@ -8,38 +8,42 @@ import argparse
 
 from hio import help
 from keri.app import habbing
-from keri.app.cli.common import displaying
+from keri.app.cli.common import displaying, existing
 from keri.core import coring
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: handler(args),
+parser.set_defaults(handler=lambda args: status(args),
                     transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 
-def handler(args):
+def status(args):
+    """ Command line status handler
 
+    """
     name = args.name
+    alias = args.alias
+    base = args.base
+    bran = args.bran
+
     try:
-        with habbing.existingHabitat(name=name) as hab:
+        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
 
             displaying.printIdentifier(hab, hab.pre)
-
-            if len(hab.prefixes) > 1:
-                print("\nAdditional Prefixes:")
-                for pre in hab.prefixes:
-                    if pre == hab.pre:
-                        continue
-                    print(f"\t{pre}")
-
             group = hab.group()
             if group:
                 print()
-                print("Groups:")
+                print("Group:")
                 print("\t   {} ({})".format(name, group.gid))
                 print()
 

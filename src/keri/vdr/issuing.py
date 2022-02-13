@@ -290,7 +290,7 @@ class Issuer:
         else:
             if seal is None:
                 op = grouping.Ops.rot if self.estOnly else grouping.Ops.ixn
-                mmsg = dict(kin="multisig", op=op, data=[rseal], reason=reason)
+                mmsg = dict(kin="multisig", pre=self.hab.pre, op=op, data=[rseal], reason=reason)
                 self.cues.append(mmsg)
 
                 self.escrow(serder)
@@ -299,7 +299,7 @@ class Issuer:
                 tevt = self.attachSeal(serder=serder, seal=seal)
                 self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
 
-                self.cues.append(dict(kin="logEvent", msg=tevt))
+                self.cues.append(dict(kin="logEvent", pre=self.hab.pre, msg=tevt))
 
     def escrow(self, serder):
         """ Save Issuer event for future process when anchor becomes available

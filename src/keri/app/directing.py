@@ -5,22 +5,13 @@ keri.app.directing module
 
 simple direct mode demo support classes
 """
-import os
 
 from hio.base import doing
-from hio.core import wiring
-from hio.core.tcp import clienting, serving
 
-from .. import kering
-from ..db import dbing, basing
-from ..core import coring, eventing, parsing
-from ..vdr.eventing import Tevery
-from . import keeping
-from . import habbing
-from . import keeping
 from .. import help
 from ..core import eventing
-from ..db import dbing
+from ..core import parsing
+from ..vdr.eventing import Tevery
 
 logger = help.ogler.getLogger()
 
@@ -242,7 +233,7 @@ class Reactor(doing.DoDoer):
         """
         yield  # enter context
         if self.parser.ims:
-            logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
+            logger.info("Client %s received:\n%s\n...\n", self.hab.name, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
@@ -273,7 +264,6 @@ class Reactor(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
-
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -330,13 +320,12 @@ class Reactor(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
-
     def sendMessage(self, msg, label=""):
         """
         Sends message msg and loggers label if any
         """
         self.client.tx(msg)  # send to remote
-        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
+        logger.info("%s sent %s:\n%s\n\n", self.hab.name, label, bytes(msg))
 
 
 class Directant(doing.DoDoer):
@@ -408,7 +397,7 @@ class Directant(doing.DoDoer):
             tock is float seconds initial value of .tock
 
         Parameters:
-            hab is Habitat instance of local controller's context
+            db is database instance of local controller's context
             verifier (optional) is Verifier instance of local controller's TEL context
             server is TCP Server instance
         """
@@ -471,7 +460,6 @@ class Directant(doing.DoDoer):
                     self.closeConnection(ca)  # also removes rant
 
             yield
-
 
     def closeConnection(self, ca):
         """
@@ -552,7 +540,7 @@ class Reactant(doing.DoDoer):
             doers is list of doers (do generator instancs or functions)
 
         Parameters:
-            hab is Habitat instance of local controller's context
+            hby is Habitat instance of local controller's context
             verifier is Verifier instance of local controller's TEL context
             remoter is TCP Remoter instance
             doers is list of doers (do generator instances, functions or methods)
@@ -624,8 +612,8 @@ class Reactant(doing.DoDoer):
         """
         yield  # enter context
         if self.parser.ims:
-            logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
-                        self.hab.pre, self.parser.ims[:1024])
+            logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
+                        self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
@@ -720,8 +708,8 @@ class Reactant(doing.DoDoer):
         Sends message msg and loggers label if any
         """
         self.remoter.tx(msg)  # send to remote
-        logger.info("Server %s: %s sent %s:\n%s\n\n", self.hab.name,
-                    self.hab.pre, label, bytes(msg))
+        logger.info("Server %s: sent %s:\n%s\n\n", self.hab.name,
+                    label, bytes(msg))
 
 
 def runController(doers, expire=0.0):

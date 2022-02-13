@@ -20,9 +20,9 @@ SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer')
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox')
 Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
-               watcher='watcher', judge='judge', juror='juror', peer='peer')
+               watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox")
 
 
 class KeriError(Exception):
@@ -65,6 +65,7 @@ class AuthNError(AuthError):
         raise AuthNError("error message")
     """
 
+
 class AuthZError(AuthError):
     """
     Error authorizing
@@ -73,6 +74,7 @@ class AuthZError(AuthError):
         raise AuthZError("error message")
     """
 
+
 class DecryptError(AuthZError):
     """
     Error when attempting decryption
@@ -80,6 +82,7 @@ class DecryptError(AuthZError):
     Usage:
         raise DecryptError("error message")
     """
+
 
 # errors associated with databases
 class DatabaseError(KeriError):

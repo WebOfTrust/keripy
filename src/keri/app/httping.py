@@ -25,29 +25,37 @@ CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
 
 
 class SignatureValidationComponent(object):
+    """ Validate SKWA signatures """
 
-    def __init__(self, hab, pre):
-        self.hab = hab
+    def __init__(self, hby, pre):
+        self.hby = hby
         self.pre = pre
 
     def process_request(self, req, resp):
-        sig = req.headers.get("SIGNATURE")
+        """ Process request to ensure has a valid signature from controller
 
-        ser = req.bounded_stream.read()
+        Parameters:
+            req: Http request object
+            resp: Http response object
+
+
+        """
+        sig = req.headers.get("SIGNATURE")
+        ked = req.media
+        ser = json.dumps(ked).encode("utf-8")
         if not self.validate(sig=sig, ser=ser):
             resp.complete = True
             resp.status = falcon.HTTP_401
             return
-        req.context.raw = ser
 
     def validate(self, sig, ser):
         signages = ending.designature(sig)
         markers = signages[0].markers
 
-        if self.pre not in self.hab.kevers:
+        if self.pre not in self.hby.kevers:
             return False
 
-        verfers = self.hab.kevers[self.pre].verfers
+        verfers = self.hby.kevers[self.pre].verfers
         for idx, verfer in enumerate(verfers):
             key = str(idx)
             if key not in markers:
@@ -177,10 +185,3 @@ def createCESRRequest(msg, client, date=None):
         headers=headers,
         body=body
     )
-
-
-class InsecureSignatureComponent(object):
-
-    def process_request(self, req, resp):
-        ser = req.bounded_stream.read()
-        req.context.raw = ser

@@ -58,6 +58,7 @@ def printIdentifier(hab, pre, label="Identifier"):
     print("Seq No:\t{}".format(kever.sn))
     if kever.delegated:
         print("Delegated Identifier")
+        print("    Delegator:  ", kever.delegator)
 
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))

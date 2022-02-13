@@ -10,7 +10,7 @@ import logging
 
 from keri import __version__
 from keri import help
-from keri.app import directing, indirecting
+from keri.app import directing, indirecting, habbing
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"
@@ -32,6 +32,11 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="witness",
                     help="Name of controller. Default is witness.")
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
 
 
 def launch(args):
@@ -44,6 +49,9 @@ def launch(args):
                 ".******\n\n", args.name, args.http, args.tcp)
 
     runWitness(name=args.name,
+               base=args.base,
+               alias=args.alias,
+               bran=args.bran,
                tcp=int(args.tcp),
                http=int(args.http))
 
@@ -51,13 +59,17 @@ def launch(args):
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def runWitness(name="witness", tcp=5631, http=5632, expire=0.0):
+def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0):
     """
     Setup and run one witness
     """
+    hby = habbing.Habery(name=name, base=base, bran=bran)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    doers = [hbyDoer]
 
-    doers = indirecting.setupWitness(name=name,
-                                     tcpPort=tcp,
-                                     httpPort=http)
+    doers.extend(indirecting.setupWitness(alias=alias,
+                                          hby=hby,
+                                          tcpPort=tcp,
+                                          httpPort=http))
 
     directing.runController(doers=doers, expire=expire)

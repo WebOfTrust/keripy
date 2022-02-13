@@ -79,6 +79,10 @@ class OfferHandler(doing.Doer):
             verfers is list of Verfers of the keys used to sign the message
 
         """
+        # start enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
         while True:
             while self.msgs:
@@ -136,7 +140,7 @@ class ApplyHandler(doing.DoDoer):
 
     resource = "/credential/apply"
 
-    def __init__(self, hab, verifier, name, issuerCues=None, cues=None, **kwa):
+    def __init__(self, hby, verifier, name, issuerCues=None, cues=None, **kwa):
         """ Initialize instance
 
         Parameters:
@@ -148,7 +152,7 @@ class ApplyHandler(doing.DoDoer):
             **kwa (dict): keyword arguments passed to DoDoer
 
         """
-        self.hab = hab
+        self.hby = hby
         self.verifier = verifier
         self.name = name
         self.issuer = None
@@ -178,8 +182,6 @@ class ApplyHandler(doing.DoDoer):
         self.tock = tock
         yield self.tock
 
-        self.issuer = issuing.Issuer(hab=self.hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
-
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -189,17 +191,20 @@ class ApplyHandler(doing.DoDoer):
 
                 schema = payload["schema"]
                 issuer = payload["issuer"]
-                source = []
-
-                if issuer != self.hab.pre:
-                    logger.info("request for incorrect issuer {} to {}".format(issuer, self.hab.pre))
+                if issuer not in  self.hby.habs:
+                    logger.info("request for incorrect issuer {}".format(issuer))
                     continue
+
+                hab = self.hby.habs[issuer]
+
+                self.issuer = issuing.Issuer(hab=hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
+
+                source = []
 
                 if schema != scheming.QualifiedvLEIIssuervLEICredential:
                     logger.info("credential type {} is invalid, only QualifiedvLEIIssuervLEICredential can be "
                                 "auto-issued".format(schema))
                     continue
-
 
                 data = payload["body"]
                 dt = data["dt"] if "dt" in data else helping.nowIso8601()
@@ -212,9 +217,9 @@ class ApplyHandler(doing.DoDoer):
 
                 d |= data
 
-                group = self.hab.group()
+                group = hab.group()
                 if group is None:
-                    pre = self.hab.pre
+                    pre = hab.pre
                 else:
                     pre = group.gid
 
@@ -228,7 +233,7 @@ class ApplyHandler(doing.DoDoer):
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-                craw = self.hab.endorse(creder)
+                craw = hab.endorse(creder)
                 parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield self.tock
@@ -304,7 +309,7 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hab, verifier,  cues=None, **kwa):
+    def __init__(self, hby, verifier,  cues=None, **kwa):
         """ Initialize instance
 
         Parameters:
@@ -315,14 +320,13 @@ class IssueHandler(doing.DoDoer):
             **kwa (dict): keyword arguments passed to DoDoer
 
         """
-        self.hab = hab
+        self.hby = hby
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
         self.verifier = verifier
-        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.HttpWitnesser)
 
-        doers = [self.witq, doing.doify(self.msgDo)]
+        doers = [doing.doify(self.msgDo)]
 
         super(IssueHandler, self).__init__(doers=doers, **kwa)
 
@@ -404,7 +408,7 @@ class RequestHandler(doing.Doer):
 
     resource = "/presentation/request"
 
-    def __init__(self, hab, wallet, cues=None, **kwa):
+    def __init__(self, hby, wallet, cues=None, **kwa):
         """ Create an `exn` request handler for processing credential presentation requests
 
         Parameters
@@ -413,7 +417,7 @@ class RequestHandler(doing.Doer):
             cues (Optional(decking.Deck)): outbound response cue for  this handler
 
         """
-        self.hab = hab
+        self.hby = hby
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
@@ -454,7 +458,7 @@ class RequestHandler(doing.Doer):
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
-                    pe = presentation_exchange(db=self.hab.db, reger=self.wallet.reger, credentials=matches)
+                    pe = presentation_exchange(db=self.hby.db, reger=self.wallet.reger, credentials=matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 

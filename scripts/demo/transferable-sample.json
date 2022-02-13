@@ -1,7 +1,7 @@
 {
-  "salt": "transferable-001",
   "transferable": true,
   "wits": [],
+  "toad": 0,
   "icount": 1,
   "ncount": 1,
   "isith": 1,

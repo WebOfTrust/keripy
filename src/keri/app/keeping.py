@@ -735,10 +735,17 @@ class Manager:
         if self.tier is None:  # never before initialized
             self.tier = tier  # init to default
 
-
         # must do this after salt is initialized so gets re-encrypted correctly
-        if self.aeid is None:  # never before initialized
+        if not self.aeid:  # never before initialized
             self.updateAeid(aeid, self.seed)
+        else:
+            self.encrypter = coring.Encrypter(verkey=self.aeid)  # derive encrypter from aeid
+            if not self.seed or not self.encrypter.verifySeed(self.seed):
+                raise kering.AuthError("Last seed missing or provided last seed "
+                                       "not associated with last aeid={}."
+                                       "".format(self.aeid))
+
+            self.decrypter = coring.Decrypter(seed=self.seed)
 
         self.inited = True
 
@@ -749,7 +756,7 @@ class Manager:
         secrets
 
         Parameters:
-            aeid (str): qb64 of new auth encrypt id  (public signing key)
+            aeid (Optional(str)): qb64 of new auth encrypt id  (public signing key)
                         aeid may match current aeid no change innocuous
                         aeid may be empty which unencrypts and removes aeid
                         aeid may be different not empty which reencrypts
@@ -769,7 +776,7 @@ class Manager:
                 # verifies new seed belongs to new aeid
                 if not seed or not self.encrypter.verifySeed(seed):
                     raise kering.AuthError("Seed missing or provided seed not associated"
-                                               "  with provided aeid={}.".format(aeid))
+                                           "  with provided aeid={}.".format(aeid))
         else:  # changing to empty aeid so new encrypter is None
             self.encrypter = None
 

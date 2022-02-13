@@ -1,9 +1,10 @@
 import copy
 import re
 
+import falcon
 from apispec import BasePlugin, yaml_utils
 from apispec.exceptions import APISpecError
-from apispec.core import VALID_METHODS
+from apispec.core import VALID_METHODS, APISpec
 
 
 class FalconPlugin(BasePlugin):
@@ -65,3 +66,38 @@ class FalconPlugin(BasePlugin):
             docstring_yaml = yaml_utils.load_yaml_from_docstring(method_handler.__doc__)
             operations[method_name] = docstring_yaml or dict()
         return path
+
+
+class SpecResource:
+    """
+    Resource for OpenAPI spec
+
+    """
+
+    def __init__(self, app, title, resources, version='1.0.0', openapiVersion="3.0.2"):
+        self.spec = APISpec(
+            title=title,
+            version=version,
+            openapi_version=openapiVersion,
+            plugins=[
+                FalconPlugin(app),
+                # MarshmallowPlugin(),
+            ],
+        )
+
+        for r in resources:
+            self.spec.path(resource=r)
+
+    def on_get(self, _, rep):
+        """
+        GET endpoint for OpenAPI spec
+
+        Args:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+
+        """
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/yaml"
+        rep.data = self.spec.to_yaml().encode("utf-8")

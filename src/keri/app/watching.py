@@ -5,13 +5,15 @@ keri.app.agenting module
 
 """
 import json
+from urllib.parse import urlparse
 
 import falcon
 from hio.base import doing
+from hio.core import http
 from hio.core.http import clienting
 from hio.help import decking
 
-from keri.app import keeping, obtaining, httping
+from keri.app import keeping
 from keri.core import coring, eventing, parsing
 from .. import help, kering
 from ..end import ending
@@ -29,7 +31,6 @@ class KiwiServer(doing.DoDoer):
         self.hab = hab
         self.controller = controller
         self.app = app if app is not None else falcon.App(cors_enable=True)
-        self.app.add_middleware(httping.SignatureValidationComponent(hab=self.hab, pre=self.controller))
         self.cues = cues if cues is not None else decking.Deck()
 
         self.app.add_route("/rotate", self, suffix="rotate")
@@ -63,7 +64,6 @@ class KiwiServer(doing.DoDoer):
                                                transferable=False,
                                                temp=False)
 
-
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
         if digers:
             nxt = coring.Nexter(sith=nst,
@@ -81,10 +81,9 @@ class KiwiServer(doing.DoDoer):
         icpMsg = bytearray(serder.raw)
         sigers = mgr.sign(ser=serder.raw, verfers=verfers)
         icpMsg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigers)).qb64b)  # attach cnt
+                                     count=len(sigers)).qb64b)  # attach cnt
         for sig in sigers:
             icpMsg.extend(sig.qb64b)  # attach sig
-
 
         sigers = self.hab.mgr.sign(ser=bytes(icpMsg),
                                    verfers=self.hab.kever.verfers,
@@ -128,7 +127,6 @@ class WatcherClientRotateDoer(doing.DoDoer):
         doers = [doing.doify(self.rotateDo)]
         super(WatcherClientRotateDoer, self).__init__(doers=doers, **kwa)
 
-
     def rotateDo(self, tymth, tock=0.0, **opts):
         """
         Returns:  doifiable Doist compatible generator method
@@ -148,7 +146,6 @@ class WatcherClientRotateDoer(doing.DoDoer):
                     raise kering.ValidationError("identifier {} is not a current watcher {}"
                                                  "".format(watcher, habr.watchers))
 
-
                 payload = dict(pre=self.hab.pre)
                 raw = json.dumps(payload)
                 sigers = self.hab.mgr.sign(ser=raw.encode("utf-8"),
@@ -158,8 +155,13 @@ class WatcherClientRotateDoer(doing.DoDoer):
                 signage = ending.Signage(markers=sigers, indexed=True)
                 headers = ending.signature([signage])
 
-                loc = obtaining.getwitnessbyprefix(watcher)
-                client = clienting.Client(hostname=loc.ip4, port=loc.http)
+                urls = self.hab.fetchUrls(eid=watcher, scheme=kering.Schemes.http)
+                if not urls:
+                    raise kering.ConfigurationError(f"unable to query watcher {watcher}, no http endpoint")
+
+                print("have url", urls)
+                up = urlparse(urls[kering.Schemes.http])
+                client = http.clienting.Client(hostname=up.hostname, port=up.port)
                 clientDoer = clienting.ClientDoer(client=client)
                 self.extend([clientDoer])
 
@@ -186,7 +188,6 @@ class WatcherClientRotateDoer(doing.DoDoer):
 
             yield self.tock
 
-
     def processWatcherResponse(self, watcher, icp):
         ctrlKvy = eventing.Kevery(db=self.hab.db)
         parsing.Parser().parse(ims=bytearray(icp), kvy=ctrlKvy)
@@ -204,7 +205,6 @@ class WatcherClientRotateDoer(doing.DoDoer):
 
         self.hab.db.habs.pin(self.hab.name, habr)
         return wat
-
 
     @staticmethod
     def authenticate(watcher, resp):

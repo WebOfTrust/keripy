@@ -706,27 +706,6 @@ def test_habery_reconfigure(mockHelpingNowUTC):
     """Done Test"""
 
 
-
-def test_hab_with_delegation():
-    """
-    Test Habitat class
-    """
-    with habbing.openHby(name='delegation', base="test") as hby:
-        torHab = hby.makeHab(name='tor')
-        assert torHab.pre == 'Eg0Vs54AiRvxoKvZn6QyddH8VN0IAr2-UR1DbJSUKy80'
-
-        teeHab = hby.makeHab(name='tee', delpre=torHab.pre)
-        assert teeHab.pre == 'EyR1tMhddjSLESCkYLil-6XqgDr4yiZdVuWioTbCTlmg'
-        assert teeHab.delserder.pre == teeHab.pre
-        assert teeHab.delserder.ked["s"] == '0'
-        assert teeHab.delserder.said == teeHab.delserder.pre == teeHab.pre
-        assert teeHab.accepted is False  # need to fix this when redo logic
-
-
-    """End Test"""
-
-
-
 if __name__ == "__main__":
     test_make_load_hab_with_habery()
     # test_habitat_reinitialization_reload()
