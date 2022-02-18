@@ -19,30 +19,30 @@ from ..app import test_grouping
 
 
 def test_verifier_query(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         issuer = issuing.Issuer(hab=hab, name="test", temp=True)
 
-        verfer = verifying.Verifier(hab=hab)
-        msg = verfer.query(issuer.regk,
+        verfer = verifying.Verifier(hby=hby)
+        msg = verfer.query(hab.pre, issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"Efp5Surn_KGO6S4G6ZnExhK8'
-                  b'3kCEIpVQA3QihDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                  b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                  b'KXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc"}}-V'
-                  b'Aj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPkuS'
-                  b'zu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDwx9'
-                  b'iBO55UL94q0CAQ')
+                       b'3kCEIpVQA3QihDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
+                       b'KXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc"}}-V'
+                       b'Aj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPkuS'
+                       b'zu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDwx9'
+                       b'iBO55UL94q0CAQ')
 
 
 def test_verifier():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
-            habbing.openHab(name="recp", transferable=True, temp=True) as recp, \
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
+            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp), \
             viring.openReg(temp=True) as reger:
         assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
 
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
-        verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger, tevers=issuer.tevers)
+        verifier = verifying.Verifier(hby=hby, reger=reger)
 
         credSubject = dict(
             d="",
@@ -56,7 +56,6 @@ def test_verifier():
                                     schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
                                     subject=d,
                                     status=issuer.regk)
-
 
         sadsigers, sadcigars = signing.signPaths(hab=hab, serder=creder, paths=[[]])
         missing = False
@@ -81,7 +80,6 @@ def test_verifier():
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-
         dcre, sadsigers, sadcigars = reger.cloneCred(said=creder.saider.qb64)
 
         assert dcre.raw == creder.raw
@@ -94,205 +92,202 @@ def test_verifier():
         saider = reger.schms.get("EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg")
         assert saider[0].qb64 == creder.said
 
-
     """End Test"""
 
 
-
-def test_verifier_multisig():
-    with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
-            habbing.openHab(name="recp", transferable=True, temp=True) as recp, \
-            habbing.openHab(name="verfer", transferable=True, temp=True) as verfer, \
-            viring.openReg(temp=True) as reger:
-
-        gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
-        group1 = hab1.group()
-        assert group1.gid == gid
-
-        # Keverys so we can process the final message.
-        kev1 = ceventing.Kevery(db=hab1.db, lax=False, local=False)
-        kev2 = ceventing.Kevery(db=hab2.db, lax=False, local=False)
-        kev3 = ceventing.Kevery(db=hab3.db, lax=False, local=False)
-        vkev = ceventing.Kevery(db=verfer.db, lax=False, local=False)
-
-        micp = hab1.makeOtherEvent(gid, sn=0)
-        parsing.Parser().parse(ims=bytearray(micp), kvy=vkev)
-
-        g1 = grouping.Groupy(hab=hab1)
-        g2 = grouping.Groupy(hab=hab2)
-        g3 = grouping.Groupy(hab=hab3)
-
-        groupies = [g1, g2, g3]
-
-        issuer = issuing.Issuer(hab=hab1, reger=reger, noBackers=True, estOnly=True, temp=True)
-        assert len(issuer.cues) == 1
-        cue = issuer.cues.popleft()
-        rseal = cue["data"]
-
-        imsg = dict(
-            op=grouping.Ops.ixn,
-            data=rseal,
-        )
-
-        for idx, groupy in enumerate(groupies):
-            missing = False
-            try:
-                groupy.processMessage(imsg)
-            except kering.MissingSignatureError:
-                missing = True
-            assert missing is True
-
-        raw = hab1.db.gpse.getLast(hab1.pre)
-        msg = json.loads(raw)
-        gid = msg["pre"]
-        dig = msg["dig"]
-
-        dgkey = dbing.dgKey(gid, dig)
-        eraw = hab1.db.getEvt(dgkey)
-        mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
-
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
-        sigs = hab1.db.getSigs(dgkey)
-        sigs.extend(hab2.db.getSigs(dgkey))
-        sigs.extend(hab3.db.getSigs(dgkey))
-
-        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
-
-        evt = bytearray(eraw)
-        evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigers)).qb64b)  # attach cnt
-        for sig in sigs:
-            evt.extend(sig)
-
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
-
-        g1.processEscrows()
-        g2.processEscrows()
-        g3.processEscrows()
-
-        issuer.processEscrows()
-        assert issuer.regk in issuer.tevers
-
-        assert len(issuer.cues) == 1
-        cue = issuer.cues.popleft()
-        assert cue["kin"] == "logEvent"
-
-        verifier = verifying.Verifier(hab=verfer, name="verifier", reger=reger, tevers=issuer.tevers)
-
-        credSubject = dict(
-            d="",
-            i=recp.pre,
-            dt=helping.nowIso8601(),
-            LEI="254900OPPU84GM83MG36",
-        )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
-
-        creder = proving.credential(issuer=group1.gid,
-                                    schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
-                                    subject=d,
-                                    status=issuer.regk)
-
-        missing = False
-        try:
-            issuer.issue(creder)
-        except kering.MissingAnchorError:
-            missing = True
-        assert missing is True
-
-        assert len(issuer.cues) == 1
-        cue = issuer.cues.popleft()
-        rseal = cue["data"]
-
-        imsg = dict(
-            op=grouping.Ops.ixn,
-            data=rseal,
-        )
-
-        for idx, groupy in enumerate(groupies):
-            missing = False
-            try:
-                groupy.processMessage(imsg)
-            except kering.MissingSignatureError:
-                missing = True
-            assert missing is True
-
-        raw = hab1.db.gpse.getLast(hab1.pre)
-        msg = json.loads(raw)
-        gid = msg["pre"]
-        dig = msg["dig"]
-
-        dgkey = dbing.dgKey(gid, dig)
-        eraw = hab1.db.getEvt(dgkey)
-        mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
-
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
-        sigs = hab1.db.getSigs(dgkey)
-        sigs.extend(hab2.db.getSigs(dgkey))
-        sigs.extend(hab3.db.getSigs(dgkey))
-
-        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
-
-        evt = bytearray(eraw)
-        evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigers)).qb64b)  # attach cnt
-        for sig in sigs:
-            evt.extend(sig)
-
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
-
-        g1.processEscrows()
-        g2.processEscrows()
-        g3.processEscrows()
-
-        kever = hab1.kevers[gid]
-        assert kever.sn == 2
-
-        issuer.processEscrows()
-        status = issuer.tvy.tevers[issuer.regk].vcState(creder.said)
-        assert status.ked["et"] == coring.Ilks.iss
-
-        gkev = hab1.kevers[gid]
-        prefixer = coring.Prefixer(qb64=gid)
-        seqner = coring.Seqner(sn=gkev.lastEst.s)
-        saider = coring.Saider(qb64=gkev.lastEst.d)
-
-        sigers = []
-        for idx, hab in enumerate([hab1, hab2, hab3]):
-            pather = coring.Pather(path=[])
-            data = pather.rawify(serder=creder)
-
-            sig = hab.mgr.sign(ser=data,
-                               verfers=hab.kever.verfers,
-                               indexed=True,
-                               indices=[idx])
-            sigers.extend(sig)
-
-        sadsigers = [(pather, prefixer, seqner, saider, sigers)]
-        verifier.processCredential(creder, sadsigers=sadsigers, sadcigars=[])
-
-        assert len(verifier.cues) == 1
-        cue = verifier.cues.popleft()
-        assert cue["kin"] == "saved"
-        assert cue["creder"].raw == creder.raw
-
-    """End Test"""
-
+# def test_verifier_multisig():
+#     with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
+#             habbing.openHab(name="recp", transferable=True, temp=True) as (recpHab, recp), \
+#             habbing.openHab(name="verfer", transferable=True, temp=True) as (verferHab, verfer), \
+#             viring.openReg(temp=True) as reger:
+#
+#         gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
+#         group1 = hab1.group()
+#         assert group1.gid == gid
+#
+#         # Keverys so we can process the final message.
+#         kev1 = ceventing.Kevery(db=hab1.db, lax=False, local=False)
+#         kev2 = ceventing.Kevery(db=hab2.db, lax=False, local=False)
+#         kev3 = ceventing.Kevery(db=hab3.db, lax=False, local=False)
+#         vkev = ceventing.Kevery(db=verfer.db, lax=False, local=False)
+#
+#         micp = hab1.makeOtherEvent(gid, sn=0)
+#         parsing.Parser().parse(ims=bytearray(micp), kvy=vkev)
+#
+#         g1 = grouping.Groupy(hby=hby1)
+#         g2 = grouping.Groupy(hby=hby2)
+#         g3 = grouping.Groupy(hby=hby3)
+#
+#         groupies = [g1, g2, g3]
+#
+#         issuer = issuing.Issuer(hab=hab1, reger=reger, noBackers=True, estOnly=True, temp=True)
+#         assert len(issuer.cues) == 1
+#         cue = issuer.cues.popleft()
+#         rseal = cue["data"]
+#
+#         imsg = dict(
+#             op=grouping.Ops.ixn,
+#             data=rseal,
+#         )
+#
+#         for idx, groupy in enumerate(groupies):
+#             missing = False
+#             try:
+#                 groupy.processMessage(imsg)
+#             except kering.MissingSignatureError:
+#                 missing = True
+#             assert missing is True
+#
+#         raw = hab1.db.gpse.getLast(hab1.pre)
+#         msg = json.loads(raw)
+#         gid = msg["pre"]
+#         dig = msg["dig"]
+#
+#         dgkey = dbing.dgKey(gid, dig)
+#         eraw = hab1.db.getEvt(dgkey)
+#         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
+#
+#         dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
+#         sigs = hab1.db.getSigs(dgkey)
+#         sigs.extend(hab2.db.getSigs(dgkey))
+#         sigs.extend(hab3.db.getSigs(dgkey))
+#
+#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#
+#         evt = bytearray(eraw)
+#         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+#                                   count=len(sigers)).qb64b)  # attach cnt
+#         for sig in sigs:
+#             evt.extend(sig)
+#
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
+#
+#         g1.processEscrows()
+#         g2.processEscrows()
+#         g3.processEscrows()
+#
+#         issuer.processEscrows()
+#         assert issuer.regk in issuer.tevers
+#
+#         assert len(issuer.cues) == 1
+#         cue = issuer.cues.popleft()
+#         assert cue["kin"] == "logEvent"
+#
+#         verifier = verifying.Verifier(hab=verfer, reger=reger)
+#
+#         credSubject = dict(
+#             d="",
+#             i=recp.pre,
+#             dt=helping.nowIso8601(),
+#             LEI="254900OPPU84GM83MG36",
+#         )
+#         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+#
+#         creder = proving.credential(issuer=group1.gid,
+#                                     schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
+#                                     subject=d,
+#                                     status=issuer.regk)
+#
+#         missing = False
+#         try:
+#             issuer.issue(creder)
+#         except kering.MissingAnchorError:
+#             missing = True
+#         assert missing is True
+#
+#         assert len(issuer.cues) == 1
+#         cue = issuer.cues.popleft()
+#         rseal = cue["data"]
+#
+#         imsg = dict(
+#             op=grouping.Ops.ixn,
+#             data=rseal,
+#         )
+#
+#         for idx, groupy in enumerate(groupies):
+#             missing = False
+#             try:
+#                 groupy.processMessage(imsg)
+#             except kering.MissingSignatureError:
+#                 missing = True
+#             assert missing is True
+#
+#         raw = hab1.db.gpse.getLast(hab1.pre)
+#         msg = json.loads(raw)
+#         gid = msg["pre"]
+#         dig = msg["dig"]
+#
+#         dgkey = dbing.dgKey(gid, dig)
+#         eraw = hab1.db.getEvt(dgkey)
+#         mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
+#
+#         dgkey = dbing.dgKey(mssrdr.preb, mssrdr.saidb)
+#         sigs = hab1.db.getSigs(dgkey)
+#         sigs.extend(hab2.db.getSigs(dgkey))
+#         sigs.extend(hab3.db.getSigs(dgkey))
+#
+#         sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+#
+#         evt = bytearray(eraw)
+#         evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+#                                   count=len(sigers)).qb64b)  # attach cnt
+#         for sig in sigs:
+#             evt.extend(sig)
+#
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
+#         parsing.Parser().parse(ims=bytearray(evt), kvy=vkev)
+#
+#         g1.processEscrows()
+#         g2.processEscrows()
+#         g3.processEscrows()
+#
+#         kever = hab1.kevers[gid]
+#         assert kever.sn == 2
+#
+#         issuer.processEscrows()
+#         status = issuer.tvy.tevers[issuer.regk].vcState(creder.said)
+#         assert status.ked["et"] == coring.Ilks.iss
+#
+#         gkev = hab1.kevers[gid]
+#         prefixer = coring.Prefixer(qb64=gid)
+#         seqner = coring.Seqner(sn=gkev.lastEst.s)
+#         saider = coring.Saider(qb64=gkev.lastEst.d)
+#
+#         sigers = []
+#         for idx, hab in enumerate([hab1, hab2, hab3]):
+#             pather = coring.Pather(path=[])
+#             data = pather.rawify(serder=creder)
+#
+#             sig = hab.mgr.sign(ser=data,
+#                                verfers=hab.kever.verfers,
+#                                indexed=True,
+#                                indices=[idx])
+#             sigers.extend(sig)
+#
+#         sadsigers = [(pather, prefixer, seqner, saider, sigers)]
+#         verifier.processCredential(creder, sadsigers=sadsigers, sadcigars=[])
+#
+#         assert len(verifier.cues) == 1
+#         cue = verifier.cues.popleft()
+#         assert cue["kin"] == "saved"
+#         assert cue["creder"].raw == creder.raw
+#
+#     """End Test"""
 
 
 def test_verifier_chained_credential():
     qviSchema = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
     vLeiSchema = "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0"
 
-    with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as ron, \
-            habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as ian, \
-            habbing.openHab(name="han", transferable=True, temp=True) as han, \
-            habbing.openHab(name="vic", transferable=True, temp=True) as vic, \
+    with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
+            habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            habbing.openHab(name="han", transferable=True, temp=True) as (hanHby, han), \
+            habbing.openHab(name="vic", transferable=True, temp=True) as (vicHby, vic), \
             viring.openReg(temp=True, name="ron") as ronreg, \
             viring.openReg(temp=True, name="ian") as ianreg, \
             viring.openReg(temp=True, name="vic") as vicreg:
@@ -303,7 +298,7 @@ def test_verifier_chained_credential():
         assert vic.pre == "E-1sk6rrObrEjysK7gsfbNyr4V4qFJsnrFiU5EDBO2Vo"
 
         roniss = issuing.Issuer(hab=ron, reger=ronreg, noBackers=True, estOnly=True, temp=True)
-        ronverfer = verifying.Verifier(hab=ron, reger=ronreg, tevers=roniss.tevers)
+        ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg)
 
         credSubject = dict(
             d="",
@@ -364,7 +359,7 @@ def test_verifier_chained_credential():
         assert saider[0].qb64 == creder.said
 
         ianiss = issuing.Issuer(hab=ian, reger=ianreg, noBackers=True, estOnly=True, temp=True)
-        ianverfer = verifying.Verifier(hab=ian, reger=ianreg)
+        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg)
 
         leiCredSubject = dict(
             d="",
@@ -433,7 +428,7 @@ def test_verifier_chained_credential():
         # Now lets get Ron's crecential into Ian's Tevers and Database
         iankvy = ceventing.Kevery(db=ian.db, lax=False, local=False)
         iantvy = eventing.Tevery(reger=ianreg, db=ian.db, local=False)
-        ianverfer = verifying.Verifier(hab=ian, reger=ianreg)
+        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg)
 
         # first get Ron's inception event into Ian's db
         ronIcp = ron.makeOwnEvent(sn=0)
@@ -460,7 +455,7 @@ def test_verifier_chained_credential():
         # Now lets get Ron's crecential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
         victvy = eventing.Tevery(reger=vicreg, db=vic.db, local=False)
-        vicverfer = verifying.Verifier(hab=vic, reger=vicreg)
+        vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg)
 
         # Get Ron's icp into Vic's db
         parsing.Parser().parse(ims=bytearray(ronIcp), kvy=vickvy, tvy=victvy)

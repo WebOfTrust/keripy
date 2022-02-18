@@ -7,16 +7,21 @@ import argparse
 import json
 
 from hio.base import doing
+
 from keri import kering
-from keri.db import basing
+from ..common import existing
+from ... import habbing, agenting, indirecting, directing
 
-from ... import habbing, keeping, agenting, indirecting, directing
-
-parser = argparse.ArgumentParser(description='Rotate keys')
+parser = argparse.ArgumentParser(description='Create and publish an interaction event')
 parser.set_defaults(handler=lambda args: interact(args))
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                          'http)', default="tcp")
+parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+parser.add_argument('--proto', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
+                                    'http)', default="tcp")
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=False)
 
 
@@ -28,6 +33,10 @@ def interact(args):
 
     """
     name = args.name
+    alias = args.alias
+    base = args.base
+    bran = args.bran
+
     if args.data is not None:
         try:
             if args.data.startswith("@"):
@@ -44,7 +53,7 @@ def interact(args):
     else:
         data = None
 
-    ixnDoer = InteractDoer(name=name, proto=args.proto, data=data)
+    ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, proto=args.proto, data=data)
 
     doers = [ixnDoer]
 
@@ -57,14 +66,13 @@ def interact(args):
         return -1
 
 
-
 class InteractDoer(doing.DoDoer):
     """
     DoDoer that launches Doers needed to create an interaction event and publication of the event
     to all appropriate witnesses
     """
 
-    def __init__(self, name, proto, data: list = None):
+    def __init__(self, name, base, bran, alias, proto, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -74,21 +82,15 @@ class InteractDoer(doing.DoDoer):
             data is list of dicts of committed data such as seals
        """
 
-        self.name = name
+        self.alias = alias
         self.proto = proto
         self.data = data
 
-        ks = keeping.Keeper(name=self.name, temp=False)  # not opened by default, doer opens
-        self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=self.name, temp=False)  # not opened by default, doer opens
-        self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-        self.hab = habbing.Habitat(name=self.name, ks=ks, db=db, temp=False, create=False)
-        self.habDoer = habbing.HabitatDoer(habitat=self.hab)  # setup doer
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.interactDo)]
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        doers = [self.hbyDoer, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)
-
 
     def interactDo(self, tymth, tock=0.0, **opts):
         """
@@ -100,33 +102,24 @@ class InteractDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        hab = self.hby.habByName(name=self.alias)
+        hab.interact(data=self.data)
 
-        msg = self.hab.interact(data=self.data)
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics="/receipt")
+        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.extend(doers=[witDoer])
 
-        if self.proto == "tcp":
-            mbx = None
-            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.TCPWitnesser, msg=msg)
-            self.extend(doers=[witDoer])
-            yield self.tock
-        else:  # "http"
-            mbx = indirecting.MailboxDirector(hab=self.hab)
-            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HTTPWitnesser, msg=msg)
-            self.extend(doers=[mbx, witDoer])
-            yield self.tock
+        if hab.kever.wits:
+            witDoer.msgs.append(dict(pre=hab.pre))
+            while not witDoer.cues:
+                _ = yield self.tock
 
-        while not witDoer.done:
-            _ = yield self.tock
-
-
-        print(f'Prefix  {self.hab.pre}')
-        print(f'New Sequence No.  {self.hab.kever.sn}')
-        for idx, verfer in enumerate(self.hab.kever.verfers):
+        print(f'Prefix  {hab.pre}')
+        print(f'New Sequence No.  {hab.kever.sn}')
+        for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx+1}:  {verfer.qb64}')
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, witDoer]
-        if mbx:
-            toRemove.append(mbx)
-
+        toRemove = [self.hbyDoer, witDoer, mbx]
         self.remove(toRemove)
 
         return

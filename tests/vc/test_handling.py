@@ -5,9 +5,8 @@ tests.vc.handling module
 """
 from hio.base import doing
 
-from keri.app import keeping, habbing, indirecting, signing
+from keri.app import habbing, indirecting, signing
 from keri.core import coring, scheming, eventing, parsing
-from keri.db import basing
 from keri.peer import exchanging
 from keri.vc.handling import IssueHandler, envelope, RequestHandler
 from keri.vc.proving import credential
@@ -21,20 +20,12 @@ def test_issuing():
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
 
-    #with basing.openDB(name="sid") as sidDB, \
-            #keeping.openKS(name="sid") as sidKS, \
-            #basing.openDB(name="red") as redDB, \
-            #habbing.openHabitat(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
-            #viring.openReg(name="red") as redPDB:
-
     with viring.openReg(name="red") as redPDB, \
          habbing.openHby(name="red", base="test") as redHby, \
          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
          habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
 
-        wanHab = wanHby.makeHab(name="wan", transferable=False)
-
-        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
+        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
 
         limit = 1.0
         tock = 1.0
@@ -45,25 +36,14 @@ def test_issuing():
         sidPre = sidHab.pre
         assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
 
-        #sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
-                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
-        #sidPre = sidHab.pre
-        #assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
-
-        #sidHab = habbing.Habitat(ks=sidHby.ks, db=sidHby.db,name="sid", salt=sidSalt, temp=True,
-                                 #wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
-        #sidPre = sidHab.pre
-        #assert sidPre == 'ErMoeFWa5WNC6hxy3EeFpcDYYOGilu0CSZvmckmNHeOQ'
-
-
         redKvy = eventing.Kevery(db=redHby.db)
 
-        verifier = verifying.Verifier(hab=sidHab, reger=redPDB)
+        verifier = verifying.Verifier(hby=sidHby, reger=redPDB)
         issuer = issuing.Issuer(hab=sidHab, reger=verifier.reger)
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        redIssueHandler = IssueHandler(hab=sidHab, verifier=verifier)
-        redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen(), handlers=[redIssueHandler])
+        redIssueHandler = IssueHandler(hby=sidHby, verifier=verifier)
+        redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
 
@@ -98,12 +78,12 @@ def test_issuing():
 
         # Create the issue credential payload
         pl = dict(
-            vc=[envelope(msg)]
+            vc=[envelope(msg=msg)]
         )
 
         # Create the `exn` message for issue credential
         sidExcSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
-        excMsg = bytearray(sidExcSrdr.raw)
+        excMsg = bytearray()
         excMsg.extend(sidHab.endorse(sidExcSrdr, last=True))
 
         # Parse the exn issue credential message on Red's side
@@ -194,7 +174,7 @@ def test_proving():
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
-        verifier = verifying.Verifier(hab=hanHab, reger=hanPDB)
+        verifier = verifying.Verifier(hby=hanHby, reger=hanPDB)
         issuer = issuing.Issuer(hab=hanHab, reger=hanPDB)
 
         creder = credential(issuer=sidHab.pre,
@@ -216,8 +196,8 @@ def test_proving():
         assert hanPDB.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        hanRequestHandler = RequestHandler(hab=hanHab, wallet=hanWallet)
-        hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen(), handlers=[hanRequestHandler])
+        hanRequestHandler = RequestHandler(hby=hanHby, wallet=hanWallet)
+        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler])
 
         # Create the issue credential payload
         pl = dict(

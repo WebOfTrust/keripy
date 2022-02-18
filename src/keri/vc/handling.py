@@ -3,20 +3,17 @@
 keri.vc.handling module
 
 """
-import json
 
 from hio.base import doing
 from hio.help import decking
+
 from keri import kering
 from keri.help import helping
 from keri.vdr import issuing, viring
-
 from . import proving
 from .. import help
 from ..app import agenting, signing
 from ..core import scheming, parsing
-from ..core.coring import dumps, Deversify
-from ..core.scheming import JSONSchema
 from ..kering import ShortageError
 from ..peer import exchanging
 from ..vc.proving import Credentialer
@@ -44,41 +41,48 @@ class OfferHandler(doing.Doer):
                   "proof_type": ["Ed25519Signature2018"]
                 }
               }
-           } //embedded credential_manifest like structure, may contain presentation_definition of requirements for fullfilment
+           } //embedded credential_manifest structure, may contain presentation_definition of reqs for fullfilment
         }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
 
     """
 
     resource = "/credential/offer"
 
-    def __init__(self, wallet, formats, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, wallet, formats, cues=None, **kwa):
         """
 
         Parameters:
             wallet (Wallet) credential wallet that will hold the issued credentials
             formats (list) of format str names accepted for offers
-            typ (JSONSchema) credential type to accept
+            cues (Optional(decking.Deck)): outbound cue messages
+
         """
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
         self.formats = formats
-        self.typ = typ
 
         super(OfferHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
 
         Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Messages:
             payload is dict representing the body of a /credential/issue message
             pre is qb64 identifier prefix of sender
             sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
 
         """
+        # start enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
         while True:
             while self.msgs:
@@ -102,7 +106,7 @@ class OfferHandler(doing.Doer):
                                 "".format(formats, self.formats))
                     continue
 
-                apply = credential_apply(issuer, schema, fmts)
+                apply = credential_apply(issuer, schema, fmts, body={})
 
                 exn = exchanging.exchange(route="/credential/apply", payload=apply)
                 self.cues.append(dict(dest=recipient, rep=exn))
@@ -136,14 +140,19 @@ class ApplyHandler(doing.DoDoer):
 
     resource = "/credential/apply"
 
-    def __init__(self, hab, verifier, name, issuerCues=None, cues=None, **kwa):
-        """
+    def __init__(self, hby, verifier, name, issuerCues=None, cues=None, **kwa):
+        """ Initialize instance
 
         Parameters:
-            hab (Habitat) credential wallet that will hold the issued credentials
-            verifier (Verifier) Local credential verifier used to verify and save any issued credential
+            hab (Habitat): credential wallet that will hold the issued credentials
+            verifier (Verifier): Local credential verifier used to verify and save any issued credential
+            name (str): local alias of issuer to use for issuing credential
+            issuerCues (Optional(decking.Deck)): outbound cue messages for issuer
+            cues (Optional(decking.Deck)): outbound cue messages
+            **kwa (dict): keyword arguments passed to DoDoer
+
         """
-        self.hab = hab
+        self.hby = hby
         self.verifier = verifier
         self.name = name
         self.issuer = None
@@ -155,19 +164,23 @@ class ApplyHandler(doing.DoDoer):
         super(ApplyHandler, self).__init__(doers=[doing.doify(self.escrowDo)], **kwa)
 
     def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
 
         Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Messages:
             payload is dict representing the body of a /credential/issue message
             pre is qb64 identifier prefix of sender
             sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
 
         """
+        self.wind(tymth)
+        self.tock = tock
         yield self.tock
-        self.issuer = issuing.Issuer(hab=self.hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
 
         while True:
             while self.msgs:
@@ -178,17 +191,20 @@ class ApplyHandler(doing.DoDoer):
 
                 schema = payload["schema"]
                 issuer = payload["issuer"]
-                source = []
-
-                if issuer != self.hab.pre:
-                    logger.info("request for incorrect issuer {} to {}".format(issuer, self.hab.pre))
+                if issuer not in  self.hby.habs:
+                    logger.info("request for incorrect issuer {}".format(issuer))
                     continue
+
+                hab = self.hby.habs[issuer]
+
+                self.issuer = issuing.Issuer(hab=hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
+
+                source = []
 
                 if schema != scheming.QualifiedvLEIIssuervLEICredential:
                     logger.info("credential type {} is invalid, only QualifiedvLEIIssuervLEICredential can be "
                                 "auto-issued".format(schema))
                     continue
-
 
                 data = payload["body"]
                 dt = data["dt"] if "dt" in data else helping.nowIso8601()
@@ -201,9 +217,9 @@ class ApplyHandler(doing.DoDoer):
 
                 d |= data
 
-                group = self.hab.group()
+                group = hab.group()
                 if group is None:
-                    pre = self.hab.pre
+                    pre = hab.pre
                 else:
                     pre = group.gid
 
@@ -217,7 +233,7 @@ class ApplyHandler(doing.DoDoer):
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-                craw = self.hab.endorse(creder)
+                craw = hab.endorse(creder)
                 parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield self.tock
@@ -225,26 +241,35 @@ class ApplyHandler(doing.DoDoer):
             yield self.tock
 
     def escrowDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
+        """ Processes the Groupy escrow for group icp, rot and ixn request messages.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Groupy escrow for group icp, rot and ixn request messages.
+        Returns:
+            Doist: doifiable Doist compatible generator method
 
         """
         # start enter context
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
         while True:
             self.issuer.processEscrows()
             yield self.tock
 
 
 class IssueHandler(doing.DoDoer):
-    """
-    Sample class that handles a credential Issue `exn` message.  By default, this handler
-    verifies the credential with the provided verifier.  The incoming message must have the following format:
+    """ Sample class that handles a credential Issue `exn` message.
+
+    By default, this handler verifies the credential with the provided verifier.
+    The incoming message must have the following format:
 
          {
        "vc" [
@@ -284,37 +309,46 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hab, verifier, ims=None, cues=None, **kwa):
-        """
+    def __init__(self, hby, verifier,  cues=None, **kwa):
+        """ Initialize instance
 
         Parameters:
+            hab (Habitat): local identifier environment
             wallet (Wallet) credential wallet that will hold the issued credentials
-            typ (JSONSchema) credential type to accept
+            ims (Optional(bytearray)): inbound message stream to process
+            cues (Optional(decking.Deck)): outbound cue messages
+            **kwa (dict): keyword arguments passed to DoDoer
+
         """
-        self.hab = hab
+        self.hby = hby
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.ims = ims if ims is not None else bytearray()
 
         self.verifier = verifier
-        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.HttpWitnesser)
 
-        doers = [self.witq, doing.doify(self.msgDo)]
+        doers = [doing.doify(self.msgDo)]
 
         super(IssueHandler, self).__init__(doers=doers, **kwa)
 
-    def msgDo(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+    def msgDo(self, tymth, tock=0.0):
+        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
 
         Parameters:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Messages:
+            payload (dict): representing the body of a /credential/issue message
+            pre (qb64): identifier prefix of sender
+            sigers (list): of Sigers representing the sigs on the /credential/issue message
+            verfers (list): of Verfers of the keys used to sign the message
 
         """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
         while True:
             while self.msgs:
@@ -326,9 +360,6 @@ class IssueHandler(doing.DoDoer):
                 for envlop in envelopes:
                     crd = envlop["vc"]
                     proof = envlop["proof"]
-                    msgs = bytearray(envlop["msgs"].encode("utf-8"))
-                    self.ims.extend(msgs)
-                    yield
 
                     creder = proving.Credentialer(ked=crd)
 
@@ -347,7 +378,8 @@ class IssueHandler(doing.DoDoer):
 
 
 class RequestHandler(doing.Doer):
-    """
+    """ Processor for a credential request
+
         Processor for a credential request with input descriptors in the payload used to
         match saved credentials based on a schema.  The payload of the request is expected to
         have the following format:
@@ -376,17 +408,16 @@ class RequestHandler(doing.Doer):
 
     resource = "/presentation/request"
 
-    def __init__(self, hab, wallet, cues=None, **kwa):
-        """
-        Create an `exn` request handler for processing credential presentation requests
+    def __init__(self, hby, wallet, cues=None, **kwa):
+        """ Create an `exn` request handler for processing credential presentation requests
 
         Parameters
-            hab (Habitate) is the environment
-            wallet (Wallet) is the wallet holding the credentials to present
-            cues (decking.Deck) of responses cue'ed up by this handler
+            hab (Habitat): is the environment
+            wallet (Wallet): is the wallet holding the credentials to present
+            cues (Optional(decking.Deck)): outbound response cue for  this handler
 
         """
-        self.hab = hab
+        self.hby = hby
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
@@ -394,16 +425,23 @@ class RequestHandler(doing.Doer):
         super(RequestHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
-        """
-        Process presentation request message with sender identifier, sigs and verfers
+        """ Process presentation request message with sender identifier, sigs and verfers
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
         Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
+            payload (dict): representing the body of a /presentation/request message
+            pre (qb64): identifier prefix of sender
+            sigers (list): of Sigers representing the sigs on the /presentation/request message
+            verfers (list): of Verfers of the keys used to sign the message
 
         """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
         while True:
             while self.msgs:
@@ -420,7 +458,7 @@ class RequestHandler(doing.Doer):
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
-                    pe = presentation_exchange(db=self.hab.db, reger=self.wallet.reger, credentials=matches)
+                    pe = presentation_exchange(db=self.hby.db, reger=self.wallet.reger, credentials=matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
@@ -430,9 +468,9 @@ class RequestHandler(doing.Doer):
 
 
 class ProofHandler(doing.Doer):
-    """
-    Processor for responding to presentation proof peer to peer message.  The payload of the message
-    is expected to have the following format:
+    """ Processor for responding to presentation proof peer to peer message.
+
+      The payload of the message is expected to have the following format:
 
         {
           "presentation_submission": {
@@ -476,6 +514,14 @@ class ProofHandler(doing.Doer):
     resource = "/presentation/proof"
 
     def __init__(self, cues=None, proofs=None, **kwa):
+        """ Initialize instance
+
+        Parameters:
+            cues (decking.Deck): outbound cue messages
+            proofs (decking.Deck): inbound proof request `exn` messages
+            **kwa (dict): keyword arguments passes to super Doer
+
+        """
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.proofs = proofs if proofs is not None else decking.Deck()
@@ -483,17 +529,24 @@ class ProofHandler(doing.Doer):
         super(ProofHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
+        """ Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Messages:
             payload is dict representing the body of a /credential/issue message
             pre is qb64 identifier prefix of sender
             sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
 
+
         """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
         while True:
             while self.msgs:
@@ -515,6 +568,7 @@ class ProofHandler(doing.Doer):
 
                 # TODO:  Find verifiable credential in vcs based on `path`
                 dm = pe["descriptor_map"]
+                print(dm)
 
                 vcs.reverse()
                 for vc in vcs:
@@ -526,12 +580,14 @@ class ProofHandler(doing.Doer):
 
 
 def envelope(msg, msgs=bytearray()):
-    """
-    Returns a dict of a VC split into the "vc" and "proof"
+    """ Returns a dict of a VC split into the "vc" and "proof"
 
     Parameters:
-        msg: bytes of verifiable credential to split
-        msgs: optional event log messages in support of the credential
+        msg (bytes): of verifiable credential to split
+        msgs (bytearray) optional event log messages in support of the credential
+
+    Returns:
+        dict: enveloped credential, proof and key event/transaction event log messages
 
     """
 
@@ -552,14 +608,18 @@ def envelope(msg, msgs=bytearray()):
 
 
 def presentation_exchange(db, reger, credentials):
-    """
-    Create a presentation exchange body containing the credential and event logs
+    """ Create a presentation exchange.
+
+    Create presentation exchange body containing the credential and event logs
     needed to provide proof of holding a valid credential
 
     Parameters:
-        db (Baser) is the environment database
-        reger (Registry) is the credential registry database
-        credentials (List) is the list of credential instances
+        db (Baser): is the environment database
+        reger (Registry): is the credential registry database
+        credentials (list): is the list of credential instances
+
+    Returns:
+        dict: presentation dict for credential
 
     """
     dm = []
@@ -606,7 +666,9 @@ def presentation_exchange(db, reger, credentials):
 
 
 def credential_apply(issuer, schema, formats, body):
-    """
+    """ Creates credential apply body for `exn` message
+
+    Resulting `exn` message will have the following format:
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
            "t": "exn",                                             // peer to peer message ilk
@@ -614,14 +676,7 @@ def credential_apply(issuer, schema, formats, body):
            "r": "/credential/apply"
            "q" {
               "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-              "input_descriptors": [
-                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
-              ],
-              "format": {
-                 "cesr": {
-                   "proof_type": ["Ed25519Signature2018"]
-                 }
-              },
+              "schema": "E_xp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaL5d",
               "body": {
                  // fields specific to the credential specified in the input_descriptor
               }
@@ -629,10 +684,13 @@ def credential_apply(issuer, schema, formats, body):
         }
 
     Parameters:
-        issuer (str) is qb64 identifier prefix of the issuer
-        schema (str) is qb64 SAID of schema being applied for
-        formats (list of CredentialFormat) is list of acceptable credential formats
-        body (map) of values being applied for
+        issuer (str): is qb64 identifier prefix of the issuer
+        schema (str): is qb64 SAID of schema being applied for
+        formats (list): is list of acceptable credential formats
+        body (map)" of values being applied for
+
+    Returns:
+        dict: field for credential apply body
 
     """
 
@@ -648,19 +706,20 @@ def credential_apply(issuer, schema, formats, body):
     return d
 
 
-def credential_issue(msgs, typ):
-    """
-    Returns a list of credentials enveloped inside a credential issue message
+def credential_issue(msgs):
+    """ Returns a list of credentials enveloped inside a credential issue message
 
     Parameters:
         msgs (list) is list of CESR formatted, endorsed verifiable credentials
-        typ (JSONSchema) type of credentials being issued
+
+    Returns:
+        dict: vc list embedded in vc property
 
     """
 
     vcs = []
     for msg in msgs:
-        vc = envelope(msg, typ)
+        vc = envelope(msg)
         vcs.append(vc)
 
     pl = dict(

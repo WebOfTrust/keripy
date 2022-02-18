@@ -22,27 +22,24 @@ QualifiedVLEIIssuerVLEICredential = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkq
 
 
 class CacheResolver:
-    """
-    Sample jsonschema resolver for loading schema $ref references from a local hash.
+    """ Sample jsonschema resolver for loading schema $ref references from a local hash.
 
     """
 
     def __init__(self, cache=None):
-        """
-        Create a jsonschema resolver that can be used for loading references to schema remotely.
+        """ Create a jsonschema resolver that can be used for loading references to schema remotely.
 
         Parameters:
-            cache (dict) is an optional pre-loaded cache of schema
+            cache (Optional(dict)) is an optional pre-loaded cache of schema
         """
         self.cache = cache if cache is not None else dict()
 
     def add(self, key, schema):
-        """
-        Add schema to cache for resolution
+        """ Add schema to cache for resolution
 
         Parameters:
-            key (str) URI to resolve to the schema
-            schema (bytes) is bytes of the schema for the URI
+            key (str): URI to resolve to the schema
+            schema (bytes): is bytes of the schema for the URI
         """
         self.cache[key] = schema
 
@@ -54,11 +51,10 @@ class CacheResolver:
         return ref
 
     def handler(self, uri):
-        """
-        Handler provided to jsonschema for cache resolution
+        """ Handler provided to jsonschema for cache resolution
 
         Parameters:
-            uri (str) the URI to resolve
+            uri (str): the URI to resolve
         """
         ref = self.resolve(uri)
         if not ref:
@@ -68,12 +64,13 @@ class CacheResolver:
         return schemr.sed
 
     def resolver(self, scer=b''):
-        """
+        """ Locally cached schema resolver
+
         Returns a jsonschema resolver for returning locally cached schema based on self-addressing
         identifier URIs.
 
         Parameters:
-            scer (bytes) is the source document that is being processed for reference resolution
+            scer (Optional(bytes)) is the source document that is being processed for reference resolution
 
         """
         return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
@@ -202,18 +199,41 @@ jsonSchemaCache = CacheResolver(cache={
 
 
 class JSONSchema:
-    """
-    JSON Schema support class
+    """ JSON Schema support class
     """
     id_ = Ids.dollar  # ID Field Label
 
     def __init__(self, resolver=CacheResolver()):
+        """ Initialize instance
+
+        Parameters:
+            resolver(Optional(Resolver)): instance used by JSONSchema parsing to resolve external refs
+
+        """
         self.resolver = resolver
 
     def resolve(self, uri):
+        """ Resolve remote reference to schema
+
+        Parameters:
+            uri (str): uniform resource identifier of schema to load
+
+        """
         return self.resolver.resolve(uri)
 
-    def load(self, raw=b'', kind=Serials.json):
+    def load(self, raw, kind=Serials.json):
+        """ Schema loader
+
+        Loads schema based on kind by performing deserialization on raw bytes of schema
+
+        Parameters:
+            raw (bytes): raw serialized schema
+            kind (Optional(Serials)): serialization kind of schema raw content
+
+        Returns:
+            tuple: (dict, Serials, Saider) of schema
+
+        """
         if kind == Serials.json:
             try:
                 sed = json.loads(raw.decode("utf-8"))
@@ -251,14 +271,30 @@ class JSONSchema:
 
     @staticmethod
     def dump(sed, kind=Serials.json):
+        """ Serailize schema based on kind
+
+        Parameters:
+            sed (dict): in memory representation of schema
+            kind (Optional(Serials)): kind of serialization to perform.  Defaults to JSON
+
+        Returns:
+            bytes: Serialized schema
+
+        """
         raw = coring.dumps(sed, kind)
         return raw
 
     @staticmethod
-    def detect(raw=b''):
-        """
-        Returns True if content represents JSON Schema by checking
-            for $schema;  False otherwise
+    def detect(raw):
+        """ Detect if raw content is JSON Schema
+
+        Parameters:
+            raw (bytes): data to check for JSON Schema
+
+        Returns:
+            boolean: True if content represents JSON Schema by checking
+                    for $schema;  False otherwise
+
         """
 
         try:
@@ -270,7 +306,8 @@ class JSONSchema:
 
     @staticmethod
     def verify_schema(schema):
-        """
+        """ Validate schema integrity
+
         Returns True if the provided schema validates successfully
           as complaint Draft 7 JSON Schema False otherwise
 
@@ -285,15 +322,17 @@ class JSONSchema:
         return True
 
     def verify_json(self, schema=b'', raw=b''):
-        """
-        Returns True if the JSON passes validation against the
-           provided complaint Draft 7 JSON Schema.  Returns False
-           if raw is not valid JSON, schema is not valid JSON Schema or
-           the validation fails
+        """ Verify the raw content against the schema for JSON that conforms to the schema
 
         Parameters:
-              schema (bytes): is the schema use for validation
-              raw (bytes): is JSON to validate against the Schema
+            schema (bytes): is the schema use for validation
+            raw (bytes): is JSON to validate against the Schema
+
+        Returns:
+            boolean: True if the JSON passes validation against the
+                   provided complaint Draft 7 JSON Schema.  Returns False
+                   if raw is not valid JSON, schema is not valid JSON Schema or
+                   the validation fails
         """
         try:
             d = json.loads(raw)
@@ -317,46 +356,47 @@ class JSONSchema:
 
 
 class Schemer:
-    """
-    Schemer is KERI schema serializer-deserializer class
+    """ Schemer is KERI schema serializer-deserializer class
+
     Verifies self-addressing identifier base on schema type
     Only supports current version VERSION
 
     Has the following public properties:
 
     Properties:
-        .raw is bytes of serialized event only
-        .sed is JSON schema dict
-        .kind is Schema kind string value (see namedtuple coring.Serials)
-        .saider is Saider instance of self-addressing identifier
-        .said  is qb64 digest from .saider
+        .raw (bytes): of serialized event only
+        .sed (dict): schema dict
+        .kind (Schema): kind string value (see namedtuple coring.Serials)
+        .saider (Saider): instance of self-addressing identifier
+        .said  (qb64): digest from .saider
 
     Hidden Attributes:
-          ._raw is bytes of serialized schema only
-          ._sed is JSON schema dict
-          ._kind is schema kind string value (see namedtuple coring.Serials)
+          ._raw (bytes): of serialized schema only
+          ._sed (JSON): schema dict
+          ._kind (schema): kind string value (see namedtuple coring.Serials)
             supported kinds are 'JSONSchema'
-          ._code is default code for .saider
-          ._saider is Saider instance of digest of .raw
+          ._code (default): code for .saider
+          ._saider (Saider): instance of digest of .raw
 
 
     """
 
     def __init__(self, raw=b'', sed=None, kind=None, typ=JSONSchema(), code=MtrDex.Blake3_256):
-        """
+        """  Initialize instance of Schemer
+
         Deserialize if raw provided
         Serialize if sed provided but not raw
         When serilaizing if kind provided then use kind instead of field in sed
 
         Parameters:
-          raw is bytes of serialized schema
-          sed is JSON dict or None
+          raw (bytes): of serialized schema
+          sed (dict): dict or None
             if None its deserialized from raw
-          schemaType is the type of schema
-          kind is serialization kind string value or None (see namedtuple coring.Serials)
+          typ (JSONSchema): type of schema
+          kind (serialization): kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-            if kind is None then its extracted from ked or raw
-          code is .saider default digest code
+            if kind (None): then its extracted from ked or raw
+          code (MtrDex): default digest code
 
         """
 
@@ -389,12 +429,10 @@ class Schemer:
         return sed, kind, saider
 
     def _exhale(self, sed, kind=None):
-        """
-        Dumps type specific Schema JSON and returns the raw bytes, sed
-           and schema kind
+        """ Dumps type specific Schema JSON and returns the raw bytes, sed and schema kind
 
         Parameters:
-            sed: JSON to load
+            sed: (dict): JSON to load
             kind (Schema) tuple of schema type
 
         """
@@ -406,6 +444,12 @@ class Schemer:
 
     @staticmethod
     def _sniff(raw):
+        """ Determine type of schema from raw bytes
+
+        Parameters:
+            raw (bytes): serialized schema
+
+        """
         try:
             raw.index(b'"$schema"')
         except ValueError:

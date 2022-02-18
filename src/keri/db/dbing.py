@@ -720,7 +720,7 @@ class LMDBer(filing.Filer):
                     ckey, cion = unsuffix(iokey, sep=sep)
                     if ckey == key:
                         pvals.add(val)  # another entry at key
-                        ion = cion + 1 # ion to add at is increment of cion
+                        ion = cion + 1  # ion to add at is increment of cion
                     else:  # prev entry if any was the last entry for key
                         break  # done
                 vals -= pvals  # remove vals already in pvals

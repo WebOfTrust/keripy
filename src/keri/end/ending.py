@@ -5,29 +5,31 @@ keri.end.ending module
 ReST API endpoints
 
 """
-import sys
-import os
 import json
+import os
+import re
+import sys
+
+from keri.core import parsing, eventing, routing
+from orderedset import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
-from dataclasses import dataclass, asdict, field
-import typing
-from typing import Union
+from urllib import parse
 
 import falcon
-
-import hio
-from hio.core import tcp, http, wiring
-
-from .. import kering
-from  ..app import keeping, habbing
-from  ..db import basing
-from  ..core import coring
+from hio import base
+from hio.base import doing
+from hio.core import http, wiring
+from hio.help import decking
 
 from .. import help
+from .. import kering
+from ..app import habbing
+from ..core import coring
+from ..db import basing
+from ..help import nowIso8601
 
 logger = help.ogler.getLogger()
-
 
 Mimage = namedtuple("Mimage", "json mgpk cbor cesr")
 
@@ -46,10 +48,12 @@ KeriMimes = Mimage(json='application/keri+json',
 # getattr(KeriMimes, coring.Serials.json.lower())
 
 
-
 # Signature HTTP header support
 Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
                      defaults=(None, None, None, None, None))
+
+OOBI_URL_TEMPLATE = "/oobi/{cid}/{role}"
+OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z', re.IGNORECASE)
 
 
 def signature(signages):
@@ -116,7 +120,7 @@ def signature(signages):
 
         items = []
         tag = 'indexed'
-        val = '?1' if indexed else '?0'  #  RFC8941 HTTP structured field values
+        val = '?1' if indexed else '?0'  # RFC8941 HTTP structured field values
         items.append(f'{tag}="{val}"')
         if signer:
             tag = "signer"
@@ -210,7 +214,7 @@ def designature(value):
             key, val = item.split("=", maxsplit=1)
             items[key] = val.strip('"')
 
-        if "indexed" not in  items:
+        if "indexed" not in items:
             raise ValueError("Missing indexed field in Signature header signage.")
         indexed = items["indexed"] not in kering.FALSY  # make bool
         del items["indexed"]
@@ -254,18 +258,19 @@ def designature(value):
 
 # Falcon reource endpoints
 
-class PointEnd(hio.base.Tymee):
+class PointEnd(base.Tymee):
     """
     ReST API for SEID (Service Endpoint IDentifier) database for each identifier prefix
     """
-    def __init__(self, hab, **kwa):
+
+    def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Habitat):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(PointEnd, self).__init__(**kwa)
-        self.hab = hab
+        self.hby = hby
 
     def on_post(self, req, rep, aid, role):
         """
@@ -283,7 +288,6 @@ class PointEnd(hio.base.Tymee):
 
         # use Serder to load from raw to support any serialization
         # verify mime type
-
 
         try:
             data = json.loads(raw)
@@ -333,19 +337,19 @@ class PointEnd(hio.base.Tymee):
         rep.text = message
 
 
-
-class LocationEnd(hio.base.Tymee):
+class LocationEnd(base.Tymee):
     """
     ReST API for Service Endpoint database for each Service Endpoint Identifier prefix
     """
-    def __init__(self, hab, **kwa):
+
+    def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Habitat):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(LocationEnd, self).__init__(**kwa)
-        self.hab = hab
+        self.hby = hby
 
     def on_get(self, req, rep):
         """
@@ -366,18 +370,19 @@ class LocationEnd(hio.base.Tymee):
         rep.text = message
 
 
-class AdminEnd(hio.base.Tymee):
+class AdminEnd(base.Tymee):
     """
     ReST API for admin of service endpoints
     """
-    def __init__(self, hab, **kwa):
+
+    def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Habitat):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(AdminEnd, self).__init__(**kwa)
-        self.hab = hab
+        self.hby = hby
 
     def on_get(self, req, rep):
         """
@@ -389,41 +394,96 @@ class AdminEnd(hio.base.Tymee):
         rep.text = message
 
 
+class OOBIEnd:
+    """ REST API for OOBI endpoints
+
+    Attributes:
+        .hby (Habery): database access
+
+    """
+
+    def __init__(self, hby: habbing.Habery):
+        self.hby = hby
+
+    def on_get(self, req, rep, aid, role=None, eid=None):
+        """  GET endoint for OOBI resource
+
+        Parameters:
+            req: Falcon request object
+            rep: Falcon response object
+            aid: qb64 identifier prefix of OOBI
+            role: requested role for OOBI rpy message
+            eid: qb64 identifier prefix of participant in role
+
+        """
+
+        if aid not in self.hby.kevers:
+            rep.status = falcon.HTTP_NOT_FOUND
+            return
+
+        kever = self.hby.kevers[aid]
+        owits = oset(kever.wits)
+        if kever.prefixer.qb64 in self.hby.prefixes:  # One of our identifiers
+            hab = self.hby.habs[kever.prefixer.qb64]
+        elif match := owits.intersection(self.hby.prefixes):  # We are a witness for identifier
+            pre = match.pop()
+            hab = self.hby.habs[pre]
+        else:  # Not allowed to respond
+            rep.status = falcon.HTTP_NOT_ACCEPTABLE
+            return
+
+        eids = []
+        if eid:
+            eids.append(eid)
+
+        msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
+
+        if msgs:
+            rep.status = falcon.HTTP_200  # This is the default status
+            rep.content_type = "application/json+cesr"
+            rep.data = msgs
+        else:
+            rep.status = falcon.HTTP_404
 
 
 WEB_DIR_PATH = os.path.dirname(
-                os.path.abspath(
-                    sys.modules.get(__name__).__file__))
+    os.path.abspath(
+        sys.modules.get(__name__).__file__))
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEnds(app, *, tymth=None, ks=None, db=None, hab=None):
+def loadEnds(app, *, tymth=None, hby=None):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
     with references to the needed shared dependencies:
         tymth: virtual time reference injection function from Tymist subclass
-        ks: keystore database
-        db: KEL and app database
         hab: local habitat
 
     Parameters:
+        app(falcon.App): Falcon Rest app for endpoint route registration
         tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
+        hby(Habery): glocal database environment
+        
     """
     sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
     app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
 
     # Resources are represented by long-lived class instances
     # handles all requests to '/end' URL path
-    app.add_route('/end/{aid}/{role}', PointEnd(tymth=tymth, hab=hab))
+    app.add_route('/end/{aid}/{role}', PointEnd(tymth=tymth, hby=hby))
     # handles all requests to '/loc' URL path
-    app.add_route('/loc', LocationEnd(tymth=tymth, hab=hab))
+    app.add_route('/loc', LocationEnd(tymth=tymth, hby=hby))
     # handles all requests to '/admin' URL path
-    app.add_route('/admin', AdminEnd(tymth=tymth, hab=hab))
+    app.add_route('/admin', AdminEnd(tymth=tymth, hby=hby))
+
+    app.add_route("/oobi/{aid}", OOBIEnd(hby=hby))
+    app.add_route("/oobi/{aid}/{role}", OOBIEnd(hby=hby))
+    app.add_route("/oobi/{aid}/{role}/{eid}", OOBIEnd(hby=hby))
 
 
 def setup(name="who", temp=False, tymth=None, sith=None, count=1,
-                    remotePort=5621, localPort=5620, webPort=8081 ):
+          remotePort=5621, localPort=5620, webPort=8081):
     """
     Setup and return doers list to run controller
     """
@@ -434,7 +494,6 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
     # make hab
     hab = hby.makeHab(name=name, isith=sith, icount=count)
 
-
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')
@@ -442,28 +501,151 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
                         reopen=True, headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
 
-    #client = tcp.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    #clientDoer = tcp.ClientDoer(client=client)  # setup doer
-    #director = directing.Director(hab=hab, client=client, tock=0.125)
-    #reactor = directing.Reactor(hab=hab, client=client)
+    # client = tcp.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    # clientDoer = tcp.ClientDoer(client=client)  # setup doer
+    # director = directing.Director(hab=hab, client=client, tock=0.125)
+    # reactor = directing.Reactor(hab=hab, client=client)
 
     # must do it here to inject into Falcon endpoint resource instances
-    myapp = falcon.App(cors_enable=True) # falcon.App instances are callable WSGI apps
-    loadEnds(myapp, tymth=tymth, hab=hab)
+    myapp = falcon.App(cors_enable=True)  # falcon.App instances are callable WSGI apps
+    loadEnds(myapp, tymth=tymth, hby=hby)
 
     webServer = http.Server(name="keri.wsgi.server", app=myapp, port=webPort, wl=wl)
     webServerDoer = http.ServerDoer(server=webServer)
 
-    #server = tcp.Server(host="", port=localPort, wl=wl)
-    #serverDoer = tcp.ServerDoer(server=server)  # setup doer
-    #directant = directing.Directant(hab=hab, server=server)
+    # server = tcp.Server(host="", port=localPort, wl=wl)
+    # serverDoer = tcp.ServerDoer(server=server)  # setup doer
+    # directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
     logger.info("\nWeb ReST API Controller %s:\nNamed %s on HTTP port %s.\n\n",
-                    hab.pre, hab.name, webPort)
+                hab.pre, hab.name, webPort)
 
-    #return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
-            #serverDoer, directant, webServerDoer]
+    # return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
+    # serverDoer, directant, webServerDoer]
 
-    return ([hbyDoer, wireDoer, webServerDoer])
+    return [hbyDoer, wireDoer, webServerDoer]
 
+
+class Oobiery(doing.DoDoer):
+    """ Resolver for OOBIs
+
+    """
+
+    def __init__(self, db, oobis=None, cues=None):
+        """  DoDoer to handle the request and parsing of OOBIs
+
+        Parameters:
+            db (Baser): database instance
+            oobis (decking.Deck): inbound cue of oobis to process
+            cues (decking.Deck): outbound cues from processing oobis
+        """
+
+        self.db = db
+        rtr = routing.Router()
+        rvy = routing.Revery(db=self.db, rtr=rtr)
+        kvy = eventing.Kevery(db=self.db, lax=True, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
+
+        self.oobis = oobis if oobis is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.clients = decking.Deck()
+
+        super(Oobiery, self).__init__(doers=[doing.doify(self.scoobiDo), doing.doify(self.clientsDo)])
+
+    def scoobiDo(self, tymth, tock=0.0):
+        """ Scooby-Dooby-Doo!
+
+        Process OOBI URLs by requesting from the endpoint and parsing the results
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.oobis:
+                oobi = self.oobis.popleft()
+                try:
+                    url = parse.urlparse(oobi)
+
+                    if url.path == "/oobi":  # Self and Blinded Introductions
+                        print("blinded")
+
+                    elif (match := OOBI_RE.match(url.path)) is not None:  # Full CID and optional EID
+                        obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+
+                        obr.cid = match.group("cid")
+                        obr.eid = match.group("eid")
+                        obr.role = match.group("role")
+
+                        self.db.oobis.pin(keys=(oobi,), val=obr)
+
+                        client = http.clienting.Client(hostname=url.hostname, port=url.port)
+                        clientDoer = http.clienting.ClientDoer(client=client)
+                        self.extend([clientDoer])
+
+                        client.request(
+                            method="GET",
+                            path=url.path,
+                            qargs=parse.parse_qs(url.query),
+                        )
+
+                        self.clients.append((oobi, client, clientDoer))
+
+                    elif url.path.startswith("/.well-known/keri/oobi"):  # Well Known
+                        print("well known")
+
+                except ValueError as ex:
+                    print("error requesting invalid OOBI URL {}", oobi)
+                yield self.tock
+
+            yield self.tock
+
+    def clientsDo(self, tymth, tock=0.0):
+        """ Process Client responses by parsing the messages and removing the client/doer
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.clients:
+                (oobi, client, clientDoer) = self.clients.popleft()
+
+                if client.responses:
+                    response = client.responses.popleft()
+                    self.remove([clientDoer])
+
+                    if not response["status"] == 200:
+                        self.cues.append(dict(kin="failed", oobi=oobi))
+                        print("invalid status for oobi response: {}".format(response["status"]))
+                        continue
+
+                    if not response["headers"]["Content-Type"] == "application/json+cesr":
+                        self.cues.append(dict(kin="failed", oobi=oobi))
+                        print("invalid content type for oobi response"
+                              .format(response.headers["Content-Type"]))
+                        continue
+
+                    self.parser.parse(ims=bytearray(response["body"]))
+                    self.cues.append(dict(kin="resolved", oobi=oobi))
+
+                else:
+                    self.clients.append((oobi, client, clientDoer))
+
+                yield self.tock
+
+            yield self.tock

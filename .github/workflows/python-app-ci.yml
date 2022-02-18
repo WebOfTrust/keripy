@@ -2,7 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 
-
+name: GitHub Actions for keripy
 on:
   push:
     branches:
@@ -40,6 +40,24 @@ jobs:
       - name: Run KERI demo tests
         run: |
           pytest tests/demo/
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov codecov hio
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run core KERI tests
+        run: |
+          pytest --cov=./ --cov-report=xml
+          codecov
 
   interop-setup:
     runs-on: ubuntu-latest

@@ -28,11 +28,15 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="watcher",
                     help="Name of controller. Default is watcher.")
-parser.add_argument('-p', '--pre',
+parser.add_argument('--controller',
                     action='store',
                     default="",
                     help="Identifier prefix of controller of this watcher")
-
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
 
 
 def startWatcher(args):
@@ -47,36 +51,32 @@ def startWatcher(args):
     logger.info("\n******* Starting Watcher for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
 
-    doers = setupWatcher(name, controller=args.pre, tcpPort=tcpPort, httpPort=httpPort)
+    doers = setupWatcher(name, controller=args.controller, alias=args.alias, base=args.base, bran=args.bran,
+                         tcpPort=tcpPort, httpPort=httpPort)
     directing.runController(doers=doers, expire=0.0)
 
     logger.info("\n******* Ended Watcher for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
+def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran=None, tcpPort=5651, httpPort=5652):
     """
     """
 
-    try:
-        with habbing.existingHabitat(name=name, transferable=False) as hab:
-            print("Watcher Identifier: {}".format(hab.pre))
-            if hab.kever.prefixer.transferable:
-                raise kering.ConfigurationError("watchers can only have a non-transferable identifier")
-    except kering.ConfigurationError as e:
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
-        sys.exit(-1)
+    hby = habbing.Habery(name=name, base=base, bran=bran)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    doers = [hbyDoer]
+    hab = hby.makeHab(name=alias, transferable=False)
 
-    hab, doers = existing.setupHabitat(name=name, transferable=False)
     app = falcon.App(cors_enable=True)
 
     mbx = storing.Mailboxer(name=name)
-    rep = storing.Respondant(hab=hab, mbx=mbx)
+    rep = storing.Respondant(hby=hby, mbx=mbx)
 
     kiwiServer = watching.KiwiServer(hab=hab, app=app, rep=rep, controller=controller)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
+    mbxer = storing.MailEnd(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)

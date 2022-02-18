@@ -1,4 +1,5 @@
 #!/bin/bash
 
-kli incept --name watcher --file tests/app/cli/commands/watcher/watcher-sample.json
-kli watcher start --name watcher --pre EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg
+kli init --name witness --nopasscode
+kli incept --name witness --alias=wil --file tests/app/cli/commands/wil-witness-sample.json
+kli witness start --name witness --alias=wil

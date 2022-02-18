@@ -25,7 +25,7 @@ logger = help.ogler.getLogger()
 
 
 
-class KomerBase():
+class KomerBase:
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
     each use a dataclass as the object mapped via serialization to an dber LMDB

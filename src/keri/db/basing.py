@@ -23,8 +23,6 @@ import os
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
-import typing
-import functools
 
 import lmdb
 from hio.base import doing
@@ -115,6 +113,17 @@ class OobiQueryRecord:  # information for responding to OOBI query
 
     def __iter__(self):
         return iter(asdict(self))
+
+
+@dataclass
+class OobiRecord:
+    """
+    Keyed by CID (AID) and role, the minimum information needed for any OOBI
+    """
+    cid: str = None
+    eid: str = None
+    role: str = None
+    date: str = None
 
 
 @dataclass
@@ -712,7 +721,7 @@ class Baser(dbing.LMDBer):
 
         # index of last retrieved message from witness mailbox
         self.tops = koming.Komer(db=self,
-                                 subkey='wits.',
+                                 subkey='witm.',
                                  schema=TopicsRecord, )
 
         # group identifiers that we are participating in
@@ -764,6 +773,12 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+
+        # config loaded oobis to be processed asynchronously, keyed by oobi URL
+        self.oobis = koming.Komer(db=self,
+                                  subkey='oobis.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         self.reload()
 

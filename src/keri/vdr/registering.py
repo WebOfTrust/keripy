@@ -1,3 +1,11 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.vdr.registering module
+
+VC Registry support
+"""
+
 from hio import help
 from hio.base import doing
 from hio.help import decking
@@ -9,26 +17,56 @@ logger = help.ogler.getLogger()
 
 
 class RegistryInceptDoer(doing.DoDoer):
+    """ DoDoer for creating a VDR registry.
 
-    def __init__(self, hab, msgs=None, cues=None, **kwa):
+    Accepts command messages on .msgs for creating credential registries.
+    Creates Issuers for each new registry and handles requests from multi-sig identifiers.
 
-        self.hab = hab
+    Notifies status on .cues
+
+    Properties:
+       .msgs (decking.Deck): inbound cue messages for handler
+       .cues (decking.Deck): outbound cue messages from handler
+
+    """
+
+    def __init__(self, hby, msgs=None, cues=None, **kwa):
+        """ Initialize registry incept DoDoer.
+
+        Parameters:
+            hby (Habery): identifier environment
+            msgs (decking.Deck): inbound cue messages for handler
+            cues (decking.Deck): outbound cue messages from handler
+            **kwa (dict): keyword arguments passed to inceptDo
+        """
+
+        self.hby = hby
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.issuer = None
-        self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
+        self.gdoer = grouping.MultiSigGroupDoer(hby=hby)
 
         doers = [self.gdoer, doing.doify(self.inceptDo, **kwa)]
         super(RegistryInceptDoer, self).__init__(doers=doers)
 
-
     def inceptDo(self, tymth, tock=0.0, **kwa):
-        """
-        Returns:  doifiable Doist compatible generator method for creating a registry
-        and sending its inception and anchoring events to witnesses or backers
+        """ Doist capable of creating a credential registry.
+
+        Processes inbound cues to create credential registries using Issuer objects.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+            **kwa (dict): keyword arguments passed to Issuer
 
         Usage:
             add result of doify on this method to doers list
+
+        Returns:
+            Doist: compatible generator method for creating a registry and sending its inception and anchoring
+            events to witnesses or backers
+
         """
         # start enter context
         self.wind(tymth)
@@ -39,9 +77,11 @@ class RegistryInceptDoer(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 name = msg["name"]
+                pre = msg["pre"]
+                hab = self.hby.habs[pre]
 
-                reger = viring.Registry(name=self.hab.name, temp=False, db=self.hab.db)
-                self.issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, noBackers=True, **kwa)
+                reger = viring.Registry(name=hab.name, temp=False, db=self.hby.db)
+                self.issuer = issuing.Issuer(hab=hab, name=name, reger=reger, noBackers=True, **kwa)
                 self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
                 yield self.tock
 
@@ -52,16 +92,16 @@ class RegistryInceptDoer(doing.DoDoer):
 
             yield self.tock
 
-
-    def issuerDo(self, tymth, tock=0.0, **opts):
-        """
-        Process cues from credential issue coroutine
+    def issuerDo(self, tymth, tock=0.0):
+        """ Process cues from credential issue coroutine
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
+            tock (float): injected initial tock value
+
+        Returns:
+            Doist: doifiable compatible generator method
         """
         self.wind(tymth)
         self.tock = tock
@@ -71,9 +111,12 @@ class RegistryInceptDoer(doing.DoDoer):
             while self.issuer.cues:
                 cue = self.issuer.cues.popleft()
                 cueKin = cue['kin']
+                pre = cue["pre"]
+                hab = self.hby.habs[pre]
+
                 if cueKin == "send":
                     tevt = cue["msg"]
-                    witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
+                    witSender = agenting.WitnessPublisher(hab=hab, msg=tevt)
                     self.extend([witSender])
 
                     while not witSender.done:
@@ -84,7 +127,7 @@ class RegistryInceptDoer(doing.DoDoer):
 
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
+                    witDoer = agenting.WitnessReceiptor(hab=hab, msg=kevt)
                     self.extend([witDoer])
 
                     while not witDoer.done:
@@ -102,23 +145,29 @@ class RegistryInceptDoer(doing.DoDoer):
                 elif cueKin == "logEvent":
                     self.cues.append(dict(kin="finished", regk=self.issuer.regk))
 
-
                 yield self.tock
             yield self.tock
 
-
     def escrowDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
+        """ Escrow processing Doist generator
 
-        Usage:
-            add result of doify on this method to doers list
+        Processes escrows for all newly created issuers.
 
-        Processes the Groupy escrow for group icp, rot and ixn request messages.
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+
+        Returns:
+            Doist: doifiable compatible generator method
 
         """
         # start enter context
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
         while True:
             self.issuer.processEscrows()
             yield

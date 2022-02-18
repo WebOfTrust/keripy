@@ -18,7 +18,8 @@ logger = help.ogler.getLogger()
 
 
 class Router:
-    """
+    """ Reply message router
+
     Reply message router that accepts registration of route `r` handlers and dispatches
     reply messages to the appropriate handler.
 
@@ -26,10 +27,14 @@ class Router:
 
     defaultResourceFunc = "processReply"
 
+    def __init__(self, routes=None):
+        """ Initialized instance with optiona list of existing routes
 
-    def __init__(self):
-        self.routes = list()
+        Parameters:
+            routes (list): preregistered routes for this router
 
+        """
+        self.routes = routes if routes is not None else list()
 
     def addRoute(self, routeTemplate, resource, suffix=None):
         """ Add a route between a route template and a resource
@@ -46,7 +51,6 @@ class Router:
 
         fields, regex = util.compile_uri_template(routeTemplate)
         self.routes.append(Route(regex=regex, fields=fields, resource=resource, suffix=suffix))
-
 
     def dispatch(self, serder, saider, cigars, tsgs):
         """
@@ -76,7 +80,6 @@ class Router:
             if name not in kwargs:
                 raise kering.ValidationError(f"parameter {name} not found in route {r}")
 
-
         fn = getattr(route.resource, fname, self.processRouteNotFound)
         fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
 
@@ -101,16 +104,26 @@ class Router:
 
         return None, None
 
-
     def processRouteNotFound(self, *, serder, saider, route,
                              cigars=None, tsgs=None, **kwargs):
+        """ Default handler for processing reply message with an unregistered route
+
+        Parameters:
+            serder (Serder): reply event message
+            saider (Saider): SAIDer of the sender
+            route (str): route ('r') of the event message
+            cigars (Optional(list)): list of non-transferable signature tuples
+            tsgs (Optional(list)): list of transferable signature tuples
+            **kwargs (dict) additional keyword args
+
+        """
 
         raise kering.ConfigurationError(f"Resource registered for route {route} in {coring.Ilks.rpy}"
                                         f"does not contain the correct processReply method")
 
 
 class Revery:
-    """Factory for processing reply 'rpy' messages
+    """ Reply message event processor
 
     """
 
@@ -131,14 +144,12 @@ class Revery:
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions
 
-
     @property
     def prefixes(self):
         """
         Returns .db.prefixes
         """
         return self.db.prefixes
-
 
     def processReply(self, serder, cigars=None, tsgs=None):
         """
@@ -188,20 +199,14 @@ class Revery:
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
-
-
     def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):
-        """
-        Applies Best Available Data Acceptance policy to reply and signatures
+        """ Applies Best Available Data Acceptance policy to reply and signatures
 
         Returns:
-            accepted (bool): True is successfully accepted. False otherwise
+            bool: True is successfully accepted. False otherwise
 
         Parameters:
-            saider (Saider): instance of saider for reply
-
-
             serder (Serder): instance of reply msg (SAD)
             saider (Saider): instance  from said in serder (SAD)
             osaider (Saider): instance of saider for previous reply if any
@@ -378,7 +383,8 @@ class Revery:
 
     def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
                     seqner=None, diger=None, sigers=None):
-        """
+        """ Update Reply SAD in database
+
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
         Overwrites val at key if already exists.
@@ -393,6 +399,7 @@ class Revery:
             seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
             diger (Diger): is digest of trans endorser's est evt for keys for sigs
             sigers (list): of indexed sigs from trans endorser's key from est evt
+
         """
         # if sigers is None:
         # sigers = []
@@ -406,8 +413,7 @@ class Revery:
             self.db.ssgs.put(keys=quadkeys, vals=sigers)
 
     def removeReply(self, saider):
-        """
-        Remove Reply SAD artifacts given by saider.
+        """ Remove Reply SAD artifacts given by saider.
 
         Parameters:
             saider (Saider): instance from said in serder (SAD)
@@ -423,19 +429,18 @@ class Revery:
 
     def escrowReply(self, *, serder, saider, dater, route, prefixer, seqner,
                     ssaider, sigers):
-        """
-        Escrow reply by route
+        """ Escrow reply by route
 
         Parameters:
             serder (Serder): instance of reply msg (SAD)
             saider (Saider): instance  from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             route (str): reply route
-
             prefixer (Prefixer): is pre of trans endorser
             seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
             ssaider (Saider) is said of trans endorser's est evt for keys for sigs
             sigers (list): is indexed sigs from trans endorser's key from est evt
+
         """
         if not sigers:
             return  # nothing to escrow
@@ -446,11 +451,10 @@ class Revery:
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 
-
     def processEscrowReply(self):
-        """
-        Process escrows for reply messages. Escrows are keyed by reply route
-        and val is reply said
+        """ Process escrows for reply messages.
+
+        Escrows are keyed by reply route and val is reply said
 
         triple (prefixer, seqner, diger)
         quadruple (prefixer, seqner, diger, siger)
@@ -508,21 +512,28 @@ class Revery:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
 
-
 class Route:
-    """
+    """ Route class for registration of reply message handlers
+
+    This class represents a registered route internally to the Revery.
+    the properties are created by using the Falcon compile route utility method
+
+    Properties:
+        .regex(re): compiled url template regex
+        .fields(set): field names for matches in regex
+        .resource(object): the handler for this route
+        .suffix(Optional(str)): a suffix to be applied to the handler method
 
     """
 
     def __init__(self, regex, fields, resource, suffix=None):
-        """
-
+        """ Initialize instance of route
 
         Parameters:
-            regex(re):
-            fields(set):
-            resource(object):
-            suffix(str, optional):
+            regex(re): compiled url template regex
+            fields(set): field names for matches in regex
+            resource(object): the handler for this route
+            suffix(Optional(str)): a suffix to be applied to the handler method
 
         """
         self.regex = regex

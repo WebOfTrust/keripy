@@ -89,7 +89,7 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
     verifier = verifying.Verifier(hab=hab, reger=reger)
-    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier)
     requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
 
     witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)

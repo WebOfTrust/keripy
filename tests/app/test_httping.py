@@ -67,11 +67,11 @@ class MockClient:
 
 
 def test_create_cesr_request(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         issuer = issuing.Issuer(hab=hab, name="test", temp=True)
 
-        verfer = verifying.Verifier(hab=hab)
-        msg = verfer.query(issuer.regk,
+        verfer = verifying.Verifier(hby=hby)
+        msg = verfer.query(hab.pre, issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         client = MockClient()

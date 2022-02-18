@@ -24,21 +24,20 @@ class Exchanger(doing.DoDoer):
      Peer to Peer KERI message Exchanger.
     """
 
-    def __init__(self, hab, handlers, controller=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
-        """
-        Initialize instance
+    def __init__(self, hby, handlers, controller=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
+        """ Initialize instance
 
         Parameters:
-            hab (Habitat): instance of local controller's
+            hab (Hab): instance of local controller's
             handler(list): list of Handlers capable of responding to exn messages
             controller (str) qb64 prefix of the controlling identifier
             cues (Deck):  of Cues i.e. notices of requests needing response
             delta (timedelta): message timeout window
         """
 
-        self.hab = hab
+        self.hby = hby
         self.controller = controller
-        self.kevers = hab.kvy.kevers
+        self.kevers = self.hby.kevers
         self.delta = delta
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
@@ -54,15 +53,21 @@ class Exchanger(doing.DoDoer):
 
         super(Exchanger, self).__init__(doers=doers, **kwa)
 
+    def addHandler(self, handler):
+        if handler.resource in self.routes:
+            raise ValidationError("unable to register behavior {}, it has already been registered"
+                                  "".format(handler.resource))
+
+        self.routes[handler.resource] = handler
+        self.extend([handler])
+
     def processEvent(self, serder, source, sigers):
-        """
-        Process one serder event with attached indexed signatures representing
-        a Peer to Peer exchange message.
+        """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
         Parameters:
-            serder (Serder) instance of event to process
-            source (Prefixer) identifier prefix of event sender
-            sigers (list) of Siger instances of attached controller indexed sigs
+            serder (Serder): instance of event to process
+            source (Prefixer): identifier prefix of event sender
+            sigers (list): of Siger instances of attached controller indexed sigs
 
         """
 
@@ -85,14 +90,14 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-        if source.qb64 not in self.hab.kevers:
+        if source.qb64 not in self.hby.kevers:
             self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
             self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
             raise MissingSignatureError("Unable to find sender {} in kevers"
                                         " for evt = {}.".format(source, serder))
 
-        kever = self.hab.kevers[source.qb64]
-        tholder, verfers = self.hab.verifiage(pre=source.qb64, sn=kever.lastEst.s)
+        kever = self.hby.kevers[source.qb64]
+        tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
 
         if self.controller is not None and self.controller != source.qb64:
             raise AuthZError("Message {} is from invalid source {}"
@@ -118,11 +123,7 @@ class Exchanger(doing.DoDoer):
         behavior.msgs.append(msg)
 
     def processResponseIter(self):
-        """
-        Iterate through cues and yields one or more responses for each cue.
-
-        Parameters:
-            cues is deque of cues
+        """ Iterate through cues and yields one or more responses for each cue.
 
         """
         responses = []
@@ -136,32 +137,29 @@ class Exchanger(doing.DoDoer):
             yield msg
 
     def processEscrow(self):
-        """
-        Process all escrows for `exn` messages
+        """ Process all escrows for `exn` messages
 
         """
         self.processEscrowPartialSigned()
 
-
     def escrowPSEvent(self, serder, source, sigers):
-        """
-        Escrow event that does not have enough signatures.
+        """ Escrow event that does not have enough signatures.
 
         Parameters:
-            serder is Serder instance of event
-            source is Prefixer of the origin of the exn
-            sigers is list of Siger instances of indexed controller sigs
+            serder (Serder): instance of event
+            source (Prefixer): of the origin of the exn
+            sigers (list): of Siger instances of indexed controller sigs
         """
         dig = serder.saidb
-        self.hab.db.epse.put(keys=dig, val=serder)
-        self.hab.db.esigs.put(keys=dig, vals=sigers)
-        self.hab.db.esrc.put(keys=dig, val=source)
-
+        self.hby.db.epse.put(keys=dig, val=serder)
+        self.hby.db.esigs.put(keys=dig, vals=sigers)
+        self.hby.db.esrc.put(keys=dig, val=source)
 
     def processEscrowPartialSigned(self):
-        for (dig,), serder in self.hab.db.epse.getItemIter():
-            sigers = self.hab.db.esigs.get(keys=dig)
-            source = self.hab.db.esrc.get(keys=dig)
+        """ Process escrow of partially signed messages """
+        for (dig,), serder in self.hby.db.epse.getItemIter():
+            sigers = self.hby.db.esigs.get(keys=dig)
+            source = self.hby.db.esrc.get(keys=dig)
 
             try:
 
@@ -173,35 +171,33 @@ class Exchanger(doing.DoDoer):
                 else:
                     logger.info("Exchange partially signed failed: %s\n", ex.args[0])
             except Exception as ex:
-                self.hab.db.epse.rem(dig)
-                self.hab.db.esigs.rem(dig)
-                self.hab.db.esrc.rem(dig)
+                self.hby.db.epse.rem(dig)
+                self.hby.db.esigs.rem(dig)
+                self.hby.db.esrc.rem(dig)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
                 else:
                     logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
             else:
-                self.hab.db.epse.rem(dig)
-                self.hab.db.esigs.rem(dig)
-                self.hab.db.esrc.rem(dig)
+                self.hby.db.epse.rem(dig)
+                self.hby.db.esigs.rem(dig)
+                self.hby.db.esrc.rem(dig)
                 logger.info("Exchanger unescrow succeeded in valid exchange: "
                             "creder=\n%s\n", serder.pretty())
 
 
-
-
 def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
              kind=coring.Serials.json):
-    """
-    Create an `exn` message with the specified route and payload
+    """ Create an `exn` message with the specified route and payload
+
     Parameters:
-        route (string) to destination route of the message
-        payload (dict) body of message to deliver to route
-        date (str) Iso8601 formatted date string to use for this request
-        modifiers (dict) equivalent of query string of uri, modifiers for the request that are not
+        route (str): to destination route of the message
+        payload (dict): body of message to deliver to route
+        date (str): Iso8601 formatted date string to use for this request
+        modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
-        version (Version) is Version instance
-        kind (Serials) is serialization kind
+        version (Version): is Version instance
+        kind (Serials): is serialization kind
 
     """
     vs = coring.Versify(version=version, kind=kind, size=0)
@@ -222,4 +218,3 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
         del ked["q"]
 
     return eventing.Serder(ked=ked)  # return serialized ked
-

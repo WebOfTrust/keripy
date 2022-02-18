@@ -1,94 +1,78 @@
 # GETTING STARTED
-rm -rf /usr/local/var/keri/*;
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+echo $SCRIPT_DIR
+
+function isSuccess() {
+    ret=$?
+    if [ $ret -ne 0 ]; then
+       echo "Error $ret"
+       exit $ret
+    fi
+}
+
+# CREATE DATABASE AND KEYSTORE
+kli init --name test --nopasscode
+isSuccess
 
 # NON-TRANSFERABLE
-kli incept --name non-trans --file ./tests/app/cli/non-transferable-sample.json
+kli incept --name test --alias non-trans --file ${SCRIPT_DIR}/non-transferable-sample.json
+isSuccess
 
-kli rotate --name non-trans
+kli rotate --name test --alias non-trans
+ret=$?
+if [ $ret -eq 0 ]; then
+   echo "Rotate of non-transferable should fail $ret"
+   exit $ret
+fi
+
 
 # TRANSFERABLE
+kli incept --name test --alias trans --file ${SCRIPT_DIR}/transferable-sample.json
+isSuccess
 
-kli incept --name trans --file ./tests/app/cli/transferable-sample.json
+kli rotate --name test --alias trans
+isSuccess
 
-kli rotate --name trans
+kli rotate --name test --alias trans --data @${SCRIPT_DIR}/anchor.json
+isSuccess
 
-kli rotate --name trans --data @./tests/app/cli/anchor.json
+kli interact --name test --alias trans --data @${SCRIPT_DIR}/anchor.json
+isSuccess
 
-kli interact --name trans --data @./tests/app/cli/anchor.json
+kli rotate --name test --alias trans --next-count 3 --sith 2
+isSuccess
 
-kli rotate --name trans --next-count 3 --sith 2
+kli rotate --name test --alias trans --next-count 3 --sith 2
+isSuccess
 
-kli rotate --name trans --next-count 3 --sith 2
+# SIGN AND VERIFY ARBITRARY DATA
+kli sign --name test --alias trans --text @${SCRIPT_DIR}/anchor.json
+isSuccess
 
-kli sign --name trans --text @tests/app/cli/anchor.json
+kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature AA29iAmC1x_gYYI5sLv4MwAt6P0XRs0Be_JKKTb6iCVBy5amf4y5XzBL-kTRWSH0d0T3Zx1QsbgXhXW3i54EWkAQ
+isSuccess
 
-kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature AAr6xD1YJW4fFJkoHU7JhtnixOjE8ubouxzUdoe1Hmc4GKnu7KoeZN1s4BD9ctaQVmyxTq0QszqZSzdJAQhDBACw
+kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature AB_whAvInYCuPXqfNQVDlDlyL0b4KsrQWsHA9IetyhDsD_AMToqJlmZzpN5Z9x_rlYlmL4pU2i2BC0so9aaxncDA
+isSuccess
 
-kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature ABEA7Wj4BDnM7UgCWspZKa9Cinnhh3G4P39umZGhUyMi-APp55oKQ-J2s5UuXmihLCCROtWFkpKY3kxmzqx-2LBw
+kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature ACAEilCq8wGtjEEWBVODrh5o98cVnB8oZ_csTyrbgequWj5elEZERSfWFsW0SH4_B5oxtN-ta0rRZiIZNoQCFLAQ
+isSuccess
 
-kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDQ
-
-kli verify --name trans --prefix Ep_l4FJyHxcZBc6JIP7sG3YKBfuMaLJe9dktrz1wX9x4 --text @tests/app/cli/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+isSuccess
 
 # ESTABLISHMENT ONLY
-kli incept --name est-only --file tests/app/cli/estonly-sample.json
+kli incept --name test --alias est-only --file ${SCRIPT_DIR}/estonly-sample.json
 
-kli interact --name est-only --data @./tests/app/cli/anchor.json
+kli interact --name test --alias est-only --data @${SCRIPT_DIR}/anchor.json
+ret=$?
+if [ $ret -eq 0 ]; then
+   echo "Interact should fail for establishment only $ret"
+   exit $ret
+fi
 
-kli rotate --name est-only
+kli rotate --name test --alias est-only
+isSuccess
 
-kli rotate --name est-only --data @./tests/app/cli/anchor.json
-
-# WITNESSES
-kli witness start --name non-trans --http 5631 --tcp 5632
-
-kli witness demo
-
-kli incept --name trans-wits --file ./tests/app/cli/trans-wits-sample.json
-
-kli incept --name inquisitor --file ./tests/app/cli/inquisitor-sample.json
-
-kli query --name inquisitor --prefix Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --witness BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw
-
-kli rotate --name trans-wits --witness-cut Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c
-
-kli rotate --name trans-wits --witness-add Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c
-
-# VC REGISTRY
-kli incept --name reg --file ./tests/app/cli/holder-sample.json
-
-kli vc registry incept --name reg --registry-name reg
-
-kli vc issue --name reg --registry-name reg --schema ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo --recipient Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --data @../../test/gleif-vc.json
-
-kli vc query --name inquisitor --witness BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo --registry=E_kLIm0UdZUYFWKDEiSxP1Yvt3A3TUoo6TMaijR3voz0 --vc EoRRdOHzYDU0_fYE07MTYF3dPKMH00BJHYJUuKFhLRa0
-
-kli vc revoke --name reg --registry-name reg --said EoRRdOHzYDU0_fYE07MTYF3dPKMH00BJHYJUuKFhLRa0
-
-# DELEGATION
-
-scripts/demo/start-agent.sh
-
-kli delegate incept --name del --file tests/app/cli/commands/delegate/incept-sample.json
-
-kli delegate rotate --name del
-
-#MULTISIG
-
-rm -rf /usr/local/var/keri/*; kli witness demo
-
-kli incept --name multisig1 --file tests/app/cli/commands/multisig/multisig-1-sample.json
-kli incept --name multisig2 --file tests/app/cli/commands/multisig/multisig-2-sample.json
-kli incept --name multisig3 --file tests/app/cli/commands/multisig/multisig-3-sample.json
-
-kli multisig demo --file tests/app/cli/commands/multisig/multisig-sample.json
-
-kli multisig list --name multisig3
-
-# MULTISIG DELEGATION
-
-rm -rf /usr/local/var/keri/*; kli witness demo
-
-scripts/demo/start-agent.sh
-
-scripts/demo/multi-delegate.sh
+kli rotate --name test --alias est-only --data @${SCRIPT_DIR}/anchor.json
+isSuccess

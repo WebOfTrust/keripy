@@ -1,0 +1,8 @@
+{
+  "dt": "2022-01-20T12:57:59.823350+00:00",
+  "curls": ["tcp://127.0.0.1:5634/", "http://127.0.0.1:5644/"],
+  "iurls": [
+    "http://127.0.0.1:5642/oobi/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo/controller",
+    "http://127.0.0.1:5643/oobi/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw/controller"
+  ]
+}

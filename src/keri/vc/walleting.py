@@ -57,14 +57,16 @@ class Wallet:
 
 
 class WalletDoer(doing.DoDoer):
+    """ DoDoer for process escrows and cues associated with a wallet
+
+    """
 
     def __init__(self, hab, verifier, **kwa):
-        """
-        Wallter doer processes the verifier cues and escrows for an Enterprise Wallet
+        """ Waller doer processes the verifier cues and escrows for an Enterprise Wallet
 
         Parameters:
-            hab (Habitat) is the local environment associate with this wallet
-            verifier (Verifier) is the verifier that processes and stores credentials
+            hab (Habitat): is the local environment associate with this wallet
+            verifier (Verifier): is the verifier that processes and stores credentials
 
         """
 
@@ -73,34 +75,41 @@ class WalletDoer(doing.DoDoer):
         doers = [doing.doify(self.escrowDo)]
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 
 
     def escrowDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
+        """ Processes the Groupy escrow for group icp, rot and ixn request messages.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Groupy escrow for group icp, rot and ixn request messages.
+        Returns:
+             Doist: doifiable Doist compatible generator method
 
         """
         # start enter context
-        yield  # enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
         while True:
             self.verifier.processEscrows()
             yield self.tock
 
-    def verifierDo(self, tymth, tock=0.0, **opts):
-        """
-        Process cues from Verifier coroutine
+    def verifierDo(self, tymth, tock=0.0):
+        """ Process cues from Verifier coroutine
 
-            tymth is injected function wrapper closure returned by .tymen() of
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
+            tock (float): injected initial tock value
+
         """
         self.wind(tymth)
         self.tock = tock

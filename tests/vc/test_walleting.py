@@ -27,7 +27,7 @@ def test_wallet():
         )
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
-        verifier = verifying.Verifier(hab=sidHab)
+        verifier = verifying.Verifier(hby=sidHby)
         issuer = issuing.Issuer(hab=sidHab, reger=verifier.reger)
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
