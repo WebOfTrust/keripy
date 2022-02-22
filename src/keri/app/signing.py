@@ -50,7 +50,7 @@ def provision(serder, *, sadsigers=None, sadcigars=None, pipelined=False):
         raise ValueError("Missing attached signatures on message = {}."
                          "".format(serder.ked))
 
-    msg.extend(eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, pipelined=pipelined))
+    msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=pipelined))
     return msg
 
 
@@ -120,3 +120,49 @@ def transSeal(hab):
     saider = coring.Saider(qb64=kever.lastEst.d)
 
     return prefixer, seqner, saider, indices
+
+
+class SadPathSigGroup:
+    """ Transposable group of signatures
+
+    Supports transposing groups of signatures from transferable or non-transferable
+    identfiers
+
+    """
+
+    def __init__(self, pather, cigars=None, sigers=None, tsgs=None):
+        self.pather = pather
+        self.cigars = cigars if cigars is not None else []
+        self.sigers = sigers if sigers is not None else []
+        self.tsgs = tsgs if tsgs is not None else []
+
+    def transpose(self, pather):
+        """ Transpose path for all signatures in group
+
+        Parameters:
+            pather:
+
+        """
+        self.pather = self.pather.root(pather)
+
+    @property
+    def proof(self):
+        # Transpose the signaturees to point to the new location
+        sadsigers = []
+        if len(self.sigers) > 0:  # iterate over each tsg
+            sadsigers.append((self.pather, self.sigers))
+
+        sadtsgs = []
+        for prefixer, seqner, diger, sigers in self.tsgs:  # iterate over each tsg
+            sadtsgs.append((self.pather, prefixer, seqner, diger, sigers))
+
+        sadcigars = []
+        for cigar in self.cigars:
+            sadcigars.append((self.pather, cigar))
+
+        return eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, sadtsgs=sadtsgs)
+
+
+
+
+

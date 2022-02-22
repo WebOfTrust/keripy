@@ -12,7 +12,7 @@ from json import JSONDecodeError
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, directing, agenting, indirecting, configing
+from keri.app import habbing, directing, agenting, indirecting, configing, delegating
 from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
@@ -33,8 +33,6 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
-parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (seed) for the aeid from which the '
-                                         'private decryption key may be derived', default=None)
 
 
 @dataclass
@@ -49,6 +47,7 @@ class InceptOptions:
     ncount: int
     nsith: int
     toad: int = 0
+    delpre: str = None
     estOnly: bool = False
 
 
@@ -102,7 +101,10 @@ class InceptDoer(doing.DoDoer):
 
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        doers = [self.hbyDoer, doing.doify(self.inceptDo)]
+        self.swain = delegating.Boatswain(hby=hby)
+        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
+        self.witDoer = None
+        doers = [self.hbyDoer, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
         self.alias = alias
@@ -124,11 +126,17 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.makeHab(name=self.alias, **self.inits)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt'])
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
-        self.extend([self.witDoer, self.mbx])
+        self.extend([self.witDoer])
+
+        if hab.kever.delegator:
+            self.swain.msgs.append(dict(alias=self.alias, pre=hab.pre, sn=0))
+            print("Waiting for delegation approval...")
+            while not self.swain.cues:
+                yield self.tock
 
         if hab.kever.wits:
+            print("Waiting for witness receipts...")
             self.witDoer.msgs.append(dict(pre=hab.pre))
             while not self.witDoer.cues:
                 _ = yield self.tock
@@ -138,7 +146,7 @@ class InceptDoer(doing.DoDoer):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
         print()
 
-        toRemove = [self.hbyDoer, self.witDoer, self.mbx]
+        toRemove = [self.hbyDoer, self.witDoer, self.mbx, self.swain]
         self.remove(toRemove)
 
         return

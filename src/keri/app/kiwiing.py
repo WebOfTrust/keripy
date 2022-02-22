@@ -285,9 +285,9 @@ class IdentifierEnd(doing.DoDoer):
             else:
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    self.postman.send(sender=hab.pre, recipient=hab.kever.delegator, topic="delegate", msg=msg)
+                    self.postman.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", msg=msg)
 
-                self.postman.send(sender=hab.pre, recipient=hab.kever.delegator, topic="delegate", msg=rot)
+                self.postman.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", msg=rot)
                 rep.status = falcon.HTTP_202
 
         except (ValueError, TypeError) as e:
@@ -557,7 +557,7 @@ class CredentialsEnd:
                         data=d,
                     )
                     exn = exchanging.exchange(route="/multisig/issue", payload=msg)
-                    self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+                    self.rep.reps.append(dict(src=hab.pre, dest=aid, rep=exn, topic="multisig"))
 
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
@@ -698,7 +698,7 @@ class ApplicationsEnd:
         apply = handling.credential_apply(issuer=issuer, schema=schema, formats=[], body=values)
 
         exn = exchanging.exchange(route="/credential/apply", payload=apply)
-        self.rep.reps.append(dict(dest=issuer, rep=exn, topic="credential"))
+        self.rep.reps.append(dict(src="", dest=issuer, rep=exn, topic="credential"))
 
         rep.status = falcon.HTTP_202
 
@@ -1304,25 +1304,25 @@ class KiwiDoer(doing.DoDoer):
 
                         sources = self.verifier.reger.sources(self.hby.db, creder)
                         for craw, smsgs in sources:
-                            self.postman.send(sender=issr, recipient=recpt, topic="credential", msg=smsgs)
+                            self.postman.send(src=issr, dest=recpt, topic="credential", msg=smsgs)
                             vcs.extend([handling.envelope(msg=craw)])
 
                         pl = dict(
                             vc=vcs
                         )
 
-                        self.postman.send(sender=issr, recipient=recpt, topic="credential", msg=msgs)
+                        self.postman.send(src=issr, dest=recpt, topic="credential", msg=msgs)
                         exn = exchanging.exchange(route="/credential/issue", payload=pl)
                         #  TODO:  Respondant must accept transposable signatures to add to the endorsed message
                         self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
 
                 elif cueKin == "query":
                     qargs = cue["q"]
-                    self.witq.backoffQuery(**qargs)
+                    self.witq.query(**qargs)
 
                 elif cueKin == "telquery":
                     qargs = cue["q"]
-                    self.witq.backoffTelQuery(**qargs)
+                    self.witq.telquery(**qargs)
 
                 elif cueKin == "proof":
                     pass
@@ -1387,7 +1387,7 @@ class KiwiDoer(doing.DoDoer):
                     self.remove([witSender])
 
                     if sub is not None:
-                        self.postman.send(sender=pre, recipient=sub["i"], topic="credential", msg=bytearray(tevt))
+                        self.postman.send(src=pre, dest=sub["i"], topic="credential", msg=bytearray(tevt))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
                     serder = eventing.Serder(raw=bytearray(kevt))
@@ -1461,11 +1461,8 @@ def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha)
 
-    mailEnd = storing.MailEnd(mbx=mbx)
-    app.add_route("/qry/mbx", mailEnd)
-
     resources = [identifierEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
-                 presentationEnd, multisigEnd, chacha, mailEnd]
+                 presentationEnd, multisigEnd, chacha]
 
     app.add_route("/spec.yaml", SpecResource(app=app, title='KERI Interactive Web Interface API',
                                              resources=resources))

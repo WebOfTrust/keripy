@@ -10,7 +10,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import rotating, existing
-from ... import habbing, agenting, indirecting, directing
+from ... import habbing, agenting, indirecting, directing, delegating
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))
@@ -67,7 +67,6 @@ def rotate(args):
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1
     except ValueError as ex:
-        print(ex.args[0])
         return -1
 
 
@@ -106,7 +105,9 @@ class RotateDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        doers = [self.hbyDoer, doing.doify(self.rotateDo)]
+        self.swain = delegating.Boatswain(hby=self.hby)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
+        doers = [self.hbyDoer, self.mbx, self.swain, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
 
@@ -135,9 +136,14 @@ class RotateDoer(doing.DoDoer):
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
+        if hab.kever.delegator:
+            self.swain.msgs.append(dict(alias=self.alias, pre=hab.pre, sn=hab.kever.sn))
+            print("Waiting for delegation approval...")
+            while not self.swain.cues:
+                yield self.tock
+
         witDoer = agenting.WitnessReceiptor(hby=self.hby)
-        self.extend(doers=[mbx, witDoer])
+        self.extend(doers=[witDoer])
         yield self.tock
 
         if hab.kever.wits:
@@ -150,7 +156,7 @@ class RotateDoer(doing.DoDoer):
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
 
-        toRemove = [self.hbyDoer, witDoer, mbx]
+        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx]
         self.remove(toRemove)
 
         return

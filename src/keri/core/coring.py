@@ -21,7 +21,6 @@ import blake3
 import hashlib
 
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
-                      InvalidSizeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError,
@@ -45,7 +44,6 @@ qry = query
 rpy = reply
 exn = exchange
 exp = expose, sealed data exposition
-fwd = forward, ??
 vcp = vdr incept, verifiable data registry inception
 vrt = vdr rotate, verifiable data registry rotation
 iss = vc issue, verifiable credential issuance
@@ -55,12 +53,11 @@ brv = backed vc revoke, registry-backed transaction event log credential revocat
 """
 
 Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn exp '
-                               'fwd vcp vrt iss rev bis brv '))
+                               'vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               ksn='ksn', qry='qry', rpy='rpy', exn='exn', exp='exp',
-              fwd='fwd', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
-              bis='bis', brv='brv')
+              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -330,7 +327,7 @@ def dumps(ked, kind=Serials.json):
        raw (bytes): serialized version of ked dict
 
     Parameters:
-       ked (dict): key event dict or message dict to serialize
+       ked (Optional(dict, list)): key event dict or message dict to serialize
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
     if kind == Serials.json:
@@ -364,7 +361,6 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
-            print(ex)
             raise DeserializationError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
@@ -1552,6 +1548,42 @@ class Pather(Texter):
         """
         return Pather(path=root.path + self.path)
 
+    def strip(self, root):
+        """ Returns a new Pather with root stipped off the front if it exists
+
+        Returns a new Pather with root stripped off the front
+
+        Args:
+            root(Pather): the new root to apply to this path
+
+        Returns:
+            Pather: new path anchored at root
+        """
+        if len(root.path) > len(self.path):
+            return Pather(path=self.path)
+
+        path = list(self.path)
+        try:
+            for i in root.path:
+                path.remove(i)
+        except ValueError:
+            return Pather(path=self.path)
+
+        return Pather(path=path)
+
+    def startswith(self, path):
+        """ Returns True is path is the root of self
+
+        Parameters:
+            path (Pather): the path to check against self
+
+        Returns:
+            bool: True if path is the root of self
+
+        """
+
+        return self.text.startswith(path.text)
+
     def resolve(self, sad):
         """ Recurses thru value following ptr
 
@@ -1580,6 +1612,8 @@ class Pather(Texter):
             saider = Saider(qb64=val)
             return saider.qb64b
         elif isinstance(val, dict):
+            return dumps(val, serder.kind)
+        elif isinstance(val, list):
             return dumps(val, serder.kind)
         else:
             raise ValueError("Non-rawifiable value at {} of {}"
@@ -1620,7 +1654,7 @@ class Pather(Texter):
         """ Recurses thru value following ptr
 
         Parameters:
-            val(dict or list): the next component
+            val(Optional(dict,list)): the next component
             ptr(list): list of path components
 
         Returns:
@@ -3657,6 +3691,7 @@ class CounterCodex:
     SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
     SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
     MessageDataGroups: str = '-U'  # Composed Message Data Group or Primitive
+    PathedMaterialQuadlets: str = '-T'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets: str = '-W'  # Composed Grouped Message Data Quadlet (4 char each)
     CombinedMaterialQuadlets: str = '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
@@ -3735,6 +3770,7 @@ class Counter:
         '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -3993,7 +4029,6 @@ class Counter:
 
         self._code = hard
         self._count = count
-
 
 
 class Sadder:

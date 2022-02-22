@@ -44,7 +44,6 @@ def generate(args):
     bran = args.bran
     role = args.role
 
-
     with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
         if role in (kering.Roles.witness,):
             if not hab.kever.wits:

@@ -75,8 +75,8 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
 
     kiwiServer = watching.KiwiServer(hab=hab, app=app, rep=rep, controller=controller)
 
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    mbxer = storing.MailEnd(app=app, hab=hab, mbx=mbx)
+    httpEnd = indirecting.HttpEnd(hab=hab, app=app, rep=rep, mbx=mbx)
+    app.add_route("/", httpEnd)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -86,6 +86,6 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
 
     directant = directing.Directant(hab=hab, server=server)
 
-    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, kiwiServer])
+    doers.extend([directant, serverDoer, httpServerDoer, httpEnd, rep, kiwiServer])
 
     return doers

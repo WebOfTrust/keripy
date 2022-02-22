@@ -11,17 +11,13 @@ from hio.help import Hict
 
 from keri import help
 from keri import kering
-from keri.core import coring
-from keri.core.coring import Ilks
+from keri.core import coring, parsing
 from keri.end import ending
-from keri.help.helping import nowIso8601
 
 logger = help.ogler.getLogger()
 
 CESR_CONTENT_TYPE = "application/cesr+json"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
-CESR_DATE_HEADER = "CESR-DATE"
-CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
 
 
 class SignatureValidationComponent(object):
@@ -69,18 +65,13 @@ class SignatureValidationComponent(object):
         return True
 
 
-
-
 @dataclass
 class CesrRequest:
-    resource: str
-    date: str
     payload: dict
-    modifiers: dict
     attachments: str
 
 
-def parseCesrHttpRequest(req, prefix=None):
+def parseCesrHttpRequest(req):
     """
     Parse Falcon HTTP request and create a CESR message from the body of the request and the two
     CESR HTTP headers (Date, Attachment).
@@ -102,35 +93,20 @@ def parseCesrHttpRequest(req, prefix=None):
                                description="Could not decode the request body. The "
                                            "JSON was incorrect.")
 
-    resource = req.path
-    if prefix is not None:
-        resource = resource.removeprefix(prefix)
-
-    if CESR_DATE_HEADER not in req.headers:
-        raise falcon.HTTPError(falcon.HTTP_UNAUTHORIZED,
-                               title="Date error",
-                               description="Missing required date header.")
-
-    dt = req.headers[CESR_DATE_HEADER]
-
     if CESR_ATTACHMENT_HEADER not in req.headers:
         raise falcon.HTTPError(falcon.HTTP_PRECONDITION_FAILED,
                                title="Attachment error",
                                description="Missing required attachment header.")
     attachment = req.headers[CESR_ATTACHMENT_HEADER]
 
-
     cr = CesrRequest(
-        resource=resource,
-        date=dt,
         payload=data,
-        modifiers=req.params,
         attachments=attachment)
 
     return cr
 
 
-def createCESRRequest(msg, client, date=None):
+def createCESRRequest(msg, client, path=None):
     """
     Turns a KERI message into a CESR http request against the provided hio http Client
 
@@ -139,8 +115,8 @@ def createCESRRequest(msg, client, date=None):
        client: hio http Client that will send the message as a CESR request
 
     """
+    path = path if path is not None else "/"
 
-    dt = date if date is not None else nowIso8601()
     try:
         serder = coring.Serder(raw=msg)
     except kering.ShortageError as ex:  # need more bytes
@@ -148,40 +124,68 @@ def createCESRRequest(msg, client, date=None):
     else:  # extracted successfully
         del msg[:serder.size]  # strip off event from front of ims
 
-    ilk = serder.ked["t"]
     attachments = bytearray(msg)
-    query = serder.ked["q"] if "q" in serder.ked else None
-
-    if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
-        resource = "/kel"
-        body = serder.raw
-    elif ilk in (Ilks.qry, ):
-        resource = "/" + ilk + "/" + serder.ked['r']
-        body = serder.raw
-    elif ilk in (Ilks.fwd,):
-        resource = "/" + ilk + "/" + serder.ked['r']
-        body = json.dumps(serder.ked["a"]).encode("utf-8")
-    elif ilk in (Ilks.exn,):
-        resource = "/" + ilk + serder.ked['r']
-        body = json.dumps(serder.ked["a"]).encode("utf-8")
-        dt = serder.ked["dt"]
-    elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-        resource = "/tel"
-        body = serder.raw
-    else:
-        raise kering.InvalidEventTypeError("Event type {} is not handled by http clients".format(ilk))
+    body = serder.raw
 
     headers = Hict([
         ("Content-Type", CESR_CONTENT_TYPE),
         ("Content-Length", len(body)),
-        (CESR_DATE_HEADER, dt),
         (CESR_ATTACHMENT_HEADER, attachments)
     ])
 
     client.request(
         method="POST",
-        path=resource,
-        qargs=query,
+        path=path,
         headers=headers,
         body=body
     )
+
+
+def streamCESRRequests(client, ims, path=None):
+    """
+    Turns a stream of KERI messages into CESR http requests against the provided hio http Client
+
+    Parameters
+       ims (bytearray):  stream of KERI messages parsable as Serder.raw
+       client (Client): hio http Client that will send the message as a CESR request
+       path (str): path to post to
+
+    """
+    path = path if path is not None else "/"
+
+    cold = parsing.Parser.sniff(ims)  # check for spurious counters at front of stream
+    if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream
+        # replace with pipelining here once CESR message format supported.
+        raise kering.ColdStartError("Expecting message counter tritet={}"
+                                    "".format(cold))
+
+    # Otherwise its a message cold start
+    while ims:  # extract and deserialize message from ims
+        try:
+            serder = coring.Serder(raw=ims)
+        except kering.ShortageError as ex:  # need more bytes
+            raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
+        else:  # extracted successfully
+            del ims[:serder.size]  # strip off event from front of ims
+
+        attachment = bytearray()
+        while ims and ims[0] != 0x7b:  # not new message so process attachments, must support CBOR and MsgPack
+            attachment.append(ims[0])
+            del ims[:1]
+
+        body = serder.raw
+
+        headers = Hict([
+            ("Content-Type", CESR_CONTENT_TYPE),
+            ("Content-Length", len(body)),
+            (CESR_ATTACHMENT_HEADER, attachment)
+        ])
+
+        client.request(
+            method="POST",
+            path=path,
+            headers=headers,
+            body=body
+        )
+
+

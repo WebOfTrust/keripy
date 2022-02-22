@@ -4,10 +4,9 @@ tests.app.signing module
 
 """
 
-from keri.app import habbing, keeping, configing
+from keri.app import habbing, configing
 from keri.app import signing
 from keri.core import coring, parsing, eventing
-from keri.db import basing
 from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import verifying, issuing
@@ -235,7 +234,7 @@ def test_signature_transposition():
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a"]))
         exn = exchanging.exchange(route="/credential/issue", payload=scre.crd, date="2022-01-04T11:58:55.154502+00:00")
         msg = hab.endorse(serder=exn)
-        msg.extend(eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars))
+        msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
 
         assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"ELiFf9jptP0iYqy16cStp9W3'
                        b'plaGIj3cqX8g8JtWKzmI","dt":"2022-01-04T11:58:55.154502+00:00","r'
@@ -310,7 +309,7 @@ def test_signature_transposition():
         msg = hab.endorse(serder=exn)
 
         # attach the transposed signatures for the embedded credential
-        msg.extend(eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars))
+        msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
         assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"ELiFf9jptP0iYqy16cStp9W3'
                        b'plaGIj3cqX8g8JtWKzmI","dt":"2022-01-04T11:58:55.154502+00:00","r'
                        b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"E1x9hWR5'

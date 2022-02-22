@@ -5,7 +5,7 @@ keri.app.directing module
 
 simple direct mode demo support classes
 """
-
+import itertools
 from hio.base import doing
 
 from .. import help
@@ -640,6 +640,9 @@ class Reactant(doing.DoDoer):
         yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
+                if isinstance(msg, list):
+                    msg = bytearray(itertools.chain(*msg))
+
                 self.sendMessage(msg, label="chit or receipt or replay")
                 yield  # throttle just do one cue at a time
             yield

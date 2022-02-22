@@ -356,7 +356,6 @@ class Registry(dbing.LMDBer):
                 for siger in sigers:
                     self.spsgs.add(keys=quinkeys, val=siger)
 
-
     def cloneCred(self, said, root=None):
         """ Load base credential and CESR proof signatures from database.
 

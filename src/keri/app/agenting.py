@@ -12,7 +12,7 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
 
-from . import httping
+from . import httping, forwarding
 from .. import help
 from .. import kering
 from ..core import eventing, parsing, coring
@@ -90,15 +90,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    urls = hab.fetchUrls(eid=wit)
-                    if kering.Schemes.http in urls:
-                        url = urls[kering.Schemes.http]
-                        witer = HttpWitnesser(hab=hab, wit=wit, url=url)
-                    elif kering.Schemes.tcp in urls:
-                        url = urls[kering.Schemes.tcp]
-                        witer = TCPWitnesser(hab=hab, wit=wit, url=url)
-                    else:
-                        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
+                    witer = witnesser(hab, wit)
 
                     witers.append(witer)
                     witer.msgs.append(bytearray(msg))  # make a copy
@@ -166,7 +158,7 @@ class WitnessInquisitor(doing.DoDoer):
         """
         self.hab = hab
         self.reger = reger
-        self.wits = wits
+        self.wits = wits if wits is not None else self.hab.kever.wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
 
@@ -183,50 +175,56 @@ class WitnessInquisitor(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        wits = self.wits if self.wits is not None else self.hab.kever.wits
-        if len(wits) == 0:
+        if len(self.wits) == 0:
             raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
 
-        witers = []
-        for wit in wits:
-            urls = self.hab.fetchUrls(eid=wit)
-            if kering.Schemes.http in urls:
-                url = urls[kering.Schemes.http]
-                witer = HttpWitnesser(hab=self.hab, wit=wit, url=url)
-            elif kering.Schemes.tcp in urls:
-                url = urls[kering.Schemes.tcp]
-                witer = TCPWitnesser(hab=self.hab, wit=wit, url=url)
-            else:
-                raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
-            witers.append(witer)
+        witers = dict()
+        for wit in self.wits:
+            witer = witnesser(self.hab, wit)
+            witers[wit] = witer
 
-        self.extend(witers)
+        self.extend(witers.values())
 
         while True:
             while not self.msgs:
                 yield self.tock
 
-            msg = self.msgs.popleft()
-            witer = random.choice(witers)
+            (wit, msg) = self.msgs.popleft()
+            witer = witers[wit]
+            kel = forwarding.introduce(self.hab, wit)
+            if kel:
+                witer.msgs.append(bytearray(kel))
+
             witer.msgs.append(bytearray(msg))
 
             yield self.tock
 
-    def query(self, pre, r="logs", sn=0, **kwa):
-        msg = self.hab.query(pre, route=r, query=dict(), **kwa)  # Query for remote pre Event
-        self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
+    def query(self, pre, r="logs", sn=0, anchor=None, **kwa):
+        """ Create, sign and return a `qry` message against the attester for the prefix
+
+        Parameters:
+            pre (str): qb64 identifier prefix being queried for
+            r (str): query route
+            sn (int): optional specific sequence number to query for
+            anchor (Seal) anchor to search for
+            **kwa (dict): keyword arguments passed to eventing.query
+
+        Returns:
+            bytearray: signed query event
+
+        """
+        wit = random.choice(self.wits)
+        qry = dict(s=sn)
+        if anchor is not None:
+            qry["a"] = anchor
+
+        msg = self.hab.query(pre, src=wit, route=r, query=qry, **kwa)  # Query for remote pre Event
+        self.msgs.append((wit, bytes(msg)))  # bytes not bytearray so set membership compare works
 
     def telquery(self, ri, i=None, r="tels", **kwa):
-        msg = self.hab.query(i, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
-        self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
-
-    def backoffQuery(self, pre, sn=None, anc=None):
-        backoff = BackoffWitnessQuery(hab=self.hab, pre=pre, sn=sn, anc=anc)
-        self.extend([backoff])
-
-    def backoffTelQuery(self, ri=None, i=None):
-        backoff = BackoffWitnessTelQuery(hab=self.hab, reger=self.reger, ri=ri, i=i, wits=self.hab.kever.wits)
-        self.extend([backoff])
+        wit = random.choice(self.wits)
+        msg = self.hab.query(i, src=wit, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
+        self.msgs.append((wit, bytes(msg)))  # bytes not bytearray so set membership compare works
 
 
 class WitnessPublisher(doing.DoDoer):
@@ -271,16 +269,7 @@ class WitnessPublisher(doing.DoDoer):
 
         witers = []
         for wit in self.wits:
-            urls = self.hab.fetchUrls(eid=wit)
-            if kering.Schemes.http in urls:
-                url = urls[kering.Schemes.http]
-                witer = HttpWitnesser(hab=self.hab, wit=wit, url=url)
-            elif kering.Schemes.tcp in urls:
-                url = urls[kering.Schemes.tcp]
-                witer = TCPWitnesser(hab=self.hab, wit=wit, url=url)
-            else:
-                raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
-
+            witer = witnesser(self.hab, wit)
             witers.append(witer)
             witer.msgs.append(bytearray(self.msg))  # make a copy so everyone munges their own
             self.extend([witer])
@@ -410,10 +399,6 @@ class HttpWitnesser(doing.DoDoer):
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
-        self.kevery = eventing.Kevery(db=self.hab.db,
-                                      lax=False,
-                                      local=True)
-
         up = urlparse(url)
         if up.scheme != kering.Schemes.http:
             raise ValueError(f"invalid scheme {up.scheme} for HttpWitnesser")
@@ -441,7 +426,7 @@ class HttpWitnesser(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            httping.createCESRRequest(msg, self.client)
+            httping.streamCESRRequests(client=self.client, ims=msg)
             while self.client.requests:
                 yield self.tock
 
@@ -464,162 +449,48 @@ class HttpWitnesser(doing.DoDoer):
             yield
 
 
-class BackoffWitnessQuery(doing.DoDoer):
+def witnesser(hab, wit):
+    """ Create a Witnesser (tcp or http) based on available endpoints
+
+    Parameters:
+        hab (Habitat): Environment to use to look up witness URLs
+        wit (str): qb64 identifier prefix of witness to create a witnesser for
+
+    Returns:
+        Optional(TcpWitnesser, HttpWitnesser): witnesser for ensuring full reciepts
     """
-    Queries selection of target witnesses randomly performing truncated exponential backoff
-    retries
+    urls = hab.fetchUrls(eid=wit)
+    if kering.Schemes.http in urls:
+        url = urls[kering.Schemes.http]
+        witer = HttpWitnesser(hab=hab, wit=wit, url=url)
+    elif kering.Schemes.tcp in urls:
+        url = urls[kering.Schemes.tcp]
+        witer = TCPWitnesser(hab=hab, wit=wit, url=url)
+    else:
+        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
 
-    """
-
-    def __init__(self, hab, pre, wits=None, sn=None, anchor=None, startTyme=0.25, maxTyme=60, doers=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
-
-        Parameters:
-            hab: Habitat of the identifier to populate witnesses
-            maxTime is seconds int of maximum amount of time before giving up
-
-        """
-        self.hab = hab
-        self.wits = wits if wits is not None else self.hab.kever.wits
-        self.startTyme = startTyme
-        self.maxTyme = maxTyme
-
-        self.pre = pre
-        self.sn = sn
-        self.anchor = anchor
-
-        self.parser = None
-        doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.queryDo)])
-
-        super(BackoffWitnessQuery, self).__init__(doers=doers, **kwa)
-
-    def queryDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        tyme = self.startTyme
-        while tyme <= self.maxTyme:
-
-            if self.pre in self.hab.kevers:
-                kever = self.hab.kevers[self.pre]
-                if self.sn is not None and kever.sn >= self.sn:
-                    break
-                if self.anchor is not None:
-                    srdr = self.hab.db.findAnchoringEvent(pre=self.pre, anchor=self.anchor)
-                    if srdr is not None:
-                        break
-
-            wit = random.choice(self.wits)
-            urls = self.hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
-            if not urls:
-                raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
-
-            up = urlparse(urls[kering.Schemes.http])
-            client = http.clienting.Client(hostname=up.hostname, port=up.port)
-            clientDoer = http.clienting.ClientDoer(client=client)
-
-            self.extend([clientDoer])
-
-            msg = self.hab.query(self.pre, route="logs", query=dict())  # Query for remote pre Event
-            httping.createCESRRequest(msg, client)
-            while client.requests:
-                yield self.tock
-
-            while not client.responses:
-                yield self.tock
-
-            self.remove([clientDoer])
-
-            delay = tyme + random.randint(0, 1000) / 1000.0
-            tyme *= 2
-
-            yield delay
+    return witer
 
 
-class BackoffWitnessTelQuery(doing.DoDoer):
-    """
-    Queries selection of target witnesses randomly performing truncated exponential backoff
-    retries
+def httpClient(hab, wit):
+    """ Create and return a http.client and http.ClientDoer for the witness
+
+    Parameters:
+        hab (Habitat): Environment to use to look up witness URLs
+        wit (str): qb64 identifier prefix of witness for which to create a client
+
+    Returns:
+        Client: Http client for connecting to remote identifier
+        ClientDoer: Doer for client
 
     """
+    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+    if not urls:
+        raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-    def __init__(self, hab, reger, ri, i, wits, startTyme=0.25, maxTyme=60, doers=None, **kwa):
-        """
-        For the current event, gather the current set of witnesses, send the event,
-        gather all receipts and send them to all other witnesses
+    up = urlparse(urls[kering.Schemes.http])
+    client = http.clienting.Client(hostname=up.hostname, port=up.port)
+    clientDoer = http.clienting.ClientDoer(client=client)
 
-        Parameters:
-            hab: Habitat of the identifier to populate witnesses
-            maxTime is seconds int of maximum amount of time before giving up
+    return client, clientDoer
 
-        """
-        self.hab = hab
-        self.reger = reger
-        self.wits = wits
-        self.maxTyme = maxTyme
-        self.startTyme = startTyme
-
-        self.ri = ri
-        self.i = i
-
-        self.parser = None
-        doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.queryDo)])
-
-        super(BackoffWitnessTelQuery, self).__init__(doers=doers, **kwa)
-
-    def queryDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        tyme = self.startTyme
-        while tyme <= self.maxTyme:
-
-            if self.ri in self.reger.tevers:
-                tever = self.reger.tevers[self.ri]
-                if self.i is None or tever.vcState(self.i) is not None:
-                    break
-
-            wit = random.choice(self.wits)
-            urls = self.hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
-            if not urls:
-                raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
-
-            up = urlparse(urls[kering.Schemes.http])
-            client = http.clienting.Client(hostname=up.hostname, port=up.port)
-            clientDoer = http.clienting.ClientDoer(client=client)
-
-            self.extend([clientDoer])
-
-            msg = self.hab.query(self.i, route="tels", query=dict(ri=self.ri))  # Query for remote pre Event
-
-            httping.createCESRRequest(msg, client)
-            while client.requests:
-                yield self.tock
-
-            while not client.responses:
-                yield self.tock
-
-            self.remove([clientDoer])
-
-            delay = tyme + random.randint(0, 1000) / 1000.0
-            tyme *= 2
-
-            yield delay
