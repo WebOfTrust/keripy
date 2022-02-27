@@ -13,7 +13,7 @@ from hio.core import http
 from hio.core.http import clienting
 from hio.help import decking
 
-from keri.app import keeping
+from keri.app import keeping, agenting
 from keri.core import coring, eventing, parsing
 from .. import help, kering
 from ..end import ending
@@ -155,14 +155,7 @@ class WatcherClientRotateDoer(doing.DoDoer):
                 signage = ending.Signage(markers=sigers, indexed=True)
                 headers = ending.signature([signage])
 
-                urls = self.hab.fetchUrls(eid=watcher, scheme=kering.Schemes.http)
-                if not urls:
-                    raise kering.ConfigurationError(f"unable to query watcher {watcher}, no http endpoint")
-
-                print("have url", urls)
-                up = urlparse(urls[kering.Schemes.http])
-                client = http.clienting.Client(hostname=up.hostname, port=up.port)
-                clientDoer = clienting.ClientDoer(client=client)
+                client, clientDoer = agenting.httpClient(self.hab, watcher)
                 self.extend([clientDoer])
 
                 client.request(method="POST", path="/rotate", headers=headers, body=raw)

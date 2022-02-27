@@ -7,7 +7,7 @@ import argparse
 
 from hio import help
 from hio.base import doing
-from keri.app import directing, agenting, indirecting
+from keri.app import directing, agenting, indirecting, habbing
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
 
@@ -17,30 +17,42 @@ parser = argparse.ArgumentParser(description='Request KEL from Witness')
 parser.set_defaults(handler=lambda args: query(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--witness', '-w', help='QB64 identifier of witness to query', default="", required=True)
-parser.add_argument('--prefix', '-p', help='QB64 identifier to query', default="", required=True)
+parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
+
+# Authentication for keystore
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
+                                   'and encryption of secrets in keystore', default=None)
 
 
 def query(args):
     name = args.name
 
-    qryDoer = QueryDoer(name=name, wit=args.witness, pre=args.prefix)
+    qryDoer = QueryDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, wit=args.witness, pre=args.prefix)
     directing.runController(doers=[qryDoer], expire=0.0)
 
 
 class QueryDoer(doing.DoDoer):
 
-    def __init__(self, name, wit, pre, **kwa):
-        hab, doers = existing.setupHabitat(name=name)
+    def __init__(self, name, alias, base, bran, wit, pre, **kwa):
+        doers = []
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        hab = self.hby.habByName(alias)
         self.hab = hab
 
         self.wit = wit
         self.pre = pre
         self.cues = help.decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=["/replay", "/receipt"])
+        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
         self.witq = agenting.WitnessInquisitor(hab=self.hab, wits=[self.wit])
-        doers.extend([self.mbd, self.witq, doing.doify(self.cueDo)])
+        doers.extend([self.hbyDoer, self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.queryDo)])
@@ -73,7 +85,6 @@ class QueryDoer(doing.DoDoer):
 
         return
 
-
     def cueDo(self, tymth, tock=0.0, **opts):
         """
 
@@ -91,7 +102,7 @@ class QueryDoer(doing.DoDoer):
                 cueKin = cue["kin"]  # type or kind of cue
                 if cueKin == "query":
                     qargs = cue["q"]
-                    self.witq.backoffQuery(**qargs)
+                    self.witq.query(**qargs)
 
                 elif cueKin == "keyStateSaved":
                     self.cues.append(cue)

@@ -4,18 +4,18 @@ keri.app.storing module
 
 """
 import random
-from urllib.parse import urlparse
+import itertools
 
 from hio.base import doing
-from hio.core import http
-from hio.help import decking, helping, Hict
+from hio.help import decking
 from orderedset import OrderedSet as oset
 
-from . import forwarding, httping
-from .. import help, kering
+from . import httping, agenting, forwarding
+from .. import help
 from ..core import coring
 from ..core.coring import MtrDex
 from ..db import dbing, subing
+from ..peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -115,11 +115,9 @@ class Mailboxer(dbing.LMDBer):
         if hasattr(msg, "encode"):
             msg = msg.encode("utf-8")
 
-
         digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
         self.appendToTopic(topic=topic, val=digb)
         return self.msgs.pin(keys=digb, val=msg)
-
 
     def cloneTopicIter(self, topic, fn=0):
         """
@@ -134,97 +132,6 @@ class Mailboxer(dbing.LMDBer):
             topic, ion = dbing.unsuffix(key)
             if msg := self.msgs.get(keys=dig):
                 yield ion, topic, msg.encode("utf-8")
-
-
-class MailEnd(doing.DoDoer):
-    """
-    Message storage for Witnesses.  Provides an inbox service for storing messages for an identifier.
-
-    """
-
-    def __init__(self, mbx: Mailboxer, **kwa):
-        """
-        Create Mailbox server for storing messages on a Witness for a witnessed
-        identifier.
-
-        Parameters:
-            mbx (Mailboxer): message storage for store and forward
-
-        """
-
-        self.mbx = mbx
-        doers = []
-
-        super(MailEnd, self).__init__(doers=doers, **kwa)
-
-    def on_get(self, req, rep):
-        """
-        Handles GET requests as a stream of SSE events
-
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        pre = req.params["i"]
-        pt = req.params["topics"]
-
-        topics = dict()
-        for t in pt:
-            key, val = t.split("=")
-            topics[key] = int(val)
-
-        rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
-
-    def on_post(self, req, rep):
-        """
-        Handles GET requests as a stream of SSE events
-
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        cr = httping.parseCesrHttpRequest(req=req)
-
-        query = cr.payload['q']
-        topics = query['topics']
-        pre = query["pre"]
-
-        rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
-
-    @helping.attributize
-    def mailboxGenerator(self, me, pre=None, topics=None, resp=None):
-        """
-
-        Parameters:
-            me:
-            pre:
-            topics:
-            resp:
-
-        """
-        me._status = http.httping.OK
-
-        headers = Hict()
-        headers['Content-Type'] = "text/event-stream"
-        headers['Cache-Control'] = "no-cache"
-        headers['Connection'] = "keep-alive"
-        me._headers = headers
-
-        yield b'retry: 1000\n'
-        while True:
-            for topic, idx in topics.items():
-                key = pre + topic
-                for fn, _, msg in self.mbx.cloneTopicIter(key, idx):
-                    data = bytearray("id: {}\nevent: {}\ndata: ".format(fn, topic).encode("utf-8"))
-                    data.extend(msg)
-                    data.extend(b'\n\n')
-                    idx = idx + 1
-                    yield data
-                topics[topic] = idx
-
-            yield b''
 
 
 class Respondant(doing.DoDoer):
@@ -251,10 +158,10 @@ class Respondant(doing.DoDoer):
 
         self.hby = hby
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
+        self.postman = forwarding.Postman(hby=self.hby)
 
-        doers = [doing.doify(self.responseDo), doing.doify(self.cueDo)]
+        doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
-
 
     def responseDo(self, tymth=None, tock=0.0):
         """
@@ -276,40 +183,34 @@ class Respondant(doing.DoDoer):
         while True:
             while self.reps:
                 rep = self.reps.popleft()
-                # TODO: ADD SENDER TO ALL EXN RESPONSES
-                sender = rep["sender"]
+                sender = rep["src"]
                 recipient = rep["dest"]
                 exn = rep["rep"]
                 topic = rep["topic"]
 
-                kever = self.hby.kevers[recipient]
-                if kever is None:
-                    logger.Error("unable to reply, dest {} not found".format(recipient))
+                if recipient not in self.hby.kevers:
+                    logger.error("unable to reply, dest {} not found".format(recipient))
                     continue
+                recpkev = self.hby.kevers[recipient]
 
-                hab = self.hby.habs[sender]
-                if len(kever.wits) == 0:
-                    msg = hab.endorse(exn, last=True)
+                senderHab = self.hby.habs[sender]
+                if len(recpkev.wits) == 0:
+                    msg = senderHab.endorse(exn, last=True)
                     self.mbx.storeMsg(topic=recipient, msg=msg)
                 else:
-                    wit = random.choice(kever.wits)
-                    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
-                    if not urls:
-                        raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
-
-                    up = urlparse(urls[kering.Schemes.http])
-                    client = http.clienting.Client(hostname=up.hostname, port=up.port)
-                    clientDoer = http.clienting.ClientDoer(client=client)
+                    wit = random.choice(recpkev.wits)
+                    client, clientDoer = agenting.httpClient(senderHab, wit)
 
                     self.extend([clientDoer])
 
-                    fwd = forwarding.forward(pre=recipient, serder=exn, topic=topic)
+                    fwd = exchanging.exchange(route='/fwd',
+                                              modifiers=dict(pre=recipient, topic=topic), payload=exn.ked)
                     msg = bytearray(fwd.raw)
-                    atc = hab.endorse(exn, last=True)
+                    atc = senderHab.endorse(exn, last=True, pipelined=False)
                     del atc[:exn.size]
                     msg.extend(atc)
 
-                    httping.createCESRRequest(msg, client, date=exn.ked["dt"])
+                    httping.createCESRRequest(msg, client)
 
                     while not client.responses:
                         yield self.tock
@@ -337,6 +238,7 @@ class Respondant(doing.DoDoer):
                 msg = bytearray()
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
+
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre
                     cuedKed = serder.ked
@@ -348,21 +250,72 @@ class Respondant(doing.DoDoer):
                             pre = match.pop()
                             hab = self.hby.habs[pre]
                             msg.extend(hab.receipt(serder))
-                            self.mbx.storeMsg(topic=serder.preb+b'/receipt', msg=msg)
+                            self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
 
                 elif cueKin in ("replay",):
+                    src = cue["src"]
                     dest = cue["dest"]
                     msgs = cue["msgs"]
+                    hab = self.hby.habs[src]
 
-                    self.mbx.storeMsg(topic=dest+'/replay', msg=msgs)
-                elif cueKin in ("reply", ):
-                    data = cue["data"]
+                    if dest not in self.hby.kevers:
+                        continue
+
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+
+                    if owits.intersection(self.hby.prefixes):
+                        bmsgs = bytearray(itertools.chain(*msgs))
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=bmsgs)
+
+                    else:
+                        events = list()
+                        atc = bytearray()
+                        for i, msg in enumerate(msgs):
+                            evt = coring.Serder(raw=msg)
+                            events.append(evt.ked)
+                            pather = coring.Pather(path=["a", i])
+                            btc = pather.qb64b + msg[evt.size:]
+                            atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                                      count=(len(btc) // 4)).qb64b)
+                            atc.extend(btc)
+
+                        fwd = exchanging.exchange(route='/fwd',
+                                                  modifiers=dict(pre=dest, topic="replay"), payload=events)
+                        msg = hab.endorse(fwd, last=True, pipelined=False)
+                        msg.extend(atc)
+                        wit = random.choice(kever.wits)
+                        client, clientDoer = agenting.httpClient(hab, wit)
+                        self.extend([clientDoer])
+
+                        httping.createCESRRequest(msg, client)
+
+                        while not client.responses:
+                            yield self.tock
+
+                        self.remove([clientDoer])
+
+                elif cueKin in ("reply",):
+                    src = cue["src"]
+                    serder = cue["serder"]
                     route = cue["route"]
                     dest = cue["dest"]
 
-                    msg = hab.reply(data=data, route=route+"/"+hab.pre)
-                    self.mbx.storeMsg(topic=dest+"/replay", msg=msg)
+                    if dest not in self.hby.kevers:
+                        continue
 
-                yield self.tock
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+                    if match := owits.intersection(self.hby.prefixes):
+                        pre = match.pop()
+                        hab = self.hby.habs[pre]
+                        msg.extend(hab.endorse(serder))
+                        self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
+
+                    else:
+                        hab = self.hby.habs[src]
+                        atc = hab.endorse(serder)
+                        del atc[:serder.size]
+                        self.postman.send(src=src, dest=dest, topic="reply", serder=serder, attachment=atc)
 
             yield self.tock

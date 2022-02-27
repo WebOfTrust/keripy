@@ -338,15 +338,12 @@ class JSONSchema:
             d = json.loads(raw)
             jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
         except jsonschema.exceptions.ValidationError as ex:
-            print(ex)
             logger.error(f'jsonschema.exceptions.ValidationError {ex}')
             return False
         except jsonschema.exceptions.SchemaError as ex:
-            print(ex)
             logger.error(f'jsonschema.exceptions.SchemaError {ex}')
             return False
         except json.decoder.JSONDecodeError as ex:
-            print(ex)
             logger.error(f'json.decoder.JSONDecodeError {ex}')
             return False
         except Exception:

@@ -55,6 +55,5 @@ def status(args):
                     print()
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

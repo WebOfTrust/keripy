@@ -12,7 +12,7 @@ from keri.help import helping
 from keri.vdr import issuing, viring
 from . import proving
 from .. import help
-from ..app import agenting, signing
+from ..app import signing
 from ..core import scheming, parsing
 from ..kering import ShortageError
 from ..peer import exchanging
@@ -191,7 +191,7 @@ class ApplyHandler(doing.DoDoer):
 
                 schema = payload["schema"]
                 issuer = payload["issuer"]
-                if issuer not in  self.hby.habs:
+                if issuer not in self.hby.habs:
                     logger.info("request for incorrect issuer {}".format(issuer))
                     continue
 

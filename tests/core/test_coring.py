@@ -3,42 +3,37 @@
 tests.core.test_coring module
 
 """
-import pytest
-
-import pysodium
-import blake3
-import json
-import hashlib
 import dataclasses
-
-import msgpack
-import cbor2 as cbor
-
-from base64 import urlsafe_b64encode as encodeB64
+import hashlib
+import json
 from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
 
-from keri.kering import Version, Versionage
-from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError)
-
-from keri.help import helping
+import blake3
+import cbor2 as cbor
+import msgpack
+import pysodium
+import pytest
 
 from keri.core import coring
+from keri.core import eventing
 from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
+from keri.core.coring import Seqner, Siger, Dater, Texter
+from keri.core.coring import Serder, Tholder
+from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
                               IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
+from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
                               B64_CHARS, Reb64, nabSextets)
-from keri.core.coring import Seqner, Siger, Dater, Texter
-from keri.core.coring import Serialage, Serials, Vstrings
-from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import Serder, Tholder
-
-from keri.core import eventing
+from keri.help import helping
+from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
+                         ShortageError, InvalidCodeSizeError)
+from keri.kering import Version, Versionage
 
 
 def test_ilks():
@@ -47,7 +42,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', qry='qry', rpy='rpy',
-                          exn='exn', exp='exp', fwd='fwd', vcp='vcp', vrt='vrt',
+                          exn='exn', exp='exp', vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
     assert isinstance(Ilks, Ilkage)
@@ -77,8 +72,6 @@ def test_ilks():
     assert Ilks.exn == 'exn'
     assert 'exp' in Ilks
     assert Ilks.exp == 'exp'
-    assert 'fwd' in Ilks
-    assert Ilks.fwd == 'fwd'
 
     assert 'vcp' in Ilks
     assert Ilks.vcp == 'vcp'
@@ -1649,6 +1642,7 @@ def test_counter():
         'MessageDataMaterialQuadlets': '-W',
         'CombinedMaterialQuadlets': '-X',
         'MaterialGroups': '-Y',
+        'PathedMaterialQuadlets': '-T',
         'MaterialQuadlets': '-Z',
         'AnchorSealGroups': '-a',
         'ConfigTraits': '-c',
@@ -1698,6 +1692,7 @@ def test_counter():
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -2378,6 +2373,30 @@ def test_pather():
     with pytest.raises(ValueError):
         pather.resolve(sad)
     assert pather.path == ["0", "field1", "0"]
+
+    text = "-a"
+    a = coring.Pather(text=text)
+    b = coring.Pather(text="-a-b")
+
+    pather = coring.Pather(text=text)
+    assert pather.startswith(a)
+    assert not pather.startswith(b)
+
+    pnew = pather.strip(a)
+    assert pnew.path == []
+
+    pnew = pather.strip(b)
+    assert pnew.path == pather.path
+
+    pather = coring.Pather(text="-a-b-c-d-e-f")
+    assert pather.startswith(a)
+    assert pather.startswith(b)
+
+    pnew = pather.strip(a)
+    assert pnew.path == ["b", "c", "d", "e", "f"]
+
+    pnew = pather.strip(b)
+    assert pnew.path == ["c", "d", "e", "f"]
 
     """ Done Test """
 

@@ -58,7 +58,7 @@ OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))
 
 def signature(signages):
     """
-    Creates  Signature HTTP header item from signages list
+    Creates Signature HTTP header item from signages list
 
     RFC8941 Structured Field Values for HTTP
 
@@ -437,13 +437,12 @@ class OOBIEnd:
             eids.append(eid)
 
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
-
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status
             rep.content_type = "application/json+cesr"
             rep.data = msgs
         else:
-            rep.status = falcon.HTTP_404
+            rep.status = falcon.HTTP_NOT_FOUND
 
 
 WEB_DIR_PATH = os.path.dirname(

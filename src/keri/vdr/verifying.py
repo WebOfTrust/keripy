@@ -141,21 +141,16 @@ class Verifier:
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
-
         schemer = scheming.Schemer(raw=scraw)
         if not schemer.verify(creder.raw):
             raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}"
                                                      .format(creder.said, schema))
 
         for (pather, cigar) in sadcigars:
-            tholder, verfers = self.hby.resolveVerifiers(pre=cigar.qb64)
-            _, indices = core.eventing.verifySigs(creder, [cigar], verfers)
-
-            if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
+            if not cigar.verfer.verify(cigar.raw, creder.raw):  # cig not verify
                 self.escrowPSC(creder, sadsigers, sadcigars)
-                raise kering.MissingSignatureError("Failure satisfying credential sith = {} on sigs for {}"
-                                                   " for evt = {}.".format(tholder.sith,
-                                                                           cigar,
+                raise kering.MissingSignatureError("Failure satisfying credential on sigs for {}"
+                                                   " for evt = {}.".format(cigar,
                                                                            creder.crd))
 
         rooted = False

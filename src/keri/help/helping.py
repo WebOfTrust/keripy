@@ -109,7 +109,6 @@ def isBase64(sb):
             return True
         return False
     except Exception as ex:
-        print(ex)
         return False
 
 

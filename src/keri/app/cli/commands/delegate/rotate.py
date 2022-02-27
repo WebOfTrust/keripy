@@ -6,6 +6,8 @@ keri.kli.commands.delegate module
 """
 import argparse
 import json
+from dataclasses import dataclass
+
 import sys
 from json import JSONDecodeError
 
@@ -14,7 +16,6 @@ from hio.base import doing
 
 from keri import kering
 from keri.app import directing, keeping, habbing, agenting
-from keri.app.cli.commands.delegate.incept import DelegateOptions
 from keri.core import eventing, coring, parsing
 from keri.db import basing
 
@@ -26,6 +27,22 @@ parser.add_argument('--name', '-n', help='Human readable environment reference',
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
 parser.add_argument('--seal', '-s', help='Filename to write seal', default="", required=True)
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=True)
+
+
+@dataclass
+class DelegateOptions:
+    """
+    Options dataclass loaded from the file parameter to this command line function.
+    Represents all the options needed to create a delegated identifier
+
+    """
+    delpre: str
+    transferable: bool
+    wits: list
+    icount: int
+    isith: str
+    ncount: int
+    nsith: str
 
 
 def rotate(args):

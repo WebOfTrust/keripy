@@ -16,7 +16,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import agenting, forwarding
+from keri.app import agenting, forwarding, signing
 from keri.core import coring, eventing, parsing
 from keri.db import dbing, basing
 from keri.peer import exchanging
@@ -320,7 +320,7 @@ class Groupy:
 
         others = list(aids)
         others.remove(hab.pre)
-        self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=bytearray(msg)))
+        self.cues.append(dict(kin="send", recipients=others, topic='multisig', serder=mssrdr, sigers=sigers))
 
         return sigers
 
@@ -574,10 +574,12 @@ class MultiSigGroupDoer(doing.DoDoer):
                 elif cueKin == "send":
                     recpts = cue["recipients"]
                     lid = cue["pre"]
+                    serder = cue["serder"]
+                    attachment = cue["attachment"]
                     for recpt in recpts:
-                        self.postman.send(sender=lid, recipient=recpt,
+                        self.postman.send(src=lid, dest=recpt,
                                           topic=cue["topic"],
-                                          msg=bytearray(cue["evt"]))
+                                          serder=serder, attachment=attachment)
                 elif cueKin == "witness":
                     msg = cue["msg"]
                     witRctDoer = agenting.WitnessReceiptor(hby=self.hby, msg=msg, klas=agenting.HttpWitnesser)
@@ -591,7 +593,7 @@ class MultiSigGroupDoer(doing.DoDoer):
                     lid = cue["pre"]
                     group = cue["group"]
                     mssrdr = cue["mssrdr"]
-                    sigers = cue["sigers"]
+                    sigers = cue["attachment"]
                     if lid not in self.hby.habs:
                         print(f"Invalid identfier {lid}")
 
@@ -607,11 +609,10 @@ class MultiSigGroupDoer(doing.DoDoer):
                             self.ims.extend(bytearray(self.msgToSend))
 
                             di = mssrdr.ked["di"]
-                            self.postman.send(sender=hab.pre, recipient=di,
+                            self.postman.send(src=hab.pre, dest=di,
                                               topic="delegate",
-                                              msg=bytearray(self.msgToSend))
+                                              serder=mssrdr)
                         else:
-
                             msg = eventing.messagize(mssrdr, sigers=sigers)
                             witRctDoer = agenting.WitnessReceiptor(hby=self.hby, msg=msg, klas=agenting.TCPWitnesser)
                             self.extend([witRctDoer])
