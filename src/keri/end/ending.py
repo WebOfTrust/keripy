@@ -266,7 +266,7 @@ class PointEnd(base.Tymee):
     def __init__(self, hby, **kwa):
         """
         Parameters:
-            hab (habbing.Habitat):  instance of local habitat
+            hab (habbing.Hab):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(PointEnd, self).__init__(**kwa)
@@ -345,7 +345,7 @@ class LocationEnd(base.Tymee):
     def __init__(self, hby, **kwa):
         """
         Parameters:
-            hab (habbing.Habitat):  instance of local habitat
+            hab (habbing.Hab):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(LocationEnd, self).__init__(**kwa)
@@ -378,7 +378,7 @@ class AdminEnd(base.Tymee):
     def __init__(self, hby, **kwa):
         """
         Parameters:
-            hab (habbing.Habitat):  instance of local habitat
+            hab (habbing.Hab):  instance of local habitat
             tymth (function): tymth for superclass (inherited)
         """
         super(AdminEnd, self).__init__(**kwa)

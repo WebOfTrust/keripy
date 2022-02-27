@@ -85,14 +85,15 @@ class Boatswain(doing.DoDoer):
 
                 if srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
-                    witDoer = agenting.WitnessReceiptor(hby=self.hby)
-                    self.extend([witDoer])
+                    if phab.kever.wits:
+                        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                        self.extend([witDoer])
 
-                    witDoer.msgs.append(dict(pre=phab.pre))
-                    while not witDoer.cues:
-                        _ = yield self.tock
+                        witDoer.msgs.append(dict(pre=phab.pre))
+                        while not witDoer.cues:
+                            _ = yield self.tock
 
-                    self.remove([witDoer])
+                        self.remove([witDoer])
 
                 else:
                     phab = self.hby.habByName(f"{alias}-proxy")

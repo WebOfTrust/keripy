@@ -64,6 +64,9 @@ class Postman(doing.DoDoer):
 
                 # Get the kever of the recipient and choose a witness
                 kever = self.hby.kevers[recp]
+                if not kever.wits:
+                    continue
+
                 wit = random.choice(kever.wits)
 
                 msg = bytearray()
