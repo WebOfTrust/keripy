@@ -34,7 +34,7 @@ def listGroupIdentifiers(args):
             keeping.openKS(name=name, temp=False) as ks:
         try:
 
-            hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+            hab = habbing.Hab(name=name, ks=ks, db=db, temp=False)
             displaying.printGroups(hab)
 
             if args.verbose:
