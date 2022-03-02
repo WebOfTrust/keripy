@@ -719,6 +719,7 @@ class Hab:
             ncount = icount
         if not transferable:
             ncount = 0  # next count
+            nsith = 0
             code = coring.MtrDex.Ed25519N
 
         if secrecies:
@@ -739,11 +740,6 @@ class Hab:
                                                         temp=self.temp)
 
         opre = verfers[0].qb64  # default original pre from key store move below
-        if digers:
-            nxt = coring.Nexter(sith=nst,
-                                digs=[diger.qb64 for diger in digers]).qb64
-        else:
-            nxt = ""
 
         cnfg = []
         if estOnly:
@@ -756,11 +752,13 @@ class Hab:
                                       wits=wits,
                                       toad=toad,
                                       cnfg=cnfg,
-                                      nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+                                      nsith=nst,
+                                      nkeys=[diger.qb64 for diger in digers])
         else:
             serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                      sith=cst,
-                                     nxt=nxt,
+                                     nsith=nst,
+                                     nkeys=[diger.qb64 for diger in digers],
                                      toad=toad,
                                      wits=wits,
                                      cnfg=cnfg,
@@ -940,12 +938,6 @@ class Hab:
                                                         sith=sith,
                                                         temp=self.temp)
 
-        if digers:
-            nxt = coring.Nexter(sith=nst,
-                                digs=[diger.qb64 for diger in digers]).qb64
-        else:
-            nxt = ""
-
         # this is wrong sith is not kever.tholder.sith as next was different
         if kever.delegator is not None:
             serder = eventing.deltate(pre=kever.prefixer.qb64,
@@ -953,7 +945,8 @@ class Hab:
                                       dig=kever.serder.saider.qb64,
                                       sn=kever.sn + 1,
                                       sith=cst,
-                                      nxt=nxt,
+                                      nsith=nst,
+                                      nkeys=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=kever.wits,
                                       cuts=cuts,
@@ -965,7 +958,8 @@ class Hab:
                                      dig=kever.serder.saider.qb64,
                                      sn=kever.sn + 1,
                                      sith=cst,
-                                     nxt=nxt,
+                                     nsith=nst,
+                                     nkeys=[diger.qb64 for diger in digers],
                                      toad=toad,
                                      wits=kever.wits,
                                      cuts=cuts,

@@ -112,7 +112,8 @@ class Groupy:
                                               sith=sith,
                                               toad=toad,
                                               wits=wits,
-                                              nxt=coring.Nexter(digs=[diger.qb64 for diger in msdigers]).qb64,
+                                              nsith=nsith,
+                                              nkeys=[diger.qb64 for diger in msdigers],
                                               code=coring.MtrDex.Blake3_256,
                                               data=data,
                                               delpre=delpre)
@@ -124,8 +125,8 @@ class Groupy:
                                              sith=sith,
                                              toad=toad,
                                              wits=wits,
-                                             nxt=coring.Nexter(sith=nsith,
-                                                               digs=[diger.qb64 for diger in msdigers]).qb64,
+                                             nsith=nsith,
+                                             nkeys=[diger.qb64 for diger in msdigers],
                                              code=coring.MtrDex.Blake3_256,
                                              data=data)
 
@@ -222,9 +223,9 @@ class Groupy:
                                          cuts=cuts,
                                          adds=adds,
                                          data=data,
-                                         nxt=coring.Nexter(sith=sith,  # the next digest previous calculated
-                                                           digs=[diger.qb64 for diger in msdigers]).qb64)
-
+                                         nsith=sith,
+                                         nkeys=[diger.qb64 for diger in msdigers],
+                                         )
                 sigers = self.signAndPropagate(hab, mssrdr, group.aids)
 
             indices = [siger.index for siger in sigers]
@@ -444,35 +445,17 @@ class Groupy:
             if len(keys) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
                                                 .format(aid, len(keys)))
+            nkeys = kever.nekeys
+            if len(nkeys) > 1:
+                raise kering.ConfigurationError("Identifier must have only one nexy key commitment, {} has {}"
+                                                .format(aid, len(nkeys)))
 
-            diger = self.extractDig(nexter=kever.nexter, tholder=kever.tholder)
+            diger = nkeys[0]
 
             mskeys.append(keys[0])
             msdigers.append(diger)
 
         return mskeys, msdigers
-
-    @staticmethod
-    def extractDig(nexter, tholder):
-        """
-        Extracts the original digest of the public key from the digest created by XORing the
-        key with the signing threshold.  This is used in group identifier event creation to enable
-        creation of the next digest with the combined keys and the group signing threshold.
-
-        Parameters:
-            nexter is Nexter instance of next sith and next signing keys
-            tholder is Tholder instance for event sith
-
-        """
-        dint = int.from_bytes(nexter.raw, 'big')
-
-        limen = tholder.limen
-        ldig = blake3.blake3(limen.encode("utf-8")).digest()
-        sint = int.from_bytes(ldig, 'big')
-        kint = dint ^ sint
-
-        diger = coring.Diger(raw=kint.to_bytes(coring.Matter._rawSize(coring.MtrDex.Blake3_256), 'big'))
-        return diger
 
 
 class MultiSigGroupDoer(doing.DoDoer):

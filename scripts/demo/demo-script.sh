@@ -49,16 +49,16 @@ isSuccess
 kli sign --name test --alias trans --text @${SCRIPT_DIR}/anchor.json
 isSuccess
 
-kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature AA29iAmC1x_gYYI5sLv4MwAt6P0XRs0Be_JKKTb6iCVBy5amf4y5XzBL-kTRWSH0d0T3Zx1QsbgXhXW3i54EWkAQ
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AA29iAmC1x_gYYI5sLv4MwAt6P0XRs0Be_JKKTb6iCVBy5amf4y5XzBL-kTRWSH0d0T3Zx1QsbgXhXW3i54EWkAQ
 isSuccess
 
-kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature AB_whAvInYCuPXqfNQVDlDlyL0b4KsrQWsHA9IetyhDsD_AMToqJlmZzpN5Z9x_rlYlmL4pU2i2BC0so9aaxncDA
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AB_whAvInYCuPXqfNQVDlDlyL0b4KsrQWsHA9IetyhDsD_AMToqJlmZzpN5Z9x_rlYlmL4pU2i2BC0so9aaxncDA
 isSuccess
 
-kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature ACAEilCq8wGtjEEWBVODrh5o98cVnB8oZ_csTyrbgequWj5elEZERSfWFsW0SH4_B5oxtN-ta0rRZiIZNoQCFLAQ
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature ACAEilCq8wGtjEEWBVODrh5o98cVnB8oZ_csTyrbgequWj5elEZERSfWFsW0SH4_B5oxtN-ta0rRZiIZNoQCFLAQ
 isSuccess
 
-kli verify --name test --alias trans --prefix ENwKjnx_hhhKthmJEO3JZ1maaIvV9d8ZsPK_RX1T4rb0 --text @${SCRIPT_DIR}/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
 isSuccess
 
 # ESTABLISHMENT ONLY

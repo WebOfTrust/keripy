@@ -584,10 +584,10 @@ def fetchTsgs(db, saider, snh=None):
     return tsgs
 
 
-
 def incept(keys,
            sith=None,
-           nxt="",
+           nkeys=None,
+           nsith=None,
            toad=None,
            wits=None,
            cnfg=None,
@@ -603,7 +603,8 @@ def incept(keys,
      Parameters:
         keys is list of qb64 signing keys
         sith is int, string, or list format for signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int, or str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of strings TraitDex of configuration trait strings
@@ -622,6 +623,16 @@ def incept(keys,
     tholder = Tholder(sith=sith)
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -655,7 +666,8 @@ def incept(keys,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -684,7 +696,8 @@ def delcept(keys,
             delpre,
             code=None,
             sith=None,
-            nxt="",
+            nkeys=None,
+            nsith=None,
             toad=None,
             wits=None,
             cnfg=None,
@@ -700,8 +713,9 @@ def delcept(keys,
         keys is list of qb64 keys
         delpre is qb64 of delegators's prefix
         code is derivation code for prefix
-        sith is int  of signing threshold
-        nxt  is qb64 next digest xor
+        sith is int of signing threshold
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int of str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of configuration trait dicts including permissions dicts
@@ -714,13 +728,22 @@ def delcept(keys,
     ilk = Ilks.dip
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -750,9 +773,10 @@ def delcept(keys,
                d="",
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+               kt=tholder.sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config and permission ordered mappings may be empty
@@ -784,7 +808,8 @@ def rotate(pre,
            dig,
            sn=1,
            sith=None,
-           nxt="",
+           nkeys=None,
+           nsith=None,
            toad=None,
            wits=None,  # prior existing wits
            cuts=None,
@@ -803,7 +828,8 @@ def rotate(pre,
         dig is digest of previous event qb64
         sn is int sequence number
         sith is string or list format for signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
@@ -824,6 +850,17 @@ def rotate(pre,
     tholder = Tholder(sith=sith)
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -882,7 +919,8 @@ def rotate(pre,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
@@ -898,7 +936,8 @@ def deltate(pre,
             dig,
             sn=1,
             sith=None,
-            nxt="",
+            nkeys=None,
+            nsith=None,
             toad=None,
             wits=None,  # prior existing wits
             cuts=None,
@@ -917,7 +956,8 @@ def deltate(pre,
         dig is digest of previous event qb64
         sn is int sequence number
         sith is int signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
@@ -934,6 +974,20 @@ def deltate(pre,
 
     if sith is None:
         sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -992,7 +1046,8 @@ def deltate(pre,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
@@ -1086,7 +1141,8 @@ def state(pre,
           eevt,
           stamp=None,  # default current datetime
           sith=None,  # default based on keys
-          nxt="",
+          nkeys=None,
+          nsith=None,
           toad=None,  # default based on wits
           wits=None,  # default to []
           cnfg=None,  # default to []
@@ -1113,7 +1169,8 @@ def state(pre,
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data
         sith is string or list format for signing threshold
-        nxt  is qb64 next digest xor if any
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int of witness threshold
         wits is list of witness prefixes qb64
         cnfg is list of strings TraitDex of configuration traits
@@ -1168,6 +1225,17 @@ def state(pre,
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+
+
     wits = wits if wits is not None else []
     witset = oset(wits)
     if len(witset) != len(wits):
@@ -1214,7 +1282,8 @@ def state(pre,
                et=eilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -1713,7 +1782,7 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        return (self.nexter is not None and self.prefixer.transferable)
+        return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
 
     def reload(self, state):
         """
@@ -1736,8 +1805,9 @@ class Kever:
         self.dater = Dater(dts=state.ked["dt"])
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
+        self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.nexter = Nexter(qb64=state.ked["n"]) if state.ked["n"] else None
+        self.nexter = coring.Nexter(digs=state.ked["n"])
         self.toad = int(state.ked["bt"], 16)
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1789,7 +1859,8 @@ class Kever:
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
-        self.nexter = Nexter(qb64=nxt) if nxt else None
+        self.nexter = serder.nexter
+        self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
         self.adds = []  # always empty at inception since no prev event
@@ -1910,6 +1981,18 @@ class Kever:
                                                             seqner=seqner,
                                                             saider=saider)
 
+            if not self.ntholder.satisfy(indices=self.nexter.indices(sigers=sigers)):
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                if seqner and saider:
+                    self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+                raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
+                                            " for evt = {}.".format(self.ntholder.sith,
+                                                                    [siger.qb64 for siger in sigers],
+                                                                    serder.ked))
+
+
+
+
             if delegator != self.delegator:  #
                 raise ValidationError("Erroneous attempted  delegated rotation"
                                       " on either undelegated event or with"
@@ -1930,8 +2013,8 @@ class Kever:
             self.tholder = tholder
             self.verfers = serder.verfers
             # update .nexter
-            nxt = ked["n"]
-            self.nexter = Nexter(qb64=nxt) if nxt else None  # check for empty
+            self.nexter = serder.nexter
+            self.ntholder = serder.ntholder
 
             self.toad = toad
             self.wits = wits
@@ -2062,7 +2145,7 @@ class Kever:
                                       "".format(dig, self.serder.saider.qb64, ked))
 
         # also check derivation code of pre for non-transferable
-        if self.nexter is None:  # empty so rotations not allowed
+        if not self.nexter:  # empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
@@ -2074,12 +2157,13 @@ class Kever:
                                             [verfer.qb64 for verfer in serder.verfers],
                                             ked))
 
-        # verify nxt from prior
+        # verify next keys from prior
+        ntholder = serder.ntholder
         keys = ked["k"]
-        if not self.nexter.verify(limen=tholder.limen, keys=keys):
+        if not self.nexter.verify(keys=keys):
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.qb64, tholder.thold, keys, ked))
+                                  "".format(self.nexter.digs, tholder.thold, keys, ked))
 
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
@@ -2478,7 +2562,8 @@ class Kever:
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,
                       sith=self.tholder.sith,
-                      nxt=self.nexter.qb64 if self.nexter else "",
+                      nsith=self.ntholder.sith if self.ntholder else 0,
+                      nkeys=self.nexter.digs if self.nexter else [],
                       toad=self.toad,
                       wits=self.wits,
                       cnfg=cnfg,

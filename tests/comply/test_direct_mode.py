@@ -2,7 +2,7 @@
 
 import os
 
-from keri.core.coring import Salter, MtrDex, CtrDex, Counter
+from keri.core.coring import Salter, MtrDex
 from keri.core.coring import Seqner
 from keri.app.keeping import Manager, openKS
 from keri.core import  eventing, parsing
@@ -49,7 +49,7 @@ def test_direct_mode_with_manager():
 
         # Controller Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeVerfers[0].qb64],
-                           nxt=eventing.Nexter(digs=[coeDigers[0].qb64]).qb64,
+                           nkeys=[coeDigers[0].qb64],
                            code=MtrDex.Blake3_256)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
@@ -74,7 +74,7 @@ def test_direct_mode_with_manager():
         valVerfers, valDigers, cst, nst = valMgr.incept(icount=1, ncount=1)
 
         valSerder = incept(keys=[valVerfers[0].qb64],
-                           nxt=eventing.Nexter(digs=[valDigers[0].qb64]).qb64,
+                           nkeys=[valDigers[0].qb64],
                            code=MtrDex.Blake3_256)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
@@ -216,7 +216,7 @@ def test_direct_mode_with_manager():
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeVerfers[0].qb64],
                            dig=coeKever.serder.saider.qb64,
-                           nxt=eventing.Nexter(digs=[coeDigers[0].qb64]).qb64,
+                           nkeys=[coeDigers[0].qb64],
                            sn=csn)
         coe_event_digs.append(coeSerder.said)
 

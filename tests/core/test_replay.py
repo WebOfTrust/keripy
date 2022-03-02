@@ -3,16 +3,13 @@
 tests delegation primaily from keri.core.eventing
 
 """
-import os
 import datetime
-
-import pytest
+import os
 
 from keri import help
-from keri.help import helping
-from keri.db import dbing, basing
-from keri.app import habbing, keeping, directing
+from keri.app import habbing
 from keri.core import coring, eventing, parsing
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -69,65 +66,69 @@ def test_replay():
         debMsgs.extend(debHab.interact())
         debMsgs.extend(debHab.interact())
 
-        assert debMsgs == (b'{"v":"KERI10JSON00018e_","t":"icp","d":"EgmiU27BZtfnJclZw6K_X67h'
-                           b'wf6SDT3nJW1dr3Jq9D3s","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr'
-                           b'3Jq9D3s","s":"0","kt":["1/2","1/2","1/2"],"k":["DRxCLERO9eSvG4fl'
+        assert debMsgs == (b'{"v":"KERI10JSON000207_","t":"icp","d":"Eban8TbpEQ4HX5hwefKvH5-7'
+                           b'eP5SOctXFdAkliMo-Rbk","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkl'
+                           b'iMo-Rbk","s":"0","kt":["1/2","1/2","1/2"],"k":["DRxCLERO9eSvG4fl'
                            b'uzOsK52GCWCtKOZClVwA38Oa--MA","DCxzT16ikP6LKVJfr6hv1jmhynm6I4-Ko'
-                           b'GYkJtd9uBro","DsDl5xSHnIlcGo13u5jDRr1jJMkQ34nEc5R6NYsdPS2k"],"n"'
-                           b':"Eer5S019j0eEFNFLb0R0UDMoNLavlLiQ73fHGU7MUHXg","bt":"0","b":[],'
-                           b'"c":[],"a":[]}-AADAAxwDO7vCR4Lxkg1ZCFB7YiCr1I7Cx9CBEYuS8uf5gc0m1'
-                           b'n3x5fYylz5Loc-X3-d_4vPgkORVRDlLc9CDnrMekAAABgd5x9CqbFnAQevnZ5oUN'
-                           b'UCxOEaW77c6P9lOTFFYL9rmVMHbbxGw4a_hzi3ZaUoU5lG3r_sR9E79Y0Fjv5kde'
-                           b'CgACcuVpvt8Z-EHOwb6OSstNvJ4lMWVAowfhOK122xJIga-REzjiyZ5OWgU-c_X9'
-                           b'QVesC-dB2ReU8ILaOe7XZuakCQ{"v":"KERI10JSON0000cb_","t":"ixn","d"'
-                           b':"Eoy3g6inBwl9tU4XObauVN6HGcrspyJn-8zDHpjRDArQ","i":"EgmiU27BZtf'
-                           b'nJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"1","p":"EgmiU27BZtfnJclZ'
-                           b'w6K_X67hwf6SDT3nJW1dr3Jq9D3s","a":[]}-AADAASUrG-BrIfFUUtN1X0Rz4m'
-                           b'LdfA-ZQM_noyzaaMrBW6DEh2PhKHumi8FPOstrk8pW0Wdkq3FS_ElBnUch0yYOJC'
-                           b'gABfWYYABCGm6utumn3svN0nokuHVWI4KeHR71ENgD-UlU9WkL7OCTxSfg2vDf28'
-                           b'OMtCxFmTCcJKr4wdBKst2bRBAACacww3k98TR_HE0IcbYN2p1g-1yz9EmbvZJxDD'
-                           b'e-ocPcPjkaNmN_9MnTHaMTj_uO6smWexygCHQRv4iJRgR0VCQ{"v":"KERI10JSO'
-                           b'N0001c3_","t":"rot","d":"EgRAXqREqw3EvxZsTOGHKU2Aa70IJmd0XC6y7AQ'
-                           b'gjwns","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"2'
-                           b'","p":"Eoy3g6inBwl9tU4XObauVN6HGcrspyJn-8zDHpjRDArQ","kt":["1/2"'
-                           b',"1/2","1/2"],"k":["Dj-DUwfCmOrE3ijqucR0I89_fYTFbyotaqeQyDfupkEU'
-                           b'","DL-k_8BanjLYaAdm6WWKIpHcHwcbF834vnLPgpW1NL8k","DWG2ZFsWYUsbDI'
-                           b'1Kmu8JH22iGaVDGvM7pnuT4y2oR3VI"],"n":"EYd4ha92A2yttnCoLMqFGRzh6n'
-                           b'sgduE910LD-scP7C3Q","bt":"0","br":[],"ba":[],"a":[]}-AADAAbw0Nbe'
-                           b'6hdYBpeDQq_JspQQRupajov_vF92N1M7XJ1EUMEAoHGpS3wXnT34t5jV6xnoAHxe'
-                           b'b3XjQhOingYPQmDwABGuC0zlEg2Efcohgfw-K3_ikX9wnbrWJwKEKe5wz2uLrncJ'
-                           b'VokI-s23CEbG8Sdpefm7SABCJS-Xi476T5ebXVBQACdLvWJKf-LraSwpjvCdeEYc'
-                           b'3nku8QhrRh7SyUZ4DEr2OX29dfuV2OstTDHc-A52P1vnl-DCVadAoChUm6yfAdBw'
-                           b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EHlKLWTe1lCakBrg-s_sSEbz'
-                           b'a24YDvi9rxDQS5Wuph5E","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr'
-                           b'3Jq9D3s","s":"3","p":"EgRAXqREqw3EvxZsTOGHKU2Aa70IJmd0XC6y7AQgjw'
-                           b'ns","a":[]}-AADAAKCxcesxrP3Fx0os-p56b4n-8QlLrVJKMiCVJxWZGpfRVFKR'
-                           b'DOMEPe6PvwxwwJ3ksF8VwGsxOUZ8BglK1y-EEAQABlTVNnnK717gZGNKKfH2fYji'
-                           b'sfaLA5tIvS6Hc79tCwSboFZkljaIiosNbL-ZYCRjR4r_0_kNkUheo3eGxJM3CCQA'
-                           b'CCk6sYXHME_4M2__75SCWEQ7q_LAbhhZG5ih5153vbXkY1B_Df44vYRIvo2hVzUK'
-                           b't2pHJPgx_XIOinb7qWAFJDw{"v":"KERI10JSON0000cb_","t":"ixn","d":"E'
-                           b'JVdSFO631gld44xpJipwzQHqKP4cS_tcoBfrBG07BYI","i":"EgmiU27BZtfnJc'
-                           b'lZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"4","p":"EHlKLWTe1lCakBrg-s_'
-                           b'sSEbza24YDvi9rxDQS5Wuph5E","a":[]}-AADAAbZOTjHCPR1fG4pVPYYi5_1pT'
-                           b'YcE06ZdlvniCNFrk69IU7pc5hg3DUEjRTjqiq6IEp2Y8KcL5Tb4Da8Kzw0bECwAB'
-                           b'JBRsCTvAsmjR0B_y2HEnL8lsZ8g6fwBvo8jo6KuRDF7Rosg15ZOBZjSiEq2iHO-H'
-                           b'QanM7YJrqcqz3E_NzENJCgACBUy5ZHcYEUq6q02LiCWB8TnnIi0wGIjPjTA9nLX5'
-                           b'MWBOYTxYNXKRt8OeQ1pEqZPwpEFLgAsBATDnWJr0xfK_Bg{"v":"KERI10JSON00'
-                           b'00cb_","t":"ixn","d":"EYcmtiV1Z__uV7iCSxk5lbcDqMV8lE_zxFGgwc4bRs'
-                           b'rg","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"5","'
-                           b'p":"EJVdSFO631gld44xpJipwzQHqKP4cS_tcoBfrBG07BYI","a":[]}-AADAAO'
-                           b'2BfTpTFyMRG_Q3C0SHRLjxRdtblQg_dpNdEPOsAa24-vBtvd5cX34SqmBh7UF2-d'
-                           b'LpVkAqXs-i-Sj0krYGPCAABKOYuKg2lPx0v-Z6M-FLaHq_F1381vxi3GIRkeJA6V'
-                           b'KBSg9jUQ4mYs7GbNi-kKwbakNAid-9X5EAR-dUNMaAGCwACphP6wVjRAnREENf3y'
-                           b'VxYsdiFsUmAI7n0v7kSyvmkhfo64nX5hHga-cTnxspjd3Kk3r2YcSkq6MhUvCG32'
-                           b'm28AQ{"v":"KERI10JSON0000cb_","t":"ixn","d":"EQ4_P5u46hGceGpc8hu'
-                           b'rR7pTox-VkvkExLj6_CMtVejw","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3n'
-                           b'JW1dr3Jq9D3s","s":"6","p":"EYcmtiV1Z__uV7iCSxk5lbcDqMV8lE_zxFGgw'
-                           b'c4bRsrg","a":[]}-AADAAVlO5R4sIWQXTgkmA5Mlf4_7cvWzxgExYs-yDOV_CAc'
-                           b'ipXaSGs34xQh0GXZ6jWon8Hn_KrYtuLAHH_vV8Mq5dBAABJ2anAFF8T4ELwbkG8v'
-                           b'-RbYSoUveWu3ir2yyf-6gjGDYAJ03xWpLYAWAmBOZr6ALE5BStOU6Zyd9DR_5Byg'
-                           b'fJBwACIs8GWSkGuRqR0Mayo6QBHYax8mIDyBrGYZeZEtim7s51ERVZ3q0_A6YqRk'
-                           b'z9Sy_fzFdiQM-GSDD4hEjVpbwkAg')
+                           b'GYkJtd9uBro","DsDl5xSHnIlcGo13u5jDRr1jJMkQ34nEc5R6NYsdPS2k"],"nt'
+                           b'":["1/2","1/2","1/2"],"n":["E1jYwSdDo3A59-KuFE7ZDb8oJl3mCXkqR8gm'
+                           b'4sUPFcFg","Eb0d6f-KcOc0Pti8w8kRWG6b7qlLv0LVe97Hn73Gx1Tw","EQkLya'
+                           b'hIDBh-IYFo3UxTuScoZbz7DVx3z2WZcm9XBQwo"],"bt":"0","b":[],"c":[],'
+                           b'"a":[]}-AADAAVrPSS8sfubmKKLLzvlHAVD8Zy7atX_CJk0YXq_YVV-oyroXaLVQ'
+                           b'lpJwLPX0CyhzDSg7U6HBeA3xQejfzS3ALDQABSPMBXtxqaRLsv5qmxzSTgO-QcqM'
+                           b'tw-GZKoKZxP4lS8AAODQHFNt8cppD6ZqI3QAbEJIy9QKtCrIdo3nUxdCwDgACpPY'
+                           b'lToFb_RIs3878JshYs5gg_6OxkVyDluanpjedrJ0lxPANXUW2XvPb0VWE9X7nmGU'
+                           b'tqFw0BHfeaEUNcrzfBQ{"v":"KERI10JSON0000cb_","t":"ixn","d":"E0EFb'
+                           b'DrGf49mevhj9LjqdDF9Zv1e3xZrVV-o74knmodI","i":"Eban8TbpEQ4HX5hwef'
+                           b'KvH5-7eP5SOctXFdAkliMo-Rbk","s":"1","p":"Eban8TbpEQ4HX5hwefKvH5-'
+                           b'7eP5SOctXFdAkliMo-Rbk","a":[]}-AADAA-MLip3S7FemcusKfo6FA05i_Z45I'
+                           b'WO1mMDpvjpwHnyXEhEvSQlVcQV_T7efrl7RmqAXwoyD3XNssCcR9igY9AgABl6FV'
+                           b'b5wIrkHw9tzoauSQg3IM4-aFYP8u7Bw4-GL24yVFN47SfcOanNEhVNo-P9PM3zwj'
+                           b'cUTJiFdkQ4zW-E8LDgAC7h1fDyGoOPyj5PYOtC_T5Cjm8rZLA8H7UGr7bBSQDP0W'
+                           b'_ouYByk4-UF10YnjIiCExAcxmdK6Q8Sm9Q_UKAQ-AA{"v":"KERI10JSON00023c'
+                           b'_","t":"rot","d":"EsZ2thB6qZ8l_eaxur-1YtY7D9PBxL7yhCdC93hYvX1M",'
+                           b'"i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"2","p":"'
+                           b'E0EFbDrGf49mevhj9LjqdDF9Zv1e3xZrVV-o74knmodI","kt":["1/2","1/2",'
+                           b'"1/2"],"k":["Dj-DUwfCmOrE3ijqucR0I89_fYTFbyotaqeQyDfupkEU","DL-k'
+                           b'_8BanjLYaAdm6WWKIpHcHwcbF834vnLPgpW1NL8k","DWG2ZFsWYUsbDI1Kmu8JH'
+                           b'22iGaVDGvM7pnuT4y2oR3VI"],"nt":["1/2","1/2","1/2"],"n":["EhmOyqs'
+                           b'UMujcjLHWJaam_AEdv9OXgnS6n2WHGtwdPVIM","EAKmM34UmvEqzao5s-wEGox1'
+                           b'XWgf4o-vsX7ZUPnbtj2M","EZpn1keK-72sCwF23w_IQ1Q6kT5ROcUw5V0iprub4'
+                           b'K4I"],"bt":"0","br":[],"ba":[],"a":[]}-AADAALL5ItV9rkzyErrEK427X'
+                           b'py95OFPM_xLorhaoShNRiV_mTjun3b4lHJJ-oimf2sER9YnxSsw-NajY4P9hS6pK'
+                           b'BAAB1r0tNgvrKm0czmjRxtoHLG54rTHEAFaNd9YqnGQ6R4PnLZvMShkp0wL_YcGS'
+                           b'qxKRxVz0QDX7A2UPl2qJc0N9AgACEci2PEK6giZ82QP-qOqhCtMtdG5R0g5HTOzj'
+                           b'307f-BcIZxXnhpMTYX6O-cai0fA-blHwby-bgwjvBNns80eNCg{"v":"KERI10JS'
+                           b'ON0000cb_","t":"ixn","d":"EvnHJz9YFtaiMlCbyq4wMulC3TXAZ9JyH2pTyX'
+                           b'kd93Lw","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"'
+                           b'3","p":"EsZ2thB6qZ8l_eaxur-1YtY7D9PBxL7yhCdC93hYvX1M","a":[]}-AA'
+                           b'DAATSxYMGzBdshao1-RhVekwwEW4AWXHT21-bH_nkpatGdlzK1bz9ybZ9xvAt3R7'
+                           b'Csf7V4H1pjRsgoB49jVSToJAAABZTay5Nz6q-Kj6yf0XF8fBT5bJ2Zf39mPr79h4'
+                           b'RpohPoURI9tXJfBcmjNjJanNxwlEv2RGSljtHGgWuUUDuuaDQACXn0pu-vHMqd2j'
+                           b'V54VpyFMwAOqSUXs4lftpwUktYko-V6QGphD9nyc0Qdra2nEuN5ET3sTtS1sh7Fw'
+                           b'veoD3atCA{"v":"KERI10JSON0000cb_","t":"ixn","d":"EQigFoXAX3U0JLw'
+                           b'8LSRtzqJENPEotsV6N_7Cl9X9GTK4","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5S'
+                           b'OctXFdAkliMo-Rbk","s":"4","p":"EvnHJz9YFtaiMlCbyq4wMulC3TXAZ9JyH'
+                           b'2pTyXkd93Lw","a":[]}-AADAAZHpUM53Az9glxch1V76b1Id44j4YGuQMNLeSU9'
+                           b'EhktXb1zNeEhjfioSYjdpAhlv2kq6smMfXX4axZyroxd8OCQABouL7UZzySw9q7g'
+                           b'DbRwvlCCdR9LlkBo2aNrDjdMbo2YoGsT9wLxoMPL_Q3XO5HK0DmTHzmSfyfVjtE6'
+                           b'maiFbFCQACVVERmP2XE5Z6h5hkGGeRquq31rJrvmy69ZG-Kma2TUnlnYpU6eAKhR'
+                           b'nI9PciQLpFk6VjNI_nofnZzfp-6-aoAw{"v":"KERI10JSON0000cb_","t":"ix'
+                           b'n","d":"EEoiyGRkxjb-bRZQUIiEfkijxg8c1_jzJYE6p0YeWZ-0","i":"Eban8'
+                           b'TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"5","p":"EQigFoXAX3'
+                           b'U0JLw8LSRtzqJENPEotsV6N_7Cl9X9GTK4","a":[]}-AADAAvMdmu5ppGll9w5Z'
+                           b'cc_V1Q6D66_lq4e6ACPSrSOwRqEHAXdG6ZRBXMhTuxZ9zUwstf9THEfLEvo-FCxM'
+                           b'ka3-yBQAB_02jO4KLKlaHmYrV3a99-uTlwRlkZ6OOhWaOgMQihYzSSj7dus1rR0l'
+                           b'TgszUOjOT6k7liOWR7aWtBhgDNqOgCQACQchXgBhmk51GnZW6ThdhB4xPsOmn73p'
+                           b'A9ADrBk2vCgmmJAof5_8sRWUvvZFgcwJlqQ65ZrD6bg7yaQTSQQwnCQ{"v":"KER'
+                           b'I10JSON0000cb_","t":"ixn","d":"ECwRGikXaPuVHZplHFnVWv6cYG-ovQpso'
+                           b'sZXEX93uLgU","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk",'
+                           b'"s":"6","p":"EEoiyGRkxjb-bRZQUIiEfkijxg8c1_jzJYE6p0YeWZ-0","a":['
+                           b']}-AADAAo2CED43TfZBRKdUUjIWhMf2IdFgXhgIPn4AZ7PBS7LtZP3v6Hm6UPKYL'
+                           b'BBeIriMcnPc1FkK0vGwu6cexsqEkAgAB7ztsDrbLfkJ7hOsfiPgfC5E7adjLmddE'
+                           b'TKFkXrSFGq13680q_5D6RJV7sgqvSoLLVDG10_jXPRDQUUB34dZ2AgACA2BbjvAS'
+                           b'mEfCbXPWuBij8WYjHQMJgQnj5AA0TVqMVuOv48N4DMkGpLOjgs2WRravAHlMB0hR'
+                           b'J2XaoSekBCMjCQ')
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
@@ -142,74 +143,76 @@ def test_replay():
 
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues)
-        assert camMsgs == (b'{"v":"KERI10JSON00017e_","t":"icp","d":"E-kW2C8JK7v59OdT-2Yit5gt'
-                           b'sny-4VdoZdYRpszkwkr4","i":"E-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRp'
-                           b'szkwkr4","s":"0","kt":"2","k":["DJBtEHHnzNtE-zxH1xeX4wxs9rEfUQ8d'
+        assert camMsgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EGifcQT5E5KKdvND2j7dLTWh'
+                           b'7YH1GaEVuq8UHe4YlmPk","i":"EGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UH'
+                           b'e4YlmPk","s":"0","kt":"2","k":["DJBtEHHnzNtE-zxH1xeX4wxs9rEfUQ8d'
                            b'1ancgJJ1BLKk","DMu6yPITjrOBoTPfsY-r1Rc0ead8GKmoCxA_BugKehgY","Df'
-                           b'hpvbNyYu1fxTBTXy8eCgghMcOYnxkgoGPBr0ZBZPQA"],"n":"EJ85AI0se7UiFB'
-                           b'FL1Vl80PnmQ-0dU6q_NXCh6BlSJcKg","bt":"0","b":[],"c":[],"a":[]}-A'
-                           b'ADAABX9ffcpdqwmRKypAQ3t7suKTKwkiWH0lrKjenKjRVgkbRxo6yLgLGsPVgfxI'
-                           b'hC-ofx-noe4mUdg5UcZ7PFBRDQABcX7FO3nbiMcAIDWOA209Dn1ASvNbV-zB1BF3'
-                           b'B2CiQD6pBDnYileVsx2RiR6YvfhkXo-R3B_oUvRk2sahf-XaAgAChzdee55ownrC'
-                           b'm-AhVpL3WiGj1a_9N3oeYRZH1hUWDB_Vr3SgahzH6L07PdeNUfmU5o3qTAcqdK3s'
-                           b'dvL93tuYCg{"v":"KERI10JSON000091_","t":"rct","d":"EgmiU27BZtfnJc'
-                           b'lZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","i":"EgmiU27BZtfnJclZw6K_X67hwf6'
-                           b'SDT3nJW1dr3Jq9D3s","s":"0"}-FABE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZ'
-                           b'dYRpszkwkr40AAAAAAAAAAAAAAAAAAAAAAAE-kW2C8JK7v59OdT-2Yit5gtsny-4'
-                           b'VdoZdYRpszkwkr4-AADAA70M7un3lxttBK2ig8ZU-RjInM-9IzoXry16g0-K_exO'
-                           b'TxBzhZK5Z749n96Q6D0Cw6tDPZ-Op5FrA83-mVOEPDgABdd7yuRAY95sGthqlo5B'
-                           b'p3TWS5TYb1BQbO4UZKIowOzW0QzwrPXanUf6Cez63AsLZ_9W4wGQcd4RzzIKuJTW'
-                           b'UBAACbg6UWYrfPKEWP42MdgSRrJLk7dXklyoCWhOFrqRRPGLW60s0AD5oB_fZjwa'
-                           b'kLqtgiNWq7ERopN2kmCXaUpkTBQ{"v":"KERI10JSON000091_","t":"rct","d'
-                           b'":"Eoy3g6inBwl9tU4XObauVN6HGcrspyJn-8zDHpjRDArQ","i":"EgmiU27BZt'
-                           b'fnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"1"}-FABE-kW2C8JK7v59OdT'
-                           b'-2Yit5gtsny-4VdoZdYRpszkwkr40AAAAAAAAAAAAAAAAAAAAAAAE-kW2C8JK7v5'
-                           b'9OdT-2Yit5gtsny-4VdoZdYRpszkwkr4-AADAALnLgaMzcwy-HD1Q_eRNLyXkskw'
-                           b'R8x5veIwy1-ku524iZ-o4pO6HpWlsmkNNCDsIBqzJo03WjYU7Du2cnTBV6BgAB9Z'
-                           b'6XXimtVgFVO5g0JRojEg50q_0aWUWOTEHsUQy62gcrDe5sWnY1qtm3-8mo_jRBTV'
-                           b'us7hYFK1R63-rt1OFMBQACzr2RoNjy7bj4Dgl1BZZ0qEVYpuZvbdlznXUOB_mvye'
-                           b'ZEw9V0bSzgkiw2scfHV0tl4ofltZSREW3uKCmg35BmBA{"v":"KERI10JSON0000'
-                           b'91_","t":"rct","d":"EgRAXqREqw3EvxZsTOGHKU2Aa70IJmd0XC6y7AQgjwns'
-                           b'","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"2"}-FA'
-                           b'BE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr40AAAAAAAAAAAAAAAAAA'
-                           b'AAAAAE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr4-AADAAZqp1jGr-W'
-                           b'cIJ8c-1BzNLIYbMtnVGVym3EJYz9sWmMO-6fVzQfJej711kl1Wkiv358vL0jY3Wm'
-                           b'4n4SzNaEdJ6CgABWCAIaIGMY8-Sit4vfFhSmut8RRG4cvZtJ4IxyDh0BB5j_DzNZ'
-                           b'6Deev_sDLdOO5deSlNB_TvSEYxYV68a-0FdBQAC378zkWXfshbQnJjvonnTr2M2V'
-                           b'HwckFwWXYIz13YBiap2EFuDitBAU8p27eKG2qYt4lGERrES_OTIK52upuH0AA{"v'
-                           b'":"KERI10JSON000091_","t":"rct","d":"EHlKLWTe1lCakBrg-s_sSEbza24'
-                           b'YDvi9rxDQS5Wuph5E","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq'
-                           b'9D3s","s":"3"}-FABE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr40A'
-                           b'AAAAAAAAAAAAAAAAAAAAAAE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwk'
-                           b'r4-AADAAy4D-vvwrR2UtRf0-JwgsAphcsuWtaA6JU5VxJtKxdbY0oVQH7kOT6q9K'
-                           b'eG4LyS3WM_l4h7HnV1sXFOPuHcnCCgABUpV9oJE7HfAJCkq0MU1_bonwXCcwF6DS'
-                           b'nK_PbEvCx0DR3WpjGA9tzgbt7lb27S7_cn5dMQZcQPPTRM18VF8IBwAC6M_rY8eF'
-                           b'gneD5j-vylXyRYLkfbUdxASDVhp6n8cyi1wPSKqv8zXnhYnhslsDPJNJkSI52TRM'
-                           b'0jDdbMk1zKRWDg{"v":"KERI10JSON000091_","t":"rct","d":"EJVdSFO631'
-                           b'gld44xpJipwzQHqKP4cS_tcoBfrBG07BYI","i":"EgmiU27BZtfnJclZw6K_X67'
-                           b'hwf6SDT3nJW1dr3Jq9D3s","s":"4"}-FABE-kW2C8JK7v59OdT-2Yit5gtsny-4'
-                           b'VdoZdYRpszkwkr40AAAAAAAAAAAAAAAAAAAAAAAE-kW2C8JK7v59OdT-2Yit5gts'
-                           b'ny-4VdoZdYRpszkwkr4-AADAATIUtLtJYFRe0Or8d4GeHW-36tkhm010IKqWJoQt'
-                           b'U4I5bNFoMbChd6ruxV-EcBFaapjFxl4lX5LOKOIQWHkQbDgABBymHY6_fhjHdhQU'
-                           b'tgOJygQC-lmwCohosoxdgax8BOloCs_8irPKYDmj9mjRCOv78B-6eeatuldYm1UH'
-                           b'9uk9CDQACPN55PAq6vZUUTlr2snI2G3SvjTXMGE7vpaVclEQOn4tNcBz_ERwCD-p'
-                           b'GJbtgS71kk2sDg3L4hUTX6v_GIBZiCQ{"v":"KERI10JSON000091_","t":"rct'
-                           b'","d":"EYcmtiV1Z__uV7iCSxk5lbcDqMV8lE_zxFGgwc4bRsrg","i":"EgmiU2'
-                           b'7BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"5"}-FABE-kW2C8JK7v5'
-                           b'9OdT-2Yit5gtsny-4VdoZdYRpszkwkr40AAAAAAAAAAAAAAAAAAAAAAAE-kW2C8J'
-                           b'K7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr4-AADAA6fqo4-7JahfKXF1ZZIHzvf'
-                           b'tSJmRfC2qHKAXHVd24La1gBz-jQGHRy3pbuogJ7LuiOfHZ5S-FJ-PHu2LCobfPBA'
-                           b'ABDU2RCWxo1Cpt31VSgRROSzH3fKmNDcbpUw0ZEwgMwGwBmA0UW_eD2t75h4tfq_'
-                           b'9UznmQ-UWy6vYq9r9fD-jHDgACQfpV88d4OTwNkAkigUyYXDHjhlplaYyucAlDdq'
-                           b'0zEFI_QU1hKXbfXabGeiK9L4vGOFDHhEi61RCx-0VyCtsPCQ{"v":"KERI10JSON'
-                           b'000091_","t":"rct","d":"EQ4_P5u46hGceGpc8hurR7pTox-VkvkExLj6_CMt'
-                           b'Vejw","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"6"'
-                           b'}-FABE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr40AAAAAAAAAAAAAA'
-                           b'AAAAAAAAAE-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRpszkwkr4-AADAAXyUC9'
-                           b'nmRPtqMXG9ci4D1JITFGz7JhzDq0iFtXPHKE2l5jIsDHvm_wNb5CJn_lxCr50qtq'
-                           b'LfV6ifPVKFqd0zNCQAB24NytxoFP110Gwcd6O7Rwceq5IhP819pVBAen0ZD_etJa'
-                           b'MZE40IVaI_HqX7dULyTMbowfRYGTKLe60j8JpNlCQACe_UgWZTeu_7dE6A90oHu8'
-                           b'M4pPWdg8tQumgHKw7refciRJDx87i5nz4UC81Mj6og-UPwaoW_UmBQKMkhEJ48sCw')
+                           b'hpvbNyYu1fxTBTXy8eCgghMcOYnxkgoGPBr0ZBZPQA"],"nt":"2","n":["Eq-s'
+                           b'_yaBaeq3BavwLMc7Q4TM1N1cxK0JFIiJEKNU18tA","EwGXfFpxspo-1acgIRGvY'
+                           b'h6Vn76V3XpLKSXURpl35bO0","EzX47juZp1pl0qMZU8yUCNNhLx5Lte9GtYRV50'
+                           b'xS3EKg"],"bt":"0","b":[],"c":[],"a":[]}-AADAArIlwP9SZ7tQYTH90KUI'
+                           b'7P8dlwvf24JW0LjF01Udc3Rns3T3LvvScQ9rZTEMdgfFXiEEXe8ZjG_VZqNHb66m'
+                           b'3BQABuHWYMgm_tZ3hzIJARVCJYia9f4UpWPH7KTor0X-KxPbh5hHi6wYCksaf73o'
+                           b'0xZH9V1OQrxdbaL4t3CupspQ4CwAC5ynsGiCew_9rZue8_DAzZohQIOWutyVY4nD'
+                           b'0989WSjBkAXVxmoTSn306htquWndjPPtqoI465YoFb5mNpdEuBw{"v":"KERI10J'
+                           b'SON000091_","t":"rct","d":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkl'
+                           b'iMo-Rbk","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":'
+                           b'"0"}-FABEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk0AAAAAAAAAAA'
+                           b'AAAAAAAAAAAAEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk-AADAAUp'
+                           b'_cOQDlxQ1UIFLlj3TFujVJiaWdR1vA-Xtfzrreo2edQqnOSdm-E3NJSLDyJYD_zm'
+                           b'dfmI3LYxVtR92mXOmuBgABLv94hqxM8bbdfZf6WwSZl64By-Ej4dwN9mSyddjL5G'
+                           b'g5B8atYP6Oa8IZxX1HqJ330BotXcgjaGIjAoNfboEqAwACZdxxR4o4UXvRfqqjc0'
+                           b'C9SEXlFlfuNG6UEZUTAj8OtffsZR2gJaNNf_Mz14GUz4xAzV-XnK3mVeIBi4laNC'
+                           b'FXAA{"v":"KERI10JSON000091_","t":"rct","d":"E0EFbDrGf49mevhj9Ljq'
+                           b'dDF9Zv1e3xZrVV-o74knmodI","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXF'
+                           b'dAkliMo-Rbk","s":"1"}-FABEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4'
+                           b'YlmPk0AAAAAAAAAAAAAAAAAAAAAAAEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8'
+                           b'UHe4YlmPk-AADAAM209g6h3ILA1zvNU1o7Zg416UHVZTGu671pUjC_BOVGa7QAqb'
+                           b'RBRMQ3WlzeK6hshaPx15L71-8xLG2UteHXiCAAB3uz7fveuGtlpjgd8mkfw_DxA7'
+                           b'BkpgEp_-72aYRNoQxuVFX-SrPKU-Uiz9oOHA1F639d4siDCnKv9hm32trwSAAACe'
+                           b'XGbEJ21PyNUbLgRCDz4fkbu8YWGJ9H76MpojO4LHtjLTsbvibYpJupDsmAoaiNhm'
+                           b'-UfB4owHgAeFEKYqiCPAA{"v":"KERI10JSON000091_","t":"rct","d":"EsZ'
+                           b'2thB6qZ8l_eaxur-1YtY7D9PBxL7yhCdC93hYvX1M","i":"Eban8TbpEQ4HX5hw'
+                           b'efKvH5-7eP5SOctXFdAkliMo-Rbk","s":"2"}-FABEGifcQT5E5KKdvND2j7dLT'
+                           b'Wh7YH1GaEVuq8UHe4YlmPk0AAAAAAAAAAAAAAAAAAAAAAAEGifcQT5E5KKdvND2j'
+                           b'7dLTWh7YH1GaEVuq8UHe4YlmPk-AADAA5mDJQRG9bdXCOplYYUzwpFvpcLMrH09J'
+                           b'sbGe9qsHNjaTv44UZc-BwiDgthviCjNPSTTwkqR6IP_osSIIkBcPBAABOadA5-ZL'
+                           b'r57TGIj3ZN3dICmfe94OxzMXkmv6FnZbctQ64uQtcFrVHNG_DOEpzNmFMT0MqY1h'
+                           b'T3v_rSOXqStrCQACg89jpowxSZaDXgzqwtBsddK-aSD-9IRuByZ2fzESMePvyBIK'
+                           b'VeQBkgp4cfQAtWFNry_gP3OyB1Nhxtg2wM-QDg{"v":"KERI10JSON000091_","'
+                           b't":"rct","d":"EvnHJz9YFtaiMlCbyq4wMulC3TXAZ9JyH2pTyXkd93Lw","i":'
+                           b'"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"3"}-FABEGifc'
+                           b'QT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk0AAAAAAAAAAAAAAAAAAAAAAAE'
+                           b'GifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk-AADAAHkKSxBrCTAp3S3i'
+                           b'p12D0_64Bl37fETH3LFGGvoF0a7uMnKZ_YgsHw8Pt4NMKbNHEgDsIm5Vl5fU8Ls-'
+                           b'qNguJCQAB3fTvkA2jLXwI4tgL7OhOWlTCVoSwRTe9Y0jInmuP3pBKRUKGqcNIvwY'
+                           b'ma3kf33gUSNs8d4jUA3FZbRydmQV7CgAC0lDZfsM6AWa9XNwyaD5JJBA-dWjsb4p'
+                           b'RBkshcthhzbeXfVa7q9-C6j0RjI7bYZOxScz3oOLvWe0UFtVjGiwlBA{"v":"KER'
+                           b'I10JSON000091_","t":"rct","d":"EQigFoXAX3U0JLw8LSRtzqJENPEotsV6N'
+                           b'_7Cl9X9GTK4","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk",'
+                           b'"s":"4"}-FABEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk0AAAAAAA'
+                           b'AAAAAAAAAAAAAAAAEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UHe4YlmPk-AAD'
+                           b'AAeqzcOLqnBpH8JtJt86Zr0w3kakOp7UHg_HNxEb-K63dvoFTBwWk_GT9zKYwWPu'
+                           b'z4YpS8drx4nBF8kkazE1mBBgABsYKOB3bQR6T0Q3Rw4F0WxOfWjoGcAwCL7rYC0l'
+                           b'e7b3W8FhzUFKVbcMHasegXltXEod0bNi-vXPbWNqh2teXPDgACs8a-QfePlA8mcC'
+                           b'JzHJ3A3OKaasuGV3rc36ep0mBJx2B53AW22VZ_Y1v8_fL6HtE8iAo8XM9Wjc3R35'
+                           b'TG7F3JBA{"v":"KERI10JSON000091_","t":"rct","d":"EEoiyGRkxjb-bRZQ'
+                           b'UIiEfkijxg8c1_jzJYE6p0YeWZ-0","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SO'
+                           b'ctXFdAkliMo-Rbk","s":"5"}-FABEGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8'
+                           b'UHe4YlmPk0AAAAAAAAAAAAAAAAAAAAAAAEGifcQT5E5KKdvND2j7dLTWh7YH1GaE'
+                           b'Vuq8UHe4YlmPk-AADAAIncXU_AogkuFeiIe5REZJnDQTiaje3MFpoePRUUOaj1xW'
+                           b'On3LgmwUO75eF-S5oWr4floZDd20JCdz_qDZOO3AAABuoTcnV1TL7Vli6Ffyh6Si'
+                           b'PIjjOwEars3FFhGP3D_WeklRwPELLmAxftNCPdPiko4dYMK3Gp8Bq3AUB1L4hpSB'
+                           b'QACliE514Ps-MfOJnK7HuZshd6HETvXm4550yaeOTNdNPus0q5JL8wtoZ2XERBs0'
+                           b'h8BiR8cNCFVGNocnfxV64lGBA{"v":"KERI10JSON000091_","t":"rct","d":'
+                           b'"ECwRGikXaPuVHZplHFnVWv6cYG-ovQpsosZXEX93uLgU","i":"Eban8TbpEQ4H'
+                           b'X5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"6"}-FABEGifcQT5E5KKdvND2j'
+                           b'7dLTWh7YH1GaEVuq8UHe4YlmPk0AAAAAAAAAAAAAAAAAAAAAAAEGifcQT5E5KKdv'
+                           b'ND2j7dLTWh7YH1GaEVuq8UHe4YlmPk-AADAAP0rhZlAaxWG5ZD3Iy5oMJhp-qapt'
+                           b'Rsb9x3GWcwgPqKr99aR_mIceVk3NkTb-Vc0NjKLYsv6cHoBHZpLvgj8FCwAB_Dlj'
+                           b'947F5wJr8etCsQjLWzeKyX9OMgZFKeLGofA9aH0kqfKkZdUw6JpoJlCfYlbe_61g'
+                           b'jyw8SbTD3mQAQ8E2AwACyZf2HploOJN7iQYmIMj_tJ6RPDwwMpFMnDrl1FLPF1Qd'
+                           b'CWZoZfikZvGWPeLjCEob0eZ185eHN7V25WWcjc_GDg')
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
@@ -224,15 +227,15 @@ def test_replay():
 
         # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
         debCamVrcs = debHab.processCues(debKevery.cues)
-        assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"E-kW2C8JK7v59OdT-2Yit5gt'
-                              b'sny-4VdoZdYRpszkwkr4","i":"E-kW2C8JK7v59OdT-2Yit5gtsny-4VdoZdYRp'
-                              b'szkwkr4","s":"0"}-FABEgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3'
-                              b's0AAAAAAAAAAAAAAAAAAAAAAgEgRAXqREqw3EvxZsTOGHKU2Aa70IJmd0XC6y7AQ'
-                              b'gjwns-AADAAEJw4Xod7bMCI6hlKQ-m2XzXj-sT3nuAhX3_SvSZosFfyGQj1hi_3o'
-                              b'vDEFCh04QnGf5WbrcECY16QggKsVMMyBAAB4KEEjzcwbWMEry3PsGk8vdrzJ5c0m'
-                              b'guNotQQKaRmEIPhazsh9lPJCbAQdJ-X5Nmo15VcYYIOi2RrNWUJ74KMAQACWQSkw'
-                              b'Ma_Kqew9GeYDxobaN2aD5rSmIWLbkpj6m2q9inbW7KCbaz9vgWZMu124vIefGRcz'
-                              b'oekARWPuCwgSXZfAQ')
+        assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EGifcQT5E5KKdvND2j7dLTWh'
+                              b'7YH1GaEVuq8UHe4YlmPk","i":"EGifcQT5E5KKdvND2j7dLTWh7YH1GaEVuq8UH'
+                              b'e4YlmPk","s":"0"}-FABEban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rb'
+                              b'k0AAAAAAAAAAAAAAAAAAAAAAgEsZ2thB6qZ8l_eaxur-1YtY7D9PBxL7yhCdC93h'
+                              b'YvX1M-AADAAFgIYCUZpSPL3YkJmPJvkVv2ObazNX9Aiy_8EiqViACWuRdOCBo5iq'
+                              b'62y1GiMarTUBp2sqS_ZpCz3hRBTVWFyCgABe22VhixbyQmBPBHU4mG3txPTw_0Iu'
+                              b'u-QNesBMI4Xqn3YEpS0VeYl4WN8pCnL6tFk7ZqOqR7zA7dCyFHc8666AQACvGsH6'
+                              b'RtNPoF4ZdhJecQFTohQn-MzbanFlMqLQfPQhFidNNuqoGBNKS7tDOnqgQjrbj1t8'
+                              b'8Fkrkv9peEHd_w7AQ')
 
         # Play disjoints debCamVrcs to Cam
         parsing.Parser().parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
@@ -251,42 +254,43 @@ def test_replay():
 
         # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
         bevMsgs = bevHab.processCues(bevKevery.cues)
-        assert bevMsgs == (b'{"v":"KERI10JSON0000f4_","t":"icp","d":"E91pCFGs1Hm_B43_LIi0jCOV'
-                           b'7DpPHn-HqHon4uJINaNw","i":"BCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-Gp'
+        assert bevMsgs == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ENE38noQTiyoAneEYmNSKNIu'
+                           b'v6lTMp20wSWanPkcA_L4","i":"BCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-Gp'
                            b'QBPaurA","s":"0","kt":"1","k":["BCqmHiYBZx_uaQiCTVeum-vt1ZPti8ch'
-                           b'qb-GpQBPaurA"],"n":"","bt":"0","b":[],"c":[],"a":[]}-AABAA2NToUy'
-                           b'43Ua8Ok1UOUTJGWoglnKVQmoEexxjbf9cUqe76Gh4CdeeK2NfT58F-18RWi6WXoP'
-                           b'hAhnaKmdKnK2J_Aw{"v":"KERI10JSON000091_","t":"rct","d":"EgmiU27B'
-                           b'ZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","i":"EgmiU27BZtfnJclZw6K_X'
-                           b'67hwf6SDT3nJW1dr3Jq9D3s","s":"0"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZP'
-                           b'ti8chqb-GpQBPaurA0BCay0z3y9YFHQO6Z7jy5xh_t74Y_4lJcvTdF46uvAJzV09'
-                           b'GGQLXtKK4tplwyKHT58yy9uqAV0_0wOFZGIEG5lBQ{"v":"KERI10JSON000091_'
-                           b'","t":"rct","d":"Eoy3g6inBwl9tU4XObauVN6HGcrspyJn-8zDHpjRDArQ","'
-                           b'i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"1"}-CABBC'
-                           b'qmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0BRqTp4tQjRgtrJk1Hl_92'
-                           b'MHYQonDUnWmjU61Af0zpAFBSGorap6Br5flNdBpTIfCDHPNru_V771ynDi-Rwj2v'
-                           b'Bg{"v":"KERI10JSON000091_","t":"rct","d":"EgRAXqREqw3EvxZsTOGHKU'
-                           b'2Aa70IJmd0XC6y7AQgjwns","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1'
-                           b'dr3Jq9D3s","s":"2"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPa'
-                           b'urA0BVjnMzuWPHd_QM9P7OnL4tU7yIENr3K2B2p3KQZRj67b5Wkinv67ro_gltaB'
-                           b'FK4PXb8LouUckRL8dgRnsvZtWDQ{"v":"KERI10JSON000091_","t":"rct","d'
-                           b'":"EHlKLWTe1lCakBrg-s_sSEbza24YDvi9rxDQS5Wuph5E","i":"EgmiU27BZt'
-                           b'fnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"3"}-CABBCqmHiYBZx_uaQiC'
-                           b'TVeum-vt1ZPti8chqb-GpQBPaurA0BSbNEMSxwResaiMT5Al3GyyXIZs4Ya4zI91'
-                           b'DsO24iBUgGug7XUo2qSQJ1cbC-ZMphbACYvLonvlfVkFy6Ptx4BA{"v":"KERI10'
-                           b'JSON000091_","t":"rct","d":"EJVdSFO631gld44xpJipwzQHqKP4cS_tcoBf'
-                           b'rBG07BYI","i":"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s"'
-                           b':"4"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0B3GwlHrRTK'
-                           b'PWw5AF3dIyIc0Csl7WMPbZlmGOlMKbhFdIq8nt-pcCe-wRDrdXk78ese3kGCEPR7'
-                           b'5RuPmff_fymBg{"v":"KERI10JSON000091_","t":"rct","d":"EYcmtiV1Z__'
-                           b'uV7iCSxk5lbcDqMV8lE_zxFGgwc4bRsrg","i":"EgmiU27BZtfnJclZw6K_X67h'
-                           b'wf6SDT3nJW1dr3Jq9D3s","s":"5"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8'
-                           b'chqb-GpQBPaurA0BXOSv2uyENysIcooyC6tys5EWswI1rxNs2ClH3wqlCqGkxr97'
-                           b'Rx6vPqbxImrGJ-nKMhYkqS413MkAPNwuWhqFAA{"v":"KERI10JSON000091_","'
-                           b't":"rct","d":"EQ4_P5u46hGceGpc8hurR7pTox-VkvkExLj6_CMtVejw","i":'
-                           b'"EgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3s","s":"6"}-CABBCqmH'
-                           b'iYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0BXj-h3cIdc5sbMlCpcsxVZx6'
-                           b'TaFS11tX0_zttjmlHrPrq5Kk_zPuSSAti47dRmpN_2tSoRYtGByllWGzGnNn2Bw')
+                           b'qb-GpQBPaurA"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-AA'
+                           b'BAAozuDFSORYWsy7Jl9asA7bicvf5xLaneMbo7Yl2lvkAT0HSjvhI8QUh9agW9e4'
+                           b'APcy_xphMdRzlDPNRfixqlWCg{"v":"KERI10JSON000091_","t":"rct","d":'
+                           b'"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","i":"Eban8TbpEQ4H'
+                           b'X5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"0"}-CABBCqmHiYBZx_uaQiCTV'
+                           b'eum-vt1ZPti8chqb-GpQBPaurA0B4DXMxgfIL54GtKxHFwmblsGpT3SHcAWz49kn'
+                           b'MuSfPcV41Yd0NFi1BgK5YrB9f2HGVtkr5cIGtETpz-L8k4JZBg{"v":"KERI10JS'
+                           b'ON000091_","t":"rct","d":"E0EFbDrGf49mevhj9LjqdDF9Zv1e3xZrVV-o74'
+                           b'knmodI","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"'
+                           b'1"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0BzsAJ_ozo7HX'
+                           b'Kdbbx_FU1YIZfOGn2f-qhh3pP4hfDSxt9m6QBdWRy6bAkAhXmg5g4qRkZyEu-XqJ'
+                           b'DEBCGMe3dCw{"v":"KERI10JSON000091_","t":"rct","d":"EsZ2thB6qZ8l_'
+                           b'eaxur-1YtY7D9PBxL7yhCdC93hYvX1M","i":"Eban8TbpEQ4HX5hwefKvH5-7eP'
+                           b'5SOctXFdAkliMo-Rbk","s":"2"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8ch'
+                           b'qb-GpQBPaurA0B2feSG3gWubwMdbhB4FAx9EKJUCEkhmahECvFYx784dp-atqnpJ'
+                           b'fW0ngmYM8hFKqx-Ahbxg1t00lK2gbWL1I4CQ{"v":"KERI10JSON000091_","t"'
+                           b':"rct","d":"EvnHJz9YFtaiMlCbyq4wMulC3TXAZ9JyH2pTyXkd93Lw","i":"E'
+                           b'ban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"3"}-CABBCqmHiY'
+                           b'BZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0Bzb-G2a56g6vhAVGvlCpcKBAWS'
+                           b'wC1NTzxj5YVteYsFWEMHhhgdn49Hy82CT8Deiqs64DydxlQLTuCdA5aN09lBg{"v'
+                           b'":"KERI10JSON000091_","t":"rct","d":"EQigFoXAX3U0JLw8LSRtzqJENPE'
+                           b'otsV6N_7Cl9X9GTK4","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo'
+                           b'-Rbk","s":"4"}-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0B'
+                           b'OMJ_BkHWf1IYQXP4mf2flEokBYU9FakIMJFO4lLtYg8WLVnVyc9k_wIoUMJTWM9R'
+                           b'llnTMEqODSVayvXjWwMmAA{"v":"KERI10JSON000091_","t":"rct","d":"EE'
+                           b'oiyGRkxjb-bRZQUIiEfkijxg8c1_jzJYE6p0YeWZ-0","i":"Eban8TbpEQ4HX5h'
+                           b'wefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"5"}-CABBCqmHiYBZx_uaQiCTVeum'
+                           b'-vt1ZPti8chqb-GpQBPaurA0BTYb-mi5zkMhOBDmlwNBUlWCDFlm1OaWDkj6GgwL'
+                           b'OTOfkClUxo16TDIl8jdfA_mdfXn7ipKFg_osGkBUI5IRHAg{"v":"KERI10JSON0'
+                           b'00091_","t":"rct","d":"ECwRGikXaPuVHZplHFnVWv6cYG-ovQpsosZXEX93u'
+                           b'LgU","i":"Eban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rbk","s":"6"}'
+                           b'-CABBCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-GpQBPaurA0BVqibBPSzBELmCw'
+                           b'VX-rivkcfRUEHPbaHo4031l6al0bsoBc3Jp7l-9UCul9prLPTJijkPY1irJvtqyz'
+                           b'fq8rn7Dg')
 
         # Play bevMsgs to Deb
         parsing.Parser().parse(ims=bytearray(bevMsgs), kvy=debKevery)
@@ -297,15 +301,15 @@ def test_replay():
 
         # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
         debBevVrcs = debHab.processCues(debKevery.cues)
-        assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"E91pCFGs1Hm_B43_LIi0jCOV'
-                              b'7DpPHn-HqHon4uJINaNw","i":"BCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-Gp'
-                              b'QBPaurA","s":"0"}-FABEgmiU27BZtfnJclZw6K_X67hwf6SDT3nJW1dr3Jq9D3'
-                              b's0AAAAAAAAAAAAAAAAAAAAAAgEgRAXqREqw3EvxZsTOGHKU2Aa70IJmd0XC6y7AQ'
-                              b'gjwns-AADAAolzi_N7g0q792H7aQoB_bVwaNPMQ61UhXDKxrhX5uS6BhCuxHHCIb'
-                              b'ELjpyjLUBQvKAs0rMQOgDI0sOGvZa6hBAABfBLZZ60qWfcVVnRx25T4FP8cCg7nH'
-                              b'QiF_rowNlbvXjI_sUUgsojVlEm570AwosNockcJr1QLkO-wb0bz59DxBAACQ6gcg'
-                              b'0EPlK-VURztqz3IXy_0ASludvqiA2DnV5N918b6fmCTCW01bSrJzEVlo8u1ZazLB'
-                              b'ZHWxPUbYUT2FpSrBg')
+        assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"ENE38noQTiyoAneEYmNSKNIu'
+                              b'v6lTMp20wSWanPkcA_L4","i":"BCqmHiYBZx_uaQiCTVeum-vt1ZPti8chqb-Gp'
+                              b'QBPaurA","s":"0"}-FABEban8TbpEQ4HX5hwefKvH5-7eP5SOctXFdAkliMo-Rb'
+                              b'k0AAAAAAAAAAAAAAAAAAAAAAgEsZ2thB6qZ8l_eaxur-1YtY7D9PBxL7yhCdC93h'
+                              b'YvX1M-AADAA6zpBCPrz6-mmX3JSjgBZYWde2FZbZp1UfDmJWg1K6b6AUs-yEdboQ'
+                              b'ZxNpao_zFftmJomy3D3yT8PKnqfmmxbAAABZTWv3ic3Ppf7s0jWhqiA6453XBoxM'
+                              b'P4Q9mCfHCL1MGHH8BA5ncj7fmRYSi7nL23scwG-DJAwNBZq193ma4NcDgACPMTbW'
+                              b'D67Wv3864TercRAX3NOdUrBrtqsky2uLub95yf_ojgG49JfGJ7ACe1Rr0WxDCes5'
+                              b'o8GorLlyvGFuv3NBw')
 
         # Play disjoints debBevVrcs to Bev
         parsing.Parser().parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
@@ -320,7 +324,7 @@ def test_replay():
         fn = 0
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator
         msg = next(cloner)  # get zeroth event with attachments
-        assert len(msg) == 1474
+        assert len(msg) == 1595
         debFelMsgs.extend(msg)
 
         # parse msg
@@ -408,7 +412,7 @@ def test_replay():
         serder = coring.Serder(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == coring.Ilks.rot
-        assert len(msg) == 1527
+        assert len(msg) == 1648
         assert ([verfer.qb64 for verfer in serder.verfers] ==
                 [verfer.qb64 for verfer in debHab.kever.verfers])
         debFelMsgs.extend(msg)
@@ -423,7 +427,7 @@ def test_replay():
             debFelMsgs.extend(msg)
             fn += 1
 
-        assert len(debFelMsgs) == 9396
+        assert len(debFelMsgs) == 9638
         cloner.close()  # must close or get lmdb error upon with exit
 
         msgs = debHab.replay()
@@ -446,7 +450,7 @@ def test_replay():
         camDebFelMsgs = camHab.replay(pre=debHab.pre)
         bevDebFelMsgs = bevHab.replay(pre=debHab.pre)
 
-        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9396
+        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9638
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = eventing.Kevery(db=artHab.db,
@@ -466,7 +470,7 @@ def test_replay():
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
         artDebFelMsgs = artHab.replay(pre=debHab.pre)
-        assert len(artDebFelMsgs) == 9396
+        assert len(artDebFelMsgs) == 9638
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)
@@ -609,7 +613,7 @@ def test_replay_all():
 
         # now setup replay
         debAllFelMsgs = debHab.replayAll()
-        assert len(debAllFelMsgs) == 11726
+        assert len(debAllFelMsgs) == 12082
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = eventing.Kevery(db=artHab.db,
@@ -627,7 +631,7 @@ def test_replay_all():
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 9
         artAllFelMsgs = artHab.replayAll()
-        assert len(artAllFelMsgs) == 10922
+        assert len(artAllFelMsgs) == 11287
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)

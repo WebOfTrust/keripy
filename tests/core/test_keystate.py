@@ -76,7 +76,7 @@ def test_keystate(mockHelpingNowUTC):
                                  #wits=[wesHab.pre], temp=True)
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True,
                                 wits=[wesHab.pre],)
-        assert bobHab.pre == "ECJTKtR-GlybCmn1PCiVwIuGBjaOUXI09XWDdXkrJNj0"
+        assert bobHab.pre == "EGaV8sWx4qxaWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -142,7 +142,7 @@ def test_keystate(mockHelpingNowUTC):
         #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
                                  #transferable=True, temp=True)
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
-        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
+        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -219,7 +219,7 @@ def test_keystate(mockHelpingNowUTC):
         #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
                                  #transferable=True, temp=True)
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
-        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
+        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -261,7 +261,7 @@ def test_keystate(mockHelpingNowUTC):
                                  #transferable=True,
                                  #wits=[], temp=True)
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
-        assert bobHab.pre == "Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
+        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Get ksn from Bob and verify
         ksn = bobHab.kever.state()

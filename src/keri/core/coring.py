@@ -2522,7 +2522,7 @@ class Diger(Matter):
         return (hashlib.sha256(ser).digest() == raw)
 
 
-class Nexter(Matter):
+class Nexter:
     """
     Nexter is Matter subclass with support to derive itself from
     next sith and next keys given code.
@@ -2551,8 +2551,7 @@ class Nexter(Matter):
 
     """
 
-    def __init__(self, limen=None, sith=None, digs=None, keys=None, ked=None,
-                 code=MtrDex.Blake3_256, **kwa):
+    def __init__(self, digs=None, keys=None, ked=None):
         """
         Assign digest verification function to ._verify
 
@@ -2565,11 +2564,6 @@ class Nexter(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-           limen is string extracted from sith expression using Tholder
-           sith is signing threshold as:
-                int threshold or
-                lowercase hex str no leading zeros
-                of list of strs or list of list of strs
            digs is list of qb64 digests of public keys
            keys is list of keys each is qb64 public key str
            ked is key event dict
@@ -2589,27 +2583,9 @@ class Nexter(Matter):
                but if not ked then compute sith as simple majority of keys
 
         """
-        try:
-            super(Nexter, self).__init__(code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not digs and not keys and not ked:
-                raise ex
-            if code == MtrDex.Blake3_256:
-                self._digest = self._blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for nexter.".format(code))
+        self.digs = self._derive(digs=digs, keys=keys, ked=ked)  # derive nxt raw
 
-            raw = self._derive(code=code, limen=limen, sith=sith, digs=digs,
-                               keys=keys, ked=ked)  # derive nxt raw
-            super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
-
-        else:
-            if self.code == MtrDex.Blake3_256:
-                self._digest = self._blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for nexter.".format(code))
-
-    def verify(self, raw=b'', limen=None, sith=None, digs=None, keys=None, ked=None):
+    def verify(self, digs=None, keys=None, ked=None):
         """
         Returns True if digest of bytes nxt raw matches .raw
         Uses .raw as reference nxt raw for ._verify algorithm determined by .code
@@ -2627,17 +2603,47 @@ class Nexter(Matter):
             keys is list of keys qb64
             ked is key event dict
         """
-        if not raw:
-            raw = self._derive(code=self.code, limen=limen, sith=sith, digs=digs,
-                               keys=keys, ked=ked)
+        if not digs:
+            digs = self._derive(digs=digs, keys=keys, ked=ked)
 
-        return (raw == self.raw)
+        if len(digs) == len(self.digs):
+            return self.digs == digs
 
-    def _derive(self, code, limen=None, sith=None, digs=None, keys=None, ked=None):
+        elif len(digs) < len(self.digs):
+            existing = list(self.digs)
+            found = []
+            for kdig in digs:
+                while existing:
+                    ndig = existing.pop(0)
+                    if kdig == ndig:
+                        found.append(kdig)
+                        break
+
+                if not existing:
+                    break
+
+            return digs == found
+
+        else:
+            return False
+
+    def indices(self, sigers):
+        ion = []
+        for sig in sigers:
+            idig = Diger(ser=sig.verfer.qb64b).qb64
+            try:
+                ion.append(self.digs.index(idig))
+            except ValueError:
+                raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
+
+        return ion
+
+    @staticmethod
+    def _derive(digs=None, keys=None, ked=None):
         """
         Returns ser where ser is serialization derived from code, sith, keys, or ked
         """
-        if not digs:
+        if digs is None:
             if not keys:
                 try:
                     keys = ked["k"]
@@ -2648,43 +2654,9 @@ class Nexter(Matter):
             if not keys:  # empty keys
                 raise DerivationError("Empty keys.")
 
-            keydigs = [self._digest(key.encode("utf-8")) for key in keys]
+            digs = [Diger(ser=key.encode("utf-8")).qb64 for key in keys]
 
-        else:
-            digers = [Diger(qb64=dig) for dig in digs]
-            for diger in digers:
-                if diger.code != code:
-                    raise DerivationError("Mismatch of public key digest "
-                                          "code = {} for next digest code = {}."
-                                          "".format(diger.code, code))
-            keydigs = [diger.raw for diger in digers]
-
-        if limen is None:  # compute default limen
-            if sith is None:  # need len keydigs to compute default sith
-                try:
-                    sith = ked["kt"]
-                except Exception as ex:
-                    # default simple majority unless empty
-                    sith = "{:x}".format(max(0, ceil(len(keydigs) / 2)))
-
-            limen = Tholder(sith=sith).limen
-
-        kints = [int.from_bytes(keydig, 'big') for keydig in keydigs]
-        sint = int.from_bytes(self._digest(limen.encode("utf-8")), 'big')
-        for kint in kints:
-            sint ^= kint  # xor together
-
-        return (sint.to_bytes(Matter._rawSize(code), 'big'))
-
-    @staticmethod
-    def _blake3_256(raw):
-        """
-        Returns digest of raw using Blake3_256
-
-        Parameters:
-            raw is bytes serialization of nxt raw
-        """
-        return (blake3.blake3(raw).digest())
+        return digs
 
 
 class Prefixer(Matter):
@@ -3690,8 +3662,8 @@ class CounterCodex:
     SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
     SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     MessageDataGroups: str = '-U'  # Composed Message Data Group or Primitive
-    PathedMaterialQuadlets: str = '-T'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets: str = '-W'  # Composed Grouped Message Data Quadlet (4 char each)
     CombinedMaterialQuadlets: str = '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
@@ -3770,7 +3742,7 @@ class Counter:
         '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-T': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -4050,6 +4022,7 @@ class Sadder:
         .verfers is list of Verfers converted from .ked["k"]
         .werfers is list of Verfers converted from .ked["b"]
         .tholder is Tholder instance from .ked["kt'] else None
+        .ntholder is Tholder instance from .ked["nt'] else None
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
@@ -4301,6 +4274,7 @@ class Serder(Sadder):
         .verfers is list of Verfers converted from .ked["k"]
         .werfers is list of Verfers converted from .ked["b"]
         .tholder is Tholder instance from .ked["kt'] else None
+        .ntholder is Tholder instance from .ked["nt'] else None
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
@@ -4360,6 +4334,20 @@ class Serder(Sadder):
         return [Verfer(qb64=key) for key in keys]
 
     @property
+    def nexter(self):
+        """
+        Returns list of Diger instances as converted from .ked['n'].
+        One for each key.
+        nkeys property getter
+        """
+        if "n" in self.ked:  # establishment event
+            keys = self.ked["n"]
+        else:  # non-establishment event
+            keys = []
+
+        return Nexter(digs=keys)
+
+    @property
     def werfers(self):
         """
         Returns list of Verfer instances as converted from .ked['b'].
@@ -4379,7 +4367,15 @@ class Serder(Sadder):
         Returns Tholder instance as converted from .ked['kt'] or None if missing.
 
         """
-        return (Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None)
+        return Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None
+
+    @property
+    def ntholder(self):
+        """
+        Returns Tholder instance as converted from .ked['nt'] or None if missing.
+
+        """
+        return Tholder(sith=self.ked["nt"]) if "nt" in self.ked else None
 
     @property
     def sn(self):

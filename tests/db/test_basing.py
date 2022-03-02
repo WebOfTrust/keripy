@@ -9,11 +9,11 @@ import os
 import lmdb
 import pytest
 from hio.base import doing
-from keri.app import habbing, keeping
+from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
 from keri.core.coring import Serials, Versify
-from keri.core.coring import Signer, Nexter
+from keri.core.coring import Signer
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
@@ -1715,7 +1715,7 @@ def test_clean_baser():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'EafakcO2q8Rz7LoXJrhTmtLu4h0wUAgcjhxKNAI0Fl_s'
+        assert natHab.kever.serder.said == 'EbjxjMV9atsoyxBVAnoe3B22Gprbu1dvYTpubyxrOfSk'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -1744,7 +1744,7 @@ def test_clean_baser():
                                       dig=natHab.kever.serder.said,
                                       sn=natHab.kever.sn+1,
                                       sith=2,
-                                      nxt=natHab.kever.nexter.qb64)
+                                      nkeys=natHab.kever.nexter.digs)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
 
@@ -1770,7 +1770,7 @@ def test_clean_baser():
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'EafakcO2q8Rz7LoXJrhTmtLu4h0wUAgcjhxKNAI0Fl_s'
+        assert natHab.kever.serder.said == 'EbjxjMV9atsoyxBVAnoe3B22Gprbu1dvYTpubyxrOfSk'
         assert natHab.pre in natHab.prefixes
         assert natHab.pre in natHab.kevers
 
@@ -1937,13 +1937,13 @@ def test_usebaser():
         # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         count = len(keys)
-        nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
+        nxtkeys = [signers[3].verfer.qb64b, signers[4].verfer.qb64b, signers[5].verfer.qb64b]
         sith = "2"
         code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
                         sith=sith,
-                        nxt=Nexter(keys=nxtkeys).qb64)
+                        nkeys=[coring.Diger(ser=key).qb64 for key in nxtkeys])
 
 
         # sign serialization
@@ -1952,13 +1952,13 @@ def test_usebaser():
         kever = Kever(serder=serder, sigers=sigers, db=db)
 
         # Event 1 Rotation Transferable
-        keys = nxtkeys
-        nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
+        keys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
+        nxtkeys = [signers[5].verfer.qb64b, signers[6].verfer.qb64b, signers[7].verfer.qb64b]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
                         sith=sith,
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=nxtkeys).qb64,
+                        nkeys=[coring.Diger(ser=key).qb64 for key in nxtkeys],
                         sn=1)
 
         # sign serialization

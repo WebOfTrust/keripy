@@ -356,7 +356,7 @@ def test_make_load_hab_with_habery():
         assert id(hby.habByName(hab.name)) == id(hab)
 
         assert hab.name == name
-        assert hab.pre == 'ELB4zp-m8ogjBI02KCHQlc-vYvsqOhi7VkqjIY0fpkwo'
+        assert hab.pre == 'ESDOVXbLrbDjo94qAw_HCo3npFXGBNo-DEQeflDL2RyE'
         assert hab.temp
         assert hab.accepted
         assert hab.inited
@@ -403,7 +403,7 @@ def test_make_load_hab_with_habery():
         assert id(hby.habByName(sueHab.name)) == id(sueHab)
 
         assert sueHab.name == "Sue"
-        assert sueHab.pre == 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
+        assert sueHab.pre == 'EJzql954-toWFugKWCIyN2iAlb7jkLrCUd_6eG-lAE9I'
         assert not sueHab.temp
         assert sueHab.accepted
         assert sueHab.inited
@@ -416,7 +416,7 @@ def test_make_load_hab_with_habery():
         assert id(hby.habByName(bobHab.name)) == id(bobHab)
 
         assert bobHab.name == "Bob"
-        assert bobHab.pre == 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+        assert bobHab.pre == 'EF8fAMlW1-2mARLE8NPEulkM7JmVTye0n5JOLb3WKcOI'
         assert not bobHab.temp
         assert bobHab.accepted
         assert bobHab.inited
@@ -435,8 +435,8 @@ def test_make_load_hab_with_habery():
     assert os.path.exists(hby.ks.path)
 
     # test load from database
-    suePre = 'EBs3dnsrPXhI0QHmo67OvB346ieVEU-xdZUMzSqHF-qs'
-    bobPre = 'EEqA-fOcJn9OvBmQqZe8UAkP6jrTKBBxE-gyHs7leWqc'
+    suePre = 'EJzql954-toWFugKWCIyN2iAlb7jkLrCUd_6eG-lAE9I'
+    bobPre = 'EF8fAMlW1-2mARLE8NPEulkM7JmVTye0n5JOLb3WKcOI'
     base = "hold"
     with habbing.openHby(base=base, temp=False) as hby:  # default is temp=True
         assert hby.cf.path.endswith("keri/cf/hold/test.json")
