@@ -4,15 +4,11 @@ tests delegation primaily from keri.core.eventing
 
 """
 import os
-import datetime
-
-import pytest
 
 from keri import help
-from keri.help import helping
-from keri.db import dbing, basing
-from keri.app import habbing, keeping, directing
+from keri.app import habbing
 from keri.core import coring, eventing, parsing
+from keri.db import dbing
 
 logger = help.ogler.getLogger()
 
@@ -137,7 +133,7 @@ def test_indexed_witness_replay():
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
-            assert len(rctMsg) == 617
+            assert len(rctMsg) == 626
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
@@ -233,7 +229,7 @@ def test_indexed_witness_replay():
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 1933
+        assert len(camReplayMsg) == 2038
         parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
         # wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
@@ -446,7 +442,7 @@ def test_nonindexed_witness_receipts():
             assert kvy.kevers[camHab.pre].sn == 0
             assert len(kvy.cues) == 1  # queued receipt cue
             rctMsg = camWitHabs[i].processCues(kvy.cues)  # process cue returns rct msg
-            assert len(rctMsg) == 617
+            assert len(rctMsg) == 626
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # Cam process rct msgs from all witnesses
@@ -554,7 +550,7 @@ def test_nonindexed_witness_receipts():
         #    Cam update Wil all event witnessed events for Cam by replay
         #    Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 1933
+        assert len(camReplayMsg) == 2038
         parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
 
         assert camHab.pre in wilKvy.kevers
@@ -663,7 +659,7 @@ def test_out_of_order_witnessed_events():
         assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
 
         bobHab = bobHby.makeHab(name='bob', isith=1, icount=1, wits=[wesHab.pre])
-        assert bobHab.pre == "EgJtvKj2tUD9K-t92Y_xkf0AGHIHwOmMqTZTy6dxrPUs"
+        assert bobHab.pre == "EfDNEAeF-UHrU7RfoEry1RHKGNlG__BsVx0qkMBoRhu0"
 
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)

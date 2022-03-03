@@ -39,11 +39,11 @@ def test_delegation():
         # Setup Bob by creating inception event
         verfers, digers, cst, nst = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
+                                  nkeys=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)
 
         bob = bobSrdr.ked["i"]
-        assert bob == 'Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8'
+        assert bob == 'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0'
 
         bobMgr.move(old=verfers[0].qb64, new=bob)  # move key pair label to prefix
 
@@ -55,12 +55,13 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON000120_","t":"icp","d":"Et78eYkh8A3H9w6Q87EC5Oci'
-                       b'jiVEJT8KyNtEGdpPVWV8","i":"Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEG'
-                       b'dpPVWV8","s":"0","kt":"1","k":["DqI2cOZ06RwGNwCovYUWExmdKU983Ias'
-                       b'mUKMmZflvWdQ"],"n":"E7FuL3Z_KBgt_QAwuZi1lUFNC69wvyHSxnMFUsKjZHss'
-                       b'","bt":"0","b":[],"c":[],"a":[]}-AABAAJEloPu7b4z8v1455StEJ1b7dMI'
-                       b'z-P0tKJ_GBBCxQA8JEg0gm8qbS4TWGiHikLoZ2GtLA58l9dzIa2x_otJhoDA')
+        assert msg == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"E7YbTIkWWyNwOxZQTTnrs6qn'
+                       b'8jFbu2A8zftQ33JYQFQ0","i":"E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ3'
+                       b'3JYQFQ0","s":"0","kt":"1","k":["DqI2cOZ06RwGNwCovYUWExmdKU983Ias'
+                       b'mUKMmZflvWdQ"],"nt":"1","n":["EOmBSdblll8qB4324PEmETrFN-DhElyZ0B'
+                       b'cBH1q1qukw"],"bt":"0","b":[],"c":[],"a":[]}-AABAAotHSmS5LuCg2LXw'
+                       b'landbAs3MFR0yTC5BbE2iSW_35U2qA0hP9gp66G--mHhiFmfHEIbBKrs3tjcc8yS'
+                       b'vYcpiBg')
 
         # apply msg to bob's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
@@ -68,7 +69,7 @@ def test_delegation():
         bobK = bobKvy.kevers[bob]
         assert bobK.prefixer.qb64 == bob
         assert bobK.serder.saider.qb64 == bobSrdr.said
-        assert bobK.serder.saider.qb64 == 'Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8'
+        assert bobK.serder.saider.qb64 == 'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0'
 
         # apply msg to del's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=delKvy)
@@ -80,13 +81,13 @@ def test_delegation():
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+                                   nkeys=[diger.qb64 for diger in digers])
 
         delPre = delSrdr.ked["i"]
-        assert delPre == 'Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI'
+        assert delPre == 'ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM0A'
 
         delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
-        assert delSrdr.said == 'Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI'
+        assert delSrdr.said == 'ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM0A'
 
         # Now create delegating event
         seal = eventing.SealEvent(i=delPre,
@@ -97,7 +98,7 @@ def test_delegation():
                                     sn=bobK.sn + 1,
                                     data=[seal._asdict()])
 
-        assert bobSrdr.said == 'E1_-icBrwC_HhxyFwsQLV6hZEbApOc_McGUjhLONpQuc'
+        assert bobSrdr.said == 'E4ncGiiaG9wbKMHrACX9iPxb7fMSSeBSnngBNIRoZ2_A'
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
@@ -107,13 +108,13 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E1_-icBrwC_HhxyFwsQLV6hZ'
-                       b'EbApOc_McGUjhLONpQuc","i":"Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEG'
-                       b'dpPVWV8","s":"1","p":"Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVW'
-                       b'V8","a":[{"i":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI","s"'
-                       b':"0","d":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI"}]}-AABAA'
-                       b'6h5mD5stIwO_rwV9apMuhHXjxrKp2ATa35u-H6DM2X-BKo5NkJ1khzBdHo-VLQ6Z'
-                       b'w_yajj2Ul_WOL8pFSk_ZDg')
+        assert msg == (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E4ncGiiaG9wbKMHrACX9iPxb'
+                       b'7fMSSeBSnngBNIRoZ2_A","i":"E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ3'
+                       b'3JYQFQ0","s":"1","p":"E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQF'
+                       b'Q0","a":[{"i":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM0A","s"'
+                       b':"0","d":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM0A"}]}-AABAA'
+                       b'Rpc88hIeWV9Z2IvzDl7dRHP-g1-EOYZLiDKyjNZB9PDSeGcNTj_SUXgWIVNdssPL'
+                       b'7ajYvglbvxRwIU8teoFHCA')
 
         # apply msg to bob's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
@@ -144,14 +145,15 @@ def test_delegation():
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saider.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON000154_","t":"dip","d":"Er4bHXd4piEtsQat1mquwsNZ'
-                       b'XItvuoj_auCUyICmwyXI","i":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUy'
-                       b'ICmwyXI","s":"0","kt":"1","k":["DuK1x8ydpucu3480Jpd1XBfjnCwb3dZ3'
-                       b'x5b1CJmuUphA"],"n":"EWWkjZkZDXF74O2bOQ4H5hu4nXDlKg2m4CBEBkUxibiU'
-                       b'","bt":"0","b":[],"c":[],"a":[],"di":"Et78eYkh8A3H9w6Q87EC5Ociji'
-                       b'VEJT8KyNtEGdpPVWV8"}-AABAA_zcT2-86Zll3FG-hwoQiVuFiT0X28Ft0t4fZGN'
-                       b'FISgtZjH2DCrBGoceko604NDZ0QF0Z3bSgEkN_y0lBafD_Bw-GAB0AAAAAAAAAAA'
-                       b'AAAAAAAAAAAQE1_-icBrwC_HhxyFwsQLV6hZEbApOc_McGUjhLONpQuc')
+        assert msg == (b'{"v":"KERI10JSON00015f_","t":"dip","d":"ESVGDRnpHMCAESkvj2bxKGAm'
+                       b'MloX6K6vxfcmBLTOCM0A","i":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmB'
+                       b'LTOCM0A","s":"0","kt":"1","k":["DuK1x8ydpucu3480Jpd1XBfjnCwb3dZ3'
+                       b'x5b1CJmuUphA"],"nt":"1","n":["Ej1L6zmDszZ8GmBdYGeUYmAwoT90h3Dt9k'
+                       b'RAS90nRyqI"],"bt":"0","b":[],"c":[],"a":[],"di":"E7YbTIkWWyNwOxZ'
+                       b'QTTnrs6qn8jFbu2A8zftQ33JYQFQ0"}-AABAAbb1dks4dZCRcibL74840WKKtk9w'
+                       b'sdMLLlmNFkjb1s7hBfevCqpN8nkZaewQFZu5QWR-rbZtN-Y8DDQ8lh_1WDA-GAB0'
+                       b'AAAAAAAAAAAAAAAAAAAAAAQE4ncGiiaG9wbKMHrACX9iPxb7fMSSeBSnngBNIRoZ'
+                       b'2_A')
 
         # apply Del's delegated inception event message to Del's own Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=delKvy)
@@ -180,9 +182,9 @@ def test_delegation():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.saider.qb64,
                                    sn=bobDelK.sn + 1,
-                                   nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+                                   nkeys=[diger.qb64 for diger in digers])
 
-        assert delSrdr.said == 'ELEnIYF_rAsluR9TI_jh5Dizq61dCXjos22AGN0hiVjw'
+        assert delSrdr.said == 'EnjU4Rc4YtHFV7ezc6FbmXWNdT4QGE2sTtl-yaGXH-ag'
 
         # Now create delegating interaction event
         seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
@@ -202,13 +204,13 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON00013a_","t":"ixn","d":"Eq-MPVuYTPXNUlQSHKfnPhiV'
-                                b'3rWo7hkkLa7ui67OIG68","i":"Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEG'
-                                b'dpPVWV8","s":"2","p":"E1_-icBrwC_HhxyFwsQLV6hZEbApOc_McGUjhLONpQ'
-                                b'uc","a":[{"i":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI","s"'
-                                b':"1","d":"ELEnIYF_rAsluR9TI_jh5Dizq61dCXjos22AGN0hiVjw"}]}-AABAA'
-                                b'-QDEYYQCDtosLkziTAaWTu3mfVdFUxa8tytwQVohRwBJEhefCIaCDIbFhrrEn17K'
-                                b'MwGoOJKBrJ7Da4WqeWbtAA')
+        assert msg == bytearray(b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EAh9mAkWlONIqJPdhMFQ4a9j'
+                                b'x4nZWz7JW6wLp9T2YFqk","i":"E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ3'
+                                b'3JYQFQ0","s":"2","p":"E4ncGiiaG9wbKMHrACX9iPxb7fMSSeBSnngBNIRoZ2'
+                                b'_A","a":[{"i":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM0A","s"'
+                                b':"1","d":"EnjU4Rc4YtHFV7ezc6FbmXWNdT4QGE2sTtl-yaGXH-ag"}]}-AABAA'
+                                b'EGO3wl32as1yxubkrY19x_BwntHVl7jAXHhUpFEPkkpkBxA9lbIG_vhe6-gm-GT6'
+                                b'pwKg_pfPDr7pWTZ5sgR5AQ')
 
         # apply msg to bob's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=bobKvy)
@@ -236,14 +238,15 @@ def test_delegation():
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saider.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON000155_","t":"drt","d":"ELEnIYF_rAsluR9TI_jh5Diz'
-                       b'q61dCXjos22AGN0hiVjw","i":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUy'
-                       b'ICmwyXI","s":"1","p":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwy'
-                       b'XI","kt":"1","k":["DTf6QZWoet154o9wvzeMuNhLQRr8JaAUeiC6wjB_4_08"'
-                       b'],"n":"E8kyiXDfkE7idwWnAZQjHbUZMz-kd_yIMH0miptIFFPo","bt":"0","b'
-                       b'r":[],"ba":[],"a":[]}-AABAAer7S2mRuHlXxmJxy6E5lgdBmh3eeKd2Tnkyiv'
-                       b'HlEw83Xhq98h6RBjXRDc_S0Z-TrLUS2u-6FnIkP_yYsOeH0Dg-GAB0AAAAAAAAAA'
-                       b'AAAAAAAAAAAAgEq-MPVuYTPXNUlQSHKfnPhiV3rWo7hkkLa7ui67OIG68')
+        assert msg ==(b'{"v":"KERI10JSON000160_","t":"drt","d":"EnjU4Rc4YtHFV7ezc6FbmXWN'
+                      b'dT4QGE2sTtl-yaGXH-ag","i":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmB'
+                      b'LTOCM0A","s":"1","p":"ESVGDRnpHMCAESkvj2bxKGAmMloX6K6vxfcmBLTOCM'
+                      b'0A","kt":"1","k":["DTf6QZWoet154o9wvzeMuNhLQRr8JaAUeiC6wjB_4_08"'
+                      b'],"nt":"1","n":["EJHd79BFLgnljYhhWP2wmc6RD3A12oHDJhkixwNe2sH0"],'
+                      b'"bt":"0","br":[],"ba":[],"a":[]}-AABAA9-6k6bExTqgFDG8akEA7ifbMPx'
+                      b'sWDe0ttdAXpm3HiYdjfTlY5-vUcDZ1e6RHs6xLADNiNhmKHAuRQW8nmFyPBw-GAB'
+                      b'0AAAAAAAAAAAAAAAAAAAAAAgEAh9mAkWlONIqJPdhMFQ4a9jx4nZWz7JW6wLp9T2'
+                      b'YFqk')
 
         # apply msg to del's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=delKvy)
@@ -265,7 +268,7 @@ def test_delegation():
         msgs = bytearray()
         for msg in delKvy.db.clonePreIter(pre=delPre, fn=0):
             msgs.extend(msg)
-        assert len(msgs) == 1145
+        assert len(msgs) == 1167
         assert couple in msgs
 
     assert not os.path.exists(delKS.path)

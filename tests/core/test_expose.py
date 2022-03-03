@@ -53,8 +53,8 @@ def test_expose():
     sith = '1'
     keys = [signerC.verfer.qb64]
     nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-    nxt = nexter.qb64
-    assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
+    nxt = nexter.digs
+    assert nxt == ['EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM']
 
     # create key pairs for witnesses of KEL
     signerW0 = salter.signer(path="W0", transferable=False, temp=True)

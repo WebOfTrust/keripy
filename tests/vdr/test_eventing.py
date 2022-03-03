@@ -415,8 +415,8 @@ def test_tever_escrow():
                               cnfg=[],
                               code=MtrDex.Blake3_256)
         regk = vcp.pre
-        assert regk == "EuUK4Q1-XrmsPZW44_HwGmRzWGzWkYbc0NZNkA6zVVqg"
-        assert vcp.said == "EuUK4Q1-XrmsPZW44_HwGmRzWGzWkYbc0NZNkA6zVVqg"
+        assert regk == "EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQPhmwgZdTI"
+        assert vcp.said == "EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQPhmwgZdTI"
         assert vcp.ked["ii"] == hab.pre
 
         # anchor to nothing, exception expected
@@ -444,12 +444,11 @@ def test_tever_escrow():
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         vcp = reg.getTvt(dgkey)
-        assert bytes(vcp) == (
-            b'{"v":"KERI10JSON0000dc_","t":"vcp","d":"EuUK4Q1-XrmsPZW44_HwGmRzWGzWkYbc0NZN'
-            b'kA6zVVqg","i":"EuUK4Q1-XrmsPZW44_HwGmRzWGzWkYbc0NZNkA6zVVqg","ii":"EhtDTO-ax'
-            b'8fziNSVsgTkQ9JRPsN4LAft2v0diSV_sdGw","s":"0","c":[],"bt":"0","b":[]}')
+        assert bytes(vcp) == (b'{"v":"KERI10JSON0000dc_","t":"vcp","d":"EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQP'
+                              b'hmwgZdTI","i":"EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQPhmwgZdTI","ii":"Evzy4Lumz'
+                              b'atnQ1GB1LpIinFlqxzksir-EZ7dRGI0Br6A","s":"0","c":[],"bt":"0","b":[]}')
         dig = reg.getTae(snKey(pre=regk, sn=0))
-        assert bytes(dig) == b'EuUK4Q1-XrmsPZW44_HwGmRzWGzWkYbc0NZNkA6zVVqg'
+        assert bytes(dig) == b'EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQPhmwgZdTI'
 
     # registry with backers, no signatures.  should escrow
     with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
@@ -475,18 +474,16 @@ def test_tever_escrow():
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         vcp = reg.getTvt(dgkey)
-        assert bytes(vcp) == (
-            b'{"v":"KERI10JSON00010a_","t":"vcp","d":"E0Ms9ILpZ8GuFe8CHwXAvQLSezWO2B0xPUt7'
-            b'ZSjYeKPI","i":"E0Ms9ILpZ8GuFe8CHwXAvQLSezWO2B0xPUt7ZSjYeKPI","ii":"EhtDTO-ax'
-            b'8fziNSVsgTkQ9JRPsN4LAft2v0diSV_sdGw","s":"0","c":[],"bt":"1","b":["BoOcciw30'
-            b'IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"]}')
+        assert bytes(vcp) == (b'{"v":"KERI10JSON00010a_","t":"vcp","d":"EQhGx1YZPUxBsU65XCexYKt70GJJpMDmX5jd'
+                              b'908l_wzo","i":"EQhGx1YZPUxBsU65XCexYKt70GJJpMDmX5jd908l_wzo","ii":"Evzy4Lumz'
+                              b'atnQ1GB1LpIinFlqxzksir-EZ7dRGI0Br6A","s":"0","c":[],"bt":"1","b":["BoOcciw30'
+                              b'IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"]}')
 
         anc = reg.getAnc(dgkey)
-        assert bytes(anc) == (
-            b'0AAAAAAAAAAAAAAAAAAAAAAQEr7va7WJFKgsve4RQn0OGezwzDVRoP9zoHJfjF7t-APQ')
+        assert bytes(anc) == b'0AAAAAAAAAAAAAAAAAAAAAAQE5YSIArcAunhL6XoOZoUaWrg41Lj8r1fQsI-LrLNADBg'
         assert reg.getTel(snKey(pre=regk, sn=0)) is None
         dig = reg.getTwe(snKey(pre=regk, sn=0))
-        assert bytes(dig) == b'E0Ms9ILpZ8GuFe8CHwXAvQLSezWO2B0xPUt7ZSjYeKPI'
+        assert bytes(dig) == b'EQhGx1YZPUxBsU65XCexYKt70GJJpMDmX5jd908l_wzo'
 
 
 def test_tever_no_backers(mockHelpingNowUTC):
@@ -518,13 +515,13 @@ def test_tever_no_backers(mockHelpingNowUTC):
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON0000e0_","t":"vcp","d":"EkOHsPmFEtpOByvqk1r7FYBbi54kTeWNo97p'
-            b'hizdlEnk","i":"EkOHsPmFEtpOByvqk1r7FYBbi54kTeWNo97phizdlEnk","ii":"EhtDTO-ax'
-            b'8fziNSVsgTkQ9JRPsN4LAft2v0diSV_sdGw","s":"0","c":["NB"],"bt":"0","b":[]}')
+            b'{"v":"KERI10JSON0000e0_","t":"vcp","d":"E_WBd2MgZlm36iyhmzMjNFWd_Xv6WsrybkGC'
+            b'jD_Es5JY","i":"E_WBd2MgZlm36iyhmzMjNFWd_Xv6WsrybkGCjD_Es5JY","ii":"Evzy4Lumz'
+            b'atnQ1GB1LpIinFlqxzksir-EZ7dRGI0Br6A","s":"0","c":["NB"],"bt":"0","b":[]}')
 
         assert bytes(reg.getAnc(dgkey)) == (
-            b'0AAAAAAAAAAAAAAAAAAAAAAQEkCsZ5u26aBvQmflS0TCLmSpRAaeAVdkf6alYf7PkKzc')
-        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EkOHsPmFEtpOByvqk1r7FYBbi54kTeWNo97phizdlEnk'
+            b'0AAAAAAAAAAAAAAAAAAAAAAQEi9EdKy3RpXAxMEsDmZDXid1fIxz5O5zCaGL4VnWBZuU')
+        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'E_WBd2MgZlm36iyhmzMjNFWd_Xv6WsrybkGCjD_Es5JY'
         assert reg.getTibs(dgkey) == []
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
@@ -556,11 +553,11 @@ def test_tever_no_backers(mockHelpingNowUTC):
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=iss.said)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON0000ed_","t":"iss","d":"E122GnEykj7MC8d2DhnhrelyuzW_jndbCWyQ'
-            b'72_XidQQ","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","ri":"E'
-            b'kOHsPmFEtpOByvqk1r7FYBbi54kTeWNo97phizdlEnk","dt":"2021-01-01T00:00:00.00000'
-            b'0+00:00"}')
-        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAwE959gkLRP958bSrIJsdDm9UUQMiSV6GO0SnfP3VBAEyU'
+             b'{"v":"KERI10JSON0000ed_","t":"iss","d":"E4lqgH82PmHK3HVjRNSOuAwM2O2Q2nkXkQ5y'
+             b'0I45vT_8","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","ri":"E'
+             b'_WBd2MgZlm36iyhmzMjNFWd_Xv6WsrybkGCjD_Es5JY","dt":"2021-01-01T00:00:00.00000'
+             b'0+00:00"}')
+        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAwEcNpKC4Bz7xQNAwFTnfKPGDz0fzGLp-UQk1YNF4y9cLw'
 
         # revoke vc with no backers
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
@@ -575,10 +572,10 @@ def test_tever_no_backers(mockHelpingNowUTC):
         tev.update(rev, seqner=seqner, saider=diger)
         dgkey = dgKey(pre=vci, dig=rev.said)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON000120_","t":"rev","d":"ERIAt8fmcGrig-gxF-rTLMpCU6emky4jhOEI'
-            b'5e4hWcb4","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","ri":"E'
-            b'kOHsPmFEtpOByvqk1r7FYBbi54kTeWNo97phizdlEnk","p":"E122GnEykj7MC8d2Dhnhrelyuz'
-            b'W_jndbCWyQ72_XidQQ","dt":"2021-01-01T00:00:00.000000+00:00"}')
+             b'{"v":"KERI10JSON000120_","t":"rev","d":"EUHu2XZeFqYWGBBfWgF_SFeO3m-_9JzF67aX'
+             b'uI-R7wVI","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","ri":"E'
+             b'_WBd2MgZlm36iyhmzMjNFWd_Xv6WsrybkGCjD_Es5JY","p":"E4lqgH82PmHK3HVjRNSOuAwM2O'
+             b'2Q2nkXkQ5y0I45vT_8","dt":"2021-01-01T00:00:00.000000+00:00"}')
 
         # assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
 
@@ -617,15 +614,14 @@ def test_tever_backers(mockHelpingNowUTC):
 
         dgkey = dgKey(pre=regk, dig=vcp.said)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON00010a_","t":"vcp","d":"E7lLqa2iDEV27pYjU_dimgi7-yuTeP-VK2nq'
-            b'4dUgIV68","i":"E7lLqa2iDEV27pYjU_dimgi7-yuTeP-VK2nq4dUgIV68","ii":"EhtDTO-ax'
-            b'8fziNSVsgTkQ9JRPsN4LAft2v0diSV_sdGw","s":"0","c":[],"bt":"1","b":["B8KY1sKmg'
-            b'yjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"]}')
-        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAQE5j8uXoyWjowmvyrz8D809bSmw7Z88oALuqke9pNfEuE'
-        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'E7lLqa2iDEV27pYjU_dimgi7-yuTeP-VK2nq4dUgIV68'
-        assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [
-            b'AAjUNMr9N_rZXstoBimgMWAIRRahn5iG_L6gTfNE01rvzFq1Mhx3zb7JIUgGIxy5A1JkrU-Gy7Cq'
-            b'842EEWc5myBg']
+             b'{"v":"KERI10JSON00010a_","t":"vcp","d":"EzqFcON23zc1VlQhr5MfpKM4yGtVSixhQS5I'
+             b'cesHqOPI","i":"EzqFcON23zc1VlQhr5MfpKM4yGtVSixhQS5IcesHqOPI","ii":"Evzy4Lumz'
+             b'atnQ1GB1LpIinFlqxzksir-EZ7dRGI0Br6A","s":"0","c":[],"bt":"1","b":["B8KY1sKmg'
+             b'yjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"]}')
+        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAQEa7IUvK3pKHJDWuAHVQuu7405DX6mufvYquOANEviGXU'
+        assert bytes(reg.getTel(snKey(pre=regk, sn=0))) == b'EzqFcON23zc1VlQhr5MfpKM4yGtVSixhQS5IcesHqOPI'
+        assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [b'AAF_-Lvkq31vu3765Cp1riy1VCCFeFMfDgOrk4DBoRxTmbg3yje19JA'
+                                                              b'gBd9GJv5YAzSN7UpIzQ_OxQcV-rnbqmDw']
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         debSecret = 'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ'
@@ -670,11 +666,11 @@ def test_tever_backers(mockHelpingNowUTC):
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=bis.said)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON000160_","t":"bis","d":"E_eCcpAC6KgR57o0TJXzYaBc9S5aN5QEpoG0'
-            b'SC6t3fwE","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"E7lLqa2iD'
-            b'EV27pYjU_dimgi7-yuTeP-VK2nq4dUgIV68","s":"0","ra":{"i":"E7lLqa2iDEV27pYjU_di'
-            b'mgi7-yuTeP-VK2nq4dUgIV68","s":1,"d":"EXoO-Bf9qJ6wffRo6yASLsxMmCwqrgzxGph7Hpy'
-            b'7XXKg"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+             b'{"v":"KERI10JSON000160_","t":"bis","d":"E6Bye-WYEeNPuVHQv5ChRqFMIZsixfIVV7A_'
+             b'T9-I7xi8","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"EzqFcON23'
+             b'zc1VlQhr5MfpKM4yGtVSixhQS5IcesHqOPI","s":"0","ra":{"i":"EzqFcON23zc1VlQhr5Mf'
+             b'pKM4yGtVSixhQS5IcesHqOPI","s":1,"d":"EoP5JLeyqYq1sTkS7skNH0XMqpHeRkOFLrHHJW_'
+             b'R04A8"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
 def test_tevery():
@@ -758,7 +754,7 @@ def test_tevery_process_escrow():
         rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
 
         seqner = Seqner(sn=1)
-        diger = coring.Diger(qb64b=b'EkCsZ5u26aBvQmflS0TCLmSpRAaeAVdkf6alYf7PkKzc')
+        diger = coring.Diger(qb64b=b'Ei9EdKy3RpXAxMEsDmZDXid1fIxz5O5zCaGL4VnWBZuU')
 
         tvy = Tevery(reger=reg, db=db)
 

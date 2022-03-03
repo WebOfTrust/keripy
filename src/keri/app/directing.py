@@ -711,8 +711,8 @@ class Reactant(doing.DoDoer):
         Sends message msg and loggers label if any
         """
         self.remoter.tx(msg)  # send to remote
-        logger.info("Server %s: sent %s:\n%s\n\n", self.hab.name,
-                    label, bytes(msg))
+        logger.info("Server %s: sent %s:\n%d\n\n", self.hab.name,
+                    label, len(msg))
 
 
 def runController(doers, expire=0.0):

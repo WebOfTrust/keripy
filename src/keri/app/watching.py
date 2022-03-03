@@ -65,15 +65,11 @@ class KiwiServer(doing.DoDoer):
                                                temp=False)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        if digers:
-            nxt = coring.Nexter(sith=nst,
-                                digs=[diger.qb64 for diger in digers]).qb64
-        else:
-            nxt = ""
 
         serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  sith=cst,
-                                 nxt=nxt,
+                                 nsith=nst,
+                                 nkeys=[diger.qb64 for diger in digers],
                                  toad=cur.toad,
                                  wits=cur.wits,
                                  code=code)

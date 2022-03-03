@@ -11,7 +11,7 @@ from hio.help import decking
 from keri.app import habbing
 from keri.kering import ValidationError
 from keri.core import parsing, coring
-from keri.core.coring import (CtrDex, Counter, Signer, Nexter)
+from keri.core.coring import (CtrDex, Counter, Signer)
 from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
 from keri.db.basing import openDB
 
@@ -50,7 +50,7 @@ def test_parser():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
+                        nkeys=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -63,18 +63,19 @@ def test_parser():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert msgs == bytearray(b'{"v":"KERI10JSON000120_","t":"icp","d":"EG4EuTsxPiRM7soX10XXzNsS'
-                                 b'1KqXKUp8xsQ-kW_tWHoI","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
+        assert msgs == bytearray(b'{"v":"KERI10JSON00012b_","t":"icp","d":"ELeMG3OOxWi5n1Zud603_Bn6'
+                                 b'Hzm3hIRZXlQnSgC5lU7A","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
                                  b'WTOunRA","s":"0","kt":"1","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
-                                 b'OoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
-                                 b'","bt":"0","b":[],"c":[],"a":[]}-AABAA0aSisI4ZZTH_6JCqsvAsEpuf_J'
-                                 b'q6bDbvPWj_eCDnAGbSARqYHipNs-9W7MHnwnMfIXwLpcoJkKGrQ-SiaklhAw')
+                                 b'OoeKtWTOunRA"],"nt":"1","n":["E67B6WkwQrEfSA2MylxmF28HJc_HxfHRyK'
+                                 b'1kRXSYeMiI"],"bt":"0","b":[],"c":[],"a":[]}-AABAAw6czYydWCMpfs-X'
+                                 b'pUPi-h2OuBHP6ji5IU7YbK0pnsQt237sI4jaALv7Guc30y1zh8j5hrou-zOoUrVI'
+                                 b'NlhSICw')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -92,7 +93,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
@@ -142,7 +143,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
@@ -177,7 +178,6 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt="",
                         sn=7)
         event_digs.append(serder.said)
         # create sig counter
@@ -211,7 +211,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -225,7 +225,7 @@ def test_parser():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert len(msgs) == 3681
+        assert len(msgs) == 3745
 
         pre = kever.prefixer.qb64
 
@@ -270,11 +270,11 @@ def test_pathed_material():
         b'zY9_ic6mddsG-lC_qLyW5wxLS8GBdIETx-m9eA"],"n":"Egtz7luAa9zYv__wE1Y1NuuJgFrzfdKoFS0dl0m1OrYc","bt":"3","br":[],'
         b'"ba":[],"a":[{"i":"EdUB40PiRIGD5KK12ixqtg-iOzdB53mvquFxEMY95Sjc","s":"0","d":"EdUB40PiRIGD5KK12ixqtg-iOzdB53m'
         b'vquFxEMY95Sjc"}]}]}-CABBgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c0BYb31eFKSIfTxztT6-ft9xmH4ozf9T4OcXK3L'
-        b'T-qINq0tgxFDrftGt5WCRIPNhFes3bbZt3I1HpMh0IftvGh4Bw-TBt4AAB-a-0-VBq-AABAA57gKX2fuFDQueMfjVZP2t8TKxyR8GrUkQV9yk'
+        b'T-qINq0tgxFDrftGt5WCRIPNhFes3bbZt3I1HpMh0IftvGh4Bw-LBt4AAB-a-0-VBq-AABAA57gKX2fuFDQueMfjVZP2t8TKxyR8GrUkQV9yk'
         b'At0UAdQzk24E2c4g4X4pJmu9z8Ab6iolHfxYYqWXubUDA7LCQ-BADAAakx_iP6JIlUg8gb45IdMJI9IXU1F3OrUCSG0RYXPt_-vcFTJ7f_MOT'
         b'nC8fwc4kLO_57z_kZFwnjpw_zJNY83BwABOQbSEplzc_AK76CK18GVcy4NeNMh3FMAd19nO3oQYiW2_v6BTRDKuSAvTA7JaeoT9sq28U3umfd'
         b'iuxEnuqphAgAC-YGArB4QGi9JxuduvzThCALaA7WWdDVeW4aNCUe_k45Ur6-U9MAWH0epAHx5Pu9BBmoM0i53tGBXWRkYAe-yBA-EAB0AAAAA'
-        b'AAAAAAAAAAAAAAAAAA1AAG2022-02-27T18c02c09d640135p00c00-TBt4AAB-a-1-VBq-AABAAh8GcgHc4gvZzNOHxcjGMDxQZkuHeR9H4w'
+        b'AAAAAAAAAAAAAAAAAA1AAG2022-02-27T18c02c09d640135p00c00-LBt4AAB-a-1-VBq-AABAAh8GcgHc4gvZzNOHxcjGMDxQZkuHeR9H4w'
         b'7MKWlIyeg-4Cx815rya5RBTpsjlg0DhYcacQutrJHI4jzS5tj7UBQ-BADAAPZd8UNgjPNGE0mLWhF81jQW10KtKwPwn0A18jnSZekoiC3meFq'
         b'ZFObZphYDsI8PGJY9j7Xv7klG7jTdL0DkjDgABNMO7i7vjVfi7G-AbeDbnu1zl86Ia_BSWVLt6ykylfGRZaIIaWBC-YrsX1bQCNIzkaf2WEj3'
         b'-7KvwtNaAxXnxCQACgztaYp19Ho6nTgBDB2Ytfp5POVRedbwtD1u9JhRBt8filMay6K65IbspoPK-MYv3t2UNvBqK8Qt1piiFT_lNCQ-EAB0A'

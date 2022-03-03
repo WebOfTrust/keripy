@@ -3,20 +3,17 @@
 tests.db.dbing module
 
 """
-import os
 import logging
-import time
+import os
 
+import time
 from hio.base import doing
-from hio.help import timing
 from hio.core.tcp import clienting, serving
 
-from keri.app import habbing, keeping, directing
-from keri.db import dbing, basing
+from keri import help  # logger support
+from keri.app import habbing, directing
 from keri.core import eventing, coring
 from keri.demo import demoing
-
-from keri import help  # logger support
 
 
 def test_direct_mode_bob_eve_demo():
@@ -47,11 +44,11 @@ def test_direct_mode_bob_eve_demo():
 
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
+    assert bob == 'EdwS_D6wppLqfIp5LSgly8GTScg5OWBaa7thzEnBqHvw'
 
 
     # set of secrets (seeds for private keys)
@@ -74,12 +71,11 @@ def test_direct_mode_bob_eve_demo():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
-
+    assert eve == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
 
     with habbing.openHby(name="eve", base="test") as eveHby, \
          habbing.openHby(name="bob", base="test") as bobHby:
@@ -94,6 +90,8 @@ def test_direct_mode_bob_eve_demo():
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
+        print(bobHab.iserder.pretty())
+        print(bobSerder.pretty())
 
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
@@ -207,11 +205,11 @@ def test_direct_mode_sam_eve_demo():
 
     # Sam inception transferable (nxt digest not empty)
     samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[samSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
-    assert sam == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
+    assert sam == 'EdwS_D6wppLqfIp5LSgly8GTScg5OWBaa7thzEnBqHvw'
 
 
     # set of secrets (seeds for private keys)
@@ -234,14 +232,11 @@ def test_direct_mode_sam_eve_demo():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
-
-    #with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         #basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
+    assert eve == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
 
     with habbing.openHby(name="eve", base="test") as eveHby, \
          habbing.openHby(name="sam", base="test") as samHby:
@@ -558,19 +553,19 @@ def test_indirect_mode_sam_cam_wit_demo():
         # setup cam
         # cam inception transferable (nxt digest not empty)
         camSerder = eventing.incept(keys=[camSigners[0].verfer.qb64],
-                                    nxt=coring.Nexter(keys=[camSigners[1].verfer.qb64]).qb64,
+                                    nkeys=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
                                     code=coring.MtrDex.Blake3_256)
 
         cam = camSerder.ked["i"]
-        assert cam == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
+        assert cam == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
 
         # sam inception transferable (nxt digest not empty)
         samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
-                                    nxt=coring.Nexter(keys=[samSigners[1].verfer.qb64]).qb64,
+                                    nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                     code=coring.MtrDex.Blake3_256)
 
         sam = samSerder.ked["i"]
-        assert sam == 'EU2vtu6GkN2UmI8H2_fi961IGnYcat6Hk9Di5S8GcAvs'
+        assert sam == 'Ec5GiUblxFy6Xlj77VQ0-ksleIA8FR-WThpcd4c0Y3gw'
 
         samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies)
         #samHab = habbing.Habitat(name='Sam',

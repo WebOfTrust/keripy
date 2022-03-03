@@ -21,10 +21,9 @@ def test_issuing():
     assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
 
     with viring.openReg(name="red") as redPDB, \
-         habbing.openHby(name="red", base="test") as redHby, \
-         habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
-         habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
-
+            habbing.openHby(name="red", base="test") as redHby, \
+            habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
+            habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
 
         limit = 1.0
@@ -34,7 +33,7 @@ def test_issuing():
         sidHab = sidHby.makeHab(name="test",
                                 wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
         sidPre = sidHab.pre
-        assert sidPre == "EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs"
+        assert sidPre == "EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE"
 
         redKvy = eventing.Kevery(db=redHby.db)
 
@@ -61,20 +60,20 @@ def test_issuing():
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzXn7ocm0lb9A"
+        assert creder.said == "EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLwfxDmEFPpUc"
 
         issuer.issue(creder=creder)
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzX'
-                       b'n7ocm0lb9A","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
-                       b'i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6X'
-                       b'brY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a6-Vc","i":"EeBZcaNdy0ZkuquN3'
-                       b'67PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRerXG3S'
-                       b'91Xs2ESrLgtBPlXkrQfw"},"p":[]}-VA3-JAB6AABAAA--FABEeBZcaNdy0Zkuq'
-                       b'uN367PMj4Plg1201MSevpLREfB3Pxs0AAAAAAAAAAAAAAAAAAAAAAAEeBZcaNdy0'
-                       b'ZkuquN367PMj4Plg1201MSevpLREfB3Pxs-AABAAh8MqB8-SlX1AkYHyMIaJ54Xv'
-                       b'cUkx-daOLsnyRbbBRZ5uZdfNUP_rpidW-r4f10jEUSFccI8x1IH_DGMOl_y2Dw')
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLw'
+                       b'fxDmEFPpUc","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
+                       b'i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E3EX'
+                       b'dMDqLATJe0a-Oc9jT531EPvpYZNeCTrk48MovNTM","i":"EWVYH1T4J09x5RePL'
+                       b'fVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21:26:21.233257+00'
+                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EScaN0EobGIzPq-3S05vY2Fj'
+                       b'BOeXBQ_7wTR9ChFUGUOU"},"p":[]}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
+                       b'ePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE0AAAAAAAAAAAAAAAAAAAAAAAEWVYH1T4J0'
+                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAAPyuL-gPw5xNHOaYU2WLEsbwX'
+                       b'1XjJejaaG9Ozz7H7pFG2PELpIo5tfgAXWRybVhjLvud7z0EpGPONQZP9U8qECg')
 
         # Create the issue credential payload
         pl = dict(
@@ -92,14 +91,14 @@ def test_issuing():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"EA8Uibg-dQsaMQvDQbMNqj2pBEW2iz6DzXn7ocm0lb9A",'
-               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EeBZcaNdy0ZkuquN367P'
-               b'Mj4Plg1201MSevpLREfB3Pxs","a":{"d":"Ec6XbrY7znoeIUhxj5Xqk6sOby9MtCcUJGHolM-a'
-               b'6-Vc","i":"EeBZcaNdy0ZkuquN367PMj4Plg1201MSevpLREfB3Pxs","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"ETxWu1_j6teP1VYBjRer'
-               b'XG3S91Xs2ESrLgtBPlXkrQfw"},"p":[]}')
-        sig0 = (b'AAh8MqB8-SlX1AkYHyMIaJ54XvcUkx-daOLsnyRbbBRZ5uZdfNUP_rpidW-r4f10jEUSFccI8x1I'
-                b'H_DGMOl_y2Dw')
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLwfxDmEFPpUc",'
+               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EWVYH1T4J09x5RePLfVy'
+               b'Tfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E3EXdMDqLATJe0a-Oc9jT531EPvpYZNeCTrk48Mo'
+               b'vNTM","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EScaN0EobGIzPq-3S05v'
+               b'Y2FjBOeXBQ_7wTR9ChFUGUOU"},"p":[]}')
+        sig0 = (b'AAPyuL-gPw5xNHOaYU2WLEsbwX1XjJejaaG9Ozz7H7pFG2PELpIo5tfgAXWRybVhjLvud7z0EpGP'
+                b'ONQZP9U8qECg')
 
         # verify we can load serialized VC by SAID
         creder, sadsigers, sadcigars = redPDB.cloneCred(said=creder.said)
@@ -122,26 +121,25 @@ def test_proving():
     hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
 
-    #with basing.openDB(name="sid") as sidDB, \
-            #keeping.openKS(name="sid") as sidKS, \
-            #basing.openDB(name="vic") as vicDB, \
-            #keeping.openKS(name="vic") as vicKS, \
-            #basing.openDB(name="han") as hanDB, \
-            #keeping.openKS(name="han") as hanKS, \
-            #viring.openReg(name="han") as hanPDB:
+    # with basing.openDB(name="sid") as sidDB, \
+    # keeping.openKS(name="sid") as sidKS, \
+    # basing.openDB(name="vic") as vicDB, \
+    # keeping.openKS(name="vic") as vicKS, \
+    # basing.openDB(name="han") as hanDB, \
+    # keeping.openKS(name="han") as hanKS, \
+    # viring.openReg(name="han") as hanPDB:
 
     with viring.openReg(name="han") as hanPDB, \
-         habbing.openHby(name="han", base="test", salt=hanSalt) as hanHby, \
-         habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
-         habbing.openHby(name="vic", base="test", salt=vicSalt) as vicHby:
-
+            habbing.openHby(name="han", base="test", salt=hanSalt) as hanHby, \
+            habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
+            habbing.openHby(name="vic", base="test", salt=vicSalt) as vicHby:
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
         # sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
         sidHab = sidHby.makeHab(name="test")
-        assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
+        assert sidHab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
         sidIcpMsg = sidHab.makeOwnInception()
 
         hanKvy = eventing.Kevery(db=hanHby.db)
@@ -150,7 +148,7 @@ def test_proving():
 
         # hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
         hanHab = hanHby.makeHab(name="test")
-        assert hanHab.pre == "EXs465M4avETtnmCD2cd02CDwE5K-1vyTnyfk15_PRPs"
+        assert hanHab.pre == "EJcjV4DalEqAtaOdlEcjNvo75HCs0lN5K3BbQwJ5kN6o"
         hanIcpMsg = hanHab.makeOwnInception()
 
         vicKvy = eventing.Kevery(db=vicHby.db)
@@ -159,7 +157,7 @@ def test_proving():
 
         # vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
         vicHab = vicHby.makeHab(name="test")
-        assert vicHab.pre == "EvOnXBWyrNJbR4wf__Qn79YAf-u3GynE3ychvkuiGnEI"
+        assert vicHab.pre == "ET9X4cK2jPatbfYzEprxjdYLKazxZ7Rufj_jY10NC-t8"
         vicIcpMsg = vicHab.makeOwnInception()
 
         parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
@@ -183,7 +181,7 @@ def test_proving():
                             status=issuer.regk,
                             )
 
-        assert creder.said == "EkHBr-04I1Id_bXI4luPZsASLVJ4ZOsI3a5ChZgE0iug"
+        assert creder.said == "Ep47HwcVCCmW2e4kYm0BNCrK1zVfEK0TANpZEDB-q6k8"
 
         msg = signing.ratify(sidHab, serder=creder)
         hanWallet = Wallet(reger=hanPDB)
@@ -237,9 +235,9 @@ def test_proving():
         assert len(vcs) == 1
 
         proof = (
-            "-JAB6AABAAA--FABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAAEPmpiN6bEM8EI0Mctny"
-            "-6AfglVOKnJje8-vqyKTlh0nc-AABAA6W18DO1EXT8Qeu_kaPqEQBPIlQQE_EoLDzxJb_M71EqQEC"
-            "-lA1lsW4R9lWTkj55jSvWIuTbTkXoTJVCyzKSTBA")
+            '-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAAECtWlHS2Wbx5M2Rg6nm69'
+            'PCtzwb1veiRNvDpBGF9Z1Pc-AABAAof2YkuOFlbe5fTXsbjrh0lorAQcGx2mwPcXhSRnjssLIeCV2s_q7YLOYPlNyB_ICj82bpXBKOMEY'
+            'l7rU9PV3Aw')
 
         assert vcs[0]["proof"] == proof
 

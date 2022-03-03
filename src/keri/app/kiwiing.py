@@ -816,9 +816,47 @@ class MultisigEnd:
         description: Initiate a multisig group inception with the participants identified by the  provided AIDs
         tags:
            - Multisig
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   aids:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of participants in multisig group
+                   notify:
+                     type: boolean
+                     required: False
+                     description: True means to send mutlsig incept exn message to other participants
+                   toad:
+                     type: integer
+                     description: Witness receipt threshold
+                   witnesses:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of witnesses to be used for the new group identfier
+                   isith:
+                     type: string
+                     description: Signing threshold for the new group identifier
+                   nsith:
+                     type: string
+                     description: Next signing threshold for the new group identifier
+
         responses:
-           202:
-              description:  multisig group inception initiated
+           204:
+              description: Multisig group AID inception initiated.
 
         """
         body = req.get_media()
