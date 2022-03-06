@@ -22,6 +22,7 @@ from ..core import eventing, parsing, routing
 from ..core.coring import Ilks
 from ..db import basing
 from ..end import ending
+from ..help import helping
 from ..peer import exchanging
 from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
@@ -425,17 +426,20 @@ class MailboxDirector(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        for hab in self.hby.habs.values():
-            self.addPollers(hab)
-            _ = (yield self.tock)
+        habs = list(self.hby.habs.values())
+        for hab in habs:
+            if hab.accepted:
+                self.addPollers(hab)
+                _ = (yield self.tock)
 
         while True:
             pres = oset(self.hby.habs.keys())
             if new := pres - self.prefixes:
                 for pre in new:
                     hab = self.hby.habs[pre]
-                    self.addPollers(hab=hab)
-                    _ = (yield self.tock)
+                    if hab.accepted:
+                        self.addPollers(hab=hab)
+                        _ = (yield self.tock)
 
             for msg in self.processPollIter():
                 self.ims.extend(msg)
@@ -450,17 +454,10 @@ class MailboxDirector(doing.DoDoer):
 
         """
         wits = hab.kever.wits
-        group = hab.group()
         for wit in wits:
             poller = Poller(hab=hab, topics=self.topics, witness=wit)
             self.pollers.append(poller)
             self.extend([poller])
-
-            if group is not None:
-                poller = Poller(hab=hab, group=group, topics=self.topics, witness=wit)
-                self.pollers.append(poller)
-                self.prefixes.add(group.gid)
-                self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
@@ -557,18 +554,18 @@ class MailboxDirector(doing.DoDoer):
             self.exchanger.processEscrow()
             yield
 
-            while self.exchanger.cues:
-                cue = self.exchanger.cues.popleft()
-                cueKin = cue["kin"]
-                if cueKin == "query":
-                    qargs = cue["q"]
-                    self.witq.query(**qargs)
-                yield
-
             for rep in self.exchanger.processResponseIter():
                 self.rep.reps.append(rep)
                 yield  # throttle just do one cue at a time
             yield
+
+    @property
+    def times(self):
+        times = dict()
+        for poller in self.pollers:  # get responses from all behaviors
+            times |= poller.times
+
+        return times
 
 
 class Poller(doing.DoDoer):
@@ -577,7 +574,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, topics, group=None, msgs=None, retry=1000, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -590,11 +587,13 @@ class Poller(doing.DoDoer):
 
         """
         self.hab = hab
-        self.pre = group.gid if group is not None else hab.pre
+        self.pre = hab.pre
         self.witness = witness
         self.topics = topics
         self.retry = retry
         self.msgs = None if msgs is not None else decking.Deck()
+        self.times = dict()
+
         doers = [doing.doify(self.eventDo)]
 
         super(Poller, self).__init__(doers=doers, **kwa)
@@ -627,7 +626,11 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+            if self.hab.phab:
+                msg = self.hab.phab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+            else:
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+
             httping.createCESRRequest(msg, client)
 
             while client.requests:
@@ -647,10 +650,12 @@ class Poller(doing.DoDoer):
                         break
 
                     self.msgs.append(msg.encode("utf=8"))
+                    yield self.tock
 
                     witrec.topics[tpc] = int(idx)
+                    self.times[tpc] = helping.nowUTC()
                     self.hab.db.tops.pin((self.pre, self.witness), witrec)
-                    yield
+
                 yield 0.25
             yield client.respondent.retry / 1000
 

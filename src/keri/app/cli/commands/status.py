@@ -37,15 +37,9 @@ def status(args):
     bran = args.bran
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (hby, hab):
 
-            displaying.printIdentifier(hab, hab.pre)
-            group = hab.group()
-            if group:
-                print()
-                print("Group:")
-                print("\t   {} ({})".format(name, group.gid))
-                print()
+            displaying.printIdentifier(hby, hab.pre)
 
             if args.verbose:
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0

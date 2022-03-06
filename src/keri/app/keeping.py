@@ -1236,7 +1236,6 @@ class Manager:
 
         return (verfers, digers, cst, nst)
 
-
     def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars with

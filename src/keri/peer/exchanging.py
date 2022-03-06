@@ -15,7 +15,7 @@ from ..core import eventing, coring
 from ..help import helping
 from ..kering import ValidationError, MissingSignatureError, AuthZError
 
-ExchangeMessageTimeWindow = timedelta(seconds=1010000)
+ExchangeMessageTimeWindow = timedelta(seconds=300)
 
 logger = help.ogler.getLogger()
 
@@ -115,6 +115,7 @@ class Exchanger(doing.DoDoer):
         if source is not None and sigers is not None:
             if source.qb64 not in self.hby.kevers:
                 self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+                print(f"querying for {source.qb64}")
                 self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
                 raise MissingSignatureError(f"Unable to find sender {source.qb64} in kevers"
                                             f" for evt = {serder}.")
@@ -126,6 +127,7 @@ class Exchanger(doing.DoDoer):
             ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
             if not tholder.satisfy(indices):  # at least one but not enough
                 self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+                print(f"sig querying for {source.qb64}")
                 self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
                 raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                             " for evt = {}.".format(tholder.sith,

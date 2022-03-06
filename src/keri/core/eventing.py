@@ -2282,24 +2282,25 @@ class Kever:
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
-        if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
-                (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
-                 not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
-            # validate that event is fully witnessed
-            if isinstance(toad, str):
-                toad = int(toad, 16)
-            if toad < 0 or len(wits) < toad:
-                raise ValidationError("Invalid toad = {} for wits = {} for evt"
-                                      " = {}.".format(toad, wits, serder.ked))
+        if serder.pre not in self.prefixes:
+            if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
+                    (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
+                     not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
+                # validate that event is fully witnessed
+                if isinstance(toad, str):
+                    toad = int(toad, 16)
+                if toad < 0 or len(wits) < toad:
+                    raise ValidationError("Invalid toad = {} for wits = {} for evt"
+                                          " = {}.".format(toad, wits, serder.ked))
 
-            if len(windices) < toad:  # not fully witnessed yet
-                if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
-                    self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
-                raise MissingWitnessSignatureError("Failure satisfying toad = {} "
-                                                   "on witness sigs for {} for evt = {}.".format(toad,
-                                                                                                 [siger.qb64 for siger
-                                                                                                  in wigers],
-                                                                                                 serder.ked))
+                if len(windices) < toad:  # not fully witnessed yet
+                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
+                        self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
+                    raise MissingWitnessSignatureError("Failure satisfying toad = {} "
+                                                       "on witness sigs for {} for evt = {}.".format(toad,
+                                                                                                     [siger.qb64 for siger
+                                                                                                      in wigers],
+                                                                                                     serder.ked))
         return sigers, delegator, wigers
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):

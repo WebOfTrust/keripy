@@ -81,9 +81,9 @@ class KiwiServer(doing.DoDoer):
         for sig in sigers:
             icpMsg.extend(sig.qb64b)  # attach sig
 
-        sigers = self.hab.mgr.sign(ser=bytes(icpMsg),
-                                   verfers=self.hab.kever.verfers,
-                                   indexed=False)
+        sigers = self.hab.sign(ser=bytes(icpMsg),
+                               verfers=self.hab.kever.verfers,
+                               indexed=False)
 
         signage = ending.Signage(markers=sigers, indexed=False)
         sheaders = ending.signature([signage])
@@ -144,9 +144,9 @@ class WatcherClientRotateDoer(doing.DoDoer):
 
                 payload = dict(pre=self.hab.pre)
                 raw = json.dumps(payload)
-                sigers = self.hab.mgr.sign(ser=raw.encode("utf-8"),
-                                           verfers=self.hab.kever.verfers,
-                                           indexed=True)
+                sigers = self.hab.sign(ser=raw.encode("utf-8"),
+                                       verfers=self.hab.kever.verfers,
+                                       indexed=True)
 
                 signage = ending.Signage(markers=sigers, indexed=True)
                 headers = ending.signature([signage])

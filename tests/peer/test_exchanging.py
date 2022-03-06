@@ -25,7 +25,7 @@ def test_exchanger():
         # create the forward message with payload embedded at `a` field
         fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre="EBCAFG", topic="/delegation"),
                                   payload=ser.ked)
-        exnsigs = hab.mgr.sign(ser=fwd.raw,
+        exnsigs = hab.sign(ser=fwd.raw,
                                verfers=hab.kever.verfers,
                                indexed=True)
 

@@ -44,9 +44,8 @@ class RegistryInceptDoer(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.issuer = None
-        self.gdoer = grouping.MultiSigGroupDoer(hby=hby)
 
-        doers = [self.gdoer, doing.doify(self.inceptDo, **kwa)]
+        doers = [doing.doify(self.inceptDo, **kwa)]
         super(RegistryInceptDoer, self).__init__(doers=doers)
 
     def inceptDo(self, tymth, tock=0.0, **kwa):
@@ -135,13 +134,6 @@ class RegistryInceptDoer(doing.DoDoer):
 
                     self.remove([witDoer])
 
-                elif cueKin == "multisig":
-                    msg = dict(
-                        op=cue["op"],
-                        data=cue["data"],
-                        reason=cue["reason"]
-                    )
-                    self.gdoer.msgs.append(msg)
                 elif cueKin == "logEvent":
                     self.cues.append(dict(kin="finished", regk=self.issuer.regk))
 

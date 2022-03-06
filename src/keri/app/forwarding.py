@@ -27,9 +27,10 @@ class Postman(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, evts=None, klas=None, **kwa):
+    def __init__(self, hby, evts=None, cues=None, klas=None, **kwa):
         self.hby = hby
         self.evts = evts if evts is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
         self.klas = klas if klas is not None else agenting.HttpWitnesser
 
         doers = [doing.doify(self.deliverDo)]
@@ -98,6 +99,7 @@ class Postman(doing.DoDoer):
                 while not witer.sent:
                     _ = (yield self.tock)
 
+                self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
                 yield self.tock
 
             yield self.tock
@@ -112,7 +114,7 @@ class Postman(doing.DoDoer):
             dest (str) is identifier prefix qb64 of the intended recipient
             topic (str): topic of message
             serder (Serder) KERI event message to envelope and forward:
-            attachment (list): attachment bytes
+            attachment (bytes): attachment bytes
 
         """
 

@@ -79,7 +79,7 @@ class OobiLoader(doing.DoDoer):
                     print(oobi, f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
                     self.oobis.remove(oobi)
                 if kin in ("failed",):
-                    print(oobi, f"{terming.Colors.OKGREEN}{terming.Symbols.FAILED}{terming.Colors.ENDC}")
+                    print(oobi, f"{terming.Colors.FAIL}{terming.Symbols.FAILED}{terming.Colors.ENDC}")
                     self.oobis.remove(oobi)
 
                 yield 0.25

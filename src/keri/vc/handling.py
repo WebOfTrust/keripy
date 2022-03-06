@@ -217,13 +217,7 @@ class ApplyHandler(doing.DoDoer):
 
                 d |= data
 
-                group = hab.group()
-                if group is None:
-                    pre = hab.pre
-                else:
-                    pre = group.gid
-
-                creder = proving.credential(issuer=pre,
+                creder = proving.credential(issuer=hab.pre,
                                             schema=schema,
                                             subject=d,
                                             source=source,
@@ -241,7 +235,7 @@ class ApplyHandler(doing.DoDoer):
             yield self.tock
 
     def escrowDo(self, tymth, tock=0.0):
-        """ Processes the Groupy escrow for group icp, rot and ixn request messages.
+        """ Processes the escrows for group icp, rot and ixn request messages.
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

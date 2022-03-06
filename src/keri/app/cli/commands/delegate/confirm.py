@@ -52,8 +52,9 @@ class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        self.witq = agenting.WitnessInquisitor(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/delegate"])
-        doers = [self.hbyDoer, self.mbx, doing.doify(self.confirmDo)]
+        doers = [self.hbyDoer, self.witq, self.mbx, doing.doify(self.confirmDo)]
 
         self.alias = alias
         self.hby = hby
@@ -124,15 +125,13 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sn}')
 
                         # wait for confirmation of fully commited event
-                        witq = agenting.WitnessInquisitor(hab=hab, wits=wits)
-                        witq.query(pre=eserder.pre, sn=eserder.sn)
-                        self.extend([witq])
+                        self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn)
 
                         while eserder.pre not in self.hby.kevers:
                             yield self.tock
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
-                        toRemove = [self.hbyDoer, self.mbx, witDoer, witq]
+                        toRemove = [self.hbyDoer, self.mbx, witDoer]
                         self.remove(toRemove)
                         return True
 

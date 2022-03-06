@@ -45,9 +45,9 @@ def sign(args):
             else:
                 data = txt
 
-            sigers = hab.mgr.sign(ser=data.encode("utf-8"),
-                                  verfers=hab.kever.verfers,
-                                  indexed=True)
+            sigers = hab.sign(ser=data.encode("utf-8"),
+                              verfers=hab.kever.verfers,
+                              indexed=True)
 
             for idx, siger in enumerate(sigers):
                 print("{}. {}".format(idx+1, siger.qb64))

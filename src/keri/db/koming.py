@@ -211,7 +211,6 @@ class KomerBase:
         return val
 
 
-
 class Komer(KomerBase):
     """
     Keyspace Object Mapper factory class.
@@ -232,7 +231,6 @@ class Komer(KomerBase):
         super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
                                     kind=kind, dupsort=False, **kwa)
 
-
     def put(self, keys: Union[str, Iterable], val: dataclass):
         """
         Puts val at key made from keys. Does not overwrite
@@ -249,7 +247,6 @@ class Komer(KomerBase):
                                key=self._tokey(keys),
                                val=self.serializer(val)))
 
-
     def pin(self, keys: Union[str, Iterable], val: dataclass):
         """
         Pins (sets) val at key made from keys. Overwrites.
@@ -264,7 +261,6 @@ class Komer(KomerBase):
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=self.serializer(val)))
-
 
     def get(self, keys: Union[str, Iterable]):
         """

@@ -79,7 +79,7 @@ def test_signature_designature():
                 b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                 b'8080,"path":"/witness"}')
 
-        sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
+        sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
 
         # test signature with list markers as indexed sigers and defaults for indexed and signer
         signage = ending.Signage(markers=sigers)
@@ -132,7 +132,7 @@ def test_signature_designature():
             assert int(tag) == marker.index == sigers[i].index
 
         # test signature with list markers as nonindexed cigars and defaults for indexed and signer
-        cigars = hab.mgr.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
+        cigars = hab.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
         signage = ending.Signage(markers=cigars)
         header = ending.signature([signage])
         assert header == ({'Signature':
@@ -372,7 +372,7 @@ def test_seid_api():
                         b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                         b'8080,"path":"/witness"}')
         # sign here  check for non-transferable
-        sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
+        sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
         signage = ending.Signage(markers=sigers)
         header = ending.signature([signage])
         assert header == ({'Signature':

@@ -1,3 +1,8 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.app.delegating module
+
+"""
 from keri.app import habbing, delegating
 
 
