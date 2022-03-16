@@ -61,7 +61,7 @@ class WalletDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, verifier, **kwa):
+    def __init__(self, hby, verifier, **kwa):
         """ Waller doer processes the verifier cues and escrows for an Enterprise Wallet
 
         Parameters:
@@ -73,13 +73,12 @@ class WalletDoer(doing.DoDoer):
         self.verifier = verifier
 
         doers = [doing.doify(self.escrowDo)]
-        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
+        self.witq = agenting.WitnessInquisitor(hby=hby, klas=agenting.TCPWitnesser)
 
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 
-
     def escrowDo(self, tymth, tock=0.0):
-        """ Processes the Groupy escrow for group icp, rot and ixn request messages.
+        """ Processes the escrows for group icp, rot and ixn request messages.
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

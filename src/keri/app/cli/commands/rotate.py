@@ -4,7 +4,6 @@ keri.kli.commands module
 
 """
 import argparse
-import json
 
 from hio.base import doing
 
@@ -20,8 +19,6 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument('--proto', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                    'http)', default="tcp")
 parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).',
                     default=None, type=int, required=False)
 rotating.addRotationArgs(parser)
@@ -34,28 +31,8 @@ def rotate(args):
         args (parseargs):  Command line argument
 
     """
-    name = args.name
-    alias = args.alias
-    base = args.base
-    bran = args.bran
-
-    if args.data is not None:
-        try:
-            if args.data.startswith("@"):
-                f = open(args.data[1:], "r")
-                data = json.load(f)
-            else:
-                data = json.loads(args.data)
-        except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
-
-        if not isinstance(data, list):
-            data = [data]
-
-    else:
-        data = None
-
-    rotDoer = RotateDoer(name=name, base=base, alias=alias, bran=bran, proto=args.proto, wits=args.witnesses,
+    data = rotating.loadData(args)
+    rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias, bran=args.bran, wits=args.witnesses,
                          cuts=args.cuts, adds=args.witness_add, sith=args.sith, count=args.next_count, toad=args.toad,
                          data=data)
 
@@ -64,9 +41,9 @@ def rotate(args):
     try:
         directing.runController(doers=doers, expire=0.0)
     except kering.ConfigurationError:
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+        print(f"identifier prefix for {args.name} does not exist, incept must be run first", )
         return -1
-    except ValueError as ex:
+    except ValueError:
         return -1
 
 
@@ -76,14 +53,13 @@ class RotateDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, proto, sith=None, count=None,
+    def __init__(self, name, base, bran, alias, sith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
         Parameters:
             name is human readable str of identifier
-            proto is tcp or http method for communicating with Witness
             sith is next signing threshold as int or str hex or list of str weights
             count is int next number of signing keys
             toad is int or str hex of witness threshold after cuts and adds
@@ -93,7 +69,6 @@ class RotateDoer(doing.DoDoer):
        """
 
         self.alias = alias
-        self.proto = proto
         self.sith = sith
         self.count = count
         self.toad = toad
@@ -122,6 +97,8 @@ class RotateDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
+        if hab is None:
+            raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
 
         if self.wits:
             if self.adds or self.cuts:

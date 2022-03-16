@@ -257,7 +257,7 @@ def test_parser():
     """ Done Test """
 
 
-def test_pathed_material():
+def test_pathed_material(mockHelpingNowUTC):
     fwd = (
         b'{"v":"KERI10JSON00044d_","t":"exn","d":"EZwbLsmCpxBf9l2tfzvf1kg5ezQZ9i6FyDmBHHwVFQGk","dt":"2022-02-27T18:02:'
         b'22.044703+00:00","r":"/fwd","q":{"pre":"EoUntUikciNJYKQEFtBaa3qAgn99ffJ316xWi3ejy6BU","topic":"replay"},"a":'

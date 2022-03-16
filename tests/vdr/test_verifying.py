@@ -3,19 +3,16 @@
 tests.vdr.verifying module
 
 """
-import json
 
 import pytest
 
 from keri import kering
-from keri.app import habbing, grouping, signing
+from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring
-from keri.db import dbing
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import verifying, issuing, viring, eventing
-from ..app import test_grouping
 
 
 def test_verifier_query(mockHelpingNowUTC):
@@ -263,7 +260,7 @@ def test_verifier():
 #             pather = coring.Pather(path=[])
 #             data = pather.rawify(serder=creder)
 #
-#             sig = hab.mgr.sign(ser=data,
+#             sig = hab.sign(ser=data,
 #                                verfers=hab.kever.verfers,
 #                                indexed=True,
 #                                indices=[idx])

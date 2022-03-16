@@ -2658,6 +2658,9 @@ class Nexter:
 
         return digs
 
+    @property
+    def digers(self):
+        return [Diger(qb64=dig) for dig in self.digs]
 
 class Prefixer(Matter):
     """

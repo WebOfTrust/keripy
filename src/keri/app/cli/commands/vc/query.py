@@ -44,7 +44,7 @@ class QueryDoer(doing.DoDoer):
         reger = viring.Registry(name=self.hab.name)
         self.verifier = verifying.Verifier(hab=self.hab, reger=reger)
         self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=["/replay", "/receipt"], verifier=self.verifier)
-        self.witq = agenting.WitnessInquisitor(hab=self.hab, reger=reger)
+        self.witq = agenting.WitnessInquisitor(hby=self.hby, reger=reger)
         doers.extend([self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)

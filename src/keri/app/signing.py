@@ -78,19 +78,18 @@ def signPaths(hab, serder, paths):
             pather = coring.Pather(path=path)
             data = pather.rawify(serder=serder)
 
-            sigers = hab.mgr.sign(ser=data,
-                                  verfers=hab.kever.verfers,
-                                  indexed=True,
-                                  indices=indices)
+            sigers = hab.sign(ser=data,
+                              verfers=hab.kever.verfers,
+                              indexed=True)
             sadsigers.append((pather, prefixer, seqner, saider, sigers))
 
     else:
         for path in paths:
             pather = coring.Pather(path=path)
             data = pather.rawify(serder=serder)
-            cigars = hab.mgr.sign(ser=data,
-                                  verfers=hab.kever.verfers,
-                                  indexed=False)
+            cigars = hab.sign(ser=data,
+                              verfers=hab.kever.verfers,
+                              indexed=False)
             sadcigars.append((pather, cigars))
 
     return sadsigers, sadcigars
@@ -107,13 +106,12 @@ def transSeal(hab):
     """
     # create SealEvent or SealLast for endorser's est evt whose keys are
     # used to sign
-    group = hab.db.gids.get(hab.pre)  # is it a group ID
-    if group is None:  # not a group use own kever
+    if not hab.phab:  # not a group use own kever
         kever = hab.kever
         indices = None  # use default order
     else:  # group so use gid kever
-        kever = hab.kevers[group.gid]
-        indices = [group.aids.index(hab.pre)]  # use group order*
+        kever = hab.phab.kever
+        indices = [hab.phab.aids.index(hab.pre)]  # use group order*
 
     prefixer = kever.prefixer
     seqner = coring.Seqner(sn=kever.lastEst.s)

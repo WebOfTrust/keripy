@@ -51,7 +51,7 @@ class WitnessReceiptor(doing.DoDoer):
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0, **opts):
+    def receiptDo(self, tymth=None, tock=0.0):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -62,7 +62,6 @@ class WitnessReceiptor(doing.DoDoer):
             tymth is injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock is injected initial tock value
-            opts is dict of injected optional additional parameters
 
         """
         self.wind(tymth)
@@ -71,15 +70,15 @@ class WitnessReceiptor(doing.DoDoer):
 
         while True:
             while self.msgs:
-                msg = self.msgs.popleft()
-                pre = msg["pre"]
+                evt = self.msgs.popleft()
+                pre = evt["pre"]
 
                 if pre not in self.hby.habs:
                     continue
 
                 hab = self.hby.habs[pre]
 
-                sn = msg["sn"] if "sn" in msg else hab.kever.sn
+                sn = evt["sn"] if "sn" in evt else hab.kever.sn
                 wits = hab.kever.wits
 
                 if len(wits) == 0:
@@ -87,6 +86,14 @@ class WitnessReceiptor(doing.DoDoer):
 
                 msg = hab.makeOwnEvent(sn=sn)
                 ser = coring.Serder(raw=msg)
+
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+
+                # Check to see if we already have all the receipts we need for this event
+                wigs = hab.db.getWigs(dgkey)
+                if len(wigs) == len(wits):  # We have all the receipts, skip
+                    self.cues.append(msg)
+                    continue
 
                 witers = []
                 for wit in wits:
@@ -98,7 +105,6 @@ class WitnessReceiptor(doing.DoDoer):
 
                     _ = (yield self.tock)
 
-                dgkey = dbing.dgKey(ser.preb, ser.saidb)
                 while True:
                     wigs = hab.db.getWigs(dgkey)
                     if len(wigs) == len(wits):
@@ -128,7 +134,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 self.remove(witers)
 
-                self.cues.append(msg)
+                self.cues.append(evt)
                 yield self.tock
 
             yield self.tock
@@ -146,7 +152,7 @@ class WitnessInquisitor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, reger=None, msgs=None, wits=None, klas=None, **kwa):
+    def __init__(self, hby, reger=None, msgs=None, klas=None, **kwa):
         """
         For all msgs, select a random witness from Habitat's current set of witnesses
         send the msg and process all responses (KEL replays, RCTs, etc)
@@ -156,11 +162,11 @@ class WitnessInquisitor(doing.DoDoer):
             msgs: is the message buffer to process and send to one random witness.
 
         """
-        self.hab = hab
+        self.hby = hby
         self.reger = reger
-        self.wits = wits if wits is not None else self.hab.kever.wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
+        self.sent = decking.Deck()
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
 
@@ -175,34 +181,48 @@ class WitnessInquisitor(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if len(self.wits) == 0:
-            raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
-
-        witers = dict()
-        for wit in self.wits:
-            witer = witnesser(self.hab, wit)
-            witers[wit] = witer
-
-        self.extend(witers.values())
-
         while True:
             while not self.msgs:
                 yield self.tock
 
-            (wit, msg) = self.msgs.popleft()
-            witer = witers[wit]
-            kel = forwarding.introduce(self.hab, wit)
+            evt = self.msgs.popleft()
+            pre = evt["pre"]
+            src = evt["src"]
+            r = evt["r"]
+            q = evt["q"]
+
+            hab = self.hby.habs[src] if src in self.hby.habs else None
+            if hab is None:
+                continue
+
+            wits = hab.kever.wits
+            if len(wits) == 0:
+                raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
+
+            wit = random.choice(wits)
+            witer = witnesser(hab, wit)
+            self.extend([witer])
+
+            msg = hab.query(pre, src=wit, route=r, query=q)  # Query for remote pre Event
+
+            kel = forwarding.introduce(hab, wit)
             if kel:
                 witer.msgs.append(bytearray(kel))
 
             witer.msgs.append(bytearray(msg))
 
+            while not witer.sent:
+                yield self.tock
+
+            self.sent.append(witer.sent.popleft())
+
             yield self.tock
 
-    def query(self, pre, r="logs", sn=0, anchor=None, **kwa):
+    def query(self, src, pre, r="logs", sn=0, anchor=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
         Parameters:
+            src (str): qb64 identifier prefix of source of query
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
             sn (int): optional specific sequence number to query for
@@ -213,18 +233,15 @@ class WitnessInquisitor(doing.DoDoer):
             bytearray: signed query event
 
         """
-        wit = random.choice(self.wits)
         qry = dict(s=sn)
         if anchor is not None:
             qry["a"] = anchor
 
-        msg = self.hab.query(pre, src=wit, route=r, query=qry, **kwa)  # Query for remote pre Event
-        self.msgs.append((wit, bytes(msg)))  # bytes not bytearray so set membership compare works
+        self.msgs.append(dict(src=src, pre=pre, r=r, q=qry))  # bytes not bytearray so set membership compare works
 
-    def telquery(self, ri, i=None, r="tels", **kwa):
-        wit = random.choice(self.wits)
-        msg = self.hab.query(i, src=wit, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
-        self.msgs.append((wit, bytes(msg)))  # bytes not bytearray so set membership compare works
+    def telquery(self, src, ri, i=None, r="tels", **kwa):
+        qry = dict(ri=ri)
+        self.msgs.append(dict(src=src, pre=i, r=r, q=qry))  # bytes not bytearray so set membership compare works
 
 
 class WitnessPublisher(doing.DoDoer):

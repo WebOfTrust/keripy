@@ -1,7 +1,12 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.db.escrowing module
+
+"""
 from keri import kering
-from keri.app import keeping, habbing
-from keri.core import coring, eventing
-from keri.db import escrowing, dbing, subing, basing
+from keri.app import habbing
+from keri.core import coring
+from keri.db import escrowing, dbing, subing
 from keri.help import helping
 
 
@@ -54,9 +59,9 @@ def test_broker_nontrans():
         saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Ids.d)
         dater = coring.Dater(dts=dts)
 
-        cigars = wesHab.mgr.sign(ser=serder.raw,
-                                 verfers=wesHab.kever.verfers,
-                                 indexed=False)
+        cigars = wesHab.sign(ser=serder.raw,
+                             verfers=wesHab.kever.verfers,
+                             indexed=False)
 
         bork.escrowStateNotice(typ=typ,
                                pre=saider.qb64,
@@ -116,10 +121,9 @@ def test_broker_trans():
         saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Ids.d)
         dater = coring.Dater(dts=dts)
 
-        sigers = bobHab.mgr.sign(ser=serder.raw,
-                                 verfers=bobHab.kever.verfers,
-                                 indexed=True,
-                                 indices=None)
+        sigers = bobHab.sign(ser=serder.raw,
+                             verfers=bobHab.kever.verfers,
+                             indexed=True)
 
         tsgs = [(bobHab.kever.prefixer, coring.Seqner(sn=bobHab.kever.lastEst.s),
                 coring.Diger(qb64=bobHab.kever.lastEst.d), sigers)]

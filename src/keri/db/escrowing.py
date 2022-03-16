@@ -56,7 +56,6 @@ class Broker:
     def current(self, keys):
         return self.saiderdb.get(keys=keys)
 
-
     def processEscrowState(self, typ, processReply, extype: Type[Exception]):
         """ Process escrows for reply messages
 

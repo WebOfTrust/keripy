@@ -51,7 +51,7 @@ class QueryDoer(doing.DoDoer):
         self.cues = help.decking.Deck()
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
-        self.witq = agenting.WitnessInquisitor(hab=self.hab, wits=[self.wit])
+        self.witq = agenting.WitnessInquisitor(hhby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)
@@ -69,7 +69,7 @@ class QueryDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        self.witq.query(pre=self.pre, r="ksn")
+        self.witq.query(src=self.hab.pre, pre=self.pre, r="ksn")
 
         while True:
             yield self.tock
@@ -79,7 +79,7 @@ class QueryDoer(doing.DoDoer):
                 if serder.pre == self.pre:
                     break
 
-        displaying.printIdentifier(self.hab, self.pre)
+        displaying.printIdentifier(self.hby, self.pre)
 
         self.remove(self.toRemove)
 

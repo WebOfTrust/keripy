@@ -5,27 +5,27 @@ keri.app.agenting module
 
 """
 import json
-import mnemonic
 from urllib.parse import urlparse
-from hio.help import helping, decking
 
 import falcon
-from apispec import APISpec
+import mnemonic
 from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
-from keri.app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing
+from hio.help import helping, decking
+
+from keri.app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing, delegating
 from keri.db import dbing
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import proving, handling, walleting
 from keri.vdr import registering, issuing, viring, verifying
-
 from . import grouping
 from .. import help
 from .. import kering
-from ..core import parsing, eventing
+from ..core import parsing, eventing, coring
+from ..db.dbing import dgKey
 from ..end import ending
 
 logger = help.ogler.getLogger()
@@ -41,8 +41,10 @@ class IdentifierEnd(doing.DoDoer):
 
         self.postman = forwarding.Postman(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.swain = delegating.Boatswain(hby=hby)
+        self.cues = decking.Deck()
 
-        doers = [self.witDoer, self.postman]
+        doers = [self.witDoer, self.postman, self.swain, doing.doify(self.eventDo)]
 
         super(IdentifierEnd, self).__init__(doers=doers, **kwa)
 
@@ -106,23 +108,40 @@ class IdentifierEnd(doing.DoDoer):
         res = []
 
         for pre, hab in self.hby.habs.items():
-            kever = hab.kevers[pre]
-            ser = kever.serder
-            dgkey = dbing.dgKey(ser.preb, ser.saidb)
-            wigs = hab.db.getWigs(dgkey)
 
             gd = dict(
                 name=hab.name,
                 prefix=pre,
-                seq_no=kever.sn,
-                delegated=kever.delegated,
-                delegator=kever.delegator,
-                witnesses=kever.wits,
-                public_keys=[verfer.qb64 for verfer in kever.verfers],
-                toad=kever.toad,
-                isith=kever.tholder.sith,
-                receipts=len(wigs)
             )
+
+            if hab.phab:
+                gd["group"] = dict(
+                    pid=hab.phab.pre,
+                    accepted=hab.accepted
+                )
+
+            if hab.accepted:
+                kever = hab.kevers[pre]
+                ser = kever.serder
+                dgkey = dbing.dgKey(ser.preb, ser.saidb)
+                wigs = hab.db.getWigs(dgkey)
+                gd |= dict(
+                    seq_no=kever.sn,
+                    isith=kever.tholder.sith,
+                    public_keys=[verfer.qb64 for verfer in kever.verfers],
+                    nsith=kever.ntholder.sith,
+                    next_keys=kever.nexter.digs,
+                    toad=kever.toad,
+                    witnesses=kever.wits,
+                    receipts=len(wigs)
+                )
+
+                if kever.delegated:
+                    gd["delegated"] = kever.delegated
+                    gd["delegator"] = kever.delegator
+                    dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
+                    anchor = self.hby.db.getAes(dgkey)
+                    gd["anchored"] = anchor is not None
 
             res.append(gd)
 
@@ -130,7 +149,7 @@ class IdentifierEnd(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post(self, req, rep, alias=None):
+    def on_post_icp(self, req, rep, alias):
         """ Identifier POST endpoint
 
         Parameters:
@@ -167,6 +186,14 @@ class IdentifierEnd(doing.DoDoer):
               description: identifier information
 
         """
+        hab = self.hby.habByName(name=alias)
+        if hab is not None:
+            rep.status = falcon.HTTP_400
+            body = dict(code=falcon.HTTP_400, msg="fInvalid incept request, {alias} already used")
+            rep.content_type = "application/json"
+            rep.data = json.dumps(body).encode("utf-8")
+            return
+
         body = req.get_media()
 
         transferable = body.get("transferable") if "transferable" in body else True
@@ -188,21 +215,20 @@ class IdentifierEnd(doing.DoDoer):
             ncount=ncount,
             estOnly=estOnly
         )
+        if "delpre" in body:
+            kwa["delpre"] = body["delpre"]
 
         hab = self.hby.makeHab(name=alias, **kwa)
-        self.witDoer.msgs.append(dict(pre=hab.pre))
+        self.cues.append(dict(pre=hab.pre))
 
-        body = dict(
-            pre=hab.pre,
-            wits=hab.kever.wits,
-            keys=[verfer.qb64 for verfer in hab.kever.verfers]
-        )
+        icp = hab.makeOwnInception()
+        serder = coring.Serder(raw=icp)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
-        rep.data = json.dumps(body).encode("utf-8")
+        rep.data = serder.raw
 
-    def on_put(self, req, rep, alias):
+    def on_put_rot(self, req, rep, alias):
         """  Identifier PUT endpoint
 
         Parameters:
@@ -262,6 +288,7 @@ class IdentifierEnd(doing.DoDoer):
         toad = int(body.get("toad")) if "toad" in body else None
         isith = int(body.get("isith")) if "isith" in body else None
         count = int(body.get("count")) if "count" in body else None
+        data = body["data"] if "data" in body else None
         cuts = set()
         adds = set()
 
@@ -273,26 +300,120 @@ class IdentifierEnd(doing.DoDoer):
             adds = set(wits) - set(ewits)
 
         try:
-            rot = hab.rotate(sith=isith, count=count, toad=toad, cuts=list(cuts), adds=list(adds))
+            rot = hab.rotate(sith=isith, count=count, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+            self.cues.append(dict(pre=hab.pre))
 
-            if hab.kever.delegator is None:
+            serder = coring.Serder(raw=rot)
+            rep.status = falcon.HTTP_200
+            rep.content_type = "application/json"
+            rep.data = serder.raw
 
-                self.witDoer.msgs.append(dict(pre=hab.pre))
-
-                rep.status = falcon.HTTP_200
-                rep.text = "Successful rotate to event number {}".format(hab.kever.sn)
-
-            else:
-                cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
-                for msg in cloner:
-                    self.postman.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", msg=msg)
-
-                self.postman.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", msg=rot)
-                rep.status = falcon.HTTP_202
-
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError, Exception) as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
+
+    def on_put_ixn(self, req, rep, alias):
+        """  Identifier PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for Hab
+
+        ---
+        summary:  Create interaction event for agent identifier
+        description:  Perform an interaction on the agent's current identifier
+        tags:
+           - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   data:
+                     type: map
+                     description: anchor data for interaction event.
+        responses:
+           200:
+              description: Non-delegated rotation successful with message indicating new event sequence number
+           202:
+              description: Delegated rotation request initiated
+
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.data = f"no matching Hab for alias {alias}"
+            return
+
+        body = req.get_media()
+        data = body["data"] if "data" in body else None
+
+        try:
+            ixn = hab.interact(data=data)
+            self.cues.append(dict(pre=hab.pre))
+
+            serder = coring.Serder(raw=ixn)
+            rep.status = falcon.HTTP_200
+            rep.content_type = "application/json"
+            rep.data = serder.raw
+
+        except (ValueError, TypeError, Exception) as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+
+    def eventDo(self, tymth, tock=0.0):
+        """ Check for accepted Habs that have not been delegated or receipted and do so
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while not self.cues:
+                yield self.tock
+
+            cue = self.cues.popleft()
+            pre = cue["pre"]
+            hab = self.hby.habs[pre]
+
+            if hab.phab:  # Skip is group, they are handled elsewhere
+                yield self.tock
+                continue
+
+            if hab.kever.delegator and hab.kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
+                dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
+                anchor = self.hby.db.getAes(dgkey)
+                if not anchor:
+                    self.swain.msgs.append(dict(alias=hab.name, pre=hab.pre, sn=hab.kever.sn))
+                    print("Waiting for delegation approval...")
+                    while not self.swain.cues:
+                        yield self.tock
+                    print("Delegation anchored")
+
+            dgkey = dbing.dgKey(hab.kever.serder.preb, hab.kever.serder.saidb)
+            wigs = hab.db.getWigs(dgkey)
+            if len(wigs) != len(hab.kever.wits):
+                print(f"witnessing for {hab.pre}")
+                self.witDoer.msgs.append(dict(pre=hab.pre))
+
+            yield self.tock
 
 
 class RegistryEnd(doing.DoDoer):
@@ -409,22 +530,16 @@ class CredentialsEnd:
                        "".format(alias)
             return
 
-        group = hab.group()
-        if group is None:
-            pre = hab.pre
-        else:
-            pre = group.gid
-
         creds = []
         if typ == "issued":
             registry = req.params["registry"]
             issuer = self.getIssuer(registry, hab=hab)
 
-            saids = issuer.reger.issus.get(keys=pre)
+            saids = issuer.reger.issus.get(keys=hab.pre)
             creds = self.verifier.reger.cloneCreds(saids)
 
         elif typ == "received":
-            saids = self.verifier.reger.subjs.get(keys=pre)
+            saids = self.verifier.reger.subjs.get(keys=hab.pre)
             creds = self.verifier.reger.cloneCreds(saids)
 
         rep.status = falcon.HTTP_200
@@ -525,13 +640,7 @@ class CredentialsEnd:
 
         d |= data
 
-        group = hab.group()
-        if group is None:
-            pre = hab.pre
-        else:
-            pre = group.gid
-
-        creder = proving.credential(issuer=pre,
+        creder = proving.credential(issuer=hab.pre,
                                     schema=schema,
                                     subject=d,
                                     source=source,
@@ -541,11 +650,10 @@ class CredentialsEnd:
         except kering.MissingAnchorError:
             logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-        print()
-        print(creder.raw)
         craw = signing.ratify(hab=hab, serder=creder)
         parsing.Parser().parse(ims=craw, vry=self.verifier)
 
+        group = []
         if notify and group:
             for aid in group.aids:
                 if aid != hab.pre:
@@ -754,68 +862,293 @@ class PresentationEnd:
         rep.status = falcon.HTTP_202
 
 
-class MultisigEnd:
+class MultisigInceptEnd(doing.DoDoer):
     """
     ReST API for admin of distributed multisig groups
 
     """
 
-    def __init__(self, hby, gdoer, rep):
+    def __init__(self, hby):
 
         self.hby = hby
-        self.gdoer = gdoer
-        self.rep = rep
+        self.cues = decking.Deck()
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.counselor = grouping.Counselor(hby=self.hby)
+        doers = [self.postman, self.counselor]
 
-    def on_put(self, req, rep):
-        """  Multisig PUT endpoint
+        super(MultisigInceptEnd, self).__init__(doers=doers)
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
+    def initialize(self, body, rep, alias):
+        if "aids" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, 'aids' is required'"
+            return None, None
 
-        ---
-        summary: Initiaite or participate in a multisig group rotation
-        description: Initiaite or participate in a multisig group rotation
-        tags:
-           - Multisig
-        responses:
-           202:
-              description:  rotation participation initiated
+        aids = body["aids"]
+        hab = None
+        for aid in aids:
+            if aid in self.hby.habs:
+                hab = self.hby.habs[aid]
+                break
 
-        """
-        body = req.get_media()
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, aid list must contain a local identifier'"
+            return None, None
 
-        msg = dict(
-            sith=None,
-            toad=None,
-            data=None,
-            witnesses=[],
-            witness_cuts=[],
-            witness_adds=[],
+        if self.hby.habByName(alias) is not None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"Identifier alias {alias} is already in use"
+            return None, None
+
+        inits = dict(
+            aids=aids
         )
 
-        for key in msg:
-            if key in body:
-                msg[key] = body[key]
+        inits["toad"] = body["toad"] if "toad" in body else None
+        inits["wits"] = body["wits"] if "wits" in body else []
+        inits["isith"] = body["isith"] if "isith" in body else None
+        inits["nsith"] = body["nsith"] if "nsith" in body else None
+        inits["delpre"] = body["delpre"] if "delpre" in body else None
 
-        msg["op"] = grouping.Ops.rot
+        ghab = self.hby.makeGroupHab(group=alias, phab=hab, **inits)
+        return hab, ghab
 
-        self.gdoer.msgs.append(msg)
+    def icp(self, hab, ghab, aids):
+        """
 
-        rep.status = falcon.HTTP_202
+        Args:
+            ghab (Hab): Group Hab to start processing
+            hab (Hab): Local participant Hab
+            aids (list) Other group participant qb64 identifier prefixes
 
-    def on_post(self, req, rep):
+        """
+        prefixer = coring.Prefixer(qb64=ghab.pre)
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64=prefixer.qb64)
+        self.counselor.start(aids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+
+    def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias (str): human readable name for new multisig identifier from path
 
         ---
         summary: Initiate a multisig group inception
         description: Initiate a multisig group inception with the participants identified by the  provided AIDs
         tags:
-           - Multisig
+           - Groups
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   aids:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of participants in multisig group
+                   notify:
+                     type: boolean
+                     required: False
+                     description: True means to send mutlsig incept exn message to other participants
+                   toad:
+                     type: integer
+                     description: Witness receipt threshold
+                   wits:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of witnesses to be used for the new group identfier
+                   isith:
+                     type: string
+                     description: Signing threshold for the new group identifier
+                   nsith:
+                     type: string
+                     description: Next signing threshold for the new group identifier
+
+        responses:
+           200:
+              description: Multisig group AID inception initiated.
+
+        """
+        body = req.get_media()
+
+        hab, ghab = self.initialize(body, rep, alias)
+        if ghab is None:
+            return
+
+        if not ghab.accepted:
+            # Create /multig/incept exn message with icp event and witness oobis as payload events
+            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+        else:
+            evt = ghab.makeOwnInception()
+
+        serder = coring.Serder(raw=evt)
+        del evt[:serder.size]
+        atc = bytearray()
+        pather = coring.Pather(path=["a"])
+        btc = pather.qb64b + evt
+        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                  count=(len(btc) // 4)).qb64b)
+        atc.extend(btc)
+
+        # Create `exn` peer to peer message to notify other participants UI
+        exn = exchanging.exchange(route='/multisig/incept', modifiers=dict(),
+                                  payload=serder.ked)
+        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        atc.extend(ims[exn.size:])
+
+        others = list(ghab.aids)
+        others.remove(hab.pre)
+
+        for recpt in others:
+            self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+
+        aids = body["aids"]
+        self.icp(hab=hab, ghab=ghab, aids=aids)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = serder.raw
+
+    def on_put(self, req, rep, alias):
+        """  Multisig PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for new multisig identifier from path
+
+        ---
+        summary: Participate in a multisig group inception
+        description: Participate in a multisig group rotation
+        tags:
+           - Groups
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   aids:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of participants in multisig group
+                   notify:
+                     type: boolean
+                     required: False
+                     description: True means to send mutlsig incept exn message to other participants
+                   toad:
+                     type: integer
+                     description: Witness receipt threshold
+                   wits:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of witnesses to be used for the new group identfier
+                   isith:
+                     type: string
+                     description: Signing threshold for the new group identifier
+                   nsith:
+                     type: string
+                     description: Next signing threshold for the new group identifier
+
+        responses:
+           200:
+              description: Multisig group AID inception initiated.
+
+        """
+        body = req.get_media()
+        hab, ghab = self.initialize(body, rep, alias)
+        if ghab is None:
+            return
+
+        if not ghab.accepted:
+            # Create /multig/incept exn message with icp event and witness oobis as payload events
+            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+        else:
+            evt = ghab.makeOwnInception()
+
+        serder = coring.Serder(raw=evt)
+
+        aids = body["aids"]
+        self.icp(hab=hab, ghab=ghab, aids=aids)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = serder.raw
+
+
+class MultisigEventEnd(doing.DoDoer):
+    """
+    ReST API for admin of distributed multisig group rotations
+
+    """
+
+    def __init__(self, hby):
+
+        self.hby = hby
+        self.postman = forwarding.Postman(hby=self.hby)
+        self.counselor = grouping.Counselor(hby=self.hby)
+        doers = [self.postman, self.counselor]
+
+        super(MultisigEventEnd, self).__init__(doers=doers)
+
+    def initialize(self, body, rep, alias):
+        if "aids" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group rotation request, 'aids' is required'"
+            return None
+
+        ghab = self.hby.habByName(alias)
+        if ghab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = "Invalid multisig group rotation request alias {alias} not found'"
+            return None
+
+        aids = body["aids"]
+        if ghab.phab.pre not in aids:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group rotation request, aid list must contain a local identifier"
+            return None
+
+        return ghab
+
+    def on_post_rot(self, req, rep, alias):
+        """  Multisig POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): path parameter human readable name for identifier to rotate
+
+        ---
+        summary: Initiate a multisig group rotation
+        description: Initiate a multisig group rotation with the participants identified by the provided AIDs
+        tags:
+           - Groups
         parameters:
           - in: path
             name: alias
@@ -861,81 +1194,221 @@ class MultisigEnd:
         """
         body = req.get_media()
 
-        if "aids" not in body:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group inception request, 'aids' is required'"
+        ghab = self.initialize(body, rep, alias)
+        if ghab is None:
             return
 
-        aids = body["aids"]
+        aids = body["aids"] if "aids" in body else ghab.aids
+        toad = body["toad"] if "toad" in body else None
+        wits = body["wits"] if "wits" in body else []
+        adds = body["adds"] if "adds" in body else []
+        cuts = body["cuts"] if "cuts" in body else []
+        isith = body["isith"] if "isith" in body else None
+        data = body["data"] if "data" in body else None
 
-        notify = body["notify"] if "notify" in body else True
+        if wits:
+            if cuts or adds:
+                rep.status = falcon.HTTP_400
+                rep.text = "you can only specify wits or cuts and add"
+                return
 
-        msg = dict(
-            aids=aids,
-            toad=None,
-            witnesses=[],
-            isith=None,
-            nsith=None)
+            ewits = ghab.kever.wits
 
-        for key in msg:
-            if key in body:
-                msg[key] = body[key]
+            # wits= [a,b,c]  wits=[b, z]
+            cuts = set(ewits) - set(wits)
+            adds = set(wits) - set(ewits)
 
-        if notify:
-            for aid in aids:
-                exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
-                self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+        # Create `exn` peer to peer message to notify other participants UI
+        exn = exchanging.exchange(route='/multisig/rotate', modifiers=dict(),
+                                  payload=dict(aids=aids,
+                                               sith=isith,
+                                               toad=toad,
+                                               cuts=list(cuts),
+                                               adds=list(adds),
+                                               data=data)
+                                  )
+        ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+        atc = bytearray(ims[exn.size:])
 
-        msg["op"] = grouping.Ops.icp
-        self.gdoer.msgs.append(msg)
+        others = list(ghab.aids)
+        others.remove(ghab.phab.pre)
+
+        for recpt in others:
+            self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+
+        self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
         rep.status = falcon.HTTP_202
 
-    def on_get(self, _, rep):
-        """  Multisig GET endpoint
+    def on_put_rot(self, req, rep, alias):
+        """  Multisig PUT endpoint
 
         Parameters:
-            _: falcon.Request HTTP request
+            req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias (str): human readable name for new multisig identifier from path
 
         ---
-        summary: List multisig groups this agent is currently participating in
-        description: List multisig groups this agent is currently participating in
+        summary: Participate in a multisig group rotation
+        description: Participate in a multisig group rotation
         tags:
-           - Multisig
+           - Groups
         responses:
-           200:
-              description:  array of multisig groups
+           202:
+              description:  rotation participation initiated
 
         """
-        res = []
+        body = req.get_media()
 
-        for hab in self.hby.habs.values():
-            group = hab.group()
-            if group:
-                kever = self.hby.kevers[group.gid]
-                ser = kever.serder
-                dgkey = dbing.dgKey(ser.preb, ser.saidb)
-                wigs = self.hby.db.getWigs(dgkey)
+        ghab = self.initialize(body, rep, alias)
+        if ghab is None:
+            return
 
-                gd = dict(
-                    prefix=group.gid,
-                    seq_no=kever.sn,
-                    aids=group.aids,
-                    delegated=kever.delegated,
-                    delegator=kever.delegator,
-                    witnesses=kever.wits,
-                    public_keys=[verfer.qb64 for verfer in kever.verfers],
-                    toad=kever.toad,
-                    isith=kever.tholder.sith,
-                    receipts=len(wigs)
-                )
+        aids = body["aids"] if "aids" in body else ghab.aids
+        toad = body["toad"] if "toad" in body else None
+        wits = body["wits"] if "wits" in body else []
+        adds = body["adds"] if "adds" in body else []
+        cuts = body["cuts"] if "cuts" in body else []
+        isith = body["isith"] if "isith" in body else None
+        data = body["data"] if "data" in body else None
 
-                res.append(gd)
+        if wits:
+            if adds or cuts:
+                rep.status = falcon.HTTP_400
+                rep.text = "you can only specify wits or cuts and add"
+                return
 
-        rep.status = falcon.HTTP_200
-        rep.content_type = "application/json"
-        rep.data = json.dumps(res).encode("utf-8")
+            ewits = ghab.kever.wits
+
+            # wits= [a,b,c]  wits=[b, z]
+            cuts = set(ewits) - set(wits)
+            adds = set(wits) - set(ewits)
+
+        self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_ixn(self, req, rep, alias):
+        """  Multisig Interaction POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for new multisig identifier from path
+
+        ---
+        summary: Initiate a multisig group interaction event
+        description: Initiate a multisig group interaction event with the participants identified by the provided AIDs
+        tags:
+           - Groups
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   aids:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of participants in multisig group
+                   notify:
+                     type: boolean
+                     required: False
+                     description: True means to send mutlsig incept exn message to other participants
+                   toad:
+                     type: integer
+                     description: Witness receipt threshold
+                   witnesses:
+                     type: array
+                     items:
+                        type: string
+                     description: List of qb64 AIDs of witnesses to be used for the new group identfier
+                   isith:
+                     type: string
+                     description: Signing threshold for the new group identifier
+                   nsith:
+                     type: string
+                     description: Next signing threshold for the new group identifier
+
+        responses:
+           204:
+              description: Multisig group AID inception initiated.
+
+        """
+        body = req.get_media()
+
+        ghab = self.initialize(body, rep, alias)
+        if ghab is None:
+            return
+
+        aids = body["aids"] if "aids" in body else ghab.aids
+        data = body["data"] if "data" in body else None
+
+        # Create `exn` peer to peer message to notify other participants UI
+        exn = exchanging.exchange(route='/multisig/ixn', modifiers=dict(),
+                                  payload=dict(aids=aids,
+                                               data=data)
+                                  )
+        ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+        atc = bytearray(ims[exn.size:])
+
+        others = list(ghab.aids)
+        others.remove(ghab.phab.pre)
+
+        for recpt in others:
+            self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+
+        self.ixn(ghab=ghab, data=data, aids=aids)
+        rep.status = falcon.HTTP_202
+
+    def on_put_ixn(self, req, rep, alias):
+        """  Multisig Interaction PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for new multisig identifier from path
+
+        ---
+        summary: Participate in a multisig group interaction event
+        description: Participate in a multisig group interaction event
+        tags:
+           - Groups
+        responses:
+           202:
+              description:  rotation participation initiated
+
+        """
+        body = req.get_media()
+
+        ghab = self.initialize(body, rep, alias)
+        if ghab is None:
+            return
+
+        aids = body["aids"] if "aids" in body else ghab.aids
+        data = body["data"] if "data" in body else None
+
+        self.ixn(ghab=ghab, data=data, aids=aids)
+        rep.status = falcon.HTTP_202
+
+    def ixn(self, ghab, data, aids):
+        ixn = ghab.interact(data=data)
+
+        serder = coring.Serder(raw=ixn)
+
+        prefixer = coring.Prefixer(qb64=ghab.pre)
+        seqner = coring.Seqner(sn=serder.sn)
+        saider = coring.Saider(qb64b=serder.saidb)
+        self.counselor.start(aids=aids, pid=ghab.phab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
 
 class OobiResource(doing.DoDoer):
@@ -1115,13 +1588,12 @@ class ChallengeEnd:
         self.rep = rep
 
     @staticmethod
-    def on_get(req, rep, alias=None):
+    def on_get(req, rep):
         """ Challenge GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: human readable name of identifier to use to sign the challange/response
 
         ---
         summary:  Get list of agent identfiers
@@ -1160,7 +1632,7 @@ class ChallengeEnd:
         msg = dict(words=words.split(" "))
         rep.data = json.dumps(msg).encode("utf-8")
 
-    def on_post(self, req, rep, alias):
+    def on_post_resolve(self, req, rep, alias):
         """ Challenge GET endpoint
 
         Parameters:
@@ -1218,48 +1690,13 @@ class ChallengeEnd:
         self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challange"))
 
 
-class SpecResource:
-    """
-    Resource for OpenAPI spec
-
-    """
-
-    def __init__(self, app, title, resources, version='1.0.0', openapiVersion="3.0.2"):
-        self.spec = APISpec(
-            title=title,
-            version=version,
-            openapi_version=openapiVersion,
-            plugins=[
-                specing.FalconPlugin(app),
-                # MarshmallowPlugin(),
-            ],
-        )
-
-        for r in resources:
-            self.spec.path(resource=r)
-
-    def on_get(self, _, rep):
-        """
-        GET endpoint for OpenAPI spec
-
-        Args:
-            _: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-
-
-        """
-        rep.status = falcon.HTTP_200
-        rep.content_type = "application/yaml"
-        rep.data = self.spec.to_yaml().encode("utf-8")
-
-
 class KiwiDoer(doing.DoDoer):
     """
     Routes for handling UI requests for Credential issuance/revocation and presentation requests
 
     """
 
-    def __init__(self, hby, rep, verifier, gdoer, issuers=None, issuerCues=None, cues=None, **kwa):
+    def __init__(self, hby, rep, verifier, issuers=None, issuerCues=None, cues=None, **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
         of an identifier.
@@ -1285,7 +1722,6 @@ class KiwiDoer(doing.DoDoer):
 
         self.cues = cues if cues is not None else decking.Deck()
         self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
-        self.gdoer = gdoer
 
         self.postman = forwarding.Postman(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=hby)
@@ -1377,8 +1813,6 @@ class KiwiDoer(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
 
-        Processes the Groupy escrow for group icp, rot and ixn request messages.
-
         """
         # start enter context
         yield  # enter context
@@ -1431,21 +1865,11 @@ class KiwiDoer(doing.DoDoer):
                     serder = eventing.Serder(raw=bytearray(kevt))
                     self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
-                elif cueKin == "multisig":
-                    msg = dict(
-                        op=cue["op"],
-                        data=cue["data"],
-                        reason=cue["reason"]
-                    )
-                    self.gdoer.append(msg)
-                elif cueKin == "logEvent":
-                    pass
-
                 yield self.tock
             yield self.tock
 
 
-def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
+def loadEnds(app, *, path, hby, rep, mbx, verifier, issuerCues, issuers):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -1456,7 +1880,6 @@ def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
         rep (Respondant): that routes responses to the appropriate mailboxes
         mbx (Mailboxer): mailbox storage class
         verifier (Verifier): that process credentials
-        gdoer (Union(decking.Deck,None)): of msgs to send to a MultisigDoer
         issuers (Union(dict,None)): of credential Issuers keyed by regk of credential Registry
         issuerCues (Deck): from Kevery handling key events:
 
@@ -1472,7 +1895,9 @@ def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
 
     identifierEnd = IdentifierEnd(hby=hby)
     app.add_route("/ids", identifierEnd)
-    app.add_route("/ids/{alias}", identifierEnd)
+    app.add_route("/ids/{alias}", identifierEnd, suffix="icp")
+    app.add_route("/ids/{alias}/rot", identifierEnd, suffix="rot")
+    app.add_route("/ids/{alias}/ixn", identifierEnd, suffix="ixn")
 
     registryEnd = RegistryEnd(hby=hby)
     app.add_route("/registries", registryEnd)
@@ -1489,23 +1914,26 @@ def loadEnds(app, *, path, hby, rep, mbx, verifier, gdoer, issuerCues, issuers):
     presentationEnd = PresentationEnd(rep=rep)
     app.add_route("/presentation", presentationEnd)
 
-    multisigEnd = MultisigEnd(hby=hby, rep=rep, gdoer=gdoer)
-    app.add_route("/multisig", multisigEnd)
+    multiIcpEnd = MultisigInceptEnd(hby=hby)
+    app.add_route("/groups/{alias}/icp", multiIcpEnd)
+    multiEvtEnd = MultisigEventEnd(hby=hby)
+    app.add_route("/groups/{alias}/rot", multiEvtEnd, suffix="rot")
+    app.add_route("/groups/{alias}/ixn", multiEvtEnd, suffic="ixn")
 
     oobiEnd = OobiResource(hby=hby)
     app.add_route("/oobi/{alias}", oobiEnd)
 
     chacha = ChallengeEnd(hby=hby, rep=rep)
     app.add_route("/challenge", chacha)
-    app.add_route("/challenge/{alias}", chacha)
+    app.add_route("/challenge/{alias}", chacha, suffix="resolve")
 
-    resources = [identifierEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
-                 presentationEnd, multisigEnd, chacha]
+    resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
+                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha]
 
-    app.add_route("/spec.yaml", SpecResource(app=app, title='KERI Interactive Web Interface API',
-                                             resources=resources))
+    app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
+                                                     resources=resources))
 
-    return [identifierEnd, registryEnd]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd]
 
 
 def setup(hby, servery, *, controller="", insecure=False, tcp=5621, staticPath=""):
@@ -1544,7 +1972,7 @@ def setup(hby, servery, *, controller="", insecure=False, tcp=5621, staticPath="
     proofHandler = handling.ProofHandler(proofs=proofs)
 
     mbx = storing.Mailboxer(name=hby.name)
-    mih = grouping.MultisigInceptHandler(controller=controller, mbx=mbx)
+    mih = grouping.MultisigInceptHandler(hby=hby, controller=controller, mbx=mbx)
     ish = grouping.MultisigIssueHandler(controller=controller, mbx=mbx)
     meh = grouping.MultisigEventHandler(hby=hby, verifier=verifier)
 
@@ -1599,7 +2027,6 @@ def adminInterface(servery, controller, hby, insecure, proofs, cues, issuerCues,
     """
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
-    gdoer = grouping.MultiSigGroupDoer(hby=hby, ims=mbd.ims)
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
@@ -1609,14 +2036,13 @@ def adminInterface(servery, controller, hby, insecure, proofs, cues, issuerCues,
     app.resp_options.media_handlers.update(media.Handlers())
 
     issuers = dict()
-    endDoers = loadEnds(app, path=staticPath, hby=hby, rep=rep, mbx=mbx, verifier=verifier, gdoer=gdoer,
+    endDoers = loadEnds(app, path=staticPath, hby=hby, rep=rep, mbx=mbx, verifier=verifier,
                         issuerCues=issuerCues, issuers=issuers)
 
     servery.msgs.append(dict(app=app))
     kiwiServer = KiwiDoer(hby=hby,
                           rep=rep,
                           verifier=verifier,
-                          gdoer=gdoer.msgs,
                           issuers=issuers,
                           issuerCues=issuerCues)
 
@@ -1624,7 +2050,7 @@ def adminInterface(servery, controller, hby, insecure, proofs, cues, issuerCues,
                                      ims=mbd.ims)
     cuery = Cuery(hby=hby, controller=controller, mbx=mbx, cues=cues)
 
-    doers = [rep, proofHandler, cuery, gdoer, kiwiServer]
+    doers = [rep, proofHandler, cuery, kiwiServer]
     doers.extend(endDoers)
 
     return doers
@@ -1762,8 +2188,8 @@ class Cuery(doing.DoDoer):
             while self.cues:
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
-                pre = cue["pre"]
-                if pre not in self.hby.habs:
+                pre = cue["pre"] if "pre" in cue else None
+                if pre is None or pre not in self.hby.habs:
                     continue
 
                 hab = self.hby.habs[pre]

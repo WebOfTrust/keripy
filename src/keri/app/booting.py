@@ -236,8 +236,7 @@ class BootEnd(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
 
-        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf)
-        hby.setup(**kwa)
+        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, **kwa)
         self.hby = hby
 
         rep.status = falcon.HTTP_200

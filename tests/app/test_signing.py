@@ -354,7 +354,7 @@ def test_signature_transposition():
                         b'a22pnSWfwEjyYcv2pK6SKLgnGFcQCc2xqK94E8GHUTow3tHZAw')
 
         pather = coring.Pather(path=["a", "b", "c"])
-        cigars = hab.mgr.sign(ser=cred.raw,
+        cigars = hab.sign(ser=cred.raw,
                               verfers=hab.kever.verfers,
                               indexed=False)
         sadcigars = [(pather, cigars)]

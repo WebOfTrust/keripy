@@ -93,11 +93,7 @@ class Issuer:
 
             self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
 
-            group = self.hab.group()
-            if group is None:
-                pre = self.hab.pre
-            else:
-                pre = group.gid
+            pre = self.hab.pre
 
             self.regser = eventing.incept(pre,
                                           baks=self.backers,
@@ -259,12 +255,10 @@ class Issuer:
 
         """
 
-        group = self.hab.group()
-
         rseal = SealEvent(serder.pre, serder.ked["s"], serder.said)
         rseal = rseal._asdict()
 
-        if group is None:
+        if self.hab.phab is None:
             if self.estOnly:
                 kevt = self.hab.rotate(data=[rseal])
             else:
@@ -289,8 +283,8 @@ class Issuer:
 
         else:
             if seal is None:
-                op = grouping.Ops.rot if self.estOnly else grouping.Ops.ixn
-                mmsg = dict(kin="multisig", pre=self.hab.pre, op=op, data=[rseal], reason=reason)
+                # TODO: replace with Counselor
+                mmsg = dict(kin="multisig", pre=self.hab.pre, data=[rseal], reason=reason)
                 self.cues.append(mmsg)
 
                 self.escrow(serder)
@@ -421,10 +415,7 @@ class IssuerDoer(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
-
         doers = [
-            self.gdoer,
             doing.doify(self.issueDo),
             doing.doify(self.issuerDo),
             doing.doify(self.escrowDo),
@@ -489,14 +480,7 @@ class IssuerDoer(doing.DoDoer):
 
                 d |= data
 
-                group = self.hab.group()
-                if group is None:
-                    pre = self.hab.pre
-                else:
-                    name, group = group
-                    pre = group.gid
-
-                creder = proving.credential(issuer=pre,
+                creder = proving.credential(issuer=self.hab.pre,
                                             schema=schema,
                                             subject=d,
                                             source=source,
@@ -551,14 +535,6 @@ class IssuerDoer(doing.DoDoer):
 
                     self.remove([witDoer])
                     self.cues.append(dict(kin="witnessed", regk=self.issuer.regk))
-                elif cueKin == "multisig":
-                    msg = dict(
-                        op=cue["op"],
-                        group=cue["group"],
-                        data=cue["data"],
-                        reason=cue["reason"]
-                    )
-                    self.gdoer.msgs.append(msg)
                 elif cueKin == "logEvent":
                     self.cues.append(dict(kin="finished", regk=self.issuer.regk))
                     pass

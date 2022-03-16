@@ -42,8 +42,9 @@ class Boatswain(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.postman = forwarding.Postman(hby=hby)
+        self.witq = agenting.WitnessInquisitor(hby=hby)
 
-        super(Boatswain, self).__init__(doers=[self.postman, doing.doify(self.anchorDo)], **kwa)
+        super(Boatswain, self).__init__(doers=[self.witq, self.postman, doing.doify(self.anchorDo)], **kwa)
 
     def anchorDo(self, tymth=None, tock=0.0):
         """
@@ -66,13 +67,13 @@ class Boatswain(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 pre = msg["pre"]
-                alias = msg["alias"]
 
                 if pre not in self.hby.habs:
                     continue
 
                 # load the hab of the delegated identifier to anchor
                 hab = self.hby.habs[pre]
+                alias = hab.name
                 delpre = hab.kever.delegator  # get the delegator identifier
                 dkever = hab.kevers[delpre]  # and the delegator's kever
 
@@ -101,27 +102,27 @@ class Boatswain(doing.DoDoer):
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
                 yield self.tock
 
-                anchor = dict(i=srdr.ked["i"], s=srdr.sn, d=srdr.said)
-                witq = agenting.WitnessInquisitor(hab=phab, wits=dkever.wits)
-                witq.query(pre=delpre, anchor=anchor)
-                self.extend([witq])
+                yield from self.waitForAnchor(phab, hab, dkever, srdr)
 
-                anchor = dict(i=srdr.said, s=0, d=srdr.said)
-                while True:
-                    if serder := self.hby.db.findAnchoringEvent(delpre, anchor=anchor):
-                        seqner = coring.Seqner(sn=serder.sn)
-                        couple = seqner.qb64b + serder.saidb
-                        dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.serder.saidb)
-                        self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                        break
-
-                    yield self.tock
-
-                self.remove([witq])
                 self.cues.append(msg)
                 yield self.tock
 
             yield self.tock
+
+    def waitForAnchor(self, phab, hab, dkever, serder):
+        anchor = dict(i=serder.said, s=serder.sn, d=serder.said)
+        self.witq.query(src=phab.pre, pre=dkever.prefixer.qb64, anchor=anchor)
+
+        while True:
+            if serder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
+                seqner = coring.Seqner(sn=serder.sn)
+                couple = seqner.qb64b + serder.saidb
+                dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.serder.saidb)
+                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                break
+            yield
+
+        return True
 
     def proxy(self, alias, kever):
         """ Create a proxy identifier for forward and query messages

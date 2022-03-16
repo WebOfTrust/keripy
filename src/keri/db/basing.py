@@ -23,6 +23,7 @@ import os
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
+from typing import Optional
 
 import lmdb
 from hio.base import doing
@@ -132,7 +133,20 @@ class HabitatRecord:  # baser.habs
     Habitat application state information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
+    pid: Optional[str]  # participant aid of group aid
+    aids: Optional[list]  # all identifiers participating in the group identity
+
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+
+
+@dataclass
+class RotateRecord:
+    aids: list
+    sith: Optional[str]
+    toad: Optional[int]
+    cuts: Optional[list]
+    adds: Optional[list]
+    data: Optional[list]
 
 
 @dataclass
@@ -143,19 +157,6 @@ class TopicsRecord:  # baser.tops
     events in a mailbox. (baser.tops)
     """
     topics: dict
-
-
-@dataclass
-class GroupIdRecord:  # baser.gids
-    """
-    Track group identifiers that we are participating in
-    Database Key is the identifier prefix of the group identifier
-    """
-    # lid: str  # local identifier that contributes to the group
-    gid: str  # group identifier prefix
-    dig: str  # qb64 of latest digest in the group
-    cst: str  # group signing threshold of the next key commitment
-    aids: list  # all identifiers participating in the group identity
 
 
 @dataclass
@@ -725,15 +726,25 @@ class Baser(dbing.LMDBer):
                                  subkey='witm.',
                                  schema=TopicsRecord, )
 
-        # group identifiers that we are participating in
-        self.gids = koming.Komer(db=self,
-                                 subkey='gids.',
-                                 schema=GroupIdRecord, )
-        # group partial aid list escrow
-        self.gpae = subing.IoSetSuber(db=self, subkey="gpae.")
+        # group local witness escrow
+        self.glwe = koming.Komer(db=self, subkey='glwe',
+                                 schema=RotateRecord)
 
         # group partial signature escrow
-        self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
+        self.gpae = koming.Komer(db=self, subkey='gpae',
+                                 schema=RotateRecord)
+
+        # group partial signature escrow
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse',
+                                             klas=(coring.Seqner, coring.Saider))
+
+        # group delegate escrow
+        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee',
+                                             klas=(coring.Seqner, coring.Saider))
+
+        # group partial witness escrow
+        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe',
+                                             klas=(coring.Seqner, coring.Saider))
 
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
@@ -801,7 +812,7 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            else:  # in .habs but no corresponding key state so remove
+            elif data.pid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records
@@ -1038,7 +1049,8 @@ class Baser(dbing.LMDBer):
 
         # get unique verified wigers and windices lists from wigers list
         wigs = self.getWigs(key=dgkey)
-        toad = int(serder.ked["bt"], 16)
+        kever = self.kevers[serder.pre]
+        toad = kever.toad
 
         return not len(wigs) < toad
 

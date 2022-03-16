@@ -180,7 +180,6 @@ class Verifier:
                                                                        in sadsigers],
                                                                        creder.crd))
 
-
         for s in prov:
             for label, node in s.items():
                 nodeSubject = node["i"]
@@ -205,7 +204,6 @@ class Verifier:
                 else:  # VcStatus == VcStates.Issued
                     logger.info("Successfully validated credential chain {} for credential {}"
                                 .format(label, creder.said))
-
 
         self.saveCredential(creder, sadsigers, sadcigars)
         msg = signing.provision(creder, sadsigers=sadsigers, sadcigars=sadcigars)
