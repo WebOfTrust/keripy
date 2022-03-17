@@ -10,9 +10,8 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import directing, grouping, indirecting, habbing
+from keri.app import grouping, indirecting, habbing
 from keri.app.cli.common import rotating, existing, displaying
-from keri.core import coring
 
 logger = help.ogler.getLogger()
 
@@ -51,7 +50,7 @@ def rotateGroupIdentifier(args):
                                   nsith=args.nsith, toad=args.toad, data=data)
 
     doers = [rotDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class GroupMultisigRotate(doing.DoDoer):

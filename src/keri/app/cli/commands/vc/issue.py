@@ -5,7 +5,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import directing, indirecting, grouping
+from keri.app import indirecting, grouping
 from keri.app.cli.common import existing
 from keri.peer import exchanging
 from keri.vdr import issuing, verifying, viring
@@ -46,7 +46,7 @@ def issueCredential(args):
                                  recipient=args.recipient, data=data)
 
     doers = [issueDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class CredentialIssuer(doing.DoDoer):

@@ -9,15 +9,11 @@ Witness command line interface
 import argparse
 import logging
 import os
+
 import sys
 
-import falcon
-from falcon import media
-from hio.base import doing
-from hio.core import http
 from keri import help
-from keri import kering
-from keri.app import httping, booting
+from keri.app import booting
 
 WEB_DIR_PATH = os.path.dirname(
     os.path.abspath(
@@ -78,12 +74,4 @@ def launch(args):
     doers = booting.setup(controller=args.controller, configFile=args.configFile, configDir=args.configDir,
                           insecure=args.insecure, tcp=int(args.tcp), adminHttpPort=int(args.admin_http_port),
                           path=args.path)
-    try:
-        tock = 0.03125
-        doist = doing.Doist(limit=0.0, tock=tock, real=True)
-        doist.do(doers=doers)
-    except kering.ConfigurationError:
-        print(f"prefix for {args.name} does not exist, incept must be run first", )
-
-    print("\n******* Ended agent listening: http/{}, tcp/{}"
-          ".******\n\n".format(args.admin_http_port, args.tcp))
+    return doers

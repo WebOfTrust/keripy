@@ -14,7 +14,7 @@ from keri.vc.walleting import Wallet
 from keri.vdr import viring, verifying, issuing
 
 
-def test_issuing():
+def test_issuing(seeder):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
@@ -25,6 +25,10 @@ def test_issuing():
             habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
             habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+
+        seeder.seedSchema(redHby.db)
+        seeder.seedSchema(sidHby.db)
+        seeder.seedSchema(wanHby.db)
 
         limit = 1.0
         tock = 1.0
@@ -44,7 +48,7 @@ def test_issuing():
         redIssueHandler = IssueHandler(hby=sidHby, verifier=verifier)
         redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
-        schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
+        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
 
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
@@ -60,20 +64,20 @@ def test_issuing():
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLwfxDmEFPpUc"
+        assert creder.said == "EzucsqkRDx69MHfroAwzNrARf_erW2j9y2-hQdUvRBLs"
 
         issuer.issue(creder=creder)
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLw'
-                       b'fxDmEFPpUc","s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","'
-                       b'i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E3EX'
-                       b'dMDqLATJe0a-Oc9jT531EPvpYZNeCTrk48MovNTM","i":"EWVYH1T4J09x5RePL'
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EzucsqkRDx69MHfroAwzNrARf_erW2j9y2'
+                       b'-hQdUvRBLs","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
+                       b'i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E24I'
+                       b'f3y9Voz-1sXgkBCeNG6pbCqMTa56kCvj47NgOgLg","i":"EWVYH1T4J09x5RePL'
                        b'fVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36","ri":"EScaN0EobGIzPq-3S05vY2Fj'
-                       b'BOeXBQ_7wTR9ChFUGUOU"},"p":[]}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
+                       b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EScaN0EobGIzPq-3'
+                       b'S05vY2FjBOeXBQ_7wTR9ChFUGUOU"}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
                        b'ePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE0AAAAAAAAAAAAAAAAAAAAAAAEWVYH1T4J0'
-                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAAPyuL-gPw5xNHOaYU2WLEsbwX'
-                       b'1XjJejaaG9Ozz7H7pFG2PELpIo5tfgAXWRybVhjLvud7z0EpGPONQZP9U8qECg')
+                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAAC6mt9p5YASFnQsWpU2x47cNv'
+                       b'15PKXJpg806KZNj3mtDGJfiCG9eU-WTwUN4Ghv7pPjHiPyBElrphD594IhSWCA')
 
         # Create the issue credential payload
         pl = dict(
@@ -91,14 +95,14 @@ def test_issuing():
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"EsiP8zuliRsbzqDYtf_mV-X5_bFrdF6kLwfxDmEFPpUc",'
-               b'"s":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg","i":"EWVYH1T4J09x5RePLfVy'
-               b'Tfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E3EXdMDqLATJe0a-Oc9jT531EPvpYZNeCTrk48Mo'
-               b'vNTM","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","ri":"EScaN0EobGIzPq-3S05v'
-               b'Y2FjBOeXBQ_7wTR9ChFUGUOU"},"p":[]}')
-        sig0 = (b'AAPyuL-gPw5xNHOaYU2WLEsbwX1XjJejaaG9Ozz7H7pFG2PELpIo5tfgAXWRybVhjLvud7z0EpGP'
-                b'ONQZP9U8qECg')
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EzucsqkRDx69MHfroAwzNrARf_erW2j9y2-hQdUvRBLs",'
+               b'"s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","i":"EWVYH1T4J09x5RePLfVy'
+               b'Tfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E24If3y9Voz-1sXgkBCeNG6pbCqMTa56kCvj47Ng'
+               b'OgLg","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21'
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EScaN0EobGIz'
+               b'Pq-3S05vY2FjBOeXBQ_7wTR9ChFUGUOU"}')
+        sig0 = (b'AAC6mt9p5YASFnQsWpU2x47cNv15PKXJpg806KZNj3mtDGJfiCG9eU-WTwUN4Ghv7pPjHiPyBElr'
+                b'phD594IhSWCA')
 
         # verify we can load serialized VC by SAID
         creder, sadsigers, sadcigars = redPDB.cloneCred(said=creder.said)
@@ -116,18 +120,10 @@ def test_issuing():
         assert schema[0].qb64 == creder.said
 
 
-def test_proving():
+def test_proving(seeder):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
-
-    # with basing.openDB(name="sid") as sidDB, \
-    # keeping.openKS(name="sid") as sidKS, \
-    # basing.openDB(name="vic") as vicDB, \
-    # keeping.openKS(name="vic") as vicKS, \
-    # basing.openDB(name="han") as hanDB, \
-    # keeping.openKS(name="han") as hanKS, \
-    # viring.openReg(name="han") as hanPDB:
 
     with viring.openReg(name="han") as hanPDB, \
             habbing.openHby(name="han", base="test", salt=hanSalt) as hanHby, \
@@ -136,6 +132,9 @@ def test_proving():
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
+        seeder.seedSchema(db=hanHby.db)
+        seeder.seedSchema(db=sidHby.db)
+        seeder.seedSchema(db=vicHby.db)
 
         # sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
         sidHab = sidHby.makeHab(name="test")
@@ -163,7 +162,7 @@ def test_proving():
         parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
         assert hanKvy.kevers[vicHab.pre].sn == 0  # accepted event
 
-        schema = "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg"
+        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
         credSubject = dict(
             d="",
             i=hanHab.pre,
@@ -181,7 +180,7 @@ def test_proving():
                             status=issuer.regk,
                             )
 
-        assert creder.said == "Ep47HwcVCCmW2e4kYm0BNCrK1zVfEK0TANpZEDB-q6k8"
+        assert creder.said == "EDmtVUrmHL69-BbKeEpy5kcI-AfiATvOmVZqvYJ04wAM"
 
         msg = signing.ratify(sidHab, serder=creder)
         hanWallet = Wallet(reger=hanPDB)
@@ -236,8 +235,8 @@ def test_proving():
 
         proof = (
             '-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAAECtWlHS2Wbx5M2Rg6nm69'
-            'PCtzwb1veiRNvDpBGF9Z1Pc-AABAAof2YkuOFlbe5fTXsbjrh0lorAQcGx2mwPcXhSRnjssLIeCV2s_q7YLOYPlNyB_ICj82bpXBKOMEY'
-            'l7rU9PV3Aw')
+            'PCtzwb1veiRNvDpBGF9Z1Pc-AABAAMXOxuGRr7Pu8Om_CviaojysYn28ClhWzIYZiZ42ePnTqzEW4u-c_seM-gT-gNI9BNztivzOUeMgVm'
+            '8MYXLpRDQ')
 
         assert vcs[0]["proof"] == proof
 

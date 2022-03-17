@@ -5,6 +5,8 @@ keri.kli.commands module
 """
 import argparse
 
+from hio.base import doing
+
 from keri import kering
 from keri.app.cli.common import existing
 from keri.core import coring
@@ -31,6 +33,16 @@ def handler(args):
     Args:
         args(Namespace): arguments object from command line
     """
+    kwa = dict(args=args)
+    return [doing.doify(verify, **kwa)]
+
+
+def verify(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
 
     name = args.name
     alias = args.alias
@@ -62,8 +74,6 @@ def handler(args):
                     print("Signature {} is valid.".format(siger.index+1))
                 else:
                     print("Signature {} is invalid.".format(siger.index+1))
-
-
 
     except kering.ConfigurationError:
         print(f"prefix for {name} does not exist, incept must be run first", )

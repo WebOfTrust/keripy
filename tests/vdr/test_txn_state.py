@@ -384,10 +384,10 @@ def test_credential_tsn_message(mockHelpingNowUTC):
                            b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         ctsn = tever.vcState(vcpre=creder.said)
-        assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"EP_naalE6Jakf54yIHC7NNke_ySHqgIJOWxi-0cAY-V0",'
-                            b'"s":"0","d":"EijkKUqTvXqPv9JUsfSiADogSHnOSn_xtr_7tR9PeA38","ri":"ENMQx5zunE2'
-                            b'R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4","ra":{},"a":{"s":2,"d":"EXETzzd9sSGjWdFnX'
-                            b'eMqUcsWAE7lHIHTfxoAZmnsq1Hg"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
+        assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"E9aqNRGTY5HS1qBAUAW9JSDiIcIgOw2RXPAl2nmKy39A",'
+                            b'"s":"0","d":"Em0EmiOp6VvjkfG2efV4WZmUWkfwgnChtyDFD5cdWPhE","ri":"ENMQx5zunE2'
+                            b'R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4","ra":{},"a":{"s":2,"d":"EWrdwoLyzdnCRu7K0'
+                            b'OPeZWubyWge0HDJHyRnpyjm8tgY"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
                             b'iss"}')
 
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
@@ -398,7 +398,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-mre", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EQ-6RPvuIWvJMpS9Fsugdt3j2Az5iOAwqgjn7rR5eX4k'
+        assert saider[0].qb64b == b'Em0UinUAb6Wbbadl-cAjfFLodblgqZMgb_HmCrPSNKgY'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "telquery"
@@ -427,7 +427,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-ooo", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EQ-6RPvuIWvJMpS9Fsugdt3j2Az5iOAwqgjn7rR5eX4k'
+        assert saider[0].qb64b == b'Em0UinUAb6Wbbadl-cAjfFLodblgqZMgb_HmCrPSNKgY'
 
         vci = viring.nsKey([issuer.regk, creder.said])
         tmsgs = bytearray()
@@ -443,4 +443,4 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         assert bamReger.txnsb.escrowdb.get(keys=(creder.said, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(creder.said, bobHab.pre))
-        assert saider.qb64b == b'EijkKUqTvXqPv9JUsfSiADogSHnOSn_xtr_7tR9PeA38'
+        assert saider.qb64b == b'Em0EmiOp6VvjkfG2efV4WZmUWkfwgnChtyDFD5cdWPhE'

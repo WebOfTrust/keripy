@@ -53,10 +53,10 @@ class Verifier:
         self.inited = False
         self.tvy = None
         self.psr = None
+        self.resolver = None
 
         if self.hby.inited:
             self.setup()
-
 
     def setup(self):
         """ Delayed initialization of instance by createing .tvy and .psr.
@@ -66,6 +66,7 @@ class Verifier:
         """
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
+        self.resolver = scheming.CacheResolver(db=self.hby.db)
 
         self.inited = True
 
@@ -75,7 +76,6 @@ class Verifier:
         """ Returns .db.tevers
         """
         return self.reger.tevers
-
 
     def processMessages(self, creds=None):
         """ Process message dicts in msgs or if msgs is None in .msgs
@@ -89,7 +89,6 @@ class Verifier:
 
         while creds:
             self.processCredential(**creds.pull())
-
 
     def processCredential(self, creder, sadsigers=None, sadcigars=None):
         """ Credential data and signature(s) verification
@@ -106,7 +105,7 @@ class Verifier:
         regk = creder.status
         vcid = creder.said
         schema = creder.schema
-        prov = creder.crd["p"]
+        prov = creder.crd["e"]
 
         sadcigars = sadcigars if sadcigars is not None else []
         sadsigers = sadsigers if sadsigers is not None else []
@@ -122,7 +121,6 @@ class Verifier:
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
-
         dtnow = helping.nowUTC()
         dte = helping.fromIso8601(state.ked["dt"])
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
@@ -135,7 +133,7 @@ class Verifier:
             # raise kering.InvalidCredentialStateError("..."))
 
         # Verify the credential against the schema
-        scraw = scheming.jsonSchemaCache.resolve(schema)
+        scraw = self.resolver.resolve(schema)
         if not scraw:
             if self.escrowMSE(creder, sadsigers, sadcigars):
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
@@ -180,27 +178,35 @@ class Verifier:
                                                                        in sadsigers],
                                                                        creder.crd))
 
-        for s in prov:
-            for label, node in s.items():
-                nodeSubject = node["i"]
-                nodeSaid = node["d"]
-                state = self.verifyChain(nodeSubject, nodeSaid)
+        if isinstance(prov, list):
+            edges = prov
+        elif isinstance(prov, dict):
+            edges = [prov]
+        else:
+            raise kering.ValidationError(f"invalid type for edges: {prov}")
+
+        for edge in edges:
+            for label, node in edge.items():
+                if label in ('d',):  # SAID of this edge block
+                    continue
+                nodeSaid = node["n"]
+                state = self.verifyChain(nodeSaid)
                 if state is None:
                     self.escrowMCE(creder, sadsigers, sadcigars)
-                    self.cues.append(dict(kin="proof", subject=nodeSubject, said=nodeSaid))
-                    raise kering.MissingChainError("Failure to verify credential {} chain {}({}) for {}"
-                                                   .format(creder.said, label, nodeSaid, nodeSubject))
+                    self.cues.append(dict(kin="proof",  said=nodeSaid))
+                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
+                                                   .format(creder.said, label, nodeSaid))
 
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.ked["dt"])
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
                     self.escrowMCE(creder, sadsigers, sadcigars)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
-                    raise kering.MissingChainError("Failure to verify credential {} chain {}({}) for {}"
-                                                   .format(creder.said, label, nodeSaid, nodeSubject))
+                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})}"
+                                                   .format(creder.said, label, nodeSaid))
                 elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):
-                    raise kering.RevokedChainError("Failure to verify credential {} chain {}({}) for {}"
-                                                   .format(creder.said, label, nodeSaid, nodeSubject))
+                    raise kering.RevokedChainError("Failure to verify credential {} chain {}({})"
+                                                   .format(creder.said, label, nodeSaid))
                 else:  # VcStatus == VcStates.Issued
                     logger.info("Successfully validated credential chain {} for credential {}"
                                 .format(label, creder.said))
@@ -293,7 +299,6 @@ class Verifier:
         self._processEscrow(self.reger.mie, self.TimeoutMRI, kering.MissingIssuerError)
         self._processEscrow(self.reger.mre, self.TimeoutMRE, kering.MissingRegistryError)
 
-
     def _processEscrow(self, db, timeout, etype: Type[Exception]):
         """ Generic credential escrow processing
 
@@ -368,7 +373,7 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True)
 
-    def verifyChain(self, nodeSubject, nodeSaid):
+    def verifyChain(self, nodeSaid):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
@@ -384,7 +389,7 @@ class Verifier:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)
-        iss = self.reger.subjs.get(keys=nodeSubject)
+        iss = self.reger.subjs.get(keys=creder.subject['i'])
         if iss is None:
             return None
 

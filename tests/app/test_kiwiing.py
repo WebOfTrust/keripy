@@ -18,9 +18,12 @@ from keri.vc import proving
 from keri.vdr import viring, issuing, verifying
 
 
-def test_credential_handlers(mockHelpingNowUTC):
+def test_credential_handlers(mockHelpingNowUTC, seeder):
     with habbing.openHab(name="test", transferable=True) as (hby, hab), \
             habbing.openHab(name="recp", transferable=True) as (recpHby, recp):
+        seeder.seedSchema(hby.db)
+        seeder.seedSchema(recpHby.db)
+
         app = falcon.App()
 
         reger = viring.Registry(name=hab.name, temp=True)
@@ -54,7 +57,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test"}')
         assert result.status == falcon.HTTP_202
 
-        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
+        schema = "EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -64,30 +67,30 @@ def test_credential_handlers(mockHelpingNowUTC):
             schema=schema,
             recipient=recp.pre,
             type="GLEIFvLEICredential",
-            credentialData=data
+            credentialData=data, source=[], rules=[]
         )
         b = json.dumps(body).encode("utf-8")
         result = client.simulate_post(path="/credentials", body=b)
         assert result.status == falcon.HTTP_200
 
-        tevt = (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EYp0zprvOVGALuENur3xFYR3'
-                b'f97-prCMjl9RXnKJ7HxI","i":"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC3'
-                b'24D_MUs","s":"0","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
+        tevt = (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EJwzM4hwvzoQnRAqXOtKynvC'
+                b'Llt83WzjKx9OUVUs82qc","i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RX'
+                b'mlaWYW0","s":"0","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
                 b'PDs","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-                b'AAAAAAAAgEmg5GkO_0R3PG3qlDNYtTpTFVZWbUoHwmAXkpP0cXI2c')
-        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"Emg5GkO_0R3PG3qlDNYtTpTF'
-                b'VZWbUoHwmAXkpP0cXI2c","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
+                b'AAAAAAAAgE0OHFMe-_ppaT2YBoJIpVn3A-lv1WcER3GoK_aPlNqGI')
+        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E0OHFMe-_ppaT2YBoJIpVn3A'
+                b'-lv1WcER3GoK_aPlNqGI","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
                 b'GF9Z1Pc","s":"2","p":"EhUlcH33N486ITfJu3kG5evVLoivVaR8Wp6ut8rP21'
-                b'gs","a":[{"i":"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs","s"'
-                b':"0","d":"EYp0zprvOVGALuENur3xFYR3f97-prCMjl9RXnKJ7HxI"}]}-AABAA'
-                b'10QegNBAIM_NSA2Tj_u7jEWS5a2S1CX9qWl_TY2r5NnyV7buK3r_aHmtUUcRRrlj'
-                b'xhOAvAECR9x-SAHgtZApCg')
-        cred = (b'{"v":"ACDC10JSON00019b_","d":"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs",'
-                b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"ECtWlHS2Wbx5M2Rg6nm6'
-                b'9PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"E-ZnCrHoereORJlfqYCLRju-Bh78JXuyZjYtwUx2'
-                b'juTU","i":"EqwblUykZNwSsBd4g8pHeRZhlkPj64MhoGDspLCh2qnI","dt":"2021-01-01T00'
-                b':00:00.000000+00:00","LEI":"1234567890abcdefg","ri":"EjPXk1a_MtWR3a0qrZiJ34c'
-                b'971FxiHyCZSRo6482KPDs"},"p":[]}')
+                b'gs","a":[{"i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0","s"'
+                b':"0","d":"EJwzM4hwvzoQnRAqXOtKynvCLlt83WzjKx9OUVUs82qc"}]}-AABAA'
+                b'sttu9Dtj72cP_Qx_o5c9HAuROPVN6tf_ABide4hT6eXKxRHV52Q9FCnOgsSWSERE'
+                b'2Gy4TO4Oc8A3NvSbu9SGDg')
+        cred = (b'{"v":"ACDC10JSON0001a2_","d":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0",'
+                b'"s":"EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A","i":"ECtWlHS2Wbx5M2Rg6nm6'
+                b'9PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"EGtpMEB96XgfrN5CzxbRSDaRWVqH-78zrCk1N3gX'
+                b'NaOE","i":"EqwblUykZNwSsBd4g8pHeRZhlkPj64MhoGDspLCh2qnI","dt":"2021-01-01T00'
+                b':00:00.000000+00:00","LEI":"1234567890abcdefg"},"e":[],"ri":"EjPXk1a_MtWR3a0'
+                b'qrZiJ34c971FxiHyCZSRo6482KPDs","r":[]}')
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -98,34 +101,35 @@ def test_credential_handlers(mockHelpingNowUTC):
         assert evt == tevt
 
         creder = proving.Credentialer(raw=cred)
-        assert reger.creds.get(b'ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs').raw == creder.raw
+        assert reger.creds.get(b'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0').raw == creder.raw
 
         # Try to revoke a credential that doesn't exist and get the appropriate error
-        result = client.simulate_post(path="/credential/revoke",
-                                      body=b'{"registry": "EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs", "said": '
-                                           b'"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs"}')
+        result = client.simulate_delete(path="/credentials",
+                                        query_string=("alias=test&"
+                                                      "registry=EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs&"
+                                                      "said=ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs"))
         assert result.status == falcon.HTTP_NOT_FOUND
 
         # Now revoke the actual credential
         result = client.simulate_delete(path="/credentials",
                                         query_string=("alias=test&"
                                                       "registry=EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs&"
-                                                      "said=ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs"))
+                                                      "said=EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0"))
         assert result.status == falcon.HTTP_202
 
-        rev = (b'{"v":"KERI10JSON000120_","t":"rev","d":"ErO_5RRABj5WhZMvtorj9Lj0'
-               b'3FScWkyvLaWWRhNIn050","i":"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC3'
-               b'24D_MUs","s":"1","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
-               b'PDs","p":"EYp0zprvOVGALuENur3xFYR3f97-prCMjl9RXnKJ7HxI","dt":"20'
-               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwEzsh'
-               b'nUr86BE4aIQLgOP8S7Y-WtvEHaxu0rIZPYliC4ug')
-        rkevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EzshnUr86BE4aIQLgOP8S7Y-'
-                 b'WtvEHaxu0rIZPYliC4ug","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
-                 b'GF9Z1Pc","s":"3","p":"Emg5GkO_0R3PG3qlDNYtTpTFVZWbUoHwmAXkpP0cXI'
-                 b'2c","a":[{"i":"ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs","s"'
-                 b':"1","d":"ErO_5RRABj5WhZMvtorj9Lj03FScWkyvLaWWRhNIn050"}]}-AABAA'
-                 b'5ZC0m0ttngqIVwmgb6tmkQ1D0DuvglMzQUmF8rtz3hpRDoYMUqjelKjiHmZ5F24N'
-                 b'ykAO4WBSqM5FWPd0hqdTDQ')
+        rev = (b'{"v":"KERI10JSON000120_","t":"rev","d":"EtSxl8hO39oSn-Mu76dYT-iW'
+               b'hkxFB2mxD5LCVvZftN78","i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RX'
+               b'mlaWYW0","s":"1","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
+               b'PDs","p":"EJwzM4hwvzoQnRAqXOtKynvCLlt83WzjKx9OUVUs82qc","dt":"20'
+               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwE7X6'
+               b'XkGS-mNlfMVMgk2itioHGRNTkio9K9-XvUrXL2iU')
+        rkevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E7X6XkGS-mNlfMVMgk2itioH'
+                 b'GRNTkio9K9-XvUrXL2iU","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
+                 b'GF9Z1Pc","s":"3","p":"E0OHFMe-_ppaT2YBoJIpVn3A-lv1WcER3GoK_aPlNq'
+                 b'GI","a":[{"i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0","s"'
+                 b':"1","d":"EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78"}]}-AABAA'
+                 b'Tkkrdu2obr76kfCUJsVMD6qLdfWDFUe2w_PvhfjrLot--wZ4BUsEwHXvvODprZ6S'
+                 b'eOwFmsPf9N45lZm0s0otCQ')
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -427,7 +431,7 @@ def test_multisig_rotation():
         # aids is required
         result = client.simulate_post(path="/multisig/test/rot", body=b'{}')
         assert result.status == falcon.HTTP_400
-        assert result.text == "Invalid multisig group rotation request, 'aids' is required'"
+        assert result.text == "Invalid multisig group rotation request, 'aids' is required"
 
         # aids must include a local identifier
         body = dict(group="test", aids=[ghab2.pre, ghab3.pre])
@@ -435,7 +439,7 @@ def test_multisig_rotation():
 
         result = client.simulate_post(path="/multisig/test/rot", body=b)
         assert result.status == falcon.HTTP_404
-        assert result.text == "Invalid multisig group rotation request alias {alias} not found'"
+        assert result.text == "Invalid multisig group rotation request alias {alias} not found"
 
         body = dict(
             aids=[ghab1.phab.pre, ghab2.phab.pre, ghab3.phab.pre],
@@ -514,7 +518,7 @@ def test_multisig_interaction():
         # aids is required
         result = client.simulate_post(path="/multisig/test/ixn", body=b'{}')
         assert result.status == falcon.HTTP_400
-        assert result.text == "Invalid multisig group rotation request, 'aids' is required'"
+        assert result.text == "Invalid multisig group rotation request, 'aids' is required"
 
         # aids must include a local identifier
         body = dict(group="test", aids=[ghab2.pre, ghab3.pre])
@@ -522,7 +526,7 @@ def test_multisig_interaction():
 
         result = client.simulate_post(path="/multisig/test/ixn", body=b)
         assert result.status == falcon.HTTP_404
-        assert result.text == "Invalid multisig group rotation request alias {alias} not found'"
+        assert result.text == "Invalid multisig group rotation request alias {alias} not found"
 
         body = dict(
             aids=[ghab1.phab.pre, ghab2.phab.pre, ghab3.phab.pre],

@@ -39,12 +39,4 @@ def demo(args):
                             tcp=5821,
                             adminHttpPort=5823)
 
-    try:
-        tock = 0.03125
-        doist = doing.Doist(limit=0.0, tock=tock, real=True)
-        doist.do(doers=doers)
-    except kering.ConfigurationError:
-        print(f"prefix for {args.name} does not exist, incept must be run first", )
-
-    logger.info("\n******* Ended Multisig Agents multisig1, multisig2, multisig3 "
-                ".******\n\n",)
+    return doers

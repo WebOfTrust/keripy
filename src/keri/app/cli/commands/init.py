@@ -5,17 +5,31 @@ keri.kli.commands module
 """
 import argparse
 import getpass
+from contextlib import contextmanager
 
 from hio import help
+from hio.base import doing
 
-from keri.app import habbing, configing, directing
+from keri.app import habbing, configing
 from keri.app.cli.common import oobiing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
+
+def handler(args):
+    """
+    Launch KERI database initialization
+
+    Args:
+        args(Namespace): arguments object from command line
+    """
+    init = InitDoer(args)
+    return [init]
+
+
 parser = argparse.ArgumentParser(description='Create a database and keystore')
-parser.set_defaults(handler=lambda args: initialize(args),
+parser.set_defaults(handler=handler,
                     transferable=True)
 
 # Parameters for basic structure of database
@@ -42,62 +56,70 @@ parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (
                                          'private decryption key may be derived', default=None)
 
 
-def initialize(args):
-    """
-    Launch KERI database initialization
+class InitDoer(doing.DoDoer):
 
-    Args:
-        args(Namespace): arguments object from command line
-    """
+    def __init__(self, args):
+        self.args = args
+        super(InitDoer, self).__init__(doers=[doing.doify(self.initialize)])
 
-    name = args.name
-    if name is None or name == "":
-        raise ConfigurationError("Name is required and can not be empty")
+    def initialize(self, tymth, tock=0.0):
 
-    base = args.base
-    temp = args.temp
-    bran = args.bran
-    configFile = args.configFile
-    configDir = args.configDir
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
 
-    if not args.nopasscode and not bran:
-        print("Creating encrypted keystore, please enter your 22 character passcode:")
-        while True:
-            bran = getpass.getpass("Passcode: ")
-            retry = getpass.getpass("Re-enter passcode: ")
+        args = self.args
+        name = args.name
+        if name is None or name == "":
+            raise ConfigurationError("Name is required and can not be empty")
 
-            if bran != retry:
-                print("Passcodes do not match, try again.")
-            else:
-                break
+        base = args.base
+        temp = args.temp
+        bran = args.bran
+        configFile = args.configFile
+        configDir = args.configDir
 
-    kwa = dict()
-    kwa["salt"] = args.salt
-    kwa["bran"] = bran
-    kwa["aeid"] = args.aeid
-    kwa["seed"] = args.seed
+        if not args.nopasscode and not bran:
+            print("Creating encrypted keystore, please enter your 22 character passcode:")
+            while True:
+                bran = getpass.getpass("Passcode: ")
+                retry = getpass.getpass("Re-enter passcode: ")
 
-    cf = None
-    if configFile is not None:
-        cf = configing.Configer(name=configFile,
-                                base=base,
-                                headDirPath=configDir,
-                                temp=False,
-                                reopen=True,
-                                clear=False)
+                if bran != retry:
+                    print("Passcodes do not match, try again.")
+                else:
+                    break
 
-    hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
+        kwa = dict()
+        kwa["salt"] = args.salt
+        kwa["bran"] = bran
+        kwa["aeid"] = args.aeid
+        kwa["seed"] = args.seed
 
-    print("KERI Keystore created at:", hby.ks.path)
-    if hby.mgr.aeid:
-        print("\taeid:", hby.mgr.aeid)
+        cf = None
+        if configFile is not None:
+            cf = configing.Configer(name=configFile,
+                                    base=base,
+                                    headDirPath=configDir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
 
-    oc = hby.db.oobis.cntAll()
-    if oc:
-        print("\nLoading OOBIs...")
+        hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
 
-        obl = oobiing.OobiLoader(db=hby.db, auto=True)
-        doers = [obl]
-        directing.runController(doers=doers, expire=0.0)
+        print("KERI Keystore created at:", hby.ks.path)
+        if hby.mgr.aeid:
+            print("\taeid:", hby.mgr.aeid)
 
+        oc = hby.db.oobis.cntAll()
+        if oc:
+            print("\nLoading OOBIs...")
 
+            obl = oobiing.OobiLoader(db=hby.db, auto=True)
+            self.extend([obl])
+
+            while not obl.done:
+                yield self.tock
+
+        hby.close()

@@ -8,7 +8,7 @@ import argparse
 from hio.base import doing
 
 from keri import help
-from keri.app import directing, watching
+from keri.app import watching
 from keri.app.cli.common import existing
 
 parser = argparse.ArgumentParser(description='Rotate watcher prefix')
@@ -24,7 +24,7 @@ def rotateWatcher(args):
     wat = args.watcher
 
     watr = WatcherRotate(name=name, wat=wat)
-    directing.runController(doers=[watr], expire=0.0)
+    return [watr]
 
 
 class WatcherRotate(doing.DoDoer):

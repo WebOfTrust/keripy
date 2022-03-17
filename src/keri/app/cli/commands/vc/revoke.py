@@ -27,7 +27,7 @@ def revokeCredential(args):
     revokeDoer = RevokeDoer(name=name, said=args.said, registryName=args.registry_name)
 
     doers = [revokeDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class RevokeDoer(doing.DoDoer):

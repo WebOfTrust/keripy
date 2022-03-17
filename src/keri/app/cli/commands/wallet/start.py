@@ -8,8 +8,7 @@ Witness command line interface
 import argparse
 import logging
 
-from hio.base import doing
-from keri import __version__, kering
+from keri import __version__
 from keri import help
 from keri.app import indirecting, storing, habbing
 from keri.app.cli.common import existing
@@ -36,15 +35,7 @@ def launch(args):
     help.ogler.level = logging.INFO
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
-    logger = help.ogler.getLogger()
-
-    logger.info("\n******* Starting Wallet for %s."
-                ".******\n\n", args.name)
-
-    runWallet(name=args.name)
-
-    logger.info("\n******* Ended Wallet for %s."
-                ".******\n\n", args.name)
+    return runWallet(name=args.name)
 
 
 def runWallet(name="wallet", base="", bran=None):
@@ -60,7 +51,7 @@ def runWallet(name="wallet", base="", bran=None):
     wallet = walleting.Wallet(reger=verifier.reger, name=name)
     walletDoer = walleting.WalletDoer(hby=hby, verifier=verifier)
 
-    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+    jsonSchema = scheming.JSONSchema(resolver=scheming.CacheResolver(db=hby.db))
     issueHandler = handling.IssueHandler(hby=hby, verifier=verifier)
     requestHandler = handling.RequestHandler(hby=hby, wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hby=hby, handlers=[issueHandler, requestHandler])
@@ -71,9 +62,4 @@ def runWallet(name="wallet", base="", bran=None):
 
     doers.extend([exchanger, mdir, rep, walletDoer])
 
-    try:
-        tock = 0.03125
-        doist = doing.Doist(limit=0.0, tock=tock, real=True)
-        doist.do(doers=doers)
-    except kering.ConfigurationError:
-        print(f"prefix for {name} does not exist, incept must be run first", )
+    return doers

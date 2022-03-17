@@ -45,7 +45,7 @@ def confirm(args):
     confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact)
 
     doers = [confirmDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class ConfirmDoer(doing.DoDoer):
@@ -131,7 +131,7 @@ class ConfirmDoer(doing.DoDoer):
                             yield self.tock
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
-                        toRemove = [self.hbyDoer, self.mbx, witDoer]
+                        toRemove = [self.hbyDoer, self.mbx, self.witq, witDoer]
                         self.remove(toRemove)
                         return True
 

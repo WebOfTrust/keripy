@@ -1,11 +1,13 @@
 import argparse
 
+from hio.base import doing
+
 from keri import kering
 from keri.app import habbing
 from keri.core import coring
 
 parser = argparse.ArgumentParser(description='Update set of watchers for this environment (Habitat)')
-parser.set_defaults(handler=lambda args: updateWatchers(args))
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--watchers', '-w', help='New set of watchers, replaces all existing watchers.  Can appear '
                                               'multiple times', metavar="<prefix>", default=[],
@@ -18,7 +20,17 @@ parser.add_argument('--add', '-a', help='Watchers to add.  Can appear multiple t
                     action="append", required=False)
 
 
-def updateWatchers(args):
+def handler(args):
+    kwa = dict(args=args)
+    return [doing.doify(updateWatchers, **kwa)]
+
+
+def updateWatchers(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
     name = args.name
 
     try:

@@ -34,7 +34,7 @@ def query(args):
     name = args.name
 
     qryDoer = QueryDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, wit=args.witness, pre=args.prefix)
-    directing.runController(doers=[qryDoer], expire=0.0)
+    return [qryDoer]
 
 
 class QueryDoer(doing.DoDoer):

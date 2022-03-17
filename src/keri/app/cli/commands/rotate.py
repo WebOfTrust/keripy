@@ -38,13 +38,7 @@ def rotate(args):
 
     doers = [rotDoer]
 
-    try:
-        directing.runController(doers=doers, expire=0.0)
-    except kering.ConfigurationError:
-        print(f"identifier prefix for {args.name} does not exist, incept must be run first", )
-        return -1
-    except ValueError:
-        return -1
+    return doers
 
 
 class RotateDoer(doing.DoDoer):
