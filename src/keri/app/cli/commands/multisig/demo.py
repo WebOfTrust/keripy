@@ -1,7 +1,6 @@
 import argparse
 import json
 
-from keri.app import directing
 from keri.app.cli.commands.multisig import incept
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
@@ -18,4 +17,4 @@ def demo(args):
     ms3 = incept.GroupMultisigIncept(name="multisig3", group="multigroup3", proto="http", **opts)
 
     doers = [ms1, ms2, ms3]
-    directing.runController(doers, expire=0.0)
+    return doers

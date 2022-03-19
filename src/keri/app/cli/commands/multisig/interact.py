@@ -10,7 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import directing, grouping, indirecting, habbing
+from keri.app import grouping, indirecting, habbing
 from keri.app.cli.common import existing, displaying, rotating
 from keri.core import coring
 
@@ -49,7 +49,7 @@ def interactGroupIdentifier(args):
                                     data=data)
 
     doers = [ixnDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class GroupMultisigInteract(doing.DoDoer):

@@ -21,7 +21,7 @@ from ..core import coring, eventing, parsing, routing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
+from ..kering import ValidationError, MissingSignatureError
 
 logger = help.ogler.getLogger()
 
@@ -572,7 +572,6 @@ class Habery:
 
         return tholder, verfers
 
-
     @property
     def kevers(self):
         """
@@ -623,6 +622,10 @@ class Habery:
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             if "iurls" in conf:  # process OOBI URLs
                 for oobi in conf["iurls"]:
+                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    self.db.oobis.put(keys=(oobi,), val=obr)
+            if "durls" in conf:  # process OOBI URLs
+                for oobi in conf["durls"]:
                     obr = basing.OobiRecord(date=help.toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
 
@@ -684,6 +687,7 @@ class HaberyDoer(doing.Doer):
     def exit(self):
         """Exit context and close Habery """
         if self.habery.inited and self.habery.free:
+
             self.habery.close(clear=self.habery.temp)
 
 
@@ -707,8 +711,6 @@ class Hab:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
         temp (bool):
-        accepted (bool): True means accepted into local KEL.
-                          False otherwise
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
@@ -717,6 +719,8 @@ class Hab:
         kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
         iserder (coring.Serder): own inception event
         prefixes (OrderedSet): local prefixes for .db
+        accepted (bool): True means accepted into local KEL.
+                          False otherwise
 
     """
 
@@ -877,7 +881,7 @@ class Hab:
         # MissingSignatureError
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError as ex:
+        except MissingSignatureError:
             pass
         except Exception as ex:
             raise kering.ConfigurationError("Improper Habitat inception for "
@@ -924,10 +928,6 @@ class Hab:
                                                    scheme=scheme,
                                                    stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
-
-            if "iurls" in conf:  # process OOBI URLs
-                for url in conf["iurls"]:
-                    splits = urlsplit(url)
 
     def recreate(self, serder, opre, verfers):
         """ Recreate the Hab with new identifier prefix.
@@ -1117,7 +1117,7 @@ class Hab:
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except MissingSignatureError:
             pass
-        except Exception as e:
+        except Exception:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
 
@@ -1593,7 +1593,7 @@ class Hab:
 
         return msgs
 
-    def replyToOobi(self, aid, role, eids=None, scheme=""):
+    def replyToOobi(self, aid, role, eids=None):
         """
         Returns a reply message stream composed of entries authed by the given
         aid from the appropriate reply database including associated attachments
@@ -1610,7 +1610,6 @@ class Hab:
             aid (str): qb64 of identifier in oobi, may be cid or eid
             role (str): authorized role for eid
             eids (list): when provided restrict returns to only eids in eids
-            scheme (str): url scheme
 
         """
         # default logic is that if self.pre is witness of aid and has a loc url

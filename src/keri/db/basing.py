@@ -121,6 +121,7 @@ class OobiRecord:
     """
     Keyed by CID (AID) and role, the minimum information needed for any OOBI
     """
+    said: str = None
     cid: str = None
     eid: str = None
     role: str = None
@@ -790,6 +791,10 @@ class Baser(dbing.LMDBer):
                                   subkey='oobis.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # JSON schema SADs keys by the SAID
+        self.schema = subing.SchemerSuber(db=self,
+                                          subkey='schema.')
 
         self.reload()
 

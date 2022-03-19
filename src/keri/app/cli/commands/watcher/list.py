@@ -1,18 +1,31 @@
 import argparse
 
+from hio.base import doing
+
 from keri import kering
-from keri.app import habbing
+from keri.app.cli.common import existing
 
 parser = argparse.ArgumentParser(description='List set of watchers for this environment (Habitat)')
-parser.set_defaults(handler=lambda args: listWatchers(args))
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 
 
-def listWatchers(args):
+def handler(args):
+    kwa = dict(args=args)
+    return [doing.doify(listWatchers, **kwa)]
+
+
+def listWatchers(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
     name = args.name
+    alias = args.alias
 
     try:
-        with habbing.existingHabitat(name=name) as hab:
+        with existing.existingHab(name=name, alias=alias) as hab:
             habr = hab.db.habs.get(name)
             print("Watcher Set:")
             for wat in habr.watchers:

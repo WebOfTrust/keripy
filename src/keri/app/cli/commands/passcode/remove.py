@@ -6,6 +6,7 @@ keri.kli.common.passcode.remove module
 import argparse
 
 from hio import help
+from hio.base import doing
 
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
@@ -22,10 +23,20 @@ parser.add_argument('--passcode', '-p', help='existing 22 character encryption p
                     dest="bran", default=None)  # passcode => bran
 
 
-def remove(args):
+def handler(args):
     """ Command line passcode remove handler
 
     """
+    kwa = dict(args=args)
+    return [doing.doify(remove, **kwa)]
+
+
+def remove(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
     name = args.name
     base = args.base
     bran = args.bran

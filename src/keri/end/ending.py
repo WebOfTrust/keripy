@@ -10,7 +10,7 @@ import os
 import re
 import sys
 
-from keri.core import parsing, eventing, routing
+from keri.core import parsing, eventing, routing, scheming
 from orderedset import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
@@ -54,6 +54,7 @@ Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
 
 OOBI_URL_TEMPLATE = "/oobi/{cid}/{role}"
 OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z', re.IGNORECASE)
+DOOBI_RE = re.compile('\\A/oobi/(?P<said>[^/]+)\\Z', re.IGNORECASE)
 
 
 def signature(signages):
@@ -598,6 +599,24 @@ class Oobiery(doing.DoDoer):
 
                         self.clients.append((oobi, client, clientDoer))
 
+                    elif (match := DOOBI_RE.match(url.path)) is not None:  # Full CID and optional EID
+                        obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+
+                        obr.said = match.group("said")
+                        self.db.oobis.pin(keys=(oobi,), val=obr)
+
+                        client = http.clienting.Client(hostname=url.hostname, port=url.port)
+                        clientDoer = http.clienting.ClientDoer(client=client)
+                        self.extend([clientDoer])
+
+                        client.request(
+                            method="GET",
+                            path=url.path,
+                            qargs=parse.parse_qs(url.query),
+                        )
+
+                        self.clients.append((oobi, client, clientDoer))
+
                     elif url.path.startswith("/.well-known/keri/oobi"):  # Well Known
                         print("well known")
 
@@ -633,14 +652,26 @@ class Oobiery(doing.DoDoer):
                         print("invalid status for oobi response: {}".format(response["status"]))
                         continue
 
-                    if not response["headers"]["Content-Type"] == "application/json+cesr":
+                    if response["headers"]["Content-Type"] == "application/json+cesr":
+                        self.parser.parse(ims=bytearray(response["body"]))
+                        self.cues.append(dict(kin="resolved", oobi=oobi))
+                    elif response["headers"]["Content-Type"] == "application/schema+json":
+                        obr = self.db.oobis.get(oobi)
+                        try:
+                            schemer = scheming.Schemer(raw=bytearray(response["body"]))
+                            if schemer.said == obr.said:
+                                self.db.schema.pin(keys=(schemer.said,), val=schemer)
+                                self.cues.append(dict(kin="resolved", oobi=oobi))
+                            else:
+                                self.cues.append(dict(kin="failed", oobi=oobi))
+
+                        except Exception:
+                            self.cues.append(dict(kin="failed", oobi=oobi))
+
+                    else:
                         self.cues.append(dict(kin="failed", oobi=oobi))
                         print("invalid content type for oobi response"
                               .format(response.headers["Content-Type"]))
-                        continue
-
-                    self.parser.parse(ims=bytearray(response["body"]))
-                    self.cues.append(dict(kin="resolved", oobi=oobi))
 
                 else:
                     self.clients.append((oobi, client, clientDoer))

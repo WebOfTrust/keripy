@@ -7,12 +7,7 @@ from hio.base import doing
 
 from .. import help
 from ..app import agenting
-from ..core.scheming import CacheResolver
-
-# TODO: create this and populate with needed schema for now
 from ..vdr import viring
-
-cache = CacheResolver()
 
 logger = help.ogler.getLogger()
 

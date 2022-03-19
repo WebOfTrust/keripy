@@ -606,6 +606,7 @@ class CredentialsEnd:
         registry = body.get("registry")
         schema = body.get("schema")
         source = body.get("source")
+        rules = body.get("rules")
         recipientIdentifier = body.get("recipient")
         notify = body["notify"] if "notify" in body else True
 
@@ -644,7 +645,9 @@ class CredentialsEnd:
                                     schema=schema,
                                     subject=d,
                                     source=source,
+                                    rules=rules,
                                     status=issuer.regk)
+        print(creder.raw)
         try:
             issuer.issue(creder=creder, dt=dt)
         except kering.MissingAnchorError:
@@ -1119,13 +1122,13 @@ class MultisigEventEnd(doing.DoDoer):
     def initialize(self, body, rep, alias):
         if "aids" not in body:
             rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group rotation request, 'aids' is required'"
+            rep.text = "Invalid multisig group rotation request, 'aids' is required"
             return None
 
         ghab = self.hby.habByName(alias)
         if ghab is None:
             rep.status = falcon.HTTP_404
-            rep.text = "Invalid multisig group rotation request alias {alias} not found'"
+            rep.text = "Invalid multisig group rotation request alias {alias} not found"
             return None
 
         aids = body["aids"]

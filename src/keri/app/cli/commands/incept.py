@@ -5,14 +5,14 @@ keri.kli.commands module
 """
 import argparse
 import json
-import sys
 from dataclasses import dataclass
 from json import JSONDecodeError
 
+import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, directing, agenting, indirecting, configing, delegating
+from keri.app import habbing, agenting, indirecting, configing, delegating
 from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
@@ -81,7 +81,7 @@ def handler(args):
     icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config, **kwa)
 
     doers = [icpDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class InceptDoer(doing.DoDoer):

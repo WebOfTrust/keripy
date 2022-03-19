@@ -32,10 +32,12 @@ def test_verifier_query(mockHelpingNowUTC):
                        b'dvBVkQnHkFLlBw')
 
 
-def test_verifier():
+def test_verifier(seeder):
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
             habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp), \
             viring.openReg(temp=True) as reger:
+        seeder.seedSchema(db=hby.db)
+        seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
 
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
@@ -50,7 +52,7 @@ def test_verifier():
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         creder = proving.credential(issuer=hab.pre,
-                                    schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
+                                    schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
                                     subject=d,
                                     status=issuer.regk)
 
@@ -86,7 +88,7 @@ def test_verifier():
         assert saider[0].qb64 == creder.said
         saider = reger.subjs.get(recp.pre)
         assert saider[0].qb64 == creder.said
-        saider = reger.schms.get("EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg")
+        saider = reger.schms.get("ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI")
         assert saider[0].qb64 == creder.said
 
     """End Test"""
@@ -277,9 +279,9 @@ def test_verifier():
 #     """End Test"""
 
 
-def test_verifier_chained_credential():
-    qviSchema = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
-    vLeiSchema = "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0"
+def test_verifier_chained_credential(seeder):
+    qviSchema = "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
+    vLeiSchema = "EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
@@ -288,6 +290,10 @@ def test_verifier_chained_credential():
             viring.openReg(temp=True, name="ron") as ronreg, \
             viring.openReg(temp=True, name="ian") as ianreg, \
             viring.openReg(temp=True, name="vic") as vicreg:
+        seeder.seedSchema(db=ronHby.db)
+        seeder.seedSchema(db=ianHby.db)
+        seeder.seedSchema(db=hanHby.db)
+        seeder.seedSchema(db=vicHby.db)
 
         assert ron.pre == "EkaWvr-o2ktpq6nIYL-KlCd_hfVkhIxVRfBOOjETday8"
         assert ian.pre == "EHcaV00uLjd7zXDt_FnH-gCNYG-HC2D2R1GsHDt6-eoc"
@@ -367,9 +373,9 @@ def test_verifier_chained_credential():
         _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         chain = dict(
+            d=creder.said,
             qualifiedvLEIIssuervLEICredential=dict(
-                d=creder.said,
-                i=ian.pre,
+                n=creder.said,
             ),
         )
 
@@ -377,7 +383,7 @@ def test_verifier_chained_credential():
                                         schema=vLeiSchema,
                                         subject=d,
                                         status=ianiss.regk,
-                                        source=[chain],
+                                        source=chain,
                                         rules=[dict(
                                             usageDisclaimer="Use carefully."
                                         )])

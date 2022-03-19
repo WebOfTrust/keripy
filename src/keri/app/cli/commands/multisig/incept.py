@@ -13,7 +13,7 @@ import sys
 from hio.base import doing
 
 from keri import help, kering
-from keri.app import directing, indirecting, grouping, habbing, delegating
+from keri.app import indirecting, grouping, habbing
 from keri.app.cli.common import existing, displaying
 from keri.core import coring
 
@@ -67,7 +67,7 @@ def inceptMultisig(args):
     icpDoer = GroupMultisigIncept(name=name, base=base, alias=alias, bran=bran, group=group, wait=args.wait, **opts)
 
     doers = [icpDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class GroupMultisigIncept(doing.DoDoer):

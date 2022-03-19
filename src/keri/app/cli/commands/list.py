@@ -7,6 +7,7 @@ keri.kli.commands module
 import argparse
 
 from hio import help
+from hio.base import doing
 
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
@@ -29,6 +30,14 @@ def list_identifiers(args):
     """ Command line list handler
 
     """
+    kwa = dict(args=args)
+    return [doing.doify(ids, **kwa)]
+
+
+def ids(tymth, tock=0.0, **opts):
+    _ = (yield tock)
+
+    args = opts["args"]
     name = args.name
     base = args.base
     bran = args.bran
