@@ -1086,7 +1086,6 @@ class Hab:
         except MissingSignatureError:
             pass
         except Exception as e:
-            print(e)
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
 

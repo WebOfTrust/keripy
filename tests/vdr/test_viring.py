@@ -16,16 +16,16 @@ from keri.db import basing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vc import proving
 from keri.vdr import viring
-from keri.vdr.viring import Registry, nsKey
+from keri.vdr.viring import Reger, nsKey
 
 
 def test_issuer():
     """
     Test Issuer Class
     """
-    issuer = Registry()
+    issuer = Reger()
 
-    assert isinstance(issuer, Registry)
+    assert isinstance(issuer, Reger)
     assert issuer.name == "main"
     assert issuer.temp is False
     assert isinstance(issuer.env, lmdb.Environment)
@@ -40,8 +40,8 @@ def test_issuer():
     assert not issuer.opened
 
     # test not opened on init
-    issuer = Registry(reopen=False)
-    assert isinstance(issuer, Registry)
+    issuer = Reger(reopen=False)
+    assert isinstance(issuer, Reger)
     assert issuer.name == "main"
     assert issuer.temp is False
     assert issuer.opened is False
@@ -62,8 +62,8 @@ def test_issuer():
 
     assert isinstance(issuer.tvts, lmdb._Database)
 
-    with openLMDB(cls=Registry) as issuer:
-        assert isinstance(issuer, Registry)
+    with openLMDB(cls=Reger) as issuer:
+        assert isinstance(issuer, Reger)
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
@@ -96,7 +96,7 @@ def test_issuer():
                     b'"s":"0","b":["BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"],"t":"vcp"}')
     vdig = Diger(ser=vcpb)
 
-    with openLMDB(cls=Registry) as issuer:
+    with openLMDB(cls=Reger) as issuer:
         key = dgKey(regk, vdig.qb64b)
 
         assert issuer.getTvt(key) is None
@@ -305,7 +305,7 @@ def test_clone():
     tib03 = ("BklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDiP"
              "jioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA").encode("utf-8")
 
-    with openLMDB(cls=Registry) as issuer:
+    with openLMDB(cls=Reger) as issuer:
         dgkey = dgKey(regk, vdig.qb64b)
         snkey = snKey(regk, sn)
         assert issuer.putTvt(dgkey, val=vcpb) is True

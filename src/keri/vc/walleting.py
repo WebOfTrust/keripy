@@ -19,7 +19,7 @@ class Wallet:
 
     """
 
-    def __init__(self, reger: viring.Registry = None, name="test", temp=False):
+    def __init__(self, reger: viring.Reger = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
@@ -30,7 +30,7 @@ class Wallet:
         self.name = name
         self.temp = temp
 
-        self.reger = reger if reger is not None else viring.Registry(name=self.name, temp=self.temp)
+        self.reger = reger if reger is not None else viring.Reger(name=self.name, temp=self.temp)
 
     def getCredentials(self, schema=None):
         """

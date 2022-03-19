@@ -62,8 +62,7 @@ class Counselor(doing.DoDoer):
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
-        sys.stdout.write("Waiting for other signatures")
-        sys.stdout.flush()
+        print("Waiting for other signatures...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
     def rotate(self, ghab, aids, sith, toad, cuts=None, adds=None, data=None):
@@ -138,7 +137,7 @@ class Counselor(doing.DoDoer):
 
         while True:
             self.processEscrows()
-            yield self.tock
+            yield 0.5
 
     def processEscrows(self):
         self.processLocalWitnessEscrow()
@@ -215,8 +214,7 @@ class Counselor(doing.DoDoer):
             for recpt in others:
                 self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
-            sys.stdout.write("Waiting for other signatures")
-            sys.stdout.flush()
+            print("Waiting for other signatures...")
             self.hby.db.gpae.rem((pre,))
             return self.hby.db.gpse.add(keys=(ghab.pre,), val=(coring.Seqner(sn=serder.sn), serder.saider))
 
@@ -228,8 +226,6 @@ class Counselor(doing.DoDoer):
 
         """
         for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrpw
-            sys.stdout.write(".")
-            sys.stdout.flush()
             snkey = dbing.snKey(pre, seqner.sn)
             evt = self.hby.db.getKeLast(key=snkey)
             if evt:
@@ -498,7 +494,7 @@ def getEscrowedEvent(db, pre, sn):
     key = snKey(pre, sn)
     dig = db.getPseLast(key)
     if dig is None:
-        return None
+        dig = db.getKeLast(key)
 
     dig = bytes(dig)
     key = dbing.dgKey(pre, dig)  # digest key

@@ -17,7 +17,7 @@ from ..core import parsing, coring, scheming
 from .. import core
 from ..help import helping
 from ..vdr import eventing
-from ..vdr.viring import Registry
+from ..vdr.viring import Reger
 
 logger = help.ogler.getLogger()
 
@@ -40,13 +40,13 @@ class Verifier:
 
         Parameters:
             hby (Habery): for this verifier's context
-            reger (Registry): database instance
+            reger (Reger): database instance
             creds (decking.Deck): inbound credentials for handler
             cues (decking.Deck): outbound cue messages from handler
 
         """
         self.hby = hby
-        self.reger = reger if reger is not None else Registry(name=self.hby.name, temp=True)
+        self.reger = reger if reger is not None else Reger(name=self.hby.name, temp=True)
         self.creds = creds if creds is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
@@ -64,7 +64,7 @@ class Verifier:
         Should not be called until .hab is initialized
 
         """
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, regk=None, local=False)
+        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
         self.resolver = scheming.CacheResolver(db=self.hby.db)
 

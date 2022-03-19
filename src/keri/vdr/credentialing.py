@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.vdr.issuing module
+keri.vdr.credentialing module
 
 VC issuer support
 """
@@ -12,7 +12,7 @@ from hio.help import decking
 
 from keri.vdr import viring
 from .. import kering, help
-from ..app import grouping, agenting
+from ..app import agenting
 from ..core import parsing, coring
 from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Serder
 from ..core.eventing import SealEvent, SealSource, TraitDex
@@ -20,12 +20,86 @@ from ..db.dbing import snKey, dgKey
 from ..help import helping
 from ..vc import proving
 from ..vdr import eventing
-from ..vdr.viring import Registry, nsKey
+from ..vdr.viring import Reger, nsKey
 
 logger = help.ogler.getLogger()
 
 
-class Issuer:
+class Regery:
+
+    def __init__(self, hby, name="test", base="", reger=None, temp=False, cues=None):
+
+        self.hby = hby
+        self.name = name
+        self.base = base
+        self.temp = temp
+        self.cues = cues if cues is not None else decking.Deck()
+
+        self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp)
+        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True)
+        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
+
+        self.regs = {}  # List of local registries
+        self.inited = False
+
+        if self.reger.opened:
+            self.setup()
+
+    def setup(self):
+        if not self.reger.opened:
+            raise kering.ClosedError("Attempt to setup Regery with closed "
+                                     "reger.")
+        self.loadRegistries()
+        self.inited = True
+
+    def loadRegistries(self):
+        """ Load Registry objects for each entry in the .regs database
+
+        """
+
+        for name, regord in self.reger.regs.getItemIter():
+            name, = name
+            regk = regord.registryKey
+            pre = regord.prefix
+
+            hab = self.hby.habs[pre]
+            if hab is None:
+                raise kering.ConfigurationError(f"Unknown prefix {pre} for creating Registry {name}")
+
+            reg = Registry(hab=hab, reger=self.reger, tvy=self.tvy, psr=self.psr, name=name, regk=regk, cues=self.cues)
+
+            reg.inited = True
+            self.regs[regk] = reg
+
+    def makeRegistry(self, name, prefix, **kwa):
+        hab = self.hby.habs[prefix]
+        if hab is None:
+            raise kering.ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
+
+        reg = Registry(hab=hab, name=name, reger=self.reger, tvy=self.tvy, psr=self.psr, cues=self.cues)
+
+        reg.make(**kwa)
+        self.regs[reg.regk] = reg
+
+        return reg
+
+    def registryByName(self, name):
+        if regrec := self.reger.regs.get(name):
+            return self.regs[regrec.registryKey] if regrec.registryKey in self.regs else None
+        return None
+
+    def processEscrows(self):
+        """ Process escrows for each registry """
+        self.tvy.processEscrows()
+        for registry in self.regs.values():
+            registry.processEscrows()
+
+    def close(self):
+        if self.reger.inited:
+            self.reger.close()
+
+
+class Registry:
     """
     Issuer provides encapsulation of creating a Verifiable Credential Registry with issuance
     and revocation of VCs against that registry.
@@ -36,38 +110,28 @@ class Issuer:
 
     """
 
-    def __init__(self, hab, name="test", cues=None, reger=None, estOnly=False,
-                 temp=False, **kwa):
+    def __init__(self, hab, reger, tvy, psr, name="test", regk=None, cues=None):
         """ Initialize Instance
 
         Parameters:
             hab (Habitat): instance of local controller's context
             name (str): alias for this issuer
-            reger (Registry): database instance for controller's credentials
-            tevers (dict): Tever instances keys by qb64 prefix of registry
-            noBackers (boolean): True to allow specification of TEL specific backers
-            backers (list): initial list of backer prefixes qb64 for VCs in the Registry
-            toad (str): hex of witness threshold
-            estOnly (boolean): True for forcing rotation events for every TEL event.
+            reger (Reger): database instance for controller's credentials
+
         """
 
         self.hab = hab
         self.name = name
-        self.estOnly = estOnly
-        self.cues = cues if cues is not None else decking.Deck()
-        self.regk = None
+        self.reger = reger
+        self.tvy = tvy  # injected
+        self.psr = psr  # injected
 
-        self.reger = reger if reger is not None else Registry(name=self.hab.name, temp=temp)
+        self.cues = cues if cues is not None else decking.Deck()
+        self.regk = regk
+
         self.inited = False
 
-        # save init kwy word arg parameters as ._inits in order to later finish
-        # init setup elseqhere after databases are opened if not below
-        self._inits = kwa
-
-        if self.hab.inited:
-            self.setup(**self._inits)
-
-    def setup(self, *, noBackers=False, baks=None, toad=None, ):
+    def make(self, *, noBackers=True, baks=None, toad=None, estOnly=False):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
@@ -77,53 +141,31 @@ class Issuer:
             noBackers (boolean): True to allow specification of TEL specific backers
             baks (list): initial list of backer prefixes qb64 for VCs in the Registry
             toad (str): hex of witness threshold
+            estOnly (boolean): True for forcing rotation events for every TEL event.
 
         """
-        ex = self.reger.regs.get(keys=self.name)
-        if ex is not None:
-            self.regk = ex.registryKey
+        baks = baks if baks is not None else []
 
-        if self.regk is None:
-            self.regi = 0
+        self.cnfg = [TraitDex.NoBackers] if noBackers else []
+        if estOnly:
+            self.cnfg.append(TraitDex.EstOnly)
 
-            self.noBackers = noBackers
+        pre = self.hab.pre
 
-            # save backers locally for now.  will be managed by tever when implemented
-            self.backers = baks if baks is not None else []
+        regser = eventing.incept(pre,
+                                 baks=baks,
+                                 toad=toad,
+                                 cnfg=self.cnfg,
+                                 code=MtrDex.Blake3_256)
+        self.regk = regser.pre
+        self.registries.add(self.regk)
+        self.reger.regs.put(keys=self.name,
+                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
 
-            self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
-
-            pre = self.hab.pre
-
-            self.regser = eventing.incept(pre,
-                                          baks=self.backers,
-                                          toad=toad,
-                                          cnfg=self.cnfg,
-                                          code=MtrDex.Blake3_256)
-            self.regk = self.regser.pre
-            self.reger.regs.put(keys=self.name,
-                                val=viring.RegistryRecord(registryKey=self.regk))
-
-            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
-            self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
-
-            try:
-                self.anchorMsg(self.regser)
-            except kering.MissingAnchorError:
-                logger.info("Credential registry missing anchor for inception = {}".format(self.regser.ked))
-        else:
-            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
-            self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
-
-            if self.regk not in self.tevers:
-                raise kering.ConfigurationError("Improper Issuer inception for "
-                                                "pre={}.".format(self.regk))
-
-            tever = self.tevers[self.regk]
-            self.regser = tever.serder
-            self.noBackers = tever.noBackers
-            self.backers = tever.baks
-            self.regi = int(tever.serder.ked["s"], 16)
+        try:
+            self.anchorMsg(regser, estOnly=estOnly)
+        except kering.MissingAnchorError:
+            logger.info("Credential registry missing anchor for inception = {}".format(regser.ked))
 
         self.inited = True
 
@@ -135,6 +177,34 @@ class Issuer:
 
         """
         return self.reger.tevers
+
+    @property
+    def tever(self):
+        return self.reger.tevers[self.regk]
+
+    @property
+    def estOnly(self):
+        return self.tever.estOnly
+
+    @property
+    def noBackers(self):
+        return self.tever.noBackers
+
+    @property
+    def baks(self):
+        return self.tever.baks
+
+    @property
+    def regi(self):
+        return int(self.tever.serder.ked["s"], 16)
+
+    @property
+    def regser(self):
+        return self.tever.serder
+
+    @property
+    def registries(self):
+        return self.reger.registries
 
     def rotate(self, toad=None, cuts=None, adds=None):
         """ Rotate backer list for registry
@@ -152,16 +222,15 @@ class Issuer:
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
-        serder = eventing.rotate(dig=self.regser.said, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
-                                 adds=adds, cuts=cuts)
+        serder = eventing.rotate(dig=self.regser.said,
+                                 regk=self.regk,
+                                 sn=self.regi + 1,
+                                 toad=toad,
+                                 baks=self.baks,
+                                 adds=adds,
+                                 cuts=cuts)
 
-        self.regser = serder
-
-        self.anchorMsg(serder)
-
-        tever = self.tevers[self.regk]
-        self.backers = tever.baks
-        self.regi = int(tever.serder.ked["s"], 16)
+        self.anchorMsg(serder, estOnly=self.estOnly)
 
         return True
 
@@ -185,7 +254,7 @@ class Issuer:
             serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                           dt=dt)
 
-        self.anchorMsg(serder=serder, subject=creder.subject, reason=craw.decode("utf-8"))
+        self.anchorMsg(serder=serder, estOnly=self.estOnly)
 
         return True
 
@@ -217,7 +286,7 @@ class Issuer:
             serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                            dig=iserder.said, dt=dt)
 
-        self.anchorMsg(serder, subject=creder.subject)
+        self.anchorMsg(serder, estOnly=self.estOnly)
 
         return True
 
@@ -240,7 +309,7 @@ class Issuer:
 
         return msg
 
-    def anchorMsg(self, serder, subject=None, reason=None, seal=None):
+    def anchorMsg(self, serder, seal=None, estOnly=None):
         """  Create key event with seal to serder anchored as data.
 
         Performs a rotation or interaction event for single sig or multiple sig identifier
@@ -249,17 +318,17 @@ class Issuer:
 
         Parameters:
             serder (Serder): registry event message
-            subject (str): qb64 identfier prefix of issuer
-            reason (Optional(str)): optional string message for multisig notifications
             seal (Optional(SealSource)): option seal provided to n > 1 participants of multsig registry
+            estOnly (bool): True means do not allow interaction events
 
         """
 
         rseal = SealEvent(serder.pre, serder.ked["s"], serder.said)
         rseal = rseal._asdict()
+        estOnly = estOnly if estOnly is not None else False
 
         if self.hab.phab is None:
-            if self.estOnly:
+            if estOnly:
                 kevt = self.hab.rotate(data=[rseal])
             else:
                 kevt = self.hab.interact(data=[rseal])
@@ -272,20 +341,23 @@ class Issuer:
                 dict(
                     kin="kevt",
                     msg=kevt,
-                    sub=subject
+                    pre=self.hab.pre,
+                    regk=self.regk
                 ),
                 dict(
                     kin="send",
                     msg=tevt,
-                    sub=subject
+                    pre=self.hab.pre,
+                    regk=self.regk
                 ),
             ])
 
         else:
             if seal is None:
-                # TODO: replace with Counselor
-                mmsg = dict(kin="multisig", pre=self.hab.pre, data=[rseal], reason=reason)
-                self.cues.append(mmsg)
+                ixn = self.hab.interact(data=[rseal])
+                gserder = coring.Serder(raw=ixn)
+                self.cues.append(dict(kin="counselor", pre=self.hab.pre, regk=self.regk, sn=gserder.sn,
+                                      said=gserder.said))
 
                 self.escrow(serder)
                 raise kering.MissingAnchorError("anchor not provided for multisig")
@@ -293,7 +365,12 @@ class Issuer:
                 tevt = self.attachSeal(serder=serder, seal=seal)
                 self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
 
-                self.cues.append(dict(kin="logEvent", pre=self.hab.pre, msg=tevt))
+                self.cues.append(dict(
+                    kin="send",
+                    msg=tevt,
+                    pre=self.hab.pre,
+                    regk=self.regk
+                ))
 
     def escrow(self, serder):
         """ Save Issuer event for future process when anchor becomes available
@@ -343,7 +420,7 @@ class Issuer:
                 continue
 
             try:
-                self.anchorMsg(serder, seal=seal, reason=None)
+                self.anchorMsg(serder, seal=seal)
             except kering.MissingAnchorError as ex:
                 logger.exception("Issuer unescrow failed event from escrow = {}", ex.args[0])
             except Exception as ex:
@@ -358,9 +435,177 @@ class Issuer:
                             "event=\n%s\n", json.dumps(serder.ked, indent=1))
 
 
-class IssuerDoer(doing.DoDoer):
+class RegistryInceptDoer(doing.DoDoer):
+    """ DoDoer for creating a VDR registry.
+
+    Accepts command messages on .msgs for creating credential registries.
+    Creates Issuers for each new registry and handles requests from multi-sig identifiers.
+
+    Notifies status on .cues
+
+    Properties:
+       .msgs (decking.Deck): inbound cue messages for handler
+       .cues (decking.Deck): outbound cue messages from handler
+
     """
-    Basic Issuer Doer to perform credential issuance of the registry
+
+    def __init__(self, hby, rgy, counselor, msgs=None, cues=None):
+        """ Initialize registry incept DoDoer.
+
+        Parameters:
+            hby (Habery): identifier environment
+            rgy (Regery): Credential registry environment
+            msgs (decking.Deck): inbound cue messages for handler
+            cues (decking.Deck): outbound cue messages from handler
+        """
+
+        self.hby = hby
+        self.rgy = rgy
+        self.counselor = counselor
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+
+        doers = [self.witDoer, doing.doify(self.inceptDo)]
+        super(RegistryInceptDoer, self).__init__(doers=doers)
+
+    def inceptDo(self, tymth, tock=0.0):
+        """ Doist capable of creating a credential registry.
+
+        Processes inbound cues to create credential registries using Issuer objects.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Returns:
+            Doist: compatible generator method for creating a registry and sending its inception and anchoring
+            events to witnesses or backers
+
+        """
+        # start enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)  # finish enter context
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                name = msg["name"]
+                pre = msg["pre"]
+                conf = msg['c'] if 'c' in msg else {}  # default config if none specified
+
+                registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
+
+                self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
+                yield self.tock
+
+                while registry.regk not in registry.tevers:
+                    yield self.tock
+
+                print(f"Registry {registry.regk} in tevers")
+                yield self.tock
+
+            yield self.tock
+
+    def issuerDo(self, tymth, tock=0.0):
+        """ Process cues from credential issue coroutine
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:
+            Doist: doifiable compatible generator method
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.rgy.cues:
+                cue = self.rgy.cues.popleft()
+                cueKin = cue['kin']
+                pre = cue["pre"]
+                regk = cue["regk"]
+                hab = self.hby.habs[pre]
+
+                if cueKin == "send":
+                    tevt = cue["msg"]
+                    witSender = agenting.WitnessPublisher(hab=hab, msg=tevt)
+                    self.extend([witSender])
+                    while not witSender.done:
+                        _ = yield self.tock
+                    self.remove([witSender])
+                    self.cues.append(dict(kin="finished", regk=regk, pre=pre))
+
+                elif cueKin == "kevt":
+                    kevt = cue["msg"]
+                    serder = eventing.Serder(raw=bytearray(kevt))
+                    self.witDoer.msgs.append(dict(pre=serder.pre, sn=serder.sn))
+
+                    while not self.witDoer.cues:
+                        yield self.tock
+
+                elif cueKin == "counselor":
+                    if not hab.phab:  # not a group hab, this is an invalid cue
+                        continue
+
+                    sn = cue["sn"]
+                    said = cue["said"]
+
+                    prefixer = coring.Prefixer(qb64=pre)
+                    seqner = coring.Seqner(sn=sn)
+                    saider = coring.Saider(qb64=said)
+
+                    self.counselor.start(aids=hab.aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+                                         saider=saider)
+                    while True:
+                        if self.counselor.cues:
+                            cue = self.counselor.cues.popleft()
+                            if cue["pre"] == hab.pre:
+                                break
+
+                        yield self.tock
+
+                    self.cues.append(dict(kin="finished", regk=regk, pre=pre))
+
+                yield self.tock
+            yield self.tock
+
+    def escrowDo(self, tymth, tock=0.0):
+        """ Escrow processing Doist generator
+
+        Processes escrows for all newly created issuers.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+
+        Returns:
+            Doist: doifiable compatible generator method
+
+        """
+        # start enter context
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            self.rgy.processEscrows()
+            yield
+
+
+class RegistryDoer(doing.DoDoer):
+    """
+    Basic Registry Doer to perform credential issuance of the registry
 
     Inherited Attributes:
         .done is Boolean completion state:
@@ -398,49 +643,33 @@ class IssuerDoer(doing.DoDoer):
         ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, issuer, verifier, msgs=None, cues=None, **kwa):
+    def __init__(self, hby, registry, verifier, msgs=None, cues=None, **kwa):
         """ Initialize DoDoer for issuing credentials.
 
         Parameters:
             hab (Habitat): identifier environment
-            issuer (Issuer): instance to use to perform credential issuance
+            registry (Registry): instance to use to perform credential issuance
             verifier (Verifier): credential verifier tied to local credential store for persistence.
             msgs (decking.Deck): inbound cue messages for handler
             cues (decking.Deck): outbound cue messages from handler
             **kwa (dict): keyword args passed through to DoDoer
         """
-        self.hab = hab
-        self.issuer = issuer
+        self.hby = hby
+        self.registry = registry
         self.verifier = verifier
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
         doers = [
-            doing.doify(self.issueDo),
-            doing.doify(self.issuerDo),
+            doing.doify(self.registryDo),
+            doing.doify(self.cueDo),
             doing.doify(self.escrowDo),
             doing.doify(self.verifierDo),
         ]
 
-        super(IssuerDoer, self).__init__(doers=doers, **kwa)
+        super(RegistryDoer, self).__init__(doers=doers, **kwa)
 
-    def enter(self, **kwargs):
-        """ Context initiation
-
-        Perform deferred initialization of issuer if needed.
-
-        Args:
-            **kwargs (dict): keyword arguments passed to issuer setup
-
-        Returns:
-            deque: deeds from super
-
-        """
-        if not self.issuer.inited:
-            self.issuer.setup(**self.issuer._inits)
-        return super(IssuerDoer, self).enter(**kwargs)
-
-    def issueDo(self, tymth, tock=0.0):
+    def registryDo(self, tymth, tock=0.0):
         """ Generator method for issuing a credential from a registry
 
 
@@ -471,7 +700,6 @@ class IssuerDoer(doing.DoDoer):
 
                 dt = data["dt"] if "dt" in data else helping.nowIso8601()
 
-
                 d = dict(
                     d="",
                     i=recipient,
@@ -480,25 +708,25 @@ class IssuerDoer(doing.DoDoer):
 
                 d |= data
 
-                creder = proving.credential(issuer=self.hab.pre,
+                creder = proving.credential(issuer=self.hby.pre,
                                             schema=schema,
                                             subject=d,
                                             source=source,
-                                            status=self.issuer.regk)
+                                            status=self.registry.regk)
 
                 try:
-                    self.issuer.issue(creder=creder, dt=dt)
+                    self.registry.issue(creder=creder, dt=dt)
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-                craw = self.hab.endorse(creder)
+                craw = self.hby.endorse(creder)
                 parsing.Parser().parse(ims=craw, vry=self.verifier)
 
                 yield self.tock
 
             yield self.tock
 
-    def issuerDo(self, tymth, tock=0.0):
+    def cueDo(self, tymth, tock=0.0):
         """ Process cues from credential issue coroutine
 
         Parameters:
@@ -511,33 +739,32 @@ class IssuerDoer(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.issuer.cues:
-                cue = self.issuer.cues.popleft()
+            while self.registry.cues:
+                cue = self.registry.cues.popleft()
 
                 cueKin = cue['kin']
                 if cueKin == "send":
                     tevt = cue["msg"]
-                    witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
+                    witSender = agenting.WitnessPublisher(hab=self.hby, msg=tevt)
                     self.extend([witSender])
 
                     while not witSender.done:
                         _ = yield self.tock
 
                     self.remove([witSender])
-                    self.cues.append(dict(kin="published", regk=self.issuer.regk))
+                    self.cues.append(dict(kin="finished", regk=self.registry.regk))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
+                    serder = eventing.Serder(raw=bytearray(kevt))
+                    witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                    witDoer.msgs.append(dict(pre=serder.pre, sn=serder.sn))
                     self.extend([witDoer])
 
                     while not witDoer.done:
                         yield self.tock
 
                     self.remove([witDoer])
-                    self.cues.append(dict(kin="witnessed", regk=self.issuer.regk))
-                elif cueKin == "logEvent":
-                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
-                    pass
+                    self.cues.append(dict(kin="witnessed", regk=self.registry.regk))
 
                 yield self.tock
 
@@ -564,7 +791,7 @@ class IssuerDoer(doing.DoDoer):
         yield self.tock
 
         while True:
-            self.issuer.processEscrows()
+            self.registry.processEscrows()
             self.verifier.processEscrows()
             yield
 

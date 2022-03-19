@@ -10,7 +10,7 @@ from hio.base import doing
 
 from keri import kering
 from ..common import existing
-from ... import habbing, agenting, indirecting, directing
+from ... import habbing, agenting, indirecting
 
 parser = argparse.ArgumentParser(description='Create and publish an interaction event')
 parser.set_defaults(handler=lambda args: interact(args))
@@ -20,8 +20,6 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument('--proto', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                    'http)', default="tcp")
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=False)
 
 
@@ -53,7 +51,7 @@ def interact(args):
     else:
         data = None
 
-    ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, proto=args.proto, data=data)
+    ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, data=data)
 
     return [ixnDoer]
 
@@ -64,7 +62,7 @@ class InteractDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, proto, data: list = None):
+    def __init__(self, name, base, bran, alias, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -75,7 +73,6 @@ class InteractDoer(doing.DoDoer):
        """
 
         self.alias = alias
-        self.proto = proto
         self.data = data
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)

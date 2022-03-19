@@ -8,7 +8,7 @@ from keri import kering
 from keri.app import indirecting, grouping
 from keri.app.cli.common import existing
 from keri.peer import exchanging
-from keri.vdr import issuing, verifying, viring
+from keri.vdr import credentialing, verifying, viring
 
 logger = help.ogler.getLogger()
 
@@ -78,8 +78,8 @@ class CredentialIssuer(doing.DoDoer):
         )
 
 
-        reger = viring.Registry(name=registryName, db=self.hab.db)
-        issuer = issuing.Issuer(hab=self.hab, name=registryName, reger=reger)
+        reger = viring.Reger(name=registryName, db=self.hab.db)
+        issuer = credentialing.Registry(hab=self.hab, name=registryName, reger=reger)
         self.verifier = verifying.Verifier(hab=self.hab, reger=reger)
         meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
 
@@ -88,7 +88,7 @@ class CredentialIssuer(doing.DoDoer):
 
         mbx = indirecting.MailboxDirector(hab=self.hab, exc=exchanger, topics=["/receipt", "/multisig"])
 
-        self.issr = issuing.IssuerDoer(hab=self.hab, issuer=issuer, verifier=self.verifier)
+        self.issr = credentialing.RegistryDoer(hab=self.hab, registry=issuer, verifier=self.verifier)
         doers.extend([self.issr, mbx, exchanger])
         self.toRemove = list(doers)
 

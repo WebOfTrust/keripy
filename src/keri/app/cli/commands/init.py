@@ -13,6 +13,7 @@ from hio.base import doing
 from keri.app import habbing, configing
 from keri.app.cli.common import oobiing
 from keri.kering import ConfigurationError
+from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
 
@@ -107,8 +108,11 @@ class InitDoer(doing.DoDoer):
                                     clear=False)
 
         hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
+        rgy = credentialing.Regery(hby=hby, name=name, base=base, temp=temp)
 
         print("KERI Keystore created at:", hby.ks.path)
+        print("KERI Database created at:", hby.db.path)
+        print("KERI Credential Store created at:", rgy.reger.path)
         if hby.mgr.aeid:
             print("\taeid:", hby.mgr.aeid)
 

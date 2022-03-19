@@ -25,7 +25,7 @@ from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from ..vdr.viring import Registry, nsKey
+from ..vdr.viring import Reger, nsKey
 
 logger = help.ogler.getLogger()
 
@@ -693,7 +693,7 @@ class Tever:
     NoBackers = False
 
     def __init__(self, cues=None, stt=None, serder=None, seqner=None, saider=None, bigers=None, db=None,
-                 reger=None, noBackers=None, regk=None, local=False):
+                 reger=None, noBackers=None, estOnly=None, regk=None, local=False):
         """ Create incepting tever and state from registry inception serder
 
         Create incepting tever and state from registry inception serder
@@ -706,8 +706,9 @@ class Tever:
             bigers (list): list of Siger instances of indexed backer signatures of
                 event. Index is offset into baks list of latest est event
             db (Baser): instance of baser lmdb database
-            reger (Registry): instance of VC lmdb database
+            reger (Reger): instance of VC lmdb database
             noBackers (bool): True means do not allow backer configuration
+            estOnly (bool): True means do not allow interaction events
             regk (str): identifier prefix of own or local registry. May not be the
                 prefix of this Tever's event. Some restrictions if present
             local (bool): True means only process msgs for own controller's
@@ -722,7 +723,7 @@ class Tever:
         if not (stt or serder):
             raise ValueError("Missing required arguments. Need state or serder")
 
-        self.reger = reger if reger is not None else Registry()
+        self.reger = reger if reger is not None else Reger()
         self.cues = cues if cues is not None else decking.Deck()
 
         self.db = db if db is not None else basing.Baser(reopen=True)
@@ -747,8 +748,7 @@ class Tever:
                                       "evt = {}.".format(k, ilk, serder.ked))
 
         self.incept(serder=serder)
-
-        self.config(serder=serder, noBackers=noBackers)
+        self.config(serder=serder, noBackers=noBackers, estOnly=estOnly)
 
         bigers = self.valAnchorBigs(serder=serder,
                                     seqner=seqner,
@@ -766,7 +766,6 @@ class Tever:
                       baks=self.baks)
 
         self.regk = self.prefixer.qb64
-        self.reger.states.pin(keys=self.regk, val=self.state())
 
     def reload(self, ksn):
         """ Reload Tever attributes (aka its state) from state serder
@@ -796,6 +795,7 @@ class Tever:
         self.adds = ksn.ked["ba"]
 
         self.noBackers = True if TraitDex.NoBackers in ksn.ked["c"] else False
+        self.estOnly = True if TraitDex.EstOnly in ksn.ked["c"] else False
 
         if (raw := self.reger.getTvt(key=dgKey(pre=self.prefixer.qb64,
                                                dig=ksn.ked['d']))) is None:
@@ -886,7 +886,7 @@ class Tever:
         self.toad = toad
         self.serder = serder
 
-    def config(self, serder, noBackers=None):
+    def config(self, serder, noBackers=None, estOnly=None):
         """ Process cnfg field for configuration traits
 
         Parse and validate the configuration options for registry inception from
@@ -904,9 +904,15 @@ class Tever:
                                    else self.NoBackers)
                           else False)  # ensure default noBackers is boolean
 
+        self.estOnly = (True if (estOnly if estOnly is not None
+                                   else False)
+                          else False)  # ensure default estOnly is boolean
+
         cnfg = serder.ked["c"]  # process cnfg for traits
         if TraitDex.NoBackers in cnfg:
             self.noBackers = True
+        if TraitDex.EstOnly in cnfg:
+            self.estOnly = True
 
     def update(self, serder, seqner=None, saider=None, bigers=None):
         """ Process registry non-inception events.
@@ -961,7 +967,6 @@ class Tever:
                           saider=saider,
                           bigers=bigers,
                           baks=self.baks)
-            self.reger.states.pin(keys=self.regk, val=self.state())
 
             return
 
@@ -1450,6 +1455,7 @@ class Tever:
         self.reger.putTvt(key, serder.raw)
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
+        print("ESCROWING ANCHORLESS", serder.pre)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
@@ -1497,8 +1503,7 @@ class Tevery:
 
     Attributes:
         db (Baser):  local LMDB identifier database
-        reger (Registry): local LMDB credential database
-        regk (str): qb64 registry AID
+        reger (Reger): local LMDB credential database
         local (bool): True means only process msgs for own events if .regk
                         False means only process msgs for not own events if .regk
         cues (Deck): notices generated from processing events
@@ -1508,13 +1513,12 @@ class Tevery:
 
     TimeoutTSN = 3600
 
-    def __init__(self, reger=None, db=None, regk=None, local=False, lax=False, cues=None, rvy=None):
+    def __init__(self, reger=None, db=None, local=False, lax=False, cues=None, rvy=None):
         """ Initialize instance:
 
         Parameters:
-            reger (Registry): local LMDB credential database
+            reger (Reger): local LMDB credential database
             db (Baser):  local LMDB identifier database
-            regk (Union[str,None]): local or own identifier prefix. Some restriction if present
             local (bool): True means only process msgs for own events if .regk
                         False means only process msgs for not own events if .regk
             cues (Deck): notices generated from processing events
@@ -1523,8 +1527,7 @@ class Tevery:
         """
         self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
         self.rvy = rvy
-        self.reger = reger if reger is not None else Registry()
-        self.regk = regk  # local prefix for restrictions on local events
+        self.reger = reger if reger is not None else Reger()
         self.local = True if local else False  # local vs nonlocal restrictions
         self.lax = True if lax else False
         self.cues = cues if cues is not None else decking.Deck()
@@ -1540,6 +1543,12 @@ class Tevery:
         """ Returns .db.kevers read through cache of key event logs """
 
         return self.db.kevers
+
+    @property
+    def registries(self):
+        """ Returns .reger.registries """
+
+        return self.reger.registries
 
     def processEvent(self, serder, seqner, saider, wigers=None):
         """ Process one event serder with attached indexde signatures sigers
@@ -1574,15 +1583,14 @@ class Tevery:
         # validate SN for
         sn = validateSN(sn, inceptive=inceptive)
 
-        if self.regk:
-            if self.local:
-                if self.regk != regk:  # nonlocal event when in local mode
-                    raise ValueError("Nonlocal event regk={} when local mode for regk={}."
-                                     "".format(regk, self.regk))
-            else:
-                if self.regk == regk:  # local event when not in local mode
-                    raise ValueError("Local event regk={} when nonlocal mode."
-                                     "".format(regk))
+        if self.local:
+            if regk not in self.registries:  # nonlocal event when in local mode
+                raise ValueError("Nonlocal event regk={} when local mode for registries={}."
+                                 "".format(regk, self.registries))
+        else:
+            if regk in self.registries:  # local event when not in local mode
+                raise ValueError("Local event regk={} when nonlocal mode."
+                                 "".format(regk))
 
         if regk not in self.tevers:  # first seen for this registry
             if ilk in [Ilks.vcp]:
@@ -1593,11 +1601,11 @@ class Tevery:
                               bigers=wigers,
                               reger=self.reger,
                               db=self.db,
-                              regk=self.regk,
+                              regk=regk,
                               local=self.local,
                               cues=self.cues)
                 self.tevers[regk] = tever
-                if not self.regk or self.regk != regk:
+                if regk not in self.registries:
                     # witness style backers will need to send receipts so lets queue them up for now
                     # actually, lets not because the Kevery has no idea what to do with them!
                     # self.cues.append(dict(kin="receipt", serder=serder))
@@ -1631,7 +1639,7 @@ class Tevery:
             elif sn == sno:  # new inorder event
                 tever.update(serder=serder, seqner=seqner, saider=saider, bigers=wigers)
 
-                if not self.regk or self.regk != regk:
+                if regk not in self.registries:
                     # witness style backers will need to send receipts so lets queue them up for now
                     # actually, lets not because the Kevery has no idea what to do with them!
                     # self.cues.append(dict(kin="receipt", serder=serder))
@@ -2098,6 +2106,7 @@ class Tevery:
 
         """
         for (pre, snb, digb) in self.reger.getTaeItemIter():
+            print("we are missing anchor for", pre)
             sn = int(snb, 16)
             try:
                 dgkey = dgKey(pre, digb)

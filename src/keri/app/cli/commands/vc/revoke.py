@@ -10,8 +10,9 @@ from hio.help import decking
 
 from keri.app import directing, indirecting, agenting
 from keri.app.cli.common import existing
+from keri.core import eventing
 from keri.vdr import viring
-from keri.vdr.issuing import Issuer
+from keri.vdr.credentialing import Registry
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential')
 parser.set_defaults(handler=lambda args: revokeCredential(args))
@@ -38,8 +39,8 @@ class RevokeDoer(doing.DoDoer):
         self.hab, doers = existing.setupHabitat(name=name)
         self.said = said
 
-        reger = viring.Registry(name=self.registryName, db=self.hab.db)
-        self.issuer = Issuer(hab=self.hab, name=self.hab.name, reger=reger)
+        reger = viring.Reger(name=self.registryName, db=self.hab.db)
+        self.issuer = Registry(hab=self.hab, name=self.hab.name, reger=reger)
 
         mbx = indirecting.MailboxDirector(hab=self.hab, topics=["/receipt", "/multisig"])
         doers.extend([mbx, doing.doify(self.issuerDo)])
@@ -88,7 +89,7 @@ class RevokeDoer(doing.DoDoer):
 
     def enter(self, **kwargs):
         if not self.issuer.inited:
-            self.issuer.setup(**self.issuer._inits)
+            self.issuer.make(**self.issuer._inits)
         return super(RevokeDoer, self).enter(**kwargs)
 
     def issuerDo(self, tymth, tock=0.0, **opts):
@@ -122,7 +123,8 @@ class RevokeDoer(doing.DoDoer):
                     self.cues.append(dict(kin="published", regk=self.issuer.regk))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
+                    serder = eventing.Serder(raw=bytearray(kevt))
+                    witDoer = agenting.WitnessReceiptor(hby=self.hby)
                     self.extend([witDoer])
 
                     while not witDoer.done:

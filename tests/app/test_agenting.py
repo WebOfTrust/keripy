@@ -12,7 +12,7 @@ from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting
 from keri.core.eventing import SealSource
 from keri.db import dbing
-from keri.vdr import eventing, viring, issuing
+from keri.vdr import eventing, viring, credentialing
 
 
 def test_withness_receiptor(seeder):
@@ -73,7 +73,7 @@ def test_witness_sender(seeder):
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.said)
-        msg = issuing.Issuer.attachSeal(serder=serder, seal=seal)
+        msg = credentialing.Registry.attachSeal(serder=serder, seal=seal)
 
         witDoer = agenting.WitnessPublisher(hab=palHab, msg=msg)
 
@@ -86,7 +86,7 @@ def test_witness_sender(seeder):
         assert witDoer.done is True
 
         for name in ["wes", "wil", "wan"]:
-            reger = viring.Registry(name=name)
+            reger = viring.Reger(name=name)
             raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
             found = coring.Serder(raw=bytes(raw))
             assert serder.pre == found.pre

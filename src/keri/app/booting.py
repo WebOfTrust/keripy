@@ -15,6 +15,7 @@ from hio.help import decking
 
 from keri.app import specing, configing, habbing, kiwiing, httping, keeping
 from keri.app.cli.common import oobiing
+from keri.vdr import credentialing
 
 DEFAULT_PASSCODE_SIZE = 22
 PASSCODE_CHARS = string.ascii_lowercase + string.ascii_uppercase + '123456789'
@@ -141,6 +142,7 @@ class BootEnd(doing.DoDoer):
         self.configDir = configDir
         self.msgs = decking.Deck()
         self.hby = None
+        self.rgy = None
 
         self._kiwinits = kwa
 
@@ -237,7 +239,9 @@ class BootEnd(doing.DoDoer):
                                     clear=False)
 
         hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, **kwa)
+        rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         self.hby = hby
+        self.rgy = rgy
 
         rep.status = falcon.HTTP_200
         body = dict(name=name, msg="Agent and keystore created")
@@ -297,7 +301,9 @@ class BootEnd(doing.DoDoer):
         ks.close()
 
         hby = habbing.Habery(name=name, base=self.base, bran=bran)
-        doers = kiwiing.setup(hby=hby, servery=self.servery, **self._kiwinits)
+        rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
+
+        doers = kiwiing.setup(hby=hby, rgy=rgy, servery=self.servery, **self._kiwinits)
         self.extend(doers)
 
         rep.status = falcon.HTTP_200

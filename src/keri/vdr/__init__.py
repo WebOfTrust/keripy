@@ -4,4 +4,4 @@ KERI
 keri.vdr Package
 """
 
-__all__ = ["issuing", "eventing", "registering", "viring", "verifying"]
+__all__ = ["credentialing", "eventing", "viring", "verifying"]
