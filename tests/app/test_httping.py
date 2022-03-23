@@ -67,7 +67,7 @@ class MockClient:
 def test_create_cesr_request(mockHelpingNowUTC):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
-        regery = credentialing.Regery(hby=hby, name="test")
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
         verfer = verifying.Verifier(hby=hby)
@@ -117,7 +117,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
 def test_stream_cesr_request(mockHelpingNowUTC):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
-        regery = credentialing.Regery(hby=hby, name="test")
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
         verfer = verifying.Verifier(hby=hby)
