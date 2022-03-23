@@ -433,7 +433,7 @@ def state(pre,
           ):
     """
     Returns serder of key state notification message.
-    Utility function to automate creation of rotation events.
+    Utility function to automate creation of key state events.
 
     Parameters:
         pre (str): identifier prefix qb64
