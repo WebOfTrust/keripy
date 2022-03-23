@@ -5,192 +5,148 @@ keri.app.delegating module
 
 module for enveloping and forwarding KERI message
 """
-import json
-import logging
-import random
 
 from hio import help
 from hio.base import doing
 from hio.help import decking
 
-from . import keeping, habbing, agenting, indirecting
-from .forwarding import forward
-from .. import kering
-from ..core import eventing, coring, parsing
-from ..db import basing
+from . import agenting, forwarding
+from ..core import coring
+from ..db import dbing
 
 logger = help.ogler.getLogger()
 
 
-class InceptDoer(doing.DoDoer):
-    """ Delegating inception DoDoer
+class Boatswain(doing.DoDoer):
+    """
+    Sends messages to Delegator of an identifier and wait for the anchoring evcent to
+    be processed to ensure the inception or rotation event has been approved by the delegator.
+
+    Removes all Doers and exits as Done once the event has been anchored.
 
     """
 
-    def __init__(self, hby, msgs=None, cues=None, ):
-        self.msgs = msgs if msgs is not None else decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-        self.hby = hby
-
-        doers = [
-            doing.doify(self.msgDo),
-        ]
-        super(InceptDoer, self).__init__(doers=doers)
-
-    def msgDo(self, tymth, tock=0.0):
-        """ Process messages to ikncept delegated identfiier
+    def __init__(self, hby, msgs=None, cues=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
 
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
+            hab (Hab): Habitat of the identifier to populate witnesses
+            msg (bytes): is the message to send to all witnesses.
+                 Defaults to sending the latest KEL event if msg is None
+            scheme (str): Scheme to favor if available
+
+        """
+        self.hby = hby
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.postman = forwarding.Postman(hby=hby)
+        self.witq = agenting.WitnessInquisitor(hby=hby)
+
+        super(Boatswain, self).__init__(doers=[self.witq, self.postman, doing.doify(self.anchorDo)], **kwa)
+
+    def anchorDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+            tock is injected initial tock value
 
         """
         self.wind(tymth)
         self.tock = tock
-        yield self.tock
+        _ = (yield self.tock)
 
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                try:
-                    alias = msg["alias"] if "alias" in msg else None
-                    msg.pop("alias")
+                pre = msg["pre"]
 
-                    hab = self.hby.makeHab(name=alias, **msg)
+                if pre not in self.hby.habs:
+                    continue
 
-                    delsrdr = hab.kever.serder
-                    fwd = forward(pre=delsrdr.ked["di"], topic="delegate", serder=delsrdr)
-                    evt = hab.endorse(serder=fwd)
-                    dkever = hab.kevers[delsrdr.ked["di"]]
-                    wit = random.choice(dkever.wits)
+                # load the hab of the delegated identifier to anchor
+                hab = self.hby.habs[pre]
+                alias = hab.name
+                delpre = hab.kever.delegator  # get the delegator identifier
+                dkever = hab.kevers[delpre]  # and the delegator's kever
 
-                    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
-                    witer = agenting.HttpWitnesser(hab=hab, wit=wit, url=urls[kering.Schemes.http])
-                    witer.msgs.append(bytearray(evt))
-                    self.extend([witer])
+                sn = msg["sn"] if "sn" in msg else hab.kever.sn
 
-                    while len(witer.sent) == 0:
-                        yield self.tock
+                # load the event and signatures
+                evt = hab.makeOwnEvent(sn=sn)
+                srdr = coring.Serder(raw=evt)
+                del evt[:srdr.size]
 
-                    self.remove([witer])
+                if srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
+                    phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
+                    if phab.kever.wits:
+                        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                        self.extend([witDoer])
 
-                    mbx = indirecting.MailboxDirector(hab=hab, topics=['/receipt'])
-                    witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.HttpWitnesser)
-                    self.extend([mbx, witDoer])
+                        witDoer.msgs.append(dict(pre=phab.pre))
+                        while not witDoer.cues:
+                            _ = yield self.tock
 
-                    while not witDoer.done:
-                        yield 1.0
+                        self.remove([witDoer])
 
-                    self.remove([mbx, witDoer])
+                else:
+                    phab = self.hby.habByName(f"{alias}-proxy")
 
-
-                except (kering.MissingAnchorError, Exception) as ex:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("delegation incept message error: %s\n", ex)
-                    else:
-                        logger.error("delegation incept message error: %s\n", ex)
+                self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
                 yield self.tock
+
+                yield from self.waitForAnchor(phab, hab, dkever, srdr)
+
+                self.cues.append(msg)
+                yield self.tock
+
             yield self.tock
 
+    def waitForAnchor(self, phab, hab, dkever, serder):
+        anchor = dict(i=serder.said, s=serder.sn, d=serder.said)
+        self.witq.query(src=phab.pre, pre=dkever.prefixer.qb64, anchor=anchor)
 
-class RotateDoer(doing.DoDoer):
-    """
-    DoDoer instance that launches the environment and dependencies needed to create and disseminate
-    the inception event for a delegated identifier.
-    """
+        while True:
+            if serder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
+                seqner = coring.Seqner(sn=serder.sn)
+                couple = seqner.qb64b + serder.saidb
+                dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.serder.saidb)
+                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                break
+            yield
 
-    def __init__(self, name, sealFile, data, **kwa):
-        """
-        Creates the DoDoer needed to create the seal for a delegated identifier.
+        return True
 
-        Parameters
-            name (str): Name of the local identifier environment
+    def proxy(self, alias, kever):
+        """ Create a proxy identifier for forward and query messages
 
-        """
-
-        ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-        self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
-        self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-        self.habDoer = habbing.HabitatDoer(habitat=hab)
-
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.rotateDo, **kwa)]
-        self.hab = hab
-        self.data = data
-        self.sealFile = sealFile
-        self.delegatorPrefix = kwa["delegatorPrefix"]
-
-        super(RotateDoer, self).__init__(doers=doers)
-
-
-    def rotateDo(self, tymth, tock=0.0):
-        """ Co-routine for performing delegated rotation
+        Uses witness and witness threshold configuration from delegated identifier to create
+        a proxy identifier that will be able to send forward exn messages and query messages.
 
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+            alias (str): human readable name of identifier to create a proxy for
+            kever (Kever): key event representation of identitifer to create proxy for
 
         Returns:
 
         """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)  # finish enter context
+        palias = f"{alias}-proxy"
+        kwargs = dict(
+            transferable=True,
+            wits=kever.wits,
+            icount=1,
+            isith=1,
+            ncount=1,
+            nsith=1,
+            toad=kever.toad,
+        )
 
-        delPre = self.data[0]["i"]
-        delK = self.hab.kevers[delPre]
-
-        verfers, digers, cst, nst = self.hab.mgr.rotate(pre=delK.prefixer.qb64, temp=False)
-        rotSrdr = eventing.deltate(pre=delK.prefixer.qb64,
-                                   keys=[verfer.qb64 for verfer in verfers],
-                                   dig=delK.serder.saider.qb64,
-                                   sn=delK.sn + 1,
-                                   nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
-
-        seal = dict(i=rotSrdr.pre,
-                    s=rotSrdr.ked["s"],
-                    d=rotSrdr.said)
-
-        with open(self.sealFile, "w") as f:
-            f.write(json.dumps(seal, indent=4))
-
-        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
-        self.extend([witq])
-
-        while self.delegatorPrefix not in self.hab.kevers or self.hab.kevers[self.delegatorPrefix].sn < 2:
-            witq.query(self.delegatorPrefix)
-            yield self.tock
-
-        sigers = self.hab.mgr.sign(ser=rotSrdr.raw, verfers=verfers)
-        msg = bytearray(rotSrdr.raw)
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                 count=1)
-        msg.extend(counter.qb64b)
-
-        event = self.hab.kevers[rotSrdr.pre]
-        seqner = coring.Seqner(sn=event.sn)
-        msg.extend(seqner.qb64b)
-        msg.extend(event.serder.saider.qb64b)
-
-        delKvy = eventing.Kevery(db=self.hab.db, lax=True)
-        parsing.Parser().parseOne(ims=bytearray(msg), kvy=delKvy)
-
-        while rotSrdr.pre not in delKvy.kevers:
-            yield self.tock
-
-        print("Successfully rotated delegate identifier keys", rotSrdr.pre)
-        print("Public key", rotSrdr.verfers[0].qb64)
-
-        self.remove([self.ksDoer, self.dbDoer, self.habDoer, witq])
-
-        return
+        hab = self.hby.makeHab(palias, **kwargs)
+        return hab

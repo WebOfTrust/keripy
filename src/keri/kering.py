@@ -7,13 +7,13 @@ from collections import namedtuple
 
 
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
-TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
+TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 
 Versionage = namedtuple("Versionage", "major minor")
 
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 
-SEPARATOR =  "\r\n\r\n"
+SEPARATOR = "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 
 
@@ -41,6 +41,7 @@ class ClosedError(KeriError):
         raise ClosedError("error message")
     """
 
+
 class ConfigurationError(KeriError):
     """
     Error configuring or initing KERI component (Controller etc)
@@ -49,6 +50,7 @@ class ConfigurationError(KeriError):
         raise ConfigurationError("error message")
     """
 
+
 class AuthError(KeriError):
     """
     Error authenticating AuthN or authorizing AuthZ
@@ -56,6 +58,7 @@ class AuthError(KeriError):
     Usage:
         raise AuthError("error message")
     """
+
 
 class AuthNError(AuthError):
     """
@@ -491,11 +494,18 @@ class FailedSchemaValidationError(KeriError):
     """
 
 
-
 class UntrustedKeyStateSource(KeriError):
     """
     Error untrusted source of key state, not aid, aid's witness or our watcher
     Usage:
         raise UntrustedKeyStateSource("error message")
+    """
+
+
+class QueryNotFoundError(KeriError):
+    """
+    Error results for a qry message are not yet available
+    Usage:
+        raise QueryNotFoundError("error message")
     """
 

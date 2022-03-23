@@ -8,10 +8,9 @@ Witness command line interface
 import argparse
 import logging
 
-from hio.base import doing
-from keri import __version__, kering
+from keri import __version__
 from keri import help
-from keri.app import indirecting, storing
+from keri.app import indirecting, storing, habbing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import exchanging
@@ -32,46 +31,35 @@ parser.add_argument('-n', '--name',
                     help="Name of controller. Default is wallet.")
 
 
-
 def launch(args):
     help.ogler.level = logging.INFO
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
-    logger = help.ogler.getLogger()
-
-    logger.info("\n******* Starting Wallet for %s."
-                ".******\n\n", args.name)
-
-    runWallet(name=args.name)
-
-    logger.info("\n******* Ended Wallet for %s."
-                ".******\n\n", args.name)
+    return runWallet(name=args.name)
 
 
-def runWallet(name="wallet"):
+def runWallet(name="wallet", base="", bran=None):
     """
     Setup and run one wallet
     """
 
-    hab, doers = existing.setupHabitat(name=name)
-    verifier = verifying.Verifier(hab=hab)
-    wallet = walleting.Wallet(reger=verifier.reger, name=name)
-    walletDoer = walleting.WalletDoer(hab=hab, verifier=verifier)
+    hby = existing.setupHby(name=name, base=base, bran=bran)
+    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    doers = [hbyDoer]
 
-    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier)
-    requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
-    exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
+    verifier = verifying.Verifier(hby=hby)
+    wallet = walleting.Wallet(reger=verifier.reger, name=name)
+    walletDoer = walleting.WalletDoer(hby=hby, verifier=verifier)
+
+    jsonSchema = scheming.JSONSchema(resolver=scheming.CacheResolver(db=hby.db))
+    issueHandler = handling.IssueHandler(hby=hby, verifier=verifier)
+    requestHandler = handling.RequestHandler(hby=hby, wallet=wallet, typ=jsonSchema)
+    exchanger = exchanging.Exchanger(hby=hby, handlers=[issueHandler, requestHandler])
 
     mbx = storing.Mailboxer(name=name)
-    rep = storing.Respondant(hab=hab, mbx=mbx)
-    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep, topics=["/receipt", "/replay", "/credential"])
+    rep = storing.Respondant(hby=hby, mbx=mbx)
+    mdir = indirecting.MailboxDirector(hby=hby, exc=exchanger, rep=rep, topics=["/receipt", "/replay", "/credential"])
 
     doers.extend([exchanger, mdir, rep, walletDoer])
 
-    try:
-        tock = 0.03125
-        doist = doing.Doist(limit=0.0, tock=tock, real=True)
-        doist.do(doers=doers)
-    except kering.ConfigurationError:
-        print(f"prefix for {name} does not exist, incept must be run first", )
+    return doers

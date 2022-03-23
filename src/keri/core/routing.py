@@ -83,7 +83,6 @@ class Router:
         fn = getattr(route.resource, fname, self.processRouteNotFound)
         fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
 
-
     def _find(self, route):
         """ Linear seach thru added routes, returning the first one that matchs
 
@@ -129,7 +128,7 @@ class Revery:
 
     TimeoutRPE = 3600  # seconds to timeout reply message escrows
 
-    def __init__(self, db, rtr, cues=None, lax=True, local=False):
+    def __init__(self, db, rtr=None, cues=None, lax=True, local=False):
         """
 
         Parameters:
@@ -139,7 +138,7 @@ class Revery:
             local:
         """
         self.db = db
-        self.rtr = rtr
+        self.rtr = rtr if rtr is not None else Router()
         self.cues = cues if cues is not None else decking.Deck()
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions

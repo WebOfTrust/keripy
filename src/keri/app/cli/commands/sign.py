@@ -6,12 +6,14 @@ keri.kli.commands module
 """
 import argparse
 
+from hio.base import doing
+
 from keri import kering
 from keri.app import habbing
 from keri.app.cli.common import existing
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string')
-parser.set_defaults(handler=lambda args: sign(args))
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
@@ -21,14 +23,23 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument('--text', '-t', help='Text or file (starts with "@") to sign', required=True)
 
 
-def sign(args):
+def handler(args):
     """
     Sign arbitrary data
 
     Args:
         args(Namespace): arguments object from command line
     """
+    kwa = dict(args=args)
+    return [doing.doify(status, **kwa)]
 
+
+def status(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
 
     name = args.name
     alias = args.alias
@@ -45,9 +56,9 @@ def sign(args):
             else:
                 data = txt
 
-            sigers = hab.mgr.sign(ser=data.encode("utf-8"),
-                                  verfers=hab.kever.verfers,
-                                  indexed=True)
+            sigers = hab.sign(ser=data.encode("utf-8"),
+                              verfers=hab.kever.verfers,
+                              indexed=True)
 
             for idx, siger in enumerate(sigers):
                 print("{}. {}".format(idx+1, siger.qb64))

@@ -7,11 +7,10 @@ import argparse
 
 from hio import help
 from hio.base import doing
-from keri.app import directing, agenting, indirecting
-from keri.app.cli.common import displaying
+
+from keri.app import agenting, indirecting
 from keri.app.cli.common import existing
-from keri.core import coring
-from keri.vdr import eventing, viring, verifying
+from keri.vdr import viring, verifying
 
 logger = help.ogler.getLogger()
 
@@ -27,7 +26,7 @@ def query(args):
     name = args.name
 
     qryDoer = QueryDoer(name=name, wit=args.witness, ri=args.registry, i=args.vc)
-    directing.runController(doers=[qryDoer], expire=0.0)
+    return [qryDoer]
 
 
 class QueryDoer(doing.DoDoer):
@@ -44,7 +43,7 @@ class QueryDoer(doing.DoDoer):
         reger = viring.Registry(name=self.hab.name)
         self.verifier = verifying.Verifier(hab=self.hab, reger=reger)
         self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=["/replay", "/receipt"], verifier=self.verifier)
-        self.witq = agenting.WitnessInquisitor(hab=self.hab, reger=reger)
+        self.witq = agenting.WitnessInquisitor(hby=self.hby, reger=reger)
         doers.extend([self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)

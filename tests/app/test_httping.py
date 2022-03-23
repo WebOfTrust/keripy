@@ -51,8 +51,6 @@ def test_parse_cesr_request():
     )
 
     cr = httping.parseCesrHttpRequest(req=req)
-    assert cr.resource == "/credential/issue"
-    assert cr.date == "2021-06-27T21:26:21.233257+00:00"
     assert cr.payload == dict(i=1234)
     assert cr.attachments == "-H000000000"
 
@@ -60,14 +58,15 @@ def test_parse_cesr_request():
 class MockClient:
 
     def __init__(self):
-        self.args = dict()
+        self.args = []
 
     def request(self, **kwargs):
-        self.args = kwargs
+        self.args.append(kwargs)
 
 
 def test_create_cesr_request(mockHelpingNowUTC):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         issuer = issuing.Issuer(hab=hab, name="test", temp=True)
 
         verfer = verifying.Verifier(hby=hby)
@@ -76,45 +75,126 @@ def test_create_cesr_request(mockHelpingNowUTC):
                            route="tels")
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
+        httping.createCESRRequest(msg, client, path="/qry/tels")
 
-        assert client.args["method"] == "POST"
-        assert client.args["path"] == "/qry/tels"
-        assert client.args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"Efp5Surn_KGO6S4G6ZnExhK83kCEIpVQA3Qi'
-                                       b'hDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
-                                       b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-'
-                                       b'36qKD8ZhUaKF55MWtITBFnc"}}')
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/tels"
+        assert args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EdaoDw0LOorX185H3Mu8O8OZ3rSHcuZn75Aj'
+                                b'FwhwgpUA","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
+                                b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"EAZj_M7DRVHIYEnvkCwo2'
+                                b'0w_ZrjKR_ScNxHXO25Qus9s"}}')
 
-        q = client.args["qargs"]
-        assert q == {'i': 'Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4',
-                     'ri': 'ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc'}
-
-        headers = client.args["headers"]
+        headers = args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 254
-        assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPk'
-                                              b'uSzu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDw'
-                                              b'x9iBO55UL94q0CAQ')
+        assert headers["CESR-ATTACHMENT"] == bytearray(b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAktrA'
+                                                       b'j01PkZlEtu7VPC076cyCvlhXdL9gYcf5pcih5ehlV73947Qp0ZeyP8J3HjFc3K'
+                                                       b'FI0IwhdvBVkQnHkFLlBw')
 
-        msg = hab.query(pre=hab.pre, route="mbx", query=dict(s=0))
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
+        httping.createCESRRequest(msg, client, path="/qry/mbx")
 
-        assert client.args["method"] == "POST"
-        assert client.args["path"] == "/qry/mbx"
-        assert client.args["body"] == (b'{"v":"KERI10JSON0000cf_","t":"qry","d":"EpYeo95qxKGAtIdCeOYEaSmKSLl0Tgs9s31o'
-                                       b'i1sdQBHs","dt":"2021-01-01T00:00:00.000000+00:00","r":"mbx","rr":"","q":{"s"'
-                                       b':0,"i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"}}')
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/mbx"
+        assert args["body"] == (b'{"v":"KERI10JSON000104_","t":"qry","d":"E1Xdkk3WlmV03aL7R63u5z-VmQzvrRjwXpwC'
+                                b'xrkkMlxg","dt":"2021-01-01T00:00:00.000000+00:00","r":"mbx","rr":"","q":{"s"'
+                                b':0,"i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","src":"BGKVzj4ve0VSd8z'
+                                b'_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
 
-        headers = client.args["headers"]
+        headers = args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
-        assert headers["Content-Length"] == 207
-        assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAA0ThN4-'
-                                              b'h1mJSFkI6H5e_Z4We_VE44MeV8gBWmI-pw-CS8HZ0947Z6h_1hmwrvTfR16HlxWu'
-                                              b'wK_i8NA-cxdg45Bg')
+        assert headers["Content-Length"] == 260
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuewE0c'
+                                              b'fWF-X9-gcw_XEf5k1NupFKUBUsRxPYs3kNU4pe8lW45GN7SryfCtXcpcmwnCeudJ'
+                                              b'3w32sUULzp2CUoCg')
+
+
+def test_stream_cesr_request(mockHelpingNowUTC):
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
+        issuer = issuing.Issuer(hab=hab, name="test", temp=True)
+
+        verfer = verifying.Verifier(hby=hby)
+        msg = verfer.query(hab.pre, issuer.regk,
+                           "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           route="tels")
+        client = MockClient()
+
+        httping.streamCESRRequests(client, msg, path="/qry/tels")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/tels"
+        assert args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EdaoDw0LOorX185H3Mu8O8OZ3rSHcuZn75Aj'
+                                b'FwhwgpUA","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
+                                b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"EAZj_M7DRVHIYEnvkCwo2'
+                                b'0w_ZrjKR_ScNxHXO25Qus9s"}}')
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Length"] == 254
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAktrAj0'
+                                              b'1PkZlEtu7VPC076cyCvlhXdL9gYcf5pcih5ehlV73947Qp0ZeyP8J3HjFc3KFI0I'
+                                              b'whdvBVkQnHkFLlBw')
+
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
+        client = MockClient()
+
+        httping.streamCESRRequests(client, msg, path="/qry/mbx")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/mbx"
+        assert args["body"] == (b'{"v":"KERI10JSON000104_","t":"qry","d":"E1Xdkk3WlmV03aL7R63u5z-VmQzvrRjwXpwC'
+                                b'xrkkMlxg","dt":"2021-01-01T00:00:00.000000+00:00","r":"mbx","rr":"","q":{"s"'
+                                b':0,"i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","src":"BGKVzj4ve0VSd8z'
+                                b'_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Length"] == 260
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuewE0c'
+                                              b'fWF-X9-gcw_XEf5k1NupFKUBUsRxPYs3kNU4pe8lW45GN7SryfCtXcpcmwnCeudJ'
+                                              b'3w32sUULzp2CUoCg')
+
+        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0))
+        msgs.extend(hab.makeOwnEvent(sn=0))
+
+        client = MockClient()
+        httping.streamCESRRequests(client, msgs)
+        assert len(client.args) == 2
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/"
+
+        assert args["body"] == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDp'
+                                b'BGF9Z1Pc","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","s":"0","kt":"1'
+                                b'","k":["DaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg"],"nt":"1","n":["EsBMmy'
+                                b'evdbrDojd73T6UmBvSktf7f-i-Yu0LjsuRr7y4"],"bt":"0","b":[],"c":[],"a":[]}')
+        headers = args["headers"]
+        assert headers['Content-Length'] == 299
+        assert headers['Content-Type'] == 'application/cesr+json'
+        assert headers['CESR-ATTACHMENT'] == (b'-AABAAzyLnzgjNDU2AqLilXI1HlfIwdEoJzHErxbPv28asokuHZnTK3k_hBYH9tu'
+                                              b'FRlUtE7AP1zX1bhm5GLnSVDu6vCw')
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/"
+
+        assert args["body"] == (b'{"v":"KERI10JSON000105_","t":"qry","d":"EStGzLcodkqvmwvbmmPKbMEOanrqsvko-4WT'
+                                b'fD8G_QZ4","dt":"2021-01-01T00:00:00.000000+00:00","r":"logs","rr":"","q":{"s'
+                                b'":0,"i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","src":"BGKVzj4ve0VSd8'
+                                b'z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
+        headers = args["headers"]
+        assert headers['Content-Length'] == 261
+        assert headers['Content-Type'] == 'application/cesr+json'
+        assert headers['CESR-ATTACHMENT'] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA6Hyou7'
+                                              b'rOsNZQ2hs-zPfHLJmLIQni-CDpILSYFjy25XgQ_dRe8b3n7LEv7lgr2r4fFoNB4l'
+                                              b'EMeS0Jtlu-jargBw')
 
 
 if __name__ == '__main__':

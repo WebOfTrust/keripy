@@ -21,14 +21,14 @@ from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counte
 from .. import help
 from .. import kering
 from ..db import basing
-from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
+from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 from ..help import helping
 from ..kering import (MissingEntryError,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
-                      UnverifiedReceiptError, UnverifiedTransferableReceiptError)
+                      UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
 from ..kering import Version
 
 logger = help.ogler.getLogger()
@@ -584,10 +584,10 @@ def fetchTsgs(db, saider, snh=None):
     return tsgs
 
 
-
 def incept(keys,
            sith=None,
-           nxt="",
+           nkeys=None,
+           nsith=None,
            toad=None,
            wits=None,
            cnfg=None,
@@ -603,7 +603,8 @@ def incept(keys,
      Parameters:
         keys is list of qb64 signing keys
         sith is int, string, or list format for signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int, or str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of strings TraitDex of configuration trait strings
@@ -622,6 +623,16 @@ def incept(keys,
     tholder = Tholder(sith=sith)
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -655,7 +666,8 @@ def incept(keys,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -684,7 +696,8 @@ def delcept(keys,
             delpre,
             code=None,
             sith=None,
-            nxt="",
+            nkeys=None,
+            nsith=None,
             toad=None,
             wits=None,
             cnfg=None,
@@ -700,8 +713,9 @@ def delcept(keys,
         keys is list of qb64 keys
         delpre is qb64 of delegators's prefix
         code is derivation code for prefix
-        sith is int  of signing threshold
-        nxt  is qb64 next digest xor
+        sith is int of signing threshold
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int of str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of configuration trait dicts including permissions dicts
@@ -714,13 +728,22 @@ def delcept(keys,
     ilk = Ilks.dip
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -750,9 +773,10 @@ def delcept(keys,
                d="",
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+               kt=tholder.sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config and permission ordered mappings may be empty
@@ -784,7 +808,8 @@ def rotate(pre,
            dig,
            sn=1,
            sith=None,
-           nxt="",
+           nkeys=None,
+           nsith=None,
            toad=None,
            wits=None,  # prior existing wits
            cuts=None,
@@ -803,7 +828,8 @@ def rotate(pre,
         dig is digest of previous event qb64
         sn is int sequence number
         sith is string or list format for signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
@@ -824,6 +850,17 @@ def rotate(pre,
     tholder = Tholder(sith=sith)
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -882,7 +919,8 @@ def rotate(pre,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,  # hash qual Base64
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
@@ -898,7 +936,8 @@ def deltate(pre,
             dig,
             sn=1,
             sith=None,
-            nxt="",
+            nkeys=None,
+            nsith=None,
             toad=None,
             wits=None,  # prior existing wits
             cuts=None,
@@ -917,7 +956,8 @@ def deltate(pre,
         dig is digest of previous event qb64
         sn is int sequence number
         sith is int signing threshold
-        nxt  is qb64 next digest xor
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
@@ -934,6 +974,20 @@ def deltate(pre,
 
     if sith is None:
         sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -992,7 +1046,8 @@ def deltate(pre,
                p=dig,  # qb64 digest of prior event
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
@@ -1086,7 +1141,8 @@ def state(pre,
           eevt,
           stamp=None,  # default current datetime
           sith=None,  # default based on keys
-          nxt="",
+          nkeys=None,
+          nsith=None,
           toad=None,  # default based on wits
           wits=None,  # default to []
           cnfg=None,  # default to []
@@ -1113,7 +1169,8 @@ def state(pre,
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data
         sith is string or list format for signing threshold
-        nxt  is qb64 next digest xor if any
+        nkeys is list of qb64 next key digests
+        nsith  is is int, string, or list format for next signing threshold
         toad is int of witness threshold
         wits is list of witness prefixes qb64
         cnfg is list of strings TraitDex of configuration traits
@@ -1168,6 +1225,17 @@ def state(pre,
     if tholder.size > len(keys):
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
+    if nsith is None:
+        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+
+    if nkeys is None:
+        nkeys = []
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.size > len(nkeys):
+        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+
+
     wits = wits if wits is not None else []
     witset = oset(wits)
     if len(witset) != len(wits):
@@ -1214,7 +1282,8 @@ def state(pre,
                et=eilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
+               nt=ntholder.sith,
+               n=nkeys,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -1461,11 +1530,12 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     return msg
 
 
-def proofize(sadsigers=None, *, sadcigars=None, pipelined=False):
+def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
     """
 
     Args:
-        sadsigers (list) sad path signatures from transferable identifier
+        sadsigers (list) sad path signatures from transferable identifier of just sigs
+        sadtsgs (list) sad path signatures from transferable identifier
         sadcigars (list) sad path signatures from non-transferable identifier
         pipelined (bool), True means prepend pipelining count code to attachemnts
             False means to not prepend pipelining count code
@@ -1475,14 +1545,24 @@ def proofize(sadsigers=None, *, sadcigars=None, pipelined=False):
     """
     atc = bytearray()
 
-    if sadsigers is None and sadcigars is None:
+    if sadtsgs is None and sadcigars is None:
         return atc
 
+    sadtsgs = [] if sadtsgs is None else sadtsgs
     sadsigers = [] if sadsigers is None else sadsigers
     sadcigars = [] if sadcigars is None else sadcigars
 
     count = 0
-    for (pather, prefixer, seqner, saider, sigers) in sadsigers:
+    for (pather, sigers) in sadsigers:
+        count += 1
+        atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
+        atc.extend(pather.qb64b)
+
+        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
+
+    for (pather, prefixer, seqner, saider, sigers) in sadtsgs:
         count += 1
         atc.extend(coring.Counter(coring.CtrDex.SadPathSig, count=1).qb64b)
         atc.extend(pather.qb64b)
@@ -1702,7 +1782,7 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        return (self.nexter is not None and self.prefixer.transferable)
+        return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
 
     def reload(self, state):
         """
@@ -1725,8 +1805,9 @@ class Kever:
         self.dater = Dater(dts=state.ked["dt"])
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
+        self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.nexter = Nexter(qb64=state.ked["n"]) if state.ked["n"] else None
+        self.nexter = coring.Nexter(digs=state.ked["n"])
         self.toad = int(state.ked["bt"], 16)
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1778,7 +1859,8 @@ class Kever:
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
-        self.nexter = Nexter(qb64=nxt) if nxt else None
+        self.nexter = serder.nexter
+        self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
         self.adds = []  # always empty at inception since no prev event
@@ -1899,6 +1981,18 @@ class Kever:
                                                             seqner=seqner,
                                                             saider=saider)
 
+            if not self.ntholder.satisfy(indices=self.nexter.indices(sigers=sigers)):
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                if seqner and saider:
+                    self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+                raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
+                                            " for evt = {}.".format(self.ntholder.sith,
+                                                                    [siger.qb64 for siger in sigers],
+                                                                    serder.ked))
+
+
+
+
             if delegator != self.delegator:  #
                 raise ValidationError("Erroneous attempted  delegated rotation"
                                       " on either undelegated event or with"
@@ -1919,8 +2013,8 @@ class Kever:
             self.tholder = tholder
             self.verfers = serder.verfers
             # update .nexter
-            nxt = ked["n"]
-            self.nexter = Nexter(qb64=nxt) if nxt else None  # check for empty
+            self.nexter = serder.nexter
+            self.ntholder = serder.ntholder
 
             self.toad = toad
             self.wits = wits
@@ -2051,7 +2145,7 @@ class Kever:
                                       "".format(dig, self.serder.saider.qb64, ked))
 
         # also check derivation code of pre for non-transferable
-        if self.nexter is None:  # empty so rotations not allowed
+        if not self.nexter:  # empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
@@ -2063,12 +2157,13 @@ class Kever:
                                             [verfer.qb64 for verfer in serder.verfers],
                                             ked))
 
-        # verify nxt from prior
+        # verify next keys from prior
+        ntholder = serder.ntholder
         keys = ked["k"]
-        if not self.nexter.verify(limen=tholder.limen, keys=keys):
+        if not self.nexter.verify(keys=keys):
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.qb64, tholder.thold, keys, ked))
+                                  "".format(self.nexter.digs, tholder.thold, keys, ked))
 
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
@@ -2187,24 +2282,25 @@ class Kever:
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
-        if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
-                (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
-                 not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
-            # validate that event is fully witnessed
-            if isinstance(toad, str):
-                toad = int(toad, 16)
-            if toad < 0 or len(wits) < toad:
-                raise ValidationError("Invalid toad = {} for wits = {} for evt"
-                                      " = {}.".format(toad, wits, serder.ked))
+        if serder.pre not in self.prefixes:
+            if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
+                    (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
+                     not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
+                # validate that event is fully witnessed
+                if isinstance(toad, str):
+                    toad = int(toad, 16)
+                if toad < 0 or len(wits) < toad:
+                    raise ValidationError("Invalid toad = {} for wits = {} for evt"
+                                          " = {}.".format(toad, wits, serder.ked))
 
-            if len(windices) < toad:  # not fully witnessed yet
-                if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
-                    self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
-                raise MissingWitnessSignatureError("Failure satisfying toad = {} "
-                                                   "on witness sigs for {} for evt = {}.".format(toad,
-                                                                                                 [siger.qb64 for siger
-                                                                                                  in wigers],
-                                                                                                 serder.ked))
+                if len(windices) < toad:  # not fully witnessed yet
+                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
+                        self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
+                    raise MissingWitnessSignatureError("Failure satisfying toad = {} "
+                                                       "on witness sigs for {} for evt = {}.".format(toad,
+                                                                                                     [siger.qb64 for siger
+                                                                                                      in wigers],
+                                                                                                     serder.ked))
         return sigers, delegator, wigers
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
@@ -2243,14 +2339,7 @@ class Kever:
 
         # during initial delegation we just escrow the delcept event
         if seqner is None and saider is None and delegator is not None:
-            #  create cue to request a delegating event seal
-            #  this may include MFA business logic for the delegator
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            if delegator in self.prefixes:
-                self.cues.append(dict(kin="delegating", serder=serder, ))
-            else:
-                self.cues.append(dict(kin="delegatage", delpre=delegator, serder=serder, sigers=sigers, ))
-
             raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
@@ -2300,7 +2389,6 @@ class Kever:
 
         pre = serder.ked["i"]
         sn = serder.ked["s"]
-        dig = serder.said
         found = False  # find event seal of delegated event in delegating data
         for dseal in dserder.ked["a"]:  # find delegating seal anchor
             if ("i" in dseal and dseal["i"] == pre and
@@ -2434,7 +2522,8 @@ class Kever:
         """
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
-        self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if sigers:
             self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if seqner and saider:
@@ -2474,7 +2563,8 @@ class Kever:
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,
                       sith=self.tholder.sith,
-                      nxt=self.nexter.qb64 if self.nexter else "",
+                      nsith=self.ntholder.sith if self.ntholder else 0,
+                      nkeys=self.nexter.digs if self.nexter else [],
                       toad=self.toad,
                       wits=self.wits,
                       cnfg=cnfg,
@@ -2536,6 +2626,7 @@ class Kevery:
     TimeoutURE = 3600  # seconds to timeout unverified receipt escrows
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
     TimeoutKSN = 3600  # seconds to timeout key state notice message escrows
+    TimeoutQNF = 300   # seconds to timeout query not found escrows
 
     def __init__(self, *, evts=None, cues=None, db=None, rvy=None,
                  lax=True, local=False, cloned=False, direct=True, check=False):
@@ -3400,7 +3491,6 @@ class Kevery:
 
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
-
     def processReplyKeyStateNotice(self, *, serder, saider, route,
                                    cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /ksn
@@ -3712,42 +3802,81 @@ class Kevery:
 
         Parameters:
             serder (Serder) is query message serder
-            source (qb64) identifier prefix of querier
+            source (Prefixer) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
+            cigars (list) of Cigar instance of attached non-trans sigs
 
         """
         ked = serder.ked
 
         ilk = ked["t"]
         route = ked["r"]
-        replyRoute = ked["rr"]
-        query = ked["q"]
+        qry = ked["q"]
 
         # do signature validation and replay attack prevention logic here
         # src, dt, route
 
         if route == "logs":
-            pre = query["i"]
-            msgs = bytearray()  # outgoing messages
-            for msg in self.db.clonePreIter(pre=pre, fn=0):
-                msgs.extend(msg)
+            pre = qry["i"]
+            src = qry["src"]
+            anchor = qry["a"] if "a" in qry else None
+            sn = qry["s"] if "s" in qry else None
+
+            if pre not in self.kevers:
+                self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                raise QueryNotFoundError("Query not found error={}.".format(ked))
 
             kever = self.kevers[pre]
+            if anchor:
+                if not self.db.findAnchoringEvent(pre=pre, anchor=anchor):
+                    self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                    raise QueryNotFoundError("Query not found error={}.".format(ked))
+
+            elif sn is not None:
+                if kever.sn < sn or not self.db.fullyWitnessed(kever.serder):
+                    self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                    raise QueryNotFoundError("Query not found error={}.".format(ked))
+
+            msgs = list()  # outgoing messages
+            for msg in self.db.clonePreIter(pre=pre, fn=0):
+                msgs.append(msg)
+
             if kever.delegator:
                 cloner = self.db.clonePreIter(pre=kever.delegator, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    msgs.extend(msg)
+                    msgs.append(msg)
 
             if msgs:
-                self.cues.push(dict(kin="replay", msgs=msgs, dest=source))
-        elif route == "ksn":
-            pre = query["i"]
-            if pre in self.kevers:
-                kever = self.kevers[pre]
-                ksn = kever.state()
-                self.cues.push(dict(kin="reply", route="/ksn", data=ksn.ked, dest=source))
+                self.cues.push(dict(kin="replay", src=src, msgs=msgs, dest=source.qb64))
 
+        elif route == "ksn":
+            pre = qry["i"]
+            src = qry["src"]
+
+            if pre not in self.kevers:
+                self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                raise QueryNotFoundError("Query not found error={}.".format(ked))
+
+            kever = self.kevers[pre]
+            ksn = kever.state()
+            self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=ksn, dest=source.qb64))
+
+        elif route == "mbx":
+            pre = qry["i"]
+            src = qry["src"]
+            topics = qry["topics"]
+
+            if pre not in self.kevers:
+                self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                raise QueryNotFoundError("Query not found error={}.".format(ked))
+
+            self.cues.push(dict(kin="stream", serder=serder, pre=pre, src=src, topics=topics))
+            # if pre in self.kevers:
+            #     kever = self.kevers[pre]
+            #     if src in kever.wits and src in self.db.prefixes:  # We are a witness for identifier
+            #         self.cues.push(dict(kin="stream", serder=serder, pre=pre, src=src, topics=topics))
         else:
+            self.cues.push(dict(kin="invalid", serder=serder))
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
     def fetchEstEvent(self, pre, sn):
@@ -3803,6 +3932,30 @@ class Kevery:
             self.db.putPde(dgkey, couple)  # idempotent
         # log escrowed
         logger.info("Kevery process: escrowed out of order event=\n%s\n",
+                    json.dumps(serder.ked, indent=1))
+
+    def escrowQueryNotFoundEvent(self, prefixer, serder, sigers, cigars=None):
+        """
+        Update associated logs for escrow of Out-of-Order event
+
+        Parameters:
+            prefixer (Prefixer): source of query message
+            serder (Serder): instance of  event
+            sigers (list): of Siger instance for  event
+            cigars (list): of non-transferable receipts
+        """
+        cigars = cigars if cigars is not None else []
+        dgkey = dgKey(prefixer.qb64b, serder.saidb)
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putEvt(dgkey, serder.raw)
+        self.db.addQnf(dgkey, serder.saidb)
+
+        for cigar in cigars:
+            self.db.addRct(key=dgkey, val=cigar.verfer.qb64b + cigar.qb64b)
+
+        # log escrowed
+        logger.info("Kevery process: escrowed query not found event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
 
     def escrowLDEvent(self, serder, sigers):
@@ -4025,13 +4178,14 @@ class Kevery:
             self.processEscrowPartialSigs()
             self.processEscrowDuplicitous()
             self.processEscrowKeyState()
-
+            self.processQueryNotFound()
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Kevery escrow process error: %s\n", ex.args[0])
             else:
                 logger.error("Kevery escrow process error: %s\n", ex.args[0])
+            raise ex
 
     def processEscrowOutOfOrders(self):
         """
@@ -4774,6 +4928,120 @@ class Kevery:
                     self.db.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
                     logger.info("Kevery unescrow succeeded for event pre=%s "
                                 "sn=%s\n", pre, sn)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey  # setup next while iteration, with key after ekey
+
+    def processQueryNotFound(self):
+        """
+        Process qry events escrowed by Kevery for KELs that have not yet met the criteria of the query.
+        A missing KEL or criteria for an event in a KEL at a particular sequence number or an event containing a
+        specific anchor can result in query not found escrowed events.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sn with duplicates given by different dig inserted in insertion order.
+        This allows FIFO processing of events with same prefix and sn but different
+        digest.
+
+        Uses  .db.addQnf(self, key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+        """
+
+        key = ekey = b''  # both start same. when not same means escrows found
+        pre = b''
+        sn = 0
+        while True:  # break when done
+            for ekey, edig in self.db.getQnfItemsNextIter(key=key):
+                try:
+                    pre, _ = splitKey(ekey)  # get pre and sn from escrow item
+                    # check date if expired then remove escrow.
+                    dtb = self.db.getDts(dgKey(pre, bytes(edig)))
+                    if dtb is None:  # othewise is a datetime as bytes
+                        # no date time so raise ValidationError which unescrows below
+                        logger.info("Kevery unescrow error: Missing event datetime"
+                                    " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow = helping.nowUTC()
+                    dte = helping.fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutQNF):
+                        # escrow stale so raise ValidationError which unescrows below
+                        logger.info("Kevery unescrow error: Stale qry event escrow "
+                                    " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Stale qry event escrow "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # get the escrowed event using edig
+                    eraw = self.db.getEvt(dgKey(pre, bytes(edig)))
+                    if eraw is None:
+                        # no event so raise ValidationError which unescrows below
+                        logger.info("Kevery unescrow error: Missing event at."
+                                    "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt at dig = {}."
+                                              "".format(bytes(edig)))
+
+                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+
+                    #  get sigs and attach
+                    sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
+                    if not sigs:  # otherwise its a list of sigs
+                        # no sigs so raise ValidationError which unescrows below
+                        logger.info("Kevery unescrow error: Missing event sigs at."
+                                    "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt sigs at "
+                                              "dig = {}.".format(bytes(edig)))
+
+                    # process event
+                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+
+                    #  get wigs
+                    cigars = []
+                    cigs = self.db.getRcts(dgKey(pre, bytes(edig)))  # list of wigs
+                    for cig in cigs:
+                        (_, cigar) = deReceiptCouple(cig)
+                        cigars.append(cigar)
+
+                    source = coring.Prefixer(qb64b=pre)
+                    self.processQuery(serder=eserder, source=source, sigers=sigers, cigars=cigars)
+
+                except QueryNotFoundError as ex:
+                    # still waiting on missing prior event to validate
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        logger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than out of order so remove from OO escrow
+                    self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        logger.error("Kevery unescrowed: %s\n", ex.args[0])
+                else:  # unescrow succeeded, remove from escrow
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
+                    self.db.delQnf(dgKey(pre, edig), edig)  # removes one escrow at key val
+                    logger.info("Kevery unescrow succeeded in valid event: "
+                                "event=\n%s\n", json.dumps(eserder.ked, indent=1))
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break

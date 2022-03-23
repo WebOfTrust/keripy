@@ -5,21 +5,24 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
-from urllib.parse import urlparse
-from orderedset import OrderedSet as oset
+import json
+import time
 
 import falcon
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
+from orderedset import OrderedSet as oset
 
-from . import habbing, directing, storing, httping
+from . import habbing, directing, storing, httping, forwarding, agenting
 from .cli.common import oobiing
-from .. import help, kering
+from .. import help
 from ..core import eventing, parsing, routing
+from ..core.coring import Ilks
 from ..db import basing
 from ..end import ending
+from ..help import helping
 from ..peer import exchanging
 from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
@@ -33,20 +36,22 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     """
     doers = []
+
     # make hab
     hab = hby.makeHab(name=alias, transferable=False)
 
     reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(hby=hby, reger=reger)
+
+    mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
+    forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
+    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby)
 
-    mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
-
     rep = storing.Respondant(hby=hby, mbx=mbx)
-    httpHandler = HttpMessageHandler(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx)
-    mailEnd = storing.MailEnd(mbx=mbx)
-    app.add_route("/qry/mbx", mailEnd)
+    httpEnd = HttpEnd(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx, exchanger=exchanger)
+    app.add_route("/", httpEnd)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -62,7 +67,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     witStart = WitnessStart(name=alias, hab=hab)
 
-    doers.extend([regDoer, directant, serverDoer, mailEnd, httpServerDoer, httpHandler, rep, obl, witStart])
+    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, httpEnd, rep, obl, witStart])
 
     return doers
 
@@ -392,7 +397,6 @@ class MailboxDirector(doing.DoDoer):
         if self.exchanger is not None:
             doers.extend([doing.doify(self.exchangerDo)])
 
-
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -422,17 +426,20 @@ class MailboxDirector(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        for hab in self.hby.habs.values():
-            self.addPollers(hab)
-            _ = (yield self.tock)
+        habs = list(self.hby.habs.values())
+        for hab in habs:
+            if hab.accepted:
+                self.addPollers(hab)
+                _ = (yield self.tock)
 
         while True:
             pres = oset(self.hby.habs.keys())
             if new := pres - self.prefixes:
                 for pre in new:
                     hab = self.hby.habs[pre]
-                    self.addPollers(hab=hab)
-                    _ = (yield self.tock)
+                    if hab.accepted:
+                        self.addPollers(hab=hab)
+                        _ = (yield self.tock)
 
             for msg in self.processPollIter():
                 self.ims.extend(msg)
@@ -447,17 +454,10 @@ class MailboxDirector(doing.DoDoer):
 
         """
         wits = hab.kever.wits
-        group = hab.group()
         for wit in wits:
             poller = Poller(hab=hab, topics=self.topics, witness=wit)
             self.pollers.append(poller)
             self.extend([poller])
-
-            if group is not None:
-                poller = GroupPoller(hab=hab, group=group, topics=self.topics, witness=wit)
-                self.pollers.append(poller)
-                self.prefixes.add(group.gid)
-                self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
@@ -501,7 +501,6 @@ class MailboxDirector(doing.DoDoer):
         yield  # enter context
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
-
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -555,19 +554,18 @@ class MailboxDirector(doing.DoDoer):
             self.exchanger.processEscrow()
             yield
 
-            while self.exchanger.cues:
-                cue = self.exchanger.cues.popleft()
-                cueKin = cue["kin"]
-                if cueKin == "query":
-                    qargs = cue["q"]
-                    self.witq.query(**qargs)
-                yield
-
             for rep in self.exchanger.processResponseIter():
                 self.rep.reps.append(rep)
                 yield  # throttle just do one cue at a time
             yield
 
+    @property
+    def times(self):
+        times = dict()
+        for poller in self.pollers:  # get responses from all behaviors
+            times |= poller.times
+
+        return times
 
 
 class Poller(doing.DoDoer):
@@ -576,7 +574,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, topics, msgs=None, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -589,9 +587,13 @@ class Poller(doing.DoDoer):
 
         """
         self.hab = hab
+        self.pre = hab.pre
         self.witness = witness
         self.topics = topics
+        self.retry = retry
         self.msgs = None if msgs is not None else decking.Deck()
+        self.times = dict()
+
         doers = [doing.doify(self.eventDo)]
 
         super(Poller, self).__init__(doers=doers, **kwa)
@@ -604,131 +606,61 @@ class Poller(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
 
-        urls = self.hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.http)
-        if not urls:
-            raise kering.ConfigurationError(f"unable to query witness {self.witness}, no http endpoint")
-
-        up = urlparse(urls[kering.Schemes.http])
-        client = http.clienting.Client(hostname=up.hostname, port=up.port)
-        clientDoer = http.clienting.ClientDoer(client=client)
-        self.extend([clientDoer])
-
-        witrec = self.hab.db.tops.get((self.hab.pre, self.witness))
+        witrec = self.hab.db.tops.get((self.pre, self.witness))
         if witrec is None:
             witrec = basing.TopicsRecord(topics=dict())
 
-        topics = dict()
-        q = dict(pre=self.hab.pre, topics=topics)
-        for topic in self.topics:
-            if topic in witrec.topics:
-                topics[topic] = witrec.topics[topic] + 1
+        while self.retry > 0:
+            client, clientDoer = agenting.httpClient(self.hab, self.witness)
+            self.extend([clientDoer])
+
+            topics = dict()
+            q = dict(pre=self.pre, topics=topics)
+            for topic in self.topics:
+                if topic in witrec.topics:
+                    topics[topic] = witrec.topics[topic] + 1
+                else:
+                    topics[topic] = 0
+
+            if self.hab.phab:
+                msg = self.hab.phab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
             else:
-                topics[topic] = 0
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
-        msg = self.hab.query(pre=self.hab.pre, route="mbx", query=q)
-        httping.createCESRRequest(msg, client)
+            httping.createCESRRequest(msg, client)
 
-        while client.requests:
-            yield self.tock
+            while client.requests:
+                yield self.tock
 
-        while True:
-            while client.events:
-                evt = client.events.popleft()
-                idx = evt["id"]
-                msg = evt["data"]
-                tpc = evt["name"]
+            connected = True
+            while connected:
+                while client.events:
+                    evt = client.events.popleft()
+                    idx = evt["id"]
+                    msg = evt["data"]
+                    tpc = evt["name"]
 
-                self.msgs.append(msg.encode("utf=8"))
+                    if tpc == "close":
+                        self.remove([client])
+                        connected = False
+                        break
 
-                witrec.topics[tpc] = int(idx)
-                self.hab.db.tops.pin((self.hab.pre, self.witness), witrec)
-                yield
-            yield
+                    self.msgs.append(msg.encode("utf=8"))
+                    yield self.tock
 
+                    witrec.topics[tpc] = int(idx)
+                    self.times[tpc] = helping.nowUTC()
+                    self.hab.db.tops.pin((self.pre, self.witness), witrec)
 
-class GroupPoller(doing.DoDoer):
-    """
-    Polls remote SSE endpoint for event that are KERI messages to be processed for a group identifier
-    if one exists
-
-    """
-
-    def __init__(self, hab, group, witness, topics, msgs=None, **kwa):
-        """
-        Returns doist compatible doing.Doer that polls a witness for mailbox messages
-        as SSE events
-
-        Parameters:
-            hab:
-            witness:
-            topics:
-            msgs:
-
-        """
-        self.hab = hab
-        self.group = group
-        self.witness = witness
-        self.topics = topics
-        self.msgs = None if msgs is not None else decking.Deck()
-        doers = [doing.doify(self.eventDo)]
-
-        super(GroupPoller, self).__init__(doers=doers, **kwa)
-
-    def eventDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns:
-           doifiable Doist compatible generator method
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        urls = self.hab.fetchUrls(eid=self.witness, scheme=kering.Schemes.http)
-        if not urls:
-            raise kering.ConfigurationError(f"unable to query witness {self.witness}, no http endpoint")
-
-        up = urlparse(urls[kering.Schemes.http])
-        client = http.clienting.Client(hostname=up.hostname, port=up.port)
-
-        clientDoer = http.clienting.ClientDoer(client=client)
-        self.extend([clientDoer])
-
-        tkey = (self.group.gid, self.witness)
-        witrec = self.hab.db.tops.get(tkey)
-        if witrec is None:
-            witrec = basing.TopicsRecord(topics=dict())
-
-        topics = dict()
-        q = dict(pre=self.group.gid, topics=topics)
-        for topic in self.topics:
-            if topic in witrec.topics:
-                topics[topic] = witrec.topics[topic] + 1
-            else:
-                topics[topic] = 0
-
-        msg = self.hab.query(pre=self.group.gid, route="mbx", query=q)
-        httping.createCESRRequest(msg, client)
-
-        while client.requests:
-            yield self.tock
-
-        while True:
-            while client.events:
-                evt = client.events.popleft()
-                idx = evt["id"]
-                msg = evt["data"]
-                tpc = evt["name"]
-                # ser = coring.Serder(raw=msg.encode("utf-8"))
-
-                self.msgs.append(msg.encode("utf=8"))
-
-                witrec.topics[tpc] = int(idx)
-                self.hab.db.tops.pin(tkey, witrec)
-                yield
-            yield
+                yield 0.25
+            yield client.respondent.retry / 1000
 
 
-class HttpMessageHandler(doing.DoDoer):
+class HttpEnd(doing.DoDoer):
     """
     HTTP handler that accepts and KERI events POSTed as the body of a request with all attachments to
     the message as a CESR attachment HTTP header.  KEL Messages are processed and added to the database
@@ -737,40 +669,40 @@ class HttpMessageHandler(doing.DoDoer):
     This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
     """
 
-    def __init__(self, hab: habbing.Hab, rep, verifier=None, exchanger=None, mbx=None, app=None, **kwa):
+    TimeoutQNF = 30
+    TimeoutMBX = 120
+
+    def __init__(self, hab: habbing.Hab, rep, verifier=None, exchanger=None, mbx=None, **kwa):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.
 
         Parameters
              hab (Habitat): the Habitat in which to store any provided KEL
-             app (Falcon): optional Falcon app in which to register the KEL routes.
+             mbx (Mailboxer): Mailbox storage
 
         """
         self.hab = hab
         self.rep = rep
+        self.mbx = mbx
+
         self.verifier = verifier
         self.exc = exchanger
-        self.mbx = mbx
+        self.kvycues = decking.Deck()
+        self.qrycues = decking.Deck()
+        self.tvycues = decking.Deck()
 
         self.rxbs = bytearray()
 
-        self.app = app if app is not None else falcon.App(cors_enable=True)
-
-        self.app.add_route("/kel", self)
-        self.app.add_route("/qry/logs", self, suffix="req")
-        self.app.add_route("/qry/ksn", self, suffix="req")
-
+        self.rvy = routing.Revery(db=self.hab.db)
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
-                                      local=False)
+                                      local=False,
+                                      rvy=self.rvy)
 
         doers = [doing.doify(self.msgDo), doing.doify(self.cueDo), doing.doify(self.escrowDo)]
 
         if self.verifier is not None:
-            self.app.add_route("/tel", self)
-            self.app.add_route("/qry/tels", self, suffix="req")
-            self.app.add_route("/qry/tsn", self, suffix="req")
             self.tvy = Tevery(reger=self.verifier.reger,
                               db=self.hab.db,
                               local=False)
@@ -779,19 +711,18 @@ class HttpMessageHandler(doing.DoDoer):
             self.tvy = None
 
         if self.exc is not None:
-            self.app.add_sink(prefix="/exn", sink=self.on_post_exn)
             doers.extend([doing.doify(self.exchangerDo)])
 
-        if self.mbx is not None:
-            self.app.add_sink(prefix="/fwd", sink=self.on_post_fwd)
+        self.kevery.registerReplyRoutes(router=self.rvy.rtr)
 
         self.parser = parsing.Parser(ims=self.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
                                      tvy=self.tvy,
-                                     exc=self.exc)
+                                     exc=self.exc,
+                                     rvy=self.rvy)
 
-        super(HttpMessageHandler, self).__init__(doers=doers, **kwa)
+        super(HttpEnd, self).__init__(doers=doers, **kwa)
 
     def on_post(self, req, rep):
         """
@@ -806,93 +737,114 @@ class HttpMessageHandler(doing.DoDoer):
             rep.status = falcon.HTTP_200
             return
 
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('Connection', "keep-alive")
+
         cr = httping.parseCesrHttpRequest(req=req)
-        self.handle(cr, rep)
-
-    def on_post_req(self, req, rep):
-        """
-        Handles POST for `req` messages.
-
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        if req.method == "OPTIONS":
-            rep.status = falcon.HTTP_200
-            return
-
-        cr = httping.parseCesrHttpRequest(req=req, prefix="/req/")
-        self.handle(cr, rep)
-
-    def on_post_exn(self, req, rep):
-        """
-        Handles POST for `exn` messages
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        if req.method == "OPTIONS":
-            rep.status = falcon.HTTP_200
-            return
-
-        cr = httping.parseCesrHttpRequest(req=req, prefix="/exn")
-
-        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload)
-        msg = bytearray(serder.raw)
-        msg.extend(cr.attachments.encode("utf-8"))
-
-        self.rxbs.extend(msg)
-
-        rep.status = falcon.HTTP_202  # This is the default status
-
-    def on_post_fwd(self, req, rep):
-        """
-        Handles POST for `fwd` messages.  Parses out destination from resource and stores in mailbox
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        if req.method == "OPTIONS":
-            rep.status = falcon.HTTP_200
-            return
-
-        cr = httping.parseCesrHttpRequest(req=req, prefix="/fwd/")
-
-        # TODO: regenerate the fwd message and verify the SAID signature on it.
-        serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
-
-        msg = bytearray(serder.raw)
-        msg.extend(cr.attachments.encode("utf-8"))
-
-        self.mbx.storeMsg(topic=cr.resource, msg=msg)
-
-        rep.status = falcon.HTTP_202  # This is the default status
-
-    def handle(self, cr, rep):
-        """
-        Handles POST requests that conform to CESR HTTP Requests.
-
-        Converts the requests into KERI event messages and passes them on to
-        the Parser to be parsed and processed by either the Kevery, Tevery or
-        Exchanger.
-
-        Parameters:
-              cr (Request) Parsed CESR request
-              rep (Response) Falcon HTTP response
-              cr (CesrRequest) Result of converting HTTP Request to a CESR message
-
-        """
-
         serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
 
-        rep.status = falcon.HTTP_202  # This is the default status
+        ilk = serder.ked["t"]
+        if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+            rep.set_header('Content-Type', "application/json")
+            rep.status = falcon.HTTP_204
+        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+            rep.set_header('Content-Type', "application/json")
+            rep.status = falcon.HTTP_204
+        elif ilk in (Ilks.qry, ):
+            rep.set_header('Content-Type', "text/event-stream")
+            rep.status = falcon.HTTP_200
+            rep.stream = self.qryrep(said=serder.said)
+
+    def qryrep(self, said):
+        """ Iterator to respond to mailbox queries
+
+        Parameters:
+            said (str): qb64 self addressing identifier of query message to track
+        """
+
+        start = end = time.perf_counter()
+        while end - start < self.TimeoutQNF:
+            if self.qrycues:
+                cue = self.qrycues.popleft()
+                serder = cue["serder"]
+                if serder.said == said:
+                    kin = cue["kin"]
+                    if kin == "stream":
+                        pre = cue["pre"]
+                        topics = cue["topics"]
+
+                        yield from self.mailboxGenerator(pre=pre, topics=topics)
+                        return
+                else:
+                    self.qrycues.append(cue)
+            end = time.perf_counter()
+            yield b''
+        yield bytearray(f"event: close\ndata: test\nretry: 5000\n\n".encode("utf-8"))
+        return b''
+
+    def kvyrep(self, said):
+        """ Iterator to respond to KEL events
+
+        Parameters:
+            said (str): qb64 self addressing identifier of query message to track
+        """
+        while True:
+            if self.kvycues:
+                cue = self.kvycues.popleft()
+                serder = cue["serder"]
+                if said == serder.said:
+                    yield json.dumps(cue).encode("utf-8")
+                    return
+                else:
+                    self.kvycues.append(cue)
+            yield b''
+
+    def tvyrep(self, said):
+        """ Iterator to respond to TEL events
+
+        Parameters:
+            said (str): qb64 self addressing identifier of query message to track
+        """
+        while True:
+            if self.tvycues:
+                cue = self.tvycues.popleft()
+                serder = cue["serder"]
+                if serder.said == said:
+                    yield json.dumps(cue).encode("utf-8")
+                    return
+                else:
+                    self.tvycues.append(cue)
+            yield b''
+
+    def mailboxGenerator(self, pre=None, topics=None):
+        """
+
+        Parameters:
+            pre (str): qb64 identifier prefix of the mailbox to read
+            topics (dict): list of topics to read messages from as strings
+
+        """
+        start = end = time.perf_counter()
+        while end - start < self.TimeoutMBX:
+            for topic, idx in topics.items():
+                key = pre + topic
+                for fn, _, msg in self.mbx.cloneTopicIter(key, idx):
+                    data = bytearray("id: {}\nevent: {}\ndata: ".format(fn, topic).encode("utf-8"))
+                    data.extend(msg)
+                    data.extend(b'\n\n')
+                    idx = idx + 1
+                    yield data
+                    start = time.perf_counter()
+                topics[topic] = idx
+            end = time.perf_counter()
+            yield b''
+
+        yield bytearray(f"event: close\ndata: test\nretry: 2000\n\n".encode("utf-8"))
+        return b''
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -918,7 +870,12 @@ class HttpMessageHandler(doing.DoDoer):
         while True:
             while self.kevery.cues:  # iteratively process each cue in cues
                 cue = self.kevery.cues.popleft()
-                self.rep.cues.append(cue)
+                cueKin = cue["kin"]
+                if cueKin == "stream":
+                    self.qrycues.append(cue)
+                else:
+                    self.kvycues.append(cue)
+                    self.rep.cues.append(cue)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -948,6 +905,7 @@ class HttpMessageHandler(doing.DoDoer):
         while True:
             while self.tvy.cues:  # iteratively process each cue in cues
                 cue = self.tvy.cues.popleft()
+                self.tvycues.append(cue)
                 self.rep.cues.append(cue)
                 yield  # throttle just do one cue at a time
             yield

@@ -5,11 +5,10 @@ tests.vc.proving module
 """
 import pytest
 
-from keri.app import keeping, habbing
+from keri.app import habbing
 from keri.core import coring, scheming, parsing
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger, Vstrings
+from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from keri.core.scheming import CacheResolver
-from keri.db import basing
 from keri.kering import Versionage
 from keri.vc.proving import Credentialer, credential
 from keri.vdr import verifying, issuing, viring
@@ -20,7 +19,7 @@ def test_proving():
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test", )
-        assert sidHab.pre == "EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc"
+        assert sidHab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
@@ -44,7 +43,7 @@ def test_proving():
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
-        cache = CacheResolver()
+        cache = CacheResolver(db=sidHby.db)
         cache.add(schemer.said, schemer.raw)
 
         creder = credential(issuer=sidHab.pre,
@@ -52,16 +51,16 @@ def test_proving():
                             subject=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EEJi2IYzwRTtvYIBx8-PjlpIiLyRrT6GWw'
-                       b'GOwycuX7vM","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
-                       b'i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc","a":{"d":"E6wI'
+        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EYPyybUq9OPi4aMnnNMafmNkjf0TRGr8bD'
+                       b'Nj0CQmUqyM","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
+                       b'i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"E6wI'
                        b'oXUVrUsFm4pHAFDMbLloniDNvEWizHO8BNPwcyBA","i":"EPmpiN6bEM8EI0Mct'
                        b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
-                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0-FABEPmp'
-                       b'iN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc0AAAAAAAAAAAAAAAAAAAAAAA'
-                       b'EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAC2EQIRhx8mBH6a'
-                       b'zYQIFT8sokz7IBle8dZdwz_XsYh84mY3YbrasTT0pHxQ9Y2nV9UdEiM4UiunmjzB'
-                       b'ZtTvqaCA')
+                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"e":{}}-VA0-FABECtW'
+                       b'lHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAA'
+                       b'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA4tl9yho6Mod3Ta'
+                       b'VbZTuBbtWSnpfLVjSqK7prYcwJyGz8HKYNU1qu2iMcaRpUD035mEy70YhiRb0AR2'
+                       b'gQuBsiCg')
 
         creder = Credentialer(raw=msg)
         proof = msg[creder.size:]
@@ -211,21 +210,21 @@ def test_credential():
                       subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"Eoimm87D8yLKoz64dgphbsbgsgrEpZUeyRro0YyADYYw",'
+    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"EZnnIhnNRaP2cqIq_4GPvjhz1JT3LMIEHJs5UcZnfmhw",'
                         b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","i":"EYNHFK056fqNSG_MDE7d'
-                        b'_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"ECe-ugAvprMRxaPgx0Q9__EBBtLxvqHTLiediZjc'
-                        b'TGEY","issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"J'
+                        b'_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL5'
+                        b'7dTA","issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"J'
                         b'ohn Doe","engagementContextRole":"Project Manager","credentialStatus":"EymRy'
                         b'7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"Ey'
-                        b'8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RV'
-                        b'SzSwcoNvmfa18AWt3M"},"p":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
-                        b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+                        b'8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI"},"e":[{"qualifiedvLEIIssuervLEIC'
+                        b'redential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}],"ri":"ETQoH02z'
+                        b'JRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M"}')
 
 
 def test_credential_parsator():
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
             viring.openReg() as reg:
-        assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
+        assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
 
         issuer = issuing.Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
 

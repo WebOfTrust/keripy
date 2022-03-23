@@ -64,8 +64,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -99,8 +98,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -112,7 +110,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -159,7 +157,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     mgr = keeping.Manager(keeper=kpr, salt=salt)
     verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True)
 
-    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256, nxt="")  # empty nxt i.e. abandoned
+    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)  # empty nxt i.e. abandoned
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -185,8 +183,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -220,8 +217,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt,
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64],
                            code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
@@ -234,7 +230,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -293,8 +289,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfer.qb64 for verfer in verfers]
 
-    nxt = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, nkeys=[diger.qb64 for diger in digers], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -329,8 +324,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfer.qb64 for verfer in verfers]
 
-    nxt = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt,
+    srdr = eventing.incept(keys=keys, nkeys=[diger.qb64 for diger in digers],
                            code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
@@ -343,7 +337,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfer.qb64 for verfer in verfers]
     nxtKeyDig = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -489,8 +483,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
     
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
     
@@ -522,8 +515,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
     
     # Create Signatures
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
@@ -547,8 +539,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
     
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
     
@@ -585,8 +576,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -599,7 +589,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     keys = [verfers[0].qb64]
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt=nxtKeyDig, sn=1)  # Create rotation event
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)  # Create rotation event
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -627,8 +617,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -641,7 +630,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nxt="", sn=1)  # nxt is empty i.e. abandoned
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, sn=1)  # nxt is empty i.e. abandoned
 
     print(srdr.raw.decode("utf-8"))
     print()

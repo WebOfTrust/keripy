@@ -9,7 +9,8 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import directing, grouping, indirecting
+from keri import kering
+from keri.app import grouping, indirecting, habbing
 from keri.app.cli.common import rotating, existing, displaying
 
 logger = help.ogler.getLogger()
@@ -18,7 +19,13 @@ parser = argparse.ArgumentParser(description='Begin or join a rotation of a grou
 parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
-parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
+                    action="append", required=False, default=None)
 
 rotating.addRotationArgs(parser)
 
@@ -36,12 +43,14 @@ def rotateGroupIdentifier(args):
 
     """
 
-    kwa = args.__dict__
-    rotDoer = GroupMultisigRotate(**kwa)
+    data = rotating.loadData(args)
+
+    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, aids=args.aids, bran=args.bran,
+                                  wits=args.witnesses, cuts=args.cuts, adds=args.witness_add, sith=args.sith,
+                                  nsith=args.nsith, toad=args.toad, data=data)
 
     doers = [rotDoer]
-    directing.runController(doers=doers, expire=0.0)
-
+    return doers
 
 
 class GroupMultisigRotate(doing.DoDoer):
@@ -52,43 +61,72 @@ class GroupMultisigRotate(doing.DoDoer):
 
     """
 
-    def __init__(self, name, **kwa):
-        self.hab, doers = existing.setupHabitat(name=name)
-        self.rotr = grouping.MultiSigGroupDoer(hab=self.hab)
-        self.msg = kwa
+    def __init__(self, name, base, bran, alias, aids=None, sith=None, nsith=None, toad=None, wits=None, cuts=None,
+                 adds=None, data: list = None):
 
-        mbd = indirecting.MailboxDirector(hab=self.hab, topics=['/receipt', '/multisig'])
-        doers.extend([self.rotr, mbd])
+        self.alias = alias
+        self.sith = sith
+        self.nsith = nsith
+        self.toad = toad
+        self.aids = aids
+        self.data = data
+
+        self.wits = wits if wits is not None else []
+        self.cuts = cuts if cuts is not None else []
+        self.adds = adds if adds is not None else []
+
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+
+        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
+        self.counselor = grouping.Counselor(hby=self.hby)
+
+        doers = [mbd, self.hbyDoer, self.counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.rotateDo)])
 
         super(GroupMultisigRotate, self).__init__(doers=doers)
 
-
     def rotateDo(self, tymth, tock=0.0, **opts):
+        """ Create or participate in an rotation event for a distributed multisig identifier
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
         # enter context
-        yield self.tock
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
 
-        msg = dict(op=grouping.Ops.rot, reason="Standard Rotation")
-        msg["group"] = self.msg["group"]
-        msg["sith"] = self.msg["sith"]
-        msg["toad"] = self.msg["toad"]
-        msg["data"] = self.msg["data"]
-        msg["wits"] = self.msg["witnesses"] if "witnesses" in msg else []
-        msg["cuts"] = self.msg["witness_cut"] if "witnesse_cut" in msg else []
-        msg["adds"] = self.msg["witness_add"] if "witnesse_add" in msg else []
+        ghab = self.hby.habByName(name=self.alias)
+        if ghab is None:
+            raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
 
+        if self.wits:
+            if self.adds or self.cuts:
+                raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
+            ewits = ghab.kever.wits
 
-        self.rotr.msgs.append(msg)
+            # wits= [a,b,c]  wits=[b, z]
+            self.cuts = set(ewits) - set(self.wits)
+            self.adds = set(self.wits) - set(ewits)
 
-        while not self.rotr.cues:
+        self.counselor.rotate(ghab=ghab, aids=self.aids, sith=self.sith, toad=self.toad,
+                              cuts=list(self.cuts), adds=list(self.adds),
+                              data=self.data)
+
+        while True:
+            if self.counselor.cues:
+                cue = self.counselor.cues.popleft()
+                if cue["pre"] == ghab.pre:
+                    break
+
             yield self.tock
 
-        rep = self.rotr.cues.popleft()
         print()
-        print("Group Identifier Rotation Complete:")
-        displaying.printIdentifier(self.hab, rep["pre"])
-
-
+        displaying.printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)

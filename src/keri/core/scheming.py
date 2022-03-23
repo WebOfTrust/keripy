@@ -18,21 +18,20 @@ from ..kering import ValidationError, DeserializationError
 
 logger = help.ogler.getLogger()
 
-QualifiedVLEIIssuerVLEICredential = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
-
 
 class CacheResolver:
     """ Sample jsonschema resolver for loading schema $ref references from a local hash.
 
     """
 
-    def __init__(self, cache=None):
+    def __init__(self, db):
         """ Create a jsonschema resolver that can be used for loading references to schema remotely.
 
         Parameters:
-            cache (Optional(dict)) is an optional pre-loaded cache of schema
+            db (Baser) is a database instance to store and retrieve json schema SADs
+
         """
-        self.cache = cache if cache is not None else dict()
+        self.db = db
 
     def add(self, key, schema):
         """ Add schema to cache for resolution
@@ -41,14 +40,17 @@ class CacheResolver:
             key (str): URI to resolve to the schema
             schema (bytes): is bytes of the schema for the URI
         """
-        self.cache[key] = schema
+        schemer = Schemer(raw=schema)
+        if schemer.said != key:
+            return
+
+        self.db.schema.pin(key, schemer)
 
     def resolve(self, uri):
-        if uri not in self.cache:
+        schemer = self.db.schema.get(uri)
+        if schemer is None:
             return None
-
-        ref = self.cache[uri]
-        return ref
+        return schemer.raw
 
     def handler(self, uri):
         """ Handler provided to jsonschema for cache resolution
@@ -56,12 +58,17 @@ class CacheResolver:
         Parameters:
             uri (str): the URI to resolve
         """
-        ref = self.resolve(uri)
-        if not ref:
+        try:
+            idx = uri.rindex(":")
+            key = uri[idx+1:]
+        except ValueError:
+            key = uri
+
+        schemer = self.db.schema.get(key)
+        if not schemer:
             return None
 
-        schemr = Schemer(raw=ref)
-        return schemr.sed
+        return schemer.sed
 
     def resolver(self, scer=b''):
         """ Locally cached schema resolver
@@ -76,134 +83,12 @@ class CacheResolver:
         return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
 
 
-jsonSchemaCache = CacheResolver(cache={
-    "EHjnQDFqeaAOYsg8Aa-L3ugPZYA5LvNArunSntXzERns": b'{"$id":"EHjnQDFqeaAOYsg8Aa-L3ugPZYA5LvNArunSntXzERns",'
-                                                    b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                    b'"title":"Legal Entity Official Organizational Role vLEI '
-                                                    b'Credential","description":"A vLEI Role Credential issued by a '
-                                                    b'Qualified vLEI issuer to official representatives of a Legal '
-                                                    b'Entity",'
-                                                    b'"credentialType":"LegalEntityOfficialOrganizationalRolevLEICreden'
-                                                    b'tial","properties":{"v":{"type":"string"},'
-                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
-                                                    b'"s":{"description":"schema SAID","type":"string"},'
-                                                    b'"a":{"description":"data block","properties":{"d":{'
-                                                    b'"type":"string"},"i":{"type":"string"},'
-                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
-                                                    b'"type":"string"},"ri":{"description":"credential status '
-                                                    b'registry","type":"string"},"LEI":{"type":"string"},'
-                                                    b'"personLegalName":{"type":"string"},"officialRole":{'
-                                                    b'"type":"string"}},"additionalProperties":false,"required":["i",'
-                                                    b'"dt","ri","LEI","personLegalName","officialRole"],'
-                                                    b'"type":"object"},"p":{"contains":{"type":"object"},'
-                                                    b'"description":"source block","items":{"properties":{'
-                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
-                                                    b'credential","properties":{"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"}},"additionalProperties":false,'
-                                                    b'"type":"object"}},"additionalProperties":false,"required":['
-                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
-                                                    b'"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},'
-                                                    b'"description":"rules block","type":"array"}},'
-                                                    b'"additionalProperties":false,"required":["i","s","d","r"],'
-                                                    b'"type":"object"}',
-    "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0": b'{"$id":"EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0",'
-                                                    b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                    b'"title":"Legal Entity vLEI Credential","description":"A vLEI '
-                                                    b'Credential issued by a Qualified vLEI issuer to a Legal '
-                                                    b'Entity","credentialType":"LegalEntityvLEICredential",'
-                                                    b'"properties":{"v":{"type":"string"},"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"},"s":{"description":"schema SAID",'
-                                                    b'"type":"string"},"a":{"description":"data block","properties":{'
-                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
-                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
-                                                    b'"type":"string"},"ri":{"description":"credential status '
-                                                    b'registry","type":"string"},"LEI":{"type":"string"}},'
-                                                    b'"additionalProperties":false,"required":["i","dt","ri","LEI"],'
-                                                    b'"type":"object"},"p":{"contains":{"type":"object"},'
-                                                    b'"description":"source block","items":{"properties":{'
-                                                    b'"qualifiedvLEIIssuervLEICredential":{"description":"chain to '
-                                                    b'issuer credential","properties":{"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"}},"additionalProperties":false,'
-                                                    b'"type":"object"}},"additionalProperties":false,"required":['
-                                                    b'"qualifiedvLEIIssuervLEICredential"],"type":"object"},'
-                                                    b'"maxItems":1,"minItems":1,"type":"array"},"r":{"contains":{'
-                                                    b'"type":"object"},"description":"rules block","type":"array"}},'
-                                                    b'"additionalProperties":false,"required":["i","s","d","r"],'
-                                                    b'"type":"object"}',
-    "EvaAd8yXN6HhHdxAQ7i_b1CGi-O6OZusI_xeVjs_olZ0": b'{"$id":"EvaAd8yXN6HhHdxAQ7i_b1CGi-O6OZusI_xeVjs_olZ0",'
-                                                    b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                    b'"title":"Legal Entity Engagement Context Role vLEI Credential",'
-                                                    b'"description":"A vLEI Role Credential issued to representatives '
-                                                    b'of a Legal Entity in other than official roles but in '
-                                                    b'functional or other context of engagement",'
-                                                    b'"credentialType":"LegalEntityEngagementContextRolevLEICredential",'
-                                                    b'"properties":{"v":{"type":"string"},"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"},"s":{"description":"schema SAID",'
-                                                    b'"type":"string"},"n":{"description":"one time use nonce",'
-                                                    b'"type":"string"},"a":{"description":"data block","properties":{'
-                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
-                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
-                                                    b'"type":"string"},"ri":{"description":"credential status '
-                                                    b'registry","type":"string"},"LEI":{"type":"string"},'
-                                                    b'"personLegalName":{"type":"string"},"engagementContextRole":{'
-                                                    b'"type":"string"}},"additionalProperties":false,"required":["i",'
-                                                    b'"dt","ri","LEI","personLegalName","engagementContextRole"],'
-                                                    b'"type":"object"},"p":{"contains":{"type":"object"},'
-                                                    b'"description":"source block","items":{"properties":{'
-                                                    b'"legalEntityvLEICredential":{"description":"chain to issuer '
-                                                    b'credential","properties":{"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"}},"additionalProperties":false,'
-                                                    b'"type":"object"}},"additionalProperties":false,"required":['
-                                                    b'"legalEntityvLEICredential"],"type":"object"},"maxItems":1,'
-                                                    b'"minItems":1,"type":"array"},"r":{"contains":{"type":"object"},'
-                                                    b'"description":"rules block","type":"array"}},'
-                                                    b'"additionalProperties":false,"required":["v","i","s","d","r",'
-                                                    b'"a"],"type":"object"}',
-    "EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg": b'{"$id":"EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",'
-                                                    b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                    b'"title":"GLEIF vLEI Credential","description":"The vLEI '
-                                                    b'Credential issued to GLEIF",'
-                                                    b'"credentialType":"GLEIFvLEICredential","type":"object",'
-                                                    b'"properties":{"v":{"type":"string"},"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"},"s":{"description":"schema SAID",'
-                                                    b'"type":"string"},"a":{"description":"data block","properties":{'
-                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
-                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
-                                                    b'"type":"string"},"ri":{"description":"credential status '
-                                                    b'registry","type":"string"},"LEI":{"type":"string"}},'
-                                                    b'"additionalProperties":false,"required":["d","dt","ri","LEI"],'
-                                                    b'"type":"object"},"p":{"maxItems":0,"minItems":0,'
-                                                    b'"type":"array"}},"additionalProperties":false,"required":["d",'
-                                                    b'"i"]}',
-    "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo": b'{"$id":"ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo",'
-                                                    b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                    b'"title":"Qualified vLEI Issuer Credential","description":"A '
-                                                    b'vLEI Credential issued by GLEIF to Qualified vLEI Issuers which '
-                                                    b'allows the Qualified vLEI Issuers to issue, verify and revoke '
-                                                    b'Legal Entity vLEI Credentials and Legal Entity Official '
-                                                    b'Organizational Role vLEI Credentials",'
-                                                    b'"credentialType":"QualifiedvLEIIssuervLEICredential",'
-                                                    b'"properties":{"v":{"type":"string"},"d":{"type":"string"},'
-                                                    b'"i":{"type":"string"},"s":{"description":"schema SAID",'
-                                                    b'"type":"string"},"a":{"description":"data block","properties":{'
-                                                    b'"d":{"type":"string"},"i":{"type":"string"},'
-                                                    b'"dt":{"description":"issuance date time","format":"date-time",'
-                                                    b'"type":"string"},"ri":{"description":"credential status '
-                                                    b'registry","type":"string"},"LEI":{"type":"string"},'
-                                                    b'"gracePeriod":{"default":90,"type":"integer"}},'
-                                                    b'"additionalProperties":false,"required":["i","dt","ri","LEI"],'
-                                                    b'"type":"object"},"p":{"maxItems":0,"minItems":0,'
-                                                    b'"type":"array"}},"additionalProperties":false,"required":["i",'
-                                                    b'"d"],"type":"object"}',
-})
-
-
 class JSONSchema:
     """ JSON Schema support class
     """
     id_ = Ids.dollar  # ID Field Label
 
-    def __init__(self, resolver=CacheResolver()):
+    def __init__(self, resolver=None):
         """ Initialize instance
 
         Parameters:
@@ -219,6 +104,9 @@ class JSONSchema:
             uri (str): uniform resource identifier of schema to load
 
         """
+        if self.resolver is None:
+            return None
+
         return self.resolver.resolve(uri)
 
     def load(self, raw, kind=Serials.json):
@@ -336,20 +224,20 @@ class JSONSchema:
         """
         try:
             d = json.loads(raw)
-            jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
+            kwargs = dict()
+            if self.resolver is not None:
+                kwargs["resolver"] = self.resolver.resolver(scer=raw)
+            jsonschema.validate(instance=d, schema=schema, **kwargs)
         except jsonschema.exceptions.ValidationError as ex:
-            print(ex)
             logger.error(f'jsonschema.exceptions.ValidationError {ex}')
             return False
         except jsonschema.exceptions.SchemaError as ex:
-            print(ex)
             logger.error(f'jsonschema.exceptions.SchemaError {ex}')
             return False
         except json.decoder.JSONDecodeError as ex:
-            print(ex)
             logger.error(f'json.decoder.JSONDecodeError {ex}')
             return False
-        except Exception:
+        except Exception as ex:
             return False
 
         return True

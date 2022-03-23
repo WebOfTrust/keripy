@@ -13,7 +13,7 @@ from hio.core import http
 from hio.core.http import clienting
 from hio.help import decking
 
-from keri.app import keeping
+from keri.app import keeping, agenting
 from keri.core import coring, eventing, parsing
 from .. import help, kering
 from ..end import ending
@@ -65,15 +65,11 @@ class KiwiServer(doing.DoDoer):
                                                temp=False)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        if digers:
-            nxt = coring.Nexter(sith=nst,
-                                digs=[diger.qb64 for diger in digers]).qb64
-        else:
-            nxt = ""
 
         serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  sith=cst,
-                                 nxt=nxt,
+                                 nsith=nst,
+                                 nkeys=[diger.qb64 for diger in digers],
                                  toad=cur.toad,
                                  wits=cur.wits,
                                  code=code)
@@ -85,9 +81,9 @@ class KiwiServer(doing.DoDoer):
         for sig in sigers:
             icpMsg.extend(sig.qb64b)  # attach sig
 
-        sigers = self.hab.mgr.sign(ser=bytes(icpMsg),
-                                   verfers=self.hab.kever.verfers,
-                                   indexed=False)
+        sigers = self.hab.sign(ser=bytes(icpMsg),
+                               verfers=self.hab.kever.verfers,
+                               indexed=False)
 
         signage = ending.Signage(markers=sigers, indexed=False)
         sheaders = ending.signature([signage])
@@ -148,21 +144,14 @@ class WatcherClientRotateDoer(doing.DoDoer):
 
                 payload = dict(pre=self.hab.pre)
                 raw = json.dumps(payload)
-                sigers = self.hab.mgr.sign(ser=raw.encode("utf-8"),
-                                           verfers=self.hab.kever.verfers,
-                                           indexed=True)
+                sigers = self.hab.sign(ser=raw.encode("utf-8"),
+                                       verfers=self.hab.kever.verfers,
+                                       indexed=True)
 
                 signage = ending.Signage(markers=sigers, indexed=True)
                 headers = ending.signature([signage])
 
-                urls = self.hab.fetchUrls(eid=watcher, scheme=kering.Schemes.http)
-                if not urls:
-                    raise kering.ConfigurationError(f"unable to query watcher {watcher}, no http endpoint")
-
-                print("have url", urls)
-                up = urlparse(urls[kering.Schemes.http])
-                client = http.clienting.Client(hostname=up.hostname, port=up.port)
-                clientDoer = clienting.ClientDoer(client=client)
+                client, clientDoer = agenting.httpClient(self.hab, watcher)
                 self.extend([clientDoer])
 
                 client.request(method="POST", path="/rotate", headers=headers, body=raw)

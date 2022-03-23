@@ -3,19 +3,16 @@
 tests.vdr.verifying module
 
 """
-import json
 
 import pytest
 
 from keri import kering
-from keri.app import habbing, grouping, signing
+from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring
-from keri.db import dbing
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import verifying, issuing, viring, eventing
-from ..app import test_grouping
 
 
 def test_verifier_query(mockHelpingNowUTC):
@@ -26,20 +23,22 @@ def test_verifier_query(mockHelpingNowUTC):
         msg = verfer.query(hab.pre, issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"Efp5Surn_KGO6S4G6ZnExhK8'
-                       b'3kCEIpVQA3QihDyeHG-Y","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EdaoDw0LOorX185H3Mu8O8OZ'
+                       b'3rSHcuZn75AjFwhwgpUA","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"ERAY2VjFALVZAAuC3GDM-36qKD8ZhUaKF55MWtITBFnc"}}-V'
-                       b'Aj-HABEPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc-AABAAfmxUPkuS'
-                       b'zu50ixd9C5NwXzI7Dm2IdtD_PKExpzz0CQRwa9d3fvuWG-iQKiPxPCMCDEOmDwx9'
-                       b'iBO55UL94q0CAQ')
+                       b'KXqgcX4","ri":"EAZj_M7DRVHIYEnvkCwo20w_ZrjKR_ScNxHXO25Qus9s"}}-V'
+                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAktrAj01P'
+                       b'kZlEtu7VPC076cyCvlhXdL9gYcf5pcih5ehlV73947Qp0ZeyP8J3HjFc3KFI0Iwh'
+                       b'dvBVkQnHkFLlBw')
 
 
-def test_verifier():
+def test_verifier(seeder):
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
             habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp), \
             viring.openReg(temp=True) as reger:
-        assert hab.pre == "EtjehgJ3LiIcPUKIQy28zge56_B2lzdGGLwLpuRBkZ8w"
+        seeder.seedSchema(db=hby.db)
+        seeder.seedSchema(db=recpHby.db)
+        assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
 
         issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
         verifier = verifying.Verifier(hby=hby, reger=reger)
@@ -53,7 +52,7 @@ def test_verifier():
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         creder = proving.credential(issuer=hab.pre,
-                                    schema="EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg",
+                                    schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
                                     subject=d,
                                     status=issuer.regk)
 
@@ -89,7 +88,7 @@ def test_verifier():
         assert saider[0].qb64 == creder.said
         saider = reger.subjs.get(recp.pre)
         assert saider[0].qb64 == creder.said
-        saider = reger.schms.get("EIZPo6FxMZvZkX-463o9Og3a2NEKEJa-E9J5BXOsdpVg")
+        saider = reger.schms.get("ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI")
         assert saider[0].qb64 == creder.said
 
     """End Test"""
@@ -263,7 +262,7 @@ def test_verifier():
 #             pather = coring.Pather(path=[])
 #             data = pather.rawify(serder=creder)
 #
-#             sig = hab.mgr.sign(ser=data,
+#             sig = hab.sign(ser=data,
 #                                verfers=hab.kever.verfers,
 #                                indexed=True,
 #                                indices=[idx])
@@ -280,9 +279,9 @@ def test_verifier():
 #     """End Test"""
 
 
-def test_verifier_chained_credential():
-    qviSchema = "ESAItgWbOyCvcNAqkJFBZqxG2-h69fOkw7Rzk0gAqkqo"
-    vLeiSchema = "EYKd_PUuCGvoMfTu6X3NZrLKl1LsvFN60M-P23ZTiKQ0"
+def test_verifier_chained_credential(seeder):
+    qviSchema = "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
+    vLeiSchema = "EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
@@ -291,11 +290,15 @@ def test_verifier_chained_credential():
             viring.openReg(temp=True, name="ron") as ronreg, \
             viring.openReg(temp=True, name="ian") as ianreg, \
             viring.openReg(temp=True, name="vic") as vicreg:
+        seeder.seedSchema(db=ronHby.db)
+        seeder.seedSchema(db=ianHby.db)
+        seeder.seedSchema(db=hanHby.db)
+        seeder.seedSchema(db=vicHby.db)
 
-        assert ron.pre == "EoovZ8CJiavhb1hpjcmCjUUPglFR3AdRA9VUhXu-Px_4"
-        assert ian.pre == "EbgpwKmMagky9SvCGXrcsT0-YlbPnmAXqRSK1an7IzvI"
-        assert han.pre == "EmQqEDpWMGGt-zmXxe7vEbyWIZOm4XwUU0J177rUMhRw"
-        assert vic.pre == "E-1sk6rrObrEjysK7gsfbNyr4V4qFJsnrFiU5EDBO2Vo"
+        assert ron.pre == "EkaWvr-o2ktpq6nIYL-KlCd_hfVkhIxVRfBOOjETday8"
+        assert ian.pre == "EHcaV00uLjd7zXDt_FnH-gCNYG-HC2D2R1GsHDt6-eoc"
+        assert han.pre == "ErqUTGqxVQzG3oYuyKVi2zKQvtUqHHMz3t_BaMt9nbPo"
+        assert vic.pre == "EI4-27_xnAB2I7LXgIjKUl8APR4iZV_LY64Am5TyBilE"
 
         roniss = issuing.Issuer(hab=ron, reger=ronreg, noBackers=True, estOnly=True, temp=True)
         ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg)
@@ -370,9 +373,9 @@ def test_verifier_chained_credential():
         _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         chain = dict(
+            d=creder.said,
             qualifiedvLEIIssuervLEICredential=dict(
-                d=creder.said,
-                i=ian.pre,
+                n=creder.said,
             ),
         )
 
@@ -380,7 +383,7 @@ def test_verifier_chained_credential():
                                         schema=vLeiSchema,
                                         subject=d,
                                         status=ianiss.regk,
-                                        source=[chain],
+                                        source=chain,
                                         rules=[dict(
                                             usageDisclaimer="Use carefully."
                                         )])

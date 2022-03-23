@@ -3,13 +3,13 @@ import os
 import pytest
 
 from keri import help
-from keri.app import keeping, habbing
+from keri.app import habbing
 from keri.core import parsing, eventing, coring
 from keri.core.coring import CtrDex, Counter
-from keri.core.coring import Signer, Nexter
+from keri.core.coring import Signer
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (incept, rotate, interact)
-from keri.db import basing, dbing
+from keri.db import dbing
 from keri.db.basing import openDB
 from keri.kering import (ValidationError)
 
@@ -46,7 +46,7 @@ def test_kevery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
+                        nkeys=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -59,18 +59,19 @@ def test_kevery():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert msgs == bytearray(b'{"v":"KERI10JSON000120_","t":"icp","d":"EG4EuTsxPiRM7soX10XXzNsS'
-                                 b'1KqXKUp8xsQ-kW_tWHoI","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
+        assert msgs == bytearray(b'{"v":"KERI10JSON00012b_","t":"icp","d":"ELeMG3OOxWi5n1Zud603_Bn6'
+                                 b'Hzm3hIRZXlQnSgC5lU7A","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
                                  b'WTOunRA","s":"0","kt":"1","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
-                                 b'OoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
-                                 b'","bt":"0","b":[],"c":[],"a":[]}-AABAA0aSisI4ZZTH_6JCqsvAsEpuf_J'
-                                 b'q6bDbvPWj_eCDnAGbSARqYHipNs-9W7MHnwnMfIXwLpcoJkKGrQ-SiaklhAw')
+                                 b'OoeKtWTOunRA"],"nt":"1","n":["E67B6WkwQrEfSA2MylxmF28HJc_HxfHRyK'
+                                 b'1kRXSYeMiI"],"bt":"0","b":[],"c":[],"a":[]}-AABAAw6czYydWCMpfs-X'
+                                 b'pUPi-h2OuBHP6ji5IU7YbK0pnsQt237sI4jaALv7Guc30y1zh8j5hrou-zOoUrVI'
+                                 b'NlhSICw')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -88,7 +89,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
@@ -138,7 +139,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
@@ -173,7 +174,6 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt="",
                         sn=7)
         event_digs.append(serder.said)
         # create sig counter
@@ -207,7 +207,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
+                        nkeys=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -221,7 +221,7 @@ def test_kevery():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        assert len(msgs) == 3681
+        assert len(msgs) == 3745
 
         pre = kever.prefixer.qb64
 
@@ -282,38 +282,37 @@ def test_witness_state():
 
         ixn0 = hab.interact()
         assert ixn0 == (
-            b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EnmIjmjrCQ9MJGzk6sg44zO9'
-            b'QAfPhgRtgmdnG6kAwEv0","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"1","p":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbANA91WP'
-            b'HA","a":[]}-AABAAVmp0AsKRYDnl1hjObV1m6waHErFu2czgWkhOVMHsuy9TR-5'
-            b'e_oJKup5Pxf9IK5LViMZF6DgUsR0ctk_2H27iDw')
+            b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EAj8A9YX36o_F_F18vojk41Y'
+            b'tzObAiN9p9rdPWDcN8sc","i":"EpUpvOQ_6hy5pxlqhSLI0vq6X72n3RxiDVv6m'
+            b'9-OjSzs","s":"1","p":"EpUpvOQ_6hy5pxlqhSLI0vq6X72n3RxiDVv6m9-OjS'
+            b'zs","a":[]}-AABAA2vgTktL0z1iU_NEQTzyyLsKFWPNhukavjYWgMqI4cjXWS5A'
+            b'HjicN_tW6rU96c94FzxEkzlz6Y0wHT8UUEnBfDw')
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
         rot1 = hab.rotate()
         assert rot1 == (
-            b'{"v":"KERI10JSON000155_","t":"rot","d":"EITSN2f52JXziJEChYETgxHf'
-            b'SdHRj1h4VzjwZXl1coII","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"2","p":"EnmIjmjrCQ9MJGzk6sg44zO9QAfPhgRtgmdnG6kAwE'
-            b'v0","kt":"1","k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"'
-            b'],"n":"E7giSjZhH8qC_oXAqUoA8JoOlal15MsEtTr30JTMwgi0","bt":"2","b'
-            b'r":[],"ba":[],"a":[]}-AABAADjFwzRpvRMcqMVYeXHRJzNRWm2Ev3d6jbWrGS'
-            b'0WIC6WCnFwCY8ENVWM3BWkHUBxMGnuImxPqj_xCFJaxWbIRCw')
+            b'{"v":"KERI10JSON000160_","t":"rot","d":"EqMb-eKPfBYgoV61l-wxEFeR'
+            b'RheeXs2I6QmYcxhMpnNQ","i":"EpUpvOQ_6hy5pxlqhSLI0vq6X72n3RxiDVv6m'
+            b'9-OjSzs","s":"2","p":"EAj8A9YX36o_F_F18vojk41YtzObAiN9p9rdPWDcN8'
+            b'sc","kt":"1","k":["DODc-zWRbn5SLtdAzxLFpGDqf6zXaJlAX85rfiIRn1-M"'
+            b'],"nt":"1","n":["EODNLJb7oY2FBAgG8COTdOGGqebkSbZPo17znQzaDJqo"],'
+            b'"bt":"2","br":[],"ba":[],"a":[]}-AABAAl8_nVOVgIpGab3e-IJP24GzfE9'
+            b'kr5XhFa6LqXi9-DwGxTUIeWnbvLYvgO1vI-lSBUSJ2wTwv5A1z2opMUjpGAg')
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
         rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
-        assert rot2 == (
-            b'{"v":"KERI10JSON00020f_","t":"rot","d":"E-KoW6rnZsHnwupnRGIUFgfH'
-            b'ntxsCdE-R0tvkaN3uuro","i":"ENE4HtoyZuPMjz6rI_hV9alLNTrDLwKwEnbAN'
-            b'A91WPHA","s":"3","p":"EITSN2f52JXziJEChYETgxHfSdHRj1h4VzjwZXl1co'
-            b'II","kt":"1","k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"'
-            b'],"n":"EhAly7aOUUvArcUdJgqag1K4nf7mODsgDnZhJGQnOBzE","bt":"3","b'
-            b'r":["BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"ba":["B7ejs'
-            b'kZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BnfnWbP3CTkWapC7rQxSkp'
-            b'ioxkb-nbmhs-JoHbiwU5q4","BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXN'
-            b'OKSu0"],"a":[]}-AABAArVCLfOe0erkyekHEWRNd2nYuRt5hZEYcf71Sg8ZkkG6'
-            b'Os_iqV6xu1qwOQGPtiDUC5O0_u3mftpoWUkEteZblCg')
+        assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"E7cxivZWgAHJMyX_nV4FRwZM'
+                        b'RfG0fArlZdZKkbThLPos","i":"EpUpvOQ_6hy5pxlqhSLI0vq6X72n3RxiDVv6m'
+                        b'9-OjSzs","s":"3","p":"EqMb-eKPfBYgoV61l-wxEFeRRheeXs2I6QmYcxhMpn'
+                        b'NQ","kt":"1","k":["DqWc3AKqVH6kvMH6n0mWb472P1Ckl-JzWynqS2H0N6LQ"'
+                        b'],"nt":"1","n":["EUjKrRYU7wzHV0jbf2MJBykwobF3lUZrGBJlafwx9o7Y"],'
+                        b'"bt":"3","br":["BqMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"'
+                        b'ba":["B7ejskZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BnfnWbP3CTk'
+                        b'WapC7rQxSkpioxkb-nbmhs-JoHbiwU5q4","BA6_tnL-DK0s7bYdVFfm_AufLsim'
+                        b'GGUMK6V3QXNOKSu0"],"a":[]}-AABAAjjA6Tweb9rTR62DMMADKx9RFnndIXI46'
+                        b'DRvEykrdMQx_L9Z5fFjGJIL5_ECgPq1Vs3Bwwl5eMX9pIAqFnIhtCg')
         wit3 = hab.kvy.fetchWitnessState(hab.pre, 3)
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
@@ -382,7 +381,7 @@ def test_stale_event_receipts():
                                  #wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True,
                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
-        assert bobHab.pre == "EDRGkqe1-ZvMzy8SRx-KMNrC_KmbJWe2EgAyD9q3nBgQ"
+        assert bobHab.pre == "EOI2V_nrmRn1UtXuJvRWQCVoImvKl1YAbwZY_TutEvaU"
 
         bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
 

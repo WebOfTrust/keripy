@@ -7,29 +7,31 @@ keri.kli.commands.multisig module
 
 import argparse
 import json
-import logging
-import sys
 from json import JSONDecodeError
 
+import sys
 from hio.base import doing
-from hio.help import decking
 
-from keri import help
-from keri.app import directing, indirecting, grouping, agenting
-from keri.app.cli.common import displaying, existing
-
-# help.ogler.level = logging.INFO
-# help.ogler.reopen(name="hio", temp=True, clear=True)
+from keri import help, kering
+from keri.app import indirecting, grouping, habbing
+from keri.app.cli.common import existing, displaying
+from keri.core import coring
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a group identifier prefix')
 parser.set_defaults(handler=lambda args: inceptMultisig(args))
 parser.add_argument('--name', '-n', help='Human readable environment reference for local identifier', required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
+parser.add_argument("--wait", "-w", help="number of seconds to wait for other multisig events, defaults to 10",
+                    default=10)
+
 parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
-parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                          'http)', default="http")
 
 
 def inceptMultisig(args):
@@ -57,91 +59,83 @@ def inceptMultisig(args):
         sys.exit(-1)
 
     name = args.name
+    alias = args.alias
+    base = args.base
+    bran = args.bran
     group = args.group
 
-    icpDoer = GroupMultisigIncept(name=name, group=group, proto=args.proto, **opts)
+    icpDoer = GroupMultisigIncept(name=name, base=base, alias=alias, bran=bran, group=group, wait=args.wait, **opts)
 
     doers = [icpDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class GroupMultisigIncept(doing.DoDoer):
 
-    def __init__(self, name, group, **kwa):
+    def __init__(self, name, base, alias, bran, group, wait, **kwa):
         self.name = name
-        self.hab, doers = existing.setupHabitat(name=name)
-        self.msg = kwa
-        self.msg["group"] = group
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+
+        self.alias = alias
+        self.inits = kwa
+        self.group = group
+        self.wait = wait
 
         topics = ['/receipt', '/multisig', '/replay']
-        if "delpre" in self.msg:
+        if "delpre" in self.inits:
             topics.append('/delegate')
 
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics)
+        self.counselor = grouping.Counselor(hby=self.hby)
 
-        self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=topics)
-        self.icpr = grouping.MultiSigGroupDoer(hab=self.hab, ims=self.mbd.ims)
-        self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser)
-
-
-        doers.extend([self.witq, doing.doify(self.cueDo), self.icpr, self.mbd])
+        doers = [self.hbyDoer, self.mbx, self.counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo)])
 
         super(GroupMultisigIncept, self).__init__(doers=doers)
 
-    def inceptDo(self, tymth, tock=0.0, **opts):
+    def inceptDo(self, tymth, tock=0.0):
+        """ Create or participate in an inception event for a distributed multisig identifier
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
         # enter context
-        yield self.tock
-
-        self.msg["op"] = grouping.Ops.icp
-        self.icpr.msgs.append(self.msg)
-
-        while not self.icpr.cues:
-            yield self.tock
-
-        rep = self.icpr.cues.popleft()
-
-
-        print()
-        print("Group Identifier Inception Complete:")
-        displaying.printIdentifier(self.hab, rep["pre"])
-
-        self.remove(self.toRemove)
-
-    def cueDo(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle cues coming out of our external Mailbox listener and forward to controller
-        mailbox if appropriate
-
-        """
         self.wind(tymth)
         self.tock = tock
-        yield self.tock
+        _ = (yield self.tock)
+
+        hab = self.hby.habByName(name=self.alias)
+        if hab is None:
+            raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.name}")
+
+        ghab = self.hby.habByName(name=self.group)
+        if ghab is None:
+            aids = self.inits["aids"]
+
+            ghab = self.hby.makeGroupHab(group=self.group, phab=hab, **self.inits)
+
+            print(f"Group identifier inception initialized for {ghab.pre}")
+            prefixer = coring.Prefixer(qb64=ghab.pre)
+            seqner = coring.Seqner(sn=0)
+            saider = coring.Saider(qb64=prefixer.qb64)
+            self.counselor.start(aids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
         while True:
-            while self.mbd.cues:
-                cue = self.mbd.cues.popleft()
-                cueKin = cue["kin"]  # type or kind of cue
-                if cueKin in ("psUnescrow",):
-                    if self.icpr.msgToSend is not None:
+            if self.counselor.cues:
+                cue = self.counselor.cues.popleft()
+                if cue["pre"] == ghab.pre:
+                    break
 
-                        witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=self.icpr.msgToSend,
-                                                               klas=agenting.TCPWitnesser)
-                        self.extend([witRctDoer])
-
-                        while not witRctDoer.done:
-                            _ = yield self.tock
-
-                        self.remove([witRctDoer])
-
-                        serder = cue["serder"]
-                        self.icpr.cues.append(dict(pre=serder.pre))
-                elif cue["kin"] == "delegatage":
-                    delpre = cue["delpre"]
-                    self.witq.query(delpre)
-
-                yield self.tock
             yield self.tock
+
+        print()
+        displaying.printIdentifier(self.hby, ghab.pre)
+
+        self.remove(self.toRemove)
 

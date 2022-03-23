@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import sys
 from hio import help
+from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
@@ -15,7 +16,7 @@ from keri.app.cli.common import existing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: generate(args),
+parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 
 # Parameters for basic structure of database
@@ -31,19 +32,28 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)
 
 
-def generate(args):
+def handler(args):
     """ command line method for generating oobies
 
     Parameters:
         args(Namespace): parse args namespace object
 
     """
+    kwa = dict(args=args)
+    return [doing.doify(generate, **kwa)]
+
+
+def generate(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
     name = args.name
     alias = args.alias
     base = args.base
     bran = args.bran
     role = args.role
-
 
     with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
         if role in (kering.Roles.witness,):

@@ -38,7 +38,7 @@ def registryIncept(args):
     icpDoer = RegistryInceptor(name=name, registryName=registryName, estOnly=estOnly, noBackers=noBackers, baks=backers)
 
     doers = [icpDoer]
-    directing.runController(doers=doers, expire=0.0)
+    return doers
 
 
 class RegistryInceptor(doing.DoDoer):

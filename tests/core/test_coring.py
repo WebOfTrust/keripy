@@ -3,42 +3,37 @@
 tests.core.test_coring module
 
 """
-import pytest
-
-import pysodium
-import blake3
-import json
-import hashlib
 import dataclasses
-
-import msgpack
-import cbor2 as cbor
-
-from base64 import urlsafe_b64encode as encodeB64
+import hashlib
+import json
 from base64 import urlsafe_b64decode as decodeB64
+from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
 
-from keri.kering import Version, Versionage
-from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError)
-
-from keri.help import helping
+import blake3
+import cbor2 as cbor
+import msgpack
+import pysodium
+import pytest
 
 from keri.core import coring
+from keri.core import eventing
 from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
+from keri.core.coring import Seqner, Siger, Dater, Texter
+from keri.core.coring import Serder, Tholder
+from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
                               IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
+from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
                               B64_CHARS, Reb64, nabSextets)
-from keri.core.coring import Seqner, Siger, Dater, Texter
-from keri.core.coring import Serialage, Serials, Vstrings
-from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import Serder, Tholder
-
-from keri.core import eventing
+from keri.help import helping
+from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
+                         ShortageError, InvalidCodeSizeError)
+from keri.kering import Version, Versionage
 
 
 def test_ilks():
@@ -47,7 +42,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', qry='qry', rpy='rpy',
-                          exn='exn', exp='exp', fwd='fwd', vcp='vcp', vrt='vrt',
+                          exn='exn', exp='exp', vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
     assert isinstance(Ilks, Ilkage)
@@ -77,8 +72,6 @@ def test_ilks():
     assert Ilks.exn == 'exn'
     assert 'exp' in Ilks
     assert Ilks.exp == 'exp'
-    assert 'fwd' in Ilks
-    assert Ilks.fwd == 'fwd'
 
     assert 'vcp' in Ilks
     assert Ilks.vcp == 'vcp'
@@ -1644,6 +1637,7 @@ def test_counter():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
+        'PathedMaterialQuadlets': '-L',
         'MessageDataGroups': '-U',
         'AttachedMaterialQuadlets': '-V',
         'MessageDataMaterialQuadlets': '-W',
@@ -1698,6 +1692,7 @@ def test_counter():
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
+        '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
@@ -2379,6 +2374,30 @@ def test_pather():
         pather.resolve(sad)
     assert pather.path == ["0", "field1", "0"]
 
+    text = "-a"
+    a = coring.Pather(text=text)
+    b = coring.Pather(text="-a-b")
+
+    pather = coring.Pather(text=text)
+    assert pather.startswith(a)
+    assert not pather.startswith(b)
+
+    pnew = pather.strip(a)
+    assert pnew.path == []
+
+    pnew = pather.strip(b)
+    assert pnew.path == pather.path
+
+    pather = coring.Pather(text="-a-b-c-d-e-f")
+    assert pather.startswith(a)
+    assert pather.startswith(b)
+
+    pnew = pather.strip(a)
+    assert pnew.path == ["b", "c", "d", "e", "f"]
+
+    pnew = pather.strip(b)
+    assert pnew.path == ["c", "d", "e", "f"]
+
     """ Done Test """
 
 
@@ -2970,20 +2989,10 @@ def test_nexter():
     """
     Test the support functionality for Nexter subclass of Diger
     """
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter()
-
     # create something to digest and verify
     # verkey, sigkey = pysodium.crypto_sign_keypair()
     # verfer = Verfer(raw=verkey)
     # assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
-
-    sith = "{:x}".format(2)
-    sithdig = blake3.blake3(sith.encode("utf-8")).digest()
-    assert sithdig == b"\x81>\x9br\x91A\xe7\xf3\x85\xaf\xa0\xa2\xd0\xdf>l7\x89\xe4'\xff\xe4\xae\xefVjV[\xc8\xf2\xfe="
-
-    sithdiger = Diger(raw=sithdig, code=MtrDex.Blake3_256)
-    assert sithdiger.qb64 == 'EgT6bcpFB5_OFr6Ci0N8-bDeJ5Cf_5K7vVmpWW8jy_j0'
 
     keys = ['BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE',
             'BujP_71bmWFVcvFmkE9uS8BTZ54GIstZ20nj_UloF8Rk',
@@ -3002,73 +3011,63 @@ def test_nexter():
                     'EO4CXp8gs0yJg1fFhJLs5hH6neqJwhFEY7vrJEdPe87I',
                     'ELWWZEyBpjrfM1UU0n31KIyIXllrCoLEOI5UHD9x7WxI']
 
-    kints = [int.from_bytes(diger.raw, 'big') for diger in digers]
-    sint = int.from_bytes(sithdiger.raw, 'big')
-    for kint in kints:
-        sint ^= kint  # xor together
-
-    raw = sint.to_bytes(Matter._rawSize(MtrDex.Blake3_256), 'big')
-    assert raw == (
-        b'\x0f\xc6/\x0e\xb5\xef\x1a\xe6\x88U\x9e\xbd^\xc0U\x03\x96\r\xda\x93S}\x03\x85\xc2\x07\xa5\xa1Q\xdeX\xab')
-
-    nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
-    assert nexter.code == MtrDex.Blake3_256
-    assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(raw=raw)
-    assert nexter.verify(raw=raw + b'ABCDEF') == False
-
-    with pytest.raises(ValueError):  # bad code
-        nexter = Nexter(raw=raw, code=MtrDex.Ed25519)
-
     #  defaults provide Blake3_256 digester
     nexter = Nexter(digs=digs)  # compute limen/sith from digs
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(digs=digs)
-    assert nexter.verify(raw=raw)
 
     nexter = Nexter(keys=keys)  # compute limen/sith from keys
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
+    assert len(nexter.digs) == len(keys)
     assert nexter.verify(keys=keys)
-    assert nexter.verify(raw=raw)
-    assert nexter.verify(raw=raw + b'ABCDEF') == False
+    assert nexter.verify(keys=keys + ['ABCDEF']) is False
 
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter(sith=sith)
-
-    nexter = Nexter(sith=1, keys=keys)  # compute sith from int
-    raw1 = nexter.raw
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(sith=1, keys=keys)
-    assert nexter.verify(raw=raw1)
-
-    nexter = Nexter(sith=1, digs=digs)
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(sith=1, digs=digs)
-    assert nexter.verify(raw=raw1)
-
-    nexter = Nexter(limen='1', digs=digs)
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(limen='1', digs=digs)
-    assert nexter.verify(raw=raw1)
-
-    nexter = Nexter(limen="1", keys=keys)
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(limen="1", keys=keys)
-    assert nexter.verify(raw=raw1)
-
-    ked = dict(kt=sith, k=keys)  # subsequent event
+    ked = dict(kt=1, k=keys)  # subsequent event
     nexter = Nexter(ked=ked)
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
+    assert len(nexter.digs) == len(keys)
     assert nexter.verify(ked=ked)
-    assert nexter.verify(raw=raw)
+
+    #  Test support for partial rotation
+    keys = [
+        "B6MUd25DuIUaJ6A3nIUay-JeMwWfAcfZcB2u0Vk_k3xE",
+        "BroOPXDvoc9c92GD489iMBp31x9s4asfQSlSNQd-o6d4",
+        "B3YjMzoTrqsZO6iOhab5L-IHVfTtRzc4hQV4XaUiyBTc",
+        "B9A-LD70YW7MkD5xZlrRLzAqPNuxfFoqAIFpe0xy-uvg",
+        "BLazW7nktYdVqRiWRFF-y-bVY-bqJT_AC-X8qAht8YiE",
+        "Bzb6FZt7473h-XIhEMlTSYzpehTVRZ0T9wa_A1Npiwr4",
+        "BpvXdM-xd24gS_ewVp_eS_G3piJh_0kohhNfiWXEW_o0",
+        "BEVlWXsK0fyYUnd-B5_ruTfZQEfTuYlS3ZL3tCSfcRos",
+        "BDRogzlpHFDjciNgt1a2S04Dk33YSA8UNXvQbxOqLl6o",
+        "B12eAgbg9V9fFTKw38S-NnV3bw3jYeKOVixP2leJGMIU",
+    ]
+    digers = [Diger(raw=blake3.blake3(key.encode("utf-8")).digest(), code=MtrDex.Blake3_256) for key in keys]
+
+    # grab first 5 for our nexter
+    cur = [diger.qb64 for diger in digers[0:5]]
+
+    nexter = Nexter(digs=cur)
+
+    # compare against full set
+    digs = cur
+    assert nexter.verify(digs=digs)
+
+    # compare against a proper subset
+    digs = [diger.qb64 for diger in digers[2:5]]
+    assert nexter.verify(digs=digs)
+
+    # compare against a single existing dig
+    digs = [digers[4].qb64]
+    assert nexter.verify(digs=digs)
+
+    # compare against a single existing dig
+    digs = [digers[7].qb64]
+    assert not nexter.verify(digs=digs)
+
+    # compare against non-contiguous subset
+    digs = [digers[1].qb64, digers[3].qb64, digers[4].qb64]
+    assert nexter.verify(digs=digs)
+
+    # compare against non-contiguous subset
+    digs = [digers[1].qb64, digers[3].qb64, digers[6].qb64]
+    assert not nexter.verify(digs=digs)
 
     """ Done Test """
 
@@ -3219,14 +3218,14 @@ def test_prefixer():
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.qb64,  # hash qual Base64
+               n=nexter.digs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'E_11RKUF7tLf1pU0vlznGLukpFIzjpmEcFqGKKsJfRV0'
+    assert prefixer.qb64 == 'EDve7ZqtIsIMrx6UVZRTcnLgEnYGGV2is_JI_Ps3hEnE'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3257,14 +3256,14 @@ def test_prefixer():
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.qb64,  # hash qual Base64
+               n=nexter.digs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer1 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer1.qb64 == 'EElXC-USUApr4KQrQD6MTaXnmejFIpMCDhVn81zeC1-E'
+    assert prefixer1.qb64 == 'EJUqcw-yS7Fqk5XAU8-MRwl25hMfURhc1wKqLDG7QZhQ'
     assert prefixer1.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3276,14 +3275,14 @@ def test_prefixer():
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.qb64,  # hash qual Base64
+               n=nexter.digs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer2 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer2.qb64 == 'EMtMcL-SJXet6A1WT_fuiA1wDTYx11OM6bsbjnExMkas'
+    assert prefixer2.qb64 == 'EN1epXqakc6DCsQqPUFVYlz6so0M0BJdDuQy53nBQI4Q'
     assert prefixer2.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 != prefixer1.qb64  # semantic diff -> syntactic diff
@@ -3300,7 +3299,7 @@ def test_prefixer():
                t=Ilks.dip,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.qb64,  # hash qual Base64
+               n=nexter.digs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -3308,7 +3307,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ECihxbUGpKKdepTqhKFzraAmzzlcz5X4wxszGAEhztT0'
+    assert prefixer.qb64 == 'ExjPDXRhIuAmgsnKGjrwudZAYuAqHf5SLMPvVscvHh9Y'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3319,7 +3318,7 @@ def test_prefixer():
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
                         allows=[MtrDex.Blake3_256, MtrDex.Ed25519])
-    assert prefixer.qb64 == 'ECihxbUGpKKdepTqhKFzraAmzzlcz5X4wxszGAEhztT0'
+    assert prefixer.qb64 == 'ExjPDXRhIuAmgsnKGjrwudZAYuAqHf5SLMPvVscvHh9Y'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4116,11 +4115,11 @@ def test_serder():
     wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
     wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
     srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
-    assert srdr.raw == (b'{"v":"KERI10JSON000151_","t":"icp","d":"Eazv_T06u6n_PevJi0BXtvOn7THI5I5tlDUU'
-                        b'XzrGLyl8","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
-                        b'","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"n":"","bt":"2","b":['
-                        b'"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed2Tpxc8KeCEWoq3_RKKRjU_3P-'
-                        b'chSser9J4eAtAK6I"],"c":[],"a":[]}')
+    assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"ENivF7rlDvQORxeomP1eGWclQr-hlq49YG6n'
+                        b'EgOb2RIQ","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
+                        b'","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"0","n":[],"bt":'
+                        b'"2","b":["B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed2Tpxc8KeCEWoq3_R'
+                        b'KKRjU_3P-chSser9J4eAtAK6I"],"c":[],"a":[]}')
     # test for serder.verfers and serder.werfers
     assert srdr.pre == pre0
     assert srdr.sn == 0

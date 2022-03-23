@@ -292,7 +292,6 @@ class Registry(dbing.LMDBer):
 
         return self.env
 
-
     def cloneCreds(self, saids):
         """ Returns fully expanded credential with chained credentials attached.
 
@@ -333,7 +332,6 @@ class Registry(dbing.LMDBer):
             creds.append(cred)
         return creds
 
-
     def logCred(self, creder, sadsigers=None, sadcigars=None):
         """ Save the base credential and seals (est evt+sigs quad) with no indices.
 
@@ -355,7 +353,6 @@ class Registry(dbing.LMDBer):
                 quinkeys = (creder.saider.qb64, pather.qb64, prefixer.qb64, f"{seqner.sn:032x}", saider.qb64)
                 for siger in sigers:
                     self.spsgs.add(keys=quinkeys, val=siger)
-
 
     def cloneCred(self, said, root=None):
         """ Load base credential and CESR proof signatures from database.
@@ -405,7 +402,6 @@ class Registry(dbing.LMDBer):
             sadsigers.append((pather, prefixer, seqner, saider, sigers))
 
         return creder, sadsigers, sadcigars
-
 
     def clonePreIter(self, pre, fn=0):
         """ Iterator of first seen event messages
@@ -468,7 +464,7 @@ class Registry(dbing.LMDBer):
             list: credential sources as resolved from `p` in creder.crd
              
         """
-        chains = creder.crd["p"]
+        chains = creder.crd["e"]
         saids = []
         for source in chains:
             for _, data in source.items():
@@ -498,7 +494,6 @@ class Registry(dbing.LMDBer):
             sources.extend(self.sources(db, screder))
             
         return sources    
-
 
     def putTvt(self, key, val):
         """

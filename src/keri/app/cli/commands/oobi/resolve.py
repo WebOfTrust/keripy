@@ -8,10 +8,8 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import directing, habbing
-from keri.app.cli.common import existing, terming, oobiing
-from keri.core import routing, eventing, parsing
-from keri.end import ending
+from keri.app import habbing
+from keri.app.cli.common import existing, oobiing
 
 logger = help.ogler.getLogger()
 
@@ -46,8 +44,7 @@ def resolve(args):
     icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base)
 
     doers = [icpDoer]
-    directing.runController(doers=doers, expire=0.0)
-
+    return doers
 
 
 class OobiDoer(doing.DoDoer):

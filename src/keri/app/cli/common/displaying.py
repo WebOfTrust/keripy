@@ -3,44 +3,13 @@
 keri.kli.common.displaying module
 
 """
+import sys
 
+from keri.app.cli.common import terming
 from keri.db import dbing
 
 
-def printGroups(hab):
-    """
-    Print identifier and participant information for an environment (Habitat)
-    Uses the .gids database to determine groups
-
-    Parameters:
-        hab (Habitat): environment for whom to print groups
-
-    """
-    group = hab.group()
-    if group:
-        printGroup(hab, group)
-
-
-def printGroup(hab, group):
-    """
-    Print identifier and participant information for a specific group
-
-    Parameters:
-        hab (Habitat): environment for whom to print groups
-        name (str): human readable name for group identifier
-        group (GroupIdentifier): the local identifier and list of participants
-
-    """
-    print("Local Identifier:", hab.pre)
-    printIdentifier(hab, group.gid, label="Group Identifier")
-
-    aids = group.aids
-    parts = "Participants: \n" + ("\t{}\n" * len(aids))
-    print(parts.format(*aids))
-    print()
-
-
-def printIdentifier(hab, pre, label="Identifier"):
+def printIdentifier(hby, pre, label="Identifier"):
     """
     Print current state information for the identifier prefix pre
 
@@ -49,22 +18,53 @@ def printIdentifier(hab, pre, label="Identifier"):
         pre (str): qb64 of the identifier prefix
     :return:
     """
-    kever = hab.kevers[pre]
-    ser = kever.serder
-    dgkey = dbing.dgKey(ser.preb, ser.saidb)
-    wigs = hab.db.getWigs(dgkey)
 
-    print("{}: {}".format(label, pre))
-    print("Seq No:\t{}".format(kever.sn))
-    if kever.delegated:
-        print("Delegated Identifier")
-        print("    Delegator:  ", kever.delegator)
+    hab = hby.habs[pre]
+    if hab.accepted:
+        kever = hab.kever
+        ser = kever.serder
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
+        wigs = hab.db.getWigs(dgkey)
+        anchor = hab.db.getAes(dgkey)
 
-    print("\nWitnesses:")
-    print("Count:\t\t{}".format(len(kever.wits)))
-    print("Receipts:\t{}".format(len(wigs)))
-    print("Threshold:\t{}".format(kever.toad))
-    print("\nPublic Keys:\t")
-    for idx, verfer in enumerate(kever.verfers):
-        print(f'\t{idx+1}. {verfer.qb64}')
-    print()
+        print("{}: {}".format(label, pre))
+        print("Seq No:\t{}".format(kever.sn))
+        if kever.delegated:
+            print("Delegated Identifier")
+            sys.stdout.write(f"    Delegator:  {kever.delegator} ")
+            if anchor:
+                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+            else:
+                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+            print()
+
+        if hab.phab:
+            print("Group Identifier")
+            sys.stdout.write(f"    Local Indentifier:  {hab.phab.pre} ")
+            if hab.accepted:
+                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Fully Signed{terming.Colors.ENDC}")
+            else:
+                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Fully Signed{terming.Colors.ENDC}")
+
+        print("\nWitnesses:")
+        print("Count:\t\t{}".format(len(kever.wits)))
+        print("Receipts:\t{}".format(len(wigs)))
+        print("Threshold:\t{}".format(kever.toad))
+        print("\nPublic Keys:\t")
+        for idx, verfer in enumerate(kever.verfers):
+            print(f'\t{idx+1}. {verfer.qb64}')
+        print()
+    else:
+        print("{}: {}".format(label, hab.pre))
+        print("Seq No:\t{}".format(0))
+
+        if hab.phab:
+            print("Group Identifier")
+            sys.stdout.write(f"    Local Indentifier:  {hab.phab.pre} ")
+            if hab.accepted:
+                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+            else:
+                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+
+        print()
+

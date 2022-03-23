@@ -12,6 +12,7 @@ from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.help import decking
+
 from keri.app import specing, configing, habbing, kiwiing, httping, keeping
 from keri.app.cli.common import oobiing
 
@@ -235,8 +236,7 @@ class BootEnd(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
 
-        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf)
-        hby.setup(**kwa)
+        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, **kwa)
         self.hby = hby
 
         rep.status = falcon.HTTP_200
@@ -330,7 +330,7 @@ def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=562
     return ends + [servery]
 
 
-def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=False, config=None, path, **kwargs):
+def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=False, path, **kwargs):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -368,6 +368,4 @@ def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=Fal
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
 
-    return [bootEnd, ]
-
-
+    return [bootEnd]

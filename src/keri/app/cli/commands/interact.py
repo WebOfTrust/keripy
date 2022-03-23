@@ -55,15 +55,7 @@ def interact(args):
 
     ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, proto=args.proto, data=data)
 
-    doers = [ixnDoer]
-
-    try:
-        directing.runController(doers=doers, expire=0.0)
-    except kering.ConfigurationError:
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
-        return -1
-    except kering.ValidationError as ex:
-        return -1
+    return [ixnDoer]
 
 
 class InteractDoer(doing.DoDoer):

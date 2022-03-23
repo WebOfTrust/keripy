@@ -12,7 +12,7 @@ from keri.help import helping
 from keri.vdr import issuing, viring
 from . import proving
 from .. import help
-from ..app import agenting, signing
+from ..app import signing
 from ..core import scheming, parsing
 from ..kering import ShortageError
 from ..peer import exchanging
@@ -191,7 +191,7 @@ class ApplyHandler(doing.DoDoer):
 
                 schema = payload["schema"]
                 issuer = payload["issuer"]
-                if issuer not in  self.hby.habs:
+                if issuer not in self.hby.habs:
                     logger.info("request for incorrect issuer {}".format(issuer))
                     continue
 
@@ -217,13 +217,7 @@ class ApplyHandler(doing.DoDoer):
 
                 d |= data
 
-                group = hab.group()
-                if group is None:
-                    pre = hab.pre
-                else:
-                    pre = group.gid
-
-                creder = proving.credential(issuer=pre,
+                creder = proving.credential(issuer=hab.pre,
                                             schema=schema,
                                             subject=d,
                                             source=source,
@@ -241,7 +235,7 @@ class ApplyHandler(doing.DoDoer):
             yield self.tock
 
     def escrowDo(self, tymth, tock=0.0):
-        """ Processes the Groupy escrow for group icp, rot and ixn request messages.
+        """ Processes the escrows for group icp, rot and ixn request messages.
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

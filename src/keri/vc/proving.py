@@ -35,7 +35,7 @@ def credential(schema,
         issuer (str): qb64 identifier prefix of the issuer
         status (str): qb64 said of the credential registry
         subject (dict): of the values being assigned to the subject of this credential
-        source (list): of source credentials to which this credential is chained
+        source (Optional[dict,list]): of source credentials to which this credential is chained
         rules (list): ACDC rules section for credential
         version (Version): version instance
         kind (Serials): serialization kind
@@ -46,7 +46,7 @@ def credential(schema,
     """
     vs = Versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
 
-    source = source if source is not None else []
+    source = source if source is not None else {}
 
     vc = dict(
         v=vs,
@@ -54,11 +54,11 @@ def credential(schema,
         s=schema,
         i=issuer,
         a={},
-        p=source
+        e=source,
     )
 
     if status is not None:
-        subject["ri"] = status
+        vc["ri"] = status
 
     if rules is not None:
         vc["r"] = rules
@@ -144,7 +144,7 @@ class Credentialer(coring.Sadder):
     @property
     def status(self):
         """ status property getter"""
-        return self._ked["a"]["ri"]
+        return self._ked["ri"]
 
 
 class CrederSuber(subing.Suber):

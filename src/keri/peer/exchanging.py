@@ -3,6 +3,7 @@
 keri.peer.exchanging module
 
 """
+import json
 import logging
 from datetime import timedelta
 
@@ -14,7 +15,7 @@ from ..core import eventing, coring
 from ..help import helping
 from ..kering import ValidationError, MissingSignatureError, AuthZError
 
-ExchangeMessageTimeWindow = timedelta(seconds=1010000)
+ExchangeMessageTimeWindow = timedelta(seconds=300)
 
 logger = help.ogler.getLogger()
 
@@ -61,25 +62,39 @@ class Exchanger(doing.DoDoer):
         self.routes[handler.resource] = handler
         self.extend([handler])
 
-    def processEvent(self, serder, source, sigers):
+    def processEvent(self, serder, source=None, sigers=None, cigars=None, **kwargs):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
         Parameters:
             serder (Serder): instance of event to process
             source (Prefixer): identifier prefix of event sender
             sigers (list): of Siger instances of attached controller indexed sigs
+            cigars (list): of Cigar instances of attached non-trans sigs
 
         """
-
         route = serder.ked["r"]
         payload = serder.ked["a"]
         dts = serder.ked["dt"]
+        modifiers = serder.ked["q"] if 'q' in serder.ked else dict()
 
         if route not in self.routes:
             raise AttributeError("unregistered route {} for exchange message = {}"
                                  "".format(route, serder.pretty()))
 
+        a = coring.Pather(path=["a"])
+        attachments = []
+        if "pathed" in kwargs:
+            pathed = kwargs["pathed"]
+            for (pather, pattach) in pathed:
+                if pather.startswith(a):
+                    np = pather.strip(a)
+                    attachments.append((np, pattach))
+
         behavior = self.routes[route]
+
+        if self.controller is not None and self.controller != source.qb64:
+            raise AuthZError("Message {} is from invalid source {}"
+                             "".format(payload, source.qb64))
 
         # delta = behavior.delta if behavior.delta is not None else self.delta
         delta = self.delta
@@ -90,35 +105,41 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-        if source.qb64 not in self.hby.kevers:
-            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
-            raise MissingSignatureError("Unable to find sender {} in kevers"
-                                        " for evt = {}.".format(source, serder))
-
-        kever = self.hby.kevers[source.qb64]
-        tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
-
-        if self.controller is not None and self.controller != source.qb64:
-            raise AuthZError("Message {} is from invalid source {}"
-                             "".format(payload, source.qb64))
-
-        #  Verify provided sigers using verfers
-        ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
-        if not tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
-            self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
-            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                        " for evt = {}.".format(tholder.sith,
-                                                                [siger.qb64 for siger in sigers],
-                                                                serder.ked))
-
         msg = dict(
             payload=payload,
+            modifiers=modifiers,
             pre=source,
-            sigers=ssigers,
-            verfers=verfers,
+            attachments=attachments,
         )
+
+        if source is not None and sigers is not None:
+            if source.qb64 not in self.hby.kevers:
+                self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+                print(f"querying for {source.qb64}")
+                self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
+                raise MissingSignatureError(f"Unable to find sender {source.qb64} in kevers"
+                                            f" for evt = {serder}.")
+
+            kever = self.hby.kevers[source.qb64]
+            tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
+
+            #  Verify provided sigers using verfers
+            ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+            if not tholder.satisfy(indices):  # at least one but not enough
+                self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
+                print(f"sig querying for {source.qb64}")
+                self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
+                raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
+                                            " for evt = {}.".format(tholder.sith,
+                                                                    [siger.qb64 for siger in sigers],
+                                                                    serder.ked))
+        elif cigars is not None:
+            for cigar in cigars:
+                if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
+                    self.escrowPSEvent(serder)
+                    raise MissingSignatureError("Failure satisfying exn on cigs for {}"
+                                                " for evt = {}.".format(cigar,
+                                                                        serder.ked))
 
         behavior.msgs.append(msg)
 
@@ -186,13 +207,12 @@ class Exchanger(doing.DoDoer):
                             "creder=\n%s\n", serder.pretty())
 
 
-def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
-             kind=coring.Serials.json):
+def exchange(route, payload, date=None, modifiers=None, version=coring.Version, kind=coring.Serials.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
         route (str): to destination route of the message
-        payload (dict): body of message to deliver to route
+        payload (Optional(dict, list)): body of message to deliver to route
         date (str): Iso8601 formatted date string to use for this request
         modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload

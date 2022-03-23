@@ -7,6 +7,7 @@ import argparse
 import getpass
 
 from hio import help
+from hio.base import doing
 
 from keri.app.cli.common import existing
 from keri.core import coring
@@ -25,10 +26,20 @@ parser.add_argument('--passcode', '-p', help='existing 22 character encryption p
                     dest="bran", default=None)  # passcode => bran
 
 
-def set_passcode(args):
+def handler(args):
     """ Command line status handler
 
     """
+    kwa = dict(args=args)
+    return [doing.doify(set_passcode, **kwa)]
+
+
+def set_passcode(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
     name = args.name
     base = args.base
     bran = args.bran
@@ -48,8 +59,6 @@ def set_passcode(args):
                         print("Passcodes do not match, try again.")
                     else:
                         break
-
-
 
             bran = coring.MtrDex.Salt_128 + newpasscode[:22]  # qb64 salt for seed
             signer = coring.Salter(qb64=bran).signer(transferable=False,

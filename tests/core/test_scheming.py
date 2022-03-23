@@ -9,6 +9,7 @@ import pytest
 
 from keri.core.coring import MtrDex, Saider
 from keri.core.scheming import Ids, Schemer, JSONSchema, CacheResolver
+from keri.db import basing
 from keri.kering import ValidationError
 
 
@@ -168,7 +169,7 @@ def test_resolution():
 
     scer = (
         b'{'
-        b'   "$id": "Er21QX8KuraJO-3KYXpcyBN7TFSgrasvJiTbgNLIMbbI", '
+        b'   "$id": "EDfHSaA1XvjltvoO1flnZVuNr8y-wWvGTBKiP1naFxUs", '
         b'   "$schema": "http://json-schema.org/draft-07/schema#", '
         b'   "type": "object", '
         b'   "properties": {'
@@ -183,7 +184,7 @@ def test_resolution():
         b'         "format": "date-time"'
         b'      },'
         b'      "xy": {'
-        b'         "$ref": "did:keri:EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndZ"'
+        b'         "$ref": "did:keri:Evcu66xr3s_x1k4IjwoQ3ZKEbfkdVLxLr7PW-67nYX4I"'
         b'      }'
         b'   }'
         b'}')
@@ -191,15 +192,16 @@ def test_resolution():
     payload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00", "xy": {"z": 456}}'
     badload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00", "xy": {"z": "456"}}'
 
-    cache = CacheResolver()
-    cache.add("did:keri:EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndZ", ref)
+    with basing.openDB(name="edy") as db:
+        cache = CacheResolver(db=db)
+        cache.add("Evcu66xr3s_x1k4IjwoQ3ZKEbfkdVLxLr7PW-67nYX4I", ref)
 
-    schemer = Schemer(raw=scer)
-    schemer.typ = JSONSchema(resolver=cache)
-    v = schemer.verify(payload)
-    assert v is True
-    v = schemer.verify(badload)
-    assert v is False
+        schemer = Schemer(raw=scer)
+        schemer.typ = JSONSchema(resolver=cache)
+        v = schemer.verify(payload)
+        assert v is True
+        v = schemer.verify(badload)
+        assert v is False
 
 
 if __name__ == '__main__':

@@ -5,14 +5,13 @@ keri.kli.commands.watcher module
 """
 import argparse
 import logging
-import sys
 
 import falcon
 from hio.core import http
 from hio.core.tcp import serving
-from keri import help, kering
+
+from keri import help
 from keri.app import directing, indirecting, watching, habbing, storing
-from keri.app.cli.common import existing
 
 parser = argparse.ArgumentParser(description='Start watcher')
 parser.set_defaults(handler=lambda args: startWatcher(args))
@@ -46,17 +45,9 @@ def startWatcher(args):
 
     help.ogler.level = logging.INFO
     help.ogler.reopen(name="keri", temp=True, clear=True)
-    logger = help.ogler.getLogger()
-
-    logger.info("\n******* Starting Watcher for %s listening: http/%s, tcp/%s "
-                ".******\n\n", args.name, args.http, args.tcp)
-
     doers = setupWatcher(name, controller=args.controller, alias=args.alias, base=args.base, bran=args.bran,
                          tcpPort=tcpPort, httpPort=httpPort)
-    directing.runController(doers=doers, expire=0.0)
-
-    logger.info("\n******* Ended Watcher for %s listening: http/%s, tcp/%s"
-                ".******\n\n", args.name, args.http, args.tcp)
+    return doers
 
 
 def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran=None, tcpPort=5651, httpPort=5652):
@@ -75,8 +66,8 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
 
     kiwiServer = watching.KiwiServer(hab=hab, app=app, rep=rep, controller=controller)
 
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    mbxer = storing.MailEnd(app=app, hab=hab, mbx=mbx)
+    httpEnd = indirecting.HttpEnd(hab=hab, app=app, rep=rep, mbx=mbx)
+    app.add_route("/", httpEnd)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -86,6 +77,6 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
 
     directant = directing.Directant(hab=hab, server=server)
 
-    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, kiwiServer])
+    doers.extend([directant, serverDoer, httpServerDoer, httpEnd, rep, kiwiServer])
 
     return doers

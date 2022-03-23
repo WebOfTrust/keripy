@@ -23,6 +23,7 @@ import os
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
+from typing import Optional
 
 import lmdb
 from hio.base import doing
@@ -120,6 +121,7 @@ class OobiRecord:
     """
     Keyed by CID (AID) and role, the minimum information needed for any OOBI
     """
+    said: str = None
     cid: str = None
     eid: str = None
     role: str = None
@@ -132,7 +134,20 @@ class HabitatRecord:  # baser.habs
     Habitat application state information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
+    pid: Optional[str]  # participant aid of group aid
+    aids: Optional[list]  # all identifiers participating in the group identity
+
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+
+
+@dataclass
+class RotateRecord:
+    aids: list
+    sith: Optional[str]
+    toad: Optional[int]
+    cuts: Optional[list]
+    adds: Optional[list]
+    data: Optional[list]
 
 
 @dataclass
@@ -143,19 +158,6 @@ class TopicsRecord:  # baser.tops
     events in a mailbox. (baser.tops)
     """
     topics: dict
-
-
-@dataclass
-class GroupIdRecord:  # baser.gids
-    """
-    Track group identifiers that we are participating in
-    Database Key is the identifier prefix of the group identifier
-    """
-    # lid: str  # local identifier that contributes to the group
-    gid: str  # group identifier prefix
-    dig: str  # qb64 of latest digest in the group
-    cst: str  # group signing threshold of the next key commitment
-    aids: list  # all identifiers participating in the group identity
 
 
 @dataclass
@@ -661,6 +663,7 @@ class Baser(dbing.LMDBer):
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
+        self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
@@ -724,15 +727,25 @@ class Baser(dbing.LMDBer):
                                  subkey='witm.',
                                  schema=TopicsRecord, )
 
-        # group identifiers that we are participating in
-        self.gids = koming.Komer(db=self,
-                                 subkey='gids.',
-                                 schema=GroupIdRecord, )
-        # group partial aid list escrow
-        self.gpae = subing.IoSetSuber(db=self, subkey="gpae.")
+        # group local witness escrow
+        self.glwe = koming.Komer(db=self, subkey='glwe',
+                                 schema=RotateRecord)
 
         # group partial signature escrow
-        self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
+        self.gpae = koming.Komer(db=self, subkey='gpae',
+                                 schema=RotateRecord)
+
+        # group partial signature escrow
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse',
+                                             klas=(coring.Seqner, coring.Saider))
+
+        # group delegate escrow
+        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee',
+                                             klas=(coring.Seqner, coring.Saider))
+
+        # group partial witness escrow
+        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe',
+                                             klas=(coring.Seqner, coring.Saider))
 
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
@@ -742,7 +755,6 @@ class Baser(dbing.LMDBer):
 
         # exchange source prefix
         self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
-
 
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
@@ -780,10 +792,13 @@ class Baser(dbing.LMDBer):
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
+        # JSON schema SADs keys by the SAID
+        self.schema = subing.SchemerSuber(db=self,
+                                          subkey='schema.')
+
         self.reload()
 
         return self.env
-
 
     def reload(self):
         """
@@ -802,12 +817,11 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            else:  # in .habs but no corresponding key state so remove
+            elif data.pid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
-
 
     def clean(self):
         """
@@ -955,7 +969,7 @@ class Baser(dbing.LMDBer):
             atc.extend(sig)
 
         # add indexed witness signatures to attachments
-        if (wigs := self.getWigs(key=dgkey)):
+        if wigs := self.getWigs(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
                                       count=len(wigs)).qb64b)
             for wig in wigs:
@@ -969,14 +983,14 @@ class Baser(dbing.LMDBer):
             atc.extend(couple)
 
         # add trans receipts quadruples to attachments
-        if (quads := self.getVrcs(key=dgkey)):
+        if quads := self.getVrcs(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
                                       count=len(quads)).qb64b)
             for quad in quads:
                 atc.extend(quad)
 
         # add nontrans receipts couples to attachments
-        if (coups := self.getRcts(key=dgkey)):
+        if coups := self.getRcts(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
                                       count=len(coups)).qb64b)
             for coup in coups:
@@ -1014,19 +1028,36 @@ class Baser(dbing.LMDBer):
             srdr = coring.Serder(raw=evt)
             if "a" in srdr.ked:
                 ancs = srdr.ked["a"]
-                if len(ancs) != 1:
-                    continue
+                for anc in ancs:
+                    spre = anc["i"]
+                    ssn = int(anc["s"])
+                    sdig = anc["d"]
 
-                anc = ancs[0]
-                spre = anc["i"]
-                ssn = int(anc["s"])
-                sdig = anc["d"]
-
-                if spre == anchor["i"] and ssn == int(anchor["s"]) \
-                        and anchor["d"] == sdig:
-                    return srdr
+                    if spre == anchor["i"] and ssn == int(anchor["s"]) \
+                            and anchor["d"] == sdig and self.fullyWitnessed(srdr):
+                        return srdr
 
         return None
+
+    def fullyWitnessed(self, serder):
+        """ Verify the witness threshold on the event
+
+        Parameters:
+            serder (Serder): event serder to validate witness threshold
+
+        Returns:
+
+        """
+        # Verify fully receipted, because this witness may have persisted before all receipts
+        # have been gathered if this ius a witness for serder.pre
+        dgkey = dbing.dgKey(serder.preb, serder.saidb)
+
+        # get unique verified wigers and windices lists from wigers list
+        wigs = self.getWigs(key=dgkey)
+        kever = self.kevers[serder.pre]
+        toad = kever.toad
+
+        return not len(wigs) < toad
 
     def putEvt(self, key, val):
         """
@@ -2208,6 +2239,97 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.ooes, key, val)
+
+    def putQnfs(self, key, vals):
+        """
+        Use snKey()
+        Write each out of order escrow event dig entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.qnfs, key, vals)
+
+    def addQnf(self, key, val):
+        """
+        Use snKey()
+        Add out of order escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.qnfs, key, val)
+
+    def getQnfs(self, key):
+        """
+        Use snKey()
+        Return list of out of order escrow event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.qnfs, key)
+
+    def getQnfLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup val of out of order escrow event dig vals at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.qnfs, key)
+
+    def getQnfItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of out of order escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.qnfs, key, skip)
+
+    def getQnfItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of out of order escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.qnfs, key, skip)
+
+    def cntQnfs(self, key):
+        """
+        Use snKey()
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.qnfs, key)
+
+    def delQnfs(self, key):
+        """
+        Use snKey()
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.qnfs, key)
+
+    def delQnf(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.qnfs, key, val)
 
     def putDes(self, key, vals):
         """

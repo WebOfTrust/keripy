@@ -44,11 +44,11 @@ def test_directing_basic():
 
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EsZuhYAPBDnexP3SOl9YsGvWBrYkjYcRjomUYmCcLAYY'
+    assert bob == 'EdwS_D6wppLqfIp5LSgly8GTScg5OWBaa7thzEnBqHvw'
 
     # set of secrets (seeds for private keys)
     eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -70,11 +70,11 @@ def test_directing_basic():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
+                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'E7pB5IKuaYh3aIWKxtexyYFhpSjDNTEGSQuxeJbWiylg'
+    assert eve == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
 
     with habbing.openHby(name="eve", base="test") as eveHby, \
             habbing.openHby(name="bob", base="test") as bobHby:
@@ -118,6 +118,8 @@ def test_directing_basic():
 
         # setup eve
         eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        print(eveHab.iserder.pretty())
+        print(eveSerder.pretty())
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 

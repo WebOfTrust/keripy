@@ -8,6 +8,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import pytest
 
 from keri import kering
+from keri.core import scheming
 from keri.db import basing
 from keri.help import helping
 
@@ -128,4 +129,72 @@ class DbSeed:
             httplocer = basing.LocationRecord(url="http://127.0.0.1:5644/")  # create new record
             watHttpLocKeys = ('BZg042qyBYoNC4rII1qdn7sPJPSh5vp5y0xnVYbJPujw', kering.Schemes.http)
             db.locs.pin(keys=watHttpLocKeys, val=httplocer)  # overwrite
+
+    @staticmethod
+    def seedSchema(db):
+        raw = (
+            b'{"$id":"EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A",'
+            b'"$schema":"http://json-schema.org/draft-07/schema#","title":"Legal Entity vLEI Credential",'
+            b'"description":"A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity",'
+            b'"credentialType":"LegalEntityvLEICredential","properties":{"v":{"type":"string"},"d":{"type":"string"},'
+            b'"i":{"type":"string"},"ri":{"description":"credential status registry","type":"string"},'
+            b'"s":{"description":"schema SAID","type":"string"},"a":{"description":"data block","properties":{"d":{'
+            b'"type":"string"},"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time",'
+            b'"type":"string"},"LEI":{"type":"string"}},"additionalProperties":false,"required":["i","dt","LEI"],'
+            b'"type":"object"},"e":{"description":"edges block","type":"array","items":{"type":"object"},'
+            b'"minItems":0},"r":{"type":"array","items":{"type":"object"},"description":"rules block","minItems":0}},'
+            b'"additionalProperties":false,"required":["i","ri","s","d","e","r"],"type":"object"}')
+
+        schemer = scheming.Schemer(raw=raw)
+        db.schema.pin(schemer.said, schemer)
+
+        raw = (
+            b'{"$id":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",'
+            b'"$schema":"http://json-schema.org/draft-07/schema#","title":"GLEIF vLEI Credential","description":"The '
+            b'vLEI Credential issued to GLEIF","credentialType":"GLEIFvLEICredential","type":"object","properties":{'
+            b'"v":{"type":"string"},"d":{"type":"string"},"i":{"type":"string"},"ri":{"description":"credential '
+            b'status registry","type":"string"},"s":{"description":"schema SAID","type":"string"},'
+            b'"a":{"description":"data block","properties":{"d":{"type":"string"},"i":{"type":"string"},'
+            b'"dt":{"description":"issuance date time","format":"date-time","type":"string"},'
+            b'"LEI":{"type":"string"}},"additionalProperties":false,"required":["d","dt","LEI"],"type":"object"},'
+            b'"e":{"type":"object"}},"additionalProperties":false,"required":["d","i","ri"]}')
+
+        schemer = scheming.Schemer(raw=raw)
+        db.schema.pin(schemer.said, schemer)
+
+        raw = (
+            b'{"$id":"EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q",'
+            b'"$schema":"http://json-schema.org/draft-07/schema#","title":"Legal Entity vLEI Credential",'
+            b'"description":"A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity",'
+            b'"credentialType":"LegalEntityvLEICredential","properties":{"v":{"type":"string"},"d":{"type":"string"},'
+            b'"i":{"type":"string"},"ri":{"description":"credential status registry","type":"string"},'
+            b'"s":{"description":"schema SAID","type":"string"},"a":{"description":"data block","properties":{"d":{'
+            b'"type":"string"},"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time",'
+            b'"type":"string"},"LEI":{"type":"string"}},"additionalProperties":false,"required":["i","dt","LEI"],'
+            b'"type":"object"},"e":{"description":"edges block","properties":{"d":{"description":"SAID of edges '
+            b'block","type":"string"},"qualifiedvLEIIssuervLEICredential":{"description":"node SAID of issuer '
+            b'credential","properties":{"n":{"type":"string"}},"additionalProperties":false,"required":["n"],'
+            b'"type":"object"}},"additionalProperties":false,"required":["d","qualifiedvLEIIssuervLEICredential"],'
+            b'"type":"object"},"r":{"type":"array","items":{"type":"object"},"description":"rules block",'
+            b'"minItems":0}},"additionalProperties":false,"required":["i","ri","s","d","e","r"],"type":"object"}')
+
+        schemer = scheming.Schemer(raw=raw)
+        db.schema.pin(schemer.said, schemer)
+
+        raw = (
+            b'{"$id":"EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw",'
+            b'"$schema":"http://json-schema.org/draft-07/schema#","title":"Qualified vLEI Issuer Credential",'
+            b'"description":"A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified '
+            b'vLEI Issuers to issue, verify and revoke Legal Entity vLEI Credentials and Legal Entity Official '
+            b'Organizational Role vLEI Credentials","credentialType":"QualifiedvLEIIssuervLEICredential",'
+            b'"properties":{"v":{"type":"string"},"d":{"type":"string"},"i":{"type":"string"},'
+            b'"ri":{"description":"credential status registry","type":"string"},"s":{"description":"schema SAID",'
+            b'"type":"string"},"a":{"description":"data block","properties":{"d":{"type":"string"},'
+            b'"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time","type":"string"},'
+            b'"LEI":{"type":"string"},"gracePeriod":{"default":90,"type":"integer"}},"additionalProperties":false,'
+            b'"required":["i","dt","LEI"],"type":"object"},"e":{"type":"object"}},"additionalProperties":false,'
+            b'"required":["i","ri","s","d"],"type":"object"}')
+
+        schemer = scheming.Schemer(raw=raw)
+        db.schema.pin(schemer.said, schemer)
 
