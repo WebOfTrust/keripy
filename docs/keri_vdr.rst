@@ -7,10 +7,10 @@ keri.vdr.eventing
 .. automodule:: keri.vdr.eventing
     :members:
 
-keri.vdr.issuing
+keri.vdr.credentialing
 ----------------
 
-.. automodule:: keri.vdr.issuing
+.. automodule:: keri.vdr.credentialing
     :members:
 
 keri.vdr.registering

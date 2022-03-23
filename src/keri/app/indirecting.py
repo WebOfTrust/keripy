@@ -15,7 +15,7 @@ from hio.core.tcp import serving
 from hio.help import decking
 from orderedset import OrderedSet as oset
 
-from . import habbing, directing, storing, httping, forwarding, agenting
+from . import directing, storing, httping, forwarding, agenting
 from .cli.common import oobiing
 from .. import help
 from ..core import eventing, parsing, routing
@@ -40,7 +40,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     # make hab
     hab = hby.makeHab(name=alias, transferable=False)
 
-    reger = viring.Registry(name=hab.name, db=hab.db, temp=False)
+    reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(hby=hby, reger=reger)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
@@ -50,7 +50,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     ending.loadEnds(app=app, hby=hby)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
-    httpEnd = HttpEnd(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx, exchanger=exchanger)
+    httpEnd = HttpEnd(db=hab.db, app=app, rep=rep, verifier=verfer, mbx=mbx, exchanger=exchanger)
     app.add_route("/", httpEnd)
 
     server = http.Server(port=httpPort, app=app)
@@ -636,18 +636,20 @@ class Poller(doing.DoDoer):
             while client.requests:
                 yield self.tock
 
-            connected = True
-            while connected:
+            while True:
                 while client.events:
                     evt = client.events.popleft()
+                    if "id" not in evt or "data" not in evt or "name" not in evt:
+                        print(f"bad mailbox event: {evt}")
+                        continue
+
                     idx = evt["id"]
                     msg = evt["data"]
                     tpc = evt["name"]
 
-                    if tpc == "close":
-                        self.remove([client])
-                        connected = False
-                        break
+                    if not idx or not msg or not tpc:
+                        print(f"bad mailbox event: {evt}")
+                        continue
 
                     self.msgs.append(msg.encode("utf=8"))
                     yield self.tock
@@ -657,7 +659,6 @@ class Poller(doing.DoDoer):
                     self.hab.db.tops.pin((self.pre, self.witness), witrec)
 
                 yield 0.25
-            yield client.respondent.retry / 1000
 
 
 class HttpEnd(doing.DoDoer):
@@ -672,17 +673,17 @@ class HttpEnd(doing.DoDoer):
     TimeoutQNF = 30
     TimeoutMBX = 120
 
-    def __init__(self, hab: habbing.Hab, rep, verifier=None, exchanger=None, mbx=None, **kwa):
+    def __init__(self, db: basing.Baser, rep, verifier=None, exchanger=None, mbx=None, **kwa):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.
 
         Parameters
-             hab (Habitat): the Habitat in which to store any provided KEL
+             db (Baser): the database in which to store any provided KEL
              mbx (Mailboxer): Mailbox storage
 
         """
-        self.hab = hab
+        self.db = db
         self.rep = rep
         self.mbx = mbx
 
@@ -694,9 +695,9 @@ class HttpEnd(doing.DoDoer):
 
         self.rxbs = bytearray()
 
-        self.rvy = routing.Revery(db=self.hab.db)
-        self.kevery = eventing.Kevery(db=self.hab.db,
-                                      lax=False,
+        self.rvy = routing.Revery(db=self.db)
+        self.kevery = eventing.Kevery(db=self.db,
+                                      lax=True,
                                       local=False,
                                       rvy=self.rvy)
 
@@ -704,7 +705,7 @@ class HttpEnd(doing.DoDoer):
 
         if self.verifier is not None:
             self.tvy = Tevery(reger=self.verifier.reger,
-                              db=self.hab.db,
+                              db=self.db,
                               local=False)
             doers.extend([doing.doify(self.verifierDo)])
         else:
@@ -732,6 +733,23 @@ class HttpEnd(doing.DoDoer):
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
 
+        ---
+        summary:  Accept KERI events with attachment headers and parse
+        description:  Accept KERI events with attachment headers and parse.
+        tags:
+           - Events
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 description: KERI event message
+        responses:
+           200:
+              description: Mailbox query response for server sent events
+           204:
+              description: KEL or EXN event accepted.
         """
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
@@ -766,8 +784,7 @@ class HttpEnd(doing.DoDoer):
             said (str): qb64 self addressing identifier of query message to track
         """
 
-        start = end = time.perf_counter()
-        while end - start < self.TimeoutQNF:
+        while True:
             if self.qrycues:
                 cue = self.qrycues.popleft()
                 serder = cue["serder"]
@@ -781,10 +798,7 @@ class HttpEnd(doing.DoDoer):
                         return
                 else:
                     self.qrycues.append(cue)
-            end = time.perf_counter()
             yield b''
-        yield bytearray(f"event: close\ndata: test\nretry: 5000\n\n".encode("utf-8"))
-        return b''
 
     def kvyrep(self, said):
         """ Iterator to respond to KEL events

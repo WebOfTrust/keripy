@@ -1,9 +1,8 @@
 import argparse
 import logging
 
-from hio.base import doing
-
-from keri import help, kering
+from keri import help
+from keri.app import booting
 from keri.app.cli.commands.agent import start
 
 parser = argparse.ArgumentParser(description="Run a demo collection of multisig agents")
@@ -15,28 +14,27 @@ def demo(args):
     help.ogler.reopen(name="keri", temp=True, clear=True)
     logger = help.ogler.getLogger()
 
-    logger.info("\n******* Starting Multisig Agents multisig1, multisig2, multisig3 "
+    logger.info("\n******* Starting Multisig Delegation Agents on ports 5623, 5723, 5823, 5923 "
                 ".******\n\n")
 
-    # kli agent start --name multisig1 --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5621
-    # --http 5620 --admin-http-port 5623
-    doers = start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
-                           name="multisig1", insecure=True,
-                           tcp=5621,
-                           adminHttpPort=5623)
+    # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5621 -a 5623
+    doers = booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",
+                          insecure=True, tcp=5621, adminHttpPort=5623,
+                          path=start.STATIC_DIR_PATH)
 
-    # kli agent start --name multisig2 --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5721
-    # --http 5720 --admin-http-port 5723
-    doers += start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
-                            name="multisig2", insecure=True,
-                            tcp=5721,
-                            adminHttpPort=5723)
+    # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5721 -a 5723
+    doers += booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",
+                           insecure=True, tcp=5721, adminHttpPort=5723,
+                           path=start.STATIC_DIR_PATH)
 
-    # kli agent start --name multisig3 --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5821
-    # --http 5820 --admin-http-port 5823
-    doers += start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
-                            name="multisig3", insecure=True,
-                            tcp=5821,
-                            adminHttpPort=5823)
+    # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5821 -a 5823
+    doers += booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",
+                           insecure=True, tcp=5821, adminHttpPort=5823,
+                           path=start.STATIC_DIR_PATH)
+
+    # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5921 -a 5923
+    doers += booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",
+                           insecure=True, tcp=5921, adminHttpPort=5923,
+                           path=start.STATIC_DIR_PATH)
 
     return doers

@@ -9,7 +9,7 @@ from keri.app import signing
 from keri.core import coring, parsing, eventing
 from keri.peer import exchanging
 from keri.vc import proving
-from keri.vdr import verifying, issuing
+from keri.vdr import verifying, credentialing
 
 
 def test_sad_signature(seeder):
@@ -139,27 +139,28 @@ def test_sad_signature(seeder):
             dt="2021-06-09T17:35:54.169967+00:00",
             LEI="254900OPPU84GM83MG36"
         )
-        verifier = verifying.Verifier(hby=hby)
-        issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
+        regery = credentialing.Regery(hby=hby, name="bob", temp=True)
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
 
         cred = proving.credential(schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
                                   issuer=hab.pre, subject=md, source={}, status=issuer.regk)
 
         # Sign with multisig transferable identifier defaults to single signature on entire SAD
         sig1 = signing.ratify(hab=hab, serder=cred)
-        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EZADKHPCWLRwSuuuB7q4d0TywasW0CqStW'
-                        b'AhQvlRvKlw","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
+        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EMsWawHCTppXm9uG1iQV35CkxU7OANg9sH'
+                        b'4dJtj6Xvco","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
                         b'i":"EJOvY0hgm0Pfw2dg39rwuhGh7B0t3J8JIZkLIk5R-rPs","a":{"d":"EleC'
                         b'RONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR4s","i":"EhwC_-ISX9helBDUS'
                         b'KU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00'
-                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EqHRzdfr0HuRYDZx'
-                        b'4xmyFHnQ_U1n3z54SO7tu02ebn3c"}-JAB6AABAAA--FABEJOvY0hgm0Pfw2dg39'
+                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EJRZsbHgmUL0bNqM'
+                        b'lX7uOcI_EDtDlzjvnsDHTYQNB7rY"}-JAB6AABAAA--FABEJOvY0hgm0Pfw2dg39'
                         b'rwuhGh7B0t3J8JIZkLIk5R-rPs0AAAAAAAAAAAAAAAAAAAAAAAEJOvY0hgm0Pfw2'
-                        b'dg39rwuhGh7B0t3J8JIZkLIk5R-rPs-AADAAHjs0y94XBmtTR7JuCpRrvbuNCFWl'
-                        b'8mnI1VTDhxtAb1tLrtuq1kd47u-ZRfR9pa7WzSzOWf8SNUfn0VJYw0uhBQABSDSc'
-                        b'9lrqeEC_IxGaA59E5ne8-Js2rGMKfp7SN1nFmeO7LFy6x9SBrDgO-lc56bnbImw-'
-                        b'vSj7vHJui9mkJJ44BgACE8WS2sF1xBMfcKHdib2A5xjKYPJz_wUU4DkvtLVI9LoX'
-                        b'om_q7VBsu7onxmRTarjzAmNg9OY93W_d1IUF4RVgAA')
+                        b'dg39rwuhGh7B0t3J8JIZkLIk5R-rPs-AADAA5MSBsAoyMrRBtSzGqsA2E-sfsiYo'
+                        b's3r-s3wgruAhO5ekFgUL7mIyErccqEWv8SXgeau6uuZPJBvr6O0TKc7tAQABFAfG'
+                        b'OTm5o6ZbeF2hGA6oFjd4vgnjKQ31XLdFcoqE-nHDiDChKyDb1_2mRgsh0-AzQwxU'
+                        b'Msb-HpXfSXSR_0OFBwACBngeUYMjnodZfx2VACut2QnvkqM9NAMVP7g8zNxsMoji'
+                        b'Lq-u4eMQ2W-hCu9EKt4ZX0JKcUL1q8RDQIUiHo5_Dw')
 
         issuer.issue(creder=cred)
         parsing.Parser().parse(ims=sig1, vry=verifier)
@@ -180,24 +181,25 @@ def test_signature_transposition(seeder):
 
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         seeder.seedSchema(db=hby.db)
-        verifier = verifying.Verifier(hby=hby)
-        issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
 
         cred = proving.credential(schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
                                   issuer=hab.pre, subject=d, source={}, status=issuer.regk)
 
         # Sign with non-transferable identifier, defaults to single signature on entire SAD
         sig0 = signing.ratify(hab=hab, serder=cred)
-        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EL8u7YWAv1TfVkSqKFCBZIiXyDWhIm6IBH'
-                        b'qkI9yoEFuU","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
+        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EpsBEPzZEdFz6hJ6LU8BCe5eU4aoOf-Vgc'
+                        b'DvrhnCH5c0","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
                         b'i":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50","a":{"d":"EleC'
                         b'RONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR4s","i":"EhwC_-ISX9helBDUS'
                         b'KU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00'
-                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EYzrBEAQFwt_X-BJ'
-                        b'3aOcwHwacdwysMSWnMr5qDaiE7Ow"}-JAB6AABAAA--FABErO8qhYftaJsAbCb6H'
+                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EXkmC7jQ4hqRyi25'
+                        b'g8aFEpMiNW5sbBLf3Awlxm0GYVrk"}-JAB6AABAAA--FABErO8qhYftaJsAbCb6H'
                         b'UrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAb'
-                        b'Cb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAiK3dXF8AhwJuJmmsO3gTz4WDZAHZ'
-                        b'lBCeKsukT8iPRLSKa2LtxU2MVjIScjOC4cVN54Kg1niMdOdAwMuwnPa_CQ')
+                        b'Cb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAALTyPGsLeCQ4MXjCBOrnbXYMLyA9J'
+                        b'_9HFX04Mx2tmvE_qox5VupXJSN_Krzgrp8ubpuiTM-0Yzc1F8l9qBGQwBg')
 
         issuer.issue(creder=cred)
         parsing.Parser().parse(ims=sig0, vry=verifier)
@@ -216,8 +218,8 @@ def test_signature_transposition(seeder):
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d
         assert len(sigers) == 1
-        assert sigers[0].qb64b == (b'AAiK3dXF8AhwJuJmmsO3gTz4WDZAHZlBCeKsukT8iPRLSKa2LtxU2MVjIScjOC4cVN54Kg1niMdO'
-                                   b'dAwMuwnPa_CQ')
+        assert sigers[0].qb64b == (b'AALTyPGsLeCQ4MXjCBOrnbXYMLyA9J_9HFX04Mx2tmvE_qox5VupXJSN_Krzgrp8ubpuiTM-0Yzc'
+                                   b'1F8l9qBGQwBg')
 
         # Transpose the signature to a new root
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a", "b", "c"]))
@@ -231,8 +233,8 @@ def test_signature_transposition(seeder):
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d
         assert len(sigers) == 1
-        assert sigers[0].qb64b == (b'AAiK3dXF8AhwJuJmmsO3gTz4WDZAHZlBCeKsukT8iPRLSKa2LtxU2MVjIScjOC4cVN54Kg1niMdO'
-                                   b'dAwMuwnPa_CQ')
+        assert sigers[0].qb64b == (b'AALTyPGsLeCQ4MXjCBOrnbXYMLyA9J_9HFX04Mx2tmvE_qox5VupXJSN_Krzgrp8ubpuiTM-0Yzc'
+                                   b'1F8l9qBGQwBg')
 
         # embed the credential in an exn and transpose the signature
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a"]))
@@ -240,22 +242,22 @@ def test_signature_transposition(seeder):
         msg = hab.endorse(serder=exn)
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
 
-        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"EpNjY-HFHATW-r1y1G3uzjdG'
-                       b'Te4_QUgPhuQmnL5AyDc8","dt":"2022-01-04T11:58:55.154502+00:00","r'
-                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EL8u7YWA'
-                       b'v1TfVkSqKFCBZIiXyDWhIm6IBHqkI9yoEFuU","s":"ExBYRwKdVGTWFq1M3Irew'
+        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"Erx51K8lauysueEhqIxjrhlx'
+                       b'dbkGIOogXBl8Yih_qiks","dt":"2022-01-04T11:58:55.154502+00:00","r'
+                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EpsBEPzZ'
+                       b'EdFz6hJ6LU8BCe5eU4aoOf-VgcDvrhnCH5c0","s":"ExBYRwKdVGTWFq1M3Irew'
                        b'jKRhKusW9p9fdsdD0aSTWQI","i":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VE'
                        b't7SdG0wh50","a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR'
                        b'4s","i":"EhwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"202'
                        b'1-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM83MG36"},"e"'
-                       b':{},"ri":"EYzrBEAQFwt_X-BJ3aOcwHwacdwysMSWnMr5qDaiE7Ow"}}-VA0-FA'
+                       b':{},"ri":"EXkmC7jQ4hqRyi25g8aFEpMiNW5sbBLf3Awlxm0GYVrk"}}-VA0-FA'
                        b'BErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAA'
-                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAW-52rDvrM'
-                       b'8GNp6eSmOpOLoDl4rvPn-hYEjLWZ4fQgPcrIYtGlvIcyoesILWAc6wHHvADLTzgo'
-                       b'Fj927KOY3VwCg-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt'
+                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAUCKd4sNsx'
+                       b'J-zESYcoEmKl4Rn_nF4Sf1EGTiaELeGR7o_pUK03SBPLoRS-FtsSiNgueARigc2E'
+                       b'5EyKztio5wtBA-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt'
                        b'7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd'
-                       b'2VEt7SdG0wh50-AABAAiK3dXF8AhwJuJmmsO3gTz4WDZAHZlBCeKsukT8iPRLSKa'
-                       b'2LtxU2MVjIScjOC4cVN54Kg1niMdOdAwMuwnPa_CQ')
+                       b'2VEt7SdG0wh50-AABAALTyPGsLeCQ4MXjCBOrnbXYMLyA9J_9HFX04Mx2tmvE_qo'
+                       b'x5VupXJSN_Krzgrp8ubpuiTM-0Yzc1F8l9qBGQwBg')
 
         # issue the credential
         issuer.issue(creder=cred)
@@ -269,25 +271,26 @@ def test_signature_transposition(seeder):
     # multiple path sigs
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         seeder.seedSchema(db=hby.db)
-        verifier = verifying.Verifier(hby=hby)
-        issuer = issuing.Issuer(hab=hab, reger=verifier.reger)
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
 
         cred = proving.credential(schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
                                   issuer=hab.pre, subject=d, source={}, status=issuer.regk)
 
         # sign with single sig transferable identfier with multiple specified paths
         sig1 = signing.ratify(hab=hab, serder=cred, paths=[[], ["a"], ["a", "i"]])
-        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EL8u7YWAv1TfVkSqKFCBZIiXyDWhIm6IBH'
-                        b'qkI9yoEFuU","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
+        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EpsBEPzZEdFz6hJ6LU8BCe5eU4aoOf-Vgc'
+                        b'DvrhnCH5c0","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
                         b'i":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50","a":{"d":"EleC'
                         b'RONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR4s","i":"EhwC_-ISX9helBDUS'
                         b'KU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00'
-                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EYzrBEAQFwt_X-BJ'
-                        b'3aOcwHwacdwysMSWnMr5qDaiE7Ow"}-KAD6AABAAA--JAB6AABAAA--FABErO8qh'
+                        b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EXkmC7jQ4hqRyi25'
+                        b'g8aFEpMiNW5sbBLf3Awlxm0GYVrk"}-KAD6AABAAA--JAB6AABAAA--FABErO8qh'
                         b'YftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAEr'
-                        b'O8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAiK3dXF8AhwJuJmms'
-                        b'O3gTz4WDZAHZlBCeKsukT8iPRLSKa2LtxU2MVjIScjOC4cVN54Kg1niMdOdAwMuw'
-                        b'nPa_CQ-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh'
+                        b'O8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAALTyPGsLeCQ4MXjCB'
+                        b'OrnbXYMLyA9J_9HFX04Mx2tmvE_qox5VupXJSN_Krzgrp8ubpuiTM-0Yzc1F8l9q'
+                        b'BGQwBg-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh'
                         b'500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7Sd'
                         b'G0wh50-AABAAljDTBx1Dboc1O1YSBYzdiAXH0Vj50MDTdNEf71q8qFbip5gjH9el'
                         b'vVIB6jDeEWY_iTG6Dc9D0zd3NO0QeQJzDg-JAB4AAB-a-i-FABErO8qhYftaJsAb'
@@ -315,19 +318,19 @@ def test_signature_transposition(seeder):
 
         # attach the transposed signatures for the embedded credential
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
-        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"EpNjY-HFHATW-r1y1G3uzjdG'
-                       b'Te4_QUgPhuQmnL5AyDc8","dt":"2022-01-04T11:58:55.154502+00:00","r'
-                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EL8u7YWA'
-                       b'v1TfVkSqKFCBZIiXyDWhIm6IBHqkI9yoEFuU","s":"ExBYRwKdVGTWFq1M3Irew'
+        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"Erx51K8lauysueEhqIxjrhlx'
+                       b'dbkGIOogXBl8Yih_qiks","dt":"2022-01-04T11:58:55.154502+00:00","r'
+                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EpsBEPzZ'
+                       b'EdFz6hJ6LU8BCe5eU4aoOf-VgcDvrhnCH5c0","s":"ExBYRwKdVGTWFq1M3Irew'
                        b'jKRhKusW9p9fdsdD0aSTWQI","i":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VE'
                        b't7SdG0wh50","a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR'
                        b'4s","i":"EhwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"202'
                        b'1-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM83MG36"},"e"'
-                       b':{},"ri":"EYzrBEAQFwt_X-BJ3aOcwHwacdwysMSWnMr5qDaiE7Ow"}}-VA0-FA'
+                       b':{},"ri":"EXkmC7jQ4hqRyi25g8aFEpMiNW5sbBLf3Awlxm0GYVrk"}}-VA0-FA'
                        b'BErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAA'
-                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAW-52rDvrM'
-                       b'8GNp6eSmOpOLoDl4rvPn-hYEjLWZ4fQgPcrIYtGlvIcyoesILWAc6wHHvADLTzgo'
-                       b'Fj927KOY3VwCg-KAD6AABAAA--JAB5AACAA-a-a-i-FABErO8qhYftaJsAbCb6HU'
+                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAUCKd4sNsx'
+                       b'J-zESYcoEmKl4Rn_nF4Sf1EGTiaELeGR7o_pUK03SBPLoRS-FtsSiNgueARigc2E'
+                       b'5EyKztio5wtBA-KAD6AABAAA--JAB5AACAA-a-a-i-FABErO8qhYftaJsAbCb6HU'
                        b'rN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbC'
                        b'b6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAASkVgGSxVHfa9d1OaV7W9VCs63H3Aq'
                        b'AiQOtj-fJRUIAcHR4hrVgQtGyGl-WOisK97zqrrXxoDXh-8AJ9gSulnDQ-JAB4AA'
@@ -336,8 +339,8 @@ def test_signature_transposition(seeder):
                        b'jDTBx1Dboc1O1YSBYzdiAXH0Vj50MDTdNEf71q8qFbip5gjH9elvVIB6jDeEWY_i'
                        b'TG6Dc9D0zd3NO0QeQJzDg-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV'
                        b'9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4t'
-                       b'UyrV9dMd2VEt7SdG0wh50-AABAAiK3dXF8AhwJuJmmsO3gTz4WDZAHZlBCeKsukT'
-                       b'8iPRLSKa2LtxU2MVjIScjOC4cVN54Kg1niMdOdAwMuwnPa_CQ')
+                       b'UyrV9dMd2VEt7SdG0wh50-AABAALTyPGsLeCQ4MXjCBOrnbXYMLyA9J_9HFX04Mx'
+                       b'2tmvE_qox5VupXJSN_Krzgrp8ubpuiTM-0Yzc1F8l9qBGQwBg')
 
     # signing SAD with non-transferable identifier
     with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):

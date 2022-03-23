@@ -12,36 +12,37 @@ from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring
 from keri.help import helping
 from keri.vc import proving
-from keri.vdr import verifying, issuing, viring, eventing
+from keri.vdr import verifying, credentialing, eventing
 
 
 def test_verifier_query(mockHelpingNowUTC):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        issuer = issuing.Issuer(hab=hab, name="test", temp=True)
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
         verfer = verifying.Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EdaoDw0LOorX185H3Mu8O8OZ'
-                       b'3rSHcuZn75AjFwhwgpUA","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EXOG6T6nt1BABGbD1OtypQe6'
+                       b'SjZAAsrnHFZYwkCneA1k","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"EAZj_M7DRVHIYEnvkCwo20w_ZrjKR_ScNxHXO25Qus9s"}}-V'
-                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAktrAj01P'
-                       b'kZlEtu7VPC076cyCvlhXdL9gYcf5pcih5ehlV73947Qp0ZeyP8J3HjFc3KFI0Iwh'
-                       b'dvBVkQnHkFLlBw')
+                       b'KXqgcX4","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs"}}-V'
+                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuArHNOMt'
+                       b'9SxHkUhHh8-f27XpHDe8lMVAiYPqvbynY2xc_XbvgTWsPn4VAOO-0nuOGVCzwWzC'
+                       b'sVOyc8LLiOF-Ag')
 
 
 def test_verifier(seeder):
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp), \
-            viring.openReg(temp=True) as reger:
+            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
 
-        issuer = issuing.Issuer(hab=hab, reger=reger, noBackers=True, estOnly=True, temp=True)
-        verifier = verifying.Verifier(hby=hby, reger=reger)
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
 
         credSubject = dict(
             d="",
@@ -79,16 +80,16 @@ def test_verifier(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre, sadsigers, sadcigars = reger.cloneCred(said=creder.saider.qb64)
+        dcre, sadsigers, sadcigars = regery.reger.cloneCred(said=creder.saider.qb64)
 
         assert dcre.raw == creder.raw
         assert len(sadsigers) == 1
 
-        saider = reger.issus.get(hab.pre)
+        saider = regery.reger.issus.get(hab.pre)
         assert saider[0].qb64 == creder.said
-        saider = reger.subjs.get(recp.pre)
+        saider = regery.reger.subjs.get(recp.pre)
         assert saider[0].qb64 == creder.said
-        saider = reger.schms.get("ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI")
+        saider = regery.reger.schms.get("ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI")
         assert saider[0].qb64 == creder.said
 
     """End Test"""
@@ -119,7 +120,7 @@ def test_verifier(seeder):
 #
 #         groupies = [g1, g2, g3]
 #
-#         issuer = issuing.Issuer(hab=hab1, reger=reger, noBackers=True, estOnly=True, temp=True)
+#         issuer = credentialing.Issuer(hab=hab1, reger=reger, noBackers=True, estOnly=True, temp=True)
 #         assert len(issuer.cues) == 1
 #         cue = issuer.cues.popleft()
 #         rseal = cue["data"]
@@ -286,10 +287,7 @@ def test_verifier_chained_credential(seeder):
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
             habbing.openHab(name="han", transferable=True, temp=True) as (hanHby, han), \
-            habbing.openHab(name="vic", transferable=True, temp=True) as (vicHby, vic), \
-            viring.openReg(temp=True, name="ron") as ronreg, \
-            viring.openReg(temp=True, name="ian") as ianreg, \
-            viring.openReg(temp=True, name="vic") as vicreg:
+            habbing.openHab(name="vic", transferable=True, temp=True) as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)
@@ -300,8 +298,11 @@ def test_verifier_chained_credential(seeder):
         assert han.pre == "ErqUTGqxVQzG3oYuyKVi2zKQvtUqHHMz3t_BaMt9nbPo"
         assert vic.pre == "EI4-27_xnAB2I7LXgIjKUl8APR4iZV_LY64Am5TyBilE"
 
-        roniss = issuing.Issuer(hab=ron, reger=ronreg, noBackers=True, estOnly=True, temp=True)
-        ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg)
+        ronreg = credentialing.Regery(hby=ronHby, name="ron", temp=True)
+        ianreg = credentialing.Regery(hby=ianHby, name="ian", temp=True)
+        vicreg = credentialing.Regery(hby=vicHby, name="vic", temp=True)
+        roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
+        ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg.reger)
 
         credSubject = dict(
             d="",
@@ -341,7 +342,7 @@ def test_verifier_chained_credential(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre, sadsig, sadcig = ronreg.cloneCred(said=creder.said)
+        dcre, sadsig, sadcig = ronreg.reger.cloneCred(said=creder.said)
         assert dcre.raw == creder.raw
         assert len(sadsig) == 1
         assert len(sadcig) == 0
@@ -350,19 +351,19 @@ def test_verifier_chained_credential(seeder):
         actual = [m.qb64 for m in sadsigers[0][:-1]]
         assert expect == actual
 
-        sig0 =  sadsig[-1][0]
+        sig0 = sadsig[-1][0]
         sig1 = sadsigers[-1][0]
         assert sig0.qb64b == sig1.qb64b
 
-        saider = ronreg.issus.get(ron.pre)
+        saider = ronreg.reger.issus.get(ron.pre)
         assert saider[0].qb64 == creder.said
-        saider = ronreg.subjs.get(ian.pre)
+        saider = ronreg.reger.subjs.get(ian.pre)
         assert saider[0].qb64 == creder.said
-        saider = ronreg.schms.get(qviSchema)
+        saider = ronreg.reger.schms.get(qviSchema)
         assert saider[0].qb64 == creder.said
 
-        ianiss = issuing.Issuer(hab=ian, reger=ianreg, noBackers=True, estOnly=True, temp=True)
-        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian")
+        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
         leiCredSubject = dict(
             d="",
@@ -408,7 +409,7 @@ def test_verifier_chained_credential(seeder):
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
 
-        dcre, sadsig, sadcig = ianreg.cloneCred(said=vLeiCreder.said)
+        dcre, sadsig, sadcig = ianreg.reger.cloneCred(said=vLeiCreder.said)
         assert dcre.raw == vLeiCreder.raw
         assert len(sadsig) == 1
         assert len(sadcig) == 0
@@ -417,11 +418,11 @@ def test_verifier_chained_credential(seeder):
         actual = [m.qb64 for m in vLeiSadsigers[0][:-1]]
         assert expect == actual
 
-        sig0 =  sadsig[-1][0]
+        sig0 = sadsig[-1][0]
         sig1 = vLeiSadsigers[-1][0]
         assert sig0.qb64b == sig1.qb64b
 
-        dater = ianreg.mce.get(vLeiCreder.saider.qb64b)
+        dater = ianreg.reger.mce.get(vLeiCreder.saider.qb64b)
         assert dater is not None
 
         assert len(ianverfer.cues) == 1
@@ -430,8 +431,8 @@ def test_verifier_chained_credential(seeder):
 
         # Now lets get Ron's crecential into Ian's Tevers and Database
         iankvy = ceventing.Kevery(db=ian.db, lax=False, local=False)
-        iantvy = eventing.Tevery(reger=ianreg, db=ian.db, local=False)
-        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg)
+        iantvy = eventing.Tevery(reger=ianreg.reger, db=ian.db, local=False)
+        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
         # first get Ron's inception event into Ian's db
         ronIcp = ron.makeOwnEvent(sn=0)
@@ -448,17 +449,17 @@ def test_verifier_chained_credential(seeder):
         ianverfer.processEscrows()
 
         # And now it should be in the indexes
-        saider = ianreg.issus.get(ian.pre)  # Ian is the issuer
+        saider = ianreg.reger.issus.get(ian.pre)  # Ian is the issuer
         assert saider[0].qb64 == vLeiCreder.said
-        saider = ianreg.subjs.get(han.pre)  # Han is the holder
+        saider = ianreg.reger.subjs.get(han.pre)  # Han is the holder
         assert saider[0].qb64 == vLeiCreder.said
-        saider = ianreg.schms.get(vLeiSchema)
+        saider = ianreg.reger.schms.get(vLeiSchema)
         assert saider[0].qb64 == vLeiCreder.said
 
         # Now lets get Ron's crecential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
-        victvy = eventing.Tevery(reger=vicreg, db=vic.db, local=False)
-        vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg)
+        victvy = eventing.Tevery(reger=vicreg.reger, db=vic.db, local=False)
+        vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
 
         # Get Ron's icp into Vic's db
         parsing.Parser().parse(ims=bytearray(ronIcp), kvy=vickvy, tvy=victvy)
@@ -503,4 +504,3 @@ def test_verifier_chained_credential(seeder):
             vicverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
 
     """End Test"""
-

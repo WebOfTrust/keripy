@@ -3,7 +3,7 @@ from keri.core import routing, parsing, coring
 from keri.core.eventing import Kevery
 
 from keri.vc import proving
-from keri.vdr import viring, issuing, eventing
+from keri.vdr import viring, credentialing, eventing
 
 
 def test_tsn_message_out_of_order(mockHelpingNowUTC):
@@ -16,8 +16,8 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
-        reger = viring.Registry(name=bobHab.name, temp=True)
-        issuer = issuing.Issuer(hab=bobHab, name=bobHab.name, reger=reger, noBackers=True, )
+        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
 
         assert issuer.regk == "ENMQx5zunE2R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4"
 
@@ -43,7 +43,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
-        bamReger = viring.Registry(name="bam", temp=True)
+        bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -57,7 +57,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC):
         assert saider[0].qb64b == b'E9KUzPJ-8ajXljg7GX0e2JWzO0GYqHvb0eraRokvSG68'
 
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -81,8 +81,8 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
-        reger = viring.Registry(name=bobHab.name, temp=True)
-        issuer = issuing.Issuer(hab=bobHab, name=bobHab.name, reger=reger, noBackers=True, )
+        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
 
         assert issuer.regk == "ENMQx5zunE2R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4"
 
@@ -102,7 +102,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
-        bamReger = viring.Registry(name="bam", temp=True)
+        bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -132,7 +132,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC):
         assert saider[0].qb64b == b'E9KUzPJ-8ajXljg7GX0e2JWzO0GYqHvb0eraRokvSG68'
 
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -168,8 +168,8 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, wits=[wesHab.pre])
         assert bobHab.pre == "EGaV8sWx4qxaWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs"
 
-        reger = viring.Registry(name=bobHab.name, temp=True)
-        issuer = issuing.Issuer(hab=bobHab, name=bobHab.name, reger=reger, noBackers=True, )
+        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
 
         assert issuer.regk == "Em4Y6cd1oLJAfVnwtFWFHjoJl7M2mlNCMZGiy_8miPEY"
 
@@ -184,11 +184,11 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         assert bobHab.pre in wesHab.kevers
 
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 
-        wesReger = viring.Registry(name="wes", temp=True)
+        wesReger = viring.Reger(name="wes", temp=True)
         wesRtr = routing.Router()
         wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
         wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
@@ -211,7 +211,7 @@ def test_tsn_from_witness(mockHelpingNowUTC):
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        bamReger = viring.Registry(name="bam", temp=True)
+        bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -277,8 +277,8 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
-        reger = viring.Registry(name=bobHab.name, temp=True)
-        issuer = issuing.Issuer(hab=bobHab, name=bobHab.name, reger=reger, noBackers=True, )
+        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
 
         assert issuer.regk == "ENMQx5zunE2R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4"
 
@@ -291,11 +291,11 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         assert bobHab.pre in wesHab.kevers
 
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 
-        wesReger = viring.Registry(name="wes", temp=True)
+        wesReger = viring.Reger(name="wes", temp=True)
         wesRtr = routing.Router()
         wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
         wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
@@ -318,7 +318,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC):
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        bamReger = viring.Registry(name="bam", temp=True)
+        bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
 
@@ -350,8 +350,8 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
-        reger = viring.Registry(name=bobHab.name, temp=True)
-        issuer = issuing.Issuer(hab=bobHab, name=bobHab.name, reger=reger, noBackers=True, )
+        regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
 
         assert issuer.regk == "ENMQx5zunE2R4KG7NYUnNpMPRxMHJWwasV173b1n3NC4"
         assert len(issuer.cues) == 2
@@ -392,7 +392,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
 
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
 
-        bamReger = viring.Registry(name="bam", temp=True)
+        bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -412,7 +412,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
 
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -431,7 +431,7 @@ def test_credential_tsn_message(mockHelpingNowUTC):
 
         vci = viring.nsKey([issuer.regk, creder.said])
         tmsgs = bytearray()
-        cloner = reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
         for msg in cloner:
             tmsgs.extend(msg)
 

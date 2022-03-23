@@ -2483,7 +2483,8 @@ class Kever:
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addPse(snKey(serder.preb, serder.sn), serder.saidb)
+        snkey = snKey(serder.preb, serder.sn)
+        self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
         logger.info("Kever state: Escrowed partially signed or delegated "
                     "event = %s\n", serder.ked)
 

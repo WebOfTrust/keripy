@@ -407,7 +407,7 @@ def test_tever_escrow():
         Tever()
 
     # registry with no backers, invalid anchor
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -427,7 +427,7 @@ def test_tever_escrow():
             Tever(serder=vcp, seqner=seqner, saider=None, db=db, reger=reg)
 
     # registry with no backers
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -451,7 +451,7 @@ def test_tever_escrow():
         assert bytes(dig) == b'EWKCDqk4W2wseV-VnW-KpzvMpe2Y08bChQQPhmwgZdTI'
 
     # registry with backers, no signatures.  should escrow
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=["BoOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
@@ -489,7 +489,7 @@ def test_tever_escrow():
 def test_tever_no_backers(mockHelpingNowUTC):
     # registry with no backers
     # registry with backer and receipt
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
@@ -582,7 +582,7 @@ def test_tever_no_backers(mockHelpingNowUTC):
 
 def test_tever_backers(mockHelpingNowUTC):
     # registry with backer and receipt
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         valSecret = 'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
 
         # create receipt signer prefixer default code is non-transferable
@@ -674,7 +674,7 @@ def test_tever_backers(mockHelpingNowUTC):
 
 
 def test_tevery():
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
@@ -740,7 +740,7 @@ def test_tevery():
 
 
 def test_tevery_process_escrow():
-    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,

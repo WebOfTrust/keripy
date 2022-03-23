@@ -11,11 +11,11 @@ from hio.base import doing
 from hio.help import decking
 
 from tests.app import test_grouping
-from keri.app import habbing, storing, kiwiing
+from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring
 from keri.vc import proving
-from keri.vdr import viring, issuing, verifying
+from keri.vdr import viring, credentialing, verifying
 
 
 def test_credential_handlers(mockHelpingNowUTC, seeder):
@@ -26,9 +26,9 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 
         app = falcon.App()
 
-        reger = viring.Registry(name=hab.name, temp=True)
-        verifier = verifying.Verifier(hby=hby, reger=reger)
-        issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
+        regery = credentialing.Regery(hby=hby, name=hab.name)
+        issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
         issuerCues = decking.Deck()
 
         icp = recp.makeOwnEvent(sn=0)
@@ -41,15 +41,15 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         cue = issuer.cues.popleft()
         assert cue["kin"] == "send"
 
-        issuers = dict()
-        issuers[issuer.regk] = issuer
         repd = storing.Respondant(hby=hby)
+        counselor = grouping.Counselor(hby=hby)
 
         _ = kiwiing.loadEnds(hby=hby,
                              rep=repd,
+                             rgy=regery,
                              verifier=verifier,
-                             issuers=issuers,
                              issuerCues=issuerCues,
+                             counselor=counselor,
                              app=app, path="/", mbx=None)
 
         client = testing.TestClient(app)
@@ -63,7 +63,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         data = dict(LEI=LEI)
         body = dict(
             alias="test",
-            registry=issuer.regk,
+            registry="test",
             schema=schema,
             recipient=recp.pre,
             type="GLEIFvLEICredential",
@@ -101,19 +101,19 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         assert evt == tevt
 
         creder = proving.Credentialer(raw=cred)
-        assert reger.creds.get(b'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0').raw == creder.raw
+        assert regery.reger.creds.get(b'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0').raw == creder.raw
 
         # Try to revoke a credential that doesn't exist and get the appropriate error
         result = client.simulate_delete(path="/credentials",
                                         query_string=("alias=test&"
-                                                      "registry=EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs&"
+                                                      "registry=test&"
                                                       "said=ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs"))
         assert result.status == falcon.HTTP_NOT_FOUND
 
         # Now revoke the actual credential
         result = client.simulate_delete(path="/credentials",
                                         query_string=("alias=test&"
-                                                      "registry=EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs&"
+                                                      "registry=test&"
                                                       "said=EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0"))
         assert result.status == falcon.HTTP_202
 
@@ -148,7 +148,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 #         ims = bytearray()
 #         reger = viring.Registry(name=hab1.name, temp=True)
 #         verifier = verifying.Verifier(hby=hby1, reger=reger)
-#         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
+#         issuer = credentialing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
 #         gdoer = grouping.MultiSigGroupDoer(hby=hby1, ims=ims)
 #         issuerCues = decking.Deck()
 #
@@ -225,7 +225,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 #
 #         reger = viring.Registry(name=hab1.name, temp=True)
 #         verifier = verifying.Verifier(hby=hby1, reger=reger)
-#         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
+#         issuer = credentialing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
 #         witq = agenting.WitnessInquisitor(hby=hby1, reger=verifier.reger, klas=agenting.HttpWitnesser)
 #         issuerCues = decking.Deck()
 #
@@ -311,7 +311,8 @@ def test_multisig_incept():
         assert hab2.pre == "EmYIWxzWUtSfQNBodo5RT8hNjoFlzcXZXTQXQM500tyE"
         assert hab3.pre == "EPrbmW_c_3Dp4Q6rddi5X7RHp_Xkjp21RcMG2FEWr_HI"
 
-        icpEnd = kiwiing.MultisigInceptEnd(hby=hby1)
+        counselor = grouping.Counselor(hby=hby1)
+        icpEnd = kiwiing.MultisigInceptEnd(hby=hby1, counselor=counselor)
         app = falcon.App()
         app.add_route("/multisig/{alias}/icp", icpEnd)
 
@@ -384,7 +385,8 @@ def test_multisig_incept():
         assert evt["serder"] == srdr
 
         # Create new end and app to represent Hab2's agent
-        icpEnd = kiwiing.MultisigInceptEnd(hby=hby2)
+        counselor = grouping.Counselor(hby=hby2)
+        icpEnd = kiwiing.MultisigInceptEnd(hby=hby2, counselor=counselor)
         app = falcon.App()
         app.add_route("/multisig/{alias}/icp", icpEnd)
 
@@ -416,14 +418,14 @@ def test_multisig_incept():
 
 def test_multisig_rotation():
     prefix = "test"
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)), \
-            habbing.openHab(name="recp", transferable=True) as (recpHby, recp):
+    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
         assert ghab1.pre == ghab2.pre == ghab3.pre == "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
 
         app = falcon.App()
 
         # Start with hby1 who will initiate the rotation with a POST
-        rotEnd = MultisigEventEnd(hby=hby1)
+        counselor = grouping.Counselor(hby=hby1)
+        rotEnd = MultisigEventEnd(hby=hby1, counselor=counselor)
         app.add_route("/multisig/{alias}/rot", rotEnd, suffix="rot")
 
         client = testing.TestClient(app)
@@ -489,14 +491,16 @@ def test_multisig_rotation():
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
-        rotEnd = MultisigEventEnd(hby=hby2)
+        counselor = grouping.Counselor(hby=hby2)
+        rotEnd = MultisigEventEnd(hby=hby2, counselor=counselor)
         app.add_route("/multisig/{alias}/rot", rotEnd, suffix="rot")
         client = testing.TestClient(app)
         result = client.simulate_put(path=f"/multisig/{prefix}_group2/rot", body=b)
         assert result.status == falcon.HTTP_202
 
         # escrow event for local witnessing
-        assert hby2.db.glwe.get(keys=(ghab2.pre,)) is not None
+        glwe = hby2.db.glwe.get(keys=(ghab2.pre,))
+        assert glwe is not None
         # no notifications set if joining
         assert len(rotEnd.postman.evts) == 0
 
@@ -510,7 +514,8 @@ def test_multisig_interaction():
         app = falcon.App()
 
         # Start with hby1 who will initiate the rotation with a POST
-        evtEnd = MultisigEventEnd(hby=hby1)
+        counselor = grouping.Counselor(hby=hby1)
+        evtEnd = MultisigEventEnd(hby=hby1, counselor=counselor)
         app.add_route("/multisig/{alias}/ixn", evtEnd, suffix="ixn")
 
         client = testing.TestClient(app)
@@ -560,7 +565,8 @@ def test_multisig_interaction():
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
-        evtEnd = MultisigEventEnd(hby=hby2)
+        counselor = grouping.Counselor(hby=hby1)
+        evtEnd = MultisigEventEnd(hby=hby2, counselor=counselor)
         app.add_route("/multisig/{alias}/ixn", evtEnd, suffix="ixn")
         client = testing.TestClient(app)
         result = client.simulate_put(path=f"/multisig/{prefix}_group2/ixn", body=b)
@@ -578,21 +584,21 @@ def test_identifier_ends():
 
         app = falcon.App()
 
-        reger = viring.Registry(name=hab.name, temp=True)
+        reger = viring.Reger(name=hab.name, temp=True)
+        regery = credentialing.Regery(hby=hby, name=hab.name)
         verifier = verifying.Verifier(hby=hby, reger=reger)
-        issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
+        issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
 
-        issuers = dict()
-        issuers[issuer.regk] = issuer
         repd = storing.Respondant(hby=hby)
+        counselor = grouping.Counselor(hby=hby)
 
         endDoers = kiwiing.loadEnds(hby=hby,
                                     rep=repd,
+                                    rgy=regery,
                                     verifier=verifier,
-                                    issuers=None,
                                     issuerCues=None,
                                     app=app, path="/",
-                                    mbx=None)
+                                    mbx=None, counselor=counselor)
         limit = 1.0
         tock = 0.03125
         doist = doing.Doist(tock=tock, limit=limit, doers=endDoers)

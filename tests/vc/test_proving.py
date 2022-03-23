@@ -11,7 +11,7 @@ from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, 
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
 from keri.vc.proving import Credentialer, credential
-from keri.vdr import verifying, issuing, viring
+from keri.vdr import verifying, credentialing
 
 
 def test_proving():
@@ -222,11 +222,11 @@ def test_credential():
 
 
 def test_credential_parsator():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
-            viring.openReg() as reg:
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
 
-        issuer = issuing.Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
+        regery = credentialing.Regery(hby=hby, name="sid", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True)
 
         credSubject = dict(
             d="",

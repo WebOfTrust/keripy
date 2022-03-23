@@ -9,7 +9,7 @@ from hio.help import decking
 
 from keri import kering
 from keri.help import helping
-from keri.vdr import issuing, viring
+from keri.vdr import credentialing, viring
 from . import proving
 from .. import help
 from ..app import signing
@@ -197,7 +197,7 @@ class ApplyHandler(doing.DoDoer):
 
                 hab = self.hby.habs[issuer]
 
-                self.issuer = issuing.Issuer(hab=hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
+                self.issuer = credentialing.Registry(hab=hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
 
                 source = []
 

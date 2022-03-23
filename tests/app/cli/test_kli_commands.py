@@ -20,6 +20,8 @@ def remove_test_dirs(name):
         shutil.rmtree(f'/usr/local/var/keri/db/{name}')
     if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
         shutil.rmtree(f'/usr/local/var/keri/ks/{name}')
+    if os.path.exists(f'/usr/local/var/keri/reg/{name}'):
+        shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
     if os.path.exists(f'/usr/local/var/keri/cf/{name}.json'):
         os.remove(f'/usr/local/var/keri/cf/{name}.json')
 
