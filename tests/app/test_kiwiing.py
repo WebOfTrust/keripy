@@ -26,7 +26,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 
         app = falcon.App()
 
-        regery = credentialing.Regery(hby=hby, name=hab.name)
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
         verifier = verifying.Verifier(hby=hby, reger=regery.reger)
         issuerCues = decking.Deck()
@@ -585,7 +585,7 @@ def test_identifier_ends():
         app = falcon.App()
 
         reger = viring.Reger(name=hab.name, temp=True)
-        regery = credentialing.Regery(hby=hby, name=hab.name)
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         verifier = verifying.Verifier(hby=hby, reger=reger)
         issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
 
