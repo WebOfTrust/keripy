@@ -29,7 +29,6 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
         verifier = verifying.Verifier(hby=hby, reger=regery.reger)
-        issuerCues = decking.Deck()
 
         icp = recp.makeOwnEvent(sn=0)
         kvy = eventing.Kevery(db=hab.db, lax=True)
@@ -48,7 +47,6 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
                              rep=repd,
                              rgy=regery,
                              verifier=verifier,
-                             issuerCues=issuerCues,
                              counselor=counselor,
                              app=app, path="/", mbx=None)
 
@@ -596,7 +594,6 @@ def test_identifier_ends():
                                     rep=repd,
                                     rgy=regery,
                                     verifier=verifier,
-                                    issuerCues=None,
                                     app=app, path="/",
                                     mbx=None, counselor=counselor)
         limit = 1.0

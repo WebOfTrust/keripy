@@ -15,11 +15,11 @@ from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import helping, decking
 
-from . import grouping
+from . import grouping, challenging
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing, delegating
-from ..core import parsing, eventing, coring
+from ..core import parsing, coring
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
@@ -2123,7 +2123,7 @@ class KiwiDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, rep, verifier, issuers=None, issuerCues=None, cues=None, **kwa):
+    def __init__(self, hby, rep, verifier, cues=None, queries=None, **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
         of an identifier.
@@ -2134,7 +2134,6 @@ class KiwiDoer(doing.DoDoer):
             rep Respondant that routes responses to the appropriate mailboxes
             verifier is Verifier that process credentials
             gdoe is decking.Deck of msgs to send to a MultisigDoer
-            issuers is dict of credential Issuers keyed by regk of credential Registry
             wallet is Wallet for local storage of credentials
             cues is Deck from Kevery handling key events:
             app falcon.App to register handlers with:
@@ -2145,18 +2144,47 @@ class KiwiDoer(doing.DoDoer):
         self.hby = hby
         self.rep = rep
         self.verifier = verifier if verifier is not None else verifying.Verifier(hby=self.hby)
-        self.issuers = issuers if issuers is not None else dict()
 
         self.cues = cues if cues is not None else decking.Deck()
-        self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
+        self.queries = queries if queries is not None else decking.Deck()
 
         self.postman = forwarding.Postman(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=hby)
 
-        doers = [self.postman, self.witDoer, doing.doify(self.verifierDo),
-                 doing.doify(self.escrowDo)]
+        doers = [self.postman, self.witDoer, doing.doify(self.verifierDo), doing.doify(self.cueDo)]
 
         super(KiwiDoer, self).__init__(doers=doers, **kwa)
+
+    def cueDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.cues:
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]
+                if cueKin == "stream":
+                    self.queries.append(cue)
+                yield self.tock
+            yield self.tock
 
     def verifierDo(self, tymth, tock=0.0):
         """
@@ -2220,31 +2248,12 @@ class KiwiDoer(doing.DoDoer):
                 yield self.tock
             yield self.tock
 
-    def escrowDo(self, tymth, tock=0.0):
-        """
-        Returns:  doifiable Doist compatible generator method
 
-        Usage:
-            add result of doify on this method to doers list
-
-        """
-        # start enter context
-        yield  # enter context
-        while True:
-            issuers = dict(self.issuers)
-            for _, issuer in issuers.items():
-                issuer.processEscrows()
-                yield self.tock
-
-            self.verifier.processEscrows()
-            yield self.tock
-
-
-def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, issuerCues):
+def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, queries=None):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
-    Args:
+    Parameters:
         app (falcon.App): falcon.App to register handlers with:
         path (str): directory location of UI web app files to be served with this API server
         hby (Habery): database environment for all endpoints
@@ -2253,7 +2262,8 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, issuerCues):
         mbx (Mailboxer): mailbox storage class
         verifier (Verifier): that process credentials
         counselor (Counselor): group multisig identifier communication manager
-        issuerCues (Deck): from Kevery handling key events:
+        rxbs (bytearray): output queue of bytes for message processing
+        queries (Deck): query cues for HttpEnd to start mailbox stream
 
     Returns:
         list: doers from registering endpoints
@@ -2276,8 +2286,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, issuerCues):
 
     credentialsEnd = CredentialsEnd(hby=hby, rgy=rgy,
                                     rep=rep,
-                                    verifier=verifier,
-                                    cues=issuerCues)
+                                    verifier=verifier)
     app.add_route("/credentials", credentialsEnd)
 
     applicationsEnd = ApplicationsEnd(rep=rep)
@@ -2301,8 +2310,8 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, issuerCues):
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha, suffix="resolve")
 
-    httpEnd = indirecting.HttpEnd(db=hby.db, rep=rep, mbx=mbx)
-    app.add_route("/events", httpEnd)
+    httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
+    app.add_route("/mbx", httpEnd, suffix="mbx")
 
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
                  presentationEnd, multiIcpEnd, multiEvtEnd, chacha]
@@ -2310,7 +2319,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, issuerCues):
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
 
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, httpEnd]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd]
 
 
 def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticPath=""):
@@ -2343,11 +2352,10 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     handlers = []
 
     proofs = decking.Deck()
-    issuerCues = decking.Deck()
 
     issueHandler = handling.IssueHandler(hby=hby, verifier=verifier)
     requestHandler = handling.RequestHandler(hby=hby, wallet=wallet)
-    applyHandler = handling.ApplyHandler(hby=hby, verifier=verifier, name=hby.name, issuerCues=issuerCues)
+    applyHandler = handling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier, name=hby.name)
     proofHandler = handling.ProofHandler(proofs=proofs)
 
     mbx = storing.Mailboxer(name=hby.name)
@@ -2358,6 +2366,7 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler, mih, ish, meh])
 
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
+    challenging.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()
@@ -2365,47 +2374,13 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
                                       exc=exchanger,
                                       verifier=verifier,
                                       rep=rep,
-                                      topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate"],
+                                      topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
+                                              "/challenge"],
                                       cues=cues)
     # configure a kevery
     doers.extend([exchanger, tcpServerDoer, mbd, rep])
-    doers.extend(adminInterface(servery=servery,
-                                controller=controller,
-                                hby=hby,
-                                rgy=rgy,
-                                insecure=insecure,
-                                proofs=proofs,
-                                cues=cues,
-                                issuerCues=issuerCues,
-                                verifier=verifier,
-                                mbx=mbx,
-                                mbd=mbd,
-                                staticPath=staticPath))
 
-    return doers
-
-
-def adminInterface(servery, controller, hby, rgy, insecure, proofs, cues, issuerCues, mbx, mbd, verifier,
-                   staticPath=""):
-    """ create admin interface for KIWI agent
-
-    Parameters:
-        servery (Servery): HTTP server manager for stopping and restarting HTTP servers
-        controller:
-        hby:
-        insecure:
-        proofs:
-        cues:
-        issuerCues:
-        mbx:
-        mbd:
-        verifier:
-        staticPath:
-
-    Returns:
-
-    """
-
+    # Load admin interface
     rep = storing.Respondant(hby=hby, mbx=mbx)
 
     app = falcon.App(middleware=falcon.CORSMiddleware(
@@ -2417,21 +2392,21 @@ def adminInterface(servery, controller, hby, rgy, insecure, proofs, cues, issuer
 
     counselor = grouping.Counselor(hby=hby)
 
+    queries = decking.Deck()
     endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, mbx=mbx, verifier=verifier,
-                        issuerCues=issuerCues, counselor=counselor)
+                        counselor=counselor, rxbs=mbd.ims, queries=queries)
 
     servery.msgs.append(dict(app=app))
-    kiwiServer = KiwiDoer(hby=hby,
-                          rep=rep,
-                          verifier=verifier,
-                          rgy=rgy,
-                          issuerCues=issuerCues)
+    kiwiDoer = KiwiDoer(hby=hby,
+                        rep=rep,
+                        verifier=verifier,
+                        queries=queries,
+                        rgy=rgy)
 
     proofHandler = AdminProofHandler(hby=hby, controller=controller, mbx=mbx, verifier=verifier, proofs=proofs,
                                      ims=mbd.ims)
-    cuery = Cuery(hby=hby, controller=controller, mbx=mbx, cues=cues)
 
-    doers = [rep, proofHandler, cuery, counselor, kiwiServer]
+    doers.extend([rep, proofHandler, counselor, kiwiDoer])
     doers.extend(endDoers)
 
     return doers
@@ -2530,59 +2505,3 @@ class AdminProofHandler(doing.DoDoer):
 
                 yield
             yield
-
-
-class Cuery(doing.DoDoer):
-    """ Handle cues from the admin
-
-    """
-
-    def __init__(self, controller, hby, mbx, cues=None, **kwa):
-        """
-
-        Parameters:
-            mbx is Mailboxer for saving messages for controller
-            cues is cues Deck from external mailbox to process
-
-        """
-        self.controller = controller
-        self.hby = hby
-        self.mbx = mbx
-        self.cues = cues if cues is not None else decking.Deck()
-        self.postman = forwarding.Postman(hby=self.hby)
-        self.witDoer = agenting.WitnessReceiptor(hby=hby)
-
-        super(Cuery, self).__init__(doers=[self.postman, self.witDoer, doing.doify(self.cueDo)], **kwa)
-
-    def cueDo(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle cues coming out of our external Mailbox listener and forward to controller
-        mailbox if appropriate
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.cues:
-                cue = self.cues.popleft()
-                cueKin = cue["kin"]  # type or kind of cue
-                pre = cue["pre"] if "pre" in cue else None
-                if pre is None or pre not in self.hby.habs:
-                    continue
-
-                hab = self.hby.habs[pre]
-                if cueKin in ("challenge",):
-                    signer = cue["signer"]
-                    words = cue["words"]
-                    ser = exchanging.exchange(route="/cmd/challenge/responsee",
-                                              payload=dict(signer=signer, words=words))
-                    msg = bytearray(ser.raw)
-                    msg.extend(hab.endorse(ser))
-
-                    self.mbx.storeMsg(self.controller + "/challenge", msg)
-
-                yield self.tock
-            yield self.tock

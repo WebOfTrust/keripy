@@ -60,7 +60,7 @@ class Exchanger(doing.DoDoer):
                                   "".format(handler.resource))
 
         self.routes[handler.resource] = handler
-        self.extend([handler])
+        self.doers.append(handler)
 
     def processEvent(self, serder, source=None, sigers=None, cigars=None, **kwargs):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.

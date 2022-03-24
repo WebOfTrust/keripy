@@ -23,7 +23,7 @@ def demo(args):
                           path=start.STATIC_DIR_PATH)
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5721 -a 5723
-    doers += booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",
+    doers += booting.setup(controller="EozYHef4je02EkMOA1IKM65WkIdSjfrL7XWDk_JzJL9o", configFile="demo-witness-oobis", configDir="./scripts",
                            insecure=True, tcp=5721, adminHttpPort=5723,
                            path=start.STATIC_DIR_PATH)
 
