@@ -9,7 +9,7 @@ from hio.help import decking
 
 from keri import kering
 from keri.help import helping
-from keri.vdr import credentialing, viring
+from keri.vdr import viring
 from . import proving
 from .. import help
 from ..app import signing
@@ -116,7 +116,7 @@ class OfferHandler(doing.Doer):
             yield
 
 
-class ApplyHandler(doing.DoDoer):
+class ApplyHandler(doing.Doer):
     """
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
@@ -140,7 +140,7 @@ class ApplyHandler(doing.DoDoer):
 
     resource = "/credential/apply"
 
-    def __init__(self, hby, verifier, name, issuerCues=None, cues=None, **kwa):
+    def __init__(self, hby, rgy, verifier, name, cues=None, **kwa):
         """ Initialize instance
 
         Parameters:
@@ -153,15 +153,15 @@ class ApplyHandler(doing.DoDoer):
 
         """
         self.hby = hby
+        self.rgy = rgy
         self.verifier = verifier
         self.name = name
         self.issuer = None
-        self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
         self.msgs = decking.Deck()
 
-        super(ApplyHandler, self).__init__(doers=[doing.doify(self.escrowDo)], **kwa)
+        super(ApplyHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
         """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
@@ -190,14 +190,13 @@ class ApplyHandler(doing.DoDoer):
                 payload = msg["payload"]
 
                 schema = payload["schema"]
-                issuer = payload["issuer"]
-                if issuer not in self.hby.habs:
-                    logger.info("request for incorrect issuer {}".format(issuer))
+                prefix = payload["issuer"]
+                if prefix not in self.hby.habs:
+                    logger.info("request for incorrect issuer {}".format(prefix))
                     continue
 
-                hab = self.hby.habs[issuer]
-
-                self.issuer = credentialing.Registry(hab=hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
+                hab = self.hby.habs[prefix]
+                issuer = self.rgy.registryByName(name=hab.name)
 
                 source = []
 
@@ -221,9 +220,9 @@ class ApplyHandler(doing.DoDoer):
                                             schema=schema,
                                             subject=d,
                                             source=source,
-                                            status=self.issuer.regk)
+                                            status=issuer.regk)
                 try:
-                    self.issuer.issue(creder=creder, dt=dt)
+                    issuer.issue(creder=creder, dt=dt)
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
@@ -232,30 +231,6 @@ class ApplyHandler(doing.DoDoer):
 
                 yield self.tock
 
-            yield self.tock
-
-    def escrowDo(self, tymth, tock=0.0):
-        """ Processes the escrows for group icp, rot and ixn request messages.
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-
-        Returns:
-            Doist: doifiable Doist compatible generator method
-
-        """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            self.issuer.processEscrows()
             yield self.tock
 
 

@@ -7,7 +7,6 @@ module for enveloping and forwarding KERI message
 """
 import json
 
-import sys
 from hio import help
 from hio.base import doing
 from hio.help import decking
@@ -320,7 +319,7 @@ class MultisigInceptHandler(doing.DoDoer):
     """
     resource = "/multisig/incept"
 
-    def __init__(self, hby, mbx, controller, cues=None, **kwa):
+    def __init__(self, hby, mbx, controller, **kwa):
         """
 
         Parameters:
@@ -333,7 +332,7 @@ class MultisigInceptHandler(doing.DoDoer):
         self.hby = hby
         self.mbx = mbx
         self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
+        self.cues = decking.Deck()
 
         super(MultisigInceptHandler, self).__init__(**kwa)
 
@@ -371,8 +370,6 @@ class MultisigInceptHandler(doing.DoDoer):
                 if self.controller:
                     self.mbx.storeMsg(self.controller+"/multisig", raw)
 
-                # print(raw)
-
                 yield
             yield
 
@@ -384,7 +381,7 @@ class MultisigIssueHandler(doing.DoDoer):
     """
     resource = "/multisig/issue"
 
-    def __init__(self, mbx, controller, cues=None, **kwa):
+    def __init__(self, mbx, controller, **kwa):
         """
 
         Parameters:
@@ -396,7 +393,7 @@ class MultisigIssueHandler(doing.DoDoer):
         self.controller = controller
         self.mbx = mbx
         self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
+        self.cues = decking.Deck()
 
         super(MultisigIssueHandler, self).__init__(**kwa)
 
