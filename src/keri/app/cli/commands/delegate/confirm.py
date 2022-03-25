@@ -125,7 +125,8 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sn}')
 
                         # wait for confirmation of fully commited event
-                        self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn)
+                        wits = [werfer.qb64 for werfer in eserder.werfers]
+                        self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
 
                         while eserder.pre not in self.hby.kevers:
                             yield self.tock

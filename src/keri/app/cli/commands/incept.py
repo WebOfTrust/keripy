@@ -12,8 +12,9 @@ import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, agenting, indirecting, configing, delegating
+from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
 from keri.app.cli.common import existing
+from keri.core import coring
 
 logger = help.ogler.getLogger()
 
@@ -102,9 +103,10 @@ class InceptDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.swain = delegating.Boatswain(hby=hby)
+        self.postman = forwarding.Postman(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
         self.witDoer = None
-        doers = [self.hbyDoer, self.mbx, self.swain, doing.doify(self.inceptDo)]
+        doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
         self.alias = alias
@@ -141,12 +143,16 @@ class InceptDoer(doing.DoDoer):
             while not self.witDoer.cues:
                 _ = yield self.tock
 
+        if hab.kever.delegator:
+            yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
+
         print(f'Prefix  {hab.pre}')
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
         print()
 
-        toRemove = [self.hbyDoer, self.witDoer, self.mbx, self.swain]
+        toRemove = [self.hbyDoer, self.witDoer, self.mbx, self.swain, self.postman]
         self.remove(toRemove)
 
         return
+

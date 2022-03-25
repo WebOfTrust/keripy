@@ -5,9 +5,13 @@ tests.app.grouping module
 """
 from contextlib import contextmanager
 
-from keri.app import habbing, grouping
+import time
+from hio.base import doing, tyming
+
+from keri.app import habbing, grouping, storing
 from keri.core import coring, eventing, parsing
 from keri.db import dbing
+from keri.peer import exchanging
 
 
 def test_counselor():
@@ -225,3 +229,262 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         assert ghab1.pre in kev3.kevers
 
         yield (hby1, ghab1), (hby2, ghab2), (hby3, ghab3)
+
+
+def test_multisig_incept(mockHelpingNowUTC):
+    with habbing.openHab(name="test", temp=True) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
+
+        assert exn.ked["r"] == '/multisig/icp'
+        assert exn.saidb == b'ExkZdDu4RqsP_R7wui_7-QJJng77l66gAOKBuxKphG6s'
+        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAILCAkxYduA'
+                       b'Zgx3V0aTc0iKHduGinIjKpWs7y5scyPd-9DdhN3NWkgpUFpzLkO24nedDLUza0Iw'
+                       b'am2Tz8NDGtCw')
+        data = exn.ked["a"]
+        assert data["aids"] == aids
+        assert data["ked"] == hab.kever.serder.ked
+
+
+def test_multisig_rotate(mockHelpingNowUTC):
+    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith=2, toad=0, cuts=[],
+                                              adds=[], data=[])
+
+        assert exn.ked["r"] == '/multisig/rot'
+        assert exn.saidb == b'EJH2ebApTHUr_BGDeRoPrdZZ2QQEfZNE8jTB5jm4-y-I'
+        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAGnL9rbBs5u'
+                       b'j4pxCI-KLEJb6Rf5FdhmXIP1RB1DVsY9JhVBs3QuV7Hn77V_uhpoCvgnO41bZA8j'
+                       b'1nudfyo5tfDw')
+        data = exn.ked["a"]
+        assert data["aids"] == ghab1.aids
+        assert data["gid"] == ghab1.pre
+        assert data["sith"] == 2
+        assert data["toad"] == 0
+        assert data["cuts"] == []
+        assert data["adds"] == []
+        assert data["data"] == []
+
+
+def test_multisig_interact(mockHelpingNowUTC):
+    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
+                                                data=[{"i": 1, "x": 0, "d": 2}])
+
+        assert exn.ked["r"] == '/multisig/ixn'
+        assert exn.saidb == b'EmEstKjLzZNZOioX3_2ITfKepSLxyKm6v-mm9zjHfh3U'
+        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAR4RQ94hFc6'
+                       b'lOMwTcg3Xj2pKfRTYv8FBIvqTpxg2blMIGbaa4i9Ar_4BOJh58XA010gUCcrMMwI'
+                       b'g7GzDjkXksCw')
+        data = exn.ked["a"]
+        assert data["aids"] == ghab1.aids
+        assert data["gid"] == ghab1.pre
+        assert data["data"] == [{"i": 1, "x": 0, "d": 2}]
+
+
+def test_multisig_incept_handler(mockHelpingNowUTC):
+    ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
+    with habbing.openHab(name="test0", temp=True) as (hby, hab):
+
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        serder = eventing.incept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"],
+                                 nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+
+        mbx = storing.Mailboxer(name=hab.name, temp=True)
+        handler = grouping.MultisigInceptHandler(hby=hby, mbx=mbx, controller=ctrl)
+
+        # Pass message missing keys:
+        handler.msgs.append(dict(name="value"))
+        handler.msgs.append(dict(pre=hab.kever.prefixer))
+        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(aids=aids)))
+        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(aids=aids, ked=serder.ked)))
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+
+    with habbing.openHab(name="test0", temp=True) as (hby, hab):
+
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
+
+        mbx = storing.Mailboxer(name=hab.name, temp=True)
+        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        grouping.loadHandlers(hby=hby, exc=exc, mbx=mbx, controller=ctrl)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        parsing.Parser().parseOne(ims=ims, exc=exc)
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+        assert msgs[0] == (b'{"src": "E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "r": "/icp", "aids":'
+                           b' ["E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "EfrzbTSWjccrTdNRsFUUfwaJ2'
+                           b'dpYxu9_5jI2PJ-TRri0"], "ked": {"v": "KERI10JSON00012b_", "t": "icp", "d": "E'
+                           b'36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "i": "E36XYdtOOxqVBFbUxkiUXZX9'
+                           b'-_ctxga4E_JtKl8IEbFI", "s": "0", "kt": "1", "k": ["DOWIhazhEMt2Ar1ntt08qL1nk'
+                           b'rvOWDGKL8ZkGlTqTh7Q"], "nt": "1", "n": ["E2HciXdDVQhrzuEJDnINtG64ciDHb7kzVQP'
+                           b'V_GXKs8Fw"], "bt": "0", "b": [], "c": [], "a": []}}')
+
+
+def test_multisig_rotate_handler(mockHelpingNowUTC):
+    ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
+    with openMutlsig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+
+        mbx = storing.Mailboxer(name=ghab.name, temp=True)
+        handler = grouping.MultisigRotateHandler(hby=hby, mbx=mbx, controller=ctrl)
+
+        # Pass message missing keys:
+        handler.msgs.append(dict(name="value"))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.phab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+
+    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith=2, toad=0, cuts=[],
+                                              adds=[], data=[])
+        mbx = storing.Mailboxer(name=ghab1.name, temp=True)
+        exc = exchanging.Exchanger(hby=hby1, handlers=[])
+        grouping.loadHandlers(hby=hby1, exc=exc, mbx=mbx, controller=ctrl)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        parsing.Parser().parseOne(ims=ims, exc=exc)
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+        assert msgs[0] == (b'{"src": "E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c", "r": "/rot", "aids":'
+                           b' ["E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c", "E83mbE6upuYnFlx68GmLYCQd7'
+                           b'cCcwG_AtHM6dW_GT068", "ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI"], "toad'
+                           b'": 0, "wits": [], "adds": [], "cuts": [], "isith": null, "data": []}')
+
+
+def test_multisig_interact_handler(mockHelpingNowUTC):
+    ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
+    with openMutlsig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+
+        mbx = storing.Mailboxer(name=ghab.name, temp=True)
+        handler = grouping.MultisigInteractHandler(hby=hby, mbx=mbx, controller=ctrl)
+
+        # Pass message missing keys:
+        handler.msgs.append(dict(name="value"))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.phab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+
+    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+
+        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
+                                                data=[{"i": 1, "x": 0, "d": 2}])
+        mbx = storing.Mailboxer(name=ghab1.name, temp=True)
+        exc = exchanging.Exchanger(hby=hby1, handlers=[])
+        grouping.loadHandlers(hby=hby1, exc=exc, mbx=mbx, controller=ctrl)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        parsing.Parser().parseOne(ims=ims, exc=exc)
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+        key = f"{ctrl}/multisig".encode("utf-8")
+        msgs = mbx.getTopicMsgs(topic=key)
+        assert len(msgs) == 1
+        assert msgs[0] == (b'{"src": "E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c", "r": "/ixn", "aids":'
+                           b' ["E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c", "E83mbE6upuYnFlx68GmLYCQd7'
+                           b'cCcwG_AtHM6dW_GT068", "ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI"], "data'
+                           b'": [{"i": 1, "x": 0, "d": 2}]}')

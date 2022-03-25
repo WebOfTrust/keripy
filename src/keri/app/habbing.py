@@ -371,8 +371,13 @@ class Habery:
         else:
             salt = coring.Salter(qb64=salt).qb64
 
-        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
-                                   algo=algo, salt=salt, tier=tier)
+        try:
+            self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
+                                       algo=algo, salt=salt, tier=tier)
+        except kering.AuthError as ex:
+            self.close()
+            raise ex
+
         self.loadHabs()
         self.inited = True
 

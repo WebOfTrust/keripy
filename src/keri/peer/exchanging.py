@@ -114,11 +114,10 @@ class Exchanger(doing.DoDoer):
 
         if source is not None and sigers is not None:
             if source.qb64 not in self.hby.kevers:
-                self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
-                print(f"querying for {source.qb64}")
-                self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
+                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers):
+                    self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError(f"Unable to find sender {source.qb64} in kevers"
-                                            f" for evt = {serder}.")
+                                            f" for evt = {serder.ked}.")
 
             kever = self.hby.kevers[source.qb64]
             tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
@@ -126,9 +125,9 @@ class Exchanger(doing.DoDoer):
             #  Verify provided sigers using verfers
             ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
             if not tholder.satisfy(indices):  # at least one but not enough
-                self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
-                print(f"sig querying for {source.qb64}")
-                self.cues.append(dict(kin="query", q=dict(r="logs", pre=source.qb64)))
+                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers):
+                    print(f"sig querying for {source.qb64}")
+                    self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                             " for evt = {}.".format(tholder.sith,
                                                                     [siger.qb64 for siger in sigers],
@@ -136,7 +135,6 @@ class Exchanger(doing.DoDoer):
         elif cigars is not None:
             for cigar in cigars:
                 if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
-                    self.escrowPSEvent(serder)
                     raise MissingSignatureError("Failure satisfying exn on cigs for {}"
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
@@ -172,9 +170,9 @@ class Exchanger(doing.DoDoer):
             sigers (list): of Siger instances of indexed controller sigs
         """
         dig = serder.saidb
-        self.hby.db.epse.put(keys=dig, val=serder)
         self.hby.db.esigs.put(keys=dig, vals=sigers)
         self.hby.db.esrc.put(keys=dig, val=source)
+        return self.hby.db.epse.put(keys=dig, val=serder)
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages """

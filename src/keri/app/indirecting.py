@@ -177,6 +177,7 @@ class WitnessStart(doing.DoDoer):
             self.rvy.processEscrowReply()
             if self.tvy is not None:
                 self.tvy.processEscrows()
+            self.exc.processEscrow()
 
             yield
 

@@ -246,7 +246,7 @@ class IdentifierEnd(doing.DoDoer):
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias for the identifier to rotate
         requestBody:
            required: true
            content:
@@ -335,8 +335,8 @@ class IdentifierEnd(doing.DoDoer):
             alias (str): human readable name for Hab
 
         ---
-        summary:  Create interaction event for agent identifier
-        description:  Perform an interaction on the agent's current identifier
+        summary:  Interaction event for agent identifier
+        description:  Perform an interaction event on the agent's current identifier
         tags:
            - Identifiers
         parameters:
@@ -345,7 +345,7 @@ class IdentifierEnd(doing.DoDoer):
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias for the identifier to ineract
         requestBody:
            required: true
            content:
@@ -355,12 +355,14 @@ class IdentifierEnd(doing.DoDoer):
                  properties:
                    data:
                      type: array
-                     description: anchor data for interaction event.
+                     description: list of data objects to anchor to this rotation event
+                     items:
+                        type: object
         responses:
            200:
-              description: Interaction event created
+              description: Interaction successful with KEL event returned
            400:
-              description: Bad request error
+              description: Error creating interaction event
 
         """
         hab = self.hby.habByName(alias)
@@ -407,7 +409,7 @@ class IdentifierEnd(doing.DoDoer):
             pre = cue["pre"]
             hab = self.hby.habs[pre]
 
-            if hab.phab:  # Skip is group, they are handled elsewhere
+            if hab.phab:  # Skip if group, they are handled elsewhere
                 yield self.tock
                 continue
 
@@ -419,6 +421,8 @@ class IdentifierEnd(doing.DoDoer):
                     print("Waiting for delegation approval...")
                     while not self.swain.cues:
                         yield self.tock
+
+                    self.swain.cues.popleft()
                     print("Delegation anchored")
 
             dgkey = dbing.dgKey(hab.kever.serder.preb, hab.kever.serder.saidb)
@@ -426,6 +430,14 @@ class IdentifierEnd(doing.DoDoer):
             if len(wigs) != len(hab.kever.wits):
                 print(f"witnessing for {hab.pre}")
                 self.witDoer.msgs.append(dict(pre=hab.pre))
+                while True:
+                    yield self.tock
+                    wigs = hab.db.getWigs(dgkey)
+                    if len(wigs) == len(hab.kever.wits):
+                        break
+
+            if hab.kever.delegator:
+                yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
             yield self.tock
 
@@ -1220,6 +1232,13 @@ class MultisigInceptEnd(doing.DoDoer):
     """
 
     def __init__(self, hby, counselor):
+        """ Create an endpoint resource for creating or participating in multisig group identfiiers
+
+        Parameters:
+            hby (Habery): identifier database environment
+            counselor (Counselor): multisig group communication management
+
+        """
 
         self.hby = hby
         self.counselor = counselor
@@ -1348,28 +1367,18 @@ class MultisigInceptEnd(doing.DoDoer):
             evt = ghab.makeOwnInception()
 
         serder = coring.Serder(raw=evt)
-        del evt[:serder.size]
-        atc = bytearray()
-        pather = coring.Pather(path=["a"])
-        btc = pather.qb64b + evt
-        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                  count=(len(btc) // 4)).qb64b)
-        atc.extend(btc)
 
-        # Create `exn` peer to peer message to notify other participants UI
-        exn = exchanging.exchange(route='/multisig/incept', modifiers=dict(),
-                                  payload=serder.ked)
-        ims = hab.endorse(serder=exn, last=True, pipelined=False)
-        atc.extend(ims[exn.size:])
+        # Create a notification EXN message to send to the other agents
+        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.aids, ked=serder.ked)
 
         others = list(ghab.aids)
         others.remove(hab.pre)
 
-        for recpt in others:
-            self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+        for recpt in others:  # this goes to other participants only as a signalling mechanism
+            self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
-        aids = body["aids"]
-        self.icp(hab=hab, ghab=ghab, aids=aids)
+        #  signal to the group counselor to start the inception
+        self.icp(hab=hab, ghab=ghab, aids=ghab.aids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -1582,25 +1591,16 @@ class MultisigEventEnd(doing.DoDoer):
             cuts = set(ewits) - set(wits)
             adds = set(wits) - set(ewits)
 
-        # Create `exn` peer to peer message to notify other participants UI
-        exn = exchanging.exchange(route='/multisig/rotate', modifiers=dict(),
-                                  payload=dict(aids=aids,
-                                               sith=isith,
-                                               toad=toad,
-                                               cuts=list(cuts),
-                                               adds=list(adds),
-                                               data=data)
-                                  )
-        ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
-        atc = bytearray(ims[exn.size:])
+        # begin the rotation process
+        self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
+        # Create `exn` peer to peer message to notify other participants UI
+        exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
         others = list(ghab.aids)
         others.remove(ghab.phab.pre)
 
-        for recpt in others:
+        for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
-
-        self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
         rep.status = falcon.HTTP_202
 
@@ -1755,21 +1755,15 @@ class MultisigEventEnd(doing.DoDoer):
         aids = body["aids"] if "aids" in body else ghab.aids
         data = body["data"] if "data" in body else None
 
-        # Create `exn` peer to peer message to notify other participants UI
-        exn = exchanging.exchange(route='/multisig/ixn', modifiers=dict(),
-                                  payload=dict(aids=aids,
-                                               data=data)
-                                  )
-        ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
-        atc = bytearray(ims[exn.size:])
-
+        exn, atc = grouping.multisigInteractExn(ghab, aids, data)
         others = list(ghab.aids)
         others.remove(ghab.phab.pre)
 
-        for recpt in others:
+        for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         self.ixn(ghab=ghab, data=data, aids=aids)
+
         rep.status = falcon.HTTP_202
 
     def on_put_ixn(self, req, rep, alias):
@@ -2359,14 +2353,13 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     proofHandler = handling.ProofHandler(proofs=proofs)
 
     mbx = storing.Mailboxer(name=hby.name)
-    mih = grouping.MultisigInceptHandler(hby=hby, controller=controller, mbx=mbx)
-    ish = grouping.MultisigIssueHandler(controller=controller, mbx=mbx)
-    meh = grouping.MultisigEventHandler(hby=hby, verifier=verifier)
 
-    handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler, mih, ish, meh])
+    handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler])
 
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
+    grouping.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
+    delegating.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()
@@ -2399,6 +2392,7 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     servery.msgs.append(dict(app=app))
     kiwiDoer = KiwiDoer(hby=hby,
                         rep=rep,
+                        mbx=mbx,
                         verifier=verifier,
                         queries=queries,
                         rgy=rgy)

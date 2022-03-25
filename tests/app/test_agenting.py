@@ -115,15 +115,15 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         palWitDoer.msgs.append(dict(pre=palHab.pre))
         qinWitDoer = agenting.WitnessReceiptor(hby=qinHby)
         qinWitDoer.msgs.append(dict(pre=qinHab.pre))
-        qinWitq = agenting.WitnessInquisitor(hby=qinHby)
 
+        qinWitq = agenting.WitnessInquisitor(hby=qinHby)
         # query up a few to make sure it still works
         stamp = nowIso8601()  # need same time stamp or not duplicate
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp)
-        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp)
+        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
+        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
+        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
         palWitq = agenting.WitnessInquisitor(hby=palHby)
-        palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp)
+        palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits)
 
         limit = 1.0
         tock = 0.03125

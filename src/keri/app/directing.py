@@ -704,8 +704,6 @@ class Reactant(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
-
-
     def sendMessage(self, msg, label=""):
         """
         Sends message msg and loggers label if any

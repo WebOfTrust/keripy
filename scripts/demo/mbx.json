@@ -3,6 +3,7 @@
   "topics": {
     "/challenge": 0,
     "/multisig": 0,
+    "/delegate": 0,
     "/receipt": 0,
     "/replay": 0,
     "/reply": 0

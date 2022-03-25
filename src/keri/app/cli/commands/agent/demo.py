@@ -1,7 +1,5 @@
 import argparse
-import logging
 
-from keri import help
 from keri.app import booting
 from keri.app.cli.commands.agent import start
 
@@ -10,12 +8,9 @@ parser.set_defaults(handler=lambda args: demo(args))
 
 
 def demo(args):
-    help.ogler.level = logging.CRITICAL
-    help.ogler.reopen(name="keri", temp=True, clear=True)
-    logger = help.ogler.getLogger()
 
-    logger.info("\n******* Starting Multisig Delegation Agents on ports 5623, 5723, 5823, 5923 "
-                ".******\n\n")
+    print("\n******* Starting Multisig Delegation Agents on ports 5623, 5723, 5823, 5923 "
+          ".******\n\n")
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5621 -a 5623
     doers = booting.setup(controller="", configFile="demo-witness-oobis", configDir="./scripts",

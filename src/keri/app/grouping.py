@@ -16,6 +16,7 @@ from keri.app import forwarding, delegating, agenting
 from keri.core import coring, eventing, parsing
 from keri.db import dbing, basing
 from keri.db.dbing import snKey
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -244,6 +245,13 @@ class Counselor(doing.DoDoer):
                         self.witq.query(src=ghab.phab.pre, pre=kever.delegator, anchor=anchor)
 
                     # Move to escrow waiting for delegator approval
+                    if witer:
+                        # Send exn message for notification purposes
+                        srdr = coring.Serder(raw=evt)
+                        exn, atc = delegating.delegateRequestExn(ghab.phab, delpre=kever.delegator, ked=srdr.ked)
+                        self.postman.send(src=ghab.phab.pre, dest=kever.delegator, topic="delegate", serder=exn,
+                                          attachment=atc)
+
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
                 else:  # Non-delegation, move on to witnessing
@@ -312,12 +320,32 @@ class Counselor(doing.DoDoer):
                 self.cues.append(dict(kin="complete", pre=pre, sn=seqner.sn, said=saider.qb64))
 
 
+def loadHandlers(hby, exc, mbx, controller):
+    """ Load handlers for the peer-to-peer distributed group multisig protocol
+
+    Parameters:
+        hby (Habery): Database and keystore for environment
+        exc (Exchanger): Peer-to-peer message router
+        mbx (Mailboxer): Database for storing mailbox messages
+        controller (str): qb64 identifier prefix of controller
+
+    """
+    incept = MultisigInceptHandler(hby=hby, mbx=mbx, controller=controller)
+    exc.addHandler(incept)
+    rotate = MultisigRotateHandler(hby=hby, mbx=mbx, controller=controller)
+    exc.addHandler(rotate)
+    interact = MultisigInteractHandler(hby=hby, mbx=mbx, controller=controller)
+    exc.addHandler(interact)
+    issue = MultisigIssueHandler(controller=controller, mbx=mbx)
+    exc.addHandler(issue)
+
+
 class MultisigInceptHandler(doing.DoDoer):
     """
     Handler for multisig group inception notification EXN messages
 
     """
-    resource = "/multisig/incept"
+    resource = "/multisig/icp"
 
     def __init__(self, hby, mbx, controller, **kwa):
         """
@@ -355,23 +383,272 @@ class MultisigInceptHandler(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                pl = msg["payload"]
-                attachments = msg["attachments"]
-                srdr = coring.Serder(ked=pl)
-                raw = bytearray(srdr.raw)
 
-                for path, atc in attachments:
-                    if path.text == "-":
-                        raw.extend(atc)
+                if "pre" not in msg:
+                    logger.error(f"invalid incept message, missing pre.  evt: {msg}")
+                    continue
 
-                kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False)
-                parsing.Parser().parseOne(ims=bytearray(raw), kvy=kvy)
+                prefixer = msg["pre"]
+                if "payload" not in msg:
+                    logger.error(f"invalid incept message, missing payload.  evt: {msg}")
+                    continue
+
+                pay = msg["payload"]
+                if "aids" not in pay or "ked" not in pay:
+                    logger.error(f"invalid incept payload, aids and ked are required.  payload: {pay}")
+                    continue
+
+                src = prefixer.qb64
+                aids = pay["aids"]
+
+                hab = None
+                for aid in aids:
+                    if aid in self.hby.habs:
+                        hab = self.hby.habs[aid]
+
+                if hab is None:
+                    logger.error(f"invalid incept message, no local event in aids: {pay}")
+                    continue
+
+                if src not in pay["aids"] or src not in hab.kevers:
+                    logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
+                    continue
+
+                data = dict(
+                    src=src,
+                    r='/icp',
+                    aids=aids,
+                    ked=pay["ked"]
+                )
+                raw = json.dumps(data).encode("utf-8")
 
                 if self.controller:
                     self.mbx.storeMsg(self.controller+"/multisig", raw)
 
                 yield
             yield
+
+
+def multisigInceptExn(hab, aids, ked):
+    data = dict(
+        aids=aids,
+        ked=ked
+    )
+
+    # Create `exn` peer to peer message to notify other participants UI
+    exn = exchanging.exchange(route=MultisigInceptHandler.resource, modifiers=dict(),
+                              payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims
+
+
+class MultisigRotateHandler(doing.DoDoer):
+    """
+    Handler for multisig group inception notification EXN messages
+
+    """
+    resource = "/multisig/rot"
+
+    def __init__(self, hby, mbx, controller, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            controller (str) qb64 identity prefix of controller
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.controller = controller
+        self.hby = hby
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(MultisigRotateHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """ Process incoming notifications for a group rotation
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a multisig/incept message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+
+                if "pre" not in msg:
+                    logger.error(f"invalid rotation message, missing pre.  evt: {msg}")
+                    continue
+
+                prefixer = msg["pre"]
+                if "payload" not in msg:
+                    logger.error(f"invalid rotation message, missing payload.  evt: {msg}")
+                    continue
+
+                pay = msg["payload"]
+                if "aids" not in pay or "gid" not in pay:
+                    logger.error(f"invalid rotation payload, aids and gid are required.  payload: {pay}")
+                    continue
+
+                src = prefixer.qb64
+                aids = pay["aids"]
+                gid = pay["gid"]
+
+                ghab = self.hby.habs[gid]
+                if ghab is None:
+                    logger.error(f"invalid rotate message, not a local group: {pay}")
+                    continue
+
+                if src not in ghab.aids or src not in ghab.kevers:
+                    logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
+                    continue
+
+                data = dict(
+                    src=src,
+                    r='/rot',
+                    aids=aids,
+                )
+                data["toad"] = pay["toad"] if "toad" in pay else None
+                data["wits"] = pay["wits"] if "wits" in pay else []
+                data["adds"] = pay["adds"] if "adds" in pay else []
+                data["cuts"] = pay["cuts"] if "cuts" in pay else []
+                data["isith"] = pay["isith"] if "isith" in pay else None
+                data["data"] = pay["data"] if "data" in pay else None
+                
+                raw = json.dumps(data).encode("utf-8")
+
+                if self.controller:
+                    self.mbx.storeMsg(self.controller+"/multisig", raw)
+
+                yield
+            yield
+
+
+def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
+
+    exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
+                              payload=dict(gid=ghab.pre,
+                                           aids=aids,
+                                           sith=isith,
+                                           toad=toad,
+                                           cuts=list(cuts),
+                                           adds=list(adds),
+                                           data=data)
+                              )
+    ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+    atc = bytearray(ims[exn.size:])
+
+    return exn, atc
+
+
+class MultisigInteractHandler(doing.DoDoer):
+    """
+    Handler for multisig group inception notification EXN messages
+
+    """
+    resource = "/multisig/ixn"
+
+    def __init__(self, hby, mbx, controller, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            controller (str) qb64 identity prefix of controller
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.controller = controller
+        self.hby = hby
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(MultisigInteractHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """ Process incoming notifications for a group interaction events
+
+        Handle incoming messages by storing a message in the mailbox of the controller
+
+        Parameters:
+            payload is dict representing the body of a multisig/ixn message
+            pre is qb64 identifier prefix of sender
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+
+                if "pre" not in msg:
+                    logger.error(f"invalid rotation message, missing pre.  evt: {msg}")
+                    continue
+
+                prefixer = msg["pre"]
+                if "payload" not in msg:
+                    logger.error(f"invalid rotation message, missing payload.  evt: {msg}")
+                    continue
+
+                pay = msg["payload"]
+                if "aids" not in pay or "gid" not in pay:
+                    logger.error(f"invalid rotation payload, aids and gid are required.  payload: {pay}")
+                    continue
+
+                src = prefixer.qb64
+                aids = pay["aids"]
+                gid = pay["gid"]
+
+                ghab = self.hby.habs[gid]
+                if ghab is None:
+                    logger.error(f"invalid rotate message, not a local group: {pay}")
+                    continue
+
+                if src not in ghab.aids or src not in ghab.kevers:
+                    logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
+                    continue
+
+                data = dict(
+                    src=src,
+                    r='/ixn',
+                    aids=aids,
+                )
+                data["data"] = pay["data"] if "data" in pay else None
+
+                raw = json.dumps(data).encode("utf-8")
+
+                if self.controller:
+                    self.mbx.storeMsg(self.controller+"/multisig", raw)
+
+                yield
+            yield
+
+
+def multisigInteractExn(ghab, aids, data):
+
+    exn = exchanging.exchange(route=MultisigInteractHandler.resource, modifiers=dict(),
+                              payload=dict(gid=ghab.pre,
+                                           aids=aids,
+                                           data=data)
+                              )
+    ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+    atc = bytearray(ims[exn.size:])
+
+    return exn, atc
 
 
 class MultisigIssueHandler(doing.DoDoer):
@@ -422,68 +699,6 @@ class MultisigIssueHandler(doing.DoDoer):
                 self.mbx.storeMsg(self.controller+"/multisig", raw)
 
                 yield
-            yield
-
-
-class MultisigEventHandler(doing.Doer):
-    """
-    Handler for multisig group rotation/interact notification EXN messages
-
-    """
-
-    resource = "/multisig/event"
-
-    def __init__(self, hby, verifier, cues=None, **kwa):
-        """
-
-        Parameters:
-            hab (Habitat) is environment of participant in multisig group
-            controller (str) qb64 identity prefix of controller
-            mbx (Mailboxer) of format str names accepted for offers
-            cues (decking.Deck) of outbound cue messages from handler
-
-        """
-        self.hby = hby
-        self.verifier = verifier
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False)
-
-        super(MultisigEventHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
-
-        Parameters:
-            payload is dict representing the body of a /multisig/interact message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Payload:
-            evt is bytes of ixn message from another participant
-            reason is either a str expressing reason for interaction event or credential
-
-        """
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                evt = payload["evt"].encode("utf-8")
-                reason = payload["reason"]
-
-                parsing.Parser().parse(bytearray(evt), kvy=self.kvy)
-                if reason is not None:
-                    craw = reason.encode("utf-8")
-                    parsing.Parser().parse(ims=craw, vry=self.verifier)
-
-                yield
-
             yield
 
 
