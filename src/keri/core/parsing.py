@@ -471,6 +471,7 @@ class Parser:
                                                    vry=vry)
 
             except kering.SizedGroupError as ex:  # error inside sized group
+                print(ex)
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s\n", ex.args[0])
@@ -478,6 +479,7 @@ class Parser:
                     logger.error("Parser msg extraction error: %s\n", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+                print(ex)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s\n", ex.args[0])
                 else:
@@ -485,6 +487,7 @@ class Parser:
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+                print(ex)
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):

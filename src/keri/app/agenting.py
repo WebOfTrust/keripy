@@ -190,12 +190,17 @@ class WitnessInquisitor(doing.DoDoer):
             src = evt["src"]
             r = evt["r"]
             q = evt["q"]
+            wits = evt["wits"]
 
             hab = self.hby.habs[src] if src in self.hby.habs else None
             if hab is None:
                 continue
 
-            wits = hab.kever.wits
+            if not wits and pre not in self.hby.kevers:
+                logger.error(f"must have KEL for identifier to query {pre}")
+                continue
+
+            wits = wits if wits is not None else hab.kevers[pre].wits
             if len(wits) == 0:
                 raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
 
@@ -218,7 +223,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield self.tock
 
-    def query(self, src, pre, r="logs", sn=0, anchor=None, **kwa):
+    def query(self, src, pre, r="logs", sn=0, anchor=None, wits=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
         Parameters:
@@ -227,7 +232,7 @@ class WitnessInquisitor(doing.DoDoer):
             r (str): query route
             sn (int): optional specific sequence number to query for
             anchor (Seal) anchor to search for
-            **kwa (dict): keyword arguments passed to eventing.query
+            wits (list) witnesses to query
 
         Returns:
             bytearray: signed query event
@@ -237,11 +242,11 @@ class WitnessInquisitor(doing.DoDoer):
         if anchor is not None:
             qry["a"] = anchor
 
-        self.msgs.append(dict(src=src, pre=pre, r=r, q=qry))  # bytes not bytearray so set membership compare works
+        self.msgs.append(dict(src=src, pre=pre, r=r, q=qry, wits=wits))
 
     def telquery(self, src, ri, i=None, r="tels", **kwa):
         qry = dict(ri=ri)
-        self.msgs.append(dict(src=src, pre=i, r=r, q=qry))  # bytes not bytearray so set membership compare works
+        self.msgs.append(dict(src=src, pre=i, r=r, q=qry))
 
 
 class WitnessPublisher(doing.DoDoer):

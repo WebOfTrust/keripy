@@ -10,7 +10,6 @@ import random
 
 from hio.base import doing
 from hio.help import decking
-from orderedset import OrderedSet as oset
 
 from keri import kering
 from keri.app import agenting
@@ -89,8 +88,7 @@ class Postman(doing.DoDoer):
                                               count=(len(atc) // 4)).qb64b)
                     ims.extend(atc)
 
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
-                witer = agenting.HttpWitnesser(hab=hab, wit=wit, url=urls[kering.Schemes.http])
+                witer = agenting.witnesser(hab=hab, wit=wit)
 
                 msg.extend(ims)
                 witer.msgs.append(bytearray(msg))  # make a copy
@@ -123,6 +121,23 @@ class Postman(doing.DoDoer):
             evt["attachment"] = attachment
 
         self.evts.append(evt)
+
+    def sendEvent(self, hab, fn=0):
+        """ Returns generator for sending event and waiting until send is complete """
+        # Send KEL event for processing
+        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
+        ser = coring.Serder(raw=icp)
+        del icp[:ser.size]
+        self.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
+        while True:
+            if self.cues:
+                cue = self.cues.popleft()
+                if cue["said"] == ser.said:
+                    break
+                else:
+                    self.cues.append(cue)
+            yield self.tock
+
 
 
 class ForwardHandler(doing.Doer):
@@ -214,6 +229,10 @@ class ForwardHandler(doing.Doer):
                     serder = coring.Serder(ked=ked, kind=eventing.Serials.json)
                     pevt.extend(serder.raw)
                     pevt.extend(atc)
+
+                if not pevt:
+                    print("error with message, nothing to forward", msg)
+
 
                 self.mbx.storeMsg(topic=resource, msg=pevt)
                 yield self.tock

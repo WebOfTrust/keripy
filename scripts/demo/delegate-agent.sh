@@ -11,3 +11,12 @@ sleep 3
 curl -s -X POST "http://localhost:5623/oobi/delegator" -H "accept: */*" -H "Content-Type: application/json" -d "{\"url\":\"http://127.0.0.1:5642/oobi/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
 sleep 2
 curl -s -X POST "http://localhost:5623/ids/delegate" -H "accept: */*" -H "Content-Type: application/json" -d "{\"delpre\":\"E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo\", \"transferable\":true,\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"],\"toad\":2,\"icount\":1,\"ncount\":1,\"isith\":1,\"nsith\":1}" | jq
+
+sleep 3
+curl -s -X PUT "http://localhost:5723/ids/delegator/rot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"adds\":[],\"count\":1,\"cuts\":[],\"data\":[{\"i\":\"EKSajEj5IsHhXaTDKx1PIcQ4-gcFQt9usFA5lYl82DCE\",\"s\":\"0\", \"d\":\"EKSajEj5IsHhXaTDKx1PIcQ4-gcFQt9usFA5lYl82DCE\"}],\"isith\":\"1\",\"toad\":2,\"wits\":[]}" | jq
+
+sleep 3
+curl -s -X PUT "http://localhost:5623/ids/delegate/rot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"adds\":[],\"count\":1,\"cuts\":[],\"data\":[],\"isith\":\"1\",\"toad\":3,\"wits\":[]}" | jq
+
+sleep 3
+curl -s -X PUT "http://localhost:5723/ids/delegator/rot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"adds\":[],\"count\":1,\"cuts\":[],\"data\":[{\"i\":\"EKSajEj5IsHhXaTDKx1PIcQ4-gcFQt9usFA5lYl82DCE\",\"s\":\"1\", \"d\":\"ERHWqC7f5k-U0vYM8u_8qFnb2ggn0HN5qHgaHS4MB_ho\"}],\"isith\":\"1\",\"toad\":3,\"wits\":[]}" | jq

@@ -8,14 +8,13 @@ import json
 import falcon
 from falcon import testing
 from hio.base import doing
-from hio.help import decking
 
-from tests.app import test_grouping
 from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring
 from keri.vc import proving
 from keri.vdr import viring, credentialing, verifying
+from tests.app import test_grouping
 
 
 def test_credential_handlers(mockHelpingNowUTC, seeder):
@@ -365,17 +364,19 @@ def test_multisig_incept():
         assert evt["dest"] == hab2.pre
         srdr = evt["serder"]
         assert srdr.ked['t'] == coring.Ilks.exn
-        assert srdr.ked['r'] == '/multisig/incept'
+        assert srdr.ked['r'] == '/multisig/icp'
         payload = json.dumps(srdr.ked["a"]).encode("utf-8")
-        assert payload == (b'{"v": "KERI10JSON000273_", "t": "icp", "d": "EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxd'
-                           b'SGlEpZVLFLU6U", "i": "EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxdSGlEpZVLFLU6U", "s": "0'
-                           b'", "kt": "2", "k": ["DZahe53x0zi5u3BEGPEdnYHePZ1uU1tE317OOSUNRqqg", "DUrtOqQ'
-                           b'yjGz_CkXkgPblFlQFvmjD3eQ_ivdGR6bPjUaU", "D_3nA6zRH1IYiA5oL6ClYeUm2vA--AN4_7T'
-                           b'5UspmFqZY"], "nt": "2", "n": ["Em9F-auLKTY-KStSxCI4m4VlnIJlcaruPjPoQGk_FFT4"'
-                           b', "Eo1ouQV2441h2Hg8cPD3D0YJg5eCzRKFFN3Dc-QYwPas", "Epxv4r1j0khdLvL_y0gTrTsCK'
-                           b'd3Kv_iKAiBtF-mDlzLg"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k'
-                           b'03q-R_Ydo", "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "Bgoq68HCmYNUDgO'
-                           b'z4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}')
+        assert payload == (b'{"aids": ["E1plfvtsnS6XwiHOxF6n3fUTs-ylvJsxIUCd2Ji4hNqc", "EmYIWxzWUtSfQNBod'
+                           b'o5RT8hNjoFlzcXZXTQXQM500tyE", "EPrbmW_c_3Dp4Q6rddi5X7RHp_Xkjp21RcMG2FEWr_HI"'
+                           b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EaPj6HOFtnnvbNKlFLwb3'
+                           b'lVTOZBvRxdSGlEpZVLFLU6U", "i": "EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxdSGlEpZVLFLU6U'
+                           b'", "s": "0", "kt": "2", "k": ["DZahe53x0zi5u3BEGPEdnYHePZ1uU1tE317OOSUNRqqg"'
+                           b', "DUrtOqQyjGz_CkXkgPblFlQFvmjD3eQ_ivdGR6bPjUaU", "D_3nA6zRH1IYiA5oL6ClYeUm2'
+                           b'vA--AN4_7T5UspmFqZY"], "nt": "2", "n": ["Em9F-auLKTY-KStSxCI4m4VlnIJlcaruPjP'
+                           b'oQGk_FFT4", "Eo1ouQV2441h2Hg8cPD3D0YJg5eCzRKFFN3Dc-QYwPas", "Epxv4r1j0khdLvL'
+                           b'_y0gTrTsCKd3Kv_iKAiBtF-mDlzLg"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
+                           b'cC_9WYX90k03q-R_Ydo", "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "Bgoq6'
+                           b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
 
         evt = icpEnd.postman.evts.popleft()
         assert evt["src"] == hab1.pre
@@ -559,7 +560,8 @@ def test_multisig_interaction():
         assert payload == {'aids': ['E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c',
                                     'E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068',
                                     'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI'],
-                           'data': {'i': 'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI', 's': 0}}
+                           'data': {'i': 'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI', 's': 0},
+                           'gid': 'Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU'}
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
