@@ -304,11 +304,11 @@ class Reger(dbing.LMDBer):
         """
         creds = []
         for saider in saids:
-            key = saider.qb64b
+            key = saider.qb64
             creder, sadsigers, sadcigars = self.cloneCred(said=key)
 
             chainSaids = []
-            for p in creder.crd["p"]:
+            for p in creder.crd["e"]:
                 v = list(p.values()).pop()
                 chainSaids.append(coring.Saider(qb64=v["d"]))
             chains = self.cloneCreds(chainSaids)
@@ -323,7 +323,7 @@ class Reger(dbing.LMDBer):
                     pre=prefixer.qb64,
                     sn=seqner.sn,
                     d=saider.qb64
-                ) for (pather, prefixer, seqner, saider) in sadsigers],
+                ) for (pather, prefixer, seqner, saider, sigers) in sadsigers],
                 sadcigars=[dict(path=pather.text, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
                 chains=chains,
                 status=status.ked,

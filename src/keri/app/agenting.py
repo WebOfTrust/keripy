@@ -202,7 +202,8 @@ class WitnessInquisitor(doing.DoDoer):
 
             wits = wits if wits is not None else hab.kevers[pre].wits
             if len(wits) == 0:
-                raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
+                logger.error("Must be used with an identifier that has witnesses")
+                continue
 
             wit = random.choice(wits)
             witer = witnesser(hab, wit)
