@@ -990,6 +990,50 @@ class HttpEnd:
         rep.status = falcon.HTTP_200
         rep.stream = self.mailboxGenerator(pre=pre, topics=topics)
 
+    def on_get_mbx(self, req, rep):
+        """
+        Handles GET requests as a stream of SSE events
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+        ---
+        summary:  Stream Server-Sent Events for KERI mailbox for identifier
+        description:  Stream Server-Sent Events for KERI mailbox for identifier
+        tags:
+           - Mailbox
+        parameters:
+          - in: query
+            name: pre
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of mailbox to read
+          - in: query
+            name: topics
+            schema:
+               type: array
+               items:
+                  type: string
+        responses:
+           200:
+              content:
+                 text/event-stream:
+                    schema:
+                       type: object
+              description: Mailbox query response for server sent events
+           204:
+              description: KEL or EXN event accepted.
+        """
+        pre = req.params["i"]
+        pt = req.params["topics"]
+
+        topics = dict()
+        for t in pt:
+            key, val = t.split("=")
+            topics[key] = int(val)
+
+        rep.stream = self.mailboxGenerator(pre=pre, topics=topics)
+
     def mailboxGenerator(self, pre=None, topics=None):
         """
 

@@ -110,6 +110,7 @@ class Boatswain(doing.DoDoer):
                 # Send exn message for notification purposes
                 exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+                self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 yield from self.waitForAnchor(phab, hab, dkever, srdr)
 
