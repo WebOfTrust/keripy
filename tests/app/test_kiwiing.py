@@ -6,12 +6,16 @@ tests.app.agent_kiwiserver module
 import json
 
 import falcon
+import time
 from falcon import testing
-from hio.base import doing
+from hio.base import doing, tyming
 
+from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring
+from keri.db import basing
+from keri.end import ending
 from keri.vc import proving
 from keri.vdr import viring, credentialing, verifying
 from tests.app import test_grouping
@@ -51,8 +55,42 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 
         client = testing.TestClient(app)
 
+        result = client.simulate_post(path="/registries", body=b'{}')
+        assert result.status == falcon.HTTP_400  # Bad request, missing name
+
+        result = client.simulate_post(path="/registries", body=b'{"name": "test"}')
+        assert result.status == falcon.HTTP_400  # Bad Request, missing alias
+
+        result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test123"}')
+        assert result.status == falcon.HTTP_404  # Bad Request, invalid alias
+
+        # Test all the parameters
+        result = client.simulate_post(path="/registries",
+                                      body=b'{"name": "test-full", "alias": "test",'
+                                           b' "noBackers": true, "baks": [], "toad": 0, "estOnly": false}')
+        assert result.status == falcon.HTTP_202
+
         result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test"}')
         assert result.status == falcon.HTTP_202
+
+        result = client.simulate_get(path="/registries")
+        assert result.status == falcon.HTTP_200
+        assert result.json == [{'name': 'test',
+                                'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                'regk': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
+                                'state': {'a': {'d': 'EhUlcH33N486ITfJu3kG5evVLoivVaR8Wp6ut8rP21gs', 's': 1},
+                                          'b': [],
+                                          'ba': [],
+                                          'br': [],
+                                          'bt': '0',
+                                          'c': ['NB'],
+                                          'd': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
+                                          'dt': '2021-01-01T00:00:00.000000+00:00',
+                                          'et': 'vcp',
+                                          'i': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
+                                          'ii': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                          's': '0',
+                                          'v': 'KERI10JSON000158_'}}]
 
         schema = "EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A"
         LEI = "1234567890abcdefg"
@@ -135,6 +173,52 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         cue = issuer.cues.popleft()
         evt = cue["msg"]
         assert evt == rev
+
+        result = client.simulate_get(path="/credentials", params=dict(type="issued", alias="test123", registry="test"))
+        assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
+
+        result = client.simulate_get(path="/credentials", params=dict(type="issued", alias="test", registry="test"))
+        assert result.status == falcon.HTTP_200
+        assert result.json == [{'chains': [],
+                                'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                'sad': {'a': {'LEI': '1234567890abcdefg',
+                                              'd': 'EGtpMEB96XgfrN5CzxbRSDaRWVqH-78zrCk1N3gXNaOE',
+                                              'dt': '2021-01-01T00:00:00.000000+00:00',
+                                              'i': 'EqwblUykZNwSsBd4g8pHeRZhlkPj64MhoGDspLCh2qnI'},
+                                        'd': 'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0',
+                                        'e': [],
+                                        'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                        'r': [],
+                                        'ri': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
+                                        's': 'EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A',
+                                        'v': 'ACDC10JSON0001a2_'},
+                                'sadcigars': [],
+                                'sadsigers': [{'d': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                               'path': '-',
+                                               'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                               'sn': 0}],
+                                'status': {'a': {'d': 'E7X6XkGS-mNlfMVMgk2itioHGRNTkio9K9-XvUrXL2iU', 's': 3},
+                                           'd': 'EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78',
+                                           'dt': '2021-01-01T00:00:00.000000+00:00',
+                                           'et': 'rev',
+                                           'i': 'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0',
+                                           'ra': {},
+                                           'ri': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
+                                           's': '1',
+                                           'v': 'KERI10JSON000135_'}}]
+
+        req = dict(alias="test",
+                   schema="EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78",
+                   issuer="ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc",
+                   values={}
+                   )
+        b = json.dumps(req).encode("utf-8")
+        result = client.simulate_post(path="/applications", body=b)
+        assert result.status == falcon.HTTP_202
+        req["alias"] = "test123"
+        b = json.dumps(req).encode("utf-8")
+        result = client.simulate_post(path="/applications", body=b)
+        assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
 
 
 # def test_credential_handlers_singlesig(mockHelpingNowUTC):
@@ -281,6 +365,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 #         assert data[0]['s'] == '0'
 #         assert data[0]['i'] == creder.saider.qb64
 #         assert 'd' in data[0]
+
 
 def test_multisig_incept():
     prefix = "ends_test"
@@ -579,7 +664,7 @@ def test_multisig_interaction():
 
 
 def test_identifier_ends():
-    with habbing.openHab(name="test", transferable=True) as (hby, hab):
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         assert hab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
 
         app = falcon.App()
@@ -587,7 +672,6 @@ def test_identifier_ends():
         reger = viring.Reger(name=hab.name, temp=True)
         regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         verifier = verifying.Verifier(hby=hby, reger=reger)
-        issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
 
         repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
@@ -598,11 +682,6 @@ def test_identifier_ends():
                                     verifier=verifier,
                                     app=app, path="/",
                                     mbx=None, counselor=counselor)
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=endDoers)
-        doist.enter()
-
         client = testing.TestClient(app)
 
         result = client.simulate_get(path="/ids")
@@ -615,7 +694,7 @@ def test_identifier_ends():
                                 'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
                                 'public_keys': ['DaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg'],
                                 'receipts': 0,
-                                'seq_no': 1,
+                                'seq_no': 0,
                                 'toad': 0,
                                 'witnesses': []}]
 
@@ -627,14 +706,14 @@ def test_identifier_ends():
                                'ba': [],
                                'br': [],
                                'bt': '0',
-                               'd': 'E0BFj0Tzv2vHlfSaHUByOx0Y_o4WSPMOePA3NRcwlxs4',
+                               'd': 'EawlnQ8c4obp5urfda9tBLdeWQuYN7caxxIZYXjABFRY',
                                'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
                                'k': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
                                'kt': '1',
                                'n': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
                                'nt': '1',
-                               'p': 'EhUlcH33N486ITfJu3kG5evVLoivVaR8Wp6ut8rP21gs',
-                               's': '2',
+                               'p': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                               's': '1',
                                't': 'rot',
                                'v': 'KERI10JSON000160_'}
 
@@ -648,6 +727,207 @@ def test_identifier_ends():
                                 'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
                                 'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
                                 'receipts': 0,
-                                'seq_no': 2,
+                                'seq_no': 1,
                                 'toad': 0,
                                 'witnesses': []}]
+
+        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False)
+        result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        assert result.json == {'a': [],
+                               'b': [],
+                               'bt': '0',
+                               'c': [],
+                               'd': 'EWJA1LHU3Du10uW9B0pM8e7xIQ_3CP3qp9a-D713MlxM',
+                               'i': 'EWJA1LHU3Du10uW9B0pM8e7xIQ_3CP3qp9a-D713MlxM',
+                               'k': ['D5TEUWL-32q6KlG8DMiygL-6hBeGlMh7rZjR8l9-kSPU'],
+                               'kt': '1',
+                               'n': ['EurslVC_9AbgETqNkP8xXewQyUxeICfbSy5hrFX5Dh3s'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'icp',
+                               'v': 'KERI10JSON00012b_'}
+
+        # Try to reuse the alias
+        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False)
+        result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_400
+
+        # Create a delegated identifier
+        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False,
+                   delpre="ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc")
+        result = client.simulate_post(path="/ids/test3", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        assert result.json == {'a': [],
+                               'b': [],
+                               'bt': '0',
+                               'c': [],
+                               'd': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
+                               'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                               'i': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
+                               'k': ['DwiTSOvj8HtydZQ24HuVYuUxC80kzq49DanESrU3g4wg'],
+                               'kt': '1',
+                               'n': ['ERQq0RyQ3nN97chiuWJSjxS3fdtPbDWZ9MmRzdQtLIk4'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'dip',
+                               'v': 'KERI10JSON00015f_'}
+
+        result = client.simulate_get(path="/ids")
+        assert result.status == falcon.HTTP_200
+        assert len(result.json) == 3
+        assert result.json[2] == {'anchored': False,
+                                  'delegated': True,
+                                  'delegator': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                  'isith': '1',
+                                  'name': 'test3',
+                                  'next_keys': ['ERQq0RyQ3nN97chiuWJSjxS3fdtPbDWZ9MmRzdQtLIk4'],
+                                  'nsith': '1',
+                                  'prefix': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
+                                  'public_keys': ['DwiTSOvj8HtydZQ24HuVYuUxC80kzq49DanESrU3g4wg'],
+                                  'receipts': 0,
+                                  'seq_no': 0,
+                                  'toad': 0,
+                                  'witnesses': []}
+
+        req = dict(data=[{"i": 1, "s": 0, "d": 2}])
+        result = client.simulate_put(path="/ids/test/ixn", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+
+        assert result.json == {'a': [{'d': 2, 'i': 1, 's': 0}],
+                               'd': 'EMNnpGzsaDEsYMhGsAlGX3VX0DE78rGzuEdj4l_HY49A',
+                               'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                               'p': 'EawlnQ8c4obp5urfda9tBLdeWQuYN7caxxIZYXjABFRY',
+                               's': '2',
+                               't': 'ixn',
+                               'v': 'KERI10JSON0000de_'}
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=endDoers)
+        doist.enter()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+
+def test_oobi_ends(seeder):
+    with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+
+        palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[wesHab.pre])
+
+        assert palHab.pre == "E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
+
+        oobiery = ending.Oobiery(db=palHby.db)
+        app = falcon.App()
+        _ = kiwiing.loadEnds(hby=palHby,
+                             rep=None,
+                             rgy=None,
+                             verifier=None,
+                             app=app, path="/",
+                             mbx=None, counselor=None,
+                             oobiery=oobiery)
+        client = testing.TestClient(app)
+
+        result = client.simulate_get(path="/oobi/test?role=witness")
+        assert result.status == falcon.HTTP_400  # Bad alias, does not exist
+
+        result = client.simulate_get(path="/oobi/pal?role=watcher")
+        assert result.status == falcon.HTTP_404  # Bad role, watcher not supported yet
+
+        result = client.simulate_get(path="/oobi/pal?role=witness")
+        assert result.status == falcon.HTTP_404  # Missing OOBI endpoints for witness
+
+        result = client.simulate_get(path="/oobi/pal?role=controller")
+        assert result.status == falcon.HTTP_404  # Missing OOBI controller endpoints
+
+        # Add controller endpoints
+        url = "http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/controller"
+        palHab.db.locs.put(keys=(palHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
+        result = client.simulate_get(path="/oobi/pal?role=controller")
+        assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
+        assert result.json == {'oobis':
+                               ['http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/controller'],
+                               'role': 'controller'}
+
+        # Seed with witness endpoints
+        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.http, kering.Schemes.tcp])
+
+        result = client.simulate_get(path="/oobi/pal?role=witness")
+        assert result.status == falcon.HTTP_200
+        assert result.json == {'oobis':
+                               [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+                                 'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
+                               'role': 'witness'}
+
+        data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi/pal", body=b)
+        assert result.status == falcon.HTTP_202
+        assert len(oobiery.oobis) == 1
+        oobi = oobiery.oobis.popleft()
+        assert oobi == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+
+
+def test_challenge_ends(seeder):
+    with habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
+
+        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+
+        app = falcon.App()
+        repd = storing.Respondant(hby=palHby)
+        _ = kiwiing.loadEnds(hby=palHby,
+                             rep=repd,
+                             rgy=None,
+                             verifier=None,
+                             app=app, path="/",
+                             mbx=None, counselor=None)
+        client = testing.TestClient(app)
+
+        result = client.simulate_get(path="/challenge?strength=256")
+        assert result.status == falcon.HTTP_200
+        assert "words" in result.json
+        words = result.json["words"]
+        assert len(words) == 24
+
+        result = client.simulate_get(path="/challenge")
+        assert result.status == falcon.HTTP_200
+        assert "words" in result.json
+        words = result.json["words"]
+        assert len(words) == 12
+
+        data = dict(
+        )
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenge/joe", body=b)
+        assert result.status == falcon.HTTP_400  # Bad allias
+        result = client.simulate_post(path="/challenge/pal", body=b)
+        assert result.status == falcon.HTTP_400  # Missing words
+
+        data["words"] = words
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenge/pal", body=b)
+        assert result.status == falcon.HTTP_400  # Missing recipient
+
+        data["recipient"] = "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/challenge/pal", body=b)
+        assert result.status == falcon.HTTP_202
+
+        assert len(repd.reps) == 1
+        rep = repd.reps.popleft()
+        assert rep["topic"] == "challenge"
+        assert rep["dest"] == "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
+        assert rep["rep"].ked['r'] == '/challenge/response'
+
+
+

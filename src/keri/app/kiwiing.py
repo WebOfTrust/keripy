@@ -614,8 +614,8 @@ class CredentialsEnd:
              required: true
 
         """
-        typ = req.params("type")
-        alias = req.params("alias")
+        typ = req.params.get("type")
+        alias = req.params.get("alias")
 
         hab = self.hby.habByName(name=alias)
         if hab is None:
@@ -626,7 +626,7 @@ class CredentialsEnd:
 
         creds = []
         if typ == "issued":
-            regname = req.params["registry"]
+            regname = req.params.get("registry")
             registry = self.rgy.registryByName(regname)
 
             saids = registry.reger.issus.get(keys=hab.pre)
@@ -1120,10 +1120,11 @@ class ApplicationsEnd:
 
     """
 
-    def __init__(self, rep):
+    def __init__(self, hby, rep):
         """
 
         """
+        self.hby = hby
         self.rep = rep
 
     def on_post(self, req, rep):
@@ -1162,9 +1163,16 @@ class ApplicationsEnd:
 
         """
         body = req.get_media()
+        alias = body.get("alias")
         schema = body.get("schema")
         issuer = body.get("issuer")
         values = body.get("values")
+
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"unknown local alias {alias}"
+            return
 
         apply = handling.credential_apply(issuer=issuer, schema=schema, formats=[], body=values)
 
@@ -1838,11 +1846,16 @@ class OobiResource(doing.DoDoer):
 
     """
 
-    def __init__(self, hby):
+    def __init__(self, hby, oobiery=None):
+        """ Create Endpoints for discovery and resolution of OOBIs
+
+        Parameters:
+            hby (Habery): identifier database environment
+            oobiery (Optioanl[Oobiery]): optional OOBI loader
+        """
         self.hby = hby
 
-        self.oobiery = ending.Oobiery(db=self.hby.db)
-
+        self.oobiery = oobiery if oobiery is not None else ending.Oobiery(db=self.hby.db)
         doers = [self.oobiery, doing.doify(self.loadDo)]
 
         super(OobiResource, self).__init__(doers=doers)
@@ -1897,7 +1910,9 @@ class OobiResource(doing.DoDoer):
             for wit in hab.kever.wits:
                 urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
                 if not urls:
-                    raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
+                    rep.status = falcon.HTTP_404
+                    rep.text = f"unable to query witness {wit}, no http endpoint"
+                    return
 
                 up = urlparse(urls[kering.Schemes.http])
                 oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
@@ -1905,8 +1920,13 @@ class OobiResource(doing.DoDoer):
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
             urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            if not urls:
+                rep.status = falcon.HTTP_404
+                rep.text = f"unable to query controller {hab.pre}, no http endpoint"
+                return
             up = urlparse(urls[kering.Schemes.http])
             oobis.append(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404
             return
@@ -1962,6 +1982,9 @@ class OobiResource(doing.DoDoer):
         else:
             rep.status = falcon.HTTP_400
             rep.data = "invalid OOBI request body, either 'rpy' or 'url' is required"
+            return
+
+        rep.status = falcon.HTTP_202
 
     def loadDo(self, tymth, tock=0.0):
         """ Load oobis
@@ -1983,7 +2006,6 @@ class OobiResource(doing.DoDoer):
             if self.oobiery.cues:
                 cue = self.oobiery.cues.popleft()
                 kin = cue["kin"]
-                oobi = cue["oobi"]
                 if kin in ("resolved",):
                     pass
                 if kin in ("failed",):
@@ -2045,7 +2067,8 @@ class ChallengeEnd:
 
         """
         mnem = mnemonic.Mnemonic(language='english')
-        strength = int(req.params["strength"]) if "stength" in req.params else 128
+        s = req.params.get("strength")
+        strength = int(s) if s is not None else 128
 
         words = mnem.generate(strength=strength)
         rep.status = falcon.HTTP_200
@@ -2095,20 +2118,22 @@ class ChallengeEnd:
         hab = self.hby.habByName(alias)
         if hab is None:
             rep.status = falcon.HTTP_400
-            rep.data = f"no matching Hab for alias {alias}"
+            rep.text = f"no matching Hab for alias {alias}"
             return
 
         body = req.get_media()
         if "words" not in body or "recipient" not in body:
             rep.status = falcon.HTTP_400
-            rep.data = "challenge response requires 'words' and 'recipient'"
+            rep.text = "challenge response requires 'words' and 'recipient'"
             return
 
         words = body["words"]
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
-        exn = exchanging.exchange(route="/challange/response", payload=payload)
-        self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challange"))
+        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challenge"))
+
+        rep.status = falcon.HTTP_202
 
 
 class KiwiDoer(doing.DoDoer):
@@ -2243,7 +2268,7 @@ class KiwiDoer(doing.DoDoer):
             yield self.tock
 
 
-def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, queries=None):
+def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, queries=None, oobiery=None):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -2258,6 +2283,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
         counselor (Counselor): group multisig identifier communication manager
         rxbs (bytearray): output queue of bytes for message processing
         queries (Deck): query cues for HttpEnd to start mailbox stream
+        oobiery (Optioanl[Oobiery]): optional OOBI loader
 
     Returns:
         list: doers from registering endpoints
@@ -2283,7 +2309,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
                                     verifier=verifier)
     app.add_route("/credentials", credentialsEnd)
 
-    applicationsEnd = ApplicationsEnd(rep=rep)
+    applicationsEnd = ApplicationsEnd(hby=hby, rep=rep)
     app.add_route("/applications", applicationsEnd)
 
     presentationEnd = PresentationEnd(rep=rep)
@@ -2297,7 +2323,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
     multiCredIss = MultisigCredentialIssuanceEnd(hby=hby, rgy=rgy, verifier=verifier)
     app.add_route("/groups/{alias}/credentials/issue", multiCredIss)
 
-    oobiEnd = OobiResource(hby=hby)
+    oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
     app.add_route("/oobi/{alias}", oobiEnd)
 
     chacha = ChallengeEnd(hby=hby, rep=rep)
