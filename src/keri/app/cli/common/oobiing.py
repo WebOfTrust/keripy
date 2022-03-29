@@ -29,7 +29,7 @@ class OobiLoader(doing.DoDoer):
         self.oobiery = ending.Oobiery(db=self.db)
         if auto:
             for ((oobi,), _) in self.db.oobis.getItemIter():
-                self.oobiery.oobis.append(oobi)
+                self.oobiery.oobis.append(dict(url=oobi))
                 self.oobis.append(oobi)
 
         doers = [self.oobiery, doing.doify(self.loadDo)]

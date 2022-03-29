@@ -1024,7 +1024,7 @@ class HttpEnd:
            204:
               description: KEL or EXN event accepted.
         """
-        pre = req.params["i"]
+        pre = req.params["pre"]
         pt = req.params["topics"]
 
         rep.set_header('Cache-Control', "no-cache")

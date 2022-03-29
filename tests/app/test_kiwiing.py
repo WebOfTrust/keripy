@@ -4,6 +4,7 @@ tests.app.agent_kiwiserver module
 
 """
 import json
+import os
 
 import falcon
 import time
@@ -874,7 +875,8 @@ def test_oobi_ends(seeder):
         assert result.status == falcon.HTTP_202
         assert len(oobiery.oobis) == 1
         oobi = oobiery.oobis.popleft()
-        assert oobi == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        assert oobi == {'alias': 'pal',
+                        'url': 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'}
 
 
 def test_challenge_ends(seeder):
@@ -928,6 +930,173 @@ def test_challenge_ends(seeder):
         assert rep["topic"] == "challenge"
         assert rep["dest"] == "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
         assert rep["rep"].ked['r'] == '/challenge/response'
+
+
+def test_contact_ends(seeder):
+    with habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
+
+        palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
+        kvy = eventing.Kevery(db=palHab.db, local=False, lax=True)
+        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+
+        msgs = bytearray()
+        aids = []
+        for i in range(5):
+            hab = kenHby.makeHab(name=f"ken{i}", icount=1, ncount=1, wits=[])
+            aids.append(hab.pre)
+            msgs.extend(hab.makeOwnInception())
+
+        hab = kenHby.makeHab(name="bad", icount=1, ncount=1, wits=[])
+        msgs.extend(hab.makeOwnInception())
+        parsing.Parser().parse(ims=msgs, kvy=kvy)
+
+        for aid in aids:
+            assert aid in palHab.kevers
+
+        app = falcon.App()
+        _ = kiwiing.loadEnds(hby=palHby,
+                             rep=None,
+                             rgy=None,
+                             verifier=None,
+                             app=app, path="/",
+                             mbx=None, counselor=None)
+        client = testing.TestClient(app)
+
+        response = client.simulate_get("/contacts")
+        assert response.status == falcon.HTTP_200
+        assert response.json == []
+
+        data = dict(
+            name="test"
+        )
+        b = json.dumps(data).encode("utf-8")
+        # POST to an identifier that is not in the Kever
+        response = client.simulate_post("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        assert response.status == falcon.HTTP_404
+
+        # POST to a local identifier
+        response = client.simulate_post(f"/contacts/{palHab.pre}", body=b)
+        assert response.status == falcon.HTTP_400
+
+        for i in range(5):
+            data = dict(
+                id=aid[i],
+                first=f"Ken{i}",
+                last=f"Burns{i}",
+                company="GLEIF"
+            )
+            b = json.dumps(data).encode("utf-8")
+            # POST to an identifier that is not in the Kever
+            response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
+            assert response.status == falcon.HTTP_200
+
+        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{hab.pre}")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[3]}")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'GLEIF',
+                                 'first': 'Ken3',
+                                 'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                 'last': 'Burns3'}
+
+        response = client.simulate_get(f"/contacts")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 5
+        data = {d["id"]: d for d in response.json}
+        for aid in aids:
+            assert aid in data
+
+        data = dict(id=hab.pre, company="ProSapien")
+        b = json.dumps(data).encode("utf-8")
+
+        response = client.simulate_put(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_put(f"/contacts/{palHab.pre}", body=b)
+        assert response.status == falcon.HTTP_400
+
+        response = client.simulate_put(f"/contacts/{aids[2]}", body=b)
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'ProSapien',
+                                 'first': 'Ken2',
+                                 'id': 'EF2EBiBL7RJ84ilErw8PyMEbABX_wJIL2VHNqLOdq5cw',
+                                 'last': 'Burns2'}
+        response = client.simulate_put(f"/contacts/{aids[4]}", body=b)
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'company': 'ProSapien',
+                                 'first': 'Ken4',
+                                 'id': 'EWgyARhlWPWWC3DD1kr-hKKR3EK10FUSpY78IGWrmf7M',
+                                 'last': 'Burns4'}
+
+        response = client.simulate_get("/contacts", query_string="group=company")
+        assert response.status == falcon.HTTP_200
+
+        gleif = response.json["GLEIF"]
+        data = {d["id"]: d for d in gleif}
+        assert aids[0] in data
+        assert aids[1] in data
+        assert aids[3] in data
+
+        pros = response.json["ProSapien"]
+        data = {d["id"]: d for d in pros}
+        assert aids[2] in data
+        assert aids[4] in data
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last")
+        assert response.status == falcon.HTTP_400
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last&filter_value=Burns3")
+        assert response.status == falcon.HTTP_200
+        assert response.json == [{'company': 'GLEIF',
+                                  'first': 'Ken3',
+                                  'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                  'last': 'Burns3'}]
+
+        response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_delete(f"/contacts/{aids[3]}")
+        assert response.status == falcon.HTTP_202
+
+        response = client.simulate_get("/contacts", query_string="filter_field=last&filter_value=Burns3")
+        assert response.status == falcon.HTTP_200
+        assert response.json == []
+
+        data = bytearray(os.urandom(50))
+        headers = {"Content-Type": "image/png", "Content-Length": "50"}
+        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img", body=data,
+                                        headers=headers)
+        assert response.status == falcon.HTTP_404
+
+        data = bytearray(os.urandom(1000001))
+        headers = {"Content-Type": "image/png", "Content-Length": "1000001"}
+        response = client.simulate_post(f"/contacts/{aids[0]}/img", body=data, headers=headers)
+        assert response.status == falcon.HTTP_400
+
+        data = bytearray(os.urandom(10000))
+        headers = {"Content-Type": "image/png", "Content-Length": "10000"}
+        response = client.simulate_post(f"/contacts/{aids[0]}/img", body=data, headers=headers)
+        assert response.status == falcon.HTTP_202
+
+        response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/img")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[2]}/img")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get(f"/contacts/{aids[0]}/img")
+        assert response.status == falcon.HTTP_200
+        assert response.content == data
+        headers = response.headers
+        assert headers["Content-Type"] == "image/png"
+        assert headers["Content-Length"] == "10000"
+
+
 
 
 

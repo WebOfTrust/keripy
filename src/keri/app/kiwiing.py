@@ -15,7 +15,7 @@ from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import helping, decking
 
-from . import grouping, challenging
+from . import grouping, challenging, connecting
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing, delegating
@@ -1976,7 +1976,7 @@ class OobiResource(doing.DoDoer):
         body = req.get_media()
         if "url" in body:
             oobi = body["url"]
-            self.oobiery.oobis.append(oobi)
+            self.oobiery.oobis.append(dict(alias=alias, url=oobi))
         elif "rpy" in body:
             pass
         else:
@@ -2083,6 +2083,7 @@ class ChallengeEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             alias: human readable name of identifier to use to sign the challange/response
+
         ---
         summary:  Sign challange message and forward to peer identfiier
         description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
@@ -2132,6 +2133,375 @@ class ChallengeEnd:
         payload = dict(i=hab.pre, words=words)
         exn = exchanging.exchange(route="/challenge/response", payload=payload)
         self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challenge"))
+
+        rep.status = falcon.HTTP_202
+
+
+class ContactEnd:
+
+    def __init__(self, hby, org):
+        """
+
+        Parameters:
+            hby (Habery): identifier environment database
+            org (Organizer): contact database
+        """
+
+        self.hby = hby
+        self.org = org
+
+    def on_get_list(self, req, rep):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+        ---
+        summary:  Get list of contact information associated with remote identfiers
+        description:  Get list of contact information associated with remote identfiers.  All
+                      information is metadata and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: query
+            name: group
+            schema:
+              type: string
+            required: false
+            description: field name to group results by
+          - in: query
+            name: filter_field
+            schema:
+               type: string
+            description: field name to search
+            required: false
+          - in: query
+            name: filter_value
+            schema:
+               type: string
+            description: value to search for
+            required: false
+        responses:
+           200:
+              description: List of contact information for remote identifiers
+        """
+        # TODO:  Add support for sorting
+
+        group = req.params.get("group")
+        field = req.params.get("filter_field")
+        if group is not None:
+            data = dict()
+            values = self.org.values(group)
+            for value in values:
+                contacts = self.org.find(group, value)
+                data[value] = contacts
+
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(data).encode("utf-8")
+
+        elif field is not None:
+            val = req.params.get("filter_value")
+            if val is None:
+                rep.status = falcon.HTTP_400
+                rep.text = "filter_value if required if field_field is specified"
+                return
+
+            contacts = self.org.find(field=field, val=val)
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(contacts).encode("utf-8")
+
+        else:
+            data = []
+            contacts = self.org.list()
+
+            for contact in contacts:
+                if contact["id"] in self.hby.kevers:
+                    data.append(contact)
+
+            rep.status = falcon.HTTP_200
+            rep.data = json.dumps(data).encode("utf-8")
+
+    def on_post(self, req, rep, prefix):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: human readable name of identifier to replace contact information
+
+       ---
+        summary:  Create new contact information for an identifier
+        description:  Creates new information for an identifier, overwriting all existing
+                      information for that identifier
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix to add contact metadata to
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        body = req.get_media()
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{prefix} is not a known identifier.  oobi required before contact information"
+            return
+
+        if prefix in self.hby.prefixes:
+            rep.status = falcon.HTTP_400
+            rep.text = f"{prefix} is a local identifier, contact information only for remote identifiers"
+            return
+
+        if "id" in body:
+            del body["id"]
+
+        self.org.replace(prefix, body)
+        contact = self.org.get(prefix)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    def on_post_img(self, req, rep, prefix):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact to associate with image
+
+        ---
+         summary: Uploads an image to associate with identfier.
+         description: Uploads an image to associate with identfier.
+         tags:
+            - Contacts
+         parameters:
+           - in: path
+             name: prefix
+             schema:
+                type: string
+             description: identifier prefix to associate image to
+         requestBody:
+             required: true
+             content:
+                image/jpg:
+                  schema:
+                    type: string
+                    format: binary
+                image/png:
+                  schema:
+                    type: string
+                    format: binary
+         responses:
+           200:
+              description: Image successfully uploaded
+
+        """
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{prefix} is not a known identifier."
+            return
+
+        if req.content_length > 1000000:
+            rep.status = falcon.HTTP_400
+            rep.text = "image too big to save"
+            return
+
+        self.org.setImg(pre=prefix, typ=req.content_type, stream=req.bounded_stream)
+        rep.status = falcon.HTTP_202
+
+    def on_get_img(self, req, rep, prefix):
+        """ Contact image GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact information to get
+
+       ---
+        summary:  Get contact image for identifer prefix
+        description:  Get contact image for identifer prefix
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact image to get
+        responses:
+           200:
+              description: Contact information successfully retrieved for prefix
+              content:
+                  image/jpg:
+                    schema:
+                        description: Image
+                        type: binary
+           404:
+              description: No contact information found for prefix
+        """
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{prefix} is not a known identifier."
+            return
+
+        data = self.org.getImgData(pre=prefix)
+        if data is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"no image available for {prefix}."
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.set_header('Content-Type', data["type"])
+        rep.set_header('Content-Length', data["length"])
+        rep.stream = self.org.getImg(pre=prefix)
+
+    def on_get(self, req, rep, prefix):
+        """ Contact GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix of contact information to get
+
+       ---
+        summary:  Get contact information associated with single remote identfier
+        description:  Get contact information associated with single remote identfier.  All
+                      information is meta-data and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact to get
+        responses:
+           200:
+              description: Contact information successfully retrieved for prefix
+           404:
+              description: No contact information found for prefix
+        """
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{prefix} is not a known identifier."
+            return
+
+        contact = self.org.get(prefix)
+        if contact is None:
+            rep.status = falcon.HTTP_404
+            rep.text = "NOT FOUND"
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    def on_put(self, req, rep, prefix):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: human readable name of identifier to update contact information
+
+        ---
+        summary:  Update provided fields in contact information associated with remote identfier prefix
+        description:  Update provided fields in contact information associated with remote identfier prefix.  All
+                      information is metadata and kept in local storage only
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix to add contact metadata to
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        body = req.get_media()
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{prefix} is not a known identifier.  oobi required before contact information"
+            return
+
+        if prefix in self.hby.prefixes:
+            rep.status = falcon.HTTP_400
+            rep.text = f"{prefix} is a local identifier, contact information only for remote identifiers"
+            return
+
+        if "id" in body:
+            del body["id"]
+
+        self.org.update(prefix, body)
+        contact = self.org.get(prefix)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    def on_delete(self, req, rep, prefix):
+        """ Contact plural GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            prefix: qb64 identifier prefix to delete contact information
+
+        ---
+        summary:  Delete contact information associated with remote identfier
+        description:  Delete contact information associated with remote identfier
+        tags:
+           - Contacts
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of contact to delete
+        responses:
+           202:
+              description: Contact information successfully deleted for prefix
+           404:
+              description: No contact information found for prefix
+        """
+        deleted = self.org.rem(prefix)
+        if not deleted:
+            rep.status = falcon.HTTP_404
+            rep.text = f"no contact information to delete for {prefix}"
+            return
 
         rep.status = falcon.HTTP_202
 
@@ -2330,11 +2700,18 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha, suffix="resolve")
 
+    org = connecting.Organizer(db=hby.db)
+    contact = ContactEnd(hby=hby, org=org)
+
+    app.add_route("/contacts/{prefix}", contact)
+    app.add_route("/contacts/{prefix}/img", contact, suffix="img")
+    app.add_route("/contacts", contact, suffix="list")
+
     httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
     app.add_route("/mbx", httpEnd, suffix="mbx")
 
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha]
+                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
