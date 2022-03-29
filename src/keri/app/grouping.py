@@ -13,10 +13,11 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import forwarding, delegating, agenting
-from keri.core import coring, eventing, parsing
+from keri.core import coring
 from keri.db import dbing, basing
 from keri.db.dbing import snKey
 from keri.peer import exchanging
+from keri.vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -639,6 +640,17 @@ class MultisigInteractHandler(doing.DoDoer):
 
 
 def multisigInteractExn(ghab, aids, data):
+    """ Create a peer to peer message to propose a multisig group interaction event
+
+    Parameters:
+        ghab (Hab): group Hab to endorse the message
+        aids (list): qb64 identifier prefixes to include in the interaction event
+        data (list): data to anchor in the interaction event
+
+    Returns:
+        Serder: Serder of exn message to send
+        butearray: attachment signatures
+    """
 
     exn = exchanging.exchange(route=MultisigInteractHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
@@ -695,11 +707,34 @@ class MultisigIssueHandler(doing.DoDoer):
                 msg = self.msgs.popleft()
                 pl = msg["payload"]
                 pl["r"] = "/issue"
-                raw = json.dumps(pl).encode("utf-8")
-                self.mbx.storeMsg(self.controller+"/multisig", raw)
 
+                try:
+                    creder = proving.Credentialer(ked=pl)
+                    self.mbx.storeMsg(self.controller+"/multisig", creder.raw)
+                except ValueError as ex:
+                    logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
                 yield
             yield
+
+
+def multisigIssueExn(hab, creder):
+    """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
+
+    Parameters:
+        hab (Hab): identifier Hab for ensorsing the message to send
+        creder (Creder): Creder instance of the issued credential
+
+    Returns:
+        Serder: Serder of exn message to send
+        butearray: attachment signatures
+
+    """
+    exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked)
+    evt = hab.phab.endorse(serder=exn, last=True, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+
+    return exn, atc
+
 
 
 def getEscrowedEvent(db, pre, sn):

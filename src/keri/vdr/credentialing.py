@@ -501,7 +501,7 @@ class RegistryInceptDoer(doing.DoDoer):
 
                 registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
 
-                self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
+                self.extend([doing.doify(self.escrowDo), doing.doify(self.registryDo)])
                 yield self.tock
 
                 while registry.regk not in registry.tevers:
@@ -512,8 +512,8 @@ class RegistryInceptDoer(doing.DoDoer):
 
             yield self.tock
 
-    def issuerDo(self, tymth, tock=0.0):
-        """ Process cues from credential issue coroutine
+    def registryDo(self, tymth, tock=0.0):
+        """ Process cues from credential registry being creation
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

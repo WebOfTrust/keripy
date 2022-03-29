@@ -5,10 +5,9 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, grouping
+from keri.app import indirecting, habbing, grouping
 from keri.app.cli.common import existing
-from keri.peer import exchanging
-from keri.vdr import credentialing, verifying, viring
+from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
@@ -20,11 +19,16 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None)
 parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
                     default=None, required=True)
-parser.add_argument('--source', '-c', help='AC/DC Source links',
+parser.add_argument('--source', '-e', help='AC/DC Source links',
                     default=None)
 parser.add_argument('--recipient', '-R', help='qb64 identifier prefix of the recipient of the credential',
                     default=None)
 parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=[], action="store", required=True)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
+                    dest="bran", default=None)  # passcode => bran
 
 
 def issueCredential(args):
@@ -41,7 +45,6 @@ def issueCredential(args):
     else:
         raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
 
-
     issueDoer = CredentialIssuer(name=name, registryName=args.registry_name, schema=args.schema, source=args.source,
                                  recipient=args.recipient, data=data)
 
@@ -55,8 +58,8 @@ class CredentialIssuer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, registryName, schema, source, recipient, data):
-        """
+    def __init__(self, name, alias, base, bran, registryName, schema, source, recipient, data):
+        """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
              name:
@@ -67,7 +70,11 @@ class CredentialIssuer(doing.DoDoer):
              data: (dict) credential data dict
         """
         self.name = name
-        self.hab, doers = existing.setupHabitat(name=self.name)
+        self.alias = alias
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        counselor = grouping.Counselor(hby=self.hby)
 
         self.msg = dict(
             registryName=registryName,
@@ -77,26 +84,24 @@ class CredentialIssuer(doing.DoDoer):
             data=data
         )
 
+        self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig"])
+        self.icpr = credentialing.RegistryIssueDoer(hby=self.hby, rgy=self.rgy, counselor=counselor)
 
-        reger = viring.Reger(name=registryName, db=self.hab.db)
-        issuer = credentialing.Registry(hab=self.hab, name=registryName, reger=reger)
-        self.verifier = verifying.Verifier(hab=self.hab, reger=reger)
-        meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
-
-        handlers = [meh]
-        exchanger = exchanging.Exchanger(hab=self.hab, handlers=handlers)
-
-        mbx = indirecting.MailboxDirector(hab=self.hab, exc=exchanger, topics=["/receipt", "/multisig"])
-
-        self.issr = credentialing.RegistryDoer(hab=self.hab, registry=issuer, verifier=self.verifier)
-        doers.extend([self.issr, mbx, exchanger])
+        doers = [self.hbyDoer, mbx, counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.issueDo)])
         super(CredentialIssuer, self).__init__(doers=doers)
 
     def issueDo(self, tymth, tock=0.0):
-        """
+        """  Issue Credential doer method
+
+
+        Parameters:
+             tymth (function): injected function wrapper closure returned by .tymen() of
+                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
+             tock (float): injected initial tock value
         """
         yield self.tock
 

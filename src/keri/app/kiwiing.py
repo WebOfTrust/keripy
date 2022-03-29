@@ -833,13 +833,13 @@ class RegistryEnd(doing.DoDoer):
         rep.status = falcon.HTTP_202
 
 
-class CredentialsEnd:
+class CredentialEnd(doing.DoDoer):
     """
     ReST API for admin of credentials
 
     """
 
-    def __init__(self, hby, rep, verifier, rgy, cues=None):
+    def __init__(self, hby, rgy, verifier):
         """ Create endpoint for issuing and listing credentials
 
         Endpoints for issuing and listing credentials from non-group identfiers only
@@ -851,13 +851,12 @@ class CredentialsEnd:
             rgy (Regery):
             cues (Deck):
         """
-
         self.hby = hby
-        self.rep = rep
-
-        self.verifier = verifier
         self.rgy = rgy
-        self.cues = cues if cues is not None else decking.Deck()
+        self.verifier = verifier
+        self.postman = forwarding.Postman(hby=self.hby)
+
+        super(CredentialEnd, self).__init__(doers=[self.postman])
 
     def on_get(self, req, rep):
         """ Credentials GET endpoint
@@ -905,103 +904,32 @@ class CredentialsEnd:
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
 
-    def on_post(self, req, rep, alias=None):
-        """ Initiate a credential issuance from a group multisig identfier
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
-
-        ---
-        summary: Initiate credential issuance from a group multisig identifier
-        description: Initiate credential issuance from a group multisig identifier
-        tags:
-           - Group Credentials
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    registry:
-                      type: string
-                      description: AID of credential issuance/revocation registry (aka status)
-                    schema:
-                      type: string
-                      description: SAID of credential schema being issued
-                    recipient:
-                      type: string
-                      description: AID of recipient of credential
-                    source:
-                      type: array
-                      description: list of credential chain sources (ACDC)
-                      items:
-                         type: object
-                         properties:
-                            d:
-                               type: string
-                               description: SAID of reference chain
-                            s:
-                               type: string
-                               description: SAID of reference chain schema
-                    credentialData:
-                      type: object
-                      description: dynamic map of values specific to the schema
-        responses:
-           200:
-              description: Credential issued.
-              content:
-                  application/json:
-                    schema:
-                        description: Credential
-                        type: object
-
-
-        """
-        body = req.get_media()
-        alias = body.get("alias")
+    def issue(self, hab, body, rep):
         regname = body.get("registry")
+        recp = body.get("recipient")
         schema = body.get("schema")
         source = body.get("source")
         rules = body.get("rules")
-        recipientIdentifier = body.get("recipient")
-        notify = body["notify"] if "notify" in body else True
 
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid alias {} for credentials" \
-                       "".format(alias)
-            return
-
-        if recipientIdentifier not in hab.kevers:
+        if recp not in hab.kevers:
             rep.status = falcon.HTTP_400
             rep.text = "Unable to issue credential to {}.  A connection to that identifier must already " \
-                       "be established".format(recipientIdentifier)
-            return
+                       "be established".format(recp)
+            return None
 
         registry = self.rgy.registryByName(regname)
         if registry is None:
             rep.status = falcon.HTTP_400
             rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
-                       "credentials".format(registry)
-            return
+                       "credentials".format(regname)
+            return None
 
         data = body.get("credentialData")
         dt = data["dt"] if "dt" in data else helping.nowIso8601()
 
         d = dict(
             d="",
-            i=recipientIdentifier,
+            i=recp,
             dt=dt,
         )
 
@@ -1022,107 +950,21 @@ class CredentialsEnd:
         craw = signing.ratify(hab=hab, serder=creder)
         parsing.Parser().parse(ims=craw, vry=self.verifier)
 
-        group = []
-        if notify and group:
-            for aid in group.aids:
-                if aid != hab.pre:
-                    msg = dict(
-                        schema=schema,
-                        source=source,
-                        recipient=recipientIdentifier,
-                        typ=body.get("type"),
-                        data=d,
-                    )
-                    exn = exchanging.exchange(route="/multisig/issue", payload=msg)
-                    self.rep.reps.append(dict(src=hab.pre, dest=aid, rep=exn, topic="multisig"))
-
-        rep.status = falcon.HTTP_200
-        rep.data = creder.pretty().encode("utf-8")
-
-    def on_delete(self, req, rep):
-        """ Credential DELETE endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-
-        ---
-        summary: Revoke credential
-        description: Create a revocation entry in the provided registry for the specified credential from a group
-                     identifier
-        tags:
-           - Group Credentials
-        parameters:
-           - in: query
-             name: registry
-             schema:
-                type: string
-             description:  SAID of credential registry
-             required: true
-           - in: query
-             name: said
-             schema:
-                type: string
-             description: SAID of credential to revoke
-             required: true
-
-        responses:
-           202:
-              description: credential successfully revoked.
-
-        """
-        alias = req.get_param("alias")
-        registry = req.get_param("registry")
-        said = req.get_param("said")
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            rep.status = falcon.HTTP_400
-            rep.text = f"unknown local alias {alias}"
-            return
-
-        registry = self.rgy.registryByName(registry)
-        if registry is None:
-            rep.status = falcon.HTTP_400
-            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
-                       "credentials".format(registry)
-            return
-
-        try:
-            creder = self.verifier.reger.creds.get(keys=said)
-            if creder is None:
-                rep.status = falcon.HTTP_NOT_FOUND
-                rep.text = "credential not found"
-                return
-
-            registry.revoke(creder=creder)
-        except kering.ValidationError as ex:
-            rep.status = falcon.HTTP_CONFLICT
-            rep.text = ex.args[0]
-            return
-
-        rep.status = falcon.HTTP_202
-
-
-class MultisigCredentialIssuanceEnd:
-
-    def __init__(self, hby, rgy, verifier):
-        self.hby = hby
-        self.rgy = rgy
-        self.verifier = verifier
+        return creder
 
     def on_post(self, req, rep, alias=None):
-        """ Initiate a credential issuance from a group multisig identfier
+        """ Initiate a credential issuance
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
+            alias: qb64 identfier prefix of issuer of credential
 
         ---
-        summary: Initiate credential issuance from a group multisig identifier
-        description: Initiate credential issuance from a group multisig identifier
+        summary: Perform credential issuance
+        description: Perform credential issuance
         tags:
-           - Group Credentials
+           - Credentials
         parameters:
           - in: path
             name: alias
@@ -1140,12 +982,12 @@ class MultisigCredentialIssuanceEnd:
                     registry:
                       type: string
                       description: AID of credential issuance/revocation registry (aka status)
+                    recipient:
+                      type: string
+                      description: AID of credential issuance/revocation recipient
                     schema:
                       type: string
                       description: SAID of credential schema being issued
-                    recipient:
-                      type: string
-                      description: AID of recipient of credential
                     source:
                       type: array
                       description: list of credential chain sources (ACDC)
@@ -1173,83 +1015,111 @@ class MultisigCredentialIssuanceEnd:
 
         """
         body = req.get_media()
-        regname = body.get("registry")
-        schema = body.get("schema")
-        source = body.get("source")
-        rules = body.get("rules")
-        recipientIdentifier = body.get("recipient")
-        notify = body["notify"] if "notify" in body else True
-
         hab = self.hby.habByName(alias)
         if hab is None:
             rep.status = falcon.HTTP_400
-            rep.text = "Invalid alias {} for credentials" \
+            rep.text = "Invalid alias {} for credential issuance" \
                        "".format(alias)
-            return
+            return None
 
-        if recipientIdentifier not in hab.kevers:
-            rep.status = falcon.HTTP_400
-            rep.text = "Unable to issue credential to {}.  A connection to that identifier must already " \
-                       "be established".format(recipientIdentifier)
-            return
-
-        regname = self.rgy.registryByName(regname)
-        if regname is None:
-            rep.status = falcon.HTTP_400
-            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
-                       "credentials".format(regname)
-            return
-
-        data = body.get("credentialData")
-        dt = data["dt"] if "dt" in data else helping.nowIso8601()
-
-        d = dict(
-            d="",
-            i=recipientIdentifier,
-            dt=dt,
-        )
-
-        d |= data
-
-        creder = proving.credential(issuer=hab.pre,
-                                    schema=schema,
-                                    subject=d,
-                                    source=source,
-                                    rules=rules,
-                                    status=regname.regk)
-        print(creder.raw)
-        try:
-            regname.issue(creder=creder, dt=dt)
-        except kering.MissingAnchorError:
-            logger.info("Missing anchor from credential issuance due to multisig identifier")
-
-        craw = signing.ratify(hab=hab, serder=creder)
-        parsing.Parser().parse(ims=craw, vry=self.verifier)
-
-        group = []
-        if notify and group:
-            for aid in group.aids:
-                if aid != hab.pre:
-                    msg = dict(
-                        schema=schema,
-                        source=source,
-                        recipient=recipientIdentifier,
-                        typ=body.get("type"),
-                        data=d,
-                    )
-                    exn = exchanging.exchange(route="/multisig/issue", payload=msg)
-                    self.rep.reps.append(dict(src=hab.pre, dest=aid, rep=exn, topic="multisig"))
+        creder = self.issue(hab=hab, body=body, rep=rep)
 
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
 
-    def on_put(self, req, rep, alias=None):
+    def on_post_iss(self, req, rep, alias=None):
+        """ Initiate a credential issuance from a group multisig identfier
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: qb64 identfier prefix of issuer of credential
+
+        ---
+        summary: Initiate credential issuance from a group multisig identifier
+        description: Initiate credential issuance from a group multisig identifier
+        tags:
+           - Group Credentials
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    registry:
+                      type: string
+                      description: AID of credential issuance/revocation registry (aka status)
+                    recipient:
+                      type: string
+                      description: AID of credential issuance/revocation recipient
+                    schema:
+                      type: string
+                      description: SAID of credential schema being issued
+                    source:
+                      type: array
+                      description: list of credential chain sources (ACDC)
+                      items:
+                         type: object
+                         properties:
+                            d:
+                               type: string
+                               description: SAID of reference chain
+                            s:
+                               type: string
+                               description: SAID of reference chain schema
+                    credentialData:
+                      type: object
+                      description: dynamic map of values specific to the schema
+        responses:
+           200:
+              description: Credential issued.
+              content:
+                  application/json:
+                    schema:
+                        description: Credential
+                        type: object
+
+
+        """
+        body = req.get_media()
+        hab = self.hby.habByName(alias)
+        if hab is None or hab.phab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for group credentials" \
+                       "".format(alias)
+            return None
+
+        creder = self.issue(hab=hab, body=body, rep=rep)
+
+        if creder is None:  # Issuance didn't work, status set in issue
+            return
+
+        hab = self.hby.habByName(alias)
+        exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
+        others = list(hab.aids)
+        others.remove(hab.phab.pre)
+
+        for recpt in others:
+            self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+
+        rep.status = falcon.HTTP_200
+        rep.data = creder.pretty().encode("utf-8")
+
+    def on_put_iss(self, req, rep, alias=None):
         """ Participate in a credential issuance from a group identfier
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
+            alias: qb64 identfier prefix of issuer of credential
 
         ---
         summary: Participate in a credential issuance from a group multisig identifier
@@ -1273,12 +1143,12 @@ class MultisigCredentialIssuanceEnd:
                     registry:
                       type: string
                       description: AID of credential issuance/revocation registry (aka status)
+                    recipient:
+                      type: string
+                      description: AID of credential issuance/revocation recipient
                     schema:
                       type: string
                       description: SAID of credential schema being issued
-                    recipient:
-                      type: string
-                      description: AID of recipient of credential
                     source:
                       type: array
                       description: list of credential chain sources (ACDC)
@@ -1306,28 +1176,59 @@ class MultisigCredentialIssuanceEnd:
 
         """
         body = req.get_media()
-        alias = body.get("alias")
-        registry = body.get("registry")
-        schema = body.get("schema")
-        source = body.get("source")
-        rules = body.get("rules")
-        recipientIdentifier = body.get("recipient")
-        notify = body["notify"] if "notify" in body else True
-        print(self.hby.habs)
+        hab = self.hby.habByName(alias)
+        if hab is None or hab.phab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for group credentials" \
+                       "".format(alias)
+            return None
 
-    def on_delete(self, req, rep):
+        creder = self.issue(hab=hab, body=body, rep=rep)
+        if creder is None:  # Issuance didn't work, status set in issue
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.data = creder.pretty().encode("utf-8")
+
+    def revoke(self, hab, req, rep, said):
+        regname = req.get_param("registry")
+
+        registry = self.rgy.registryByName(regname)
+        if registry is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
+                       "credentials".format(regname)
+            return False
+
+        try:
+            creder = self.verifier.reger.creds.get(keys=said)
+            if creder is None:
+                rep.status = falcon.HTTP_NOT_FOUND
+                rep.text = "credential not found"
+                return False
+
+            registry.revoke(creder=creder)
+        except kering.ValidationError as ex:
+            rep.status = falcon.HTTP_CONFLICT
+            rep.text = ex.args[0]
+            return False
+
+        return True
+
+    def on_delete(self, req, rep, alias=None, said=None):
         """ Credential DELETE endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias: qb64 identfier prefix of issuer of credential
+            said: qb64 identifier prefix of recipient of credential
 
         ---
         summary: Revoke credential
-        description: Create a revocation entry in the provided registry for the specified credential from a group
-                     identifier
+        description: PArticipate in a credential revocation for a group multisig issuer
         tags:
-           - Group Credentials
+           - Credentials
         parameters:
            - in: query
              name: registry
@@ -1335,7 +1236,13 @@ class MultisigCredentialIssuanceEnd:
                 type: string
              description:  SAID of credential registry
              required: true
-           - in: query
+           - in: path
+             name: alias
+             schema:
+                type: string
+             description: human readable alias for issuer identifier
+             required: true
+           - in: path
              name: said
              schema:
                 type: string
@@ -1347,36 +1254,120 @@ class MultisigCredentialIssuanceEnd:
               description: credential successfully revoked.
 
         """
-        alias = req.get_param("alias")
-        regname = req.get_param("registry")
-        said = req.get_param("said")
         hab = self.hby.habByName(alias)
         if hab is None:
             rep.status = falcon.HTTP_400
-            rep.text = f"unknown local alias {alias}"
-            return
+            rep.text = "Invalid alias {} for credential revocation" \
+                       "".format(alias)
+            return None
 
-        registry = self.rgy.registryByName(regname)
-        if registry is None:
+        if self.revoke(hab=hab, req=req, rep=rep, said=said):
+            rep.status = falcon.HTTP_202
+
+        # Else the revoke method handled the status
+
+    def on_post_rev(self, req, rep, alias=None, said=None):
+        """ Credential DELETE endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: qb64 identfier prefix of issuer of credential
+            said: qb64 SAID of the credential to be revoked
+
+        ---
+        summary: Revoke credential
+        description: Initiate a credential revocation for a group multisig issuer
+        tags:
+           - Group Credentials
+        parameters:
+           - in: query
+             name: registry
+             schema:
+                type: string
+             description:  SAID of credential registry
+             required: true
+           - in: path
+             name: alias
+             schema:
+                type: string
+             description: human readable alias for issuer identifier
+             required: true
+           - in: path
+             name: said
+             schema:
+                type: string
+             description: SAID of credential to revoke
+             required: true
+
+        responses:
+           202:
+              description: credential successfully revoked.
+
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None or hab.phab is None:
             rep.status = falcon.HTTP_400
-            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
-                       "credentials".format(regname)
-            return
+            rep.text = "Invalid alias {} for group credentials" \
+                       "".format(alias)
+            return None
 
-        try:
-            creder = self.verifier.reger.creds.get(keys=said)
-            if creder is None:
-                rep.status = falcon.HTTP_NOT_FOUND
-                rep.text = "credential not found"
-                return
+        if self.revoke(hab=hab, req=req, rep=rep, said=said):
+            # TODO: SEND revocation proposal exn to others!
+            rep.status = falcon.HTTP_202
 
-            registry.revoke(creder=creder)
-        except kering.ValidationError as ex:
-            rep.status = falcon.HTTP_CONFLICT
-            rep.text = ex.args[0]
-            return
+        # Else the revoke method handled the status
 
-        rep.status = falcon.HTTP_202
+    def on_put_rev(self, req, rep, alias=None, said=None):
+        """ Credential DELETE endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: qb64 identfier prefix of issuer of credential
+            said: qb64 identifier prefix of recipient of credential
+
+        ---
+        summary: Revoke credential
+        description: PArticipate in a credential revocation for a group multisig issuer
+        tags:
+           - Group Credentials
+        parameters:
+           - in: query
+             name: registry
+             schema:
+                type: string
+             description:  SAID of credential registry
+             required: true
+           - in: path
+             name: alias
+             schema:
+                type: string
+             description: human readable alias for issuer identifier
+             required: true
+           - in: path
+             name: said
+             schema:
+                type: string
+             description: SAID of credential to revoke
+             required: true
+
+        responses:
+           202:
+              description: credential successfully revoked.
+
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None or hab.phab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for group credentials" \
+                       "".format(alias)
+            return None
+
+        if self.revoke(hab=hab, req=req, rep=rep, said=said):
+            rep.status = falcon.HTTP_202
+
+        # Else the revoke method handled the status
 
 
 class ApplicationsEnd:
@@ -2943,11 +2934,6 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
     registryEnd = RegistryEnd(hby=hby, rgy=rgy, counselor=counselor)
     app.add_route("/registries", registryEnd)
 
-    credentialsEnd = CredentialsEnd(hby=hby, rgy=rgy,
-                                    rep=rep,
-                                    verifier=verifier)
-    app.add_route("/credentials", credentialsEnd)
-
     applicationsEnd = ApplicationsEnd(hby=hby, rep=rep)
     app.add_route("/applications", applicationsEnd)
 
@@ -2959,8 +2945,11 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
     multiEvtEnd = MultisigEventEnd(hby=hby, counselor=counselor)
     app.add_route("/groups/{alias}/rot", multiEvtEnd, suffix="rot")
     app.add_route("/groups/{alias}/ixn", multiEvtEnd, suffix="ixn")
-    multiCredIss = MultisigCredentialIssuanceEnd(hby=hby, rgy=rgy, verifier=verifier)
-    app.add_route("/groups/{alias}/credentials/issue", multiCredIss)
+
+    credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier)
+    app.add_route("/credentials", credsEnd)
+    app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
+    app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
 
     oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
     app.add_route("/oobi/{alias}", oobiEnd)
@@ -2979,7 +2968,7 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
     httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
     app.add_route("/mbx", httpEnd, suffix="mbx")
 
-    resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, applicationsEnd, credentialsEnd,
+    resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, applicationsEnd, credsEnd,
                  presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
