@@ -121,6 +121,7 @@ class OobiRecord:
     """
     Keyed by CID (AID) and role, the minimum information needed for any OOBI
     """
+    alias: str = None
     said: str = None
     cid: str = None
     eid: str = None
@@ -795,6 +796,11 @@ class Baser(dbing.LMDBer):
         # JSON schema SADs keys by the SAID
         self.schema = subing.SchemerSuber(db=self,
                                           subkey='schema.')
+
+        # Field values for contact information for remote identfiers.  Keyed by prefix/field
+        self.cons = subing.Suber(db=self,
+                                 subkey=".cons")
+        self.imgs = self.env.open_db(key=b'imgs.')
 
         self.reload()
 

@@ -573,51 +573,31 @@ class Oobiery(doing.DoDoer):
             while self.oobis:
                 oobi = self.oobis.popleft()
                 try:
-                    url = parse.urlparse(oobi)
+                    url = oobi["url"]
+                    purl = parse.urlparse(url)
 
-                    if url.path == "/oobi":  # Self and Blinded Introductions
+                    if purl.path == "/oobi":  # Self and Blinded Introductions
                         print("blinded")
 
-                    elif (match := OOBI_RE.match(url.path)) is not None:  # Full CID and optional EID
+                    elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
                         obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
 
                         obr.cid = match.group("cid")
                         obr.eid = match.group("eid")
                         obr.role = match.group("role")
+                        if "alias" in oobi:
+                            obr.alias = oobi["alias"]
 
-                        self.db.oobis.pin(keys=(oobi,), val=obr)
+                        self.request(url, purl, obr)
 
-                        client = http.clienting.Client(hostname=url.hostname, port=url.port)
-                        clientDoer = http.clienting.ClientDoer(client=client)
-                        self.extend([clientDoer])
-
-                        client.request(
-                            method="GET",
-                            path=url.path,
-                            qargs=parse.parse_qs(url.query),
-                        )
-
-                        self.clients.append((oobi, client, clientDoer))
-
-                    elif (match := DOOBI_RE.match(url.path)) is not None:  # Full CID and optional EID
+                    elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
                         obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
 
                         obr.said = match.group("said")
-                        self.db.oobis.pin(keys=(oobi,), val=obr)
 
-                        client = http.clienting.Client(hostname=url.hostname, port=url.port)
-                        clientDoer = http.clienting.ClientDoer(client=client)
-                        self.extend([clientDoer])
+                        self.request(url, purl, obr)
 
-                        client.request(
-                            method="GET",
-                            path=url.path,
-                            qargs=parse.parse_qs(url.query),
-                        )
-
-                        self.clients.append((oobi, client, clientDoer))
-
-                    elif url.path.startswith("/.well-known/keri/oobi"):  # Well Known
+                    elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
                         print("well known")
 
                 except ValueError as ex:
@@ -655,6 +635,10 @@ class Oobiery(doing.DoDoer):
                     if response["headers"]["Content-Type"] == "application/json+cesr":
                         self.parser.parse(ims=bytearray(response["body"]))
                         self.cues.append(dict(kin="resolved", oobi=oobi))
+                        obr = self.db.oobis.get(oobi)
+                        if obr.alias is not None:
+                            self.db.cons.put(keys=(obr.cid, "alias"), val=obr.alias)
+
                     elif response["headers"]["Content-Type"] == "application/schema+json":
                         obr = self.db.oobis.get(oobi)
                         try:
@@ -679,3 +663,18 @@ class Oobiery(doing.DoDoer):
                 yield self.tock
 
             yield self.tock
+
+    def request(self, url, purl, obr):
+        self.db.oobis.pin(keys=(url,), val=obr)
+
+        client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
+        clientDoer = http.clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
+
+        client.request(
+            method="GET",
+            path=purl.path,
+            qargs=parse.parse_qs(purl.query),
+        )
+
+        self.clients.append((url, client, clientDoer))
