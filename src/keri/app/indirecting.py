@@ -1027,6 +1027,10 @@ class HttpEnd:
         pre = req.params["i"]
         pt = req.params["topics"]
 
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('Connection', "keep-alive")
+        rep.set_header('Content-Type', "text/event-stream")
+
         topics = dict()
         for t in pt:
             key, val = t.split("=")
