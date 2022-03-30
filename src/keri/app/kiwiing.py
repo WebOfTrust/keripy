@@ -19,7 +19,7 @@ from . import grouping, challenging, connecting
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing, delegating
-from ..core import parsing, coring
+from ..core import parsing, coring, eventing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
@@ -42,19 +42,19 @@ class IdentifierEnd(doing.DoDoer):
         self.postman = forwarding.Postman(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.swain = delegating.Boatswain(hby=hby)
+        self.org = connecting.Organizer(db=hby.db)
         self.cues = decking.Deck()
 
         doers = [self.witDoer, self.postman, self.swain, doing.doify(self.eventDo)]
 
         super(IdentifierEnd, self).__init__(doers=doers, **kwa)
 
-    def on_get(self, req, rep, alias=None):
+    def on_get(self, req, rep):
         """ Identifier GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
 
         ---
         summary:  Get list of agent identfiers
@@ -108,47 +108,180 @@ class IdentifierEnd(doing.DoDoer):
         res = []
 
         for pre, hab in self.hby.habs.items():
-            gd = dict(
-                name=hab.name,
-                prefix=pre,
-            )
-
-            if hab.phab:
-                gd["group"] = dict(
-                    pid=hab.phab.pre,
-                    accepted=hab.accepted
-                )
-
-            if hab.accepted:
-                kever = hab.kevers[pre]
-                ser = kever.serder
-                dgkey = dbing.dgKey(ser.preb, ser.saidb)
-                wigs = hab.db.getWigs(dgkey)
-                gd |= dict(
-                    seq_no=kever.sn,
-                    isith=kever.tholder.sith,
-                    public_keys=[verfer.qb64 for verfer in kever.verfers],
-                    nsith=kever.ntholder.sith,
-                    next_keys=kever.nexter.digs,
-                    toad=kever.toad,
-                    witnesses=kever.wits,
-                    receipts=len(wigs)
-                )
-
-                if kever.delegated:
-                    gd["delegated"] = kever.delegated
-                    gd["delegator"] = kever.delegator
-                    dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
-                    anchor = self.hby.db.getAes(dgkey)
-                    gd["anchored"] = anchor is not None
-
-            res.append(gd)
+            info = self.info(hab)
+            res.append(info)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post_icp(self, req, rep, alias):
+    def on_get_alias(self, req, rep, alias=None):
+        """ Identifier GET endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: option route parameter for specific identifier to get
+
+        ---
+        summary:  Get list of agent identfiers
+        description:  Get identfier information associated with alias
+        tags:
+           - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to get
+        responses:
+            200:
+              description: An array of Identifier key state information
+              content:
+                  application/json:
+                    schema:
+                        description: Key state information for current identifiers
+                        type: array
+                        items:
+                           type: object
+                           properties:
+                              name:
+                                 description: habitat local alias
+                                 type: string
+                              prefix:
+                                 description: qualified base64 identifier prefix
+                                 type: string
+                              seq_no:
+                                 description: current key event sequence number
+                                 type: integer
+                              delegated:
+                                 description: Flag indicating whether this identifier is delegated
+                                 type: boolean
+                              delegator:
+                                 description: qualified base64 identifier prefix of delegator
+                                 type: string
+                              witnesses:
+                                 description: list of qualified base64 identfier prefixes of witnesses
+                                 type: string
+                              public_keys:
+                                 description: list of current public keys
+                                 type: array
+                                 items:
+                                    type: string
+                              toad:
+                                 description: Current witness threshold
+                                 type: integer
+                              isith:
+                                 description: Current signing threshold
+                                 type: string
+                              receipts:
+                                 description:  Count of witness receipts received for last key event
+                                 type: integer
+        """
+        hab = self.hby.habByName(alias)
+        info = self.info(hab)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(info).encode("utf-8")
+
+    def info(self, hab):
+        data = dict(
+            name=hab.name,
+            prefix=hab.pre,
+        )
+
+        if hab.phab:
+            data["group"] = dict(
+                pid=hab.phab.pre,
+                accepted=hab.accepted
+            )
+
+        if hab.accepted:
+            kever = hab.kevers[hab.pre]
+            ser = kever.serder
+            dgkey = dbing.dgKey(ser.preb, ser.saidb)
+            wigs = hab.db.getWigs(dgkey)
+            data |= dict(
+                seq_no=kever.sn,
+                isith=kever.tholder.sith,
+                public_keys=[verfer.qb64 for verfer in kever.verfers],
+                nsith=kever.ntholder.sith,
+                next_keys=kever.nexter.digs,
+                toad=kever.toad,
+                witnesses=kever.wits,
+                receipts=len(wigs)
+            )
+
+            if kever.delegated:
+                data["delegated"] = kever.delegated
+                data["delegator"] = kever.delegator
+                dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
+                anchor = self.hby.db.getAes(dgkey)
+                data["anchored"] = anchor is not None
+
+        md = self.org.get(hab.pre)
+        if md is not None:
+            del md["id"]
+            data["metadata"] = md
+
+        return data
+
+    def on_put_alias(self, req, rep, alias):
+        """ Identifier PUT endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to update contact information
+
+        ---
+        summary:  Update metadata associated with the identfier of the alias
+        description:  Update metadata associated with the identfier of the alias
+        tags:
+           - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: human readable name of identifier prefix to add metadata
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        body = req.get_media()
+        hab = self.hby.habByName(name=alias)
+
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{alias} does not represent a known identifier."
+            return
+
+        if "id" in body:
+            del body["id"]
+
+        self.org.update(hab.pre, body)
+        contact = self.org.get(hab.pre)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    def on_post_alias(self, req, rep, alias):
         """ Identifier POST endpoint
 
         Parameters:
@@ -440,6 +573,138 @@ class IdentifierEnd(doing.DoDoer):
                 yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
             yield self.tock
+
+
+class KeyStateEnd:
+
+    def __init__(self, hby):
+        self.hby = hby
+
+    def on_get(self, req, rep, prefix):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+            prefix (str): human readable name of identifier to replace contact information
+
+        ---
+        summary:  Display key event log (KEL) for given identifier prefix
+        description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
+                      identifier along with the KEL and all associated signatures and receipts
+        tags:
+           - Ket Event Log
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of KEL to load
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+
+
+        """
+        if prefix not in self.hby.kevers:
+            rep.status = falcon.HTTP_404
+            rep.text = f"no information found for {prefix}"
+            return
+
+        kever = self.hby.kevers[prefix]
+        pre = kever.prefixer.qb64
+        preb = kever.prefixer.qb64b
+
+        res = dict(
+            pre=pre,
+            state=kever.state().ked
+        )
+
+        kel = []
+        for fn, dig in self.hby.db.getFelItemPreIter(preb, fn=0):
+            event = dict()
+            dgkey = dbing.dgKey(preb, dig)  # get message
+            if not (raw := self.hby.db.getEvt(key=dgkey)):
+                rep.status = falcon.HTTP_400
+                rep.text = "Missing event for dig={}.".format(dig)
+                return
+            srdr = coring.Serder(raw=bytes(raw))
+            event["ked"] = srdr.ked
+
+            # add indexed signatures to attachments
+            if not (sigs := self.hby.db.getSigs(key=dgkey)):
+                rep.status = falcon.HTTP_400
+                rep.text = "Missing sigs for dig={}.".format(dig)
+                return
+
+            dsigs = []
+            for s in sigs:
+                sig = coring.Siger(qb64b=bytes(s))
+                dsigs.append(dict(index=sig.index, signature=sig.qb64))
+            event["signatures"] = dsigs
+
+            # add indexed witness signatures to attachments
+            dwigs = []
+            if wigs := self.hby.db.getWigs(key=dgkey):
+                for w in wigs:
+                    sig = coring.Siger(qb64b=bytes(w))
+                    dwigs.append(dict(index=sig.index, signature=sig.qb64))
+            event["witness_signatures"] = dwigs
+
+            # add authorizer (delegator/issure) source seal event couple to attachments
+            couple = self.hby.db.getAes(dgkey)
+            if couple is not None:
+                raw = bytearray(couple)
+                seqner = coring.Seqner(qb64b=raw, strip=True)
+                saider = coring.Saider(qb64b=raw)
+                event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
+
+            receipts = dict()
+            # add trans receipts quadruples
+            if quads := self.hby.db.getVrcs(key=dgkey):
+                trans = []
+                for quad in quads:
+                    raw = bytearray(quad)
+                    trans.append(dict(
+                        prefix=coring.Prefixer(qb64b=raw, strip=True).qb64,
+                        sequence=coring.Seqner(qb64b=raw, strip=True).qb64,
+                        said=coring.Saider(qb64b=raw, strip=True).qb64,
+                        signature=coring.Siger(qb64b=raw, strip=True).qb64,
+                    ))
+
+                receipts["transferable"] = trans
+
+            # add nontrans receipts couples
+            if coups := self.hby.db.getRcts(key=dgkey):
+                nontrans = []
+                for coup in coups:
+                    raw = bytearray(coup)
+                    (prefixer, cigar) = eventing.deReceiptCouple(raw, strip=True)
+                    nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
+                receipts["nontransferable"] = nontrans
+
+            event["receipts"] = receipts
+            # add first seen replay couple to attachments
+            if not (dts := self.hby.db.getDts(key=dgkey)):
+                rep.status = falcon.HTTP_400
+                rep.text = "Missing datetime for dig={}.".format(dig)
+                return
+
+            event["timestamp"] = coring.Dater(dts=bytes(dts)).dts
+
+            kel.append(event)
+
+        res["kel"] = kel
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
 
 
 class RegistryEnd(doing.DoDoer):
@@ -2215,7 +2480,8 @@ class ContactEnd:
             contacts = self.org.list()
 
             for contact in contacts:
-                if contact["id"] in self.hby.kevers:
+                aid = contact["id"]
+                if aid in self.hby.kevers and aid not in self.hby.prefixes:
                     data.append(contact)
 
             rep.status = falcon.HTTP_200
@@ -2415,12 +2681,12 @@ class ContactEnd:
         rep.data = json.dumps(contact).encode("utf-8")
 
     def on_put(self, req, rep, prefix):
-        """ Contact plural GET endpoint
+        """ Contact PUT endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            prefix: human readable name of identifier to update contact information
+            prefix: qb64 identifier to update contact information
 
         ---
         summary:  Update provided fields in contact information associated with remote identfier prefix
@@ -2667,9 +2933,12 @@ def loadEnds(app, *, path, hby, rgy, rep, mbx, verifier, counselor, rxbs=None, q
 
     identifierEnd = IdentifierEnd(hby=hby)
     app.add_route("/ids", identifierEnd)
-    app.add_route("/ids/{alias}", identifierEnd, suffix="icp")
+    app.add_route("/ids/{alias}", identifierEnd, suffix="alias")
     app.add_route("/ids/{alias}/rot", identifierEnd, suffix="rot")
     app.add_route("/ids/{alias}/ixn", identifierEnd, suffix="ixn")
+
+    keyEnd = KeyStateEnd(hby=hby)
+    app.add_route("/keystate/{prefix}", keyEnd)
 
     registryEnd = RegistryEnd(hby=hby, rgy=rgy, counselor=counselor)
     app.add_route("/registries", registryEnd)
