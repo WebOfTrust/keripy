@@ -233,7 +233,6 @@ class WitnessStart(doing.DoDoer):
 
         while True:
             for rep in self.exc.processResponseIter():
-                print("got a reply", rep)
                 self.replies.append(rep)
                 yield  # throttle just do one cue at a time
             yield
@@ -793,18 +792,22 @@ class Poller(doing.DoDoer):
                 yield self.tock
 
             while True:
+                if client.respondent.eventSource and client.respondent.eventSource.closed:
+                    break
+
                 while client.events:
                     evt = client.events.popleft()
+                    if "retry" in evt:
+                        self.retry = evt["retry"]
                     if "id" not in evt or "data" not in evt or "name" not in evt:
-                        print(f"bad mailbox event: {evt}")
+                        logger.error(f"bad mailbox event: {evt}")
                         continue
-
                     idx = evt["id"]
                     msg = evt["data"]
                     tpc = evt["name"]
 
                     if not idx or not msg or not tpc:
-                        print(f"bad mailbox event: {evt}")
+                        logger.error(f"bad mailbox event: {evt}")
                         continue
 
                     self.msgs.append(msg.encode("utf=8"))
@@ -815,6 +818,7 @@ class Poller(doing.DoDoer):
                     self.hab.db.tops.pin((self.pre, self.witness), witrec)
 
                 yield 0.25
+            yield self.retry / 1000
 
 
 class HttpEnd:
@@ -827,7 +831,7 @@ class HttpEnd:
     """
 
     TimeoutQNF = 30
-    TimeoutMBX = 120
+    TimeoutMBX = 5
 
     def __init__(self, rxbs=None, mbx=None, qrycues=None):
         """
@@ -876,7 +880,7 @@ class HttpEnd:
             return
 
         rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('Connection', "keep-alive")
+        rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
         serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
@@ -895,30 +899,7 @@ class HttpEnd:
         elif ilk in (Ilks.qry,):
             rep.set_header('Content-Type', "text/event-stream")
             rep.status = falcon.HTTP_200
-            rep.stream = self.qryrep(said=serder.said)
-
-    def qryrep(self, said):
-        """ Iterator to respond to mailbox queries
-
-        Parameters:
-            said (str): qb64 self addressing identifier of query message to track
-        """
-
-        while True:
-            if self.qrycues:
-                cue = self.qrycues.popleft()
-                serder = cue["serder"]
-                if serder.said == said:
-                    kin = cue["kin"]
-                    if kin == "stream":
-                        pre = cue["pre"]
-                        topics = cue["topics"]
-
-                        yield from self.mailboxGenerator(pre=pre, topics=topics)
-                        return
-                else:
-                    self.qrycues.append(cue)
-            yield b''
+            rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
 
     def on_post_mbx(self, req, rep):
         """
@@ -980,7 +961,7 @@ class HttpEnd:
             return
 
         rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('Connection', "keep-alive")
+        rep.set_header('connection', "close")
 
         body = req.get_media()
         pre = body["pre"]
@@ -988,7 +969,7 @@ class HttpEnd:
 
         rep.set_header('Content-Type', "text/event-stream")
         rep.status = falcon.HTTP_200
-        rep.stream = self.mailboxGenerator(pre=pre, topics=topics)
+        rep.stream = MailboxIterable(mbx=self.mbx, pre=pre, topics=topics)
 
     def on_get_mbx(self, req, rep):
         """
@@ -1028,7 +1009,7 @@ class HttpEnd:
         pt = req.params["topics"]
 
         rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('Connection', "keep-alive")
+        rep.set_header('connection', "close")
         rep.set_header('Content-Type', "text/event-stream")
 
         topics = dict()
@@ -1040,31 +1021,72 @@ class HttpEnd:
             key, val = pt.split("=")
             topics[key] = int(val)
 
-        rep.stream = self.mailboxGenerator(pre=pre, topics=topics)
+        rep.stream = MailboxIterable(mbx=self.mbx, pre=pre, topics=topics)
 
-    def mailboxGenerator(self, pre=None, topics=None):
-        """
 
-        Parameters:
-            pre (str): qb64 identifier prefix of the mailbox to read
-            topics (dict): list of topics to read messages from as strings
+class MailboxIterable:
 
-        """
-        yield b''
-        start = end = time.perf_counter()
-        while end - start < self.TimeoutMBX:
-            for topic, idx in topics.items():
-                key = pre + topic
+    TimeoutMBX = 300
+
+    def __init__(self, mbx, pre, topics, retry=5000):
+        self.mbx = mbx
+        self.pre = pre
+        self.topics = topics
+        self.retry = retry
+
+    def __iter__(self):
+        self.start = self.end = time.perf_counter()
+        return self
+
+    def __next__(self):
+        if self.end - self.start < self.TimeoutMBX:
+            if self.start == self.end:
+                self.end = time.perf_counter()
+                return bytearray(f"retry: {self.retry}\n\n".encode("utf-8"))
+
+            data = bytearray()
+            for topic, idx in self.topics.items():
+                key = self.pre + topic
                 for fn, _, msg in self.mbx.cloneTopicIter(key, idx):
-                    data = bytearray("id: {}\nevent: {}\ndata: ".format(fn, topic).encode("utf-8"))
+                    data.extend(bytearray("id: {}\nevent: {}\nretry: {}\ndata: ".format(fn, topic, self.retry).encode(
+                        "utf-8")))
                     data.extend(msg)
                     data.extend(b'\n\n')
                     idx = idx + 1
-                    yield data
-                    start = time.perf_counter()
-                topics[topic] = idx
-            end = time.perf_counter()
-            yield b''
+                    self.start = time.perf_counter()
 
-        yield bytearray(f"event: close\ndata: test\nretry: 2000\n\n".encode("utf-8"))
-        return b''
+                self.topics[topic] = idx
+            self.end = time.perf_counter()
+            return data
+
+        raise StopIteration
+
+
+class QryRpyMailboxIterable:
+
+    def __init__(self, cues, mbx, said, retry=5000):
+        self.mbx = mbx
+        self.retry = retry
+        self.cues = cues
+        self.said = said
+        self.iter = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.iter is None:
+            if self.cues:
+                cue = self.cues.popleft()
+                serder = cue["serder"]
+                if serder.said == self.said:
+                    kin = cue["kin"]
+                    if kin == "stream":
+                        self.iter = iter(MailboxIterable(mbx=self.mbx, pre=cue["pre"], topics=cue["topics"],
+                                                         retry=self.retry))
+                else:
+                    self.cues.append(cue)
+
+            return b''
+
+        return next(self.iter)
