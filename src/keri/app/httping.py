@@ -130,6 +130,7 @@ def createCESRRequest(msg, client, path=None):
     headers = Hict([
         ("Content-Type", CESR_CONTENT_TYPE),
         ("Content-Length", len(body)),
+        ("connection", "close"),
         (CESR_ATTACHMENT_HEADER, attachments)
     ])
 

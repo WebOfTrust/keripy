@@ -22,11 +22,11 @@ kli init --name witness-test --nopasscode
 isSuccess
 
 # RESOLVE WITNESS OOBIs
-kli oobi resolve --name witness-test --oobi http://127.0.0.1:5643/oobi/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw/controller
+kli oobi resolve --name witness-test --oobi-alias wan --oobi http://127.0.0.1:5643/oobi/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw/controller
 isSuccess
-kli oobi resolve --name witness-test --oobi http://127.0.0.1:5642/oobi/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo/controller
+kli oobi resolve --name witness-test --oobi-alias wil --oobi http://127.0.0.1:5642/oobi/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo/controller
 isSuccess
-kli oobi resolve --name witness-test --oobi http://127.0.0.1:5644/oobi/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c/controller
+kli oobi resolve --name witness-test --oobi-alias wes --oobi http://127.0.0.1:5644/oobi/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c/controller
 isSuccess
 
 # INCEPT AND PROPOGATE EVENTS AND RECEIPTS TO WITNESSES

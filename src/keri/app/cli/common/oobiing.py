@@ -45,7 +45,7 @@ class OobiLoader(doing.DoDoer):
         """
         for oobi in oobis:
             self.oobiery.oobis.append(oobi)
-            self.oobis.append(oobi)
+            self.oobis.append(oobi["url"])
 
     def loadDo(self, tymth, tock=0.0):
         """ Load oobis
