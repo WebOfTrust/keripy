@@ -7,9 +7,7 @@ import json
 import os
 
 import falcon
-import time
 from falcon import testing
-from hio.base import doing, tyming
 
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping
@@ -803,20 +801,45 @@ def test_identifier_ends():
                                't': 'ixn',
                                'v': 'KERI10JSON0000de_'}
 
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=endDoers)
-        doist.enter()
+        req = dict(id="ignored", name="Wile", company="ACME")
+        result = client.simulate_put("/ids/bad", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_404  # Unknown alias
 
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        result = client.simulate_put("/ids/test", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        res = dict(req)
+        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert result.json == res
 
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
+        # Test single GET with metadata
+        result = client.simulate_get("/ids/test")
+        assert result.status == falcon.HTTP_200
+        assert result.json == {'isith': '1',
+                               'metadata': {'company': 'ACME', 'name': 'Wile'},
+                               'name': 'test',
+                               'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
+                               'nsith': '1',
+                               'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                               'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
+                               'receipts': 0,
+                               'seq_no': 2,
+                               'toad': 0,
+                               'witnesses': []}
 
-        assert doist.limit == limit
-        doist.exit()
-
+        # Test list GET method with metadata
+        result = client.simulate_get("/ids")
+        assert result.status == falcon.HTTP_200
+        assert result.json[0] == {'isith': '1',
+                                  'metadata': {'company': 'ACME', 'name': 'Wile'},
+                                  'name': 'test',
+                                  'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
+                                  'nsith': '1',
+                                  'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                  'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
+                                  'receipts': 0,
+                                  'seq_no': 2,
+                                  'toad': 0,
+                                  'witnesses': []}
 
 def test_oobi_ends(seeder):
     with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
@@ -1096,6 +1119,36 @@ def test_contact_ends(seeder):
         assert headers["Content-Type"] == "image/png"
         assert headers["Content-Length"] == "10000"
 
+
+def test_keystate_end():
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        assert hab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+
+        app = falcon.App()
+
+        counselor = grouping.Counselor(hby=hby)
+
+        endDoers = kiwiing.loadEnds(hby=hby,
+                                    rep=None,
+                                    rgy=None,
+                                    verifier=None,
+                                    app=app, path="/",
+                                    mbx=None, counselor=counselor)
+        client = testing.TestClient(app)
+
+        result = client.simulate_get(path=f"/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        assert result.status == falcon.HTTP_404
+
+        result = client.simulate_get(path=f"/keystate/{hab.pre}")
+        assert result.status == falcon.HTTP_200
+        state = result.json["state"]
+        assert state["i"] == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert state["et"] == "icp"
+        assert state["k"] == ['DaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg']
+        assert state["n"] == ['EsBMmyevdbrDojd73T6UmBvSktf7f-i-Yu0LjsuRr7y4']
+
+        kel = result.json["kel"]
+        assert len(kel) == 1
 
 
 

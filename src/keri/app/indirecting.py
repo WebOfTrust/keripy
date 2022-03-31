@@ -1032,8 +1032,12 @@ class HttpEnd:
         rep.set_header('Content-Type', "text/event-stream")
 
         topics = dict()
-        for t in pt:
-            key, val = t.split("=")
+        if isinstance(pt, list):
+            for t in pt:
+                key, val = t.split("=")
+                topics[key] = int(val)
+        else:
+            key, val = pt.split("=")
             topics[key] = int(val)
 
         rep.stream = self.mailboxGenerator(pre=pre, topics=topics)
