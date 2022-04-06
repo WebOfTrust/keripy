@@ -203,14 +203,25 @@ class Respondant(doing.DoDoer):
 
                     self.extend([clientDoer])
 
+                    # sign the exn to get the signature
+                    eattach = senderHab.endorse(exn, last=True, pipelined=False)
+                    del eattach[:exn.size]
+
+                    # create and sign the forward exn that will contain the exn
                     fwd = exchanging.exchange(route='/fwd',
                                               modifiers=dict(pre=recipient, topic=topic), payload=exn.ked)
-                    msg = bytearray(fwd.raw)
-                    atc = senderHab.endorse(exn, last=True, pipelined=False)
-                    del atc[:exn.size]
-                    msg.extend(atc)
+                    ims = senderHab.endorse(serder=fwd, last=True, pipelined=False)
 
-                    httping.createCESRRequest(msg, client)
+                    # Attach pathed exn signature to end of message
+                    atc = bytearray()
+                    pather = coring.Pather(path=["a"])
+                    atc.extend(pather.qb64b)
+                    atc.extend(eattach)
+                    ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                              count=(len(atc) // 4)).qb64b)
+                    ims.extend(atc)
+
+                    httping.createCESRRequest(ims, client)
 
                     while not client.responses:
                         yield self.tock
