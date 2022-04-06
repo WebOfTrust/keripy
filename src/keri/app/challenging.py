@@ -62,7 +62,7 @@ class ChallengeHandler(doing.Doer):
 
                 msg = dict(
                     r="/challenge",
-                    signer=signer,
+                    signer=signer.qb64,
                     words=words
                 )
 

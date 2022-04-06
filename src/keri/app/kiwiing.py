@@ -2397,7 +2397,7 @@ class ChallengeEnd:
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
         exn = exchanging.exchange(route="/challenge/response", payload=payload)
-        self.rep.reps.append(dict(dest=recpt, rep=exn, topic="challenge"))
+        self.rep.reps.append(dict(src=hab.pre, dest=recpt, rep=exn, topic="challenge"))
 
         rep.status = falcon.HTTP_202
 
