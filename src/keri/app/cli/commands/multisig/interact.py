@@ -109,10 +109,9 @@ class GroupMultisigInteract(doing.DoDoer):
         self.counselor.start(aids=aids, pid=ghab.phab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
         while True:
-            if self.counselor.cues:
-                cue = self.counselor.cues.popleft()
-                if cue["pre"] == ghab.pre:
-                    break
+            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            if saider is not None:
+                break
 
             yield self.tock
 

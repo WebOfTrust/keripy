@@ -77,14 +77,14 @@ class RegistryInceptor(doing.DoDoer):
         counselor = grouping.Counselor(hby=self.hby)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
-        self.icpr = credentialing.RegistryInceptDoer(hby=self.hby, rgy=self.rgy, counselor=counselor)
-        doers = [self.hbyDoer, counselor, self.icpr, mbx]
+        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
+        doers = [self.hbyDoer, counselor, self.registrar, mbx]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo)])
         super(RegistryInceptor, self).__init__(doers=doers, **kwa)
 
-    def inceptDo(self, tymth, tock=0.0):
+    def inceptDo(self, tymth, tock=0.0, **kwa):
         """ Process incoming messages to incept a credential registry
 
         Parameters:
@@ -100,19 +100,14 @@ class RegistryInceptor(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(self.alias)
-        msg = dict(name=self.registryName, pre=hab.pre)
-        self.icpr.msgs.append(msg)
+        registry = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
 
-        regk = None
-        while not regk:
-            while self.icpr.cues:
-                cue = self.icpr.cues.popleft()
-                if cue["kin"] == "finished":
-                    regk = cue["regk"]
-                    break
-                yield self.tock
+        while not self.registrar.complete(pre=registry.regk, sn=0):
             yield self.tock
 
-        print("Regsitry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName, regk, hab.pre))
+        self.rgy.processEscrows()
+
+        print("Regsitry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName,
+                                                                                registry.regk, hab.pre))
 
         self.remove(self.toRemove)

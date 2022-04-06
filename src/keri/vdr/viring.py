@@ -251,12 +251,12 @@ class Reger(dbing.LMDBer):
         # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs', klas=coring.Siger)
+        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=coring.Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
-        self.spcgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
+        self.spcgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs.',
                                               klas=(coring.Verfer, coring.Cigar))
 
         # Index of credentials processed and saved.  Indicates fully verified (even if revoked)
@@ -279,16 +279,35 @@ class Reger(dbing.LMDBer):
         # Missing schema escrow
         self.mse = subing.CesrSuber(db=self, subkey='mse.', klas=coring.Dater)
 
-        # Missing anchor seal escrow for Issuer Events before they reach the Tevery
-        self.mase = subing.IoSetSuber(db=self, subkey="mase.")
-
         # Collection of sub-dbs for persisting Registry Txn State Notices
-        self.txnsb = escrowing.Broker(db=self, subkey="txn")
+        self.txnsb = escrowing.Broker(db=self, subkey="txn.")
 
         # registry keys keyed by Registry name
         self.regs = koming.Komer(db=self,
                                  subkey='regs.',
                                  schema=RegistryRecord, )
+
+        # TEL partial witness escrow
+        self.tpwe = subing.CatCesrIoSetSuber(db=self, subkey='tpwe.',
+                                             klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+
+        # TEL multisig anchor escrow
+        self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
+                                             klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+
+        # TEL event disemination escrow
+        self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
+                                             klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+
+        # Completed TEL event
+        self.ctel = subing.CesrSuber(db=self, subkey='ctel.',
+                                     klas=coring.Saider)
+
+        # Credential Issuance Escrow
+        self.crie = proving.CrederSuber(db=self, subkey="drie.")
+
+        # Credential Missing Signature Escrow
+        self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
 
         return self.env
 
@@ -336,7 +355,7 @@ class Reger(dbing.LMDBer):
         """ Save the base credential and seals (est evt+sigs quad) with no indices.
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -458,7 +477,7 @@ class Reger(dbing.LMDBer):
          
         Parameters:
             db (LMDBer): table to search
-            creder (Credentialer): root credential
+            creder (Creder): root credential
 
         Returns:
             list: credential sources as resolved from `p` in creder.crd
@@ -475,22 +494,9 @@ class Reger(dbing.LMDBer):
             key = said.encode("utf-8")
             screder, sadsigers, sadcigars = self.cloneCred(said=key)
 
-            regk = screder.status
-            vci = nsKey([regk, said])
-
-            issr = screder.crd["i"]
-            msgs = bytearray()
-            for msg in db.clonePreIter(pre=issr):
-                msgs.extend(msg)
-
-            for msg in self.clonePreIter(pre=regk):
-                msgs.extend(msg)
-
-            for msg in self.clonePreIter(pre=vci):
-                msgs.extend(msg)
-
             craw = signing.provision(serder=screder, sadsigers=sadsigers, sadcigars=sadcigars)
-            sources.append((craw, msgs))
+            del craw[screder.size:]
+            sources.append((screder, craw))
             sources.extend(self.sources(db, screder))
             
         return sources    
@@ -922,7 +928,7 @@ def messagize(creder, proof):
     """ Create a CESR message format with proof attachment for credential
 
     Parameters
-        creder (Credentialer): instance of credential
+        creder (Creder): instance of credential
         proof (str): CESR proof attachment
 
     Returns:

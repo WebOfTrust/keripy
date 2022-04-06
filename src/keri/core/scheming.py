@@ -13,7 +13,7 @@ import msgpack
 
 from . import coring
 from .coring import MtrDex, Serials, Saider, Ids
-from .. import help
+from .. import help, kering
 from ..kering import ValidationError, DeserializationError
 
 logger = help.ogler.getLogger()
@@ -229,16 +229,13 @@ class JSONSchema:
                 kwargs["resolver"] = self.resolver.resolver(scer=raw)
             jsonschema.validate(instance=d, schema=schema, **kwargs)
         except jsonschema.exceptions.ValidationError as ex:
-            logger.error(f'jsonschema.exceptions.ValidationError {ex}')
-            return False
+            raise kering.ValidationError(f'Credential validation exception: {ex}')
         except jsonschema.exceptions.SchemaError as ex:
-            logger.error(f'jsonschema.exceptions.SchemaError {ex}')
-            return False
+            raise kering.ValidationError(f'Schema exception: {ex}')
         except json.decoder.JSONDecodeError as ex:
-            logger.error(f'json.decoder.JSONDecodeError {ex}')
-            return False
+            raise kering.ValidationError(f"Credential JSON exception: {ex}")
         except Exception as ex:
-            return False
+            raise kering.ValidationError(f"Credential Exception: {ex}")
 
         return True
 

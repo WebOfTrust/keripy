@@ -24,15 +24,13 @@ logger = help.ogler.getLogger()
 
 class Counselor(doing.DoDoer):
 
-    def __init__(self, hby, cues=None, **kwa):
+    def __init__(self, hby, **kwa):
 
         self.hby = hby
         self.postman = forwarding.Postman(hby=hby)
         self.swain = delegating.Boatswain(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
-
-        self.cues = cues if cues is not None else decking.Deck()
 
         doers = [self.postman, self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
 
@@ -318,7 +316,7 @@ class Counselor(doing.DoDoer):
                     if not witnessed:
                         continue
                 self.hby.db.gpwe.rem(keys=(pre,))
-                self.cues.append(dict(kin="complete", pre=pre, sn=seqner.sn, said=saider.qb64))
+                self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
 
 def loadHandlers(hby, exc, mbx, controller):
@@ -709,7 +707,7 @@ class MultisigIssueHandler(doing.DoDoer):
                 pl["r"] = "/issue"
 
                 try:
-                    creder = proving.Credentialer(ked=pl)
+                    creder = proving.Creder(ked=pl)
                     self.mbx.storeMsg(self.controller+"/multisig", creder.raw)
                 except ValueError as ex:
                     logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
@@ -734,7 +732,6 @@ def multisigIssueExn(hab, creder):
     atc = bytearray(evt[exn.size:])
 
     return exn, atc
-
 
 
 def getEscrowedEvent(db, pre, sn):

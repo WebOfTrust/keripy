@@ -41,7 +41,7 @@ def credential(schema,
         kind (Serials): serialization kind
 
     Returns:
-        Credentialer: credential instance
+        Creder: credential instance
 
     """
     vs = Versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
@@ -68,11 +68,11 @@ def credential(schema,
 
     _, vc = coring.Saider.saidify(sad=vc)
 
-    return Credentialer(ked=vc)
+    return Creder(ked=vc)
 
 
-class Credentialer(coring.Sadder):
-    """ Credentialer is for creating ACDC chained credentials
+class Creder(coring.Sadder):
+    """ Creder is for creating ACDC chained credentials
 
     Sub class of Sadder that adds credential specific validation and properties
 
@@ -116,7 +116,7 @@ class Credentialer(coring.Sadder):
             code (MtrDex): is hashing codex
 
         """
-        super(Credentialer, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
+        super(Creder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
         if self._ident != coring.Idents.acdc:
             raise ValueError("Invalid ident {}, must be ACDC".format(self._ident))
@@ -148,28 +148,28 @@ class Credentialer(coring.Sadder):
 
 
 class CrederSuber(subing.Suber):
-    """ Data serialization for Credentialer
+    """ Data serialization for Creder
 
-    Sub class of Suber where data is serialized Credentialer instance
-    Automatically serializes and deserializes using Credentialer methods
+    Sub class of Suber where data is serialized Creder instance
+    Automatically serializes and deserializes using Creder methods
 
     """
 
     def __init__(self, *pa, **kwa):
         """
         Parameters:
-            *pa (list): list arguments passed through to Suber
-            **kwa (dict): keyword arguments passed through to Suber
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
 
         """
         super(CrederSuber, self).__init__(*pa, **kwa)
 
-    def put(self, keys: Union[str, Iterable], val: Credentialer):
+    def put(self, keys: Union[str, Iterable], val: Creder):
         """ Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Credentialer): instance
+            val (Creder): instance
 
         Returns:
             bool: True If successful, False otherwise, such as key
@@ -179,12 +179,12 @@ class CrederSuber(subing.Suber):
                                key=self._tokey(keys),
                                val=val.raw))
 
-    def pin(self, keys: Union[str, Iterable], val: Credentialer):
+    def pin(self, keys: Union[str, Iterable], val: Creder):
         """ Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Credentialer): instance
+            val (Creder): instance
 
         Returns:
             bool: True If successful. False otherwise.
@@ -200,7 +200,7 @@ class CrederSuber(subing.Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            Credentialer: instance at keys
+            Creder: instance at keys
             None: if no entry at keys
 
         Usage:
@@ -211,7 +211,7 @@ class CrederSuber(subing.Suber):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return Credentialer(raw=bytes(val)) if val is not None else None
+        return Creder(raw=bytes(val)) if val is not None else None
 
     def rem(self, keys: Union[str, Iterable]):
         """ Removes entry at keys
@@ -236,4 +236,4 @@ class CrederSuber(subing.Suber):
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield self._tokeys(key), Credentialer(raw=bytes(val))
+            yield self._tokeys(key), Creder(raw=bytes(val))

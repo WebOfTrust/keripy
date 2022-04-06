@@ -13,7 +13,7 @@ from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, Dater, Verfer,
                      Prefixer, Serder, Saider, Pather, Idents, Sadder)
 from .. import help
 from .. import kering
-from ..vc.proving import Credentialer
+from ..vc.proving import Creder
 
 logger = help.ogler.getLogger()
 
@@ -1100,7 +1100,7 @@ class Parser:
                                              " {}.".format(ilk, serder.pretty()))
 
         elif sadder.ident == Idents.acdc:
-            creder = Credentialer(sad=sadder)
+            creder = Creder(sad=sadder)
             args = dict(creder=creder)
 
             if sadtsgs:
@@ -1111,7 +1111,7 @@ class Parser:
 
             try:
                 vry.processCredential(**args)
-            except Exception as e:
+            except AttributeError as e:
                 raise kering.ValidationError("No verifier to process so dropped credential"
                                              "= {}.".format(creder.pretty()))
 

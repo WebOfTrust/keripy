@@ -97,7 +97,7 @@ class Verifier:
         the CESR Proof on the credential and if valid, store the credential
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -140,9 +140,11 @@ class Verifier:
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
-        if not schemer.verify(creder.raw):
-            raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}"
-                                                     .format(creder.said, schema))
+        try:
+            schemer.verify(creder.raw)
+        except kering.ValidationError as ex:
+            raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}: {}"
+                                                     .format(creder.said, schema, ex))
 
         for (pather, cigar) in sadcigars:
             if not cigar.verfer.verify(cigar.raw, creder.raw):  # cig not verify
@@ -219,7 +221,7 @@ class Verifier:
         """ Credential Partial Signature Escrow
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -233,7 +235,7 @@ class Verifier:
         """ Missing Registry Escrow
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -248,7 +250,7 @@ class Verifier:
         """ Missing Issuer Escrow
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -262,7 +264,7 @@ class Verifier:
         """ Missing Issuer Escrow
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -278,7 +280,7 @@ class Verifier:
 
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 
@@ -346,7 +348,7 @@ class Verifier:
         """ Write the credential and associated indicies to the database
 
         Parameters:
-            creder (Credentialer): that contains the credential to process
+            creder (Creder): that contains the credential to process
             sadsigers (list): sad path signatures from transferable identifier
             sadcigars (list): sad path signatures from non-transferable identifier
 

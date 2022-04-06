@@ -15,13 +15,13 @@ def ratify(hab, serder, paths=None, pipelined=False):
 
     Parameters:
         hab (Habitat): environment used to sign the SAD
-        serder (Union[Serder,Credentialer]): the self addressing data (SAD)
+        serder (Union[Serder,Creder]): the self addressing data (SAD)
         paths (list): list of paths specified as arrays of path components
         pipelined (bool): True means prepend pipelining count code to attachemnts
             False means to not prepend pipelining count code
 
     Returns:
-        str: serialized SAD with qb64 CESR Proof Signature attachments
+        bytes: serialized SAD with qb64 CESR Proof Signature attachments
 
     """
     paths = [[]] if paths is None else paths
@@ -34,7 +34,7 @@ def provision(serder, *, sadsigers=None, sadcigars=None, pipelined=False):
     Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
     Parameters:
-        serder (Union[Serder,Credentialer]): instance containing the event
+        serder (Union[Serder,Creder]): instance containing the event
         sadsigers (list): of Siger instances (optional) to create indexed signatures
         sadcigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
@@ -61,7 +61,7 @@ def signPaths(hab, serder, paths):
 
     Parameters:
         hab (Habitat): environment used to sign the SAD
-        serder (Union[Serder,Credentialer]): the self addressing data (SAD)
+        serder (Union[Serder,Creder]): the self addressing data (SAD)
         paths (list): list of paths specified as arrays of path components
 
     Returns:

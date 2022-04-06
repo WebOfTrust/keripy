@@ -685,12 +685,12 @@ class Baser(dbing.LMDBer):
         # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
-        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs', klas=coring.Siger)
+        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=coring.Siger)
 
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
-        self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
+        self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs.',
                                              klas=(coring.Verfer, coring.Cigar))
 
         # all reply messages. Maps reply said to serialization. Replys are
@@ -729,24 +729,28 @@ class Baser(dbing.LMDBer):
                                  schema=TopicsRecord, )
 
         # group local witness escrow
-        self.glwe = koming.Komer(db=self, subkey='glwe',
+        self.glwe = koming.Komer(db=self, subkey='glwe.',
                                  schema=RotateRecord)
 
         # group partial signature escrow
-        self.gpae = koming.Komer(db=self, subkey='gpae',
+        self.gpae = koming.Komer(db=self, subkey='gpae.',
                                  schema=RotateRecord)
 
         # group partial signature escrow
-        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse',
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
                                              klas=(coring.Seqner, coring.Saider))
 
         # group delegate escrow
-        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee',
+        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
                                              klas=(coring.Seqner, coring.Saider))
 
         # group partial witness escrow
-        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe',
+        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
                                              klas=(coring.Seqner, coring.Saider))
+
+        # group partial witness escrow
+        self.cgms = subing.CesrSuber(db=self, subkey='cgms.',
+                                     klas=coring.Saider)
 
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
@@ -799,7 +803,7 @@ class Baser(dbing.LMDBer):
 
         # Field values for contact information for remote identfiers.  Keyed by prefix/field
         self.cons = subing.Suber(db=self,
-                                 subkey=".cons")
+                                 subkey="cons.")
         self.imgs = self.env.open_db(key=b'imgs.')
 
         self.reload()

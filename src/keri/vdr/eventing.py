@@ -257,11 +257,10 @@ def issue(
                ri=regk,
                dt=helping.nowIso8601()
                )
-    _, ked = coring.Saider.saidify(sad=ked)
-
     if dt is not None:
         ked["dt"] = dt
 
+    _, ked = coring.Saider.saidify(sad=ked)
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -1099,8 +1098,7 @@ class Tever:
 
             # check if fully anchored
             if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
-                if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider):
-                    self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
+                self.escrowALEvent(serder=serder, seqner=seqner, saider=saider)
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked,
                                                    ))
@@ -1277,10 +1275,6 @@ class Tever:
             sn (int): is event sequence number
             serder (Serder): is Serder instance of current event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            seqner (Seqner): is optional Seqner instance of cloned first seen ordinal
-                If cloned mode then seqner maybe provided (not None)
-                When seqner provided then compare fn of dater and database and
-                first seen if not match then log and add cue notify problem
             saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): is optional list of Siger instance of indexed backer sigs
             baks (list): is optional list of qb64 non-trans identifiers of backers
@@ -1334,10 +1328,8 @@ class Tever:
 
         # check if fully anchored
         if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
-            if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers, baks=baks):
-                self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
-            raise MissingAnchorError("Failure verify event = {} "
-                                     "".format(serder.ked))
+            self.escrowALEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers, baks=baks)
+            raise MissingAnchorError("Failure verify event = {}".format(serder.ked))
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
@@ -1360,7 +1352,7 @@ class Tever:
                                                                                                  serder.ked))
         return bigers
 
-    def verifyAnchor(self, serder, seqner, saider):
+    def verifyAnchor(self, serder, seqner=None, saider=None):
         """ Retrieve specified anchoring event and verify seal
 
         Retrieve event from db using anchor, get seal from event eserder and
@@ -1376,6 +1368,9 @@ class Tever:
                    TEL event.
 
         """
+
+        if seqner is None or saider is None:
+            return False
 
         dig = self.db.getKeLast(key=snKey(pre=self.pre, sn=seqner.sn))
         if not dig:
@@ -1455,7 +1450,6 @@ class Tever:
         self.reger.putTvt(key, serder.raw)
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
-        print("ESCROWING ANCHORLESS", serder.pre)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
@@ -1550,7 +1544,7 @@ class Tevery:
 
         return self.reger.registries
 
-    def processEvent(self, serder, seqner, saider, wigers=None):
+    def processEvent(self, serder, seqner=None, saider=None, wigers=None):
         """ Process one event serder with attached indexde signatures sigers
 
         Validates event against current state of registry or credential, creating registry
@@ -2106,7 +2100,6 @@ class Tevery:
 
         """
         for (pre, snb, digb) in self.reger.getTaeItemIter():
-            print("we are missing anchor for", pre)
             sn = int(snb, 16)
             try:
                 dgkey = dgKey(pre, digb)

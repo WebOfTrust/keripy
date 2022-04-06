@@ -126,11 +126,14 @@ class GroupMultisigIncept(doing.DoDoer):
             saider = coring.Saider(qb64=prefixer.qb64)
             self.counselor.start(aids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
+        else:
+            prefixer = coring.Prefixer(ghab.pre)
+            seqner = coring.Seqner(sn=0)
+
         while True:
-            if self.counselor.cues:
-                cue = self.counselor.cues.popleft()
-                if cue["pre"] == ghab.pre:
-                    break
+            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            if saider is not None:
+                break
 
             yield self.tock
 

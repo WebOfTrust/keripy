@@ -10,7 +10,7 @@ from keri.core import coring, scheming, parsing
 from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
-from keri.vc.proving import Credentialer, credential
+from keri.vc.proving import Creder, credential
 from keri.vdr import verifying, credentialing
 
 
@@ -62,7 +62,7 @@ def test_proving():
                        b'VbZTuBbtWSnpfLVjSqK7prYcwJyGz8HKYNU1qu2iMcaRpUD035mEy70YhiRb0AR2'
                        b'gQuBsiCg')
 
-        creder = Credentialer(raw=msg)
+        creder = Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True)
@@ -101,7 +101,7 @@ def test_proving():
 
 def test_credentialer():
     with pytest.raises(ValueError):
-        Credentialer()
+        Creder()
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
         v=coring.Versify(ident=coring.Idents.acdc, kind=Serials.json, size=0),
@@ -112,7 +112,7 @@ def test_credentialer():
     )
     _, d = coring.Saider.saidify(sad=d)
 
-    creder = Credentialer(ked=d)
+    creder = Creder(ked=d)
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.kind == Serials.json
     assert creder.issuer == "i"
@@ -131,7 +131,7 @@ def test_credentialer():
     assert ked1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
-    creder = Credentialer(raw=raw1)
+    creder = Creder(raw=raw1)
     assert creder.kind == Serials.json
     assert creder.issuer == "i"
     assert creder.crd == d
@@ -139,7 +139,7 @@ def test_credentialer():
 
     d2 = dict(d)
     d2["v"] = coring.Versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
-    creder = Credentialer(ked=d2)
+    creder = Creder(ked=d2)
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.issuer == "i"
     assert creder.schema == "abc"
@@ -151,7 +151,7 @@ def test_credentialer():
                           b'abcaiaiaa\xa3aa\x18{abcabclissuanceDatex 2021-06-27T21:26:21.233257+00:00')
 
     raw2 = bytes(creder.raw)
-    creder = Credentialer(raw=raw2)
+    creder = Creder(raw=raw2)
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.issuer == "i"
     assert creder.schema == "abc"
@@ -162,7 +162,7 @@ def test_credentialer():
 
     d3 = dict(d)
     d3["v"] = coring.Versify(ident=coring.Idents.acdc, kind=Serials.mgpk, size=0)
-    creder = Credentialer(ked=d3)
+    creder = Creder(ked=d3)
 
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.issuer == "i"
@@ -176,7 +176,7 @@ def test_credentialer():
                           b'\xd9 2021-06-27T21:26:21.233257+00:00')
 
     raw3 = bytes(creder.raw)
-    creder = Credentialer(raw=raw3)
+    creder = Creder(raw=raw3)
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.issuer == "i"
     assert creder.schema == "abc"

@@ -3,117 +3,17 @@
 keri.vc.handling module
 
 """
+import json
 
 from hio.base import doing
 from hio.help import decking
 
-from keri import kering
-from keri.help import helping
 from keri.vdr import viring
-from . import proving
 from .. import help
 from ..app import signing
-from ..core import scheming, parsing
-from ..kering import ShortageError
 from ..peer import exchanging
-from ..vc.proving import Credentialer
 
 logger = help.ogler.getLogger()
-
-
-class OfferHandler(doing.Doer):
-    """
-    Sample handler to a credential offer message from an Issuer to a Holder for a credential based
-
-    on
-        {
-           "v": "KERI10JSON00011c_",                               // KERI Version String
-           "t": "exn",                                             // peer to peer message ilk
-           "dt": "2020-08-22T17:50:12.988921+00:00"
-           "r": "/credential/offer"                                // resource with nested namespace
-           "q": {
-              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-              "output_descriptors: [
-                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
-              ],
-              "format": {
-                "cesr": {
-                  "proof_type": ["Ed25519Signature2018"]
-                }
-              }
-           } //embedded credential_manifest structure, may contain presentation_definition of reqs for fullfilment
-        }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
-
-    """
-
-    resource = "/credential/offer"
-
-    def __init__(self, wallet, formats, cues=None, **kwa):
-        """
-
-        Parameters:
-            wallet (Wallet) credential wallet that will hold the issued credentials
-            formats (list) of format str names accepted for offers
-            cues (Optional(decking.Deck)): outbound cue messages
-
-        """
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-        self.wallet = wallet
-        self.formats = formats
-
-        super(OfferHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-        """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                recipient = msg["pre"]
-
-                issuer = payload["issuer"]
-                descriptors = payload["input_descriptors"]
-                formats = payload["format"]
-
-                schema = descriptors[0]
-
-                fmts = []
-                for fmt in self.formats:
-                    if fmt in formats:
-                        fmts.append(formats[fmt])
-
-                if not fmts:
-                    logger.info("No acceptable formats being offered in {}.  Needed one of {}."
-                                "".format(formats, self.formats))
-                    continue
-
-                apply = credential_apply(issuer, schema, fmts, body={})
-
-                exn = exchanging.exchange(route="/credential/apply", payload=apply)
-                self.cues.append(dict(dest=recipient, rep=exn))
-
-                yield
-
-            yield
 
 
 class ApplyHandler(doing.Doer):
@@ -121,18 +21,14 @@ class ApplyHandler(doing.Doer):
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
            "t": "exn",                                             // peer to peer message ilk
+           "d": "EvLi9I4T6tiIEi4IxZtQy8S7ec5SZYwKJnUBPIgYs5Ks",
            "dt": "2020-08-22T17:50:12.988921+00:00"
            "r": "/credential/apply"
-           "q" {
-              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-              "input_descriptors": [
-                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
-              ],
-              "format": {
-                 "cesr": {
-                   "proof_type": ["Ed25519Signature2018"]
-                 }
-              }
+           "a" {
+               "s": "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw",
+               "a": {
+                  "LEI": "254900OPPU84GM83MG36"
+               }
            } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
         }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
 
@@ -186,48 +82,7 @@ class ApplyHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 recipientIdentifier = msg["pre"]
-
-                payload = msg["payload"]
-
-                schema = payload["schema"]
-                prefix = payload["issuer"]
-                if prefix not in self.hby.habs:
-                    logger.info("request for incorrect issuer {}".format(prefix))
-                    continue
-
-                hab = self.hby.habs[prefix]
-                issuer = self.rgy.registryByName(name=hab.name)
-
-                source = []
-
-                if schema != scheming.QualifiedvLEIIssuervLEICredential:
-                    logger.info("credential type {} is invalid, only QualifiedvLEIIssuervLEICredential can be "
-                                "auto-issued".format(schema))
-                    continue
-
-                data = payload["body"]
-                dt = data["dt"] if "dt" in data else helping.nowIso8601()
-
-                d = dict(
-                    d="",
-                    i=recipientIdentifier.qb64,
-                    dt=dt,
-                )
-
-                d |= data
-
-                creder = proving.credential(issuer=hab.pre,
-                                            schema=schema,
-                                            subject=d,
-                                            source=source,
-                                            status=issuer.regk)
-                try:
-                    issuer.issue(creder=creder, dt=dt)
-                except kering.MissingAnchorError:
-                    logger.info("Missing anchor from credential issuance due to multisig identifier")
-
-                craw = hab.endorse(creder)
-                parsing.Parser().parse(ims=craw, vry=self.verifier)
+                print(recipientIdentifier)
 
                 yield self.tock
 
@@ -278,7 +133,7 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hby, verifier,  cues=None, **kwa):
+    def __init__(self, hby, rgy, mbx, controller, **kwa):
         """ Initialize instance
 
         Parameters:
@@ -290,10 +145,11 @@ class IssueHandler(doing.DoDoer):
 
         """
         self.hby = hby
+        self.rgy = rgy
+        self.mbx = mbx
+        self.controller = controller
         self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.verifier = verifier
+        self.cues = decking.Deck()
 
         doers = [doing.doify(self.msgDo)]
 
@@ -323,31 +179,70 @@ class IssueHandler(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
-                envelopes = payload["vc"]
 
-                envelopes.reverse()
-                for envlop in envelopes:
-                    crd = envlop["vc"]
-                    proof = envlop["proof"]
+                if "i" not in payload or "s" not in payload or "a" not in payload:
+                    logger.error(f"invalid credential issuance message, i, s and a are required fields.  evt=: "
+                                 f"{payload}")
+                    continue
 
-                    creder = proving.Credentialer(ked=crd)
+                iaid = payload["i"]
+                ssaid = payload["s"]
+                csaid = payload["a"]
 
-                    msg = bytearray(creder.raw)
-                    msg.extend(proof.encode("utf-8"))
-                    parsing.Parser().parse(ims=msg, vry=self.verifier)
+                data = dict(
+                    r='/credential/issue',
+                    issuer=dict(
+                        i=iaid
+                    ),
+                    schema=dict(
+                        d=ssaid
+                    ),
+                    credential=dict(
+                        d=csaid
+                    )
+                )
 
-                    c = self.verifier.reger.saved.get(creder.said)
-                    while c is None:
-                        c = self.verifier.reger.saved.get(creder.said)
-                        yield
+                creder = self.rgy.reger.creds.get(csaid)
+                if creder is not None:
+                    data["credential"]["sad"] = creder.crd
 
-                yield
+                # TODO:  Get schema resolver and Organizer to load schema and contact info if any.
+                raw = json.dumps(data).encode("utf-8")
 
-            yield
+                if self.controller is not None:
+                    self.mbx.storeMsg(self.controller+"/credential", raw)
+
+                yield self.tock
+
+            yield self.tock
 
 
-class RequestHandler(doing.Doer):
-    """ Processor for a credential request
+def credentialIssueExn(hab, schema, said):
+    """
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        schema (str): qb64 SAID of JSON schema of credential being issued
+        said (str): qb64 SAID of credentiual being issued
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        c=said,
+    )
+
+    exn = exchanging.exchange(route="/credential/issue", payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims
+
+
+class PresentationRequestHandler(doing.Doer):
+    """ Processor for a presentation request
 
         Processor for a credential request with input descriptors in the payload used to
         match saved credentials based on a schema.  The payload of the request is expected to
@@ -391,7 +286,7 @@ class RequestHandler(doing.Doer):
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
 
-        super(RequestHandler, self).__init__(**kwa)
+        super(PresentationRequestHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
         """ Process presentation request message with sender identifier, sigs and verfers
@@ -427,7 +322,7 @@ class RequestHandler(doing.Doer):
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
-                    pe = presentation_exchange(db=self.hby.db, reger=self.wallet.reger, credentials=matches)
+                    pe = presentationExchangeExn(db=self.hby.db, reger=self.wallet.reger, credentials=matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
@@ -436,7 +331,7 @@ class RequestHandler(doing.Doer):
             yield
 
 
-class ProofHandler(doing.Doer):
+class PresentationProofHandler(doing.Doer):
     """ Processor for responding to presentation proof peer to peer message.
 
       The payload of the message is expected to have the following format:
@@ -495,7 +390,7 @@ class ProofHandler(doing.Doer):
         self.cues = cues if cues is not None else decking.Deck()
         self.proofs = proofs if proofs is not None else decking.Deck()
 
-        super(ProofHandler, self).__init__(**kwa)
+        super(PresentationProofHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
         """ Handle incoming messages by parsing and verifying the credential and storing it in the wallet
@@ -548,35 +443,7 @@ class ProofHandler(doing.Doer):
             yield
 
 
-def envelope(msg, msgs=bytearray()):
-    """ Returns a dict of a VC split into the "vc" and "proof"
-
-    Parameters:
-        msg (bytes): of verifiable credential to split
-        msgs (bytearray) optional event log messages in support of the credential
-
-    Returns:
-        dict: enveloped credential, proof and key event/transaction event log messages
-
-    """
-
-
-    ims = bytearray(msg)
-    try:
-        creder = Credentialer(raw=ims)
-    except ShortageError as e:
-        raise e
-    else:
-        del ims[:creder.size]
-
-    return dict(
-        vc=creder.crd,
-        proof=ims.decode("utf-8"),
-        msgs=msgs.decode("utf-8")
-    )
-
-
-def presentation_exchange(db, reger, credentials):
+def presentationExchangeExn(db, reger, credentials):
     """ Create a presentation exchange.
 
     Create presentation exchange body containing the credential and event logs
@@ -611,18 +478,17 @@ def presentation_exchange(db, reger, credentials):
         for msg in reger.clonePreIter(pre=vci):
             msgs.extend(msg)
 
-        # TODO:  Package credential in presentation exchange, transposing all signatures:
         dm.append(dict(
             id=creder.schema,
             format="cesr",
             path="$.verifiableCredential[{}]".format(idx)
         ))
+
         craw = signing.provision(creder, sadsigers=sadsigers, sadcigars=sadcigars)
-        vcs.append(envelope(craw, msgs))
+        vcs.append(creder.said)
 
         sources = reger.sources(db, creder)
-        vcs.extend([envelope(msg=craw, msgs=msgs) for craw, msgs in sources])
-
+        vcs.extend([creder.said for creder, msgs in sources])
 
     d = dict(
         presentation_submission=dict(
@@ -632,67 +498,3 @@ def presentation_exchange(db, reger, credentials):
     )
 
     return d
-
-
-def credential_apply(issuer, schema, formats, body):
-    """ Creates credential apply body for `exn` message
-
-    Resulting `exn` message will have the following format:
-        {
-           "v": "KERI10JSON00011c_",                               // KERI Version String
-           "t": "exn",                                             // peer to peer message ilk
-           "dt": "2020-08-22T17:50:12.988921+00:00"
-           "r": "/credential/apply"
-           "q" {
-              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-              "schema": "E_xp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaL5d",
-              "body": {
-                 // fields specific to the credential specified in the input_descriptor
-              }
-           } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
-        }
-
-    Parameters:
-        issuer (str): is qb64 identifier prefix of the issuer
-        schema (str): is qb64 SAID of schema being applied for
-        formats (list): is list of acceptable credential formats
-        body (map)" of values being applied for
-
-    Returns:
-        dict: field for credential apply body
-
-    """
-
-    d = dict(
-        issuer=issuer,
-        schema=schema,
-        body=body
-    )
-
-    for fmt in formats:
-        d["format"].append(fmt.fmd)
-
-    return d
-
-
-def credential_issue(msgs):
-    """ Returns a list of credentials enveloped inside a credential issue message
-
-    Parameters:
-        msgs (list) is list of CESR formatted, endorsed verifiable credentials
-
-    Returns:
-        dict: vc list embedded in vc property
-
-    """
-
-    vcs = []
-    for msg in msgs:
-        vc = envelope(msg)
-        vcs.append(vc)
-
-    pl = dict(
-        vc=vcs
-    )
-
-    return pl

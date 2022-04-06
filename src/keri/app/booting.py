@@ -302,8 +302,9 @@ class BootEnd(doing.DoDoer):
 
         hby = habbing.Habery(name=name, base=self.base, bran=bran)
         hbyDoer = habbing.HaberyDoer(habery=hby)
-        self.extend([hbyDoer])
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
+        rgyDoer = credentialing.RegeryDoer(rgy=rgy)
+        self.extend([hbyDoer, rgyDoer])
 
         doers = kiwiing.setup(hby=hby, rgy=rgy, servery=self.servery, **self._kiwinits)
         self.extend(doers)

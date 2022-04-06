@@ -134,7 +134,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         evt = cue["msg"]
         assert evt == tevt
 
-        creder = proving.Credentialer(raw=cred)
+        creder = proving.Creder(raw=cred)
         assert regery.reger.creds.get(b'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0').raw == creder.raw
 
         # Try to revoke a credential that doesn't exist and get the appropriate error
@@ -352,7 +352,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 #         result = client.simulate_post(path="/credentials", body=b)
 #         assert result.status == falcon.HTTP_200
 #
-#         creder = proving.Credentialer(ked=result.json, kind=coring.Serials.json)
+#         creder = proving.Creder(ked=result.json, kind=coring.Serials.json)
 #
 #         # The Issuer will have cue'd up a multisig request to be processed
 #         assert len(issuer.cues) == 1

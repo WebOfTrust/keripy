@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import kering
 from keri.app import grouping, indirecting, habbing
 from keri.app.cli.common import rotating, existing, displaying
+from keri.core import coring
 
 logger = help.ogler.getLogger()
 
@@ -115,15 +116,14 @@ class GroupMultisigRotate(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
+        seqner = coring.Seqner(sn=ghab.kever.sn+1)
         self.counselor.rotate(ghab=ghab, aids=self.aids, sith=self.sith, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds),
                               data=self.data)
-
         while True:
-            if self.counselor.cues:
-                cue = self.counselor.cues.popleft()
-                if cue["pre"] == ghab.pre:
-                    break
+            saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
+            if saider is not None:
+                break
 
             yield self.tock
 
