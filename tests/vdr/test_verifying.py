@@ -10,12 +10,13 @@ from keri import kering
 from keri.app import habbing, signing
 from keri.core import eventing as ceventing, scheming
 from keri.core import parsing, coring
+from keri.core.eventing import SealEvent
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import verifying, credentialing, eventing
 
 
-def test_verifier_query(mockHelpingNowUTC):
+def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
@@ -24,13 +25,13 @@ def test_verifier_query(mockHelpingNowUTC):
         msg = verfer.query(hab.pre, issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EXOG6T6nt1BABGbD1OtypQe6'
-                       b'SjZAAsrnHFZYwkCneA1k","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"E2SIcWEY-nxQXJT7yDHMJxVM'
+                       b'v0NmjHx7Hgum38nYfhYI","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs"}}-V'
-                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuArHNOMt'
-                       b'9SxHkUhHh8-f27XpHDe8lMVAiYPqvbynY2xc_XbvgTWsPn4VAOO-0nuOGVCzwWzC'
-                       b'sVOyc8LLiOF-Ag')
+                       b'KXqgcX4","ri":"E2c3V7uJMRWNg13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ"}}-V'
+                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAE_clfMOX'
+                       b'ko297fejXgAOa0iBpLHt30pHZPU5hL0LIb5y6tK1gDdBp-f63ZCfyJY6dd9zC4U9'
+                       b'SMkEHmejSpgHAA')
 
 
 def test_verifier(seeder):
@@ -42,6 +43,12 @@ def test_verifier(seeder):
 
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+
         verifier = verifying.Verifier(hby=hby, reger=regery.reger)
 
         credSubject = dict(
@@ -70,7 +77,12 @@ def test_verifier(seeder):
         assert cue["kin"] == "telquery"
         q = cue["q"]
         assert q["ri"] == issuer.regk
-        issuer.issue(creder=creder)
+        iss = issuer.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         verifier.processEscrows()
@@ -302,6 +314,12 @@ def test_verifier_chained_credential(seeder):
         ianreg = credentialing.Regery(hby=ianHby, name="ian", temp=True)
         vicreg = credentialing.Regery(hby=vicHby, name="vic", temp=True)
         roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
+        rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
+        ron.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ron.kever.sn)
+        roniss.anchorMsg(pre=roniss.regk, regd=roniss.regd, seqner=seqner, saider=ron.kever.serder.saider)
+        ronreg.processEscrows()
+
         ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg.reger)
 
         credSubject = dict(
@@ -332,7 +350,12 @@ def test_verifier_chained_credential(seeder):
         q = cue["q"]
         assert q["ri"] == roniss.regk
 
-        roniss.issue(creder=creder)
+        iss = roniss.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ron.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ron.kever.sn)
+        roniss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ron.kever.serder.saider)
+        ronreg.processEscrows()
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ronverfer.processEscrows()
@@ -363,6 +386,12 @@ def test_verifier_chained_credential(seeder):
         assert saider[0].qb64 == creder.said
 
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian")
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ian.kever.sn)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd, seqner=seqner, saider=ian.kever.serder.saider)
+        ianreg.processEscrows()
+
         ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
         leiCredSubject = dict(
@@ -404,7 +433,12 @@ def test_verifier_chained_credential(seeder):
         q = cue["q"]
         assert q["ri"] == ianiss.regk
 
-        ianiss.issue(creder=vLeiCreder)
+        iss = ianiss.issue(said=vLeiCreder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ian.kever.sn)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ian.kever.serder.saider)
+        ianreg.processEscrows()
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
@@ -434,13 +468,12 @@ def test_verifier_chained_credential(seeder):
         iantvy = eventing.Tevery(reger=ianreg.reger, db=ian.db, local=False)
         ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
-        # first get Ron's inception event into Ian's db
-        ronIcp = ron.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(ronIcp), kvy=iankvy, tvy=iantvy)
-
         # Now process all the events that Ron's issuer has generated so far
-        for cue in roniss.cues:
-            msg = cue["msg"]
+        for msg in ron.db.clonePreIter(pre=ron.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
@@ -461,11 +494,11 @@ def test_verifier_chained_credential(seeder):
         victvy = eventing.Tevery(reger=vicreg.reger, db=vic.db, local=False)
         vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
 
-        # Get Ron's icp into Vic's db
-        parsing.Parser().parse(ims=bytearray(ronIcp), kvy=vickvy, tvy=victvy)
-
-        for cue in roniss.cues:
-            msg = cue["msg"]
+        for msg in ron.db.clonePreIter(pre=ron.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
@@ -476,12 +509,11 @@ def test_verifier_chained_credential(seeder):
 
         # Vic should be able to verify Han's credential
         # Get Ian's icp into Vic's db
-        ianIcp = ian.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(ianIcp), kvy=vickvy, tvy=victvy)
-
-        # Get Ian's events in Vic's Tevery
-        for cue in ianiss.cues:
-            msg = cue["msg"]
+        for msg in ian.db.clonePreIter(pre=ian.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ianverfer.reger.clonePreIter(pre=ianiss.regk):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ianverfer.reger.clonePreIter(pre=vLeiCreder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
@@ -494,10 +526,19 @@ def test_verifier_chained_credential(seeder):
 
         # Revoke Ian's issuer credential and vic should no longer be able to verify
         # Han's credential that's linked to it
-        roniss.cues.clear()  # empty Ron's cue, we're done with all the previous events
-        roniss.revoke(creder=creder)
-        for cue in roniss.cues:
-            msg = cue["msg"]
+        rev = roniss.revoke(said=creder.said)
+        rseq = coring.Seqner(sn=rev.sn)
+        rseal = SealEvent(rev.pre, rseq.snh, rev.said)._asdict()
+        ron.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ron.kever.sn)
+        roniss.anchorMsg(pre=rev.pre, regd=rev.said, seqner=seqner, saider=ron.kever.serder.saider)
+        ronreg.processEscrows()
+
+        for msg in ron.db.clonePreIter(pre=ron.pre):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(kering.RevokedChainError):

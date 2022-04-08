@@ -8,7 +8,6 @@ import json
 from hio.base import doing
 from hio.help import decking
 
-from keri.vdr import viring
 from .. import help
 from ..app import signing
 from ..peer import exchanging
@@ -464,7 +463,6 @@ def presentationExchangeExn(db, reger, credentials):
     for idx, (creder, sadsigers, sadcigars) in enumerate(credentials):
         said = creder.said
         regk = creder.status
-        vci = viring.nsKey([regk, said])
 
         issr = creder.crd["i"]
 
@@ -475,7 +473,7 @@ def presentationExchangeExn(db, reger, credentials):
         for msg in reger.clonePreIter(pre=regk):
             msgs.extend(msg)
 
-        for msg in reger.clonePreIter(pre=vci):
+        for msg in reger.clonePreIter(pre=said):
             msgs.extend(msg)
 
         dm.append(dict(

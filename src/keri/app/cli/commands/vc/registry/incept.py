@@ -103,9 +103,8 @@ class RegistryInceptor(doing.DoDoer):
         registry = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
 
         while not self.registrar.complete(pre=registry.regk, sn=0):
+            self.rgy.processEscrows()
             yield self.tock
-
-        self.rgy.processEscrows()
 
         print("Regsitry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName,
                                                                                 registry.regk, hab.pre))

@@ -13,20 +13,19 @@ from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
-from hio.help import helping, decking
+from hio.help import decking
 
 from . import grouping, challenging, connecting
 from .. import help
 from .. import kering
-from ..app import specing, forwarding, agenting, signing, storing, indirecting, httping, habbing, delegating
-from ..core import parsing, coring, eventing, scheming
+from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating
+from ..core import parsing, coring, eventing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
-from ..help import helping
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
-from ..vdr import viring, verifying, credentialing
+from ..vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
 
@@ -841,7 +840,7 @@ class CredentialEnd(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, rgy, credentialer, verifier):
+    def __init__(self, hby, rgy, registrar, credentialer, verifier):
         """ Create endpoint for issuing and listing credentials
 
         Endpoints for issuing and listing credentials from non-group identfiers only
@@ -850,11 +849,14 @@ class CredentialEnd(doing.DoDoer):
             hby (Habery): identifier database environment
             rgy (Regery): credential registry database environment
             verifier (Verifier): credential verifier
+            registrar (Registrar): credential registry protocol manager
             credentialer: (Credentialer): credential protocol manager
+
         """
         self.hby = hby
         self.rgy = rgy
         self.credentialer = credentialer
+        self.registrar = registrar
         self.verifier = verifier
         self.postman = forwarding.Postman(hby=self.hby)
 
@@ -998,7 +1000,8 @@ class CredentialEnd(doing.DoDoer):
         data = body.get("credentialData")
 
         try:
-            creder = self.credentialer.issue(regname, recp, schema, source, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
@@ -1170,7 +1173,7 @@ class CredentialEnd(doing.DoDoer):
                        "".format(alias)
             return None
 
-        creder = self.issue(hab=hab, body=body, rep=rep)
+        creder = self.credentialer.issue(hab=hab, body=body, rep=rep)
         if creder is None:  # Issuance didn't work, status set in issue
             return
 
@@ -1188,13 +1191,13 @@ class CredentialEnd(doing.DoDoer):
             return False
 
         try:
-            creder = self.verifier.reger.creds.get(keys=said)
+            creder = self.verifier.reger.creds.get(keys=(said,))
             if creder is None:
                 rep.status = falcon.HTTP_NOT_FOUND
                 rep.text = "credential not found"
                 return False
 
-            registry.revoke(creder=creder)
+            self.registrar.revoke(regk=registry.regk, said=creder.said)
         except kering.ValidationError as ex:
             rep.status = falcon.HTTP_CONFLICT
             rep.text = ex.args[0]
@@ -1202,14 +1205,13 @@ class CredentialEnd(doing.DoDoer):
 
         return True
 
-    def on_delete(self, req, rep, alias=None, said=None):
+    def on_delete(self, req, rep, alias=None):
         """ Credential DELETE endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             alias: qb64 identfier prefix of issuer of credential
-            said: qb64 identifier prefix of recipient of credential
 
         ---
         summary: Revoke credential
@@ -1229,7 +1231,7 @@ class CredentialEnd(doing.DoDoer):
                 type: string
              description: human readable alias for issuer identifier
              required: true
-           - in: path
+           - in: query
              name: said
              schema:
                 type: string
@@ -1247,6 +1249,8 @@ class CredentialEnd(doing.DoDoer):
             rep.text = "Invalid alias {} for credential revocation" \
                        "".format(alias)
             return None
+
+        said = req.params.get("said")
 
         if self.revoke(req=req, rep=rep, said=said):
             rep.status = falcon.HTTP_202
@@ -2744,7 +2748,7 @@ def loadEnds(app, *,
     app.add_route("/groups/{alias}/rot", multiEvtEnd, suffix="rot")
     app.add_route("/groups/{alias}/ixn", multiEvtEnd, suffix="ixn")
 
-    credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier, credentialer=credentialer)
+    credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier, registrar=registrar, credentialer=credentialer)
     app.add_route("/credentials/{alias}", credsEnd)
     app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")

@@ -83,13 +83,8 @@ def test_counselor():
         counselor.processEscrows()
         val = hby1.db.gpse.getLast(keys=(ghab.pre,))  # thold met, partial sig escrow should be empty
         assert val is None
-        assert len(counselor.cues) == 1
-        cue = counselor.cues.popleft()
-        assert cue["kin"] == "complete"
-        assert cue["pre"] == ghab.pre
-        assert cue["sn"] == 0
-        assert cue["said"] == "EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW5FGLpaY"
-        counselor.postman.evts.popleft()  # clear events for next step (rotation)
+        assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.postman.evts.popleft()
 
         # Partial rotation
         aids = [hab1.pre, hab2.pre]
@@ -159,12 +154,7 @@ def test_counselor():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
-        assert len(counselor.cues) == 1
-        cue = counselor.cues.popleft()
-        assert cue["kin"] == "complete"
-        assert cue["pre"] == ghab.pre
-        assert cue["sn"] == 1
-        assert cue["said"] == "EwEVZQHjYW_jju5RS25q1IMoMT1mci-RIUa0m027h5Oo"
+        assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]

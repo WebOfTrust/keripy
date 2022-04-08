@@ -315,6 +315,7 @@ class WitnessPublisher(doing.DoDoer):
                     _ = (yield self.tock)
 
                 self.remove(witers)
+                self.cues.append(evt)
 
                 yield self.tock
 

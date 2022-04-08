@@ -80,7 +80,7 @@ def test_witness_sender(seeder):
         msg.extend(seal.d.encode("utf-8"))
 
         witDoer = agenting.WitnessPublisher(hby=palHby)
-        witDoer.msgs.append(dict(pre=palHby.pre, msg=msg))
+        witDoer.msgs.append(dict(pre=palHab.pre, msg=msg))
 
         limit = 1.0
         tock = 0.03125
@@ -88,7 +88,10 @@ def test_witness_sender(seeder):
         doers = wanDoers + wilDoers + wesDoers + [witDoer]
         doist.do(doers=doers)
 
-        assert witDoer.done is True
+        assert len(witDoer.cues) == 1
+        cue = witDoer.cues.popleft()
+        assert cue["pre"] == palHab.pre
+        assert cue["msg"] == msg
 
         for name in ["wes", "wil", "wan"]:
             reger = viring.Reger(name=name)

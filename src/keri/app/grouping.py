@@ -57,7 +57,7 @@ class Counselor(doing.DoDoer):
         others = list(aids)
         others.remove(pid)
 
-        print(f"Sending inception event to {len(aids) - 1} other participants")
+        print(f"Sending multisig event to {len(aids) - 1} other participants")
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
@@ -111,6 +111,16 @@ class Counselor(doing.DoDoer):
                 self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
+
+    def complete(self, prefixer, seqner, saider):
+        csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+        if not csaider:
+            return False
+        else:
+            if csaider.qb64 != saider.qb64:
+                raise kering.ValidationError(f"invalid TEL event multisig escrowed event {csaider.qb64}-{saider.qb64}")
+
+        return True
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -228,7 +238,6 @@ class Counselor(doing.DoDoer):
             snkey = dbing.snKey(pre, seqner.sn)
             evt = self.hby.db.getKeLast(key=snkey)
             if evt:
-                print()
                 self.hby.db.gpse.rem(keys=(pre, ))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -315,6 +324,7 @@ class Counselor(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
+
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 

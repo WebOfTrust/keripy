@@ -13,6 +13,7 @@ from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring
+from keri.core.eventing import SealEvent
 from keri.db import basing
 from keri.end import ending
 from keri.vc import proving
@@ -30,26 +31,31 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
 
         regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(name=hab.name, prefix=hab.pre)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+        assert issuer.regk in regery.reger.tevers
+
         verifier = verifying.Verifier(hby=hby, reger=regery.reger)
 
         icp = recp.makeOwnEvent(sn=0)
         kvy = eventing.Kevery(db=hab.db, lax=True)
         parsing.Parser().parseOne(ims=bytearray(icp), kvy=kvy)
 
-        assert len(issuer.cues) == 2
-        cue = issuer.cues.popleft()
-        assert cue["kin"] == "kevt"
-        cue = issuer.cues.popleft()
-        assert cue["kin"] == "send"
-
         repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
+        registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
+        credentialer = credentialing.Credentialer(hby=hby, rgy=regery, registrar=registrar, verifier=verifier)
 
         _ = kiwiing.loadEnds(hby=hby,
                              rep=repd,
                              rgy=regery,
                              verifier=verifier,
                              counselor=counselor,
+                             registrar=registrar,
+                             credentialer=credentialer,
                              app=app, path="/", mbx=None)
 
         client = testing.TestClient(app)
@@ -68,35 +74,21 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
                                       body=b'{"name": "test-full", "alias": "test",'
                                            b' "noBackers": true, "baks": [], "toad": 0, "estOnly": false}')
         assert result.status == falcon.HTTP_202
+        regery.processEscrows()
 
         result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test"}')
         assert result.status == falcon.HTTP_202
+        regery.processEscrows()
 
         result = client.simulate_get(path="/registries")
         assert result.status == falcon.HTTP_200
-        assert result.json == [{'name': 'test',
-                                'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                'regk': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
-                                'state': {'a': {'d': 'EhUlcH33N486ITfJu3kG5evVLoivVaR8Wp6ut8rP21gs', 's': 1},
-                                          'b': [],
-                                          'ba': [],
-                                          'br': [],
-                                          'bt': '0',
-                                          'c': ['NB'],
-                                          'd': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
-                                          'dt': '2021-01-01T00:00:00.000000+00:00',
-                                          'et': 'vcp',
-                                          'i': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
-                                          'ii': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                          's': '0',
-                                          'v': 'KERI10JSON000158_'}}]
+        assert len(result.json) == 3
 
         schema = "EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
         body = dict(
-            alias="test",
             registry="test",
             schema=schema,
             recipient=recp.pre,
@@ -104,120 +96,39 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
             credentialData=data, source=[], rules=[]
         )
         b = json.dumps(body).encode("utf-8")
-        result = client.simulate_post(path="/credentials", body=b)
+        result = client.simulate_post(path="/credentials/test", body=b)
         assert result.status == falcon.HTTP_200
+        creder = proving.Creder(ked=result.json)
+        regery.processEscrows()
+        credentialer.processEscrows()
+        verifier.processEscrows()
 
-        tevt = (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EJwzM4hwvzoQnRAqXOtKynvC'
-                b'Llt83WzjKx9OUVUs82qc","i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RX'
-                b'mlaWYW0","s":"0","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
-                b'PDs","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-                b'AAAAAAAAgE0OHFMe-_ppaT2YBoJIpVn3A-lv1WcER3GoK_aPlNqGI')
-        kevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E0OHFMe-_ppaT2YBoJIpVn3A'
-                b'-lv1WcER3GoK_aPlNqGI","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
-                b'GF9Z1Pc","s":"2","p":"EhUlcH33N486ITfJu3kG5evVLoivVaR8Wp6ut8rP21'
-                b'gs","a":[{"i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0","s"'
-                b':"0","d":"EJwzM4hwvzoQnRAqXOtKynvCLlt83WzjKx9OUVUs82qc"}]}-AABAA'
-                b'sttu9Dtj72cP_Qx_o5c9HAuROPVN6tf_ABide4hT6eXKxRHV52Q9FCnOgsSWSERE'
-                b'2Gy4TO4Oc8A3NvSbu9SGDg')
-        cred = (b'{"v":"ACDC10JSON0001a2_","d":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0",'
-                b'"s":"EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A","i":"ECtWlHS2Wbx5M2Rg6nm6'
-                b'9PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"EGtpMEB96XgfrN5CzxbRSDaRWVqH-78zrCk1N3gX'
-                b'NaOE","i":"EqwblUykZNwSsBd4g8pHeRZhlkPj64MhoGDspLCh2qnI","dt":"2021-01-01T00'
-                b':00:00.000000+00:00","LEI":"1234567890abcdefg"},"e":[],"ri":"EjPXk1a_MtWR3a0'
-                b'qrZiJ34c971FxiHyCZSRo6482KPDs","r":[]}')
-
-        assert len(issuer.cues) == 2
-        cue = issuer.cues.popleft()
-        evt = cue["msg"]
-        assert evt == kevt
-        cue = issuer.cues.popleft()
-        evt = cue["msg"]
-        assert evt == tevt
-
-        creder = proving.Creder(raw=cred)
-        assert regery.reger.creds.get(b'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0').raw == creder.raw
+        assert regery.reger.creds.get(creder.saidb).raw == creder.raw
 
         # Try to revoke a credential that doesn't exist and get the appropriate error
-        result = client.simulate_delete(path="/credentials",
-                                        query_string=("alias=test&"
-                                                      "registry=test&"
+        result = client.simulate_delete(path="/credentials/test",
+                                        query_string=("registry=test&"
                                                       "said=ESRIYQwCs8z1Fu7Jc6wf1ZDSoQQbKgjW9PiC324D_MUs"))
         assert result.status == falcon.HTTP_NOT_FOUND
 
         # Now revoke the actual credential
-        result = client.simulate_delete(path="/credentials",
-                                        query_string=("alias=test&"
-                                                      "registry=test&"
-                                                      "said=EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0"))
+        result = client.simulate_delete(path="/credentials/test",
+                                        query_string=("registry=test&"
+                                                      f"said={creder.said}"))
         assert result.status == falcon.HTTP_202
+        regery.processEscrows()
+        credentialer.processEscrows()
 
-        rev = (b'{"v":"KERI10JSON000120_","t":"rev","d":"EtSxl8hO39oSn-Mu76dYT-iW'
-               b'hkxFB2mxD5LCVvZftN78","i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RX'
-               b'mlaWYW0","s":"1","ri":"EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482K'
-               b'PDs","p":"EJwzM4hwvzoQnRAqXOtKynvCLlt83WzjKx9OUVUs82qc","dt":"20'
-               b'21-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwE7X6'
-               b'XkGS-mNlfMVMgk2itioHGRNTkio9K9-XvUrXL2iU')
-        rkevt = (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"E7X6XkGS-mNlfMVMgk2itioH'
-                 b'GRNTkio9K9-XvUrXL2iU","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpB'
-                 b'GF9Z1Pc","s":"3","p":"E0OHFMe-_ppaT2YBoJIpVn3A-lv1WcER3GoK_aPlNq'
-                 b'GI","a":[{"i":"EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0","s"'
-                 b':"1","d":"EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78"}]}-AABAA'
-                 b'Tkkrdu2obr76kfCUJsVMD6qLdfWDFUe2w_PvhfjrLot--wZ4BUsEwHXvvODprZ6S'
-                 b'eOwFmsPf9N45lZm0s0otCQ')
-
-        assert len(issuer.cues) == 2
-        cue = issuer.cues.popleft()
-        evt = cue["msg"]
-        assert evt == rkevt
-        cue = issuer.cues.popleft()
-        evt = cue["msg"]
-        assert evt == rev
-
-        result = client.simulate_get(path="/credentials", params=dict(type="issued", alias="test123", registry="test"))
+        result = client.simulate_get(path="/credentials/test123", params=dict(type="issued", registry="test"))
         assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
 
-        result = client.simulate_get(path="/credentials", params=dict(type="issued", alias="test", registry="test"))
+        result = client.simulate_get(path="/credentials/test", params=dict(type="issued", registry="test"))
         assert result.status == falcon.HTTP_200
-        assert result.json == [{'chains': [],
-                                'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                'sad': {'a': {'LEI': '1234567890abcdefg',
-                                              'd': 'EGtpMEB96XgfrN5CzxbRSDaRWVqH-78zrCk1N3gXNaOE',
-                                              'dt': '2021-01-01T00:00:00.000000+00:00',
-                                              'i': 'EqwblUykZNwSsBd4g8pHeRZhlkPj64MhoGDspLCh2qnI'},
-                                        'd': 'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0',
-                                        'e': [],
-                                        'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                        'r': [],
-                                        'ri': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
-                                        's': 'EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A',
-                                        'v': 'ACDC10JSON0001a2_'},
-                                'sadcigars': [],
-                                'sadsigers': [{'d': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                               'path': '-',
-                                               'pre': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                               'sn': 0}],
-                                'status': {'a': {'d': 'E7X6XkGS-mNlfMVMgk2itioHGRNTkio9K9-XvUrXL2iU', 's': 3},
-                                           'd': 'EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78',
-                                           'dt': '2021-01-01T00:00:00.000000+00:00',
-                                           'et': 'rev',
-                                           'i': 'EqwyiM0_aCQDgkPeOULSgRXhmwsxO_zI0C9RXmlaWYW0',
-                                           'ra': {},
-                                           'ri': 'EjPXk1a_MtWR3a0qrZiJ34c971FxiHyCZSRo6482KPDs',
-                                           's': '1',
-                                           'v': 'KERI10JSON000135_'}}]
-
-        req = dict(alias="test",
-                   schema="EtSxl8hO39oSn-Mu76dYT-iWhkxFB2mxD5LCVvZftN78",
-                   issuer="ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc",
-                   values={}
-                   )
-        b = json.dumps(req).encode("utf-8")
-        result = client.simulate_post(path="/applications", body=b)
-        assert result.status == falcon.HTTP_202
-        req["alias"] = "test123"
-        b = json.dumps(req).encode("utf-8")
-        result = client.simulate_post(path="/applications", body=b)
-        assert result.status == falcon.HTTP_400  # Bad Request, invalid alias
+        assert len(result.json) == 1
+        sad = result.json[0]["sad"]
+        assert sad["d"] == creder.said
+        state = result.json[0]["status"]
+        assert state["et"] == coring.Ilks.rev
 
 
 # def test_credential_handlers_singlesig(mockHelpingNowUTC):
@@ -674,13 +585,18 @@ def test_identifier_ends():
 
         repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
+        registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
+        credentialer = credentialing.Credentialer(hby=hby, rgy=regery, registrar=registrar, verifier=verifier)
 
-        endDoers = kiwiing.loadEnds(hby=hby,
-                                    rep=repd,
-                                    rgy=regery,
-                                    verifier=verifier,
-                                    app=app, path="/",
-                                    mbx=None, counselor=counselor)
+        _ = kiwiing.loadEnds(hby=hby,
+                             rep=repd,
+                             rgy=regery,
+                             verifier=verifier,
+                             app=app, path="/",
+                             registrar=registrar,
+                             credentialer=credentialer,
+                             mbx=None, counselor=counselor)
+
         client = testing.TestClient(app)
 
         result = client.simulate_get(path="/ids")
@@ -841,6 +757,7 @@ def test_identifier_ends():
                                   'toad': 0,
                                   'witnesses': []}
 
+
 def test_oobi_ends(seeder):
     with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
@@ -858,6 +775,8 @@ def test_oobi_ends(seeder):
                              verifier=None,
                              app=app, path="/",
                              mbx=None, counselor=None,
+                             registrar=None,
+                             credentialer=None,
                              oobiery=oobiery)
         client = testing.TestClient(app)
 
@@ -879,7 +798,9 @@ def test_oobi_ends(seeder):
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
         assert result.json == {'oobis':
-                               ['http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/controller'],
+                                   [
+                                       'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
+                                       '/controller'],
                                'role': 'controller'}
 
         # Seed with witness endpoints
@@ -888,8 +809,8 @@ def test_oobi_ends(seeder):
         result = client.simulate_get(path="/oobi/pal?role=witness")
         assert result.status == falcon.HTTP_200
         assert result.json == {'oobis':
-                               [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
-                                 'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
+                                   [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+                                     'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
                                'role': 'witness'}
 
         data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
@@ -915,6 +836,8 @@ def test_challenge_ends(seeder):
                              rgy=None,
                              verifier=None,
                              app=app, path="/",
+                             registrar=None,
+                             credentialer=None,
                              mbx=None, counselor=None)
         client = testing.TestClient(app)
 
@@ -983,6 +906,8 @@ def test_contact_ends(seeder):
                              rgy=None,
                              verifier=None,
                              app=app, path="/",
+                             registrar=None,
+                             credentialer=None,
                              mbx=None, counselor=None)
         client = testing.TestClient(app)
 
@@ -1132,6 +1057,8 @@ def test_keystate_end():
                                     rep=None,
                                     rgy=None,
                                     verifier=None,
+                                    registrar=None,
+                                    credentialer=None,
                                     app=app, path="/",
                                     mbx=None, counselor=counselor)
         client = testing.TestClient(app)
@@ -1149,7 +1076,3 @@ def test_keystate_end():
 
         kel = result.json["kel"]
         assert len(kel) == 1
-
-
-
-

@@ -309,6 +309,9 @@ class Reger(dbing.LMDBer):
         # Credential Missing Signature Escrow
         self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
 
+        # Completed Credentials
+        self.ccrd = proving.CrederSuber(db=self, subkey="ccrd.")
+
         return self.env
 
     def cloneCreds(self, saids):
@@ -587,7 +590,6 @@ class Reger(dbing.LMDBer):
             fn is int fn to resume replay. Earliset is fn=0
         """
         return self.getAllOrdItemPreIter(db=self.tels, pre=pre, on=fn)
-
 
     def cntTels(self, pre, fn=0):
         """
@@ -885,18 +887,6 @@ class Reger(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.baks, key, val)
-
-
-
-def nsKey(comps):
-    """
-    Returns bytes namespaced key from concatenation of ':' with qualified Base64
-    prefix bytes components
-    If any component is a str then converts to bytes
-    """
-    comps = map(lambda p: p if not hasattr(p, "encode") else p.encode("utf-8"), comps)
-    return b':'.join(comps)
-
 
 
 def buildProof(prefixer, seqner, diger, sigers):

@@ -8,7 +8,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import pytest
 
 from keri import kering
-from keri.core import scheming
+from keri.core import scheming, coring
 from keri.db import basing
 from keri.help import helping
 
@@ -27,6 +27,16 @@ def mockHelpingNowUTC(monkeypatch):
         return helping.fromIso8601("2021-01-01T00:00:00.000000+00:00")
 
     monkeypatch.setattr(helping, "nowUTC", mockNowUTC)
+
+
+@pytest.fixture()
+def mockCoringRandomNonce(monkeypatch):
+    """ Replay randomNonce with fixed falue for testing"""
+
+    def mockRandomNonce():
+        return "A9XfpxIl1LcIkMhUSCCC8fgvkuX8gG9xK3SM-S8a8Y_U"
+
+    monkeypatch.setattr(coring, "randomNonce", mockRandomNonce)
 
 
 @pytest.fixture
