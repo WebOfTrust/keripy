@@ -409,6 +409,15 @@ class Schemer:
 
         return self.typ.verify_json(schema=self.sed, raw=raw)
 
+    def pretty(self, *, size=1024):
+        """
+        Returns str JSON of .sed with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
+        """
+        return json.dumps(self.sed, indent=1)[:size if size is not None else None]
+
     def _verify_schema(self):
         """
         Returns True if derivation from ked for .code matches .qb64 and

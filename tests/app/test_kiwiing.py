@@ -12,7 +12,7 @@ from falcon import testing
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
-from keri.core import eventing, parsing, coring
+from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
 from keri.db import basing
 from keri.end import ending
@@ -798,10 +798,10 @@ def test_oobi_ends(seeder):
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
         assert result.json == {'oobis':
-                                   [
-                                       'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
-                                       '/controller'],
-                               'role': 'controller'}
+            [
+                'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
+                '/controller'],
+            'role': 'controller'}
 
         # Seed with witness endpoints
         seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.http, kering.Schemes.tcp])
@@ -1053,14 +1053,14 @@ def test_keystate_end():
 
         counselor = grouping.Counselor(hby=hby)
 
-        endDoers = kiwiing.loadEnds(hby=hby,
-                                    rep=None,
-                                    rgy=None,
-                                    verifier=None,
-                                    registrar=None,
-                                    credentialer=None,
-                                    app=app, path="/",
-                                    mbx=None, counselor=counselor)
+        _ = kiwiing.loadEnds(hby=hby,
+                             rep=None,
+                             rgy=None,
+                             verifier=None,
+                             registrar=None,
+                             credentialer=None,
+                             app=app, path="/",
+                             mbx=None, counselor=counselor)
         client = testing.TestClient(app)
 
         result = client.simulate_get(path=f"/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
@@ -1076,3 +1076,62 @@ def test_keystate_end():
 
         kel = result.json["kel"]
         assert len(kel) == 1
+
+
+def test_schema_ends():
+    with habbing.openHby(name="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
+
+        app = falcon.App()
+        _ = kiwiing.loadEnds(hby=hby,
+                             rep=None,
+                             rgy=None,
+                             verifier=None,
+                             app=app, path="/",
+                             registrar=None,
+                             credentialer=None,
+                             mbx=None, counselor=None)
+        client = testing.TestClient(app)
+
+        sed = dict()
+        sed["$id"] = ""
+        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
+        sed.update(dict(type="object", properties=dict(a=dict(type="string"))))
+        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        hby.db.schema.pin(sce.said, sce)
+
+        sed = dict()
+        sed["$id"] = ""
+        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
+        sed.update(dict(type="object", properties=dict(b=dict(type="number"),)))
+        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        hby.db.schema.pin(sce.said, sce)
+
+        sed = dict()
+        sed["$id"] = ""
+        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
+        sed.update(dict(type="object", properties=dict(c=dict(type="string", format="date-time"))))
+        sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        hby.db.schema.pin(sce.said, sce)
+
+        response = client.simulate_get("/schema")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 3
+        assert response.json[0]["$id"] == "E1bRmgA1GEsAdzOjsHCDMGWQMxlYVTZCKUIIhuD3w8ro"
+        assert response.json[1]["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
+        assert response.json[2]["$id"] == "EusII1Sa7u305LldfoxjC7IsdjXcha4mgVU98GSOQYB0"
+
+        assert response.json[0]["properties"] == {'b': {'type': 'number'}}
+        assert response.json[1]["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
+        assert response.json[2]["properties"] == {'a': {'type': 'string'}}
+
+        response = client.simulate_get("/schema/EzzRmgA1GEsAdzOjsHCDMGWQMxlYVTZCKUIIhuD3w8ro")
+        assert response.status == falcon.HTTP_404
+
+        response = client.simulate_get("/schema/EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4")
+        assert response.status == falcon.HTTP_200
+        assert response.json["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
+        assert response.json["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
+
+
+
+
