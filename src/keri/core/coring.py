@@ -4626,3 +4626,9 @@ class Tholder:
             return False
 
         return False
+
+
+def randomNonce():
+    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+    return seedqb64

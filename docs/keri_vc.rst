@@ -1,10 +1,10 @@
 KERI Verificable Credential API
 =============
 
-keri.vc.handling
+keri.vc.protocoling
 ----------------
 
-.. automodule:: keri.vc.handling
+.. automodule:: keri.vc.protocoling
     :members:
 
 keri.vc.proving

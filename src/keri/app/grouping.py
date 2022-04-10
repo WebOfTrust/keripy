@@ -13,25 +13,24 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import forwarding, delegating, agenting
-from keri.core import coring, eventing, parsing
+from keri.core import coring
 from keri.db import dbing, basing
 from keri.db.dbing import snKey
 from keri.peer import exchanging
+from keri.vc import proving
 
 logger = help.ogler.getLogger()
 
 
 class Counselor(doing.DoDoer):
 
-    def __init__(self, hby, cues=None, **kwa):
+    def __init__(self, hby, **kwa):
 
         self.hby = hby
         self.postman = forwarding.Postman(hby=hby)
         self.swain = delegating.Boatswain(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
-
-        self.cues = cues if cues is not None else decking.Deck()
 
         doers = [self.postman, self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
 
@@ -58,7 +57,7 @@ class Counselor(doing.DoDoer):
         others = list(aids)
         others.remove(pid)
 
-        print(f"Sending inception event to {len(aids) - 1} other participants")
+        print(f"Sending multisig event to {len(aids) - 1} other participants")
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
@@ -112,6 +111,16 @@ class Counselor(doing.DoDoer):
                 self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
+
+    def complete(self, prefixer, seqner, saider):
+        csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+        if not csaider:
+            return False
+        else:
+            if csaider.qb64 != saider.qb64:
+                raise kering.ValidationError(f"invalid TEL event multisig escrowed event {csaider.qb64}-{saider.qb64}")
+
+        return True
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -229,7 +238,6 @@ class Counselor(doing.DoDoer):
             snkey = dbing.snKey(pre, seqner.sn)
             evt = self.hby.db.getKeLast(key=snkey)
             if evt:
-                print()
                 self.hby.db.gpse.rem(keys=(pre, ))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -316,8 +324,9 @@ class Counselor(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
+
                 self.hby.db.gpwe.rem(keys=(pre,))
-                self.cues.append(dict(kin="complete", pre=pre, sn=seqner.sn, said=saider.qb64))
+                self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
 
 def loadHandlers(hby, exc, mbx, controller):
@@ -639,6 +648,17 @@ class MultisigInteractHandler(doing.DoDoer):
 
 
 def multisigInteractExn(ghab, aids, data):
+    """ Create a peer to peer message to propose a multisig group interaction event
+
+    Parameters:
+        ghab (Hab): group Hab to endorse the message
+        aids (list): qb64 identifier prefixes to include in the interaction event
+        data (list): data to anchor in the interaction event
+
+    Returns:
+        Serder: Serder of exn message to send
+        butearray: attachment signatures
+    """
 
     exn = exchanging.exchange(route=MultisigInteractHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
@@ -695,11 +715,33 @@ class MultisigIssueHandler(doing.DoDoer):
                 msg = self.msgs.popleft()
                 pl = msg["payload"]
                 pl["r"] = "/issue"
-                raw = json.dumps(pl).encode("utf-8")
-                self.mbx.storeMsg(self.controller+"/multisig", raw)
 
+                try:
+                    creder = proving.Creder(ked=pl)
+                    self.mbx.storeMsg(self.controller+"/multisig", creder.raw)
+                except ValueError as ex:
+                    logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
                 yield
             yield
+
+
+def multisigIssueExn(hab, creder):
+    """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
+
+    Parameters:
+        hab (Hab): identifier Hab for ensorsing the message to send
+        creder (Creder): Creder instance of the issued credential
+
+    Returns:
+        Serder: Serder of exn message to send
+        butearray: attachment signatures
+
+    """
+    exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked)
+    evt = hab.phab.endorse(serder=exn, last=True, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+
+    return exn, atc
 
 
 def getEscrowedEvent(db, pre, sn):

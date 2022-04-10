@@ -14,7 +14,7 @@ from keri.app import indirecting, storing, habbing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import exchanging
-from keri.vc import walleting, handling
+from keri.vc import walleting, protocoling
 from keri.vdr import verifying
 
 d = "Runs KERI Agent controller.\n"
@@ -52,8 +52,8 @@ def runWallet(name="wallet", base="", bran=None):
     walletDoer = walleting.WalletDoer(hby=hby, verifier=verifier)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.CacheResolver(db=hby.db))
-    issueHandler = handling.IssueHandler(hby=hby, verifier=verifier)
-    requestHandler = handling.RequestHandler(hby=hby, wallet=wallet, typ=jsonSchema)
+    issueHandler = protocoling.IssueHandler(hby=hby, verifier=verifier)
+    requestHandler = protocoling.PresentationRequestHandler(hby=hby, wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hby=hby, handlers=[issueHandler, requestHandler])
 
     mbx = storing.Mailboxer(name=name)

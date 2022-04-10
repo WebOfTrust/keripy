@@ -55,8 +55,7 @@ class RegistryStatusor(doing.DoDoer):
         counselor = grouping.Counselor(hby=self.hby)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
-        self.icpr = credentialing.RegistryInceptDoer(hby=self.hby, rgy=self.rgy, counselor=counselor)
-        doers = [self.hbyDoer, counselor, self.icpr, mbx]
+        doers = [self.hbyDoer, counselor, mbx]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.statusDo)])

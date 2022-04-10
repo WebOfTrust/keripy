@@ -8,6 +8,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.core import coring
+from keri.core.coring import Counter, CtrDex, Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting
 from keri.core.eventing import SealSource
@@ -73,9 +74,13 @@ def test_witness_sender(seeder):
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.said)
-        msg = credentialing.Registry.attachSeal(serder=serder, seal=seal)
+        msg = bytearray(serder.raw)
+        msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
+        msg.extend(Seqner(sn=seal.s).qb64b)
+        msg.extend(seal.d.encode("utf-8"))
 
-        witDoer = agenting.WitnessPublisher(hab=palHab, msg=msg)
+        witDoer = agenting.WitnessPublisher(hby=palHby)
+        witDoer.msgs.append(dict(pre=palHab.pre, msg=msg))
 
         limit = 1.0
         tock = 0.03125
@@ -83,7 +88,10 @@ def test_witness_sender(seeder):
         doers = wanDoers + wilDoers + wesDoers + [witDoer]
         doist.do(doers=doers)
 
-        assert witDoer.done is True
+        assert len(witDoer.cues) == 1
+        cue = witDoer.cues.popleft()
+        assert cue["pre"] == palHab.pre
+        assert cue["msg"] == msg
 
         for name in ["wes", "wil", "wan"]:
             reger = viring.Reger(name=name)

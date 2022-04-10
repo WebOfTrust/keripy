@@ -13,7 +13,7 @@ from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, Dater, Verfer,
                      Prefixer, Serder, Saider, Pather, Idents, Sadder)
 from .. import help
 from .. import kering
-from ..vc.proving import Credentialer
+from ..vc.proving import Creder
 
 logger = help.ogler.getLogger()
 
@@ -471,7 +471,6 @@ class Parser:
                                                    vry=vry)
 
             except kering.SizedGroupError as ex:  # error inside sized group
-                print(ex)
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s\n", ex.args[0])
@@ -479,7 +478,6 @@ class Parser:
                     logger.error("Parser msg extraction error: %s\n", ex.args[0])
 
             except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
-                print(ex)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s\n", ex.args[0])
                 else:
@@ -487,7 +485,6 @@ class Parser:
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (kering.ValidationError, Exception) as ex:  # non Extraction Error
-                print(ex)
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
@@ -576,7 +573,7 @@ class Parser:
 
         return done
 
-    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None):
+    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply.
@@ -600,6 +597,7 @@ class Parser:
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
+            vry (Verifier): credential processor
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -617,6 +615,7 @@ class Parser:
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
         rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
 
         while True:  # continuous stream processing never stop
             try:
@@ -626,7 +625,8 @@ class Parser:
                                                    kvy=kvy,
                                                    tvy=tvy,
                                                    exc=exc,
-                                                   rvy=rvy)
+                                                   rvy=rvy,
+                                                   vry=vry)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -1100,7 +1100,7 @@ class Parser:
                                              " {}.".format(ilk, serder.pretty()))
 
         elif sadder.ident == Idents.acdc:
-            creder = Credentialer(sad=sadder)
+            creder = Creder(sad=sadder)
             args = dict(creder=creder)
 
             if sadtsgs:
@@ -1111,7 +1111,7 @@ class Parser:
 
             try:
                 vry.processCredential(**args)
-            except Exception as e:
+            except AttributeError as e:
                 raise kering.ValidationError("No verifier to process so dropped credential"
                                              "= {}.".format(creder.pretty()))
 

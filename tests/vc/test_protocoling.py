@@ -1,20 +1,22 @@
 # -*- encoding: utf-8 -*-
 """
-tests.vc.handling module
+tests.vc.protocoling module
 
 """
 from hio.base import doing
 
-from keri.app import habbing, indirecting, signing
+from keri.app import habbing, indirecting, signing, storing
 from keri.core import coring, scheming, eventing, parsing
+from keri.core.eventing import SealEvent
 from keri.peer import exchanging
-from keri.vc.handling import IssueHandler, envelope, RequestHandler
+from keri.vc import protocoling
+from keri.vc.protocoling import IssueHandler, PresentationRequestHandler
 from keri.vc.proving import credential
 from keri.vc.walleting import Wallet
 from keri.vdr import verifying, credentialing
 
 
-def test_issuing(seeder):
+def test_issuing(seeder, mockCoringRandomNonce):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
@@ -39,18 +41,27 @@ def test_issuing(seeder):
         assert sidPre == "EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE"
 
         redKvy = eventing.Kevery(db=redHby.db)
+        redRgy = credentialing.Regery(hby=redHby, name="red", temp=True)
+        redVer = verifying.Verifier(hby=redHby, reger=redRgy.reger)
 
-        sidReg = credentialing.Regery(hby=sidHby, name="bob", temp=True)
-        verifier = verifying.Verifier(hby=sidHby, reger=sidReg.reger)
-        issuer = sidReg.makeRegistry(prefix=sidHab.pre, name="sid")
+        sidRgy = credentialing.Regery(hby=sidHby, name="bob", temp=True)
+        sidVer = verifying.Verifier(hby=sidHby, reger=sidRgy.reger)
+
+        sidMbx = storing.Mailboxer(temp=True)
+        issuer = sidRgy.makeRegistry(prefix=sidHab.pre, name="sid")
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        sidHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=sidHab.kever.serder.saider)
+        sidRgy.processEscrows()
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        redIssueHandler = IssueHandler(hby=sidHby, verifier=verifier)
+        redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, mbx=sidMbx, controller=sidHab.pre)
         redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
 
-        # Build the credential subject and then the Credentialer for the full credential
+        # Build the credential subject and then the Creder for the full credential
         credSubject = dict(
             d="",
             i=sidHab.pre,
@@ -64,48 +75,52 @@ def test_issuing(seeder):
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "E7DT3Vo5f9t3vgfeYlZbpwAvrumP4wZz5UipjEMGWYmg"
+        assert creder.said == "EcwGL5ottoRCgzPncRlylLZlskX3yNUF_sIZaMekWdwc"
 
-        issuer.issue(creder=creder)
+        iss = issuer.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        sidHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=sidHab.kever.serder.saider)
+        sidRgy.processEscrows()
+
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"E7DT3Vo5f9t3vgfeYlZbpwAvrumP4wZz5U'
-                       b'ipjEMGWYmg","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EcwGL5ottoRCgzPncRlylLZlskX3yNUF_s'
+                       b'IZaMekWdwc","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
                        b'i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E24I'
                        b'f3y9Voz-1sXgkBCeNG6pbCqMTa56kCvj47NgOgLg","i":"EWVYH1T4J09x5RePL'
                        b'fVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EUFmYfQn31KHudwM'
-                       b'PoSgnrBZOrc8PUcLDKsLXmYyV9WU"}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
+                       b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"E8LSkU2s_BsAOf5t'
+                       b'c63y1xnCf8qUP7ZBKgWJqiCvklK8"}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
                        b'ePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE0AAAAAAAAAAAAAAAAAAAAAAAEWVYH1T4J0'
-                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAAEdHUgtz8EaTo4bd_jrNbAOMX'
-                       b'hSvxFE5hL80GJH5qyAFAt7jszFij4cjHnB-toPkMsZOo-z30X6ypKkqFMRE6DQ')
-
-        # Create the issue credential payload
-        pl = dict(
-            vc=[envelope(msg=msg)]
-        )
+                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAAZulDE3EJgqxM2oD0UI3TMMWI'
+                       b'Naxr5K3SyjLtq02LmP_Ii-V8VcSno9_hk8spOj56aIrXO5ylkeFsR3EVrX9QDw')
 
         # Create the `exn` message for issue credential
-        sidExcSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
-        excMsg = bytearray()
-        excMsg.extend(sidHab.endorse(sidExcSrdr, last=True))
-
+        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, schema=creder.schema, said=creder.said)
+        excMsg = bytearray(sidExcSrdr.raw)
+        excMsg.extend(atc)
         # Parse the exn issue credential message on Red's side
+
+        parsing.Parser().parse(ims=bytearray(msg), vry=sidVer)
+
+        parsing.Parser().parse(ims=bytearray(msg), kvy=redKvy, exc=redExc, vry=redVer)
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=redKvy, exc=redExc)
         doers = wanDoers + [redExc]
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"E7DT3Vo5f9t3vgfeYlZbpwAvrumP4wZz5UipjEMGWYmg",'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EcwGL5ottoRCgzPncRlylLZlskX3yNUF_sIZaMekWdwc",'
                b'"s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","i":"EWVYH1T4J09x5RePLfVy'
                b'Tfno3aHzJ-YqnL9Bm0Kyx6UE","a":{"d":"E24If3y9Voz-1sXgkBCeNG6pbCqMTa56kCvj47Ng'
                b'OgLg","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"EUFmYfQn31KH'
-               b'udwMPoSgnrBZOrc8PUcLDKsLXmYyV9WU"}')
-        sig0 = (b'AAEdHUgtz8EaTo4bd_jrNbAOMXhSvxFE5hL80GJH5qyAFAt7jszFij4cjHnB-toPkMsZOo-z30X6'
-                b'ypKkqFMRE6DQ')
+               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"E8LSkU2s_BsA'
+               b'Of5tc63y1xnCf8qUP7ZBKgWJqiCvklK8"}')
+        sig0 = (b'AAZulDE3EJgqxM2oD0UI3TMMWINaxr5K3SyjLtq02LmP_Ii-V8VcSno9_hk8spOj56aIrXO5ylke'
+                b'FsR3EVrX9QDw')
 
         # verify we can load serialized VC by SAID
-        creder, sadsigers, sadcigars = sidReg.reger.cloneCred(said=creder.said)
+        creder, sadsigers, sadcigars = sidRgy.reger.cloneCred(said=creder.said)
         assert creder.raw == ser
 
         # verify the signature
@@ -115,12 +130,12 @@ def test_issuing(seeder):
         assert len(sadcigars) == 0
 
         # verify we can look up credential by Schema SAID
-        schema = sidReg.reger.schms.get(schema)
+        schema = sidRgy.reger.schms.get(schema)
         assert len(schema) == 1
         assert schema[0].qb64 == creder.said
 
 
-def test_proving(seeder):
+def test_proving(seeder, mockCoringRandomNonce):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
@@ -172,6 +187,11 @@ def test_proving(seeder):
 
         hanReg = credentialing.Regery(hby=hanHby, name="han", temp=True)
         issuer = hanReg.makeRegistry(prefix=hanHab.pre, name="han")
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hanHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hanHab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hanHab.kever.serder.saider)
+        hanReg.processEscrows()
 
         verifier = verifying.Verifier(hby=hanHby, reger=hanReg.reger)
 
@@ -181,12 +201,18 @@ def test_proving(seeder):
                             status=issuer.regk,
                             )
 
-        assert creder.said == "EGIvo3cL_suCKlo2AAX9_e35clbr1nkaA-r8KRERVyy8"
+        assert creder.said == "EOWu6rXz9eg0KLoS_Ljfh7Ksn8fnkhGuyOI8WKRwgpH8"
 
         msg = signing.ratify(sidHab, serder=creder)
         hanWallet = Wallet(reger=hanReg.reger)
 
-        issuer.issue(creder=creder)
+        iss = issuer.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        hanHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hanHab.kever.sn)
+        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=hanHab.kever.serder.saider)
+        hanReg.processEscrows()
+
         parsing.Parser().parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
@@ -194,7 +220,7 @@ def test_proving(seeder):
         assert hanReg.reger.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        hanRequestHandler = RequestHandler(hby=hanHby, wallet=hanWallet)
+        hanRequestHandler = PresentationRequestHandler(hby=hanHby, wallet=hanWallet)
         hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler])
 
         # Create the issue credential payload
@@ -234,8 +260,4 @@ def test_proving(seeder):
         vcs = data["verifiableCredential"]
         assert len(vcs) == 1
 
-        proof = ('-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAAECtWlHS2Wbx5M2Rg6'
-                 'nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAce-lLANIi8zIPw0mmG6tacgnvqogwj3sqywN7LgdXk-d5oZHHpr75fT5R644x_8cLufQ'
-                 'arhrdnJMyQj1cgI0Dw')
-
-        assert vcs[0]["proof"] == proof
+        assert vcs[0] == "EOWu6rXz9eg0KLoS_Ljfh7Ksn8fnkhGuyOI8WKRwgpH8"

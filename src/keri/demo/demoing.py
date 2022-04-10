@@ -18,7 +18,7 @@ from ..core import scheming
 from ..db import basing
 from ..help import helping
 from ..peer import exchanging
-from ..vc import proving, handling
+from ..vc import proving, protocoling
 
 logger = help.ogler.getLogger()
 

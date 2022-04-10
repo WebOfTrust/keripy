@@ -39,10 +39,9 @@ class WitnessReceiptor(doing.DoDoer):
         gather all receipts and send them to all other witnesses
 
         Parameters:
-            hab (Hab): Habitat of the identifier to populate witnesses
-            msg (bytes): is the message to send to all witnesses.
-                 Defaults to sending the latest KEL event if msg is None
-            scheme (str): Scheme to favor if available
+            hby (Habery): Habitat of the identifier to receipt witnesses
+            msgs (Deck): incoming messages to publish to witnesses
+            cues (Deck): outgoing cues of successful messages
 
         """
         self.hby = hby
@@ -260,20 +259,20 @@ class WitnessPublisher(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg, wits=None, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
 
         Parameters:
-            hab: Habitat of the identifier to populate witnesses
-            msg: is the message to send to all witnesses.
-                 Defaults to sending the latest KEL event if msg is None
+            hby (Habery): Habitat of the identifier to populate witnesses
+            msgs (Deck): incoming messages to publish to witnesses
+            cues (Deck): outgoing cues of successful messages
 
         """
-        self.hab = hab
-        self.msg = msg
-        self.wits = wits if wits is not None else self.hab.kever.wits
+        self.hby = hby
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
@@ -287,27 +286,40 @@ class WitnessPublisher(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if len(self.wits) == 0:
-            return True
+        while True:
+            while self.msgs:
+                evt = self.msgs.popleft()
+                pre = evt["pre"]
+                msg = evt["msg"]
 
-        witers = []
-        for wit in self.wits:
-            witer = witnesser(self.hab, wit)
-            witers.append(witer)
-            witer.msgs.append(bytearray(self.msg))  # make a copy so everyone munges their own
-            self.extend([witer])
+                if pre not in self.hby.habs:
+                    continue
 
-            _ = (yield self.tock)
+                hab = self.hby.habs[pre]
+                wits = hab.kever.wits
 
-        total = len(witers)
-        count = 0
-        while count < total:
-            for witer in witers:
-                count += len(witer.sent)
-            _ = (yield self.tock)
+                witers = []
+                for wit in wits:
+                    witer = witnesser(hab, wit)
+                    witers.append(witer)
+                    witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
+                    self.extend([witer])
 
-        self.remove(witers)
-        return True
+                    _ = (yield self.tock)
+
+                total = len(witers)
+                count = 0
+                while count < total:
+                    for witer in witers:
+                        count += len(witer.sent)
+                    _ = (yield self.tock)
+
+                self.remove(witers)
+                self.cues.append(evt)
+
+                yield self.tock
+
+            yield self.tock
 
 
 class TCPWitnesser(doing.DoDoer):

@@ -10,11 +10,10 @@ import re
 from collections.abc import Iterable, Sequence, Mapping
 
 import pysodium
-from multidict import MultiDict  # base class for mdict defined below
-from orderedset import OrderedSet as oset
 
 B64REX = b'[A-Za-z-_]*'
 B64Rev = re.compile(B64REX) #compile is faster
+
 
 # Utilities
 def isign(i):

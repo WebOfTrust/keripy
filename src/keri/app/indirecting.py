@@ -549,7 +549,8 @@ class MailboxDirector(doing.DoDoer):
                                      kvy=self.kvy,
                                      tvy=self.tevery,
                                      exc=self.exchanger,
-                                     rvy=self.rvy)
+                                     rvy=self.rvy,
+                                     vry=self.verifier)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
@@ -717,7 +718,7 @@ class MailboxDirector(doing.DoDoer):
     @property
     def times(self):
         times = dict()
-        for poller in self.pollers:  # get responses from all behaviors
+        for poller in self.pollers:  # get responses from all pollers
             times |= poller.times
 
         return times

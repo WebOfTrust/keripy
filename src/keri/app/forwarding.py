@@ -226,13 +226,12 @@ class ForwardHandler(doing.Doer):
                 pevt = bytearray()
                 for pather, atc in attachments:
                     ked = pather.resolve(payload)
-                    serder = coring.Serder(ked=ked, kind=eventing.Serials.json)
-                    pevt.extend(serder.raw)
+                    sadder = coring.Sadder(ked=ked, kind=eventing.Serials.json)
+                    pevt.extend(sadder.raw)
                     pevt.extend(atc)
 
                 if not pevt:
                     print("error with message, nothing to forward", msg)
-
 
                 self.mbx.storeMsg(topic=resource, msg=pevt)
                 yield self.tock

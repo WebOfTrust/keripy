@@ -5,22 +5,21 @@ keri.vdr.credentialing module
 
 VC issuer support
 """
-import json
-
 from hio.base import doing
 from hio.help import decking
 
 from keri.vdr import viring
 from .. import kering, help
-from ..app import agenting
-from ..core import parsing, coring
-from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Serder
-from ..core.eventing import SealEvent, SealSource, TraitDex
+from ..app import agenting, signing, forwarding
+from ..core import parsing, coring, scheming
+from ..core.coring import Seqner, MtrDex, Serder
+from ..core.eventing import SealEvent, TraitDex
+from ..db import dbing
 from ..db.dbing import snKey, dgKey
 from ..help import helping
-from ..vc import proving
+from ..vc import proving, protocoling
 from ..vdr import eventing
-from ..vdr.viring import Reger, nsKey
+from ..vdr.viring import Reger
 
 logger = help.ogler.getLogger()
 
@@ -70,6 +69,7 @@ class Regery:
 
             reg.inited = True
             self.regs[regk] = reg
+            self.reger.registries.add(regk)
 
     def makeRegistry(self, name, prefix, **kwa):
         hab = self.hby.habs[prefix]
@@ -91,12 +91,38 @@ class Regery:
     def processEscrows(self):
         """ Process escrows for each registry """
         self.tvy.processEscrows()
-        for registry in self.regs.values():
-            registry.processEscrows()
 
     def close(self):
         if self.reger.inited:
             self.reger.close()
+
+
+class RegeryDoer(doing.Doer):
+    """ """
+
+    def __init__(self, rgy):
+        self.rgy = rgy
+        super(RegeryDoer, self).__init__()
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Parameters:
+            tymth: is injected function wrapper closure returned by .tymen() of
+                  Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock: is injected initial tock value
+            **opts (dict): additional keyword arguments
+
+        Returns:
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            self.rgy.processEscrows()
+            yield self.tock
 
 
 class Registry:
@@ -128,6 +154,8 @@ class Registry:
 
         self.cues = cues if cues is not None else decking.Deck()
         self.regk = regk
+        self.regd = None
+        self.cnfg = []
 
         self.inited = False
 
@@ -158,12 +186,13 @@ class Registry:
                                  cnfg=self.cnfg,
                                  code=MtrDex.Blake3_256)
         self.regk = regser.pre
+        self.regd = regser.said
         self.registries.add(self.regk)
         self.reger.regs.put(keys=self.name,
                             val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
 
         try:
-            self.anchorMsg(regser, estOnly=estOnly)
+            self.tvy.processEvent(serder=regser)
         except kering.MissingAnchorError:
             logger.info("Credential registry missing anchor for inception = {}".format(regser.ked))
 
@@ -230,86 +259,73 @@ class Registry:
                                  adds=adds,
                                  cuts=cuts)
 
-        self.anchorMsg(serder, estOnly=self.estOnly)
+        try:
+            self.tvy.processEvent(serder=serder)
+        except kering.MissingAnchorError:
+            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
 
-        return True
+        return serder
 
-    def issue(self, creder, dt=None):
+    def issue(self, said, dt=None):
         """ Create and process an iss or bis message event
 
         Parameters:
-            creder (Credentialer): instance of the credential to issue
+            said (str): qb64 SAID of credential to issue
             dt (str): iso8601 formatted date time string of issuance
 
         Returns:
             boolean: True if issuance is successful
 
         """
-        vcdig = creder.said
-        craw = self.hab.endorse(creder)
 
         if self.noBackers:
-            serder = eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
+            serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                           dt=dt)
 
-        self.anchorMsg(serder=serder, estOnly=self.estOnly)
+        try:
+            self.tvy.processEvent(serder=serder)
+        except kering.MissingAnchorError:
+            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
 
-        return True
+        return serder
 
-    def revoke(self, creder, dt=None):
+    def revoke(self, said, dt=None):
         """ Perform revocation of credential
 
         Create and process rev or brv message event
 
         Parameters:
-            creder (Credentialer): instance of the credential to revoke
+            said (str): qb64 SAID of the credential to revoke
             dt (str): iso8601 formatted date time string of revocation
 
         Returns:
             boolean: True if revocation is successful.
 
         """
-        vcdig = creder.said
-        vckey = nsKey([self.regk, vcdig])
-        vcser = self.reger.getTel(snKey(pre=vckey, sn=0))
+        vci = said
+        vcser = self.reger.getTel(snKey(pre=vci, sn=0))
         if vcser is None:
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
-                                         "pre={}.".format(vcdig, self.regk))
-        ievt = self.reger.getTvt(dgKey(pre=vckey, dig=vcser))
+                                         "pre={}.".format(vci, self.regk))
+        ievt = self.reger.getTvt(dgKey(pre=vci, dig=vcser))
         iserder = Serder(raw=bytes(ievt))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.said, dt=dt)
+            serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                            dig=iserder.said, dt=dt)
 
-        self.anchorMsg(serder, estOnly=self.estOnly)
+        try:
+            self.tvy.processEvent(serder=serder)
+        except kering.MissingAnchorError:
+            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
 
-        return True
+        return serder
 
-    @staticmethod
-    def attachSeal(serder, seal):
-        """ Create serialization of event message with attached source seal.
-
-        Parameters:
-            serder (Serder): event message
-            seal (SealSource): {s, d} source seal couple of sequence number and digest of sealed event
-
-        Returns:
-            bytearray:  serialization of event message with attached source seal
-
-        """
-        msg = bytearray(serder.raw)
-        msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
-        msg.extend(Seqner(sn=seal.s).qb64b)
-        msg.extend(seal.d.encode("utf-8"))
-
-        return msg
-
-    def anchorMsg(self, serder, seal=None, estOnly=None):
+    def anchorMsg(self, pre, regd, seqner, saider):
         """  Create key event with seal to serder anchored as data.
 
         Performs a rotation or interaction event for single sig or multiple sig identifier
@@ -317,507 +333,543 @@ class Registry:
         of resulting events or multisig handling.
 
         Parameters:
-            serder (Serder): registry event message
-            seal (Optional(SealSource)): option seal provided to n > 1 participants of multsig registry
-            estOnly (bool): True means do not allow interaction events
+            pre (str): registry event identifier
+            regd (str): registry event SAID
+            seqner (Seqner): sequence number of anchoring event
+            saider (Saider): SAID of the anchoring event
 
         """
 
-        rseal = SealEvent(serder.pre, serder.ked["s"], serder.said)
-        rseal = rseal._asdict()
-        estOnly = estOnly if estOnly is not None else False
-
-        if self.hab.phab is None:
-            if estOnly:
-                kevt = self.hab.rotate(data=[rseal])
-            else:
-                kevt = self.hab.interact(data=[rseal])
-
-            seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.said)
-            tevt = self.attachSeal(serder=serder, seal=seal)
-
-            self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
-            self.cues.extend([
-                dict(
-                    kin="kevt",
-                    msg=kevt,
-                    pre=self.hab.pre,
-                    regk=self.regk
-                ),
-                dict(
-                    kin="send",
-                    msg=tevt,
-                    pre=self.hab.pre,
-                    regk=self.regk
-                ),
-            ])
-
-        else:
-            if seal is None:
-                ixn = self.hab.interact(data=[rseal])
-                gserder = coring.Serder(raw=ixn)
-                self.cues.append(dict(kin="counselor", pre=self.hab.pre, regk=self.regk, sn=gserder.sn,
-                                      said=gserder.said))
-
-                self.escrow(serder)
-                raise kering.MissingAnchorError("anchor not provided for multisig")
-            else:
-                tevt = self.attachSeal(serder=serder, seal=seal)
-                self.psr.parseOne(ims=bytearray(tevt))  # make copy as kvr deletes
-
-                self.cues.append(dict(
-                    kin="send",
-                    msg=tevt,
-                    pre=self.hab.pre,
-                    regk=self.regk
-                ))
-
-    def escrow(self, serder):
-        """ Save Issuer event for future process when anchor becomes available
-
-        Parameters:
-           serder: (Serder) is event to escrow
-
-        """
-        self.reger.mase.add(self.regk, serder.raw)
-
-    def processEscrows(self):
-        """
-        Process credential registry missing anchor escrow:
-
-        """
-        for (regk,), raw in self.reger.mase.getItemIter():
-            serder = coring.Serder(raw=raw.encode("utf-8"))
-
-            if "ri" in serder.ked:
-                tev = self.tevers[serder.ked["ri"]]
-                pre = tev.pre
-            else:
-                pre = serder.ked["ii"]
-
-            sn = serder.sn
-            dig = serder.said
-
-            seal = None
-            for evts in self.hab.db.clonePreIter(pre=pre):
-                eserder = coring.Serder(raw=evts)
-                if "a" in eserder.ked:
-                    ancs = eserder.ked["a"]
-                    if len(ancs) != 1:
-                        continue
-
-                    anc = ancs[0]
-                    spre = anc["i"]
-                    ssn = int(anc["s"])
-                    sdig = anc["d"]
-
-                    if spre == serder.ked["i"] and ssn == sn \
-                            and dig == sdig:
-                        seal = SealSource(s=eserder.sn, d=eserder.said)
-                        break
-
-            if not seal:
-                continue
-
-            try:
-                self.anchorMsg(serder, seal=seal)
-            except kering.MissingAnchorError as ex:
-                logger.exception("Issuer unescrow failed event from escrow = {}", ex.args[0])
-            except Exception as ex:
-                logger.exception("Issuer unescrow failed event from escrow = {}", ex.args[0])
-                self.reger.mase.rem(regk, raw)
-            else:  # unescrow succeeded, remove from escrow
-                # We don't remove all escrows at pre,sn because some might be
-                # duplicitous so we process remaining escrows in spite of found
-                # valid event escrow.
-                self.reger.mase.rem(regk, raw)
-                logger.info("Issuer unescrow succeeded in valid event: "
-                            "event=\n%s\n", json.dumps(serder.ked, indent=1))
+        key = dgKey(pre, regd)
+        sealet = seqner.qb64b + saider.qb64b
+        self.reger.putAnc(key, sealet)
 
 
-class RegistryInceptDoer(doing.DoDoer):
-    """ DoDoer for creating a VDR registry.
+class Registrar(doing.DoDoer):
 
-    Accepts command messages on .msgs for creating credential registries.
-    Creates Issuers for each new registry and handles requests from multi-sig identifiers.
-
-    Notifies status on .cues
-
-    Properties:
-       .msgs (decking.Deck): inbound cue messages for handler
-       .cues (decking.Deck): outbound cue messages from handler
-
-    """
-
-    def __init__(self, hby, rgy, counselor, msgs=None, cues=None):
-        """ Initialize registry incept DoDoer.
-
-        Parameters:
-            hby (Habery): identifier environment
-            rgy (Regery): Credential registry environment
-            msgs (decking.Deck): inbound cue messages for handler
-            cues (decking.Deck): outbound cue messages from handler
-        """
-
+    def __init__(self, hby, rgy, counselor):
         self.hby = hby
         self.rgy = rgy
         self.counselor = counselor
-        self.msgs = msgs if msgs is not None else decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witPub = agenting.WitnessPublisher(hby=self.hby)
 
-        doers = [self.witDoer, doing.doify(self.inceptDo)]
-        super(RegistryInceptDoer, self).__init__(doers=doers)
+        doers = [self.witDoer, self.witPub, doing.doify(self.escrowDo)]
 
-    def inceptDo(self, tymth, tock=0.0):
-        """ Doist capable of creating a credential registry.
+        super(Registrar, self).__init__(doers=doers)
 
-        Processes inbound cues to create credential registries using Issuer objects.
+    def incept(self, name, pre, conf=None, aids=None):
+        """
+
+        Parameters:
+            name (str): human readable name for the registry
+            pre (str): qb64 identifier prefix of issuing identifier in control of this registry
+            conf (dict): configuration information for the registry (noBackers, estOnly)
+            aids (list): participants of a multisig group in the anchoring event
+
+        Returns:
+            Registry:  created registry
+
+        """
+        conf = conf if conf is not None else {}  # default config if none specified
+        estOnly = "estOnly" in conf and conf["estOnly"]
+        hab = self.hby.habs[pre]
+
+        registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
+
+        rseq = coring.Seqner(sn=0)
+        rseal = SealEvent(registry.regk, "0", registry.regd)._asdict()
+        if hab.phab is None:
+            if estOnly:
+                hab.rotate(data=[rseal])
+            else:
+                hab.interact(data=[rseal])
+
+            seqner = coring.Seqner(sn=hab.kever.sn)
+            saider = hab.kever.serder.saider
+            registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
+
+            print("Waiting for TEL event witness receipts")
+            self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
+
+            self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+
+        else:
+            aids = aids if aids is not None else hab.aids
+            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+                                 saider=saider)
+
+            print("Waiting for TEL event mulisig anchoring event")
+            self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
+
+        return registry
+
+    def issue(self, regk, said, dt=None, aids=None):
+        """
+        Create and process the credential issuance TEL events on the given registry
+
+        Parameters:
+            regk (str): qb64 identifier prefix of the credential registry
+            said (str): qb64 SAID of the credential to issue
+            dt (str): iso8601 formatted date string of issuance date
+            aids (list): participants of a multisig group in the anchoring event
+
+        """
+        registry = self.rgy.regs[regk]
+        hab = registry.hab
+
+        iserder = registry.issue(said=said, dt=dt)
+        print(iserder.pretty())
+
+        vcid = iserder.ked["i"]
+        rseq = coring.Seqner(snh=iserder.ked["s"])
+        rseal = SealEvent(vcid, rseq.snh, iserder.said)._asdict()
+
+        if hab.phab is None:
+            if registry.estOnly:
+                hab.rotate(data=[rseal])
+            else:
+                hab.interact(data=[rseal])
+
+            seqner = coring.Seqner(sn=hab.kever.sn)
+            saider = hab.kever.serder.saider
+            registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
+
+            print("Waiting for TEL event witness receipts")
+            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
+
+            self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+            return vcid, rseq.sn
+        else:
+            aids = aids if aids is not None else hab.aids
+            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+                                 saider=saider)
+
+            print("Waiting for TEL event mulisig anchoring event")
+            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
+            return vcid, rseq.sn
+
+    def revoke(self, regk, said, dt=None, aids=None):
+        """
+        Create and process the credential revocation TEL events on the given registry
+
+        Parameters:
+            regk (str): qb64 identifier prefix of the credential registry
+            said (str): qb64 SAID of the credential to issue
+            dt (str): iso8601 formatted date string of issuance date
+            aids (list): participants of a multisig group in the anchoring event
+
+        """
+        registry = self.rgy.regs[regk]
+        hab = registry.hab
+
+        state = registry.tever.vcState(vci=said)
+        if state is None or state.ked["et"] not in (coring.Ilks.iss, coring.Ilks.rev):
+            raise kering.ValidationError(f"credential {said} not is correct state for revocation")
+
+        rserder = registry.revoke(said=said, dt=dt)
+
+        vcid = rserder.ked["i"]
+        rseq = coring.Seqner(snh=rserder.ked["s"])
+        rseal = SealEvent(vcid, rseq.snh, rserder.said)._asdict()
+
+        if hab.phab is None:
+            if registry.estOnly:
+                hab.rotate(data=[rseal])
+            else:
+                hab.interact(data=[rseal])
+
+            seqner = coring.Seqner(sn=hab.kever.sn)
+            saider = hab.kever.serder.saider
+            registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
+
+            print("Waiting for TEL event witness receipts")
+            self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
+
+            self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
+            return vcid, rseq.sn
+        else:
+            aids = aids if aids is not None else hab.aids
+            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+                                 saider=saider)
+
+            print("Waiting for TEL event mulisig anchoring event")
+            self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
+            return vcid, rseq.sn
+
+    @staticmethod
+    def multisigIxn(hab, rseal):
+        ixn = hab.interact(data=[rseal])
+        gserder = coring.Serder(raw=ixn)
+
+        sn = gserder.sn
+        said = gserder.said
+
+        prefixer = coring.Prefixer(qb64=hab.pre)
+        seqner = coring.Seqner(sn=sn)
+        saider = coring.Saider(qb64=said)
+
+        return prefixer, seqner, saider
+
+    def complete(self, pre, sn=0):
+        seqner = coring.Seqner(sn=sn)
+        said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
+        return said is not None
+
+    def escrowDo(self, tymth, tock=1.0):
+        """ Process escrows of group multisig identifiers waiting to be compeleted.
+
+        Steps involve:
+           1. Sending local event with sig to other participants
+           2. Waiting for signature threshold to be met.
+           3. If elected and delegated identifier, send complete event to delegator
+           4. If delegated, wait for delegator's anchor
+           5. If elected, send event to witnesses and collect receipts.
+           6. Otherwise, wait for fully receipted event
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-
-        Returns:
-            Doist: compatible generator method for creating a registry and sending its inception and anchoring
-            events to witnesses or backers
+            tock (float): injected initial tock value.  Default to 1.0 to slow down processing
 
         """
-        # start enter context
+        # enter context
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)  # finish enter context
+        _ = (yield self.tock)
 
         while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                name = msg["name"]
-                pre = msg["pre"]
-                conf = msg['c'] if 'c' in msg else {}  # default config if none specified
+            self.processEscrows()
+            yield 0.5
 
-                registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
-
-                self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
-                yield self.tock
-
-                while registry.regk not in registry.tevers:
-                    yield self.tock
-
-                print(f"Registry {registry.regk} in tevers")
-                yield self.tock
-
-            yield self.tock
-
-    def issuerDo(self, tymth, tock=0.0):
-        """ Process cues from credential issue coroutine
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Returns:
-            Doist: doifiable compatible generator method
+    def processEscrows(self):
         """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        Process credential registry anchors:
 
-        while True:
-            while self.rgy.cues:
-                cue = self.rgy.cues.popleft()
-                cueKin = cue['kin']
-                pre = cue["pre"]
-                regk = cue["regk"]
-                hab = self.hby.habs[pre]
+        """
+        self.processWitnessEscrow()
+        self.processMultisigEscrow()
+        self.processDiseminationEscrow()
 
-                if cueKin == "send":
-                    tevt = cue["msg"]
-                    witSender = agenting.WitnessPublisher(hab=hab, msg=tevt)
-                    self.extend([witSender])
-                    while not witSender.done:
-                        _ = yield self.tock
-                    self.remove([witSender])
-                    self.cues.append(dict(kin="finished", regk=regk, pre=pre))
+    def processWitnessEscrow(self):
+        """
+        Process escrow of group multisig events that do not have a full compliment of receipts
+        from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
+        that the event is complete.
 
-                elif cueKin == "kevt":
-                    kevt = cue["msg"]
-                    serder = eventing.Serder(raw=bytearray(kevt))
-                    self.witDoer.msgs.append(dict(pre=serder.pre, sn=serder.sn))
+        """
+        for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+            kever = self.hby.kevers[prefixer.qb64]
+            dgkey = dbing.dgKey(prefixer.qb64b, saider.qb64)
 
-                    while not self.witDoer.cues:
-                        yield self.tock
+            # Load all the witness receipts we have so far
+            wigs = self.hby.db.getWigs(dgkey)
+            if kever.wits:
+                if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
+                    hab = self.hby.habs[prefixer.qb64]
+                    witnessed = False
+                    for cue in self.witDoer.cues:
+                        if cue["pre"] == hab.pre and cue["sn"] == seqner.sn:
+                            witnessed = True
 
-                elif cueKin == "counselor":
-                    if not hab.phab:  # not a group hab, this is an invalid cue
+                    if not witnessed:
                         continue
+                else:
+                    continue
 
-                    sn = cue["sn"]
-                    said = cue["said"]
+            rseq = coring.Seqner(qb64=snq)
+            self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
-                    prefixer = coring.Prefixer(qb64=pre)
-                    seqner = coring.Seqner(sn=sn)
-                    saider = coring.Saider(qb64=said)
+            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
 
-                    self.counselor.start(aids=hab.aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
-                                         saider=saider)
-                    while True:
-                        if self.counselor.cues:
-                            cue = self.counselor.cues.popleft()
-                            if cue["pre"] == hab.pre:
-                                break
-
-                        yield self.tock
-
-                    self.cues.append(dict(kin="finished", regk=regk, pre=pre))
-
-                yield self.tock
-            yield self.tock
-
-    def escrowDo(self, tymth, tock=0.0):
-        """ Escrow processing Doist generator
-
-        Processes escrows for all newly created issuers.
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-
-        Returns:
-            Doist: doifiable compatible generator method
+    def processMultisigEscrow(self):
+        """
+        Process escrow of group multisig events that do not have a full compliment of receipts
+        from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
+        that the event is complete.
 
         """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        for (regk, snq, regd), (prefixer, seqner, saider) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
+            try:
+                if not self.counselor.complete(prefixer, seqner, saider):
+                    continue
+            except kering.ValidationError:
+                self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
+                continue
 
-        while True:
-            self.rgy.processEscrows()
-            yield
+            rseq = coring.Seqner(qb64=snq)
+
+            # Anchor the message, registry or otherwise
+            key = dgKey(regk, regd)
+            sealet = seqner.qb64b + saider.qb64b
+            self.rgy.reger.putAnc(key, sealet)
+
+            self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
+            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+
+    def processDiseminationEscrow(self):
+        for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
+            rseq = coring.Seqner(qb64=snq)
+            dig = self.rgy.reger.getTel(key=snKey(pre=regk, sn=rseq.sn))
+            if dig is None:
+                continue
+
+            self.rgy.reger.tede.rem(keys=(regk, snq))
+
+            tevt = bytearray()
+            for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
+                tevt.extend(msg)
+
+            print(f"Sending TEL events to witnesses")
+            # Fire and forget the TEL event to the witnesses.  Consumers will have to query
+            # to determine when the Witnesses have received the TEL events.
+            self.witPub.msgs.append(dict(pre=prefixer.qb64, msg=tevt))
+            self.rgy.reger.ctel.put(keys=(regk, rseq.qb64), val=saider)  # idempotent
 
 
-class RegistryDoer(doing.DoDoer):
-    """
-    Basic Registry Doer to perform credential issuance of the registry
+class Credentialer(doing.DoDoer):
 
-    Inherited Attributes:
-        .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
-
-    Attributes:
-        .issuer is Issuer subclass
-
-    Inherited Properties:
-        .tyme is float relative cycle time of associated Tymist .tyme obtained
-            via injected .tymth function wrapper closure.
-        .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
-        .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Methods:
-        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
-        .__call__ makes instance callable
-            Appears as generator function that returns generator
-        .do is generator method that returns generator
-        .enter is enter context action method
-        .recur is recur context action method or generator method
-        .exit is exit context method
-        .close is close context method
-        .abort is abort context method
-
-    Hidden:
-        ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-        ._tock is hidden attribute for .tock property
-    """
-
-    def __init__(self, hby, registry, verifier, msgs=None, cues=None, **kwa):
-        """ Initialize DoDoer for issuing credentials.
-
-        Parameters:
-            hab (Habitat): identifier environment
-            registry (Registry): instance to use to perform credential issuance
-            verifier (Verifier): credential verifier tied to local credential store for persistence.
-            msgs (decking.Deck): inbound cue messages for handler
-            cues (decking.Deck): outbound cue messages from handler
-            **kwa (dict): keyword args passed through to DoDoer
-        """
+    def __init__(self, hby, rgy, registrar, verifier):
         self.hby = hby
-        self.registry = registry
+        self.rgy = rgy
+        self.registrar = registrar
         self.verifier = verifier
-        self.msgs = msgs if msgs is not None else decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
+        self.postman = forwarding.Postman(hby=hby)
+        doers = [self.postman, doing.doify(self.escrowDo)]
 
-        doers = [
-            doing.doify(self.registryDo),
-            doing.doify(self.cueDo),
-            doing.doify(self.escrowDo),
-            doing.doify(self.verifierDo),
-        ]
+        super(Credentialer, self).__init__(doers=doers)
 
-        super(RegistryDoer, self).__init__(doers=doers, **kwa)
-
-    def registryDo(self, tymth, tock=0.0):
-        """ Generator method for issuing a credential from a registry
-
-
-        Creating issuance events and anchoring them to key state.
-        Propagates all events to witnesses or backers
+    def create(self, regname, recp, schema, source, rules, data):
+        """  Create and validate a credential returning the fully populated Creder
 
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
+            regname:
+            recp:
+            schema:
+            source:
+            rules:
+            data:
 
         Returns:
-            Doist: doifiable Doist compatible generator
+            Creder: Creder class for the issued credential
 
         """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)  # finish enter context
+        if recp not in self.hby.kevers:
+            raise kering.ConfigurationError("Unable to issue credential to {}.  A connection to that identifier must "
+                                            "already be established".format(recp))
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                schema = msg["schema"]
-                source = msg["source"]
-                recipient = msg["recipient"]
-                data = msg["data"]
+        registry = self.rgy.registryByName(regname)
+        if registry is None:
+            raise kering.ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
+                                            "credentials".format(regname))
+        hab = registry.hab
 
-                dt = data["dt"] if "dt" in data else helping.nowIso8601()
+        dt = data["dt"] if "dt" in data else helping.nowIso8601()
 
-                d = dict(
-                    d="",
-                    i=recipient,
-                    dt=dt,
-                )
+        d = dict(
+            d="",
+            i=recp,
+            dt=dt,
+        )
 
-                d |= data
+        d |= data
 
-                creder = proving.credential(issuer=self.hby.pre,
-                                            schema=schema,
-                                            subject=d,
-                                            source=source,
-                                            status=self.registry.regk)
+        creder = proving.credential(issuer=hab.pre,
+                                    schema=schema,
+                                    subject=d,
+                                    source=source,
+                                    rules=rules,
+                                    status=registry.regk)
+        self.validate(creder)
+        return creder
 
-                try:
-                    self.registry.issue(creder=creder, dt=dt)
-                except kering.MissingAnchorError:
-                    logger.info("Missing anchor from credential issuance due to multisig identifier")
-
-                craw = self.hby.endorse(creder)
-                parsing.Parser().parse(ims=craw, vry=self.verifier)
-
-                yield self.tock
-
-            yield self.tock
-
-    def cueDo(self, tymth, tock=0.0):
-        """ Process cues from credential issue coroutine
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): initial tock value
+    def validate(self, creder):
         """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
 
-        while True:
-            while self.registry.cues:
-                cue = self.registry.cues.popleft()
-
-                cueKin = cue['kin']
-                if cueKin == "send":
-                    tevt = cue["msg"]
-                    witSender = agenting.WitnessPublisher(hab=self.hby, msg=tevt)
-                    self.extend([witSender])
-
-                    while not witSender.done:
-                        _ = yield self.tock
-
-                    self.remove([witSender])
-                    self.cues.append(dict(kin="finished", regk=self.registry.regk))
-                elif cueKin == "kevt":
-                    kevt = cue["msg"]
-                    serder = eventing.Serder(raw=bytearray(kevt))
-                    witDoer = agenting.WitnessReceiptor(hby=self.hby)
-                    witDoer.msgs.append(dict(pre=serder.pre, sn=serder.sn))
-                    self.extend([witDoer])
-
-                    while not witDoer.done:
-                        yield self.tock
-
-                    self.remove([witDoer])
-                    self.cues.append(dict(kin="witnessed", regk=self.registry.regk))
-
-                yield self.tock
-
-            yield self.tock
-
-    def escrowDo(self, tymth, tock=0.0):
-        """ Processes .issuer and .verifier escrows.
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
+        Args:
+            creder:
 
         Returns:
-            Doist: doifiable Doist compatible generator method
+            bool: true if credential is valid against a known schema
 
         """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        schema = creder.crd['s']
+        scraw = self.verifier.resolver.resolve(schema)
+        if not scraw:
+            raise kering.ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
+                                            "issuing credentials".format(schema))
 
-        while True:
-            self.registry.processEscrows()
-            self.verifier.processEscrows()
-            yield
+        schemer = scheming.Schemer(raw=scraw)
+        try:
+            schemer.verify(creder.raw)
+        except kering.ValidationError as ex:
+            raise kering.ConfigurationError(f"Credential schema validation failed for {schema}: {ex}")
 
-    def verifierDo(self, tymth, tock=0.0):
-        """ Processes the Verifier cues.
+        return True
+
+    def issue(self, creder, aids=None):
+        """ Issue the credential creder and handle witness propagation and communication
+
+        Args:
+            creder (Creder): Credential object to issue
+            aids (list): optional participant list for multisig issuance
+
+        """
+        regk = creder.crd["ri"]
+        registry = self.rgy.regs[regk]
+        hab = registry.hab
+        aids = aids if aids is not None else hab.aids
+        dt = creder.subject["dt"] if "dt" in creder.subject else None
+
+        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, aids=aids)
+
+        rseq = coring.Seqner(sn=seq)
+        if hab.phab:
+            craw = signing.ratify(hab=hab.phab, serder=creder)
+            atc = bytearray(craw[creder.size:])
+            others = list(aids)
+            others.remove(hab.phab.pre)
+
+            print(f"Sending signed credential to {len(aids) - 1} other participants")
+            for recpt in others:
+                self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
+
+            # escrow waiting for other signatures
+            self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
+        else:
+            craw = signing.ratify(hab=hab, serder=creder)
+
+            # escrow waiting for registry anchors to be complete
+            self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
+
+        parsing.Parser().parse(ims=craw, vry=self.verifier)
+
+    def processCredentialMissingSigEscrow(self):
+        for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
+            rseq = coring.Seqner(qb64=snq)
+
+            # Look for the saved saider
+            saider = self.rgy.reger.saved.get(keys=said)
+            if saider is None:
+                continue
+
+            # Remove from this escrow
+            self.rgy.reger.cmse.rem(keys=(said, snq))
+
+            hab = self.hby.habs[creder.issuer]
+            kever = hab.kever
+            keys = [verfer.qb64 for verfer in kever.verfers]
+            witer = hab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
+
+            # place in escrow to diseminate to other if witnesser
+            if witer:
+                self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
+            else:  # not witnesser just save as issued.
+                self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+
+    def processCredentialIssuedEscrow(self):
+        for (said, snq), creder in self.rgy.reger.crie.getItemIter():
+            rseq = coring.Seqner(qb64=snq)
+            issr = creder.issuer
+            regk = creder.status
+            recp = creder.subject["i"]
+
+            if not self.registrar.complete(pre=said, sn=rseq.sn):
+                continue
+
+            hab = self.hby.habs[issr]
+
+            for msg in self.hby.db.clonePreIter(pre=issr):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            if regk is not None:
+                for msg in self.verifier.reger.clonePreIter(pre=regk):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            for msg in self.verifier.reger.clonePreIter(pre=creder.said):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            sources = self.verifier.reger.sources(self.hby.db, creder)
+            for source, atc in sources:
+                regk = source.status
+                vci = source.said
+
+                issr = source.crd["i"]
+                for msg in self.verifier.reger.clonePreIter(pre=vci):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder,
+                                      attachment=atc)
+
+                for msg in self.hby.db.clonePreIter(pre=regk):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder,
+                                      attachment=atc)
+
+                for msg in self.hby.db.clonePreIter(pre=issr):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder,
+                                      attachment=atc)
+
+                serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(source.said)
+                atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
+                del atc[:serder.size]
+                self.postman.send(src=issr, dest=recp, topic="credential", serder=source, attachment=atc)
+
+            serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(creder.said)
+            atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
+            del atc[:serder.size]
+            self.postman.send(src=issr, dest=recp, topic="credential", serder=creder, attachment=atc)
+
+            exn, atc = protocoling.credentialIssueExn(hab=hab, schema=creder.schema, said=creder.said)
+            self.postman.send(src=issr, dest=recp, topic="credential", serder=exn, attachment=atc)
+            self.rgy.reger.crie.rem(keys=(said, snq))
+            self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+
+    def complete(self, said):
+        return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
+
+    def escrowDo(self, tymth, tock=1.0):
+        """ Process escrows of group multisig identifiers waiting to be compeleted.
+
+        Steps involve:
+           1. Sending local event with sig to other participants
+           2. Waiting for signature threshold to be met.
+           3. If elected and delegated identifier, send complete event to delegator
+           4. If delegated, wait for delegator's anchor
+           5. If elected, send event to witnesses and collect receipts.
+           6. Otherwise, wait for fully receipted event
 
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-
-        Returns:
-            Doist: doifiable Doist compatible generator method
+            tock (float): injected initial tock value.  Default to 1.0 to slow down processing
 
         """
+        # enter context
         self.wind(tymth)
         self.tock = tock
-        yield self.tock
+        _ = (yield self.tock)
 
         while True:
-            while self.verifier.cues:
-                cue = self.verifier.cues.popleft()
-                if cue["kin"] == "saved":
-                    self.cues.append(cue)
-                yield self.tock
-            yield
+            self.processEscrows()
+            yield 0.5
+
+    def processEscrows(self):
+        """
+        Process credential registry anchors:
+
+        """
+        self.processCredentialIssuedEscrow()
+        self.processCredentialMissingSigEscrow()

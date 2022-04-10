@@ -9,6 +9,7 @@ import pytest
 from falcon.testing import helpers
 
 from keri.app import habbing, httping
+from keri.core import coring
 from keri.vdr import credentialing, verifying
 
 
@@ -81,17 +82,14 @@ def test_create_cesr_request(mockHelpingNowUTC):
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        assert args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EXOG6T6nt1BABGbD1OtypQe6SjZAAsrnHFZY'
-                                b'wkCneA1k","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
-                                b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"EjPXk1a_MtWR3a0qrZiJ3'
-                                b'4c971FxiHyCZSRo6482KPDs"}}')
+        serder = coring.Serder(raw=args['body'])
+        assert serder.ked["t"] == coring.Ilks.qry
+        assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 254
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuArHNO'
-                                              b'Mt9SxHkUhHh8-f27XpHDe8lMVAiYPqvbynY2xc_XbvgTWsPn4VAOO-0nuOGVCzwW'
-                                              b'zCsVOyc8LLiOF-Ag')
+        assert len(headers["CESR-ATTACHMENT"]) == 144
 
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
@@ -131,17 +129,14 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        assert args["body"] == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EXOG6T6nt1BABGbD1OtypQe6SjZAAsrnHFZY'
-                                b'wkCneA1k","dt":"2021-01-01T00:00:00.000000+00:00","r":"tels","rr":"","q":{"i'
-                                b'":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4","ri":"EjPXk1a_MtWR3a0qrZiJ3'
-                                b'4c971FxiHyCZSRo6482KPDs"}}')
+        serder = coring.Serder(raw=args['body'])
+        assert serder.ked["t"] == coring.Ilks.qry
+        assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 254
-        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuArHNO'
-                                              b'Mt9SxHkUhHh8-f27XpHDe8lMVAiYPqvbynY2xc_XbvgTWsPn4VAOO-0nuOGVCzwW'
-                                              b'zCsVOyc8LLiOF-Ag')
+        assert len(headers["CESR-ATTACHMENT"]) == 144
 
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()

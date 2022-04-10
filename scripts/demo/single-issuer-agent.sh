@@ -17,3 +17,6 @@ sleep 3
 
 curl -s -X POST "http://localhost:5623/oobi/holder" -H "accept: */*" -H "Content-Type: application/json" -d "{\"url\":\"http://127.0.0.1:5643/oobi/Ew9ae1KDP6apL8N7WeyaUBCXOEbEmCcO6uzgCo3WU72A/witness/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\"}" | jq
 curl -s -X POST "http://localhost:5723/oobi/issuer" -H "accept: */*" -H "Content-Type: application/json" -d "{\"url\":\"http://127.0.0.1:5644/oobi/Ew-o5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M/witness/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"}" | jq
+sleep 2
+
+curl -X POST "http://localhost:5623/credentials/issuer" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"Ew9ae1KDP6apL8N7WeyaUBCXOEbEmCcO6uzgCo3WU72A\",\"registry\":\"vLEI\",\"schema\":\"EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\",\"source\":{}}"

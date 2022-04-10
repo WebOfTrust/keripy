@@ -8,15 +8,10 @@ import json
 import os
 
 import lmdb
-from keri.app import keeping, habbing
-from keri.core import coring, scheming
 
 from keri.core.coring import Diger, Versify, Serials
-from keri.db import basing
 from keri.db.dbing import openLMDB, dgKey, snKey
-from keri.vc import proving
-from keri.vdr import viring
-from keri.vdr.viring import Reger, nsKey
+from keri.vdr.viring import Reger
 
 
 def test_issuer():
@@ -76,13 +71,12 @@ def test_issuer():
 
     assert not os.path.exists(issuer.path)
 
-    ipreb = "DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo".encode("utf-8")
     regb = "EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
     rarb = "BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
 
     #  test with registry inception (vcp) event
-    regk = nsKey([ipreb, regb])
-    assert regk == b'DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo:EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0'
+    regk = regb
+    assert regk == b'EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0'
     sn = 0
     vs = Versify(kind=Serials.json, size=20)
 
@@ -91,8 +85,7 @@ def test_issuer():
                t="vcp")
 
     vcpb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert vcpb == (b'{"v":"KERI10JSON000014_",'
-                    b'"i":"DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo:EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0",'
+    assert vcpb == (b'{"v":"KERI10JSON000014_","i":"EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0",'
                     b'"s":"0","b":["BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"],"t":"vcp"}')
     vdig = Diger(ser=vcpb)
 
@@ -268,7 +261,6 @@ def test_issuer():
 
 
 def test_clone():
-    ipreb = "DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo".encode("utf-8")
     regk = "EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
     rarb = "BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
     rarb2 = "BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4".encode("utf-8")
@@ -344,9 +336,3 @@ def test_clone():
             b',"t":"rot"}-VA0-BABBklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
             b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAAAAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIG'
             b'M9u2Edk-PLMZ1H4')
-
-
-
-if __name__ == "__main__":
-    test_issuer()
-    test_clone()

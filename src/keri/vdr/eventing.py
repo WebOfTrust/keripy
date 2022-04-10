@@ -9,6 +9,7 @@ VC TEL  support
 import json
 import logging
 
+import pysodium
 from hio.help import decking
 from math import ceil
 from orderedset import OrderedSet as oset
@@ -25,7 +26,7 @@ from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from ..vdr.viring import Reger, nsKey
+from ..vdr.viring import Reger
 
 logger = help.ogler.getLogger()
 
@@ -102,9 +103,6 @@ def incept(
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
 
-    # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    # seedqb64 = coring.Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
-
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",
@@ -114,7 +112,7 @@ def incept(
                c=cnfg,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=baks,  # list of qb64 may be empty
-               # n=seedqb64  # nonce of random bytes to make each registry unique
+               n=coring.randomNonce()  # nonce of random bytes to make each registry unique
                )
 
     prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
@@ -257,11 +255,10 @@ def issue(
                ri=regk,
                dt=helping.nowIso8601()
                )
-    _, ked = coring.Saider.saidify(sad=ked)
-
     if dt is not None:
         ked["dt"] = dt
 
+    _, ked = coring.Saider.saidify(sad=ked)
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -1076,7 +1073,7 @@ class Tever:
         ked = serder.ked
         vcpre = ked["i"]
         ilk = ked["t"]
-        vci = nsKey([self.prefixer.qb64, vcpre])
+        vci = vcpre
 
         labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
 
@@ -1099,8 +1096,7 @@ class Tever:
 
             # check if fully anchored
             if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
-                if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider):
-                    self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
+                self.escrowALEvent(serder=serder, seqner=seqner, saider=saider)
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked,
                                                    ))
@@ -1154,7 +1150,7 @@ class Tever:
                                       "evt = {}.".format(k, ilk, ked))
 
         # have to compare with VC issuance serder
-        vci = nsKey([self.prefixer.qb64, vcpre])
+        vci = vcpre
 
         dig = self.reger.getTel(snKey(pre=vci, sn=sn - 1))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=dig))
@@ -1176,8 +1172,7 @@ class Tever:
 
             # check if fully anchored
             if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
-                if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider):
-                    self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
+                self.escrowALEvent(serder=serder, seqner=seqner, saider=saider)
                 raise MissingAnchorError("Failure verify event = {} "
                                          "".format(serder.ked))
 
@@ -1201,20 +1196,19 @@ class Tever:
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
-    def vcState(self, vcpre):
+    def vcState(self, vci):
         """ Calculate state (issued/revoked) of VC from db.
 
         Returns None if never issued from this Registry
 
         Parameters:
-          vcpre (str):  qb64 VC identifier
+          vci (str):  qb64 VC identifier
 
         Returns:
             status (Serder): transaction event state notification message
         """
-        vci = nsKey([self.prefixer.qb64, vcpre])
         digs = []
-        for _, dig in self.reger.getTelItemPreIter(pre=vci):
+        for _, dig in self.reger.getTelItemPreIter(pre=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:
@@ -1234,14 +1228,13 @@ class Tever:
             vcilk = Ilks.bis if len(digs) == 1 else Ilks.brv
             ra = serder.ked["ra"]
 
-
         dgkey = dbing.dgKey(vci, vcdig)
         couple = self.reger.getAnc(dgkey)
         ancb = bytearray(couple)
         seqner = coring.Seqner(qb64b=ancb, strip=True)
         saider = coring.Saider(qb64b=ancb, strip=True)
 
-        return vcstate(vcpre=vcpre,
+        return vcstate(vcpre=vci,
                        said=vcdig.decode("utf-8"),
                        sn=vcsn,
                        ri=self.prefixer.qb64,
@@ -1250,19 +1243,18 @@ class Tever:
                        a=dict(s=seqner.sn, d=saider.qb64),
                        )
 
-    def vcSn(self, vcpre):
+    def vcSn(self, vci):
         """ Calculates the current seq no of VC from db.
 
         Returns None if never issued from this Registry
 
         Parameters:
-          vcpre (str):  qb64 VC identifier
+          vci (str):  qb64 VC identifier
 
         Returns:
             int: current TEL sequence number of credential or None if not found
 
         """
-        vci = nsKey([self.prefixer.qb64, vcpre])
         cnt = self.reger.cntTels(vci)
 
         return None if cnt == 0 else cnt - 1
@@ -1273,18 +1265,16 @@ class Tever:
         Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
-            pre (qb64): is event prefix
+            pre (str): is event prefix
             sn (int): is event sequence number
             serder (Serder): is Serder instance of current event
             seqner (Seqner): issuing event sequence number from controlling KEL.
-            seqner (Seqner): is optional Seqner instance of cloned first seen ordinal
-                If cloned mode then seqner maybe provided (not None)
-                When seqner provided then compare fn of dater and database and
-                first seen if not match then log and add cue notify problem
             saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): is optional list of Siger instance of indexed backer sigs
             baks (list): is optional list of qb64 non-trans identifiers of backers
         """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
 
         dig = serder.saider.qb64b
         key = dgKey(pre, dig)
@@ -1334,10 +1324,8 @@ class Tever:
 
         # check if fully anchored
         if not self.verifyAnchor(serder=serder, seqner=seqner, saider=saider):
-            if self.escrowALEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers, baks=baks):
-                self.cues.append(dict(kin="query", q=dict(pre=self.pre, sn=seqner.sn)))
-            raise MissingAnchorError("Failure verify event = {} "
-                                     "".format(serder.ked))
+            self.escrowALEvent(serder=serder, seqner=seqner, saider=saider, bigers=bigers, baks=baks)
+            raise MissingAnchorError("Failure verify event = {}".format(serder.ked))
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
@@ -1360,7 +1348,7 @@ class Tever:
                                                                                                  serder.ked))
         return bigers
 
-    def verifyAnchor(self, serder, seqner, saider):
+    def verifyAnchor(self, serder, seqner=None, saider=None):
         """ Retrieve specified anchoring event and verify seal
 
         Retrieve event from db using anchor, get seal from event eserder and
@@ -1376,6 +1364,9 @@ class Tever:
                    TEL event.
 
         """
+
+        if seqner is None or saider is None:
+            return False
 
         dig = self.db.getKeLast(key=snKey(pre=self.pre, sn=seqner.sn))
         if not dig:
@@ -1455,7 +1446,6 @@ class Tever:
         self.reger.putTvt(key, serder.raw)
         logger.info("Tever state: Escrowed anchorless event "
                     "event = %s\n", serder.ked)
-        print("ESCROWING ANCHORLESS", serder.pre)
         return self.reger.putTae(snKey(serder.preb, serder.sn), serder.saidb)
 
     def getBackerState(self, ked):
@@ -1488,7 +1478,7 @@ class Tever:
         # the backer threshold at this event in mgmt TEL
         rtoad = rserder.ked["bt"]
 
-        baks = [bytes(bak) for bak in self.reger.getBaks(dgkey)]
+        baks = [bytes(bak).decode("utf-8") for bak in self.reger.getBaks(dgkey)]
 
         return rtoad, baks
 
@@ -1550,7 +1540,7 @@ class Tevery:
 
         return self.reger.registries
 
-    def processEvent(self, serder, seqner, saider, wigers=None):
+    def processEvent(self, serder, seqner=None, saider=None, wigers=None):
         """ Process one event serder with attached indexde signatures sigers
 
         Validates event against current state of registry or credential, creating registry
@@ -1677,9 +1667,8 @@ class Tevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            if vcpre := qry["i"]:
-                vck = nsKey([mgmt, vcpre])
-                cloner = self.reger.clonePreIter(pre=vck, fn=0)  # create iterator at 0
+            if vci := qry["i"]:
+                cloner = self.reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
                 for msg in cloner:
                     msgs.extend(msg)
 
@@ -1922,7 +1911,7 @@ class Tevery:
         # fetch from serder to process
         ked = tserder.ked
         regk = tserder.ked["ri"]
-        vcpre = tserder.pre
+        vci = tserder.pre
         sn = tserder.sn
         ra = tserder.ked["ra"]
 
@@ -1932,7 +1921,7 @@ class Tevery:
             regsn = 0
 
         if regk not in self.tevers or self.tevers[regk].sn < regsn:
-            if self.reger.txnsb.escrowStateNotice(typ="credential-mre", pre=vcpre, aid=aid, serder=serder,
+            if self.reger.txnsb.escrowStateNotice(typ="credential-mre", pre=vci, aid=aid, serder=serder,
                                                   saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
@@ -1942,12 +1931,11 @@ class Tevery:
         pre = tever.pre
 
         if pre not in self.kevers:
-            if self.reger.txnsb.escrowStateNotice(typ="credential-mae", pre=vcpre, aid=aid, serder=serder,
+            if self.reger.txnsb.escrowStateNotice(typ="credential-mae", pre=vci, aid=aid, serder=serder,
                                                   saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="query", q=dict(pre=aid)))
 
             raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
-
 
         # Load backers from either tsn or Kever of issuer
         if tever.noBackers:
@@ -1969,7 +1957,7 @@ class Tevery:
                 raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
                                                      .format(tserder.pre, aid))
 
-        keys = (vcpre, aid,)
+        keys = (vci, aid,)
         osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
 
         # BADA Logic
@@ -1979,14 +1967,13 @@ class Tevery:
         if not accepted:
             raise kering.UnverifiedReplyError(f"Unverified reply.")
 
-        vci = nsKey([regk, vcpre])
         ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
-            if self.reger.txnsb.escrowStateNotice(typ="credential-ooo", pre=vcpre, aid=aid, serder=serder,
+            if self.reger.txnsb.escrowStateNotice(typ="credential-ooo", pre=vci, aid=aid, serder=serder,
                                                   saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcpre)))
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vci)))
 
             raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
 
@@ -2007,7 +1994,6 @@ class Tevery:
 
         self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", serder=tserder))
-
 
     @staticmethod
     def registryKey(serder):
@@ -2106,7 +2092,6 @@ class Tevery:
 
         """
         for (pre, snb, digb) in self.reger.getTaeItemIter():
-            print("we are missing anchor for", pre)
             sn = int(snb, 16)
             try:
                 dgkey = dgKey(pre, digb)
@@ -2130,8 +2115,8 @@ class Tevery:
                     logger.info("Tevery unescrow error: Missing anchor at."
                                 "dig = %s\n", bytes(digb))
 
-                    raise ValidationError("Missing escrowed anchor at dig = {}."
-                                          "".format(bytes(digb)))
+                    raise MissingAnchorError("Missing escrowed anchor at dig = {}."
+                                             "".format(bytes(digb)))
                 ancb = bytearray(couple)
                 seqner = coring.Seqner(qb64b=ancb, strip=True)
                 saider = coring.Saider(qb64b=ancb, strip=True)

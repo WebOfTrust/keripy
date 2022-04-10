@@ -7,11 +7,10 @@ import json
 
 import pytest
 
-from keri.core.coring import MtrDex, Saider
-from keri.core.scheming import Ids, Schemer, JSONSchema, CacheResolver
+from keri.core.coring import MtrDex
+from keri.core.scheming import Schemer, JSONSchema, CacheResolver
 from keri.db import basing
 from keri.kering import ValidationError
-
 
 
 def test_json_schema():
@@ -26,14 +25,18 @@ def test_json_schema():
     sce = Schemer(raw=scer)
     assert sce.said == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sce.verify(raw=payload) is True
-    assert sce.verify(raw=mismatch) is False
-    assert sce.verify(raw=badjson) is False
+    with pytest.raises(ValidationError):
+        sce.verify(raw=mismatch)
+
+    with pytest.raises(ValidationError):
+        sce.verify(raw=badjson)
 
     payload = b'{"a": "test", "c": "2018-11-13T20:20:39+00:00"}'
     assert sce.verify(raw=payload) is True
 
     payload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00", d:"not valid"}'
-    assert sce.verify(raw=payload) is False
+    with pytest.raises(ValidationError):
+        sce.verify(raw=payload)
 
     # Invalid SAID for given schema
     badsaid = (b'{"$id": "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPz", "$schema": '
@@ -80,8 +83,11 @@ def test_json_schema_dict():
     assert sce.said == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sce.sed["$id"] == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sce.verify(raw=payload) is True
-    assert sce.verify(raw=mismatch) is False
-    assert sce.verify(raw=badjson) is False
+    with pytest.raises(ValidationError):
+        sce.verify(raw=mismatch)
+
+    with pytest.raises(ValidationError):
+        sce.verify(raw=badjson)
 
     raw = json.dumps(sce.sed).encode("utf-8")
 
@@ -200,8 +206,9 @@ def test_resolution():
         schemer.typ = JSONSchema(resolver=cache)
         v = schemer.verify(payload)
         assert v is True
-        v = schemer.verify(badload)
-        assert v is False
+
+        with pytest.raises(ValidationError):
+            schemer.verify(badload)
 
 
 if __name__ == '__main__':

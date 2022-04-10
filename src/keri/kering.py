@@ -24,7 +24,6 @@ Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror 
 Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
                watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox")
 
-
 class KeriError(Exception):
     """
     Base Class for keri exceptions
