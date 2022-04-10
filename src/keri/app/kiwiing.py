@@ -2686,6 +2686,71 @@ class ContactEnd:
         rep.status = falcon.HTTP_202
 
 
+class SchemaEnd:
+
+    def __init__(self, db):
+        self.db = db
+
+    def on_get(self, _, rep, said):
+        """ Schema GET endpoint
+
+        Parameters:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            said: qb64 self-addressing identifier of schema to load
+
+       ---
+        summary:  Get schema JSON of specified schema
+        description:  Get schema JSON of specified schema
+        tags:
+           - Schema
+        parameters:
+          - in: path
+            name: said
+            schema:
+              type: string
+            required: true
+            description: qb64 self-addressing identifier of schema to get
+        responses:
+           200:
+              description: Schema JSON successfully returned
+           404:
+              description: No schema found for SAID
+        """
+        schemer = self.db.schema.get(keys=(said,))
+        if schemer is None:
+            rep.status = falcon.HTTP_404
+            rep.text = "Schema not found"
+            return
+
+        data = schemer.sed
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(data).encode("utf-8")
+
+    def on_get_list(self, _, rep):
+        """ Schema GET plural endpoint
+
+        Parameters:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+       ---
+        summary:  Get schema JSON of all schema
+        description:  Get schema JSON of all schema
+        tags:
+           - Schema
+        responses:
+           200:
+              description: Array of all schema JSON
+        """
+        data = []
+        for said, schemer in self.db.schema.getItemIter():
+            data.append(schemer.sed)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(data).encode("utf-8")
+
+
 def loadEnds(app, *,
              path,
              hby,
@@ -2766,6 +2831,10 @@ def loadEnds(app, *,
     app.add_route("/contacts/{prefix}", contact)
     app.add_route("/contacts/{prefix}/img", contact, suffix="img")
     app.add_route("/contacts", contact, suffix="list")
+
+    schemaEnd = SchemaEnd(db=hby.db)
+    app.add_route("/schema", schemaEnd, suffix="list")
+    app.add_route("/schema/{said}", schemaEnd)
 
     httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
     app.add_route("/mbx", httpEnd, suffix="mbx")
