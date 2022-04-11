@@ -2,12 +2,14 @@
 """
 tests.app.connecting module
 """
-import functools
 import io
 import os
 
-from keri.app import connecting
-from keri.db import basing
+import pytest
+
+from keri import kering
+from keri.app import connecting, habbing
+from keri.core import coring
 
 
 def test_organizer():
@@ -31,15 +33,15 @@ def test_organizer():
                 zip="70605",
                 company="GLEIF", alias="sally")
 
-    with basing.openDB(name="org") as db:
-        org = connecting.Organizer(db=db)
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        org = connecting.Organizer(hby=hby)
 
-        org.replace(pre=joe, data=joed)
-        org.replace(pre=bob, data=bobd)
-        org.replace(pre=ken, data=kend)
-        org.replace(pre=jen, data=jend)
-        org.replace(pre=wil, data=wild)
-        org.replace(pre=sal, data=sald)
+        org.replace(alias=hab.name, pre=joe, data=joed)
+        org.replace(alias=hab.name, pre=bob, data=bobd)
+        org.replace(alias=hab.name, pre=ken, data=kend)
+        org.replace(alias=hab.name, pre=jen, data=jend)
+        org.replace(alias=hab.name, pre=wil, data=wild)
+        org.replace(alias=hab.name, pre=sal, data=sald)
 
         contacts = org.list()
         assert len(contacts) == 6
@@ -69,17 +71,17 @@ def test_organizer():
         assert d["id"] == jen
         assert d["first"] == "Jen"
         assert d["last"] == "Jones"
-        org.set(pre=jen, field="last", val="Smith")
+        org.set(alias=hab.name, pre=jen, field="last", val="Smith")
         d = org.get(pre=jen)
         assert d["last"] == "Smith"
 
-        org.unset(pre=jen, field="first")
+        org.unset(alias=hab.name, pre=jen, field="first")
         d = org.get(pre=jen)
         assert d["id"] == jen
         assert "first" not in d
         assert d["last"] == "Smith"
 
-        org.update(pre=ken, data=dict(
+        org.update(alias=hab.name, pre=ken, data=dict(
             first="Kenneth",
             mobile="222-555-1212"
         ))
@@ -96,7 +98,7 @@ def test_organizer():
                      'state': 'NJ',
                      'zip': '08807'}
 
-        org.replace(pre=ken, data=kend)
+        org.replace(alias=hab.name, pre=ken, data=kend)
         d = org.get(pre=ken)
         assert d == {'address': '28 Williams Ave.',
                      'alias': 'ken',
@@ -111,7 +113,7 @@ def test_organizer():
         org.rem(pre=wil)
         d = org.get(pre=wil)
         assert d is None
-        org.replace(pre=wil, data=wild)
+        org.replace(alias=hab.name, pre=wil, data=wild)
 
         companies = org.values(field="company")
         assert companies == ["GLEIF", "HCF"]
@@ -130,11 +132,36 @@ def test_organizer():
         assert wil in data
         assert sal in data
 
+        # Rotate identifier and make sure data still validates.
+        hab.rotate()
+        assert hab.kever.sn == 1
+        d = org.get(pre=ken)
+        assert d == {'address': '28 Williams Ave.',
+                     'alias': 'ken',
+                     'city': 'Bridgewater',
+                     'company': 'GLEIF',
+                     'first': 'Ken',
+                     'id': 'EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU',
+                     'last': 'Knight',
+                     'state': 'NJ',
+                     'zip': '08807'}
+
+        # Update the Jen's data signature by signing garbage
+        nonce = coring.randomNonce()
+        sigers = hab.sign(ser=nonce.encode("utf-8"))
+        hby.db.csigs.pin(keys=(jen,), vals=sigers)
+        with pytest.raises(kering.ValidationError):
+            org.get(pre=jen)
+
+        # This will fail too because it contains Jen
+        with pytest.raises(kering.ValidationError):
+            org.find(field="company", val="GLEIF")
+
 
 def test_organizer_imgs():
 
-    with basing.openDB(name="org") as db:
-        org = connecting.Organizer(db=db)
+    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        org = connecting.Organizer(hby=hby)
         pre = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
         data = bytearray(os.urandom(100000))
         assert len(data) == 100000
@@ -161,5 +188,3 @@ def test_organizer_imgs():
             img.extend(chunk)
 
         assert len(img) == 0
-
-

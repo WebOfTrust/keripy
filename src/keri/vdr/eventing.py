@@ -1319,7 +1319,7 @@ class Tever:
         berfers = [Verfer(qb64=bak) for bak in baks]
 
         # get unique verified bigers and bindices lists from bigers list
-        bigers, bindices = verifySigs(serder=serder, sigers=bigers, verfers=berfers)
+        bigers, bindices = verifySigs(raw=serder.raw, sigers=bigers, verfers=berfers)
         # each biger now has werfer of corresponding wit
 
         # check if fully anchored

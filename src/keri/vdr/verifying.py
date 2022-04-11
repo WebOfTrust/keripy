@@ -166,7 +166,7 @@ class Verifier:
 
             # Verify the signatures are valid and that the signature threshold as of the signing event is met
             tholder, verfers = self.hby.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=saider.qb64)
-            _, indices = core.eventing.verifySigs(creder, sigers, verfers)
+            _, indices = core.eventing.verifySigs(creder.raw, sigers, verfers)
 
             if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
                 self.escrowPSC(creder, sadsigers, sadcigars)

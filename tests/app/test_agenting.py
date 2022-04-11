@@ -13,7 +13,7 @@ from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting
 from keri.core.eventing import SealSource
 from keri.db import dbing
-from keri.vdr import eventing, viring, credentialing
+from keri.vdr import eventing, viring
 
 
 def test_withness_receiptor(seeder):
@@ -82,7 +82,7 @@ def test_witness_sender(seeder):
         witDoer = agenting.WitnessPublisher(hby=palHby)
         witDoer.msgs.append(dict(pre=palHab.pre, msg=msg))
 
-        limit = 1.0
+        limit = 2.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
         doers = wanDoers + wilDoers + wesDoers + [witDoer]
