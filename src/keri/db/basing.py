@@ -122,6 +122,7 @@ class OobiRecord:
     Keyed by CID (AID) and role, the minimum information needed for any OOBI
     """
     alias: str = None
+    oobialias: str = None
     said: str = None
     cid: str = None
     eid: str = None

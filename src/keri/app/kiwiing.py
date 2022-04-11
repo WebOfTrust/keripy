@@ -2034,12 +2034,12 @@ class OobiResource(doing.DoDoer):
         """
         self.hby = hby
 
-        self.oobiery = oobiery if oobiery is not None else ending.Oobiery(db=self.hby.db)
+        self.oobiery = oobiery if oobiery is not None else ending.Oobiery(hby=self.hby)
         doers = [self.oobiery, doing.doify(self.loadDo)]
 
         super(OobiResource, self).__init__(doers=doers)
 
-    def on_get(self, req, rep, alias):
+    def on_get_alias(self, req, rep, alias=None):
         """ Identifier GET endpoint
 
         Parameters:
@@ -2114,13 +2114,81 @@ class OobiResource(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post(self, req, rep, alias):
+    def on_post_alias(self, req, rep, alias):
         """ Resolve OOBI endpoint.
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
+            alias: human readable name of the local identifier context for resolving this OOBI
+
+        ---
+        summary: Resolve OOBI and assign an alias for the remote identifier
+        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
+                     data for resolved identifier
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the oobi to resolve
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: OOBI
+                    properties:
+                        oobialias:
+                          type: string
+                          description: alias to assign to the identifier resolved from this OOBI
+                          required: true
+                        url:
+                          type: string
+                          description:  URL OOBI
+                        rpy:
+                          type: object
+                          description: unsigned KERI `rpy` event message with endpoints
+        responses:
+           202:
+              description: OOBI resolution to key state successful
+
+        """
+        body = req.get_media()
+
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = "invalid alias, not found"
+            return
+
+        if "oobialias" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "invalid request, oobialias is required"
+            return
+
+        if "url" in body:
+            oobi = body["url"]
+            oobialias = body["oobialias"]
+            self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
+        elif "rpy" in body:
+            pass
+        else:
+            rep.status = falcon.HTTP_400
+            rep.text = "invalid OOBI request body, either 'rpy' or 'url' is required"
+            return
+
+        rep.status = falcon.HTTP_202
+
+    def on_post(self, req, rep):
+        """ Resolve OOBI endpoint.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
 
         ---
         summary: Resolve OOBI
@@ -2153,14 +2221,15 @@ class OobiResource(doing.DoDoer):
 
         """
         body = req.get_media()
+
         if "url" in body:
             oobi = body["url"]
-            self.oobiery.oobis.append(dict(alias=alias, url=oobi))
+            self.oobiery.oobis.append(dict(url=oobi))
         elif "rpy" in body:
             pass
         else:
             rep.status = falcon.HTTP_400
-            rep.data = "invalid OOBI request body, either 'rpy' or 'url' is required"
+            rep.text = "invalid OOBI request body, either 'rpy' or 'url' is required"
             return
 
         rep.status = falcon.HTTP_202
@@ -2827,7 +2896,8 @@ def loadEnds(app, *,
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
 
     oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
-    app.add_route("/oobi/{alias}", oobiEnd)
+    app.add_route("/oobi/{alias}", oobiEnd, suffix="alias")
+    app.add_route("/oobi", oobiEnd)
 
     chacha = ChallengeEnd(hby=hby, rep=rep)
     app.add_route("/challenge", chacha)

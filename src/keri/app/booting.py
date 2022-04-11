@@ -168,7 +168,7 @@ class BootEnd(doing.DoDoer):
         while not self.hby:
             yield self.tock
 
-        obl = oobiing.OobiLoader(db=self.hby.db, auto=True)
+        obl = oobiing.OobiLoader(hby=self.hby, auto=True)
         self.extend([obl])
 
         while not obl.done:

@@ -768,7 +768,7 @@ def test_oobi_ends(seeder):
 
         assert palHab.pre == "E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
 
-        oobiery = ending.Oobiery(db=palHby.db)
+        oobiery = ending.Oobiery(hby=palHby)
         app = falcon.App()
         _ = kiwiing.loadEnds(hby=palHby,
                              rep=None,
@@ -814,13 +814,57 @@ def test_oobi_ends(seeder):
                                      'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
                                'role': 'witness'}
 
+        # Post without a URL or RPY
+        data = dict()
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi", body=b)
+        assert result.status == falcon.HTTP_400
+
+        # Post an RPY
+        data = dict(rpy={})
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi", body=b)
+        assert result.status == falcon.HTTP_202
+
         data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
         b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi", body=b)
+        assert result.status == falcon.HTTP_202
+        assert len(oobiery.oobis) == 1
+        oobi = oobiery.oobis.popleft()
+        assert oobi == {'url': 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'}
+
+        # Post without a URL or RPY
+        data = dict(oobialias="sal")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi/pal", body=b)
+        assert result.status == falcon.HTTP_400
+
+        # Post an RPY
+        data = dict(oobialias="sal", rpy={})
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi/pal", body=b)
+        assert result.status == falcon.HTTP_202
+
+        # POST without an oobialias
+        data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi/pal", body=b)
+        assert result.status == falcon.HTTP_400
+
+        # Post to an unknown local alias
+        data = dict(oobialias="sal",
+                    url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi/jim", body=b)
+        assert result.status == falcon.HTTP_404
+
         result = client.simulate_post(path="/oobi/pal", body=b)
         assert result.status == falcon.HTTP_202
         assert len(oobiery.oobis) == 1
         oobi = oobiery.oobis.popleft()
         assert oobi == {'alias': 'pal',
+                        'oobialias': 'sal',
                         'url': 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'}
 
 

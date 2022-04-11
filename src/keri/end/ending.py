@@ -24,7 +24,7 @@ from hio.help import decking
 
 from .. import help
 from .. import kering
-from ..app import habbing
+from ..app import habbing, connecting
 from ..core import coring
 from ..db import basing
 from ..help import nowIso8601
@@ -532,7 +532,7 @@ class Oobiery(doing.DoDoer):
 
     """
 
-    def __init__(self, db, oobis=None, cues=None):
+    def __init__(self, hby, oobis=None, cues=None):
         """  DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
@@ -541,10 +541,11 @@ class Oobiery(doing.DoDoer):
             cues (decking.Deck): outbound cues from processing oobis
         """
 
-        self.db = db
+        self.hby = hby
+        self.org = connecting.Organizer(hby=self.hby)
         rtr = routing.Router()
-        rvy = routing.Revery(db=self.db, rtr=rtr)
-        kvy = eventing.Kevery(db=self.db, lax=True, local=False, rvy=rvy)
+        rvy = routing.Revery(db=self.hby.db, rtr=rtr)
+        kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
         self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
 
@@ -580,18 +581,19 @@ class Oobiery(doing.DoDoer):
                         print("blinded")
 
                     elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+                        obr = self.hby.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
 
                         obr.cid = match.group("cid")
                         obr.eid = match.group("eid")
                         obr.role = match.group("role")
-                        if "alias" in oobi:
+                        if "alias" in oobi and "oobialias" in oobi:
                             obr.alias = oobi["alias"]
+                            obr.oobialias = oobi["oobialias"]
 
                         self.request(url, purl, obr)
 
                     elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+                        obr = self.hby.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
 
                         obr.said = match.group("said")
 
@@ -635,16 +637,16 @@ class Oobiery(doing.DoDoer):
                     if response["headers"]["Content-Type"] == "application/json+cesr":
                         self.parser.parse(ims=bytearray(response["body"]))
                         self.cues.append(dict(kin="resolved", oobi=oobi))
-                        obr = self.db.oobis.get(oobi)
-                        if obr.alias is not None:
-                            self.db.cfld.put(keys=(obr.cid, "alias"), val=obr.alias)
+                        obr = self.hby.db.oobis.get(oobi)
+                        if obr.alias is not None and obr.oobialias is not None:
+                            self.org.replace(alias=obr.alias, pre=obr.cid, data=dict(alias=obr.oobialias))
 
                     elif response["headers"]["Content-Type"] == "application/schema+json":
-                        obr = self.db.oobis.get(oobi)
+                        obr = self.hby.db.oobis.get(oobi)
                         try:
                             schemer = scheming.Schemer(raw=bytearray(response["body"]))
                             if schemer.said == obr.said:
-                                self.db.schema.pin(keys=(schemer.said,), val=schemer)
+                                self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
                                 self.cues.append(dict(kin="resolved", oobi=oobi))
                             else:
                                 self.cues.append(dict(kin="failed", oobi=oobi))
@@ -665,7 +667,7 @@ class Oobiery(doing.DoDoer):
             yield self.tock
 
     def request(self, url, purl, obr):
-        self.db.oobis.pin(keys=(url,), val=obr)
+        self.hby.db.oobis.pin(keys=(url,), val=obr)
 
         client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
         clientDoer = http.clienting.ClientDoer(client=client)

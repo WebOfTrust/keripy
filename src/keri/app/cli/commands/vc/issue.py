@@ -103,8 +103,7 @@ class CredentialIssuer(doing.DoDoer):
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
 
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                                          verifier=self.verifier)
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"])
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
         try:
