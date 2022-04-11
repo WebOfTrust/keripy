@@ -60,7 +60,7 @@ class OobiDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
-        self.obl = oobiing.OobiLoader(db=self.hby.db)
+        self.obl = oobiing.OobiLoader(hby=self.hby)
         self.obl.queue([dict(alias=alias, url=oobi)])
 
         doers = [self.hbyDoer, self.obl, doing.doify(self.waitDo)]

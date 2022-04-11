@@ -13,7 +13,7 @@ from keri.end import ending
 class OobiLoader(doing.DoDoer):
     """ DoDoer for loading oobis and waiting for the results """
 
-    def __init__(self, db, oobis=None, auto=False):
+    def __init__(self, hby, oobis=None, auto=False):
         """
 
         Parameters:
@@ -23,10 +23,10 @@ class OobiLoader(doing.DoDoer):
         """
 
         self.processed = 0
-        self.db = db
+        self.db = hby.db
         self.oobis = oobis if oobis is not None else decking.Deck()
 
-        self.oobiery = ending.Oobiery(db=self.db)
+        self.oobiery = ending.Oobiery(hby=hby)
         if auto:
             for ((oobi,), _) in self.db.oobis.getItemIter():
                 self.oobiery.oobis.append(dict(url=oobi))

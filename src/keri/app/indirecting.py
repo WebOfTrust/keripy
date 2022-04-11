@@ -83,7 +83,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     serverDoer = serving.ServerDoer(server=server)
 
     directant = directing.Directant(hab=hab, server=server, verifier=verfer)
-    obl = oobiing.OobiLoader(db=hby.db, auto=True)
+    obl = oobiing.OobiLoader(hby=hby, auto=True)
 
     witStart = WitnessStart(hab=hab, parser=parser, cues=cues,
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,

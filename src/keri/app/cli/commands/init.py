@@ -120,7 +120,7 @@ class InitDoer(doing.DoDoer):
         if oc:
             print("\nLoading OOBIs...")
 
-            obl = oobiing.OobiLoader(db=hby.db, auto=True)
+            obl = oobiing.OobiLoader(hby=hby, auto=True)
             self.extend([obl])
 
             while not obl.done:
