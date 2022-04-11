@@ -123,7 +123,7 @@ class Exchanger(doing.DoDoer):
             tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
 
             #  Verify provided sigers using verfers
-            ssigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+            ssigers, indices = eventing.verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
             if not tholder.satisfy(indices):  # at least one but not enough
                 if self.escrowPSEvent(serder=serder, source=source, sigers=sigers):
                     print(f"sig querying for {source.qb64}")

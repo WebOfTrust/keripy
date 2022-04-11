@@ -721,6 +721,7 @@ def test_identifier_ends():
         result = client.simulate_put("/ids/bad", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_404  # Unknown alias
 
+        # Update contact data for identifier
         result = client.simulate_put("/ids/test", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         res = dict(req)
@@ -920,11 +921,11 @@ def test_contact_ends(seeder):
         )
         b = json.dumps(data).encode("utf-8")
         # POST to an identifier that is not in the Kever
-        response = client.simulate_post("/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        response = client.simulate_post(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_404
 
         # POST to a local identifier
-        response = client.simulate_post(f"/contacts/{palHab.pre}", body=b)
+        response = client.simulate_post(f"/contacts/{palHab.pre}/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_400
 
         for i in range(5):
@@ -936,7 +937,7 @@ def test_contact_ends(seeder):
             )
             b = json.dumps(data).encode("utf-8")
             # POST to an identifier that is not in the Kever
-            response = client.simulate_post(f"/contacts/{aids[i]}", body=b)
+            response = client.simulate_post(f"/contacts/{aids[i]}/{palHab.name}", body=b)
             assert response.status == falcon.HTTP_200
 
         response = client.simulate_get(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
@@ -962,19 +963,19 @@ def test_contact_ends(seeder):
         data = dict(id=hab.pre, company="ProSapien")
         b = json.dumps(data).encode("utf-8")
 
-        response = client.simulate_put(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo", body=b)
+        response = client.simulate_put(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_404
 
-        response = client.simulate_put(f"/contacts/{palHab.pre}", body=b)
+        response = client.simulate_put(f"/contacts/{palHab.pre}/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_400
 
-        response = client.simulate_put(f"/contacts/{aids[2]}", body=b)
+        response = client.simulate_put(f"/contacts/{aids[2]}/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_200
         assert response.json == {'company': 'ProSapien',
                                  'first': 'Ken2',
                                  'id': 'EF2EBiBL7RJ84ilErw8PyMEbABX_wJIL2VHNqLOdq5cw',
                                  'last': 'Burns2'}
-        response = client.simulate_put(f"/contacts/{aids[4]}", body=b)
+        response = client.simulate_put(f"/contacts/{aids[4]}/{palHab.name}", body=b)
         assert response.status == falcon.HTTP_200
         assert response.json == {'company': 'ProSapien',
                                  'first': 'Ken4',

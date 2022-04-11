@@ -456,7 +456,7 @@ def validateSN(sn, inceptive=None):
     return sn
 
 
-def verifySigs(serder, sigers, verfers):
+def verifySigs(raw, sigers, verfers):
     """
     Returns tuple of (vsigers, vindices) where:
         vsigers is list  of unique verified sigers with assigned verfer
@@ -468,7 +468,7 @@ def verifySigs(serder, sigers, verfers):
     If no signatures verify then sigers and indices are empty
 
     Parameters:
-        serder is Serder of signed event
+        raw (bytes) signed data
         sigers is list of indexed Siger instances (signatures)
         verfers is list of Verfer instance (public keys)
 
@@ -493,7 +493,7 @@ def verifySigs(serder, sigers, verfers):
     vindices = []
     vsigers = []
     for siger in usigers:
-        if siger.verfer.verify(siger.raw, serder.raw):
+        if siger.verfer.verify(siger.raw, raw):
             vindices.append(siger.index)
             vsigers.append(siger)
 
@@ -533,7 +533,7 @@ def validateSigs(serder, sigers, verfers, tholder):
                                         [verfer.qb64 for verfer in verfers]))
 
     # get unique verified sigers and indices lists from sigers list
-    sigers, indices = verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+    sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
     # sigers  now have .verfer assigned
 
     # check if satisfies threshold for fully signed
@@ -2254,13 +2254,13 @@ class Kever:
                                             serder.ked))
 
         # get unique verified sigers and indices lists from sigers list
-        sigers, indices = verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+        sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
         # sigers  now have .verfer assigned
 
         werfers = [Verfer(qb64=wit) for wit in wits]
 
         # get unique verified wigers and windices lists from wigers list
-        wigers, windices = verifySigs(serder=serder, sigers=wigers, verfers=werfers)
+        wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
         # each wiger now has werfer of corresponding wit
 
         # check if fully signed
@@ -2808,11 +2808,11 @@ class Kevery:
                     # raises ValidationError if no valid sig
                     kever = self.kevers[pre]  # get key state
                     # get unique verified lists of sigers and indices from sigers
-                    sigers, indices = verifySigs(serder=serder,
+                    sigers, indices = verifySigs(raw=serder.raw,
                                                  sigers=sigers,
                                                  verfers=eserder.verfers)
 
-                    wigers, windices = verifySigs(serder=serder,
+                    wigers, windices = verifySigs(raw=serder.raw,
                                                   sigers=wigers,
                                                   verfers=eserder.werfers)
 
@@ -2865,13 +2865,13 @@ class Kevery:
                         # raises ValidationError if no valid sig
                         kever = self.kevers[pre]
                         # get unique verified lists of sigers and indices from sigers
-                        sigers, indices = verifySigs(serder=serder,
+                        sigers, indices = verifySigs(raw=serder.raw,
                                                      sigers=sigers,
                                                      verfers=eserder.verfers)
 
                         wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
                         werfers = [Verfer(qb64=wit) for wit in wits]
-                        wigers, windices = verifySigs(serder=serder,
+                        wigers, windices = verifySigs(raw=serder.raw,
                                                       sigers=wigers,
                                                       verfers=werfers)
 

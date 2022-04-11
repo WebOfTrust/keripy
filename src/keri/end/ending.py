@@ -637,7 +637,7 @@ class Oobiery(doing.DoDoer):
                         self.cues.append(dict(kin="resolved", oobi=oobi))
                         obr = self.db.oobis.get(oobi)
                         if obr.alias is not None:
-                            self.db.cons.put(keys=(obr.cid, "alias"), val=obr.alias)
+                            self.db.cfld.put(keys=(obr.cid, "alias"), val=obr.alias)
 
                     elif response["headers"]["Content-Type"] == "application/schema+json":
                         obr = self.db.oobis.get(oobi)

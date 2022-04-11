@@ -41,7 +41,7 @@ class IdentifierEnd(doing.DoDoer):
         self.postman = forwarding.Postman(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.swain = delegating.Boatswain(hby=hby)
-        self.org = connecting.Organizer(db=hby.db)
+        self.org = connecting.Organizer(hby=hby)
         self.cues = decking.Deck()
 
         doers = [self.witDoer, self.postman, self.swain, doing.doify(self.eventDo)]
@@ -274,7 +274,7 @@ class IdentifierEnd(doing.DoDoer):
         if "id" in body:
             del body["id"]
 
-        self.org.update(hab.pre, body)
+        self.org.update(alias, hab.pre, body)
         contact = self.org.get(hab.pre)
 
         rep.status = falcon.HTTP_200
@@ -2401,12 +2401,13 @@ class ContactEnd:
             rep.status = falcon.HTTP_200
             rep.data = json.dumps(data).encode("utf-8")
 
-    def on_post(self, req, rep, prefix):
+    def on_post_alias(self, req, rep, prefix, alias):
         """ Contact plural GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign the contact data
             prefix: human readable name of identifier to replace contact information
 
        ---
@@ -2416,6 +2417,12 @@ class ContactEnd:
         tags:
            - Contacts
         parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
           - in: path
             name: prefix
             schema:
@@ -2452,7 +2459,7 @@ class ContactEnd:
         if "id" in body:
             del body["id"]
 
-        self.org.replace(prefix, body)
+        self.org.replace(alias, prefix, body)
         contact = self.org.get(prefix)
 
         rep.status = falcon.HTTP_200
@@ -2594,13 +2601,14 @@ class ContactEnd:
         rep.status = falcon.HTTP_200
         rep.data = json.dumps(contact).encode("utf-8")
 
-    def on_put(self, req, rep, prefix):
+    def on_put_alias(self, req, rep, prefix, alias):
         """ Contact PUT endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
             prefix: qb64 identifier to update contact information
+            alias (str): human readable name of identifier to use to sign the challange/response
 
         ---
         summary:  Update provided fields in contact information associated with remote identfier prefix
@@ -2645,7 +2653,7 @@ class ContactEnd:
         if "id" in body:
             del body["id"]
 
-        self.org.update(prefix, body)
+        self.org.update(alias, prefix, body)
         contact = self.org.get(prefix)
 
         rep.status = falcon.HTTP_200
@@ -2825,11 +2833,12 @@ def loadEnds(app, *,
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha, suffix="resolve")
 
-    org = connecting.Organizer(db=hby.db)
+    org = connecting.Organizer(hby=hby)
     contact = ContactEnd(hby=hby, org=org)
 
-    app.add_route("/contacts/{prefix}", contact)
+    app.add_route("/contacts/{prefix}/{alias}", contact, suffix="alias")
     app.add_route("/contacts/{prefix}/img", contact, suffix="img")
+    app.add_route("/contacts/{prefix}", contact)
     app.add_route("/contacts", contact, suffix="list")
 
     schemaEnd = SchemaEnd(db=hby.db)

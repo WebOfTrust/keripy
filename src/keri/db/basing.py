@@ -802,8 +802,19 @@ class Baser(dbing.LMDBer):
                                           subkey='schema.')
 
         # Field values for contact information for remote identfiers.  Keyed by prefix/field
+        self.cfld = subing.Suber(db=self,
+                                 subkey="cfld.")
+
+        # Signed contact data, keys by prefix
         self.cons = subing.Suber(db=self,
                                  subkey="cons.")
+
+        # Contact signature source data seal
+        self.csds = subing.CatCesrSuber(db=self, subkey='csds.',
+                                        klas=(coring.Prefixer, coring.Seqner))
+        # Transferable signatures on contact data
+        self.csigs = subing.CesrIoSetSuber(db=self, subkey='csigs.', klas=coring.Siger)
+        # Chunked image data for contact information for remote identfiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
         self.reload()
