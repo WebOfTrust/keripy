@@ -777,6 +777,9 @@ class RegistryEnd(doing.DoDoer):
                     toad:
                       type: integer
                       description: Backer receipt threshold
+                    nonce:
+                      type: string
+                      description: qb64 encoded ed25519 random seed for registry
                     noBackers:
                       type: boolean
                       required: False
@@ -828,6 +831,8 @@ class RegistryEnd(doing.DoDoer):
             c["toad"] = body["toad"]
         if "estOnly" in body:
             c["estOnly"] = body["estOnly"]
+        if "nonce" in body:
+            c["nonce"] = body["nonce"]
 
         self.registrar.incept(name=body["name"], pre=hab.pre, conf=c)
 
@@ -1087,7 +1092,8 @@ class CredentialEnd(doing.DoDoer):
         rules = body.get("rules")
         data = body.get("credentialData")
         try:
-            creder = self.credentialer.issue(regname, recp, schema, source, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
@@ -1130,30 +1136,9 @@ class CredentialEnd(doing.DoDoer):
                 schema:
                   type: object
                   properties:
-                    registry:
-                      type: string
-                      description: AID of credential issuance/revocation registry (aka status)
-                    recipient:
-                      type: string
-                      description: AID of credential issuance/revocation recipient
-                    schema:
-                      type: string
-                      description: SAID of credential schema being issued
-                    source:
-                      type: array
-                      description: list of credential chain sources (ACDC)
-                      items:
-                         type: object
-                         properties:
-                            d:
-                               type: string
-                               description: SAID of reference chain
-                            s:
-                               type: string
-                               description: SAID of reference chain schema
-                    credentialData:
+                    credential:
                       type: object
-                      description: dynamic map of values specific to the schema
+                      description: Fully populated ACDC credential to issue
         responses:
            200:
               description: Credential issued.
@@ -1173,8 +1158,20 @@ class CredentialEnd(doing.DoDoer):
                        "".format(alias)
             return None
 
-        creder = self.credentialer.issue(hab=hab, body=body, rep=rep)
-        if creder is None:  # Issuance didn't work, status set in issue
+        if "credential" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "credential required in body"
+            return None
+
+        data = body["credential"]
+        creder = proving.Creder(ked=data)
+
+        try:
+            self.credentialer.validate(creder=creder)
+            self.credentialer.issue(creder=creder)
+        except kering.ConfigurationError as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
             return
 
         rep.status = falcon.HTTP_200

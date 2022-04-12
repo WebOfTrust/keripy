@@ -484,6 +484,22 @@ class HttpWitnesser(doing.DoDoer):
             yield
 
 
+def mailbox(hab, cid):
+    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
+        if end.allowed:
+            return eid
+
+    if cid not in hab.kevers:
+        return None
+
+    kever = hab.kevers[cid]
+    if not kever.wits:
+        return None
+
+    mbx = random.choice(kever.wits)
+    return mbx
+
+
 def witnesser(hab, wit):
     """ Create a Witnesser (tcp or http) based on available endpoints
 

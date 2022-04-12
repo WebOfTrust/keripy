@@ -15,7 +15,7 @@ from orderedset import OrderedSet as oset
 
 from . import directing, storing, httping, forwarding, agenting
 from .cli.common import oobiing
-from .. import help
+from .. import help, kering
 from ..core import eventing, parsing, routing
 from ..core.coring import Ilks
 from ..db import basing
@@ -601,6 +601,12 @@ class MailboxDirector(doing.DoDoer):
             hab (Hab): the Hab of the prefix
 
         """
+        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, kering.Roles.mailbox)):
+            if end.allowed:
+                poller = Poller(hab=hab, topics=self.topics, witness=eid)
+                self.pollers.append(poller)
+                self.extend([poller])
+
         wits = hab.kever.wits
         for wit in wits:
             poller = Poller(hab=hab, topics=self.topics, witness=wit)

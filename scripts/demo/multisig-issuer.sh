@@ -35,8 +35,8 @@ kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/
 # kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
 # Create a credential registry owned by the multisig issuer
-# kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI
-# kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI
+# kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s
+# kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s
 
 # Rotate multisig keys:
 # kli multisig rotate --name multisig1 --alias multisig
@@ -44,5 +44,5 @@ kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/
 
 # Issue Credential
 # kli vc issue --name multisig1 --alias multisig --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI --data @scripts/demo/credential-data.json
-# kli vc issue --name multisig2 --alias multisig --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI --data @scripts/demo/credential-data.json
+# kli vc issue --name multisig2 --alias multisig --credential @./credential.json
 

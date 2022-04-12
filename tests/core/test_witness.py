@@ -33,54 +33,33 @@ def test_indexed_witness_replay():
          habbing.openHby(name="wam", base="test", salt=salt) as wamHby, \
          habbing.openHby(name="wil", base="test", salt=salt) as wilHby:
 
-
         # witnesses first so can setup inception event for cam
         wsith = 1
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
-        #assert wesHab.ks == wesKS
-        #assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        #wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
-        #assert wokHab.ks == wokKS
-        #assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        #wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
-        #assert wamHab.ks == wamKS
-        #assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        #wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
-        #assert wilHab.ks == wilKS
-        #assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
@@ -88,13 +67,7 @@ def test_indexed_witness_replay():
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
-        #camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB,
-                                 #isith=csith, icount=3,
-                                 #toad=2, wits=wits,
-                                 #salt=salt, temp=True)  # stem is .name
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
-        #assert camHab.ks == camKS
-        #assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.werfers) == len(wits)
         for werfer in camHab.iserder.werfers:
@@ -108,12 +81,7 @@ def test_indexed_witness_replay():
 
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
-        #vanHab = habbing.Habitat(name='van', ks=vanKS, db=vanDB,
-                                 #isith=vsith, icount=3,
-                                 #salt=salt, temp=True)  # stem is .name
         vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
-        #assert vanHab.ks == vanKS
-        #assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
@@ -128,7 +96,6 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
-            # kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 0  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -138,7 +105,6 @@ def test_indexed_witness_replay():
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
-            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -158,7 +124,6 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy)
-            # kvy.process(ims=bytearray(camIcpWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
@@ -180,7 +145,6 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
-            # kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -190,7 +154,6 @@ def test_indexed_witness_replay():
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
-            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -210,17 +173,14 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=kvy)
-            # kvy.process(ims=bytearray(camIxnWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
         parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=vanKvy)
-        # vanKvy.process(ims=bytearray(camIxnWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 0
         parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy)
-        # vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
@@ -231,14 +191,12 @@ def test_indexed_witness_replay():
         camReplayMsg = camHab.replay()
         assert len(camReplayMsg) == 2038
         parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
-        # wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
         assert len(wilKvy.cues) == 2
         wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
         assert len(wilKvy.cues) == 0
         parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy)
-        # camKvy.process(ims=bytearray(wilRctMsg))  # make copy
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
@@ -255,7 +213,6 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
-            # kvy.process(ims=bytearray(camRotMsg))  # send copy of cam msg to witness
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -265,7 +222,6 @@ def test_indexed_witness_replay():
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
             parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
-            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -298,11 +254,9 @@ def test_indexed_witness_replay():
 
         # send Cam rot's witness rcts to Van first then send Cam rot
         parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=vanKvy)
-        # vanKvy.process(ims=bytearray(camRotWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
         parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy)
-        # vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 1
         vanKvy.processEscrows()
         assert vcKvr.sn == 2
@@ -310,7 +264,6 @@ def test_indexed_witness_replay():
 
         # need disjoint test of sending witness receipts to Van not conjoint
         # from Cam replay
-
 
     assert not os.path.exists(wokHby.ks.path)
     assert not os.path.exists(wokHby.db.path)
@@ -320,7 +273,6 @@ def test_indexed_witness_replay():
     assert not os.path.exists(vanHby.db.path)
     assert not os.path.exists(camHby.ks.path)
     assert not os.path.exists(camHby.db.path)
-
 
     """End Test"""
 
@@ -350,48 +302,28 @@ def test_nonindexed_witness_receipts():
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
-        #assert wesHab.ks == wesKS
-        #assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        #wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
-        #assert wokHab.ks == wokKS
-        #assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        #wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
-        #assert wamHab.ks == wamKS
-        #assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        #wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
-        #assert wilHab.ks == wilKS
-        #assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
@@ -399,13 +331,7 @@ def test_nonindexed_witness_receipts():
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
-        #camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB,
-                                 #isith=csith, icount=3,
-                                 #toad=2, wits=wits,
-                                 #salt=salt, temp=True)  # stem is .name
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
-        #assert camHab.ks == camKS
-        #assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.werfers) == len(wits)
         for werfer in camHab.iserder.werfers:
@@ -419,12 +345,7 @@ def test_nonindexed_witness_receipts():
 
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
-        #vanHab = habbing.Habitat(name='van', ks=vanKS, db=vanDB,
-                                 #isith=vsith, icount=3,
-                                 #salt=salt, temp=True)  # stem is .name
         vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
-        #assert vanHab.ks == vanKS
-        #assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
@@ -632,7 +553,6 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.sn == 2  # rot accepted
         assert vcKvr.wits == wits  # wits changed
 
-
     assert not os.path.exists(wokHby.ks.path)
     assert not os.path.exists(wokHby.db.path)
     assert not os.path.exists(wesHby.ks.path)
@@ -702,8 +622,6 @@ def test_out_of_order_witnessed_events():
 
         pwedig = bamHby.db.getPwes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
         assert pwedig == []
-
-
 
 
 if __name__ == "__main__":
