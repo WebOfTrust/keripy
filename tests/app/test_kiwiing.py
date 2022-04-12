@@ -1050,6 +1050,18 @@ def test_contact_ends(seeder):
                                   'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
                                   'last': 'Burns3'}]
 
+        response = client.simulate_get("/contacts",
+                                       query_string="filter_field=last&filter_value=Burns3&filter_value=Burns1")
+        assert response.status == falcon.HTTP_200
+        assert response.json == [{'company': 'GLEIF',
+                                  'first': 'Ken3',
+                                  'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                  'last': 'Burns3'},
+                                 {'company': 'GLEIF',
+                                  'first': 'Ken1',
+                                  'id': 'Esba3nH2TssmC3ePHxQFZkbFqOxNFxKlCOfrXEnEUl0M',
+                                  'last': 'Burns1'}]
+
         response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
 
