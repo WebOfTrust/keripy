@@ -159,15 +159,18 @@ class Organizer:
 
         Parameters:
             field (str): field name to search for
-            val (Union[str,bytes]): value to search for
+            val (Union[str,bytes,list]): value to search for
 
         Returns:
             list: All contacts that match the val in field
 
         """
+        if not isinstance(val, list):
+            val = [val]
+
         pres = []
         for (pre, f), v in self.hby.db.cfld.getItemIter():
-            if f == field and v == val:
+            if f == field and v in val:
                 pres.append(pre)
 
         return [self.get(pre) for pre in pres]
