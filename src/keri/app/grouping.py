@@ -61,7 +61,7 @@ class Counselor(doing.DoDoer):
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
-        print("Waiting for other signatures...")
+        print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
     def rotate(self, ghab, aids, sith, toad, cuts=None, adds=None, data=None):
@@ -234,11 +234,11 @@ class Counselor(doing.DoDoer):
         then this escrow waits for signatures from all other participants
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrpw
+        for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
             snkey = dbing.snKey(pre, seqner.sn)
             evt = self.hby.db.getKeLast(key=snkey)
             if evt:
-                self.hby.db.gpse.rem(keys=(pre, ))
+                self.hby.db.gpse.rem(keys=(pre,))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
                 keys = [verfer.qb64 for verfer in kever.verfers]
@@ -264,11 +264,11 @@ class Counselor(doing.DoDoer):
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
                 else:  # Non-delegation, move on to witnessing
                     if witer:  # We are elected witnesser, send off event to witnesses
-                        print("We are the witnesser, sending to witnesses")
+                        print(f"We are the fully signed witnesser {seqner.sn}, sending to witnesses")
                         self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
 
                     # Move to escrow waiting for witness receipts
-                    print("Waiting for witness receipts")
+                    print(f"Waiting for fully signed witness receipts for {seqner.sn}")
                     self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processDelegateEscrow(self):

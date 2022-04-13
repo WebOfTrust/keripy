@@ -63,11 +63,9 @@ class Postman(doing.DoDoer):
                 hab = self.hby.habs[src]
 
                 # Get the kever of the recipient and choose a witness
-                kever = self.hby.kevers[recp]
-                if not kever.wits:
+                wit = agenting.mailbox(hab, recp)
+                if not wit:
                     continue
-
-                wit = random.choice(kever.wits)
 
                 msg = bytearray()
                 msg.extend(introduce(hab, wit))
@@ -137,7 +135,6 @@ class Postman(doing.DoDoer):
                 else:
                     self.cues.append(cue)
             yield self.tock
-
 
 
 class ForwardHandler(doing.Doer):

@@ -3394,7 +3394,6 @@ class Kevery:
 
         self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 
-
     def processReplyLocScheme(self, *, serder, saider, route,
                               cigars=None, tsgs=None):
         """

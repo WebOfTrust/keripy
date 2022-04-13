@@ -8,10 +8,9 @@ VC TEL  support
 
 import json
 import logging
-
-import pysodium
-from hio.help import decking
 from math import ceil
+
+from hio.help import decking
 from orderedset import OrderedSet as oset
 
 from keri import kering
@@ -47,6 +46,7 @@ def incept(
         pre,
         toad=None,
         baks=None,
+        nonce=None,
         cnfg=None,
         version=Version,
         kind=Serials.json,
@@ -61,6 +61,7 @@ def incept(
          pre (str): issuer identifier prefix qb64
          toad (Union(int,str)): int or str hex of backer threshold
          baks (list): the initial list of backers prefixes for VCs in the Registry
+         nonce (str): qb64 encoded ed25519 random seed of credential registry
          cnfg (list): is list of strings TraitDex of configuration traits
 
          version (Versionage): the API version
@@ -103,6 +104,7 @@ def incept(
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
 
+    nonce = nonce if nonce is not None else coring.randomNonce()
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",
@@ -112,7 +114,7 @@ def incept(
                c=cnfg,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=baks,  # list of qb64 may be empty
-               n=coring.randomNonce()  # nonce of random bytes to make each registry unique
+               n=nonce  # nonce of random bytes to make each registry unique
                )
 
     prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code

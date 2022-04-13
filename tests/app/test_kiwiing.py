@@ -131,152 +131,6 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         assert state["et"] == coring.Ilks.rev
 
 
-# def test_credential_handlers_singlesig(mockHelpingNowUTC):
-#     with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
-#             habbing.openHab(name="recp", transferable=True) as (recpHby, recp):
-#         app = falcon.App()
-#
-#         ims = bytearray()
-#         reger = viring.Registry(name=hab1.name, temp=True)
-#         verifier = verifying.Verifier(hby=hby1, reger=reger)
-#         issuer = credentialing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
-#         gdoer = grouping.MultiSigGroupDoer(hby=hby1, ims=ims)
-#         issuerCues = decking.Deck()
-#
-#         issuers = dict()
-#         issuers[issuer.regk] = issuer
-#         repd = storing.Respondant(hby=hby1)
-#
-#         _ = kiwiing.loadEnds(hby=hby1,
-#                              rep=repd,
-#                              verifier=verifier,
-#                              gdoer=gdoer,
-#                              issuers=issuers,
-#                              issuerCues=issuerCues,
-#                              app=app, path="/", mbx=None)
-#
-#         client = testing.TestClient(app)
-#
-#         result = client.simulate_post(path="/registries", body=b'{"name": "test", "alias": "test"}')
-#         assert result.status == falcon.HTTP_202
-#
-#         schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
-#         LEI = "1234567890abcdefg"
-#
-#         data = dict(LEI=LEI)
-#         body = dict(
-#             alias="test_1",
-#             registry="test",
-#             schema=schema,
-#             recipient=recp.pre,
-#             type="GLEIFvLEICredential",
-#             credentialData=data
-#         )
-#         b = json.dumps(body).encode("utf-8")
-#         result = client.simulate_post(path="/credentials", body=b)
-#         assert result.status == falcon.HTTP_200
-#         assert len(issuer.cues) == 1
-#
-#         cue = issuer.cues.popleft()
-#         assert cue["kin"] == "multisig"
-#         assert cue["op"] == grouping.Ops.ixn
-#         assert cue["data"] == [
-#             {'d': 'Exe1r9MGB7C5H0YvoqiiyB7sQl1-Ahv9YdBjqNjImQ70',
-#              'i': 'Exe1r9MGB7C5H0YvoqiiyB7sQl1-Ahv9YdBjqNjImQ70',
-#              's': '0'}
-#         ]
-#
-#         result = client.simulate_delete(path="/credentials",
-#                                         query_string=("alias=test&"
-#                                                       "registry=E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38&"
-#                                                       "said=EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0"))
-#         assert result.status == falcon.HTTP_NOT_FOUND
-#         assert result.text == "credential not found"
-
-
-# def test_issue_credential_full_multisig():
-#     with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
-#             habbing.openHab(name="recp", transferable=True) as recp:
-#         # Verify the group identifier was incepted properly and matches the identifiers
-#         assert hab1.pre == "El5WIVmMSnNIsa3Oqib-g5BNkK8uwKOrFvxxPJ_jM5I8"
-#         assert hab2.pre == "ESXQU9TMcdFiuVNRxe6YrbeYlwZJn04UyJUEJxR36Qyw"
-#         assert hab3.pre == "EHDoHoAMCI4iRgOjNKYuSLdxsATl9mWCN3HlzOptd2XA"
-#
-#         gid = "Ea69OZWwWIVBvwX5a-LJjg8VAsc7sTL_OlxBHPdhKjow"
-#         group1 = hab1.db.gids.get(hab1.pre)
-#         assert group1.gid == gid
-#         group2 = hab2.db.gids.get(hab2.pre)
-#         assert group2.gid == gid
-#         group3 = hab3.db.gids.get(hab3.pre)
-#         assert group3.gid == gid
-#
-#         # Now create the Falcon app and the Kiwi Server
-#         # with one of the Group participants Habitats
-#         app = falcon.App()
-#
-#         reger = viring.Registry(name=hab1.name, temp=True)
-#         verifier = verifying.Verifier(hby=hby1, reger=reger)
-#         issuer = credentialing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
-#         witq = agenting.WitnessInquisitor(hby=hby1, reger=verifier.reger, klas=agenting.HttpWitnesser)
-#         issuerCues = decking.Deck()
-#
-#         assert len(issuer.cues) == 1
-#         cue = issuer.cues.popleft()
-#         assert cue["kin"] == "multisig"
-#         assert cue["data"] == [
-#             {'d': 'Exe1r9MGB7C5H0YvoqiiyB7sQl1-Ahv9YdBjqNjImQ70',
-#              'i': 'Exe1r9MGB7C5H0YvoqiiyB7sQl1-Ahv9YdBjqNjImQ70',
-#              's': '0'}
-#         ]
-#
-#         ims = bytearray()
-#         issuers = dict()
-#         issuers[issuer.regk] = issuer
-#         repd = storing.Respondant(hby=hby1)
-#         gdoer = grouping.MultiSigGroupDoer(hby=hby1, ims=ims)
-#
-#         _ = kiwiing.loadEnds(hby=hby1,
-#                              rep=repd,
-#                              verifier=verifier,
-#                              gdoer=gdoer,
-#                              issuers=issuers,
-#                              issuerCues=issuerCues,
-#                              app=app, path="/", mbx=None)
-#
-#         # Create the credential to be issued
-#         schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
-#         LEI = "1234567890abcdefg"
-#
-#         data = dict(LEI=LEI)
-#         body = dict(
-#             registry=issuer.regk,
-#             schema=schema,
-#             source=hab1.pre,
-#             recipient=recp.pre,
-#             type="GLEIFvLEICredential",
-#             credentialData=data
-#         )
-#         b = json.dumps(body).encode("utf-8")
-#
-#         # Use Falcon test all to submit the request to issue a credential
-#         client = testing.TestClient(app)
-#         result = client.simulate_post(path="/credentials", body=b)
-#         assert result.status == falcon.HTTP_200
-#
-#         creder = proving.Creder(ked=result.json, kind=coring.Serials.json)
-#
-#         # The Issuer will have cue'd up a multisig request to be processed
-#         assert len(issuer.cues) == 1
-#         cue = issuer.cues.popleft()
-#
-#         assert cue["kin"] == "multisig"
-#         data = cue["data"]
-#         assert len(data) == 1
-#         assert data[0]['s'] == '0'
-#         assert data[0]['i'] == creder.saider.qb64
-#         assert 'd' in data[0]
-
-
 def test_multisig_incept():
     prefix = "ends_test"
     salt = b'0123456789abcdef'
@@ -579,9 +433,8 @@ def test_identifier_ends():
 
         app = falcon.App()
 
-        reger = viring.Reger(name=hab.name, temp=True)
         regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
-        verifier = verifying.Verifier(hby=hby, reger=reger)
+        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
 
         repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
@@ -1188,7 +1041,3 @@ def test_schema_ends():
         assert response.status == falcon.HTTP_200
         assert response.json["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
         assert response.json["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
-
-
-
-

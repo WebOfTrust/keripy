@@ -15,6 +15,8 @@ parser.set_defaults(handler=lambda args: registryIncept(args),
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
+parser.add_argument('--nonce', help='Unique random value to seed the credential registry',
+                    default=None, required=False)
 parser.add_argument("--no-backers", "-nb", help="do not allow setting up backers different from the ahcnoring KEL "
                                                 "witnesses", default=True, action="store")
 parser.add_argument('--backers', help='New set of backers different from the anchoring KEL witnesses.  Can '
@@ -35,6 +37,7 @@ def registryIncept(args):
     bran = args.bran
     base = args.base
     registryName = args.registry_name if args.registry_name is not None else alias
+    nonce = args.nonce
     estOnly = args.establishment_only
     noBackers = args.no_backers
     backers = args.backers
@@ -44,7 +47,7 @@ def registryIncept(args):
         return -1
 
     icpDoer = RegistryInceptor(name=name, base=base, alias=alias, bran=bran, registryName=registryName,
-                               estOnly=estOnly, noBackers=noBackers, baks=backers)
+                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers)
 
     doers = [icpDoer]
     return doers
@@ -81,8 +84,8 @@ class RegistryInceptor(doing.DoDoer):
         doers = [self.hbyDoer, counselor, self.registrar, mbx]
         self.toRemove = list(doers)
 
-        doers.extend([doing.doify(self.inceptDo)])
-        super(RegistryInceptor, self).__init__(doers=doers, **kwa)
+        doers.extend([doing.doify(self.inceptDo, **kwa)])
+        super(RegistryInceptor, self).__init__(doers=doers)
 
     def inceptDo(self, tymth, tock=0.0, **kwa):
         """ Process incoming messages to incept a credential registry

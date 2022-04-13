@@ -88,6 +88,15 @@ class Regery:
             return self.regs[regrec.registryKey] if regrec.registryKey in self.regs else None
         return None
 
+    @property
+    def tevers(self):
+        """ tevers property
+
+        Returns .reger.tevers
+
+        """
+        return self.reger.tevers
+
     def processEscrows(self):
         """ Process escrows for each registry """
         self.tvy.processEscrows()
@@ -159,7 +168,7 @@ class Registry:
 
         self.inited = False
 
-    def make(self, *, noBackers=True, baks=None, toad=None, estOnly=False):
+    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
@@ -183,6 +192,7 @@ class Registry:
         regser = eventing.incept(pre,
                                  baks=baks,
                                  toad=toad,
+                                 nonce=nonce,
                                  cnfg=self.cnfg,
                                  code=MtrDex.Blake3_256)
         self.regk = regser.pre
@@ -420,7 +430,6 @@ class Registrar(doing.DoDoer):
         hab = registry.hab
 
         iserder = registry.issue(said=said, dt=dt)
-        print(iserder.pretty())
 
         vcid = iserder.ked["i"]
         rseq = coring.Seqner(snh=iserder.ked["s"])
@@ -447,7 +456,7 @@ class Registrar(doing.DoDoer):
             self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
-            print("Waiting for TEL event mulisig anchoring event")
+            print(f"Waiting for TEL event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -496,7 +505,7 @@ class Registrar(doing.DoDoer):
             self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
-            print("Waiting for TEL event mulisig anchoring event")
+            print(f"Waiting for TEL event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
