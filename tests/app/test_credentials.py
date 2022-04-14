@@ -9,6 +9,7 @@ import os
 import falcon
 from falcon import testing
 from hio.base import doing
+from hio.help import decking
 
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing
@@ -72,9 +73,10 @@ class TestDoer(doing.DoDoer):
         loadSchema(hby3.db)
 
         # Create falcon app loaded with kiwiing ends for each participant
-        self.app1, doers1 = loadApp(hby1, self.rgy1, self.verifier1)
-        self.app2, doers2 = loadApp(hby2, self.rgy2, self.verifier2)
-        self.app3, doers3 = loadApp(hby3, self.rgy3, self.verifier3)
+        self.notifs = decking.Deck()
+        self.app1, doers1 = loadApp(hby1, self.rgy1, self.verifier1, self.notifs)
+        self.app2, doers2 = loadApp(hby2, self.rgy2, self.verifier2, self.notifs)
+        self.app3, doers3 = loadApp(hby3, self.rgy3, self.verifier3, self.notifs)
         doers = wanDoers + doers1 + doers2 + doers3 + [doing.doify(self.escrowDo)]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
@@ -182,7 +184,25 @@ class TestDoer(doing.DoDoer):
         while not self.rgy1.reger.saved.get(creder.said):
             yield tock
 
+        # Wait for the credential endpoint to notify the completion of the credential issuance
+        while len(self.notifs) != 6:
+            yield tock
+
+        for _ in range(3):
+            cue = self.notifs.popleft()
+            assert cue["kin"] == "notification"
+            assert cue["topic"] == "/multisig"
+            assert cue["msg"]["r"] == "/rot/complete"
+
+
+        for _ in range(3):
+            cue = self.notifs.popleft()
+            assert cue["kin"] == "notification"
+            assert cue["topic"] == "/multisig"
+            assert cue["msg"]["r"] == "/iss/complete"
+
         self.remove(self.toRemove)
+
         return True
 
 
@@ -200,7 +220,7 @@ def test_multisig_issue_agent():
         assert testDoer.done is True
 
 
-def loadApp(hby, rgy, verifier):
+def loadApp(hby, rgy, verifier, notifs):
     app = falcon.App()
 
     repd = storing.Respondant(hby=hby)
@@ -212,6 +232,7 @@ def loadApp(hby, rgy, verifier):
     doers = kiwiing.loadEnds(hby=hby,
                              rep=repd,
                              rgy=rgy,
+                             notifications=notifs,
                              verifier=verifier,
                              app=app, path="/",
                              registrar=registrar,

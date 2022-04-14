@@ -229,6 +229,7 @@ class ForwardHandler(doing.Doer):
 
                 if not pevt:
                     print("error with message, nothing to forward", msg)
+                    continue
 
                 self.mbx.storeMsg(topic=resource, msg=pevt)
                 yield self.tock
