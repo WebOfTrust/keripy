@@ -5,12 +5,9 @@ keri.app.agenting module
 
 """
 import json
-from urllib.parse import urlparse
 
 import falcon
 from hio.base import doing
-from hio.core import http
-from hio.core.http import clienting
 from hio.help import decking
 
 from keri.app import keeping, agenting

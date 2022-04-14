@@ -112,13 +112,23 @@ class Counselor(doing.DoDoer):
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
-    def complete(self, prefixer, seqner, saider):
+    def complete(self, prefixer, seqner, saider=None):
+        """ Check for completed multsig protocol for the specific event
+
+        Parameters:
+            prefixer (Prefixer): qb64 identifier prefix of event to check
+            seqner (Seqner): sequence number of event to check
+            saider (Saider): optional digest of event to verify
+
+        Returns:
+
+        """
         csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
         if not csaider:
             return False
         else:
-            if csaider.qb64 != saider.qb64:
-                raise kering.ValidationError(f"invalid TEL event multisig escrowed event {csaider.qb64}-{saider.qb64}")
+            if saider and (csaider.qb64 != saider.qb64):
+                raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
 
         return True
 
@@ -425,7 +435,7 @@ class MultisigInceptHandler(doing.DoDoer):
 
                 data = dict(
                     src=src,
-                    r='/icp',
+                    r='/icp/init',
                     aids=aids,
                     ked=pay["ked"]
                 )

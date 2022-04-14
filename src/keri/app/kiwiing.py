@@ -19,7 +19,7 @@ from . import grouping, challenging, connecting
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating
-from ..core import parsing, coring, eventing
+from ..core import coring, eventing, cueing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
@@ -716,7 +716,7 @@ class RegistryEnd(doing.DoDoer):
         self.rgy = rgy
         self.registrar = registrar
 
-        super(RegistryEnd, self).__init__(doers=[self.registrar], **kwa)
+        super(RegistryEnd, self).__init__(doers=[], **kwa)
 
     def on_get(self, _, rep):
         """  Registries GET endpoint
@@ -845,7 +845,7 @@ class CredentialEnd(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, rgy, registrar, credentialer, verifier):
+    def __init__(self, hby, rgy, registrar, credentialer, verifier, cues=None):
         """ Create endpoint for issuing and listing credentials
 
         Endpoints for issuing and listing credentials from non-group identfiers only
@@ -856,6 +856,7 @@ class CredentialEnd(doing.DoDoer):
             verifier (Verifier): credential verifier
             registrar (Registrar): credential registry protocol manager
             credentialer: (Credentialer): credential protocol manager
+            cues (Deck): outbound notifications
 
         """
         self.hby = hby
@@ -864,8 +865,10 @@ class CredentialEnd(doing.DoDoer):
         self.registrar = registrar
         self.verifier = verifier
         self.postman = forwarding.Postman(hby=self.hby)
+        self.cues = cues if cues is not None else decking.Deck()
+        self.evts = decking.Deck()
 
-        super(CredentialEnd, self).__init__(doers=[self.postman])
+        super(CredentialEnd, self).__init__(doers=[self.postman, doing.doify(self.evtDo)])
 
     def on_get(self, req, rep, alias):
         """ Credentials GET endpoint
@@ -1012,6 +1015,9 @@ class CredentialEnd(doing.DoDoer):
             rep.text = e.args[0]
             return
 
+        # cue up an event to send notification when complete
+        self.evts.append(dict(topic="/credential", r="/iss/complete", d=creder.said))
+
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
 
@@ -1106,6 +1112,9 @@ class CredentialEnd(doing.DoDoer):
         for recpt in others:
             self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
+        # cue up an event to send notification when complete
+        self.evts.append(dict(topic="/multisig", r="/iss/complete", d=creder.said))
+
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
 
@@ -1173,6 +1182,9 @@ class CredentialEnd(doing.DoDoer):
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
             return
+
+        # cue up an event to send notification when complete
+        self.evts.append(dict(topic="/multisig", r="/iss/complete", d=creder.said))
 
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
@@ -1250,6 +1262,9 @@ class CredentialEnd(doing.DoDoer):
         said = req.params.get("said")
 
         if self.revoke(req=req, rep=rep, said=said):
+            # cue up an event to send notification when complete
+            self.evts.append(dict(topic="/credential", r="/rev/complete", d=said))
+
             rep.status = falcon.HTTP_202
 
         # Else the revoke method handled the status
@@ -1302,6 +1317,10 @@ class CredentialEnd(doing.DoDoer):
 
         if self.revoke(req=req, rep=rep, said=said):
             # TODO: SEND revocation proposal exn to others!
+
+            # cue up an event to send notification when complete
+            self.evts.append(dict(topic="/multisig", r="/rev/complete", d=said))
+
             rep.status = falcon.HTTP_202
 
         # Else the revoke method handled the status
@@ -1353,9 +1372,66 @@ class CredentialEnd(doing.DoDoer):
             return None
 
         if self.revoke(req=req, rep=rep, said=said):
+            # cue up an event to send notification when complete
+            self.evts.append(dict(topic="/multisig", r="/rev/complete", d=said))
+
             rep.status = falcon.HTTP_202
 
         # Else the revoke method handled the status
+
+    def evtDo(self, tymth, tock=0.5):
+        """ Monitor results of inception initiation and raise a cue when one completes
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:  doifiable Doist compatible generator method for monitoring events
+
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            if not self.evts:
+                yield self.tock
+                continue
+
+            evt = self.evts.popleft()
+            tpc = evt["topic"]
+            said = evt["d"]
+            route = evt["r"]
+
+            if route == "/iss/complete":
+                if self.credentialer.complete(said=said):
+                    self.cues.append(dict(
+                        kin="notification",
+                        topic=tpc,
+                        msg=dict(
+                            r=route,
+                            a=dict(d=said)
+                        )
+                    ))
+                else:
+                    self.evts.append(evt)
+
+            elif route == "/rev/complete":
+                if self.registrar.complete(pre=said, sn=1):
+                    self.cues.append(dict(
+                        kin="notification",
+                        topic=tpc,
+                        msg=dict(
+                            r=route,
+                            a=dict(d=said)
+                        )
+                    ))
+                else:
+                    self.evts.append(evt)
+
+            yield self.tock
 
 
 class PresentationEnd:
@@ -1409,13 +1485,69 @@ class PresentationEnd:
         rep.status = falcon.HTTP_202
 
 
-class MultisigInceptEnd(doing.DoDoer):
+class MultisigEndBase(doing.DoDoer):
+
+    def __init__(self, counselor, cues, doers):
+
+        self.cues = cues
+        self.counselor = counselor
+        self.evts = decking.Deck()
+        doers.extend([doing.doify(self.evtDo)])
+
+        super(MultisigEndBase, self).__init__(doers=doers)
+
+    def evtDo(self, tymth, tock=0.5):
+        """ Monitor results of inception initiation and raise a cue when one completes
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Returns:  doifiable Doist compatible generator method for monitoring events
+
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            if not self.evts:
+                yield self.tock
+                continue
+
+            evt = self.evts.popleft()
+            pre = evt["i"]
+            sn = evt["s"]
+            saider = coring.Saider(qb64=evt["d"]) if "d" in evt else None
+
+            route = evt["r"]
+            prefixer = coring.Prefixer(qb64=pre)
+            seqner = coring.Seqner(sn=sn)
+
+            if self.counselor.complete(prefixer, seqner, saider):
+                self.cues.append(dict(
+                    kin="notification",
+                    topic="/multisig",
+                    msg=dict(
+                        r=route,
+                        a=dict(i=pre, s=sn)
+                    )
+                ))
+            else:
+                self.evts.append(evt)
+
+            yield self.tock
+
+
+class MultisigInceptEnd(MultisigEndBase):
     """
     ReST API for admin of distributed multisig groups
 
     """
 
-    def __init__(self, hby, counselor):
+    def __init__(self, hby, counselor, cues=None):
         """ Create an endpoint resource for creating or participating in multisig group identfiiers
 
         Parameters:
@@ -1426,11 +1558,11 @@ class MultisigInceptEnd(doing.DoDoer):
 
         self.hby = hby
         self.counselor = counselor
-        self.cues = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
         self.postman = forwarding.Postman(hby=self.hby)
         doers = [self.postman]
 
-        super(MultisigInceptEnd, self).__init__(doers=doers)
+        super(MultisigInceptEnd, self).__init__(cues=self.cues, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
         if "aids" not in body:
@@ -1564,6 +1696,9 @@ class MultisigInceptEnd(doing.DoDoer):
         #  signal to the group counselor to start the inception
         self.icp(hab=hab, ghab=ghab, aids=ghab.aids)
 
+        # cue up an event to send notification when complete
+        self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
+
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = serder.raw
@@ -1640,25 +1775,29 @@ class MultisigInceptEnd(doing.DoDoer):
         aids = body["aids"]
         self.icp(hab=hab, ghab=ghab, aids=aids)
 
+        # Monitor the final creation of this identifier and send out notification
+        self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
+
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = serder.raw
 
 
-class MultisigEventEnd(doing.DoDoer):
+class MultisigEventEnd(MultisigEndBase):
     """
     ReST API for admin of distributed multisig group rotations
 
     """
 
-    def __init__(self, hby, counselor):
+    def __init__(self, hby, counselor, cues=None):
 
         self.hby = hby
         self.counselor = counselor
+        self.cues = cues if cues is not None else decking.Deck()
         self.postman = forwarding.Postman(hby=self.hby)
         doers = [self.postman]
 
-        super(MultisigEventEnd, self).__init__(doers=doers)
+        super(MultisigEventEnd, self).__init__(cues=self.cues, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
         if "aids" not in body:
@@ -1775,6 +1914,7 @@ class MultisigEventEnd(doing.DoDoer):
             cuts = set(ewits) - set(wits)
             adds = set(wits) - set(ewits)
 
+        sn = ghab.kever.sn
         # begin the rotation process
         self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
@@ -1785,6 +1925,9 @@ class MultisigEventEnd(doing.DoDoer):
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+
+        # cue up an event to send notification when complete
+        self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
 
         rep.status = falcon.HTTP_202
 
@@ -1883,7 +2026,11 @@ class MultisigEventEnd(doing.DoDoer):
             cuts = set(ewits) - set(wits)
             adds = set(wits) - set(ewits)
 
+        sn = ghab.kever.sn
         self.counselor.rotate(ghab=ghab, aids=aids, sith=isith, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+
+        # cue up an event to send notification when complete
+        self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
 
         rep.status = falcon.HTTP_202
 
@@ -1946,7 +2093,9 @@ class MultisigEventEnd(doing.DoDoer):
         for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
-        self.ixn(ghab=ghab, data=data, aids=aids)
+        serder = self.ixn(ghab=ghab, data=data, aids=aids)
+        # cue up an event to send notification when complete
+        self.evts.append(dict(r="/ixn/complete", i=serder.pre, s=serder.sn, d=serder.said))
 
         rep.status = falcon.HTTP_202
 
@@ -2002,7 +2151,10 @@ class MultisigEventEnd(doing.DoDoer):
         aids = body["aids"] if "aids" in body else ghab.aids
         data = body["data"] if "data" in body else None
 
-        self.ixn(ghab=ghab, data=data, aids=aids)
+        serder = self.ixn(ghab=ghab, data=data, aids=aids)
+        # cue up an event to send notification when complete
+        self.evts.append(dict(r="/ixn/complete", i=serder.pre, s=serder.sn, d=serder.said))
+
         rep.status = falcon.HTTP_202
 
     def ixn(self, ghab, data, aids):
@@ -2014,6 +2166,7 @@ class MultisigEventEnd(doing.DoDoer):
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
         self.counselor.start(aids=aids, pid=ghab.phab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        return serder
 
 
 class OobiResource(doing.DoDoer):
@@ -2835,6 +2988,7 @@ def loadEnds(app, *,
              counselor,
              registrar,
              credentialer,
+             notifications=None,
              rxbs=None,
              queries=None,
              oobiery=None):
@@ -2852,6 +3006,7 @@ def loadEnds(app, *,
         registrar (Registrar): credential registry protocol manager
         counselor (Counselor): group multisig identifier communication manager
         credentialer (Credentialer): credential issuance protocol manager
+        notifications (Deck): cue to forward agent notifications to controller
         rxbs (bytearray): output queue of bytes for message processing
         queries (Deck): query cues for HttpEnd to start mailbox stream
         oobiery (Optioanl[Oobiery]): optional OOBI loader
@@ -2915,13 +3070,15 @@ def loadEnds(app, *,
     httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
     app.add_route("/mbx", httpEnd, suffix="mbx")
 
-    resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd,
+    resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd,
                  presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
+    notifications = notifications if notifications is not None else decking.Deck()
+    funnel = cueing.Funneler(srcs=[multiIcpEnd.cues, multiEvtEnd.cues, credsEnd.cues], dest=notifications)
 
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, funnel]
 
 
 def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticPath=""):
@@ -2993,113 +3150,14 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
+    notifier = storing.Notifier(controller=controller, mbx=mbx)
     queries = decking.Deck()
-    endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, mbx=mbx, verifier=verifier,
-                        counselor=counselor, registrar=registrar, credentialer=credentialer, rxbs=mbd.ims,
-                        queries=queries)
+    endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, mbx=mbx, notifications=notifier.notifs,
+                        verifier=verifier, counselor=counselor, registrar=registrar, credentialer=credentialer,
+                        rxbs=mbd.ims, queries=queries)
 
     servery.msgs.append(dict(app=app))
-    proofHandler = AdminProofHandler(hby=hby, controller=controller, mbx=mbx, verifier=verifier, proofs=proofs,
-                                     ims=mbd.ims)
-
-    doers.extend([rep, proofHandler, counselor, registrar, credentialer])
+    doers.extend([rep, counselor, registrar, credentialer, notifier])
     doers.extend(endDoers)
 
     return doers
-
-
-class AdminProofHandler(doing.DoDoer):
-    def __init__(self, hby, controller, mbx, verifier, proofs=None, ims=None, **kwa):
-        self.hby = hby
-        self.controller = controller
-        self.mbx = mbx
-        self.verifier = verifier
-        self.presentations = proofs if proofs is not None else decking.Deck()
-        self.parsed = decking.Deck()
-
-        self.ims = ims if ims is not None else bytearray()
-
-        doers = [doing.doify(self.presentationDo), doing.doify(self.parsedDo)]
-
-        super(AdminProofHandler, self).__init__(doers=doers, **kwa)
-
-    def presentationDo(self, tymth, tock=0.0):
-        """
-
-        Handle proofs presented externally
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.presentations:
-                (pre, presentation) = self.presentations.popleft()
-                vc = presentation["vc"]
-                vcproof = bytearray(presentation["proof"].encode("utf-8"))
-                msgs = bytearray(presentation["msgs"].encode("utf-8"))
-                self.ims.extend(msgs)
-                yield
-
-                creder = proving.Creder(ked=vc)
-
-                # Remove credential from database so we revalidate it fully
-                self.verifier.reger.saved.rem(creder.said)
-
-                msg = bytearray(creder.raw)
-                msg.extend(vcproof)
-                parsing.Parser().parse(ims=msg, vry=self.verifier)
-
-                c = self.verifier.reger.saved.get(creder.said)
-                while c is None:
-                    c = self.verifier.reger.saved.get(creder.said)
-                    yield
-
-                self.parsed.append((creder, vcproof))
-
-                yield
-
-            yield
-
-    def parsedDo(self, tymth, tock=0.0):
-        """
-
-        Handle proofs presented externally
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.parsed:
-                (creder, vcproof) = self.parsed.popleft()
-                hab = self.hby.habs[creder.issuer]
-
-                c = self.verifier.reger.saved.get(creder.said)
-                if c is None:
-                    self.parsed.append((creder, vcproof))
-
-                else:
-                    creders = self.verifier.reger.cloneCreds([creder.saider])
-                    cred = creders[0]
-
-                    ser = exchanging.exchange(route="/cmd/presentation/proof", payload=cred)
-                    msg = bytearray(ser.raw)
-                    msg.extend(hab.endorse(ser))
-
-                    self.mbx.storeMsg(self.controller + "/presentation", msg)
-
-                yield
-            yield

@@ -337,13 +337,13 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         key = f"{ctrl}/multisig".encode("utf-8")
         msgs = mbx.getTopicMsgs(topic=key)
         assert len(msgs) == 1
-        assert msgs[0] == (b'{"src": "E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "r": "/icp", "aids":'
-                           b' ["E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "EfrzbTSWjccrTdNRsFUUfwaJ2'
-                           b'dpYxu9_5jI2PJ-TRri0"], "ked": {"v": "KERI10JSON00012b_", "t": "icp", "d": "E'
-                           b'36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "i": "E36XYdtOOxqVBFbUxkiUXZX9'
-                           b'-_ctxga4E_JtKl8IEbFI", "s": "0", "kt": "1", "k": ["DOWIhazhEMt2Ar1ntt08qL1nk'
-                           b'rvOWDGKL8ZkGlTqTh7Q"], "nt": "1", "n": ["E2HciXdDVQhrzuEJDnINtG64ciDHb7kzVQP'
-                           b'V_GXKs8Fw"], "bt": "0", "b": [], "c": [], "a": []}}')
+        assert msgs[0] == (b'{"src": "E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "r": "/icp/init", "a'
+                           b'ids": ["E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "EfrzbTSWjccrTdNRsFUU'
+                           b'fwaJ2dpYxu9_5jI2PJ-TRri0"], "ked": {"v": "KERI10JSON00012b_", "t": "icp", "d'
+                           b'": "E36XYdtOOxqVBFbUxkiUXZX9-_ctxga4E_JtKl8IEbFI", "i": "E36XYdtOOxqVBFbUxki'
+                           b'UXZX9-_ctxga4E_JtKl8IEbFI", "s": "0", "kt": "1", "k": ["DOWIhazhEMt2Ar1ntt08'
+                           b'qL1nkrvOWDGKL8ZkGlTqTh7Q"], "nt": "1", "n": ["E2HciXdDVQhrzuEJDnINtG64ciDHb7'
+                           b'kzVQPV_GXKs8Fw"], "bt": "0", "b": [], "c": [], "a": []}}')
 
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):

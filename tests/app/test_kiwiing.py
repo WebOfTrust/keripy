@@ -44,6 +44,8 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         kvy = eventing.Kevery(db=hab.db, lax=True)
         parsing.Parser().parseOne(ims=bytearray(icp), kvy=kvy)
 
+        mbx = storing.Mailboxer(name="test", temp=True)
+        notifier = storing.Notifier(controller="", mbx=mbx)
         repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
         registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
@@ -52,6 +54,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         _ = kiwiing.loadEnds(hby=hby,
                              rep=repd,
                              rgy=regery,
+                             notifications=notifier.notifs,
                              verifier=verifier,
                              counselor=counselor,
                              registrar=registrar,
