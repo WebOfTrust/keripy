@@ -617,11 +617,9 @@ class KeyStateEnd:
             description: qb64 identifier prefix of KEL to load
         responses:
            200:
-              description: Updated contact information for remote identifier
-           400:
-              description: Invalid identfier used to update contact information
+              description: Key event log and key state of identifier
            404:
-              description: Prefix not found in identifier contact information
+              description: Identifier not found in Key event database
 
 
         """
@@ -641,75 +639,12 @@ class KeyStateEnd:
 
         kel = []
         for fn, dig in self.hby.db.getFelItemPreIter(preb, fn=0):
-            event = dict()
-            dgkey = dbing.dgKey(preb, dig)  # get message
-            if not (raw := self.hby.db.getEvt(key=dgkey)):
+            try:
+                event = loadEvent(self.hby.db, preb, dig)
+            except ValueError as e:
                 rep.status = falcon.HTTP_400
-                rep.text = "Missing event for dig={}.".format(dig)
+                rep.text = e.args[0]
                 return
-            srdr = coring.Serder(raw=bytes(raw))
-            event["ked"] = srdr.ked
-
-            # add indexed signatures to attachments
-            if not (sigs := self.hby.db.getSigs(key=dgkey)):
-                rep.status = falcon.HTTP_400
-                rep.text = "Missing sigs for dig={}.".format(dig)
-                return
-
-            dsigs = []
-            for s in sigs:
-                sig = coring.Siger(qb64b=bytes(s))
-                dsigs.append(dict(index=sig.index, signature=sig.qb64))
-            event["signatures"] = dsigs
-
-            # add indexed witness signatures to attachments
-            dwigs = []
-            if wigs := self.hby.db.getWigs(key=dgkey):
-                for w in wigs:
-                    sig = coring.Siger(qb64b=bytes(w))
-                    dwigs.append(dict(index=sig.index, signature=sig.qb64))
-            event["witness_signatures"] = dwigs
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.hby.db.getAes(dgkey)
-            if couple is not None:
-                raw = bytearray(couple)
-                seqner = coring.Seqner(qb64b=raw, strip=True)
-                saider = coring.Saider(qb64b=raw)
-                event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
-
-            receipts = dict()
-            # add trans receipts quadruples
-            if quads := self.hby.db.getVrcs(key=dgkey):
-                trans = []
-                for quad in quads:
-                    raw = bytearray(quad)
-                    trans.append(dict(
-                        prefix=coring.Prefixer(qb64b=raw, strip=True).qb64,
-                        sequence=coring.Seqner(qb64b=raw, strip=True).qb64,
-                        said=coring.Saider(qb64b=raw, strip=True).qb64,
-                        signature=coring.Siger(qb64b=raw, strip=True).qb64,
-                    ))
-
-                receipts["transferable"] = trans
-
-            # add nontrans receipts couples
-            if coups := self.hby.db.getRcts(key=dgkey):
-                nontrans = []
-                for coup in coups:
-                    raw = bytearray(coup)
-                    (prefixer, cigar) = eventing.deReceiptCouple(raw, strip=True)
-                    nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
-                receipts["nontransferable"] = nontrans
-
-            event["receipts"] = receipts
-            # add first seen replay couple to attachments
-            if not (dts := self.hby.db.getDts(key=dgkey)):
-                rep.status = falcon.HTTP_400
-                rep.text = "Missing datetime for dig={}.".format(dig)
-                return
-
-            event["timestamp"] = coring.Dater(dts=bytes(dts)).dts
 
             kel.append(event)
 
@@ -3017,6 +2952,150 @@ class SchemaEnd:
         rep.data = json.dumps(data).encode("utf-8")
 
 
+class EscrowEnd:
+
+    def __init__(self, db):
+        """ Create endpoint for retrieving escrow status
+
+        Parameters:
+            db (Baser): escrow database
+
+        """
+        self.db = db
+
+    def on_get(self, req, rep):
+        """
+
+        Parameters:
+            req (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+
+        ---
+        summary:  Display escrow status for entire database or search for single identifier in escrows
+        description:  Display escrow status for entire database or search for single identifier in escrows
+        tags:
+           - Escrows
+        parameters:
+          - in: query
+            name: pre
+            schema:
+              type: string
+            required: false
+            description: qb64 identifier prefix to search for in escrows
+          - in: query
+            name: escrow
+            schema:
+              type: string
+            required: false
+            description: name of escrow to load, ignoring others
+        responses:
+           200:
+              description: Escrow information
+           404:
+              description: Prefix not found in any escrow
+
+
+        """
+        rpre = req.params.get("pre")
+        if rpre is not None:
+            rpre = rpre.encode("utf-8")
+        escrow = req.params.get("escrow")
+
+        escrows = dict()
+
+        if (not escrow) or escrow == "out-of-order-events":
+            oots = list()
+            key = ekey = b''  # both start same. when not same means escrows found
+            while True:
+                for ekey, edig in self.db.getOoeItemsNextIter(key=key):
+                    pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    if rpre and pre != rpre:
+                        continue
+
+                    try:
+                        oots.append(loadEvent(self.db, pre, edig))
+                    except ValueError as e:
+                        rep.status = falcon.HTTP_400
+                        rep.text = e.args[0]
+                        return
+
+                if ekey == key:  # still same so no escrows found on last while iteration
+                    break
+                key = ekey  # setup next while iteration, with key after ekey
+
+            escrows["out-of-order-events"] = oots
+
+        if (not escrow) or escrow == "partially-witnessed-events":
+            pwes = list()
+            key = ekey = b''  # both start same. when not same means escrows found
+            while True:  # break when done
+                for ekey, edig in self.db.getPweItemsNextIter(key=key):
+                    pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    if rpre and pre != rpre:
+                        continue
+
+                    try:
+                        pwes.append(loadEvent(self.db, pre, edig))
+                    except ValueError as e:
+                        rep.status = falcon.HTTP_400
+                        rep.text = e.args[0]
+                        return
+
+                if ekey == key:  # still same so no escrows found on last while iteration
+                    break
+                key = ekey  # setup next while iteration, with key after ekey
+
+            escrows["partially-witnessed-events"] = pwes
+
+        if (not escrow) or escrow == "partially-signed-events":
+            pses = list()
+            key = ekey = b''  # both start same. when not same means escrows found
+            while True:  # break when done
+                for ekey, edig in self.db.getPseItemsNextIter(key=key):
+                    pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    if rpre and pre != rpre:
+                        continue
+
+                    try:
+                        pses.append(loadEvent(self.db, pre, edig))
+                    except ValueError as e:
+                        rep.status = falcon.HTTP_400
+                        rep.text = e.args[0]
+                        return
+
+                if ekey == key:  # still same so no escrows found on last while iteration
+                    break
+                key = ekey  # setup next while iteration, with key after ekey
+
+            escrows["partially-signed-events"] = pses
+
+        if (not escrow) or escrow == "likely-duplicitous-events":
+            ldes = list()
+            key = ekey = b''  # both start same. when not same means escrows found
+            while True:  # break when done
+                for ekey, edig in self.db.getLdeItemsNextIter(key=key):
+                    pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+                    if rpre and pre != rpre:
+                        continue
+
+                    try:
+                        ldes.append(loadEvent(self.db, pre, edig))
+                    except ValueError as e:
+                        rep.status = falcon.HTTP_400
+                        rep.text = e.args[0]
+                        return
+
+                if ekey == key:  # still same so no escrows found on last while iteration
+                    break
+                key = ekey  # setup next while iteration, with key after ekey
+
+            escrows["likely-duplicitous-events"] = ldes
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(escrows, indent=2).encode("utf-8")
+
+
 def loadEnds(app, *,
              path,
              hby,
@@ -3106,11 +3185,14 @@ def loadEnds(app, *,
     app.add_route("/schema", schemaEnd, suffix="list")
     app.add_route("/schema/{said}", schemaEnd)
 
+    escrowEnd = EscrowEnd(db=hby.db)
+    app.add_route("/escrows", escrowEnd)
+
     httpEnd = indirecting.HttpEnd(rxbs=rxbs, mbx=mbx, qrycues=queries)
     app.add_route("/mbx", httpEnd, suffix="mbx")
 
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact]
+                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
@@ -3200,3 +3282,69 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
     doers.extend(endDoers)
 
     return doers
+
+
+def loadEvent(db, preb, dig):
+    event = dict()
+    dgkey = dbing.dgKey(preb, dig)  # get message
+    if not (raw := db.getEvt(key=dgkey)):
+        raise ValueError("Missing event for dig={}.".format(dig))
+
+    srdr = coring.Serder(raw=bytes(raw))
+    event["ked"] = srdr.ked
+
+    # add indexed signatures to attachments
+    sigs = db.getSigs(key=dgkey)
+    dsigs = []
+    for s in sigs:
+        sig = coring.Siger(qb64b=bytes(s))
+        dsigs.append(dict(index=sig.index, signature=sig.qb64))
+    event["signatures"] = dsigs
+
+    # add indexed witness signatures to attachments
+    dwigs = []
+    if wigs := db.getWigs(key=dgkey):
+        for w in wigs:
+            sig = coring.Siger(qb64b=bytes(w))
+            dwigs.append(dict(index=sig.index, signature=sig.qb64))
+    event["witness_signatures"] = dwigs
+
+    # add authorizer (delegator/issure) source seal event couple to attachments
+    couple = db.getAes(dgkey)
+    if couple is not None:
+        raw = bytearray(couple)
+        seqner = coring.Seqner(qb64b=raw, strip=True)
+        saider = coring.Saider(qb64b=raw)
+        event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
+
+    receipts = dict()
+    # add trans receipts quadruples
+    if quads := db.getVrcs(key=dgkey):
+        trans = []
+        for quad in quads:
+            raw = bytearray(quad)
+            trans.append(dict(
+                prefix=coring.Prefixer(qb64b=raw, strip=True).qb64,
+                sequence=coring.Seqner(qb64b=raw, strip=True).qb64,
+                said=coring.Saider(qb64b=raw, strip=True).qb64,
+                signature=coring.Siger(qb64b=raw, strip=True).qb64,
+            ))
+
+        receipts["transferable"] = trans
+
+    # add nontrans receipts couples
+    if coups := db.getRcts(key=dgkey):
+        nontrans = []
+        for coup in coups:
+            raw = bytearray(coup)
+            (prefixer, cigar) = eventing.deReceiptCouple(raw, strip=True)
+            nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
+        receipts["nontransferable"] = nontrans
+
+    event["receipts"] = receipts
+    # add first seen replay couple to attachments
+    if not (dts := db.getDts(key=dgkey)):
+        raise ValueError("Missing datetime for dig={}.".format(dig))
+
+    event["timestamp"] = coring.Dater(dts=bytes(dts)).dts
+    return event
