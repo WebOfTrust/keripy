@@ -14,10 +14,10 @@ from keri.app import habbing, storing, kiwiing, grouping
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
-from keri.db import basing
+from keri.db import basing, dbing
 from keri.end import ending
 from keri.vc import proving
-from keri.vdr import viring, credentialing, verifying
+from keri.vdr import credentialing, verifying
 from tests.app import test_grouping
 
 
@@ -381,8 +381,7 @@ def test_multisig_rotation():
 
 def test_multisig_interaction():
     prefix = "test"
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)), \
-            habbing.openHab(name="recp", transferable=True) as (recpHby, recp):
+    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
         assert ghab1.pre == ghab2.pre == ghab3.pre == "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
 
         app = falcon.App()
@@ -677,10 +676,9 @@ def test_oobi_ends(seeder):
         palHab.db.locs.put(keys=(palHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
-        assert result.json == {'oobis':
-            [
-                'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
-                '/controller'],
+        assert result.json == {'oobis': [
+            'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
+            '/controller'],
             'role': 'controller'}
 
         # Seed with witness endpoints
@@ -688,9 +686,9 @@ def test_oobi_ends(seeder):
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
         assert result.status == falcon.HTTP_200
-        assert result.json == {'oobis':
-                                   [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
-                                     'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
+        assert result.json == {'oobis': [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
+                                          '/witness/'
+                                          'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
                                'role': 'witness'}
 
         # Post without a URL or RPY
@@ -1016,7 +1014,6 @@ def test_keystate_end():
 
 def test_schema_ends():
     with habbing.openHby(name="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
-
         app = falcon.App()
         _ = kiwiing.loadEnds(hby=hby,
                              rep=None,
@@ -1038,7 +1035,7 @@ def test_schema_ends():
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-        sed.update(dict(type="object", properties=dict(b=dict(type="number"),)))
+        sed.update(dict(type="object", properties=dict(b=dict(type="number"), )))
         sce = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         hby.db.schema.pin(sce.said, sce)
 
@@ -1067,3 +1064,163 @@ def test_schema_ends():
         assert response.status == falcon.HTTP_200
         assert response.json["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
         assert response.json["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
+
+
+def test_escrow_end(mockHelpingNowUTC):
+    with habbing.openHby(name="bob", temp=True) as hby:
+        rgy = credentialing.Regery(hby=hby, name="bob", temp=True)
+
+        app = falcon.App()
+        _ = kiwiing.loadEnds(hby=hby,
+                             rep=None,
+                             rgy=rgy,
+                             verifier=None,
+                             app=app, path="/",
+                             registrar=None,
+                             credentialer=None,
+                             mbx=None, counselor=None)
+        client = testing.TestClient(app)
+
+        response = client.simulate_get("/escrows")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'likely-duplicitous-events': [],
+                                 'out-of-order-events': [],
+                                 'partially-signed-events': [],
+                                 'partially-witnessed-events': []}
+
+        response = client.simulate_get("/escrows?escrow=partially-signed-events")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'partially-signed-events': []}
+
+        response = client.simulate_get("/escrows?escrow=unknown-escrow")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {}
+
+        response = client.simulate_get(
+            "/escrows?escrow=partially-witnessed-events&pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'partially-witnessed-events': []}
+
+        bob = hby.makeHab(name="bob")
+        icp = bob.kever.serder
+        sigs = []
+
+        key = dbing.dgKey(bob.pre, icp.said)  # digest key
+        for sig in hby.db.getSigsIter(key):
+            sigs.append(coring.Siger(qb64b=bytes(sig)))
+        bob.kever.escrowPSEvent(serder=icp, sigers=sigs)
+        escrowedEvt = {'ked': {'a': [],
+                               'b': [],
+                               'bt': '0',
+                               'c': [],
+                               'd':
+                                   'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0',
+                               'i':
+                                   'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0',
+                               'k': [
+                                   'DqI2cOZ06RwGNwCovYUWExmdKU983IasmUKMmZflvWdQ'],
+                               'kt': '1',
+                               'n': [
+                                   'EOmBSdblll8qB4324PEmETrFN-DhElyZ0BcBH1q1qukw'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'icp',
+                               'v': 'KERI10JSON00012b_'},
+                       'receipts': {},
+                       'signatures': [{'index': 0,
+                                       'signature':
+                                           'AAotHSmS5LuCg2LXwlandbAs3MFR0yTC5BbE2iSW_35U2qA0hP9gp66G--mHhiFmfHEIbBKrs3'
+                                           'tjcc8ySvYcpiBg'}],
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
+                       'witness_signatures': []}
+        response = client.simulate_get("/escrows?pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert response.json == {'likely-duplicitous-events': [],
+                                 'out-of-order-events': [],
+                                 'partially-signed-events': [],
+                                 'partially-witnessed-events': []}
+
+        response = client.simulate_get("/escrows")
+        assert response.status == falcon.HTTP_200
+        data = dict(response.json)
+        assert "partially-signed-events" in data
+        evt = data["partially-signed-events"]
+        del data["partially-signed-events"]
+        assert data == {'likely-duplicitous-events': [],
+                        'out-of-order-events': [],
+                        'partially-witnessed-events': []}
+        assert evt == [escrowedEvt]
+
+        response = client.simulate_get(f"/escrows?escrow=partially-signed-events&pre={bob.pre}")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['partially-signed-events']) == 1
+
+        response = client.simulate_get(f"/escrows?escrow=partially-signed-events"
+                                       f"&pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['partially-signed-events']) == 0
+
+        snkey = dbing.snKey(bob.pre, bob.kever.sn)
+        hby.db.delPses(snkey)
+        bob.kever.escrowPWEvent(serder=icp, sigers=sigs, wigers=None)
+
+        response = client.simulate_get("/escrows?escrow=partially-witnessed-events")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        evt = response.json['partially-witnessed-events']
+        assert evt == [escrowedEvt]
+
+        response = client.simulate_get(f"/escrows?escrow=partially-witnessed-events&pre={bob.pre}")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['partially-witnessed-events']) == 1
+
+        response = client.simulate_get(f"/escrows?escrow=partially-witnessed-events"
+                                       f"&pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['partially-witnessed-events']) == 0
+
+        hby.db.delPwes(snkey)
+
+        kvy = eventing.Kevery(db=bob.db)
+        kvy.escrowOOEvent(serder=icp, sigers=sigs)
+        response = client.simulate_get("/escrows?escrow=out-of-order-events")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        evt = response.json['out-of-order-events']
+        assert evt == [escrowedEvt]
+
+        response = client.simulate_get(f"/escrows?escrow=out-of-order-events&pre={bob.pre}")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['out-of-order-events']) == 1
+
+        response = client.simulate_get(f"/escrows?escrow=out-of-order-events"
+                                       f"&pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['out-of-order-events']) == 0
+
+        hby.db.delPde(key)
+
+        kvy.escrowLDEvent(serder=icp, sigers=sigs)
+        response = client.simulate_get("/escrows?escrow=likely-duplicitous-events")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        evt = response.json['likely-duplicitous-events']
+        assert evt == [escrowedEvt]
+
+        response = client.simulate_get(f"/escrows?escrow=likely-duplicitous-events&pre={bob.pre}")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['likely-duplicitous-events']) == 1
+
+        response = client.simulate_get(f"/escrows?escrow=likely-duplicitous-events"
+                                       f"&pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
+        assert len(response.json['likely-duplicitous-events']) == 0
+
