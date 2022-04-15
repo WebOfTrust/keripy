@@ -327,12 +327,22 @@ class IdentifierEnd(doing.DoDoer):
 
         body = req.get_media()
 
+        isith = None
+        if "isith" in body:
+            isith = body["isith"]
+            if isinstance(isith, str) and "," in isith:
+                isith = isith.split(",")
+
+        nsith = None
+        if "nsith" in body:
+            nsith = body["nsith"]
+            if isinstance(nsith, str) and "," in nsith:
+                nsith = nsith.split(",")
+
         transferable = body.get("transferable") if "transferable" in body else True
         wits = body.get("wits") if "wits" in body else []
         toad = int(body.get("toad")) if "toad" in body else None
-        isith = int(body.get("isith")) if "isith" in body else "1"
         icount = int(body.get("count")) if "count" in body else 1
-        nsith = int(body.get("nsith")) if "nsith" in body else "1"
         ncount = int(body.get("ncount")) if "ncount" in body else 1
         estOnly = int(body.get("estOnly")) if "estOnly" in body else False
 
@@ -430,9 +440,14 @@ class IdentifierEnd(doing.DoDoer):
             return
 
         body = req.get_media()
+        isith = None
+        if "isith" in body:
+            isith = body["isith"]
+            if isinstance(isith, str) and "," in isith:
+                isith = isith.split(",")
+
         wits = body.get("wits")
         toad = int(body.get("toad")) if "toad" in body else None
-        isith = int(body.get("isith")) if "isith" in body else None
         count = int(body.get("count")) if "count" in body else None
         data = body["data"] if "data" in body else None
         cuts = set()
@@ -1591,10 +1606,24 @@ class MultisigInceptEnd(MultisigEndBase):
             aids=aids
         )
 
+        isith = None
+        if "isith" in body:
+            isith = body["isith"]
+            if isinstance(isith, str) and "," in isith:
+                isith = isith.split(",")
+
+        inits["isith"] = isith
+        
+        nsith = None
+        if "nsith" in body:
+            nsith = body["nsith"]
+            if isinstance(nsith, str) and "," in nsith:
+                nsith = nsith.split(",")
+
+        inits["nsith"] = nsith
+
         inits["toad"] = body["toad"] if "toad" in body else None
         inits["wits"] = body["wits"] if "wits" in body else []
-        inits["isith"] = body["isith"] if "isith" in body else None
-        inits["nsith"] = body["nsith"] if "nsith" in body else None
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         ghab = self.hby.makeGroupHab(group=alias, phab=hab, **inits)
@@ -1894,12 +1923,17 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
+        isith = None
+        if "isith" in body:
+            isith = body["isith"]
+            if isinstance(isith, str) and "," in isith:
+                isith = isith.split(",")
+
         aids = body["aids"] if "aids" in body else ghab.aids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
         cuts = body["cuts"] if "cuts" in body else []
-        isith = body["isith"] if "isith" in body else None
         data = body["data"] if "data" in body else None
 
         if wits:
@@ -2006,12 +2040,17 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
+        isith = None
+        if "isith" in body:
+            isith = body["isith"]
+            if isinstance(isith, str) and "," in isith:
+                isith = isith.split(",")
+
         aids = body["aids"] if "aids" in body else ghab.aids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
         cuts = body["cuts"] if "cuts" in body else []
-        isith = body["isith"] if "isith" in body else None
         data = body["data"] if "data" in body else None
 
         if wits:
