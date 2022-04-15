@@ -266,6 +266,29 @@ def test_multisig_incept():
         assert evt["src"] == hab2.pre
         assert evt["dest"] == hab3.pre
 
+        # Test weight threshold specification for isith and nsith
+        body = dict(
+            aids=[hab1.pre, hab2.pre, hab3.pre],
+            transferable=True,
+            wits=[
+                "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+                "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+            ],
+            toad=2,
+            isith="1/3,1/3,1/3",
+            nsith="1/3,1/3,1/3"
+
+        )
+        b = json.dumps(body).encode("utf-8")
+
+        # Use Falcon test all to submit the request to issue a credential
+        client = testing.TestClient(app)
+        result = client.simulate_post(path="/multisig/multisig/icp", body=b)
+        assert result.status == falcon.HTTP_200
+        assert len(icpEnd.postman.evts) == 2
+
+
 
 def test_multisig_rotation():
     prefix = "test"
