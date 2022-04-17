@@ -194,7 +194,6 @@ class TestDoer(doing.DoDoer):
             assert cue["topic"] == "/multisig"
             assert cue["msg"]["r"] == "/rot/complete"
 
-
         for _ in range(3):
             cue = self.notifs.popleft()
             assert cue["kin"] == "notification"
