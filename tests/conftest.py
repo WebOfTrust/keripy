@@ -5,6 +5,9 @@ Use this module to configure pytest
 https://docs.pytest.org/en/latest/pythonpath.html
 
 """
+import os
+import shutil
+
 import pytest
 
 from keri import kering
@@ -208,3 +211,21 @@ class DbSeed:
         schemer = scheming.Schemer(raw=raw)
         db.schema.pin(schemer.said, schemer)
 
+
+class Helpers:
+
+    @staticmethod
+    def remove_test_dirs(name):
+        if os.path.exists(f'/usr/local/var/keri/db/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/db/{name}')
+        if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/ks/{name}')
+        if os.path.exists(f'/usr/local/var/keri/reg/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
+        if os.path.exists(f'/usr/local/var/keri/cf/{name}.json'):
+            os.remove(f'/usr/local/var/keri/cf/{name}.json')
+
+
+@pytest.fixture
+def helpers():
+    return Helpers
