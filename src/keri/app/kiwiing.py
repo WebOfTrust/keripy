@@ -768,10 +768,6 @@ class RegistryEnd(doing.DoDoer):
             rep.text = "alias is not a valid reference to an identfier"
             return
 
-        if hab.phab is not None:
-            rep.status = falcon.HTTP_400
-            rep.text = "registry inception with a multisig identifier is not allowed from this endpoint"
-
         c = dict()
         if "noBackers" in body:
             c["noBackers"] = body["noBackers"]
@@ -917,17 +913,15 @@ class CredentialEnd(doing.DoDoer):
                       type: string
                       description: SAID of credential schema being issued
                     source:
-                      type: array
-                      description: list of credential chain sources (ACDC)
-                      items:
-                         type: object
-                         properties:
-                            d:
-                               type: string
-                               description: SAID of reference chain
-                            s:
-                               type: string
-                               description: SAID of reference chain schema
+                      type: object
+                      description: ACDC edge or edge group for chained credentials
+                      properties:
+                         d:
+                            type: string
+                            description: SAID of reference chain
+                         s:
+                            type: string
+                            description: SAID of reference chain schema
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
