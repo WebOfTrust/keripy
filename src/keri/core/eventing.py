@@ -12,7 +12,10 @@ from urllib.parse import urlsplit
 
 from hio.help import decking
 from math import ceil
-from orderedset import OrderedSet as oset
+try:
+    from orderedset import OrderedSet as oset
+except ImportError:
+    from  ordered_set import OrderedSet as oset
 
 from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,

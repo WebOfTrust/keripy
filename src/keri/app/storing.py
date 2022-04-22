@@ -9,7 +9,10 @@ import itertools
 
 from hio.base import doing
 from hio.help import decking
-from orderedset import OrderedSet as oset
+try:
+    from orderedset import OrderedSet as oset
+except ImportError:
+    from  ordered_set import OrderedSet as oset
 
 from . import httping, agenting, forwarding
 from .. import help

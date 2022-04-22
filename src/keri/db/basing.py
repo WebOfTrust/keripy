@@ -27,7 +27,11 @@ from typing import Optional
 
 import lmdb
 from hio.base import doing
-from orderedset import OrderedSet as oset
+
+try:
+    from orderedset import OrderedSet as oset
+except ImportError:
+    from  ordered_set import OrderedSet as oset
 
 from . import dbing, koming, subing
 from .. import kering

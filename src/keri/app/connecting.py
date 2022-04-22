@@ -1,6 +1,9 @@
 import json
 
-from orderedset import OrderedSet as oset
+try:
+    from orderedset import OrderedSet as oset
+except ImportError:
+    from  ordered_set import OrderedSet as oset
 
 from keri import kering
 from keri.core import coring, eventing
