@@ -89,7 +89,7 @@ class ListDoer(doing.DoDoer):
                 sys.stdout.write(".")
                 sys.stdout.flush()
                 if "/credential" in self.mbx.times:
-                    end = self.mbx.times + datetime.timedelta(seconds=5)
+                    end = self.mbx.times['/credential'] + datetime.timedelta(seconds=5)
                 yield 1.0
             print("\n")
 
