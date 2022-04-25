@@ -120,7 +120,7 @@ class PasscodeEnd:
 class BootEnd(doing.DoDoer):
     """ Resource class for boot a cloud agent """
 
-    def __init__(self, servery, base="", temp=False, configFile=None, configDir=None, **kwa):
+    def __init__(self, servery, base="", temp=False, configFile=None, configDir=None, headDirPath=None, **kwa):
         """ Provides endpoints for initializing and unlocking an agent
 
         Parameters:
@@ -133,6 +133,7 @@ class BootEnd(doing.DoDoer):
                 weak resources for stretch of salty key
             configFile (str):  name of config file to load
             configDir (str): name of base for directory to load
+            headDirPath (str): root path
 
         """
         self.servery = servery
@@ -140,6 +141,7 @@ class BootEnd(doing.DoDoer):
         self.temp = temp
         self.configFile = configFile
         self.configDir = configDir
+        self.headDirPath = headDirPath
         self.msgs = decking.Deck()
         self.hby = None
         self.rgy = None
@@ -238,7 +240,7 @@ class BootEnd(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
 
-        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, **kwa)
+        hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, headDirPath=self.headDirPath, **kwa)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         self.hby = hby
         self.rgy = rgy
@@ -291,7 +293,8 @@ class BootEnd(doing.DoDoer):
         ks = keeping.Keeper(name=name,
                             base=self.base,
                             temp=False,
-                            reopen=True)
+                            reopen=True,
+                            headDirPath=self.headDirPath)
         aeid = ks.gbls.get('aeid')
         if aeid is None:
             rep.status = falcon.HTTP_400
@@ -300,7 +303,7 @@ class BootEnd(doing.DoDoer):
 
         ks.close()
 
-        hby = habbing.Habery(name=name, base=self.base, bran=bran)
+        hby = habbing.Habery(name=name, base=self.base, bran=bran, headDirPath=self.headDirPath)
         hbyDoer = habbing.HaberyDoer(habery=hby)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         rgyDoer = credentialing.RegeryDoer(rgy=rgy)
@@ -315,7 +318,8 @@ class BootEnd(doing.DoDoer):
         rep.data = json.dumps(body).encode("utf-8")
 
 
-def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=5621, adminHttpPort=5623, path=""):
+def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=5621, adminHttpPort=5623, path="",
+          headDirPath=None):
     """ Set up an agent in bootloader mode """
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
@@ -334,12 +338,13 @@ def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=562
         staticPath=path
     )
 
-    ends = loadEnds(app=app, configFile=configFile, configDir=configDir, path=path, servery=servery, **kwargs)
+    ends = loadEnds(app=app, configFile=configFile, configDir=configDir, path=path, servery=servery,
+                    headDirPath=headDirPath, **kwargs)
 
     return ends + [servery]
 
 
-def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=False, path, **kwargs):
+def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=False, headDirPath=None, path, **kwargs):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -354,6 +359,7 @@ def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=Fal
             Otherwise then open persistent directory, do not clear on close
         configFile: (str) file name override for configuration data
         configDir: (str) directory override for configuration data
+        headDirPath: (str) optional path
         path (str): directory location of UI web app files to be served with this API server
 
     Returns:
@@ -369,7 +375,8 @@ def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=Fal
     passcodeEnd = PasscodeEnd()
     app.add_route("/codes", passcodeEnd)
 
-    bootEnd = BootEnd(configFile=configFile, configDir=configDir, base=base, temp=temp, servery=servery, **kwargs)
+    bootEnd = BootEnd(configFile=configFile, configDir=configDir, base=base, temp=temp, servery=servery,
+                      headDirPath=headDirPath, **kwargs)
     app.add_route("/boot", bootEnd)
 
     resources = [passcodeEnd, bootEnd]

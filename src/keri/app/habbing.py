@@ -221,7 +221,7 @@ class Habery:
     """
 
     def __init__(self, *, name='test', base="", temp=False,
-                 ks=None, db=None, cf=None, clear=False, **kwa):
+                 ks=None, db=None, cf=None, clear=False, headDirPath=None, **kwa):
         """
         Initialize instance.
 
@@ -242,6 +242,7 @@ class Habery:
                             reopening
                           False means do not remove directory upon close when
                             reopening
+            headDirPath (str): directory override
 
 
         Parameters: Passed through via kwa to setup for later init
@@ -279,12 +280,14 @@ class Habery:
                                                            base=self.base,
                                                            temp=self.temp,
                                                            reopen=True,
-                                                           clear=clear)
+                                                           clear=clear,
+                                                           headDirPath=headDirPath)
         self.db = db if db is not None else basing.Baser(name=self.name,
                                                          base=self.base,
                                                          temp=self.temp,
                                                          reopen=True,
-                                                         clear=clear)
+                                                         clear=clear,
+                                                         headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
