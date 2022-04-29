@@ -1194,10 +1194,11 @@ class Hab:
                              "state.".format(self.pre))
         kever = self.kevers[serder.pre]
         if self.pre not in kever.wits:
-            raise ValueError("Attempt by {} to witness event of {} when not a "
+            print("Attempt by {} to witness event of {} when not a "
                              "witness in wits={}.".format(self.pre,
                                                           serder.pre,
-                                                          kever.wits))
+                                                         kever.wits))
+        print("I am", self.pre, "wits", kever.wits)
         index = kever.wits.index(self.pre)
 
         reserder = eventing.receipt(pre=ked["i"],
