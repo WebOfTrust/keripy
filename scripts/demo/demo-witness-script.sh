@@ -38,8 +38,6 @@ isSuccess
 
 kli status --name witness-test --alias trans-wits
 
-# kli query --name witness-test --alias inquisitor --prefix Ezgv-1LmULy9ghlCP5Wt9mrQY-jJ-tQHcZZ9SteV7Hqo --witness BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw
-
 kli rotate --name witness-test --alias trans-wits --witness-cut Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c
 isSuccess
 

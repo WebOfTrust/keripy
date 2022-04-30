@@ -4228,6 +4228,7 @@ class Kevery:
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
+                print("OOO", ekey)
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
