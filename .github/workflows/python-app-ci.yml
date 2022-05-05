@@ -9,8 +9,6 @@ on:
       - 'master'
   pull_request:
   workflow_dispatch:
-    branches:
-      - 'py310'
 
 jobs:
   test:
