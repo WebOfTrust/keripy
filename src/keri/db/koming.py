@@ -14,7 +14,6 @@ import cbor2
 import msgpack
 import lmdb
 
-from orderedset import OrderedSet as oset
 
 from . import dbing
 from .. import help

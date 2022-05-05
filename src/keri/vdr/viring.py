@@ -9,7 +9,7 @@ A special purpose Verifiable Data Registry (VDR)
 """
 
 from dataclasses import dataclass
-from orderedset import OrderedSet as oset
+from  ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing
 
@@ -477,14 +477,14 @@ class Reger(dbing.LMDBer):
 
     def sources(self, db, creder):
         """ Returns raw bytes of any source ('p') credential that is in our database
-         
+
         Parameters:
             db (LMDBer): table to search
             creder (Creder): root credential
 
         Returns:
             list: credential sources as resolved from `p` in creder.crd
-             
+
         """
         chains = creder.crd["e"]
         saids = []
@@ -501,8 +501,8 @@ class Reger(dbing.LMDBer):
             del craw[screder.size:]
             sources.append((screder, craw))
             sources.extend(self.sources(db, screder))
-            
-        return sources    
+
+        return sources
 
     def putTvt(self, key, val):
         """

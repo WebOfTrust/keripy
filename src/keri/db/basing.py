@@ -26,8 +26,9 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional
 
 import lmdb
+from  ordered_set import OrderedSet as oset
+
 from hio.base import doing
-from orderedset import OrderedSet as oset
 
 from . import dbing, koming, subing
 from .. import kering

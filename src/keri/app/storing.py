@@ -7,9 +7,10 @@ import json
 import random
 import itertools
 
+from  ordered_set import OrderedSet as oset
+
 from hio.base import doing
 from hio.help import decking
-from orderedset import OrderedSet as oset
 
 from . import httping, agenting, forwarding
 from .. import help

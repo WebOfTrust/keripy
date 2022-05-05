@@ -10,8 +10,7 @@ import os
 import re
 import sys
 
-from keri.core import parsing, eventing, routing, scheming
-from orderedset import OrderedSet as oset
+from  ordered_set import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
 from urllib import parse
@@ -22,6 +21,7 @@ from hio.base import doing
 from hio.core import http, wiring
 from hio.help import decking
 
+from keri.core import parsing, eventing, routing, scheming
 from .. import help
 from .. import kering
 from ..app import habbing, connecting
@@ -464,7 +464,7 @@ def loadEnds(app, *, tymth=None, hby=None):
         app(falcon.App): Falcon Rest app for endpoint route registration
         tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
         hby(Habery): glocal database environment
-        
+
     """
     sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
     app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)

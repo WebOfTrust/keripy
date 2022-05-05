@@ -10,7 +10,7 @@ import json
 import datetime
 
 import lmdb
-from orderedset import OrderedSet as oset
+from  ordered_set import OrderedSet as oset
 
 from hio.base import doing
 

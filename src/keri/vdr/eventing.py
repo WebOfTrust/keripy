@@ -9,9 +9,9 @@ VC TEL  support
 import json
 import logging
 from math import ceil
+from  ordered_set import OrderedSet as oset
 
 from hio.help import decking
-from orderedset import OrderedSet as oset
 
 from keri import kering
 from keri.core import coring

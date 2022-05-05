@@ -31,7 +31,7 @@ from os.path import splitext
 from setuptools import find_packages, setup
 setup(
     name='keri',
-    version='0.6.4',  # also change in src/keri/__init__.py
+    version='0.6.6',  # also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -51,7 +51,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         # 'Programming Language :: Python :: Implementation :: PyPy',
@@ -68,30 +68,30 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.9.7',
+    python_requires='>=3.10.4',
     install_requires=[
-                        'lmdb>=1.2.1',
-                        'pysodium>=0.7.9',
-                        'blake3>=0.2.0',
-                        'msgpack>=1.0.2',
-                        'cbor2>=5.4.1',
-                        'multidict>=5.1.0',
-                        'orderedset>=2.0.3',
-                        'hio>=0.5.8',
-                        'multicommand>=0.1.1',
-                        'jsonschema>=3.2.0',
-                        'falcon>=3.0.1',
+                        'lmdb>=1.3.0',
+                        'pysodium>=0.7.11',
+                        'blake3>=0.3.1',
+                        'msgpack>=1.0.3',
+                        'cbor2>=5.4.3',
+                        'multidict>=6.0.2',
+                        'ordered-set>=4.1.0',
+                        'hio>=0.6.0',
+                        'multicommand>=1.0.0',
+                        'jsonschema>=4.5.0',
+                        'falcon>=3.1.0',
                         'daemonocle>=1.2.3',
                         'hjson>=3.0.2',
                         'PyYaml>=6.0',
-                        'apispec>=5.1.1',
+                        'apispec>=5.2.1',
                         'mnemonic>=0.20'
     ],
     extras_require={
     },
     tests_require=[
-                    'coverage>=5.5',
-                    'pytest>=6.2.5',
+                    'coverage>=6.3.2',
+                    'pytest>=7.1.2',
                   ],
     setup_requires=[
     ],
