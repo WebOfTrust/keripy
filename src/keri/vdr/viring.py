@@ -9,10 +9,7 @@ A special purpose Verifiable Data Registry (VDR)
 """
 
 from dataclasses import dataclass
-try:
-    from orderedset import OrderedSet as oset
-except ImportError:
-    from  ordered_set import OrderedSet as oset
+from  ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing
 

@@ -7,14 +7,13 @@ simple indirect mode demo support classes
 """
 import falcon
 import time
+from  ordered_set import OrderedSet as oset
+
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
-try:
-    from orderedset import OrderedSet as oset
-except ImportError:
-    from  ordered_set import OrderedSet as oset
+
 
 from . import directing, storing, httping, forwarding, agenting
 from .cli.common import oobiing

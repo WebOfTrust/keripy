@@ -10,11 +10,7 @@ import os
 import re
 import sys
 
-from keri.core import parsing, eventing, routing, scheming
-try:
-    from orderedset import OrderedSet as oset
-except ImportError:
-    from  ordered_set import OrderedSet as oset
+from  ordered_set import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
 from urllib import parse
@@ -25,6 +21,7 @@ from hio.base import doing
 from hio.core import http, wiring
 from hio.help import decking
 
+from keri.core import parsing, eventing, routing, scheming
 from .. import help
 from .. import kering
 from ..app import habbing, connecting

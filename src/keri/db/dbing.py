@@ -53,11 +53,9 @@ from contextlib import contextmanager
 from typing import Union
 
 import lmdb
+from  ordered_set import OrderedSet as oset
+
 from hio.base import filing
-try:
-    from orderedset import OrderedSet as oset
-except ImportError:
-    from  ordered_set import OrderedSet as oset
 
 from hio.base import filing
 
