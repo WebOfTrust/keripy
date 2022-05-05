@@ -13,7 +13,7 @@ from keri.app.cli.common import existing, oobiing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description="Resolve the provided OOBI")
 parser.set_defaults(handler=lambda args: resolve(args),
                     transferable=True)
 

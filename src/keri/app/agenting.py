@@ -99,6 +99,10 @@ class WitnessReceiptor(doing.DoDoer):
                     witer = witnesser(hab, wit)
 
                     witers.append(witer)
+                    if "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
+                        for msg in hab.db.clonePreIter(pre=pre):
+                            witer.msgs.append(msg)
+
                     witer.msgs.append(bytearray(msg))  # make a copy
                     self.extend([witer])
 

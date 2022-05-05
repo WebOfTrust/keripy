@@ -31,7 +31,7 @@ def test_withness_receiptor(seeder):
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
 
-        palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
+        palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre], transferable=True)
 
         witDoer = agenting.WitnessReceiptor(hby=palHby)
         witDoer.msgs.append(dict(pre=palHab.pre))
@@ -41,11 +41,33 @@ def test_withness_receiptor(seeder):
         doist = doing.Doist(limit=limit, tock=tock)
         doers = wanDoers + wilDoers + wesDoers + [witDoer]
         doist.do(doers=doers)
+        doist.remove(doers)
+        doist.exit()
 
         kev = palHab.kever
         ser = kev.serder
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
+        wigs = wanHab.db.getWigs(dgkey)
+        assert len(wigs) == 2
+        wigs = wilHab.db.getWigs(dgkey)
+        assert len(wigs) == 2
+
+        palHab.rotate(adds=[wesHab.pre])
+
+        witDoer = agenting.WitnessReceiptor(hby=palHby)
+        witDoer.msgs.append(dict(pre=palHab.pre, sn=1))
+
+        limit = 5.0
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+        doers = wanDoers + wilDoers + wesDoers + [witDoer]
+        doist.do(doers=doers)
+        doist.exit()
+
+        kev = palHab.kever
+        ser = kev.serder
+        dgkey = dbing.dgKey(ser.preb, ser.saidb)
         wigs = wanHab.db.getWigs(dgkey)
         assert len(wigs) == 3
         wigs = wilHab.db.getWigs(dgkey)

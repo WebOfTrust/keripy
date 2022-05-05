@@ -50,6 +50,11 @@ def status(tymth, tock=0.0, **opts):
             displaying.printIdentifier(hby, hab.pre)
 
             if args.verbose:
+                print("\nWitnesses:\t")
+                for idx, wit in enumerate(hab.kever.wits):
+                    print(f'\t{idx+1}. {wit}')
+                print()
+
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
                     srdr = coring.Serder(raw=msg)

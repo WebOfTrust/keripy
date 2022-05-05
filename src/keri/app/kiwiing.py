@@ -2609,7 +2609,7 @@ class ContactEnd:
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human readable alias identifier to sign contact with
           - in: path
             name: prefix
             schema:
@@ -2804,6 +2804,12 @@ class ContactEnd:
         tags:
            - Contacts
         parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias identifier to sign contact with
           - in: path
             name: prefix
             schema:

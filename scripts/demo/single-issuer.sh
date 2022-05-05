@@ -15,3 +15,4 @@ kli vc registry incept --name issuer --alias issuer --registry-name vLEI
 
 kli vc issue --name issuer --alias issuer --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI --data @scripts/demo/credential-data.json
 
+# kli vc list --name holder --alias holder --poll

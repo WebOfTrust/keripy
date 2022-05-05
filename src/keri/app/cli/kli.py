@@ -22,7 +22,8 @@ def main():
 
     except Exception as ex:
         print(f"ERR: {ex}")
-        raise ex
+        return -1
+        # raise ex
 
 
 if __name__ == "__main__":

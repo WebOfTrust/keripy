@@ -15,7 +15,7 @@ from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 

@@ -246,8 +246,10 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
             snkey = dbing.snKey(pre, seqner.sn)
-            evt = self.hby.db.getKeLast(key=snkey)
-            if evt:
+            sdig = self.hby.db.getKeLast(key=snkey)
+            if sdig:
+                sraw = self.hby.db.getEvt(key=dbing.dgKey(pre=pre, dig=bytes(sdig)))
+
                 self.hby.db.gpse.rem(keys=(pre,))
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
@@ -265,7 +267,7 @@ class Counselor(doing.DoDoer):
                     # Move to escrow waiting for delegator approval
                     if witer:
                         # Send exn message for notification purposes
-                        srdr = coring.Serder(raw=evt)
+                        srdr = coring.Serder(raw=bytes(sraw))
                         exn, atc = delegating.delegateRequestExn(ghab.phab, delpre=kever.delegator, ked=srdr.ked)
                         self.postman.send(src=ghab.phab.pre, dest=kever.delegator, topic="delegate", serder=exn,
                                           attachment=atc)

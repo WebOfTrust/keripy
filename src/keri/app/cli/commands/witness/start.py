@@ -40,7 +40,7 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 
 
 def launch(args):
-    help.ogler.level = logging.INFO
+    help.ogler.level = logging.CRITICAL
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
     logger = help.ogler.getLogger()

@@ -17,8 +17,8 @@ kli init --name delegator2 --nopasscode --config-dir ./scripts --config-file dem
 kli incept --name delegator2 --alias delegator2 --file tests/app/cli/commands/delegate/delegator-2.json
 
 echo "Sharing OOBIs between delegate's two local identifiers"
-kli oobi resolve --name delegate1 --oobi --oobi-alias delegate2 http://127.0.0.1:5642/oobi/E64X4wS9Oaps6NtcsE_rgNoxxAT5QzdGfGyUKu1ecHgo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-kli oobi resolve --name delegate2 --oobi --oobi-alias delegate1 http://127.0.0.1:5642/oobi/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate1 --oobi-alias delegate2 --oobi http://127.0.0.1:5642/oobi/E64X4wS9Oaps6NtcsE_rgNoxxAT5QzdGfGyUKu1ecHgo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate2 --oobi-alias delegate1 --oobi http://127.0.0.1:5642/oobi/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 echo "Sharing OOBIs between delegator's two local identifiers"
 kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0.1:5642/oobi/EC1DxuYp8GgIDVQ2c8EYBaY1CwxozvQuqGxwppNVrapY/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/Ef9Bhn_LeAU3rq8Rf3XHi5C1XmNdIM5uxv2DwWQT6qd8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
@@ -33,8 +33,8 @@ kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0
 
 # In 2 delegate terminal windows run the following
 # kli multisig incept --name delegate1 --alias delegate1 --group delegate --file tests/app/cli/commands/delegate/multisig-delegate.json
-# kli multisig incept --name delegate2 --alias delegate2 --group delegate --file tests/app/cli/commands/multisig/multisig-delegate.json
+# kli multisig incept --name delegate2 --alias delegate2 --group delegate --file tests/app/cli/commands/delegate/multisig-delegate.json
 
 # In 2 delegator terminal windows run the following to anchor the delegate's inception event
-# kli multisig interact --name delegator1 --alias delegate --data scripts/demo/multisig-delegate-icp-anchor.json
-# kli multisig interact --name delegator2 --alias delegate --data scripts/demo/multisig-delegate-icp-anchor.json
+# kli multisig interact --name delegator1 --alias delegator --data @scripts/demo/multisig-delegate-icp-anchor.json
+# kli multisig interact --name delegator2 --alias delegator --data @scripts/demo/multisig-delegate-icp-anchor.json

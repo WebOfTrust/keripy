@@ -49,17 +49,22 @@ isSuccess
 kli sign --name test --alias trans --text @${SCRIPT_DIR}/anchor.json
 isSuccess
 
-kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AA29iAmC1x_gYYI5sLv4MwAt6P0XRs0Be_JKKTb6iCVBy5amf4y5XzBL-kTRWSH0d0T3Zx1QsbgXhXW3i54EWkAQ
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AAasJ-r22h9LnB7SgSvjQWDuQxAyVRpcWpYbQzw-sn_MZ4--XcEYV-rKSCJYTP5ZR1WYv1_OJ9ni3P_OPKZYspAA
 isSuccess
 
-kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AB_whAvInYCuPXqfNQVDlDlyL0b4KsrQWsHA9IetyhDsD_AMToqJlmZzpN5Z9x_rlYlmL4pU2i2BC0so9aaxncDA
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AB_sDX2BZqN1I0Cr-Xwz2MaH18z-uqejNZsrPDPCre1f3ND6O4aIzRf4CGCZodct5ThTDCvc6axxlm_pK_wujsAQ
 isSuccess
 
-kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature ACAEilCq8wGtjEEWBVODrh5o98cVnB8oZ_csTyrbgequWj5elEZERSfWFsW0SH4_B5oxtN-ta0rRZiIZNoQCFLAQ
+kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature AC1sns_hyJ3pTLcu8WUmSlxFZG9viUuC4-DZYlZu_21nquPRaQ2uH9286SdA9zHT-4boUA3sV129b0dd0djHKEAg
 isSuccess
 
 kli verify --name test --alias trans --prefix EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg --text @${SCRIPT_DIR}/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
-isSuccess
+ret=$?
+if [ $ret -eq 0 ]; then
+   echo "Testing invalid signature should fail $ret"
+   exit $ret
+fi
+
 
 # ESTABLISHMENT ONLY
 kli incept --name test --alias est-only --file ${SCRIPT_DIR}/estonly-sample.json

@@ -53,6 +53,12 @@ def kevers(tymth, tock=0.0, **opts):
             displaying.printExternal(hby, prefix)
 
             if args.verbose:
+                kever = hby.kevers[prefix]
+                print("\nWitnesses:\t")
+                for idx, wit in enumerate(kever.wits):
+                    print(f'\t{idx+1}. {wit}')
+                print()
+
                 cloner = hby.db.clonePreIter(pre=prefix, fn=0)  # create iterator at 0
                 for msg in cloner:
                     srdr = coring.Serder(raw=msg)

@@ -73,7 +73,7 @@ def verify(tymth, tock=0.0, **opts):
                 if siger.verfer.verify(siger.raw, ser):  # verify each sig
                     print("Signature {} is valid.".format(siger.index+1))
                 else:
-                    print("Signature {} is invalid.".format(siger.index+1))
+                    raise kering.ValidationError("Signature {} is invalid.".format(siger.index+1))
 
     except kering.ConfigurationError:
         print(f"prefix for {name} does not exist, incept must be run first", )
