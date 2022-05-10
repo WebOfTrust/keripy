@@ -6,14 +6,12 @@ Test expose messages
 routes:
 
 """
-import pytest
-
 from keri import kering
 
 from keri.core import eventing
 from keri.core.coring import MtrDex, Nexter, Salter
 
-from keri.core.eventing import (SealEvent, SealLocation, messagize)
+from keri.core.eventing import (SealEvent, messagize)
 
 from keri import help
 

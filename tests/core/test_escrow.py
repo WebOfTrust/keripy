@@ -399,14 +399,8 @@ def test_missing_delegator_escrow():
         assert bobK.prefixer.qb64 == bobPre
         assert bobK.serder.saider.qb64 == bobSrdr.said
 
-
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
         verfers, digers, cst, nst = delMgr.incept(stem='del', temp=True) # algo default salty and rooted
-
-        seal = eventing.SealLocation(i=bobK.prefixer.qb64,
-                                     s="{:x}".format(bobK.sn+1),
-                                     t=coring.Ilks.ixn,
-                                     p=bobK.serder.saider.qb64)
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobPre,
