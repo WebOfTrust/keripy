@@ -39,7 +39,9 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     doers = []
 
     # make hab
-    hab = hby.makeHab(name=alias, transferable=False)
+    hab = hby.habByName(name=alias)
+    if hab is None:
+        hab = hby.makeHab(name=alias, transferable=False)
 
     reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(hby=hby, reger=reger)

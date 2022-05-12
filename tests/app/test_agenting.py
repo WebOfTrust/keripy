@@ -11,7 +11,6 @@ from keri.core import coring
 from keri.core.coring import Counter, CtrDex, Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
-from keri.core.eventing import SealSource
 from keri.db import dbing
 from keri.vdr import eventing, viring
 
@@ -117,11 +116,10 @@ class PublishDoer(doing.DoDoer):
 
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
-        seal = SealSource(s=self.palHab.kever.sn, d=self.palHab.kever.serder.said)
         msg = bytearray(serder.raw)
         msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
-        msg.extend(Seqner(sn=seal.s).qb64b)
-        msg.extend(seal.d.encode("utf-8"))
+        msg.extend(Seqner(sn=self.palHab.kever.sn).qb64b)
+        msg.extend(self.palHab.kever.serder.saidb)
 
         self.witDoer.msgs.append(dict(pre=self.palHab.pre, msg=msg))
 

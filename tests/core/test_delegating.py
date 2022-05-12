@@ -129,9 +129,6 @@ def test_delegation():
         # now create msg with Del's delegated inception event
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
-        # seal = eventing.SealSource(s="{:x}".format(bobK.sn+1),
-        # d=bobSrdr.diger.qb64)
-
         msg = bytearray(delSrdr.raw)
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                  count=len(sigers))

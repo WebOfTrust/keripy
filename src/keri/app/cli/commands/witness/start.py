@@ -10,7 +10,8 @@ import logging
 
 from keri import __version__
 from keri import help
-from keri.app import directing, indirecting, habbing
+from keri.app import directing, indirecting, habbing, keeping
+from keri.app.cli.common import existing
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"
@@ -63,7 +64,19 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     """
     Setup and run one witness
     """
-    hby = habbing.Habery(name=name, base=base, bran=bran)
+
+    ks = keeping.Keeper(name=name,
+                        base=base,
+                        temp=False,
+                        reopen=True)
+
+    aeid = ks.gbls.get('aeid')
+
+    if aeid is None:
+        hby = habbing.Habery(name=name, base=base, bran=bran)
+    else:
+        hby = existing.existingHby(name=name, base=base, bran=bran)
+
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]
 

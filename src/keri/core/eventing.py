@@ -98,18 +98,6 @@ SealEvent = namedtuple("SealEvent", 'i s d')
 # used to indicate to get the latest keys available from KEL for 'i'
 SealLast = namedtuple("SealLast", 'i')
 
-# Event Location Seal: quadruple (i, s, t, p)
-# i = pre is qb64 of identifier prefix of KEL,
-# s = sn of event as lowercase hex string  no leading zeros,
-# t = message type ilk is str,
-# p = prior digest dig is qb64 of prior event digest
-SealLocation = namedtuple("SealLocation", 'i s t p')
-
-# Source Seal: couple (s,d)
-# s = sn of event as lowercase hex string  no leading zeros,
-# d = dig is qb64 digest of source event (delegator or issuer)
-SealSource = namedtuple("SealSource", 's d')
-
 # State (latest current) Event: triple (s, t, d)
 # s = sn of latest event as lowercase hex string  no leading zeros,
 # t = message type of latest event (ilk)
@@ -2304,8 +2292,7 @@ class Kever:
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
         """
-        Returns delegator's qb64 identifier prefix if seal instance of
-        SealLocation if seal validates with respect to Delegator's KEL
+        Returns delegator's qb64 identifier prefix if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
         Assumes state setup
 

@@ -19,8 +19,7 @@ from keri.core.coring import Salter, Serder, Siger, Cigar
 from keri.core.coring import Seqner, Verfer, Signer, Nexter, Prefixer
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
-                                SealEvent, SealLast, SealLocation,
-                                StateEvent, StateEstEvent)
+                                SealEvent, SealLast, StateEvent, StateEstEvent)
 from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
                                 simple, ample)
 from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
@@ -665,19 +664,6 @@ def test_seals_states():
     assert seal.i == 'B4321'
     assert seal._asdict() == dict(i='B4321')
     assert seal._fields == ('i',)
-
-    seal = SealLocation(i='B4321', s='1', t='ixn', p='Eabcd')
-    assert isinstance(seal, SealLocation)
-    assert 'B4321' in seal
-    assert seal.i == 'B4321'
-    assert '1' in seal
-    assert seal.s == '1'
-    assert 'ixn' in seal
-    assert seal.t == 'ixn'
-    assert 'Eabcd' in seal
-    assert seal.p == 'Eabcd'
-    assert seal._asdict() == dict(i='B4321', s='1', t='ixn', p='Eabcd')
-    assert seal._fields == ('i', 's', 't', 'p')
 
     seal = StateEvent(s='1', t='ixn', d='Eabcd')
     assert isinstance(seal, StateEvent)
