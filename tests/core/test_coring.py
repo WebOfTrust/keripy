@@ -42,7 +42,8 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', qry='qry', rpy='rpy',
-                          exn='exn', exp='exp', vcp='vcp', vrt='vrt',
+                          exn='exn', prd='prd', bre='bre',
+                          vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
     assert isinstance(Ilks, Ilkage)
@@ -70,8 +71,13 @@ def test_ilks():
     assert Ilks.rpy == 'rpy'
     assert 'exn' in Ilks
     assert Ilks.exn == 'exn'
-    assert 'exp' in Ilks
-    assert Ilks.exp == 'exp'
+
+
+    assert 'prd' in Ilks
+    assert Ilks.prd == 'prd'
+    assert 'bre' in Ilks
+    assert Ilks.bre == 'bre'
+
 
     assert 'vcp' in Ilks
     assert Ilks.vcp == 'vcp'
