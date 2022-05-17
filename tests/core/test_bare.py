@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-tests.core.test_expose module
+tests.core.test_bare module
 
-Test expose messages
+Test bare message
 routes:
 
 """
@@ -18,13 +18,13 @@ from keri import help
 logger = help.ogler.getLogger()
 
 
-def test_expose():
+def test_bare():
     """
-    Test expose message 'exp'
+    Test bare message 'bre'
 
     {
       "v" : "KERI10JSON00011c_",
-      "t" : "exp",
+      "t" : "bre",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "logs/processor",
       "a" :
@@ -87,17 +87,18 @@ def test_expose():
                )
 
 
-    serderE = eventing.expose(route="/to/the/moon",
+    serderE = eventing.bare(route="/to/the/moon",
                              data=data,
                             )
 
-    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4MnNMwjuVy8hh'
-                        b'Ke25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqW'
-                        b'VK9ZBNZk0","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
-                        b'5CM","name":"besty"}}')
+    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"EB_Xo7dILS8QB5Y1-KeB3qHUwbpVW2-gEe9D'
+                           b'jd-OG-cw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqW'
+                           b'VK9ZBNZk0","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
+                           b'5CM","name":"besty"}}')
 
 
-    assert serderE.ked["d"] == 'EWcQzVYR26plzL6foNKGD2T4MnNMwjuVy8hhKe25a_Z0'
+
+    assert serderE.ked["d"] == "EB_Xo7dILS8QB5Y1-KeB3qHUwbpVW2-gEe9Djd-OG-cw"
 
     # create SealEvent for endorsers est evt whose keys use to sign
 
@@ -111,17 +112,17 @@ def test_expose():
                      s='0',
                      d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
-                    b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                    b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                    b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3p'
-                    b'YGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAA'
-                    b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAt_KQsGz2VO83a'
-                    b'tmF-1yfwJ676NnzrS9z6g-qytJrEumx78lcNLZr77IVOUotfO-yP1vrQnEcOgbW9'
-                    b'YVsyIr5Bw')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"EB_Xo7dILS8QB5Y1-KeB3qHU'
+                   b'wbpVW2-gEe9Djd-OG-cw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3p'
+                   b'YGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAARJ66zuChkViyH'
+                   b'IghE_ODT5NXyhWHXH7kfo23q85BnjT8tJ9RSOErXifLY6RHRiv3yYf7ooX5eENPy'
+                   b'Ut5luaeCA')
 
-    # create endorsed rpy with trans endorser
-    # create trans key pair for endorder
+    # create endorsed bre with trans endorser
+    # create trans key pair for endorser
     signerE = salter.signer(path="E", temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519  # transferable
     preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
@@ -135,16 +136,17 @@ def test_expose():
                      s='0',
                      d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
-                b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyv'
-                b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAA'
-                b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAw0Jer1I2BUxYX'
-                b'YEJ_GpiddpoXBsTp9qs3RXR8QrcL_Nt9YYlTvbc8yjqV-9r0UDAU_K6l-tGXwrp3'
-                b'k0koeYDDw')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"EB_Xo7dILS8QB5Y1-KeB3qHU'
+                   b'wbpVW2-gEe9Djd-OG-cw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyv'
+                   b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAYsvGuxuEjx8uy'
+                   b'-QtgZrwXMrkdcix7nUdx_qCXM-Oy23D44m_xHbtTGdHXtNJAKZ1H-jnaNDnYNmjk'
+                   b'c8NOd4ZAA')
 
-    # create endorsed rpy with nontrans endorser
+
+    # create endorsed bre with nontrans endorser
     # create nontrans key pair for endorder
     signerE = salter.signer(path="E", transferable=False, temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
@@ -154,19 +156,20 @@ def test_expose():
     cigarE = signerE.sign(ser=serderE.raw)  # no index so Cigar
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderE.raw)
     msg = messagize(serderE, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
-                b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByv'
-                b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0Bw0Jer1I2BUxYXYEJ_Gpid'
-                b'dpoXBsTp9qs3RXR8QrcL_Nt9YYlTvbc8yjqV-9r0UDAU_K6l-tGXwrp3k0koeYDDw')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"EB_Xo7dILS8QB5Y1-KeB3qHU'
+                   b'wbpVW2-gEe9Djd-OG-cw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByv'
+                   b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BYsvGuxuEjx8uy-QtgZrwX'
+                   b'Mrkdcix7nUdx_qCXM-Oy23D44m_xHbtTGdHXtNJAKZ1H-jnaNDnYNmjkc8NOd4ZAA')
+
 
     """Done Test"""
 
 
 
 if __name__ == "__main__":
-    test_expose()
+    test_bare()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])
 
 

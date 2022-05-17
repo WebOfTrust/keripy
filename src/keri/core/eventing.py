@@ -1392,16 +1392,16 @@ def reply(route="",
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
-def expose(route="",
+def bare(route="",
            data=None,
            version=Version,
            kind=Serials.json):
     """
-    Returns serder of exposure 'exp' message.
-    Utility function to automate creation of exposure messages for disclosure of
-    sealed data associated with anchored seals in a KEL. Reference to anchoring
-    seal is provided as an attachment to exposure message.
-    Exposure 'exp' message is a SAD item with an associated derived SAID in its
+    Returns serder of bare 'bre' message.
+    Utility function to automate creation of unhiding (bareing) messages for
+    disclosure of sealed data associated with anchored seals in a KEL.
+    Reference to anchoring seal is provided as an attachment to bare message.
+    Bare 'bre' message is a SAD item with an associated derived SAID in its
     'd' field.
 
      Parameters:
@@ -1413,7 +1413,7 @@ def expose(route="",
 
     {
       "v" : "KERI10JSON00011c_",
-      "t" : "exp",
+      "t" : "bre",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "sealed/processor",
       "a" :
@@ -1431,7 +1431,7 @@ def expose(route="",
         data = {}
 
     sad = dict(v=vs,  # version string
-               t=Ilks.exp,
+               t=Ilks.bre,
                d="",
                r=route if route is not None else "",  # route
                a=data if data else {},  # attributes
