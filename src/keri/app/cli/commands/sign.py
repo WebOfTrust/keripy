@@ -31,10 +31,10 @@ def handler(args):
         args(Namespace): arguments object from command line
     """
     kwa = dict(args=args)
-    return [doing.doify(status, **kwa)]
+    return [doing.doify(sign, **kwa)]
 
 
-def status(tymth, tock=0.0, **opts):
+def sign(tymth, tock=0.0, **opts):
     """ Command line status handler
 
     """

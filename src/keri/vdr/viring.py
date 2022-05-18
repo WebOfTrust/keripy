@@ -330,9 +330,14 @@ class Reger(dbing.LMDBer):
             creder, sadsigers, sadcigars = self.cloneCred(said=key)
 
             chainSaids = []
-            for p in creder.crd["e"]:
-                v = list(p.values()).pop()
-                chainSaids.append(coring.Saider(qb64=v["d"]))
+            for k, p in creder.crd["e"].items():
+                if k == "d":
+                    continue
+
+                if not isinstance(p, dict):
+                    continue
+
+                chainSaids.append(coring.Saider(qb64=p["n"]))
             chains = self.cloneCreds(chainSaids)
 
             regk = creder.status
@@ -476,26 +481,30 @@ class Reger(dbing.LMDBer):
             yield msg
 
     def sources(self, db, creder):
-        """ Returns raw bytes of any source ('p') credential that is in our database
+        """ Returns raw bytes of any source ('e') credential that is in our database
 
         Parameters:
             db (LMDBer): table to search
             creder (Creder): root credential
 
         Returns:
-            list: credential sources as resolved from `p` in creder.crd
+            list: credential sources as resolved from `e` in creder.crd
 
         """
         chains = creder.crd["e"]
         saids = []
-        for source in chains:
-            for _, data in source.items():
-                saids.append(data['d'])
+        for key, source in chains.items():
+            if key == 'd':
+                continue
+
+            if not isinstance(source, dict):
+                continue
+
+            saids.append(source['n'])
 
         sources = []
         for said in saids:
-            key = said.encode("utf-8")
-            screder, sadsigers, sadcigars = self.cloneCred(said=key)
+            screder, sadsigers, sadcigars = self.cloneCred(said=said)
 
             craw = signing.provision(serder=screder, sadsigers=sadsigers, sadcigars=sadcigars)
             del craw[screder.size:]

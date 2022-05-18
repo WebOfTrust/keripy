@@ -143,6 +143,8 @@ class Verifier:
         try:
             schemer.verify(creder.raw)
         except kering.ValidationError as ex:
+            print("Credential {} is not valid against schema {}: {}"
+                  .format(creder.said, schema, ex))
             raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}: {}"
                                                      .format(creder.said, schema, ex))
 
@@ -185,11 +187,12 @@ class Verifier:
         elif isinstance(prov, dict):
             edges = [prov]
         else:
+            print(f"invalid type for edges: {prov}")
             raise kering.ValidationError(f"invalid type for edges: {prov}")
 
         for edge in edges:
             for label, node in edge.items():
-                if label in ('d',):  # SAID of this edge block
+                if label in ('d', 'o'):  # SAID or Operator of this edge block
                     continue
                 nodeSaid = node["n"]
                 state = self.verifyChain(nodeSaid)

@@ -575,7 +575,6 @@ class IdentifierEnd(doing.DoDoer):
             dgkey = dbing.dgKey(hab.kever.serder.preb, hab.kever.serder.saidb)
             wigs = hab.db.getWigs(dgkey)
             if len(wigs) != len(hab.kever.wits):
-                print(f"witnessing for {hab.pre}")
                 self.witDoer.msgs.append(dict(pre=hab.pre))
                 while True:
                     yield self.tock

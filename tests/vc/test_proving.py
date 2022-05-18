@@ -51,16 +51,16 @@ def test_proving():
                             subject=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EYPyybUq9OPi4aMnnNMafmNkjf0TRGr8bD'
-                       b'Nj0CQmUqyM","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
-                       b'i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"E6wI'
+        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EBAjLJSNxLkV3wqvLUrWh10RR5KPb3YNFD'
+                       b'dydSW0HAYk","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","'
+                       b's":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","a":{"d":"E6wI'
                        b'oXUVrUsFm4pHAFDMbLloniDNvEWizHO8BNPwcyBA","i":"EPmpiN6bEM8EI0Mct'
                        b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
                        b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"e":{}}-VA0-FABECtW'
                        b'lHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAA'
-                       b'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA4tl9yho6Mod3Ta'
-                       b'VbZTuBbtWSnpfLVjSqK7prYcwJyGz8HKYNU1qu2iMcaRpUD035mEy70YhiRb0AR2'
-                       b'gQuBsiCg')
+                       b'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA60gkEY5DXpVD8h'
+                       b'o-CA5-cpp5xDUgWBQ01IkjG1oLocO43yovd5G-BUOO8UF2U4UIHJnWWc76g9Nei4'
+                       b'4Ns94KAQ')
 
         creder = Creder(raw=msg)
         proof = msg[creder.size:]
@@ -210,15 +210,15 @@ def test_credential():
                       subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"EZnnIhnNRaP2cqIq_4GPvjhz1JT3LMIEHJs5UcZnfmhw",'
-                        b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","i":"EYNHFK056fqNSG_MDE7d'
-                        b'_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL5'
-                        b'7dTA","issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"J'
-                        b'ohn Doe","engagementContextRole":"Project Manager","credentialStatus":"EymRy'
-                        b'7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"Ey'
-                        b'8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI"},"e":[{"qualifiedvLEIIssuervLEIC'
-                        b'redential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}],"ri":"ETQoH02z'
-                        b'JRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M"}')
+    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"E6FL99WMVU45ZPfypWnP2rMlRqAm2viv0NegQ51SlDT4",'
+                        b'"i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri":"ETQoH02zJRCTNz-Wl3n'
+                        b'nkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q'
+                        b'","a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL57dTA","issuanceDate":"20'
+                        b'21-06-27T21:26:21.233257+00:00","personLegalName":"John Doe","engagementCont'
+                        b'extRole":"Project Manager","credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPA'
+                        b'I6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"Ey8O65r9KllNVjY8hnmfHxruMv'
+                        b'2VG1s2_wdnj_5-kgkI"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
+                        b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
 
 
 def test_credential_parsator():

@@ -51,14 +51,17 @@ def credential(schema,
     vc = dict(
         v=vs,
         d="",
-        s=schema,
         i=issuer,
-        a={},
-        e=source,
     )
 
     if status is not None:
         vc["ri"] = status
+
+    vc |= dict(
+        s=schema,
+        a={},
+        e=source,
+    )
 
     if rules is not None:
         vc["r"] = rules
@@ -144,7 +147,10 @@ class Creder(coring.Sadder):
     @property
     def status(self):
         """ status property getter"""
-        return self._ked["ri"]
+        if "ri" in self._ked:
+            return self._ked["ri"]
+        else:
+            return None
 
 
 class CrederSuber(subing.Suber):

@@ -87,7 +87,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 3
 
-        schema = "EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A"
+        schema = "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -96,7 +96,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
             schema=schema,
             recipient=recp.pre,
             type="GLEIFvLEICredential",
-            credentialData=data, source=[], rules=[]
+            credentialData=data, source={}, rules={}
         )
         b = json.dumps(body).encode("utf-8")
         result = client.simulate_post(path="/credentials/test", body=b)

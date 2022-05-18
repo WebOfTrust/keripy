@@ -41,7 +41,7 @@ def test_wallet(seeder, mockCoringRandomNonce):
                             schema=schema,
                             subject=credSubject,
                             status=issuer.regk)
-        assert creder.said == "ERI5wqoIen5LnXvoSWMPuuy2xBQaKLJc9icDlqwboD0U"
+        assert creder.said == "E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ6cGmVjDngo"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -51,26 +51,26 @@ def test_wallet(seeder, mockCoringRandomNonce):
         sidReg.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"ERI5wqoIen5LnXvoSWMPuuy2xBQaKLJc9i'
-                       b'cDlqwboD0U","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","'
-                       b'i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"Esxx'
-                       b'FocfzQDzMX7FYU0jIbsacY0r3-7Ueve9reGOVakc","i":"ECtWlHS2Wbx5M2Rg6'
-                       b'nm69PCtzwb1veiRNvDpBGF9Z1Pc","dt":"2021-06-27T21:26:21.233257+00'
-                       b':00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"E2c3V7uJMRWNg13J'
-                       b't1wwbwdutqozJF2m-Y3vd-cvIFfQ"}-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6n'
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ'
+                       b'6cGmVjDngo","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","'
+                       b'ri":"E2c3V7uJMRWNg13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ","s":"ExBYRwKd'
+                       b'VGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","a":{"d":"EsxxFocfzQDzMX7F'
+                       b'YU0jIbsacY0r3-7Ueve9reGOVakc","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1v'
+                       b'eiRNvDpBGF9Z1Pc","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
+                       b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6n'
                        b'm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAAECtWlHS2Wbx5M2'
-                       b'Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAbJ3URQNQ12x8mtr3OdhvaVlvloA_'
-                       b'DrExLKjBj-RwWk4WLQZQntIn5hHvcK1Lgs5w8Ba9hXvUPds-PCgS1WHoBQ')
+                       b'Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuTABhuLXGU8PwKoc5G9yH7yu2Uwa'
+                       b'1OL3ln9e9IeorVS6Nyp7qVjADpZDCOCaFd5LNzgg_8CjsSQztJ7Zzjf1Bg')
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"ERI5wqoIen5LnXvoSWMPuuy2xBQaKLJc9icDlqwboD0U",'
-               b'"s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","i":"ECtWlHS2Wbx5M2Rg6nm6'
-               b'9PCtzwb1veiRNvDpBGF9Z1Pc","a":{"d":"EsxxFocfzQDzMX7FYU0jIbsacY0r3-7Ueve9reGO'
-               b'Vakc","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","dt":"2021-06-27T21'
-               b':26:21.233257+00:00","LEI":"254900OPPU84GM83MG36"},"e":{},"ri":"E2c3V7uJMRWN'
-               b'g13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ"}')
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ6cGmVjDngo",'
+               b'"i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","ri":"E2c3V7uJMRWNg13Jt1w'
+               b'wbwdutqozJF2m-Y3vd-cvIFfQ","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI'
+               b'","a":{"d":"EsxxFocfzQDzMX7FYU0jIbsacY0r3-7Ueve9reGOVakc","i":"ECtWlHS2Wbx5M'
+               b'2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","dt":"2021-06-27T21:26:21.233257+00:00","LE'
+               b'I":"254900OPPU84GM83MG36"},"e":{}}')
 
-        sig0 = (b'AAbJ3URQNQ12x8mtr3OdhvaVlvloA_DrExLKjBj-RwWk4WLQZQntIn5hHvcK1Lgs5w8Ba9hXvUPd'
-                b's-PCgS1WHoBQ')
+        sig0 = (b'AAuTABhuLXGU8PwKoc5G9yH7yu2Uwa1OL3ln9e9IeorVS6Nyp7qVjADpZDCOCaFd5LNzgg_8CjsS'
+                b'QztJ7Zzjf1Bg')
 
         parsing.Parser().parse(ims=msg, vry=verifier)
 
