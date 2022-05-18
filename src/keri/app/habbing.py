@@ -1198,7 +1198,6 @@ class Hab:
                              "witness in wits={}.".format(self.pre,
                                                           serder.pre,
                                                          kever.wits))
-        print("I am", self.pre, "wits", kever.wits)
         index = kever.wits.index(self.pre)
 
         reserder = eventing.receipt(pre=ked["i"],

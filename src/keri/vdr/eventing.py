@@ -2079,7 +2079,59 @@ class Tevery:
 
         """
         for (pre, snb, digb) in self.reger.getOotItemIter():
-            pass
+            try:
+                sn = int(snb, 16)
+                dgkey = dgKey(pre, digb)
+                traw = self.reger.getTvt(dgkey)
+                if traw is None:
+                    # no event so raise ValidationError which unescrows below
+                    logger.info("Tevery unescrow error: Missing event at."
+                                "dig = %s\n", bytes(digb))
+
+                    raise ValidationError("Missing escrowed evt at dig = {}."
+                                          "".format(bytes(digb)))
+
+                tserder = Serder(raw=bytes(traw))  # escrowed event
+
+                bigers = None
+                if tibs := self.reger.getTibs(key=dgkey):
+                    bigers = [coring.Siger(qb64b=tib) for tib in tibs]
+
+                couple = self.reger.getAnc(dgkey)
+                if couple is None:
+                    logger.info("Tevery unescrow error: Missing anchor at."
+                                "dig = %s\n", bytes(digb))
+
+                    raise ValidationError("Missing escrowed anchor at dig = {}."
+                                          "".format(bytes(digb)))
+                ancb = bytearray(couple)
+                seqner = coring.Seqner(qb64b=ancb, strip=True)
+                saider = coring.Saider(qb64b=ancb, strip=True)
+
+                self.processEvent(serder=tserder, seqner=seqner, saider=saider, wigers=bigers)
+
+            except OutOfOrderError as ex:
+                # still waiting on missing prior event to validate
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Tevery unescrow failed: %s\n", ex.args[0])
+                else:
+                    logger.error("Tevery unescrow failed: %s\n", ex.args[0])
+
+            except Exception as ex:  # log diagnostics errors etc
+                # error other than out of order so remove from OO escrow
+                self.reger.delOot(snKey(pre, sn))  # removes one escrow at key val
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Tevery unescrowed: %s\n", ex.args[0])
+                else:
+                    logger.error("Tevery unescrowed: %s\n", ex.args[0])
+
+            else:  # unescrow succeeded, remove from escrow
+                # We don't remove all escrows at pre,sn because some might be
+                # duplicitous so we process remaining escrows in spite of found
+                # valid event escrow.
+                self.reger.delOot(snKey(pre, sn))  # removes from escrow
+                logger.info("Tevery unescrow succeeded in valid event: "
+                            "event=\n%s\n", json.dumps(tserder.ked, indent=1))
 
     def processEscrowAnchorless(self):
         """ Process escrow of TEL events received before the anchoring KEL event.

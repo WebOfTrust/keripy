@@ -146,17 +146,17 @@ class DbSeed:
     @staticmethod
     def seedSchema(db):
         raw = (
-            b'{"$id":"EzvqGGnDksl5b92NPbVXhQg56p9Rf2OGeu_RjbEAtv-A",'
-            b'"$schema":"http://json-schema.org/draft-07/schema#","title":"Legal Entity vLEI Credential",'
-            b'"description":"A vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity",'
-            b'"credentialType":"LegalEntityvLEICredential","properties":{"v":{"type":"string"},"d":{"type":"string"},'
-            b'"i":{"type":"string"},"ri":{"description":"credential status registry","type":"string"},'
-            b'"s":{"description":"schema SAID","type":"string"},"a":{"description":"data block","properties":{"d":{'
-            b'"type":"string"},"i":{"type":"string"},"dt":{"description":"issuance date time","format":"date-time",'
-            b'"type":"string"},"LEI":{"type":"string"}},"additionalProperties":false,"required":["i","dt","LEI"],'
-            b'"type":"object"},"e":{"description":"edges block","type":"array","items":{"type":"object"},'
-            b'"minItems":0},"r":{"type":"array","items":{"type":"object"},"description":"rules block","minItems":0}},'
-            b'"additionalProperties":false,"required":["i","ri","s","d","e","r"],"type":"object"}')
+            b'{"$id": "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk", "$schema": '
+            b'"http://json-schema.org/draft-07/schema#", "title": "Legal Entity vLEI Credential", "description": "A '
+            b'vLEI Credential issued by a Qualified vLEI issuer to a Legal Entity", "credentialType": '
+            b'"LegalEntityvLEICredential", "properties": {"v": {"type": "string"}, "d": {"type": "string"}, '
+            b'"i": {"type": "string"}, "ri": {"description": "credential status registry", "type": "string"}, '
+            b'"s": {"description": "schema SAID", "type": "string"}, "a": {"description": "data block", "properties": '
+            b'{"d": {"type": "string"}, "i": {"type": "string"}, "dt": {"description": "issuance date time", '
+            b'"format": "date-time", "type": "string"}, "LEI": {"type": "string"}}, "additionalProperties": false, '
+            b'"required": ["i", "dt", "LEI"], "type": "object"}, "e": {"description": "edges block", '
+            b'"type": "object"}, "r": {"type": "object", "description": "rules block"}}, "additionalProperties": '
+            b'false, "required": ["i", "ri", "s", "d", "e", "r"], "type": "object"}')
 
         schemer = scheming.Schemer(raw=raw)
         db.schema.pin(schemer.said, schemer)

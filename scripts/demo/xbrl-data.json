@@ -1,0 +1,66 @@
+{
+  "d": "EtP3Xrc8uKo59n63sWacse7GAoDge3Dy64ambb65w0sY",
+  "rd": "Ec20NbV0KM3GE-PZdhGLSPLkD9uqdRL0-f3EE-qcRtig",
+  "dt": "2022-05-15T21:52:45.294205+00:00",
+  "a": [
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl8xOTkvZnJhZzo2Nzk3YTMwYzgwMGU0OTVhYmVjY2ExMTE1NGJjY2E5MC90ZXh0cmVnaW9uOjY3OTdhMzBjODAwZTQ5NWFiZWNjYTExMTU0YmNjYTkwXzE3NTkyMTg2MDU5OTE3_a5a64414-cb08-466a-ae35-f8a96345055c",
+      "t": "nonNumeric",
+      "d": "ETKa6kLrowJV6BxgctSApyw5FCQtGHE5F-RubOL9l83E",
+      "v": "The Global Legal Entity Identifier Foundation (GLEIF) was established by the Financial Stability Board (FSB) in June 2014 as a not-for-profit organization to support the implementation and use of the Legal Entity Identifier (LEI). GLEIF enables smarter, less costly and more reliable decisions about who to do business with by supporting the implementation of the LEI and the availability of the Global LEI Index. GLEIF is headquartered in Basel, Switzerland.",
+      "c": "ifrs-full:DescriptionOfNatureOfEntitysOperationsAndPrincipalActivities",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2020-01-01/2021-01-01"
+    },
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl80L2ZyYWc6ODlhMGJlZjQ2ZTNkNGI5YzlkYWEzOGE3NTc4ODg2ZTMvdGFibGU6ZTE4OWNjZTY3YjRmNGY0MmIwYjUyM2U0OTgyNWE2MTQvdGFibGVyYW5nZTplMTg5Y2NlNjdiNGY0ZjQyYjBiNTIzZTQ5ODI1YTYxNF8yLTItMS0xLTA_3aa68ea3-c3e8-4eef-a572-9e945d1b96ad",
+      "t": "nonFraction",
+      "d": "E277sOIOr7_xO7SgJzNmyxtcsC9h1lJhbPT4V88NyFAs",
+      "v": "11987725",
+      "f": "ixt:num-dot-decimal",
+      "c": "ifrs-full:LicenceFeeIncome",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2020-01-01/2021-01-01"
+    },
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl80L2ZyYWc6ODlhMGJlZjQ2ZTNkNGI5YzlkYWEzOGE3NTc4ODg2ZTMvdGFibGU6ZTE4OWNjZTY3YjRmNGY0MmIwYjUyM2U0OTgyNWE2MTQvdGFibGVyYW5nZTplMTg5Y2NlNjdiNGY0ZjQyYjBiNTIzZTQ5ODI1YTYxNF8yLTMtMS0xLTA_da60142d-b6ce-4d7c-991d-449e79a5b39f",
+      "t": "nonFraction",
+      "d": "EJFEhdOG8WQJzy-s4wQFAdkwR33FiqIZgMJgXYccpM9Q",
+      "v": "14516715",
+      "f": "ixt:num-dot-decimal",
+      "c": "ifrs-full:LicenceFeeIncome",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2019-01-01/2020-01-01"
+    },
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl80L2ZyYWc6ODlhMGJlZjQ2ZTNkNGI5YzlkYWEzOGE3NTc4ODg2ZTMvdGFibGU6ZTE4OWNjZTY3YjRmNGY0MmIwYjUyM2U0OTgyNWE2MTQvdGFibGVyYW5nZTplMTg5Y2NlNjdiNGY0ZjQyYjBiNTIzZTQ5ODI1YTYxNF8zLTItMS0xLTA_12d47db7-3889-4487-bcf6-e0f0b866ae5e",
+      "t": "nonFraction",
+      "d": "Ew6wd1Cp2zcRnozBHsOk2ZOraxN_2rOFOuUKS6EtPtIY",
+      "v": "5894056",
+      "f": "ixt:num-dot-decimal",
+      "c": "ifrs-full:WagesAndSalaries",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2020-01-01/2021-01-01"
+    },
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl80L2ZyYWc6ODlhMGJlZjQ2ZTNkNGI5YzlkYWEzOGE3NTc4ODg2ZTMvdGFibGU6ZTE4OWNjZTY3YjRmNGY0MmIwYjUyM2U0OTgyNWE2MTQvdGFibGVyYW5nZTplMTg5Y2NlNjdiNGY0ZjQyYjBiNTIzZTQ5ODI1YTYxNF8zLTMtMS0xLTA_eae14453-388c-4d56-be4e-155fbf88ec76",
+      "t": "nonFraction",
+      "d": "EpYPlSwhg8dbp1i0NU3deyaqRIrFjPCy7sxxT89rivBo",
+      "v": "4616880",
+      "f": "ixt:num-dot-decimal",
+      "c": "ifrs-full:WagesAndSalaries",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2019-01-01/2020-01-01"
+    },
+    {
+      "i": "id3VybDovL2RvY3MudjEvZG9jOmYyYTIzMWVhMzZhYTRlMzliODFmMmQ4OWVhNWRiNTQ2L3NlYzpmMmEyMzFlYTM2YWE0ZTM5YjgxZjJkODllYTVkYjU0Nl80L2ZyYWc6ODlhMGJlZjQ2ZTNkNGI5YzlkYWEzOGE3NTc4ODg2ZTMvdGFibGU6ZTE4OWNjZTY3YjRmNGY0MmIwYjUyM2U0OTgyNWE2MTQvdGFibGVyYW5nZTplMTg5Y2NlNjdiNGY0ZjQyYjBiNTIzZTQ5ODI1YTYxNF80LTItMS0xLTA_eef356a3-6cfd-41fb-abf4-7cb2b9a63bf2",
+      "t": "nonFraction",
+      "d": "Ex4giSbLM7wrsQ2lZ9A6a6M73qOAPLyG7CeNMM6Be0v0",
+      "v": "780217",
+      "f": "ixt:num-dot-decimal",
+      "c": "gleif:SocialContributionsAndExpensesForPensionsAndCare",
+      "e": "e:506700GE1G29325QX363",
+      "p": "2020-01-01/2021-01-01"
+    }
+  ]
+}

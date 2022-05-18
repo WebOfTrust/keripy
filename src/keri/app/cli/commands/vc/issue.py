@@ -20,7 +20,9 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None)
 parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
                     default=None, required=False)
-parser.add_argument('--source', '-e', help='AC/DC Source links',
+parser.add_argument('--edges', '-e', help='AC/DC Edge links',
+                    default=None)
+parser.add_argument('--rules', help='AC/DC Rules Section',
                     default=None)
 parser.add_argument('--recipient', '-R', help='qb64 identifier prefix of the recipient of the credential',
                     default=None)
@@ -37,6 +39,8 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 def issueCredential(args):
     name = args.name
     data = None
+    rules = None
+    edges = None
     credential = None
     if args.data is not None:
         try:
@@ -47,6 +51,25 @@ def issueCredential(args):
                 data = json.loads(args.data)
         except json.JSONDecodeError:
             raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
+
+        if args.edges is not None:
+            try:
+                if args.edges.startswith("@"):
+                    f = open(args.edges[1:], "r")
+                    edges = json.load(f)
+                else:
+                    edges = json.loads(args.edges)
+            except json.JSONDecodeError:
+                raise kering.ConfigurationError("edges supplied must be value JSON to issue in a credential")
+        if args.rules is not None:
+            try:
+                if args.rules.startswith("@"):
+                    f = open(args.rules[1:], "r")
+                    rules = json.load(f)
+                else:
+                    rules = json.loads(args.rules)
+            except json.JSONDecodeError:
+                raise kering.ConfigurationError("rules supplied must be value JSON to issue in a credential")
     elif args.credential is not None:
         try:
             if args.credential.startswith("@"):
@@ -65,9 +88,10 @@ def issueCredential(args):
                                  bran=args.bran,
                                  registryName=args.registry_name,
                                  schema=args.schema,
-                                 source=args.source,
                                  recipient=args.recipient,
                                  data=data,
+                                 edges=edges,
+                                 rules=rules,
                                  credential=credential)
 
     doers = [issueDoer]
@@ -80,8 +104,8 @@ class CredentialIssuer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, alias, base, bran, registryName=None, schema=None, source=None, recipient=None, data=None,
-                 credential=None):
+    def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
+                 rules=None, credential=None):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
@@ -111,8 +135,8 @@ class CredentialIssuer(doing.DoDoer):
                 self.creder = self.credentialer.create(regname=registryName,
                                                        recp=recipient,
                                                        schema=schema,
-                                                       source=source,
-                                                       rules=None,
+                                                       source=edges,
+                                                       rules=rules,
                                                        data=data)
                 print(f"Writing credential {self.creder.said} to credential.json")
                 f = open("./credential.json", mode="w")
