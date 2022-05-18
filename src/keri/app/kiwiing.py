@@ -18,7 +18,7 @@ from hio.help import decking
 from . import grouping, challenging, connecting
 from .. import help
 from .. import kering
-from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating
+from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating, booting
 from ..core import coring, eventing, cueing
 from ..db import dbing
 from ..db.dbing import dgKey
@@ -28,6 +28,51 @@ from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
+
+
+class LockEnd(doing.DoDoer):
+    """
+    ReST API for encrypting keystore
+    """
+
+    def __init__(self, servery, bootConfig):
+        self.servery = servery
+        self.bootConfig = bootConfig
+
+        super(LockEnd, self).__init__(doers=[])
+
+    def on_get(self, _, rep):
+        """ Lock POST endpoint
+
+        Parameters:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary:  Encrypt datastore
+        description:  Encrypts the datastore and reloads the API to the boot version
+        tags:
+           - Lock
+        responses:
+            200:
+              description: Datastore encrypted
+
+
+        """
+        doers = booting.setup(servery=self.servery, controller=self.bootConfig["controller"],
+                              configFile=self.bootConfig["configFile"],
+                              configDir=self.bootConfig["configDir"],
+                              insecure=self.bootConfig["insecure"],
+                              tcp=self.bootConfig["tcp"],
+                              adminHttpPort=self.bootConfig["adminHttpPort"],
+                              path=self.bootConfig["staticPath"],
+                              headDirPath=self.bootConfig["headDirPath"])
+        self.extend(doers)
+
+        rep.status = falcon.HTTP_200
+        body = dict(msg="Agent locked")
+        rep.content_type = "application/json"
+        rep.data = json.dumps(body).encode("utf-8")
 
 
 class IdentifierEnd(doing.DoDoer):
@@ -56,8 +101,8 @@ class IdentifierEnd(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Get list of agent identfiers
-        description:  Get the list of identfiers associated with this agent
+        summary:  Get list of agent identifiers
+        description:  Get the list of identifiers associated with this agent
         tags:
            - Identifiers
         responses:
@@ -413,7 +458,7 @@ class IdentifierEnd(doing.DoDoer):
                         type: string
                    toad:
                      type: integer
-                     description: withness threshold
+                     description: witness threshold
                      default: 1
                    isith:
                      type: string
@@ -2382,7 +2427,7 @@ class OobiResource(doing.DoDoer):
 
 
 class ChallengeEnd:
-    """ Resource for Challange/Response Endpoints """
+    """ Resource for Challenge/Response Endpoints """
 
     def __init__(self, hby, rep):
         """ Initialize Challenge/Response Endpoint
@@ -3105,10 +3150,13 @@ def loadEnds(app, *,
              counselor,
              registrar,
              credentialer,
+             servery,
+             bootConfig,
              notifications=None,
              rxbs=None,
              queries=None,
-             oobiery=None):
+             oobiery=None,
+             **kwargs):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -3137,6 +3185,9 @@ def loadEnds(app, *,
 
     swagsink = http.serving.StaticSink(staticDirPath="./static")
     app.add_sink(swagsink, prefix="/swaggerui")
+
+    lockEnd = LockEnd(servery=servery, bootConfig=bootConfig)
+    app.add_route("/lock", lockEnd)
 
     identifierEnd = IdentifierEnd(hby=hby)
     app.add_route("/ids", identifierEnd)
@@ -3191,23 +3242,24 @@ def loadEnds(app, *,
     app.add_route("/mbx", httpEnd, suffix="mbx")
 
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd]
+                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd, lockEnd]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
     notifications = notifications if notifications is not None else decking.Deck()
     funnel = cueing.Funneler(srcs=[multiIcpEnd.cues, multiEvtEnd.cues, credsEnd.cues], dest=notifications)
 
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, funnel]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, funnel, lockEnd]
 
 
-def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticPath=""):
+def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, tcp=5621, staticPath="", **kwargs):
     """ Setup and run a KIWI agent
 
     Parameters:
         hby (Habery): database environment for identifiers
         rgy (Regery): database environment for credentials
         servery (Servery): HTTP server manager for stopping and restarting HTTP servers
+        bootConfig (dict): original configuration at launch, used to reset during lock
         controller (str): qb64 identifier prefix of the controller of this agent
         insecure (bool): allow unsigned HTTP requests to the admin interface (non-production ONLY)
         tcp (int): TCP port for agent to listen on for incoming direct connections
@@ -3272,9 +3324,10 @@ def setup(hby, rgy, servery, *, controller="", insecure=False, tcp=5621, staticP
 
     notifier = storing.Notifier(controller=controller, mbx=mbx)
     queries = decking.Deck()
+    print("kiwiing load ends", bootConfig)
     endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, mbx=mbx, notifications=notifier.notifs,
                         verifier=verifier, counselor=counselor, registrar=registrar, credentialer=credentialer,
-                        rxbs=mbd.ims, queries=queries)
+                        servery=servery, bootConfig=bootConfig, rxbs=mbd.ims, queries=queries, **kwargs)
 
     servery.msgs.append(dict(app=app))
     doers.extend([rep, counselor, registrar, credentialer, notifier])
@@ -3308,7 +3361,7 @@ def loadEvent(db, preb, dig):
             dwigs.append(dict(index=sig.index, signature=sig.qb64))
     event["witness_signatures"] = dwigs
 
-    # add authorizer (delegator/issure) source seal event couple to attachments
+    # add authorizer (delegator/issuer) source seal event couple to attachments
     couple = db.getAes(dgkey)
     if couple is not None:
         raw = bytearray(couple)

@@ -126,7 +126,7 @@ class BootEnd(doing.DoDoer):
         Parameters:
             servery (Servery): HTTP server manager for stopping and restarting HTTP servers
             base (str): optional directory path segment inserted before name
-                        that allows further hierarchical differentation of databases.
+                        that allows further hierarchical differentiation of databases.
                         "" means optional.
             temp (bool): True for testing:
                 temporary storage of databases and config file
@@ -145,7 +145,11 @@ class BootEnd(doing.DoDoer):
         self.msgs = decking.Deck()
         self.hby = None
         self.rgy = None
-
+        self.bootConfig = dict(
+            configFile=configFile,
+            configDir=configDir,
+            headDirPath=headDirPath
+        ) | kwa
         self._kiwinits = kwa
 
         doers = [doing.doify(self.loadDo)]
@@ -185,7 +189,7 @@ class BootEnd(doing.DoDoer):
     def on_post(self, req, rep):
         """ POST endpoint for creating a new environment (keystore and database)
 
-        Posts creates a new database with aeid encryption key generated from passcode.  Fails
+        Post creates a new database with aeid encryption key generated from passcode.  Fails
         if database already exists.
 
         Args:
@@ -313,7 +317,7 @@ class BootEnd(doing.DoDoer):
         rgyDoer = credentialing.RegeryDoer(rgy=rgy)
         self.extend([hbyDoer, rgyDoer])
 
-        doers = kiwiing.setup(hby=hby, rgy=rgy, servery=self.servery, **self._kiwinits)
+        doers = kiwiing.setup(hby=hby, rgy=rgy, servery=self.servery, bootConfig=self.bootConfig, **self._kiwinits)
         self.extend(doers)
 
         rep.status = falcon.HTTP_200
@@ -322,7 +326,7 @@ class BootEnd(doing.DoDoer):
         rep.data = json.dumps(body).encode("utf-8")
 
 
-def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=5621, adminHttpPort=5623, path="",
+def setup(servery, controller="", configFile=None, configDir=None, insecure=True, tcp=5621, adminHttpPort=5623, path="",
           headDirPath=None):
     """ Set up an agent in bootloader mode """
     app = falcon.App(middleware=falcon.CORSMiddleware(
@@ -332,14 +336,14 @@ def setup(controller="", configFile=None, configDir=None, insecure=True, tcp=562
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
-    servery = Servery(port=adminHttpPort)  # Manager of HTTP server environments
     servery.msgs.append(dict(app=app))
 
     kwargs = dict(
         controller=controller,
         insecure=insecure,
         tcp=tcp,
-        staticPath=path
+        staticPath=path,
+        adminHttpPort=adminHttpPort,
     )
 
     ends = loadEnds(app=app, configFile=configFile, configDir=configDir, path=path, servery=servery,
@@ -356,7 +360,7 @@ def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=Fal
         app (falcon.App): falcon.App to register handlers with:
         servery (Servery): HTTP server manager for stopping and restarting HTTP servers
         base (str): optional directory path segment inserted before name
-            that allows further differentation with a hierarchy. "" means
+            that allows further differentiation with a hierarchy. "" means
             optional.
         temp (bool): assign to .temp
             True then open in temporary directory, clear on close
