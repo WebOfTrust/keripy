@@ -75,7 +75,7 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     if aeid is None:
         hby = habbing.Habery(name=name, base=base, bran=bran)
     else:
-        hby = existing.existingHby(name=name, base=base, bran=bran)
+        hby = existing.setupHby(name=name, base=base, bran=bran)
 
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]

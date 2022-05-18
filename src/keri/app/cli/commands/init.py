@@ -12,6 +12,7 @@ from hio.base import doing
 
 from keri.app import habbing, configing
 from keri.app.cli.common import oobiing
+from keri.app.keeping import Algos
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 
@@ -97,6 +98,8 @@ class InitDoer(doing.DoDoer):
         kwa["bran"] = bran
         kwa["aeid"] = args.aeid
         kwa["seed"] = args.seed
+        if args.salt is None:
+            kwa["algo"] = Algos.randy
 
         cf = None
         if configFile is not None:
