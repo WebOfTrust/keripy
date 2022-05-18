@@ -209,9 +209,11 @@ class BootEnd(doing.DoDoer):
                    name:
                      type: string
                      description: human readable nickname for this agent
+                     example: alice
                    passcode:
                      type: string
                      description: passcode for encrypting and securing this agent
+                     example: RwyY-KleGM-jbe1-cUiSz-p3Ce
         responses:
            200:
               description: JSON object containing status message
@@ -274,9 +276,11 @@ class BootEnd(doing.DoDoer):
                    name:
                      type: string
                      description: human readable nickname for this agent
+                     example: alice
                    passcode:
                      type: string
                      description: passcode for unlocking the agent and decrypting the keystore
+                     example: RwyY-KleGM-jbe1-cUiSz-p3Ce
         responses:
            200:
               description: JSON object containing status message

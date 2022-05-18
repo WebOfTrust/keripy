@@ -35,7 +35,7 @@ def interactGroupIdentifier(args):
     Performs an interaction event on the group identifier specified as an argument.  The identifier prefix of the
     environment represented by the name parameter must be a member of the group identifier.  This command will
     perform an interaction of the local identifier if the sequence number of the local identifier is the same as the
-    group identifier sequence number.  It will wait for all other members of the group to acheive the same sequence
+    group identifier sequence number.  It will wait for all other members of the group to achieve the same sequence
     number (group + 1) and then publish the signed interaction event for the group identifier to all witnesses and
     wait for receipts.
 
@@ -55,7 +55,7 @@ def interactGroupIdentifier(args):
 class GroupMultisigInteract(doing.DoDoer):
     """
     Command line DoDoer to launch the needed coroutines to run launch Multisig interaction.
-       This DoDoer will remove the multisig coroutine and exit when it recieves a message
+       This DoDoer will remove the multisig coroutine and exit when it receives a message
        that the multisig coroutine has successfully completed a cooperative rotation.
 
     """
