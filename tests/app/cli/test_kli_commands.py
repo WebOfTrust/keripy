@@ -3,7 +3,7 @@ import os
 import multicommand
 import pytest
 
-from keri.app import directing
+from keri.app import directing, habbing
 from keri.app.cli import commands
 from keri.app.cli.common import existing
 from keri.core import coring
@@ -17,7 +17,7 @@ def test_standalone_kli_commands(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test") is False
 
     parser = multicommand.create_parser(commands)
-    args = parser.parse_args(["init", "--name", "test", "--nopasscode"])
+    args = parser.parse_args(["init", "--name", "test", "--nopasscode", "--salt", habbing.SALT])
     assert args.handler is not None
     doers = args.handler(args)
 
