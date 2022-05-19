@@ -10,7 +10,7 @@ import falcon
 from falcon import testing
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping
+from keri.app import habbing, storing, kiwiing, grouping, booting
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
@@ -59,6 +59,8 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
                              counselor=counselor,
                              registrar=registrar,
                              credentialer=credentialer,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              app=app, path="/", mbx=None)
 
         client = testing.TestClient(app)
@@ -473,6 +475,8 @@ def test_identifier_ends():
                              app=app, path="/",
                              registrar=registrar,
                              credentialer=credentialer,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              mbx=None, counselor=counselor)
 
         client = testing.TestClient(app)
@@ -656,6 +660,8 @@ def test_oobi_ends(seeder):
                              mbx=None, counselor=None,
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              oobiery=oobiery)
         client = testing.TestClient(app)
 
@@ -760,6 +766,8 @@ def test_challenge_ends(seeder):
                              app=app, path="/",
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              mbx=None, counselor=None)
         client = testing.TestClient(app)
 
@@ -830,6 +838,8 @@ def test_contact_ends(seeder):
                              app=app, path="/",
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              mbx=None, counselor=None)
         client = testing.TestClient(app)
 
@@ -993,8 +1003,10 @@ def test_keystate_end():
                              verifier=None,
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              app=app, path="/",
-                             mbx=None, counselor=counselor)
+                             mbx=None, counselor=counselor,)
         client = testing.TestClient(app)
 
         result = client.simulate_get(path=f"/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
@@ -1022,7 +1034,9 @@ def test_schema_ends():
                              app=app, path="/",
                              registrar=None,
                              credentialer=None,
-                             mbx=None, counselor=None)
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
+                             mbx=None, counselor=None,)
         client = testing.TestClient(app)
 
         sed = dict()
@@ -1078,6 +1092,8 @@ def test_escrow_end(mockHelpingNowUTC):
                              app=app, path="/",
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              mbx=None, counselor=None)
         client = testing.TestClient(app)
 

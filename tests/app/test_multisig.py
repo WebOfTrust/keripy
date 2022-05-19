@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, agenting
+from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, agenting, booting
 from keri.core import coring, eventing, parsing
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -199,6 +199,8 @@ def loadApp(hby, notifs):
                              app=app, path="/",
                              registrar=None,
                              credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
                              mbx=mbx, counselor=counselor)
     doers.extend([repd, counselor, mbx])
     return app, doers

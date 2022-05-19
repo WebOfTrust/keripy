@@ -71,7 +71,9 @@ def launch(args):
     print("\n******* Starting agent listening: http/{}, tcp/{} "
           ".******\n\n".format(args.admin_http_port, args.tcp))
 
-    doers = booting.setup(controller=args.controller, configFile=args.configFile, configDir=args.configDir,
-                          insecure=args.insecure, tcp=int(args.tcp), adminHttpPort=int(args.admin_http_port),
-                          path=args.path)
-    return doers
+    servery = booting.Servery(port=int(args.admin_http_port))  # Manager of HTTP server environments
+
+    doers = booting.setup(servery=servery, controller=args.controller, configFile=args.configFile,
+                          configDir=args.configDir, insecure=args.insecure, tcp=int(args.tcp),
+                          adminHttpPort=int(args.admin_http_port), path=args.path)
+    return doers + [servery]
