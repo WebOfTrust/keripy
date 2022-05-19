@@ -102,28 +102,6 @@ class ExportDoer(doing.DoDoer):
 
     def outputCred(self, said):
         creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
-        if self.files:
-            f = open(f"{creder.said}-acdc.cesr", 'w')
-            f.write(creder.raw.decode("utf-8"))
-            if self.sigs:
-                f.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
-            f.close()
-        else:
-            sys.stdout.write(creder.pretty(size=200000))
-            if self.sigs:
-                print(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
-
-            sys.stdout.flush()
-
-        if self.tels:
-            if creder.status is not None:
-                self.outputTEL(creder.status)
-            self.outputTEL(creder.said)
-
-        if self.kels:
-            issr = creder.issuer
-            self.outputKEL(issr)
-
         if self.chains:
             chains = creder.crd["e"]
             saids = []
@@ -138,6 +116,28 @@ class ExportDoer(doing.DoDoer):
 
             for said in saids:
                 self.outputCred(said)
+
+        if self.kels:
+            issr = creder.issuer
+            self.outputKEL(issr)
+
+        if self.tels:
+            if creder.status is not None:
+                self.outputTEL(creder.status)
+            self.outputTEL(creder.said)
+
+        if self.files:
+            f = open(f"{creder.said}-acdc.cesr", 'w')
+            f.write(creder.raw.decode("utf-8"))
+            if self.sigs:
+                f.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
+            f.close()
+        else:
+            sys.stdout.write(creder.pretty(size=200000))
+            if self.sigs:
+                print(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
+
+            sys.stdout.flush()
 
     def outputTEL(self, regk):
         f = None
