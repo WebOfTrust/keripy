@@ -13,7 +13,7 @@ Project Name:  keripy
 ### Dependencies
 #### Binaries
 
-python 3.9.1+
+python 3.10.4+
 libsodium 1.0.18+
 
 
@@ -45,7 +45,7 @@ $ pip3 install -U cbor2
 ## Development
 
 ### Setup
-* Ensure Python 3.9 is present along with venv and dev header files;
+* Ensure Python 3.10.4 is present along with venv and dev header files;
 * Setup virtual environment: `python3 -m venv keripy`
 * Activate virtual environment: `source keripy/bin/activate`
 * Setup dependencies: `pip install -r requirements.txt`
