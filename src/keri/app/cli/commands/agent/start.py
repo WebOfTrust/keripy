@@ -76,4 +76,4 @@ def launch(args):
     doers = booting.setup(servery=servery, controller=args.controller, configFile=args.configFile,
                           configDir=args.configDir, insecure=args.insecure, tcp=int(args.tcp),
                           adminHttpPort=int(args.admin_http_port), path=args.path)
-    return doers
+    return doers + [servery]

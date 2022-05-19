@@ -12,7 +12,6 @@ import mnemonic
 from falcon import media
 from hio.base import doing
 from hio.core import http
-from hio.core.tcp import serving as tcpServing
 from hio.help import decking
 
 from . import grouping, challenging, connecting
@@ -3252,7 +3251,7 @@ def loadEnds(app, *,
     return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, funnel, lockEnd]
 
 
-def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, tcp=5621, staticPath="", **kwargs):
+def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, staticPath="", **kwargs):
     """ Setup and run a KIWI agent
 
     Parameters:
@@ -3272,9 +3271,6 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, tcp=5
 
     # setup doers
     doers = [habbing.HaberyDoer(habery=hby)]
-
-    tcpServer = tcpServing.Server(host="", port=tcp)
-    tcpServerDoer = tcpServing.ServerDoer(server=tcpServer)
 
     verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
     wallet = walleting.Wallet(reger=verifier.reger, name=hby.name)
@@ -3310,7 +3306,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, tcp=5
                                               "/challenge"],
                                       cues=cues)
     # configure a kevery
-    doers.extend([exchanger, tcpServerDoer, mbd, rep])
+    doers.extend([exchanger, mbd, rep])
 
     # Load admin interface
     rep = storing.Respondant(hby=hby, mbx=mbx)
@@ -3324,7 +3320,6 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, tcp=5
 
     notifier = storing.Notifier(controller=controller, mbx=mbx)
     queries = decking.Deck()
-    print("kiwiing load ends", bootConfig)
     endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, mbx=mbx, notifications=notifier.notifs,
                         verifier=verifier, counselor=counselor, registrar=registrar, credentialer=credentialer,
                         servery=servery, bootConfig=bootConfig, rxbs=mbd.ims, queries=queries, **kwargs)

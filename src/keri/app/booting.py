@@ -349,7 +349,7 @@ def setup(servery, controller="", configFile=None, configDir=None, insecure=True
     ends = loadEnds(app=app, configFile=configFile, configDir=configDir, path=path, servery=servery,
                     headDirPath=headDirPath, **kwargs)
 
-    return ends + [servery]
+    return ends
 
 
 def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=False, headDirPath=None, path, **kwargs):

@@ -18,27 +18,31 @@ def demo(args):
           ".******\n\n")
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5621 -a 5623
-    servery = booting.Servery(port=5623)
-    doers = booting.setup(servery=servery, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng", configFile=args.configFile,
+    servery0 = booting.Servery(port=5623)
+    doers = booting.setup(servery=servery0, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
+                          configFile=args.configFile,
                           configDir="./scripts", insecure=True, tcp=5621, adminHttpPort=5623,
                           path=start.STATIC_DIR_PATH)
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5721 -a 5723
-    servery = booting.Servery(port=5723)
-    doers += booting.setup(servery=servery, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng", configFile=args.configFile,
+    servery1 = booting.Servery(port=5723)
+    doers += booting.setup(servery=servery1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
+                           configFile=args.configFile,
                            configDir="./scripts", insecure=True, tcp=5721, adminHttpPort=5723,
                            path=start.STATIC_DIR_PATH)
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5821 -a 5823
-    servery = booting.Servery(port=5823)
-    doers += booting.setup(servery=servery, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng", configFile=args.configFile,
+    servery2 = booting.Servery(port=5823)
+    doers += booting.setup(servery=servery2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
+                           configFile=args.configFile,
                            configDir="./scripts", insecure=True, tcp=5821, adminHttpPort=5823,
                            path=start.STATIC_DIR_PATH)
 
     # kli agent start --config-dir ./scripts --config-file demo-witness-oobis --insecure --tcp 5921 -a 5923
-    servery = booting.Servery(port=5923)
-    doers += booting.setup(servery=servery, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng", configFile=args.configFile,
+    servery3 = booting.Servery(port=5923)
+    doers += booting.setup(servery=servery3, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
+                           configFile=args.configFile,
                            configDir="./scripts", insecure=True, tcp=5921, adminHttpPort=5923,
                            path=start.STATIC_DIR_PATH)
 
-    return doers
+    return doers + [servery0, servery1, servery2, servery3]
