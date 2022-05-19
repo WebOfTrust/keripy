@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing
+from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting
 from keri.core import scheming, coring, eventing, parsing
 from keri.db import basing
 from keri.vc import proving
@@ -227,7 +227,7 @@ def loadApp(hby, rgy, verifier, notifs):
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
     mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"])
-
+    servery = booting.Servery(port=1234)
     doers = kiwiing.loadEnds(hby=hby,
                              rep=repd,
                              rgy=rgy,
@@ -236,6 +236,8 @@ def loadApp(hby, rgy, verifier, notifs):
                              app=app, path="/",
                              registrar=registrar,
                              credentialer=credentialer,
+                             servery=servery,
+                             bootConfig=dict(),
                              mbx=mbx, counselor=counselor)
     doers.extend([repd, counselor, registrar, credentialer, mbx])
     return app, doers

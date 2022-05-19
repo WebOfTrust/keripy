@@ -31,7 +31,7 @@ logger = help.ogler.getLogger()
 
 class LockEnd(doing.DoDoer):
     """
-    ReST API for encrypting keystore
+    ReST API for locking
     """
 
     def __init__(self, servery, bootConfig):
@@ -48,13 +48,13 @@ class LockEnd(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Encrypt datastore
-        description:  Encrypts the datastore and reloads the API to the boot version
+        summary:  Lock
+        description:  Reloads the API to the boot version
         tags:
            - Lock
         responses:
             200:
-              description: Datastore encrypted
+              description: locked
 
 
         """
@@ -69,7 +69,7 @@ class LockEnd(doing.DoDoer):
         self.extend(doers)
 
         rep.status = falcon.HTTP_200
-        body = dict(msg="Agent locked")
+        body = dict(msg="locked")
         rep.content_type = "application/json"
         rep.data = json.dumps(body).encode("utf-8")
 
