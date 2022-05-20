@@ -89,8 +89,8 @@ class PasscodeEnd:
             rep: falcon.Response HTTP response
 
         ---
-        summary: Generate random 22 digit passcode for use in securing and excrypting keystore
-        description: Generate random 22 digit passcode for use in securing and excrypting keystore
+        summary: Generate random 22 digit passcode for use in securing and encrypting keystore
+        description: Generate random 22 digit passcode for use in securing and encrypting keystore
         tags:
            - Passcode
         responses:
@@ -185,6 +185,55 @@ class BootEnd(doing.DoDoer):
 
         while True:
             yield 10.0
+
+    def on_get_name(self, _, rep, name=None):
+        """ GET endpoint for
+
+        Get keystore status
+
+        Args:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            name: Keystore name
+
+        ---
+        summary: Query KERI environment for keystore name
+        tags:
+           - Boot
+        parameters:
+          - in: path
+            name: name
+            schema:
+              type: string
+            required: true
+            description: predetermined name of keep keystore
+            example: alice
+        responses:
+           200:
+              description: No keystore exists
+           404:
+              description: Keystore exists
+
+        """
+        if name is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid request"
+            return
+
+        ks = keeping.Keeper(name=name,
+                            base=self.base,
+                            temp=False,
+                            reopen=True,
+                            headDirPath=self.headDirPath)
+
+        aeid = ks.gbls.get('aeid')
+        if aeid is None:
+            ks.close()
+            rep.status = falcon.HTTP_404
+            return
+
+        ks.close()
+        rep.status = falcon.HTTP_200
 
     def on_post(self, req, rep):
         """ POST endpoint for creating a new environment (keystore and database)
@@ -386,6 +435,7 @@ def loadEnds(app, servery, *, configFile=None, configDir=None, base="", temp=Fal
     bootEnd = BootEnd(configFile=configFile, configDir=configDir, base=base, temp=temp, servery=servery,
                       headDirPath=headDirPath, **kwargs)
     app.add_route("/boot", bootEnd)
+    app.add_route("/boot/{name}", bootEnd, suffix="name")
 
     resources = [passcodeEnd, bootEnd]
 
