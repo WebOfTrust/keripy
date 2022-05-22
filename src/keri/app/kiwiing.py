@@ -167,8 +167,8 @@ class IdentifierEnd(doing.DoDoer):
             alias: option route parameter for specific identifier to get
 
         ---
-        summary:  Get list of agent identfiers
-        description:  Get identfier information associated with alias
+        summary:  Get list of agent identifiers
+        description:  Get identifier information associated with alias
         tags:
            - Identifiers
         parameters:
