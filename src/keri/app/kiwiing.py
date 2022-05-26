@@ -1535,7 +1535,7 @@ class MultisigInceptEnd(MultisigEndBase):
     """
 
     def __init__(self, hby, counselor, cues=None):
-        """ Create an endpoint resource for creating or participating in multisig group identfiiers
+        """ Create an endpoint resource for creating or participating in multisig group identifiers
 
         Parameters:
             hby (Habery): identifier database environment
@@ -1678,7 +1678,6 @@ class MultisigInceptEnd(MultisigEndBase):
             return
 
         if not ghab.accepted:
-            # Create /multig/incept exn message with icp event and witness oobis as payload events
             evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
         else:
             evt = ghab.makeOwnInception()
@@ -2334,6 +2333,7 @@ class OobiResource(doing.DoDoer):
         if "url" in body:
             oobi = body["url"]
             oobialias = body["oobialias"]
+            # oobialias is alias name for new identifier, alias is local hab that will sign the data
             self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
         elif "rpy" in body:
             pass
@@ -3170,6 +3170,8 @@ def loadEnds(app, *,
         registrar (Registrar): credential registry protocol manager
         counselor (Counselor): group multisig identifier communication manager
         credentialer (Credentialer): credential issuance protocol manager
+        servery (Servery):
+        bootConfig: (dict): original launch configuration of Servery
         notifications (Deck): cue to forward agent notifications to controller
         rxbs (bytearray): output queue of bytes for message processing
         queries (Deck): query cues for HttpEnd to start mailbox stream
@@ -3294,7 +3296,8 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
     grouping.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
-    delegating.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
+    oobiery = ending.Oobiery(hby=hby)
+    delegating.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller, oobiery=oobiery)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()

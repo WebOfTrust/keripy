@@ -21,7 +21,7 @@ logger = help.ogler.getLogger()
 
 class Boatswain(doing.DoDoer):
     """
-    Sends messages to Delegator of an identifier and wait for the anchoring evcent to
+    Sends messages to Delegator of an identifier and wait for the anchoring event to
     be processed to ensure the inception or rotation event has been approved by the delegator.
 
     Removes all Doers and exits as Done once the event has been anchored.
@@ -68,9 +68,11 @@ class Boatswain(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
+                print("got msg", msg)
                 pre = msg["pre"]
 
                 if pre not in self.hby.habs:
+                    print("not in habibi")
                     continue
 
                 # load the hab of the delegated identifier to anchor
@@ -109,7 +111,10 @@ class Boatswain(doing.DoDoer):
 
                 # Send exn message for notification purposes
                 exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked)
+                # exn of /oobis of all multisig participants to rootgar
+                # self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="oobis", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+                print("***** sending to delpre", delpre)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 yield from self.waitForAnchor(phab, hab, dkever, srdr)
@@ -162,7 +167,7 @@ class Boatswain(doing.DoDoer):
         return hab
 
 
-def loadHandlers(hby, exc, mbx, controller):
+def loadHandlers(hby, exc, mbx, controller, oobiery):
     """ Load handlers for the peer-to-peer delegation protocols
 
     Parameters:
@@ -170,10 +175,13 @@ def loadHandlers(hby, exc, mbx, controller):
         exc (Exchanger): Peer-to-peer message router
         mbx (Mailboxer): Database for storing mailbox messages
         controller (str): qb64 identifier prefix of controller
+        oobiery: (Oobiery): OOBI loader
 
     """
-    req = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
-    exc.addHandler(req)
+    delreq = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
+    exc.addHandler(delreq)
+    oobireq = OobiRequestHandler(mbx=mbx, oobiery=oobiery, controller=controller)
+    exc.addHandler(oobireq)
 
 
 class DelegateRequestHandler(doing.DoDoer):
@@ -203,7 +211,7 @@ class DelegateRequestHandler(doing.DoDoer):
     def do(self, tymth, tock=0.0, **opts):
         """
 
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
             payload is dict representing the body of a multisig/incept message
@@ -250,11 +258,15 @@ class DelegateRequestHandler(doing.DoDoer):
                 if self.controller is not None:
                     self.mbx.storeMsg(self.controller+"/delegate", raw)
 
+                # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
+                # multisig group
+
                 yield
             yield
 
 
 def delegateRequestExn(hab, delpre, ked):
+    print("delegateRequestExn")
     data = dict(
         delpre=delpre,
         ked=ked
@@ -262,6 +274,95 @@ def delegateRequestExn(hab, delpre, ked):
 
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
+                              payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims
+
+
+class OobiRequestHandler(doing.DoDoer):
+    """
+    Handler for oobi notification EXN messages
+
+    """
+    resource = "/oobis"
+
+    def __init__(self, mbx, oobiery, controller, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            oobiery (Oobiery) OOBI loader
+            controller (str) qb64 identity prefix of controller
+
+        """
+        self.mbx = mbx
+        self.controller = controller
+        self.oobiery = oobiery
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(OobiRequestHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages processing new contacts via OOBIs
+
+        Parameters:
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                if "alias" not in msg:
+                    logger.error(f"invalid oobi message, missing alias.  evt=: {msg}")
+                    continue
+                alias = msg["alias"]
+
+                if "oobialias" not in msg:
+                    logger.error(f"invalid oobi message, missing oobialias.  evt=: {msg}")
+                    continue
+                oobialias = msg["oobialias"]
+
+                if "oobi" not in msg:
+                    logger.error(f"invalid oobi message, missing oobi.  evt=: {msg}")
+                    continue
+                oobi = msg["oobi"]
+
+                self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
+
+                data = dict(
+                    # src=src,
+                    # r='/request',
+                    # delpre=delpre,
+                    # ked=pay["ked"]
+                )
+                raw = json.dumps(data).encode("utf-8")
+
+                # new verified contact
+                if self.controller is not None:
+                    self.mbx.storeMsg(self.controller+"/delegate", raw)
+
+                yield
+            yield
+
+
+def oobiRequestExn(hab, alias, oobialias, oobi):
+    print("oobiRequestExn")
+    data = dict(
+        alias=alias,
+        oobialias=oobialias,
+        oobi=oobi
+    )
+
+    # Create `exn` peer to peer message to notify other participants UI
+    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
                               payload=data)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]

@@ -60,6 +60,7 @@ class Counselor(doing.DoDoer):
         print(f"Sending multisig event to {len(aids) - 1} other participants")
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
+            # add exn send delegator oobi to others
 
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
@@ -256,7 +257,7 @@ class Counselor(doing.DoDoer):
                 keys = [verfer.qb64 for verfer in kever.verfers]
                 witer = ghab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
 
-                if kever.delegated:  # We are a delegated identfier, must wait for delegator approval
+                if kever.delegated:  # We are a delegated identifier, must wait for delegator approval
                     if witer:  # We are elected to perform delegation and witnessing messaging
                         print("We are the witnesser, sending to delegator")
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
@@ -388,7 +389,7 @@ class MultisigInceptHandler(doing.DoDoer):
     def do(self, tymth, tock=0.0, **opts):
         """
 
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
             payload is dict representing the body of a multisig/incept message
@@ -450,17 +451,22 @@ class MultisigInceptHandler(doing.DoDoer):
             yield
 
 
-def multisigInceptExn(hab, aids, ked):
+def multisigInceptExn(hab, aids, ked, delegator=None):
     data = dict(
         aids=aids,
         ked=ked
     )
+
+    if delegator is not None:
+        data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=MultisigInceptHandler.resource, modifiers=dict(),
                               payload=data)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]
+
+    print(data)
 
     return exn, ims
 

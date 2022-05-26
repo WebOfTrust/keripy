@@ -457,8 +457,8 @@ class Habery:
         """Make new Group Hab with name using pre from hab as local identifier, pre is generated from **kwa
 
         Parameters: (Passthrough to hab.make)
-            group (str): human readable alias for group identfier
-            hab (Hab): Habititat of local identifier to use as participant in group
+            group (str): human readable alias for group identifier
+            hab (Hab): Habitat of local identifier to use as participant in group
             secrecies (list): of list of secrets to preload key pairs if any
             iridx (int): initial rotation index after ingestion of secrecies
             code (str): prefix derivation code
@@ -477,12 +477,12 @@ class Habery:
         aids = list(kwa['aids'])
         del kwa['aids']
         if phab.pre not in aids:
-            raise kering.ConfigurationError("Local identifer must be member of aids ={}"
+            raise kering.ConfigurationError("Local identifier must be member of aids ={}"
                                             .format(aids))
 
         for aid in aids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifer {aid} not recognized from group aids ={aids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={aids}")
 
         mskeys, msdigers = self.extractKeysDigs(aids)
         kwa["mskeys"] = mskeys
