@@ -482,12 +482,12 @@ class MatterCodex:
     StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
     StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
     StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-    Str_L0:               str = '4B'    # String Leader Size 0
-    Str_L1:               str = '5B'    # String Leader Size 1
-    Str_L2:               str = '6B'    # String Leader Size 2
     StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
     StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
     StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
+    Str_L0:               str = '4B'    # String Leader Size 0
+    Str_L1:               str = '5B'    # String Leader Size 1
+    Str_L2:               str = '6B'    # String Leader Size 2
     Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
     Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
     Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
@@ -703,12 +703,12 @@ class Matter:
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
         '5A': Sizage(hs=2, ss=2, fs=None, ls=1),
         '6A': Sizage(hs=2, ss=2, fs=None, ls=2),
-        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
-        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
-        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
         '7AAA': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAA': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAA': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4B': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5B': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6B': Sizage(hs=2, ss=2, fs=None, ls=2),
         '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
