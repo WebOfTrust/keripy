@@ -66,7 +66,7 @@ def test_standalone_kli_commands(helpers, capsys):
         assert hab.kever.sn == 1
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "trans", "--data",
-                              "@"+os.path.join(TEST_DIR, "anchor.json")])
+                              "@" + os.path.join(TEST_DIR, "anchor.json")])
     assert args.handler is not None
     doers = args.handler(args)
 
@@ -84,7 +84,7 @@ def test_standalone_kli_commands(helpers, capsys):
         ]
 
     args = parser.parse_args(["interact", "--name", "test", "--alias", "trans", "--data",
-                              "@"+os.path.join(TEST_DIR, "anchor.json")])
+                              "@" + os.path.join(TEST_DIR, "anchor.json")])
     assert args.handler is not None
     doers = args.handler(args)
 
@@ -101,7 +101,7 @@ def test_standalone_kli_commands(helpers, capsys):
              }
         ]
 
-    rotate_args = ["rotate", "--name", "test", "--alias", "trans",  "--next-count", "3", "--sith", "2"]
+    rotate_args = ["rotate", "--name", "test", "--alias", "trans", "--next-count", "3", "--sith", "2"]
     args = parser.parse_args(rotate_args)
     assert args.handler is not None
     doers = args.handler(args)
@@ -144,7 +144,7 @@ def test_standalone_kli_commands(helpers, capsys):
         assert hab.kever.sn == 0
 
     args = parser.parse_args(["interact", "--name", "test", "--alias", "est-only", "--data",
-                              "@"+os.path.join(TEST_DIR, "anchor.json")])
+                              "@" + os.path.join(TEST_DIR, "anchor.json")])
     assert args.handler is not None
     doers = args.handler(args)
 
@@ -162,7 +162,7 @@ def test_standalone_kli_commands(helpers, capsys):
         assert hab.kever.ilk == coring.Ilks.rot
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "est-only", "--data",
-                              "@"+os.path.join(TEST_DIR, "anchor.json")])
+                              "@" + os.path.join(TEST_DIR, "anchor.json")])
     assert args.handler is not None
     doers = args.handler(args)
     directing.runController(doers=doers)
@@ -223,3 +223,19 @@ def test_standalone_kli_commands(helpers, capsys):
                            '\t2. DT9U0mqDhv_vE_7FU02DQ2a22m0ZWuRPDtI0q1VI0kmA\n'
                            '\t3. DQzBSXe7yYn5xbFKdF4DStB6wiBnxIWgenRTZbKJmNG0\n'
                            '\n')
+
+    args = parser.parse_args(["escrow", "--name", "test"])
+    assert args.handler is not None
+    doers = args.handler(args)
+    directing.runController(doers=doers)
+    capesc = capsys.readouterr()
+    assert capesc.out == ('{\n'
+                          '  "out-of-order-events": [],\n'
+                          '  "partially-witnessed-events": [],\n'
+                          '  "partially-signed-events": [],\n'
+                          '  "likely-duplicitous-events": [],\n'
+                          '  "missing-registry-escrow": [],\n'
+                          '  "missing-issuer-escrow": [],\n'
+                          '  "broken-chain-escrow": [],\n'
+                          '  "missing-schema-escrow": []\n'
+                          '}\n')

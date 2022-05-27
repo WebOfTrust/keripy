@@ -360,14 +360,16 @@ class Verifier:
 
         schema = creder.schema.encode("utf-8")
         issuer = creder.issuer.encode("utf-8")
-        subject = creder.subject["i"].encode("utf-8")
 
         # Look up indicies
         saider = creder.saider
         self.reger.saved.pin(keys=saider.qb64b, val=saider)
         self.reger.issus.add(keys=issuer, val=saider)
-        self.reger.subjs.add(keys=subject, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
+
+        if 'i' in creder.subject:
+            subject = creder.subject["i"].encode("utf-8")
+            self.reger.subjs.add(keys=subject, val=saider)
 
     def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """ Returns query message for querying registry

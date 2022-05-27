@@ -133,9 +133,10 @@ class ExportDoer(doing.DoDoer):
                 f.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
             f.close()
         else:
-            sys.stdout.write(creder.pretty(size=200000))
+            sys.stdout.write(creder.raw.decode("utf-8"))
             if self.sigs:
-                print(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
+                sys.stdout.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode(
+                    "utf-8"))
 
             sys.stdout.flush()
 
@@ -150,8 +151,8 @@ class ExportDoer(doing.DoDoer):
             else:
                 serder = coring.Serder(raw=msg)
                 atc = msg[serder.size:]
-                sys.stdout.write(serder.pretty())
-                print(atc.decode("utf-8"))
+                sys.stdout.write(serder.raw.decode("utf-8"))
+                sys.stdout.write(atc.decode("utf-8"))
 
         if f is not None:
             f.close()
@@ -167,8 +168,8 @@ class ExportDoer(doing.DoDoer):
             else:
                 serder = coring.Serder(raw=msg)
                 atc = msg[serder.size:]
-                sys.stdout.write(serder.pretty())
-                print(atc.decode("utf-8"))
+                sys.stdout.write(serder.raw.decode("utf-8"))
+                sys.stdout.write(atc.decode("utf-8"))
 
         if f is not None:
             f.close()
