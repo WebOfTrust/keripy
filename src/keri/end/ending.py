@@ -656,8 +656,8 @@ class Oobiery(doing.DoDoer):
 
                     else:
                         self.cues.append(dict(kin="failed", oobi=oobi))
-                        print("invalid content type for oobi response"
-                              .format(response.headers["Content-Type"]))
+                        print("invalid content type for oobi response: {}"
+                              .format(response["headers"]["Content-Type"]))
 
                 else:
                     self.clients.append((oobi, client, clientDoer))
