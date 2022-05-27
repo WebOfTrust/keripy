@@ -3672,14 +3672,6 @@ class CounterCodex:
     CombinedMaterialQuadlets: str = '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
     MaterialGroups: str = '-Y'  # Composed Generic Material Group or Primitive
     MaterialQuadlets: str = '-Z'  # Composed Generic Material Quadlet (4 char each)
-    AnchorSealGroups: str = '-a'  # Composed Anchor Seal Material Group
-    ConfigTraits: str = '-c'  # Composed Config Trait Material Group
-    DigestSealQuadlets: str = '-d'  # Composed Digest Seal Quadlet (4 char each)
-    EventSealQuadlets: str = '-e'  # Composed Event Seal Quadlet (4 char each)
-    Keys: str = '-k'  # Composed Key Material Primitive
-    LocationSealQuadlets: str = '-l'  # Composed Location Seal Quadlet (4 char each)
-    RootDigestSealQuadlets: str = '-r'  # Composed Root Digest Seal Quadlet (4 char each)
-    Witnesses: str = '-w'  # Composed Witness Prefix Material Primitive
     BigMessageDataGroups: str = '-0U'  # Composed Message Data Group or Primitive
     BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigMessageDataMaterialQuadlets: str = '-0W'  # Composed Grouped Message Data Quadlet (4 char each)

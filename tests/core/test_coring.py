@@ -1643,6 +1643,8 @@ def test_counter():
         'SealSourceCouples': '-G',
         'TransLastIdxSigGroups': '-H',
         'SealSourceTriples': '-I',
+        'SadPathSig': '-J',
+        'SadPathSigGroup': '-K',
         'PathedMaterialQuadlets': '-L',
         'MessageDataGroups': '-U',
         'AttachedMaterialQuadlets': '-V',
@@ -1650,16 +1652,6 @@ def test_counter():
         'CombinedMaterialQuadlets': '-X',
         'MaterialGroups': '-Y',
         'MaterialQuadlets': '-Z',
-        'AnchorSealGroups': '-a',
-        'ConfigTraits': '-c',
-        'DigestSealQuadlets': '-d',
-        'EventSealQuadlets': '-e',
-        'Keys': '-k',
-        'LocationSealQuadlets': '-l',
-        'RootDigestSealQuadlets': '-r',
-        'SadPathSig': '-J',
-        'SadPathSigGroup': '-K',
-        'Witnesses': '-w',
         'BigMessageDataGroups': '-0U',
         'BigAttachedMaterialQuadlets': '-0V',
         'BigMessageDataMaterialQuadlets': '-0W',
@@ -4320,4 +4312,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_texter()
+    test_counter()
