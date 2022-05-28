@@ -320,6 +320,12 @@ class OobiRequestHandler(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
+                print("oobi handler")
+                if "pre" not in msg:
+                    logger.error(f"invalid delegate request message, missing pre.  evt=: {msg}")
+                    continue
+                prefixer = msg["pre"]
+
                 if "alias" not in msg:
                     logger.error(f"invalid oobi message, missing alias.  evt=: {msg}")
                     continue
@@ -335,19 +341,21 @@ class OobiRequestHandler(doing.DoDoer):
                     continue
                 oobi = msg["oobi"]
 
+                src = prefixer.qb64
                 self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
 
                 data = dict(
-                    # src=src,
-                    # r='/request',
-                    # delpre=delpre,
-                    # ked=pay["ked"]
+                    src=src,
+                    r='/oobi',
+                    alias=alias,
+                    oobialias=oobialias,
+                    oobi=oobi
                 )
                 raw = json.dumps(data).encode("utf-8")
 
                 # new verified contact
                 if self.controller is not None:
-                    self.mbx.storeMsg(self.controller+"/delegate", raw)
+                    self.mbx.storeMsg(self.controller+"/oobi", raw)
 
                 yield
             yield
