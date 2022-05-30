@@ -45,7 +45,7 @@ parser.add_argument("--config-dir",
 
 parser.add_argument('-c', '--controller',
                     action='store',
-                    default=None,
+                    default="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                     help="Identifier prefix to accept control messages from.")
 parser.add_argument("-I", '--insecure',
                     action='store_true',
@@ -72,7 +72,6 @@ def launch(args):
           ".******\n\n".format(args.admin_http_port, args.tcp))
 
     servery = booting.Servery(port=int(args.admin_http_port))  # Manager of HTTP server environments
-
     doers = booting.setup(servery=servery, controller=args.controller, configFile=args.configFile,
                           configDir=args.configDir, insecure=args.insecure, tcp=int(args.tcp),
                           adminHttpPort=int(args.admin_http_port), path=args.path)

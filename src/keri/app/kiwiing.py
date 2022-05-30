@@ -948,7 +948,7 @@ class CredentialEnd(doing.DoDoer):
                   properties:
                     registry:
                       type: string
-                      description: AID of credential issuance/revocation registry (aka status)
+                      description: Alias of credential issuance/revocation registry (aka status)
                     recipient:
                       type: string
                       description: AID of credential issuance/revocation recipient
@@ -977,7 +977,6 @@ class CredentialEnd(doing.DoDoer):
                         description: Credential
                         type: object
 
-
         """
         body = req.get_media()
         hab = self.hby.habByName(alias)
@@ -994,8 +993,10 @@ class CredentialEnd(doing.DoDoer):
         rules = body.get("rules")
         data = body.get("credentialData")
 
+        _, edges = coring.Saider.saidify(sad=source)
+
         try:
-            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
             self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
