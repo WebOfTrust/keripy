@@ -919,6 +919,97 @@ class CredentialEnd(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
 
+    def on_get_export(self, _, rep, alias, said):
+        """ Credentials GET endpoint
+
+        Parameters:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name of identifier to load credentials for
+            said (str): SAID of credential to export
+
+        ---
+        summary:  Export credential and all supporting cryptographic material
+        description: Export credential and all supporting cryptographic material
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: alias
+             schema:
+               type: string
+             required: true
+             description: Human readable alias for the identifier to create
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: SAID of credential to export
+        responses:
+           200:
+              description: Credential export.
+              content:
+                  application/json+cesr:
+                    schema:
+                        description: Credential
+                        type: object
+
+        """
+        hab = self.hby.habByName(name=alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for credentials".format(alias)
+            return
+
+        data = self.outputCred(hab, said)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json+cesr"
+        rep.data = bytes(data)
+
+    def outputCred(self, hab, said):
+        out = bytearray()
+        creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
+        chains = creder.crd["e"]
+        saids = []
+        for key, source in chains.items():
+            if key == 'd':
+                continue
+
+            if not isinstance(source, dict):
+                continue
+
+            saids.append(source['n'])
+
+        for said in saids:
+            out.extend(self.outputCred(hab, said))
+
+        issr = creder.issuer
+        for msg in self.hby.db.clonePreIter(pre=issr):
+            serder = coring.Serder(raw=msg)
+            atc = msg[serder.size:]
+            out.extend(serder.raw)
+            out.extend(atc)
+
+        if creder.status is not None:
+            for msg in self.rgy.reger.clonePreIter(pre=creder.status):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+            for msg in self.rgy.reger.clonePreIter(pre=creder.said):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+        out.extend(creder.raw)
+        out.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True))
+
+        return out
+
     def on_post(self, req, rep, alias):
         """ Initiate a credential issuance
 
@@ -1007,7 +1098,7 @@ class CredentialEnd(doing.DoDoer):
         self.evts.append(dict(topic="/credential", r="/iss/complete", d=creder.said))
 
         rep.status = falcon.HTTP_200
-        rep.data = creder.pretty().encode("utf-8")
+        rep.data = creder.raw
 
     def on_post_iss(self, req, rep, alias=None):
         """ Initiate a credential issuance from a group multisig identfier
@@ -3214,6 +3305,7 @@ def loadEnds(app, *,
 
     credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier, registrar=registrar, credentialer=credentialer)
     app.add_route("/credentials/{alias}", credsEnd)
+    app.add_route("/credentials/{alias}/{said}", credsEnd, suffix="export")
     app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
 

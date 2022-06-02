@@ -21,8 +21,10 @@ parser.set_defaults(handler=lambda args: resolve(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=False,
+                    default=None)
 parser.add_argument("--oobi", "-o", help="out-of-band introduciton to load", required=True)
-parser.add_argument("--oobi-alias", dest="alias", help="alias for AID resolved from out-of-band introduciton",
+parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolved from out-of-band introduciton",
                     required=True)
 
 # Parameters for Manager access
@@ -43,8 +45,9 @@ def resolve(args):
     bran = args.bran
     oobi = args.oobi
     alias = args.alias
+    oobiAlias = args.oobiAlias
 
-    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, alias=alias)
+    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, alias=alias, oobiAlias=oobiAlias)
 
     doers = [icpDoer]
     return doers
@@ -53,7 +56,7 @@ def resolve(args):
 class OobiDoer(doing.DoDoer):
     """ DoDoer for loading oobis and waiting for the results """
 
-    def __init__(self, name, oobi, alias, bran=None, base=None):
+    def __init__(self, name, oobi, alias, oobiAlias, bran=None, base=None):
 
         self.processed = 0
 
@@ -61,7 +64,7 @@ class OobiDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
         self.obl = oobiing.OobiLoader(hby=self.hby)
-        self.obl.queue([dict(alias=alias, url=oobi)])
+        self.obl.queue([dict(alias=alias, oobialias=oobiAlias, url=oobi)])
 
         doers = [self.hbyDoer, self.obl, doing.doify(self.waitDo)]
 

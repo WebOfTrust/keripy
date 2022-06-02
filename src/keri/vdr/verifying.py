@@ -177,6 +177,7 @@ class Verifier:
                                                                            [siger.qb64 for siger in sigers],
                                                                            creder.crd))
         if not rooted:
+            print("Missing root signature for ", vcid)
             raise kering.MissingSignatureError("No root signature on credential with paths {}"
                                                " for evt = {}.".format([pather.text for (pather, _, _, _, _)
                                                                        in sadsigers],
@@ -187,7 +188,7 @@ class Verifier:
         elif isinstance(prov, dict):
             edges = [prov]
         else:
-            print(f"invalid type for edges: {prov}")
+            print(f"Invalid type for edges: {prov}")
             raise kering.ValidationError(f"invalid type for edges: {prov}")
 
         for edge in edges:
