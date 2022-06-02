@@ -25,6 +25,7 @@ from ..end import ending
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
+from ..app.cli.common import oobiing
 
 logger = help.ogler.getLogger()
 
@@ -404,6 +405,7 @@ class IdentifierEnd(doing.DoDoer):
             kwa["delpre"] = body["delpre"]
 
         hab = self.hby.makeHab(name=alias, **kwa)
+        self.extend([oobiing.OobiLoader(hby=self.hby, auto=True)])
         self.cues.append(dict(pre=hab.pre))
 
         icp = hab.makeOwnInception()

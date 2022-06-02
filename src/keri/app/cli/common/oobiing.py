@@ -82,6 +82,8 @@ class OobiLoader(doing.DoDoer):
                     print(oobi, "failed")
                     self.oobis.remove(oobi)
 
+                self.db.oobis.rem(keys=(oobi, ))
+
                 yield 0.25
 
             yield self.tock

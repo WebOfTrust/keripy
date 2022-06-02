@@ -360,7 +360,7 @@ class BootEnd(doing.DoDoer):
 
         ks.close()
 
-        hby = habbing.Habery(name=name, base=self.base, bran=bran, headDirPath=self.headDirPath)
+        hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=self.hby.cf)
         hbyDoer = habbing.HaberyDoer(habery=hby)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         rgyDoer = credentialing.RegeryDoer(rgy=rgy)

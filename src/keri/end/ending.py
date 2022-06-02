@@ -600,7 +600,13 @@ class Oobiery(doing.DoDoer):
                         self.request(url, purl, obr)
 
                     elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
-                        print("well known")
+                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
+                        obr.cid = purl.path.lstrip("/.well-known/keri/oobi")
+
+                        if "alias" in oobi and "oobialias" in oobi:
+                            obr.alias = oobi["alias"]
+                            obr.oobialias = oobi["oobialias"]
+                        self.request(url, purl, obr)
 
                 except ValueError as ex:
                     print("error requesting invalid OOBI URL {}", oobi)

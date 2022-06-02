@@ -896,7 +896,8 @@ class Hab:
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
-        self.reconfigure()  # should we do this for new Habs not loaded from db
+        if not self.phab:
+            self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
 
@@ -910,6 +911,9 @@ class Hab:
           dt: "isodatetime",
           curls: ["tcp://localhost:5620/"],
           iurls: ["tcp://localhost:5621/?name=eve"],
+          nurls: {
+              {"alias": "GLEIF Root", "oobi":  "http://localhost:3000/root"}
+          }
         }
 
         Config file is meant to be read only at init not changed by app at
@@ -936,6 +940,11 @@ class Hab:
                                                    scheme=scheme,
                                                    stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
+
+            if "nurls" in conf:
+                for oobi in conf["nurls"]:
+                    obr = basing.OobiRecord(date=help.toIso8601(dt), oobialias=oobi["alias"], alias=self.name)
+                    self.db.oobis.put(keys=(oobi["oobi"],), val=obr)
 
     def recreate(self, serder, opre, verfers):
         """ Recreate the Hab with new identifier prefix.

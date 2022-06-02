@@ -15,8 +15,6 @@ sleep 2
 echo "Create identifiers"
 curl -s -X POST "http://localhost:5522/ids/rootgar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
 curl -s -X POST "http://localhost:5523/ids/rootgar2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
-curl -s -X POST "http://localhost:5623/ids/extgar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
-curl -s -X POST "http://localhost:5723/ids/extgar2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
 
 # rootgar1
 # EH3L9seOV-2X1zomF3NZ_U4RTj-M6mQI0Ffav3mAz4Ng
@@ -47,6 +45,9 @@ echo "Root GAR Multisig group inception"
 curl -s -X PUT 'http://localhost:5522/groups/rootgars/icp' -H 'Accept: */*' -H 'Content-Type: application/json' -d '{"aids":["EH3L9seOV-2X1zomF3NZ_U4RTj-M6mQI0Ffav3mAz4Ng","Eoap8SUfoW5oFw6QnSkNHZPRaNChJ5xy3SuR2r0dLgFs"],"isith":"1/2,1/2","nsith":"1/2,1/2","toad":3,"wits":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw","Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]}' | jq
 curl -s -X PUT 'http://localhost:5523/groups/rootgars/icp' -H 'Accept: */*' -H 'Content-Type: application/json' -d '{"aids":["EH3L9seOV-2X1zomF3NZ_U4RTj-M6mQI0Ffav3mAz4Ng","Eoap8SUfoW5oFw6QnSkNHZPRaNChJ5xy3SuR2r0dLgFs"],"isith":["1/2","1/2"],"nsith":["1/2","1/2"],"toad":3,"wits":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw","Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]}' | jq
 #
+sleep 2
+curl -s -X POST "http://localhost:5623/ids/extgar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
+curl -s -X POST "http://localhost:5723/ids/extgar2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\",\"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"]}" | jq
 sleep 2
 echo "Ext GAR OOBIs"
 curl -s -X POST "http://localhost:5623/oobi/extgar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"extgar2\", \"url\":\"http://127.0.0.1:5642/oobi/ETdcy4NvU6RMhH8KtFNYFtNGwvyIu83mGZHSsZvrHu9s/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
