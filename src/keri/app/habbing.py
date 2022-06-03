@@ -413,7 +413,6 @@ class Habery:
                                                 f"{pre} name={name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
-            hab.reconfigure()
             hab.inited = True
             self.habs[hab.pre] = hab
             if habord.pid:

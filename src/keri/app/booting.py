@@ -360,7 +360,15 @@ class BootEnd(doing.DoDoer):
 
         ks.close()
 
-        hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=self.hby.cf)
+        if self.configFile is not None:
+            cf = configing.Configer(name=self.configFile,
+                                    base=self.base,
+                                    headDirPath=self.configDir,
+                                    temp=self.temp,
+                                    reopen=True,
+                                    clear=False)
+
+        hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=cf)
         hbyDoer = habbing.HaberyDoer(habery=hby)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         rgyDoer = credentialing.RegeryDoer(rgy=rgy)
