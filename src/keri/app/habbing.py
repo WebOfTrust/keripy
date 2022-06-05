@@ -1237,10 +1237,11 @@ class Hab:
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign
-            if not self.phab:
-                kever = self.kever
-            else:  # group so use gid kever
-                kever = self.phab.kever
+            kever = self.kever
+            # if not self.phab:
+            #     kever = self.kever
+            # else:  # group so use gid kever
+            #     kever = self.phab.kever
 
             if last:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)

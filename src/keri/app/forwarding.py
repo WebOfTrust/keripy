@@ -6,7 +6,6 @@ keri.app.forwarding module
 module for enveloping and forwarding KERI message
 """
 
-import random
 
 from hio.base import doing
 from hio.help import decking
@@ -277,4 +276,3 @@ def introduce(hab, wit):
         msgs.extend(hab.replyEndRole(cid=hab.pre, role=kering.Roles.witness))
 
     return msgs
-

@@ -927,12 +927,7 @@ class Parser:
 
                         pims = ims[:pags]  # copy out substream pipeline group
                         del ims[:pags]  # strip off from ims
-
-                        path = yield from self._extractor(pims,
-                                                          klas=Pather,
-                                                          cold=cold,
-                                                          abort=pipelined)
-                        pathed.append((path, pims))
+                        pathed.append(pims)
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"

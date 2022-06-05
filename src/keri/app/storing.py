@@ -196,6 +196,11 @@ class Respondant(doing.DoDoer):
                 recpkev = self.hby.kevers[recipient]
 
                 senderHab = self.hby.habs[sender]
+                if senderHab.phab:
+                    forwardHab = senderHab.phab
+                else:
+                    forwardHab = senderHab
+
                 if len(recpkev.wits) == 0:
                     msg = senderHab.endorse(exn, last=True)
                     self.mbx.storeMsg(topic=recipient, msg=msg)
@@ -212,7 +217,7 @@ class Respondant(doing.DoDoer):
                     # create and sign the forward exn that will contain the exn
                     fwd = exchanging.exchange(route='/fwd',
                                               modifiers=dict(pre=recipient, topic=topic), payload=exn.ked)
-                    ims = senderHab.endorse(serder=fwd, last=True, pipelined=False)
+                    ims = forwardHab.endorse(serder=fwd, last=True, pipelined=False)
 
                     # Attach pathed exn signature to end of message
                     atc = bytearray()

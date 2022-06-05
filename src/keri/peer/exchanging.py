@@ -3,7 +3,6 @@
 keri.peer.exchanging module
 
 """
-import json
 import logging
 from datetime import timedelta
 
@@ -74,21 +73,13 @@ class Exchanger(doing.DoDoer):
         """
         route = serder.ked["r"]
         payload = serder.ked["a"]
-        dts = serder.ked["dt"]
+        # dts = serder.ked["dt"]
         modifiers = serder.ked["q"] if 'q' in serder.ked else dict()
+        pathed = kwargs["pathed"] if "pathed" in kwargs else []
 
         if route not in self.routes:
             raise AttributeError("unregistered route {} for exchange message = {}"
                                  "".format(route, serder.pretty()))
-
-        a = coring.Pather(path=["a"])
-        attachments = []
-        if "pathed" in kwargs:
-            pathed = kwargs["pathed"]
-            for (pather, pattach) in pathed:
-                if pather.startswith(a):
-                    np = pather.strip(a)
-                    attachments.append((np, pattach))
 
         behavior = self.routes[route]
 
@@ -97,24 +88,17 @@ class Exchanger(doing.DoDoer):
                              "".format(payload, source.qb64))
 
         # delta = behavior.delta if behavior.delta is not None else self.delta
-        delta = self.delta
-        msgDt = helping.fromIso8601(dts)
-        now = helping.nowUTC()
+        # delta = self.delta
+        # msgDt = helping.fromIso8601(dts)
+        # now = helping.nowUTC()
 
-        if now - msgDt > delta:
-            raise ValidationError("message received outside time window with delta {} message={}"
-                                  "".format(delta, serder.pretty()))
-
-        msg = dict(
-            payload=payload,
-            modifiers=modifiers,
-            pre=source,
-            attachments=attachments,
-        )
+        # if now - msgDt > delta:
+        #     raise ValidationError("message received outside time window with delta {} message={}"
+        #                           "".format(delta, serder.pretty()))
 
         if source is not None and sigers is not None:
             if source.qb64 not in self.hby.kevers:
-                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers):
+                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers, pathed=pathed):
                     self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError(f"Unable to find sender {source.qb64} in kevers"
                                             f" for evt = {serder.ked}.")
@@ -125,8 +109,8 @@ class Exchanger(doing.DoDoer):
             #  Verify provided sigers using verfers
             ssigers, indices = eventing.verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
             if not tholder.satisfy(indices):  # at least one but not enough
-                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers):
-                    print(f"sig querying for {source.qb64}")
+                psigers = self.hby.db.esigs.get(keys=(serder.said,))
+                if self.escrowPSEvent(serder=serder, source=source, sigers=sigers, pathed=pathed):
                     self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                             " for evt = {}.".format(tholder.sith,
@@ -138,6 +122,21 @@ class Exchanger(doing.DoDoer):
                     raise MissingSignatureError("Failure satisfying exn on cigs for {}"
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
+
+        a = coring.Pather(path=["a"])
+        attachments = []
+        for pattach in pathed:
+            pather = coring.Pather(qb64b=pattach, strip=True)
+            if pather.startswith(a):
+                np = pather.strip(a)
+                attachments.append((np, pattach))
+
+        msg = dict(
+            payload=payload,
+            modifiers=modifiers,
+            pre=source,
+            attachments=attachments,
+        )
 
         behavior.msgs.append(msg)
 
@@ -161,28 +160,32 @@ class Exchanger(doing.DoDoer):
         """
         self.processEscrowPartialSigned()
 
-    def escrowPSEvent(self, serder, source, sigers):
+    def escrowPSEvent(self, serder, source, sigers, pathed):
         """ Escrow event that does not have enough signatures.
 
         Parameters:
             serder (Serder): instance of event
             source (Prefixer): of the origin of the exn
             sigers (list): of Siger instances of indexed controller sigs
+            pathed (list): list of bytes of attached paths
+
         """
-        dig = serder.saidb
-        self.hby.db.esigs.put(keys=dig, vals=sigers)
-        self.hby.db.esrc.put(keys=dig, val=source)
-        return self.hby.db.epse.put(keys=dig, val=serder)
+        dig = serder.said
+        for siger in sigers:
+            self.hby.db.esigs.add(keys=(dig,), val=siger)
+        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        self.hby.db.esrc.put(keys=(dig,), val=source)
+        return self.hby.db.epse.put(keys=(dig,), val=serder)
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages """
         for (dig,), serder in self.hby.db.epse.getItemIter():
-            sigers = self.hby.db.esigs.get(keys=dig)
-            source = self.hby.db.esrc.get(keys=dig)
+            sigers = self.hby.db.esigs.get(keys=(dig,))
+            source = self.hby.db.esrc.get(keys=(dig,))
+            pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
 
             try:
-
-                self.processEvent(serder=serder, source=source, sigers=sigers)
+                self.processEvent(serder=serder, source=source, sigers=sigers, pathed=pathed)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -225,7 +228,6 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version, 
     ked = dict(v=vs,
                t=ilk,
                d="",
-               dt=dt,
                r=route,
                q=modifiers,
                a=payload

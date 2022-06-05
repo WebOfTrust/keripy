@@ -49,8 +49,7 @@ KeriMimes = Mimage(json='application/keri+json',
 
 
 # Signature HTTP header support
-Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
-                     defaults=(None, None, None, None, None))
+Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind")
 
 OOBI_URL_TEMPLATE = "/oobi/{cid}/{role}"
 OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z', re.IGNORECASE)

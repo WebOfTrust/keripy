@@ -7,7 +7,7 @@ simple indirect mode demo support classes
 """
 import falcon
 import time
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 from hio.core import http
@@ -781,6 +781,7 @@ class Poller(doing.DoDoer):
             witrec = basing.TopicsRecord(topics=dict())
 
         while self.retry > 0:
+            self.retry = 0
             client, clientDoer = agenting.httpClient(self.hab, self.witness)
             self.extend([clientDoer])
 
@@ -1037,7 +1038,7 @@ class HttpEnd:
 
 class MailboxIterable:
 
-    TimeoutMBX = 300
+    TimeoutMBX = 30000000
 
     def __init__(self, mbx, pre, topics, retry=5000):
         self.mbx = mbx

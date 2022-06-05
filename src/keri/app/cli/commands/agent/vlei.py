@@ -22,7 +22,7 @@ def vlei(args):
           "    QARs:      5626, 5627\n"   
           "    LARs:      5628, 5629\n"   
           "    Person:    5630\n\n"
-          ".******\n")
+          "*******\n")
 
     # RootGAR1
     rootGAR1 = booting.Servery(port=5620)

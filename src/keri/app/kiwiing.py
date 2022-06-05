@@ -22,6 +22,7 @@ from ..core import coring, eventing, cueing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
+from ..help import helping
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
@@ -2634,7 +2635,8 @@ class ChallengeEnd:
         words = body["words"]
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        dt = "2022-05-19T20:20:00.751126+00:00"
+        exn = exchanging.exchange(route="/challenge/response", payload=payload, date=dt)
         self.rep.reps.append(dict(src=hab.pre, dest=recpt, rep=exn, topic="challenge"))
 
         rep.status = falcon.HTTP_202
