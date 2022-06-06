@@ -2295,7 +2295,7 @@ class OobiResource(doing.DoDoer):
         super(OobiResource, self).__init__(doers=doers)
 
     def on_get_alias(self, req, rep, alias=None):
-        """ Identifier GET endpoint
+        """ OOBI GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request

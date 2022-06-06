@@ -10,7 +10,7 @@ import os
 import re
 import sys
 
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
 from urllib import parse
@@ -54,6 +54,8 @@ Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind")
 OOBI_URL_TEMPLATE = "/oobi/{cid}/{role}"
 OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z', re.IGNORECASE)
 DOOBI_RE = re.compile('\\A/oobi/(?P<said>[^/]+)\\Z', re.IGNORECASE)
+
+OOBI_AID_HEADER = "KERI-AID"
 
 
 def signature(signages):
@@ -439,6 +441,7 @@ class OOBIEnd:
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status
+            rep.set_header(OOBI_AID_HEADER, aid)
             rep.content_type = "application/json+cesr"
             rep.data = msgs
         else:
@@ -550,9 +553,11 @@ class Oobiery(doing.DoDoer):
 
         self.oobis = oobis if oobis is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.retries = decking.Deck()
         self.clients = decking.Deck()
 
-        super(Oobiery, self).__init__(doers=[doing.doify(self.scoobiDo), doing.doify(self.clientsDo)])
+        super(Oobiery, self).__init__(doers=[doing.doify(self.scoobiDo), doing.doify(self.clientsDo),
+                                             doing.doify(self.retryDo)])
 
     def scoobiDo(self, tymth, tock=0.0):
         """ Scooby-Dooby-Doo!
@@ -580,7 +585,7 @@ class Oobiery(doing.DoDoer):
                         print("blinded")
 
                     elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.hby.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
 
                         obr.cid = match.group("cid")
                         obr.eid = match.group("eid")
@@ -592,7 +597,7 @@ class Oobiery(doing.DoDoer):
                         self.request(url, purl, obr)
 
                     elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.hby.db.oobis.get(oobi) or basing.OobiRecord(date=nowIso8601())
+                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
 
                         obr.said = match.group("said")
 
@@ -600,7 +605,6 @@ class Oobiery(doing.DoDoer):
 
                     elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
                         obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
-                        obr.cid = purl.path.lstrip("/.well-known/keri/oobi")
 
                         if "alias" in oobi and "oobialias" in oobi:
                             obr.alias = oobi["alias"]
@@ -634,6 +638,13 @@ class Oobiery(doing.DoDoer):
                     response = client.responses.popleft()
                     self.remove([clientDoer])
 
+                    if response["status"] == 404:
+                        print(f"{oobi} not found")
+                        obr = self.hby.db.oobis.get(oobi)
+                        retry = dict(url=oobi, alias=obr.alias, oobialias=obr.oobialias)
+                        self.retries.append(retry)
+                        continue
+
                     if not response["status"] == 200:
                         self.cues.append(dict(kin="failed", oobi=oobi))
                         print("invalid status for oobi response: {}".format(response["status"]))
@@ -643,7 +654,10 @@ class Oobiery(doing.DoDoer):
                         self.parser.parse(ims=bytearray(response["body"]))
                         self.cues.append(dict(kin="resolved", oobi=oobi))
                         obr = self.hby.db.oobis.get(oobi)
-                        if obr.alias is not None and obr.oobialias is not None:
+                        if "Keri-Aid" in response["headers"]:
+                            obr.cid = response["headers"]["Keri-Aid"]
+                            print(f"we have an aid {obr.cid}")
+                        if obr.alias is not None and obr.oobialias is not None and obr.cid:
                             self.org.replace(alias=obr.alias, pre=obr.cid, data=dict(alias=obr.oobialias))
 
                     elif response["headers"]["Content-Type"] == "application/schema+json":
@@ -670,6 +684,29 @@ class Oobiery(doing.DoDoer):
                 yield self.tock
 
             yield self.tock
+
+    def retryDo(self, tymth, tock=0.0):
+        """ Process Client responses by parsing the messages and removing the client/doer
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        retryDelay = 10.0
+        while True:
+            while self.retries:
+                retry = self.retries.popleft()
+                self.oobis.append(retry)
+
+                yield retryDelay
+
+            yield retryDelay
 
     def request(self, url, purl, obr):
         self.hby.db.oobis.pin(keys=(url,), val=obr)
