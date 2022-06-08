@@ -88,7 +88,9 @@ class Boatswain(doing.DoDoer):
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
+                if hab.phab:
+                    phab = hab.phab
+                elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:
                         witDoer = agenting.WitnessReceiptor(hby=self.hby)
@@ -110,11 +112,10 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.aids)
                 # exn of /oobis of all multisig participants to rootgar
                 # self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="oobis", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
-                print("***** sending to delpre", delpre)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 yield from self.waitForAnchor(phab, hab, dkever, srdr)
@@ -253,6 +254,9 @@ class DelegateRequestHandler(doing.DoDoer):
                     delpre=delpre,
                     ked=pay["ked"]
                 )
+                if "aids" in pay:
+                    data["aids"] = pay["aids"]
+
                 raw = json.dumps(data).encode("utf-8")
 
                 if self.controller is not None:
@@ -265,12 +269,14 @@ class DelegateRequestHandler(doing.DoDoer):
             yield
 
 
-def delegateRequestExn(hab, delpre, ked):
-    print("delegateRequestExn")
+def delegateRequestExn(hab, delpre, ked, aids=None):
     data = dict(
         delpre=delpre,
         ked=ked
     )
+
+    if aids is not None:
+        data["aids"] = aids
 
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),

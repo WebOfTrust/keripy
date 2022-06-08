@@ -481,7 +481,7 @@ class HttpWitnesser(doing.DoDoer):
         _ = (yield self.tock)
 
         while True:
-            while not self.client.responses:
+            while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
                 yield

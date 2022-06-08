@@ -267,14 +267,6 @@ class Counselor(doing.DoDoer):
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         self.witq.query(src=ghab.phab.pre, pre=kever.delegator, anchor=anchor)
 
-                    # Move to escrow waiting for delegator approval
-                    if witer:
-                        # Send exn message for notification purposes
-                        srdr = coring.Serder(raw=bytes(sraw))
-                        exn, atc = delegating.delegateRequestExn(ghab.phab, delpre=kever.delegator, ked=srdr.ked)
-                        self.postman.send(src=ghab.phab.pre, dest=kever.delegator, topic="delegate", serder=exn,
-                                          attachment=atc)
-
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
                 else:  # Non-delegation, move on to witnessing

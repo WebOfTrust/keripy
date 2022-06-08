@@ -2439,6 +2439,74 @@ class OobiResource(doing.DoDoer):
 
         rep.status = falcon.HTTP_202
 
+    def on_post_share(self, req, rep, alias):
+        """ Resolve OOBI endpoint.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of the local identifier context for resolving this OOBI
+
+        ---
+        summary: Resolve OOBI and assign an alias for the remote identifier
+        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
+                     data for resolved identifier
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the oobi to resolve
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: OOBI
+                    properties:
+                        oobialias:
+                          type: string
+                          description: alias to assign to the identifier resolved from this OOBI
+                          required: true
+                        url:
+                          type: string
+                          description:  URL OOBI
+                        rpy:
+                          type: object
+                          description: unsigned KERI `rpy` event message with endpoints
+        responses:
+           202:
+              description: OOBI resolution to key state successful
+
+        """
+        body = req.get_media()
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"Unknown identifier {alias}"
+            return
+
+        if hab.phab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"Identifer for {alias} is not a group hab, not supported"
+            return
+
+        oobis = body["oobis"]
+        for aid in hab.aids:
+            for oobi in oobis:
+                print(f"sharing {oobi.alias}, {oobi.url} with {aid}")
+
+        rep.status = falcon.HTTP_200
+        rep.text = f"We have shared with {hab.aids}"
+        return
+
+
+
+
+
     def on_post(self, req, rep):
         """ Resolve OOBI endpoint.
 
@@ -3316,6 +3384,7 @@ def loadEnds(app, *,
     oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
     app.add_route("/oobi/{alias}", oobiEnd, suffix="alias")
     app.add_route("/oobi", oobiEnd)
+    app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
 
     chacha = ChallengeEnd(hby=hby, rep=rep)
     app.add_route("/challenge", chacha)
