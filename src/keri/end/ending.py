@@ -656,7 +656,7 @@ class Oobiery(doing.DoDoer):
                         obr = self.hby.db.oobis.get(oobi)
                         if "Keri-Aid" in response["headers"]:
                             obr.cid = response["headers"]["Keri-Aid"]
-                            print(f"we have an aid {obr.cid}")
+
                         if obr.alias is not None and obr.oobialias is not None and obr.cid:
                             self.org.replace(alias=obr.alias, pre=obr.cid, data=dict(alias=obr.oobialias))
 

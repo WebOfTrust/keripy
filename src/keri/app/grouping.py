@@ -60,9 +60,6 @@ class Counselor(doing.DoDoer):
         print(f"Sending multisig event to {len(aids) - 1} other participants")
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
-            # add exn send delegator oobi to others
-            print("sending evt to others", evt, serder.pretty())
-            # self.postman.send(src=pid, dest=recpt, topic="oobi", serder=serder, attachment=evt)
 
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
@@ -459,8 +456,6 @@ def multisigInceptExn(hab, aids, ked, delegator=None):
                               payload=data)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]
-
-    print(data)
 
     return exn, ims
 

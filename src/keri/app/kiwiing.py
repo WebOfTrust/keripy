@@ -240,6 +240,7 @@ class IdentifierEnd(doing.DoDoer):
         if hab.phab:
             data["group"] = dict(
                 pid=hab.phab.pre,
+                aids=hab.aids,
                 accepted=hab.accepted
             )
 
@@ -2290,7 +2291,8 @@ class OobiResource(doing.DoDoer):
         self.hby = hby
 
         self.oobiery = oobiery if oobiery is not None else ending.Oobiery(hby=self.hby)
-        doers = [self.oobiery, doing.doify(self.loadDo)]
+        self.postman = forwarding.Postman(hby=self.hby)
+        doers = [self.oobiery, self.postman, doing.doify(self.loadDo)]
 
         super(OobiResource, self).__init__(doers=doers)
 
@@ -2440,7 +2442,7 @@ class OobiResource(doing.DoDoer):
         rep.status = falcon.HTTP_202
 
     def on_post_share(self, req, rep, alias):
-        """ Resolve OOBI endpoint.
+        """ Share OOBI endpoint.
 
         Parameters:
             req: falcon.Request HTTP request
@@ -2448,9 +2450,8 @@ class OobiResource(doing.DoDoer):
             alias: human readable name of the local identifier context for resolving this OOBI
 
         ---
-        summary: Resolve OOBI and assign an alias for the remote identifier
-        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
-                     data for resolved identifier
+        summary: Share OOBI and alias for remote identifier with other aids
+        description: Send all other participants in a group AID a copy of the OOBI with suggested alias
         tags:
            - OOBIs
         parameters:
@@ -2459,7 +2460,7 @@ class OobiResource(doing.DoDoer):
             schema:
               type: string
             required: true
-            description: Human readable alias for the oobi to resolve
+            description: Human readable alias for AID to use to sign exn message
         requestBody:
             required: true
             content:
@@ -2467,16 +2468,18 @@ class OobiResource(doing.DoDoer):
                 schema:
                     description: OOBI
                     properties:
-                        oobialias:
-                          type: string
-                          description: alias to assign to the identifier resolved from this OOBI
-                          required: true
-                        url:
-                          type: string
-                          description:  URL OOBI
-                        rpy:
-                          type: object
-                          description: unsigned KERI `rpy` event message with endpoints
+                        oobis:
+                            type: array
+                            items:
+                               type: object
+                               properties:
+                                  alias:
+                                    type: string
+                                    description: alias to assign to the identifier resolved from this OOBI
+                                    required: true
+                                  url:
+                                    type: string
+                                    description:  URL OOBI
         responses:
            202:
               description: OOBI resolution to key state successful
@@ -2496,16 +2499,15 @@ class OobiResource(doing.DoDoer):
 
         oobis = body["oobis"]
         for aid in hab.aids:
+            if aid == hab.phab.pre:
+                continue
+
             for oobi in oobis:
-                print(f"sharing {oobi.alias}, {oobi.url} with {aid}")
+                exn, atc = delegating.oobiRequestExn(hab.phab, aid, oobi["alias"], oobi["url"])
+                self.postman.send(src=hab.phab.pre, dest=aid, topic="delegate", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_200
-        rep.text = f"We have shared with {hab.aids}"
         return
-
-
-
-
 
     def on_post(self, req, rep):
         """ Resolve OOBI endpoint.
@@ -3494,7 +3496,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         servery=servery, bootConfig=bootConfig, rxbs=mbd.ims, queries=queries, **kwargs)
 
     servery.msgs.append(dict(app=app))
-    doers.extend([rep, counselor, registrar, credentialer, notifier])
+    doers.extend([rep, counselor, registrar, credentialer, notifier, oobiery])
     doers.extend(endDoers)
 
     return doers

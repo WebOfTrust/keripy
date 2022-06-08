@@ -82,8 +82,6 @@ class GroupMultisigIncept(doing.DoDoer):
         self.group = group
         self.wait = wait
 
-        print("GroupMultisigIncept")
-
         topics = ['/receipt', '/multisig', '/replay']
         if "delpre" in self.inits:
             topics.append('/delegate')

@@ -68,11 +68,10 @@ class Boatswain(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                print("got msg", msg)
                 pre = msg["pre"]
 
                 if pre not in self.hby.habs:
-                    print("not in habibi")
+                    print("not in hab")
                     continue
 
                 # load the hab of the delegated identifier to anchor
@@ -181,7 +180,7 @@ def loadHandlers(hby, exc, mbx, controller, oobiery):
     """
     delreq = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
     exc.addHandler(delreq)
-    oobireq = OobiRequestHandler(mbx=mbx, oobiery=oobiery, controller=controller)
+    oobireq = OobiRequestHandler(hby=hby, mbx=mbx, oobiery=oobiery, controller=controller)
     exc.addHandler(oobireq)
 
 
@@ -294,7 +293,7 @@ class OobiRequestHandler(doing.DoDoer):
     """
     resource = "/oobis"
 
-    def __init__(self, mbx, oobiery, controller, **kwa):
+    def __init__(self, hby, mbx, oobiery, controller, **kwa):
         """
 
         Parameters:
@@ -303,6 +302,7 @@ class OobiRequestHandler(doing.DoDoer):
             controller (str) qb64 identity prefix of controller
 
         """
+        self.hby = hby
         self.mbx = mbx
         self.controller = controller
         self.oobiery = oobiery
@@ -326,34 +326,32 @@ class OobiRequestHandler(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                print("oobi handler")
-                if "pre" not in msg:
-                    logger.error(f"invalid delegate request message, missing pre.  evt=: {msg}")
-                    continue
                 prefixer = msg["pre"]
-
-                if "alias" not in msg:
-                    logger.error(f"invalid oobi message, missing alias.  evt=: {msg}")
+                pay = msg["payload"]
+                if "dest" not in pay:
+                    print(f"invalid oobi request message, missing dest.  evt=: {msg}")
                     continue
-                alias = msg["alias"]
+                pre = pay["dest"]
 
-                if "oobialias" not in msg:
-                    logger.error(f"invalid oobi message, missing oobialias.  evt=: {msg}")
+                if "oobialias" not in pay:
+                    print(f"invalid oobi message, missing oobialias.  evt=: {msg}")
                     continue
-                oobialias = msg["oobialias"]
+                oobialias = pay["oobialias"]
 
-                if "oobi" not in msg:
-                    logger.error(f"invalid oobi message, missing oobi.  evt=: {msg}")
+                if "oobi" not in pay:
+                    print(f"invalid oobi message, missing oobi.  evt=: {msg}")
                     continue
-                oobi = msg["oobi"]
+                oobi = pay["oobi"]
+
+                hab = self.hby.habs[pre]
 
                 src = prefixer.qb64
-                self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
+                self.oobiery.oobis.append(dict(alias=hab.name, oobialias=oobialias, url=oobi))
 
                 data = dict(
                     src=src,
                     r='/oobi',
-                    alias=alias,
+                    alias=hab.name,
                     oobialias=oobialias,
                     oobi=oobi
                 )
@@ -367,10 +365,9 @@ class OobiRequestHandler(doing.DoDoer):
             yield
 
 
-def oobiRequestExn(hab, alias, oobialias, oobi):
-    print("oobiRequestExn")
+def oobiRequestExn(hab, dest, oobialias, oobi):
     data = dict(
-        alias=alias,
+        dest=dest,
         oobialias=oobialias,
         oobi=oobi
     )

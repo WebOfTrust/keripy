@@ -104,7 +104,6 @@ class RespondDoer(doing.DoDoer):
 
         payload = dict(i=hab.pre, words=self.words)
         exn = exchanging.exchange(route="/challenge/response", payload=payload)
-        print(exn.pretty())
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
