@@ -11,5 +11,9 @@
     "http://127.0.0.1:7723/oobi/EKrJtKr528-QBE9VkhKLwpXXGJ4YyVrzYWSkR7KpsNdw",
     "http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs",
     "http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
+  ],
+  "nurls": [
+    {"alias": "GLEIF External", "oobi":  "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-external"},
+    {"alias": "GLEIF Internal", "oobi":  "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-internal"}
   ]
 }
