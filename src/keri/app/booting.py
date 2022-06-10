@@ -368,7 +368,7 @@ class BootEnd(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
 
-        hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=cf)
+        hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=cf, headDirPath=self.headDirPath)
         hbyDoer = habbing.HaberyDoer(habery=hby)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
         rgyDoer = credentialing.RegeryDoer(rgy=rgy)
