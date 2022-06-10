@@ -107,7 +107,8 @@ class RespondDoer(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        self.postman.send(src=hab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
+        senderHab = hab.phab if hab.phab else hab
+        self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock
 

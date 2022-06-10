@@ -1280,9 +1280,16 @@ class Hab:
         """
         if not pre:
             pre = self.pre
+
         msgs = bytearray()
+        kever = self.kevers[pre]
+        if kever.delegated:
+            for msg in self.db.clonePreIter(pre=kever.delegator, fn=0):
+                msgs.extend(msg)
+
         for msg in self.db.clonePreIter(pre=pre, fn=fn):
             msgs.extend(msg)
+
         return msgs
 
     def replayAll(self, key=b''):

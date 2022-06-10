@@ -739,7 +739,7 @@ class Credentialer(doing.DoDoer):
 
         rseq = coring.Seqner(sn=seq)
         if hab.phab:
-            craw = signing.ratify(hab=hab.phab, serder=creder)
+            craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(aids)
             others.remove(hab.phab.pre)
@@ -772,14 +772,8 @@ class Credentialer(doing.DoDoer):
 
             hab = self.hby.habs[creder.issuer]
             kever = hab.kever
-            keys = [verfer.qb64 for verfer in kever.verfers]
-            witer = hab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
-
             # place in escrow to diseminate to other if witnesser and if there is an issuee
-            if witer:
-                self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
-            else:  # not witnesser or no one to send it to so just save as issued.
-                self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+            self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
 
     def processCredentialIssuedEscrow(self):
         for (said, snq), creder in self.rgy.reger.crie.getItemIter():
@@ -791,29 +785,33 @@ class Credentialer(doing.DoDoer):
             issr = creder.issuer
             regk = creder.status
 
+            print("Credential issuance complete, sending to recipient")
             if "i" in creder.subject:
                 recp = creder.subject["i"]
 
                 hab = self.hby.habs[issr]
+                if hab.phab:
+                    sender = hab.phab.pre
+                else:
+                    sender = issr
 
                 for msg in self.hby.db.clonePreIter(pre=issr):
                     serder = coring.Serder(raw=msg)
                     atc = msg[serder.size:]
-                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
 
                 if regk is not None:
                     for msg in self.verifier.reger.clonePreIter(pre=regk):
                         serder = coring.Serder(raw=msg)
                         atc = msg[serder.size:]
-                        self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
 
                 for msg in self.verifier.reger.clonePreIter(pre=creder.said):
                     serder = coring.Serder(raw=msg)
                     atc = msg[serder.size:]
-                    self.postman.send(src=issr, dest=recp, topic="credential", serder=serder, attachment=atc)
+                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
 
                 sources = self.verifier.reger.sources(self.hby.db, creder)
-                sender = issr
                 for source, atc in sources:
                     regk = source.status
                     vci = source.said
