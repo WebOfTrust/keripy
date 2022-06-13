@@ -6,6 +6,7 @@ keri.kli.common.displaying module
 import sys
 
 from keri.app.cli.common import terming
+from keri.core import coring
 from keri.db import dbing
 
 
@@ -32,10 +33,13 @@ def printIdentifier(hby, pre, label="Identifier"):
         if kever.delegated:
             print("Delegated Identifier")
             sys.stdout.write(f"    Delegator:  {kever.delegator} ")
-            if anchor:
-                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+            if kever.ilk in (coring.Ilks.drt, coring.Ilks.dip):
+                if anchor:
+                    print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+                else:
+                    print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
             else:
-                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+                print(" Non-establishment")
             print()
 
         if hab.phab:

@@ -844,11 +844,34 @@ class Credentialer(doing.DoDoer):
                 del atc[:serder.size]
                 self.postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
 
-                exn, atc = protocoling.credentialIssueExn(hab=hab, schema=creder.schema, said=creder.said)
+                exn, atc = protocoling.credentialIssueExn(hab=hab, issuer=issr, schema=creder.schema, said=creder.said)
                 self.postman.send(src=sender, dest=recp, topic="credential", serder=exn, attachment=atc)
 
+                # Escrow until postman has successfully sent the notification
+                self.rgy.reger.crse.put(keys=(exn.said,), val=creder)
+            else:
+                # Credential complete, mark it in the database
+                self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+
             self.rgy.reger.crie.rem(keys=(said, snq))
-            self.rgy.reger.ccrd.put(keys=(said,), val=creder)
+
+    def processCredentialSentEscrow(self):
+        """
+        Process Postman cues to ensure that the last message (exn notification) has
+        been sent before declaring the credential complete
+
+        """
+        for (said,), creder in self.rgy.reger.crse.getItemIter():
+            found = False
+            while self.postman.cues:
+                cue = self.postman.cues.popleft()
+                if cue["said"] == said:
+                    found = True
+                    break
+
+            if found:
+                self.rgy.reger.crse.rem(keys=(said,))
+                self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
 
     def complete(self, said):
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
@@ -886,3 +909,4 @@ class Credentialer(doing.DoDoer):
         """
         self.processCredentialIssuedEscrow()
         self.processCredentialMissingSigEscrow()
+        self.processCredentialSentEscrow()

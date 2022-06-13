@@ -1093,6 +1093,7 @@ class CredentialEnd(doing.DoDoer):
         try:
             creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
             self.credentialer.issue(creder=creder)
+
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
@@ -1152,6 +1153,9 @@ class CredentialEnd(doing.DoDoer):
                             s:
                                type: string
                                description: SAID of reference chain schema
+                    rules:
+                      type: array
+                      description: list of credential chain sources (ACDC)
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
@@ -1180,8 +1184,11 @@ class CredentialEnd(doing.DoDoer):
         source = body.get("source")
         rules = body.get("rules")
         data = body.get("credentialData")
+
+        _, edges = coring.Saider.saidify(sad=source)
+
         try:
-            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
             self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400

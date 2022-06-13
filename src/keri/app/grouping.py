@@ -256,7 +256,8 @@ class Counselor(doing.DoDoer):
                 keys = [verfer.qb64 for verfer in kever.verfers]
                 witer = ghab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
 
-                if kever.delegated:  # We are a delegated identifier, must wait for delegator approval
+                if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
+                    # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witer:  # We are elected to perform delegation and witnessing messaging
                         print("We are the witnesser, sending to delegator")
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
@@ -721,11 +722,15 @@ class MultisigIssueHandler(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 pl = msg["payload"]
-                pl["r"] = "/issue"
 
                 try:
                     creder = proving.Creder(ked=pl)
-                    self.mbx.storeMsg(self.controller+"/multisig", creder.raw)
+                    data = dict(
+                        r="/issue",
+                        ked=creder.ked
+                    )
+                    msg = json.dumps(data).encode("utf-8")
+                    self.mbx.storeMsg(self.controller+"/multisig", msg)
                 except ValueError as ex:
                     logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
                 yield

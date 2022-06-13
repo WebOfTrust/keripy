@@ -41,7 +41,7 @@ kli oobi generate --name extgar2 --alias extgar2 --role witness
 
 sleep 3
 echo
-echo "Creating Internal GAR"
+echo "Creating GLEIF Internal"
 kli init --name intgar1 --salt 0AMDEyMzQ1Njc4OWxtbm9AbC --nopasscode --config-dir ./scripts --config-file demo-witness-oobis
 kli incept --name intgar1 --alias intgar1 --file tests/app/cli/commands/multisig/multisig-1-sample.json
 
@@ -57,7 +57,15 @@ echo ""
 echo "intgar2 OOBIs"
 kli oobi generate --name intgar2 --alias intgar2 --role witness
 
-# kli multisig incept --name intgar1 --alias intgar1 --group "Internal GAR" --file scripts/demo/internal-gar-nodel-incept.json
-# kli multisig incept --name intgar2 --alias intgar2 --group "Internal GAR" --file scripts/demo/internal-gar-nodel-incept.json
+# kli multisig incept --name intgar1 --alias intgar1 --group "GLEIF Internal" --file scripts/demo/internal-gar-nodel-incept.json
+# kli multisig incept --name intgar2 --alias intgar2 --group "GLEIF Internal" --file scripts/demo/internal-gar-nodel-incept.json
 
+# kli oobi generate --name intgar1 --alias "GLEIF Internal" --role witness
 
+# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EPy2ddJBSa5VcxZZQO4Q1mCRd5FdKz4t0RQ5h3NwcHHc/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EPy2ddJBSa5VcxZZQO4Q1mCRd5FdKz4t0RQ5h3NwcHHc/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+
+# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
+# kli oobi resolve --name intgar1 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs

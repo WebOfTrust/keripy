@@ -180,8 +180,8 @@ class IssueHandler(doing.DoDoer):
                 payload = msg["payload"]
 
                 if "i" not in payload or "s" not in payload or "a" not in payload:
-                    logger.error(f"invalid credential issuance message, i, s and a are required fields.  evt=: "
-                                 f"{payload}")
+                    print(f"invalid credential issuance message, i, s and a are required fields.  evt=: "
+                          f"{payload}")
                     continue
 
                 iaid = payload["i"]
@@ -209,18 +209,19 @@ class IssueHandler(doing.DoDoer):
                 raw = json.dumps(data).encode("utf-8")
 
                 if self.controller is not None:
-                    self.mbx.storeMsg(self.controller+"/credential", raw)
+                    self.mbx.storeMsg(self.controller + "/credential", raw)
 
                 yield self.tock
 
             yield self.tock
 
 
-def credentialIssueExn(hab, schema, said):
+def credentialIssueExn(hab, issuer, schema, said):
     """
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
+        issuer (str): qb64 AID of the issuer of the credential
         schema (str): qb64 SAID of JSON schema of credential being issued
         said (str): qb64 SAID of credentiual being issued
 
@@ -230,7 +231,9 @@ def credentialIssueExn(hab, schema, said):
 
     """
     data = dict(
-        c=said,
+        i=issuer,
+        s=schema,
+        a=said,
     )
 
     exn = exchanging.exchange(route="/credential/issue", payload=data)

@@ -97,7 +97,8 @@ def test_issuing(seeder, mockCoringRandomNonce):
                        b'__bbU0gNuSkB8MLBMC_YcmkewPixKBhTp4uYp7koqJRsHn_LGShuqm_3tzPVAQ')
 
         # Create the `exn` message for issue credential
-        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, schema=creder.schema, said=creder.said)
+        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
+                                                         said=creder.said)
         excMsg = bytearray(sidExcSrdr.raw)
         excMsg.extend(atc)
         # Parse the exn issue credential message on Red's side
