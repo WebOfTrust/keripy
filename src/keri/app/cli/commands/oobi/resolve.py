@@ -25,7 +25,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
                     default=None)
 parser.add_argument("--oobi", "-o", help="out-of-band introduciton to load", required=True)
 parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolved from out-of-band introduciton",
-                    required=True)
+                    required=False, default=None)
 
 # Parameters for Manager access
 # passcode => bran
@@ -64,7 +64,12 @@ class OobiDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
         self.obl = oobiing.OobiLoader(hby=self.hby)
-        self.obl.queue([dict(alias=alias, oobialias=oobiAlias, url=oobi)])
+        if alias is None or oobiAlias is None:
+            msg = dict(url=oobi)
+        else:
+            msg = dict(alias=alias, oobialias=oobiAlias, url=oobi)
+
+        self.obl.queue([msg])
 
         doers = [self.hbyDoer, self.obl, doing.doify(self.waitDo)]
 
