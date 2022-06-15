@@ -13,6 +13,6 @@
     "http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
   ],
   "nurls": [
-    {"alias": "GLEIF Root", "oobi":  "http://127.0.0.1:3000/.well-known/keri/oobi/E4tEHaAAg8LbvdyUwxchP9WO_lZ2vtXyyFFKmTxVGY9U"}
+    {"alias": "GLEIF Root", "oobi":  "http://127.0.0.1:3000/.well-known/keri/oobi/gleif-root"}
   ]
 }

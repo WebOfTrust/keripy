@@ -288,12 +288,14 @@ class BootEnd(doing.DoDoer):
 
         cf = None
         if self.configFile is not None:
+            print(f"creating with {self.configFile}:{self.configDir}")
             cf = configing.Configer(name=self.configFile,
                                     base=self.base,
                                     headDirPath=self.configDir,
                                     temp=self.temp,
                                     reopen=True,
                                     clear=False)
+            print(cf.path)
 
         hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, headDirPath=self.headDirPath, **kwa)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
