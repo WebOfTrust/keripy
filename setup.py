@@ -77,7 +77,7 @@ setup(
                         'cbor2>=5.4.3',
                         'multidict>=6.0.2',
                         'ordered-set>=4.1.0',
-                        'hio>=0.6.2',
+                        'hio>=0.6.3',
                         'multicommand>=1.0.0',
                         'jsonschema>=4.5.0',
                         'falcon>=3.1.0',
