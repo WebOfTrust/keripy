@@ -54,6 +54,9 @@ parser.add_argument("-p", "--path",
                     action="store",
                     default=STATIC_DIR_PATH,
                     help="Location of the KIWI app bundle for this agent")
+parser.add_argument("--keypath", action="store", required=False, default=None)
+parser.add_argument("--certpath", action="store", required=False, default=None)
+parser.add_argument("--cafilepath", action="store", required=False, default=None)
 
 
 def launch(args):
@@ -71,7 +74,8 @@ def launch(args):
     print("\n******* Starting agent listening: http/{}, tcp/{} "
           ".******\n\n".format(args.admin_http_port, args.tcp))
 
-    servery = booting.Servery(port=int(args.admin_http_port))  # Manager of HTTP server environments
+    servery = booting.Servery(port=int(args.admin_http_port), keypath=args.keypath, certpath=args.certpath,
+                              cafilepath=args.cafilepath)  # Manager of HTTP server environments
     doers = booting.setup(servery=servery, controller=args.controller, configFile=args.configFile,
                           configDir=args.configDir, insecure=args.insecure, tcp=int(args.tcp),
                           adminHttpPort=int(args.admin_http_port), path=args.path)

@@ -8,6 +8,7 @@ import secrets
 import string
 
 import falcon
+import hio.core.tcp
 from falcon import media
 from hio.base import doing
 from hio.core import http
@@ -24,7 +25,7 @@ PASSCODE_CHARS = string.ascii_lowercase + string.ascii_uppercase + '123456789'
 class Servery(doing.DoDoer):
     """ Http Server Manager """
 
-    def __init__(self, port):
+    def __init__(self, port, keypath=None, certpath=None, cafilepath=None):
         """ Servery init
 
         Returns a Servery capable of starting and stopping a single HTTP server on the same port
@@ -36,6 +37,9 @@ class Servery(doing.DoDoer):
         self.msgs = decking.Deck()
 
         self.port = port
+        self.keypath = keypath
+        self.certpath = certpath
+        self.cafilepath = cafilepath
         self.server = None
         self.serverDoer = None
 
@@ -69,7 +73,17 @@ class Servery(doing.DoDoer):
                     self.server.close()
 
                 yield 1.0
-                self.server = http.Server(port=self.port, app=app)
+
+                if self.keypath is not None and self.certpath is not None and self.cafilepath is not None:
+                    servant = hio.core.tcp.ServerTls(certify=False,
+                                                     keypath=self.keypath,
+                                                     certpath=self.certpath,
+                                                     cafilepath=self.cafilepath,
+                                                     port=self.port)
+                else:
+                    servant = None
+
+                self.server = http.Server(port=self.port, app=app, servant=servant)
                 self.serverDoer = http.ServerDoer(server=self.server)
 
                 self.extend([self.serverDoer])
