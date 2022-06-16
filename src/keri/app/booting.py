@@ -75,7 +75,7 @@ class Servery(doing.DoDoer):
                 yield 1.0
 
                 if self.keypath is not None and self.certpath is not None and self.cafilepath is not None:
-                    servant = hio.core.tcp.ServerTls(certify=False,
+                    servant = hio.core.tcp.ServerTls(ha=("0.0.0.0", self.port), certify=False,
                                                      keypath=self.keypath,
                                                      certpath=self.certpath,
                                                      cafilepath=self.cafilepath,
