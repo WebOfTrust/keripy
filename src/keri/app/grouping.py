@@ -259,7 +259,7 @@ class Counselor(doing.DoDoer):
                 if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witer:  # We are elected to perform delegation and witnessing messaging
-                        print("We are the witnesser, sending to delegator")
+                        print(f"We are the witnesser, sending {pre} to delegator")
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
@@ -298,11 +298,11 @@ class Counselor(doing.DoDoer):
                 self.hby.db.gdee.rem(keys=(pre,))
 
                 if witer:  # We are elected witnesser, send off event to witnesses
-                    print("We are the witnesser, sending to witnesses")
+                    print(f"We are the witnesser, sending {pre} to witnesses")
                     self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
 
                 # Move to escrow waiting for witness receipts
-                print("Waiting for witness receipts")
+                print(f"Waiting for witness receipts for {pre}")
                 self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processPartialWitnessEscrow(self):
