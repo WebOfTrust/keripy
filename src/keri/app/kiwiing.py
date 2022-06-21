@@ -263,7 +263,7 @@ class IdentifierEnd(doing.DoDoer):
             if kever.delegated:
                 data["delegated"] = kever.delegated
                 data["delegator"] = kever.delegator
-                dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
+                dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.lastEst.d)
                 anchor = self.hby.db.getAes(dgkey)
                 data["anchored"] = anchor is not None
 
