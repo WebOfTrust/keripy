@@ -540,7 +540,7 @@ class MailboxDirector(doing.DoDoer):
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,
                                  db=self.hby.db, rvy=self.rvy,
-                                 local=False, cues=self.cues)
+                                 lax=True, local=False, cues=self.cues)
             self.tevery.registerReplyRoutes(self.rtr)
         else:
             self.tevery = None

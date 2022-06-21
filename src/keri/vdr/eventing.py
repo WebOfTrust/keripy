@@ -1575,14 +1575,15 @@ class Tevery:
         # validate SN for
         sn = validateSN(sn, inceptive=inceptive)
 
-        if self.local:
-            if regk not in self.registries:  # nonlocal event when in local mode
-                raise ValueError("Nonlocal event regk={} when local mode for registries={}."
-                                 "".format(regk, self.registries))
-        else:
-            if regk in self.registries:  # local event when not in local mode
-                raise ValueError("Local event regk={} when nonlocal mode."
-                                 "".format(regk))
+        if not self.lax:
+            if self.local:
+                if regk not in self.registries:  # nonlocal event when in local mode
+                    raise ValueError("Nonlocal event regk={} when local mode for registries={}."
+                                     "".format(regk, self.registries))
+            else:
+                if regk in self.registries:  # local event when not in local mode
+                    raise ValueError("Local event regk={} when nonlocal mode."
+                                     "".format(regk))
 
         if regk not in self.tevers:  # first seen for this registry
             if ilk in [Ilks.vcp]:
