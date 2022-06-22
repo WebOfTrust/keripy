@@ -26,8 +26,8 @@ kli oobi generate --name extgar2 --alias extgar2 --role witness
 # kli multisig interact --name extgar2 --alias "GLEIF External" --data @scripts/demo/extgar-delegate-icp-anchor.json
 
 # Resolve UbiSecure OOBI
-# kli oobi resolve --name extgar1 --alias extgar1 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EQmseDjLOz0SzyQ0alinF9wIRpwFwiMYIHQexAghRAAQ/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-# kli oobi resolve --name extgar2 --alias extgar2 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EQmseDjLOz0SzyQ0alinF9wIRpwFwiMYIHQexAghRAAQ/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+# kli oobi resolve --name extgar1 --alias extgar1 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EyruLi8ybgPKO-aULHrVAq_yw_QQGTDmmuvvmoPINe-U/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+# kli oobi resolve --name extgar2 --alias extgar2 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EyruLi8ybgPKO-aULHrVAq_yw_QQGTDmmuvvmoPINe-U/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
 # Create Revocation Registry
 # kli vc registry incept --name extgar1 --alias "GLEIF External" --registry-name vLEI --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s
@@ -63,15 +63,15 @@ kli oobi generate --name intgar2 --alias intgar2 --role witness
 # kli multisig incept --name intgar2 --alias intgar2 --group "GLEIF Internal" --file scripts/demo/internal-gar-nodel-incept.json
 
 # kli oobi generate --name intgar1 --alias "GLEIF Internal" --role witness
-# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EQmseDjLOz0SzyQ0alinF9wIRpwFwiMYIHQexAghRAAQ/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EQmseDjLOz0SzyQ0alinF9wIRpwFwiMYIHQexAghRAAQ/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EyruLi8ybgPKO-aULHrVAq_yw_QQGTDmmuvvmoPINe-U/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias "UbiSecure QVI" --oobi http://127.0.0.1:5642/oobi/EyruLi8ybgPKO-aULHrVAq_yw_QQGTDmmuvvmoPINe-U/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 # kli challenge respond --name intgar1 --alias "GLEIF Internal" --recipient "UbiSecure QVI" --words ""
 # kli challenge respond --name intgar2 --alias "GLEIF Internal" --recipient "UbiSecure QVI" --words ""
 
-# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-# kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
-# kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
+kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name intgar1 --alias intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
+kli oobi resolve --name intgar2 --alias intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
 
 # kli vc list --name intgar1 --alias "GLEIF Internal" --poll
 # kli vc list --name intgar2 --alias "GLEIF Internal" --poll
