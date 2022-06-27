@@ -91,7 +91,7 @@ class WitnessReceiptor(doing.DoDoer):
                 # Check to see if we already have all the receipts we need for this event
                 wigs = hab.db.getWigs(dgkey)
                 if len(wigs) == len(wits):  # We have all the receipts, skip
-                    self.cues.append(msg)
+                    self.cues.append(evt)
                     continue
 
                 witers = []
