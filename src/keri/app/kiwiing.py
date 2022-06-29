@@ -1088,7 +1088,10 @@ class CredentialEnd(doing.DoDoer):
         rules = body.get("rules")
         data = body.get("credentialData")
 
-        _, edges = coring.Saider.saidify(sad=source)
+        try:
+            _, edges = coring.Saider.saidify(sad=source)
+        except KeyError:
+            edges = source
 
         try:
             creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
@@ -1185,7 +1188,10 @@ class CredentialEnd(doing.DoDoer):
         rules = body.get("rules")
         data = body.get("credentialData")
 
-        _, edges = coring.Saider.saidify(sad=source)
+        try:
+            _, edges = coring.Saider.saidify(sad=source)
+        except KeyError:
+            edges = source
 
         try:
             creder = self.credentialer.create(regname, recp, schema, edges, rules, data)

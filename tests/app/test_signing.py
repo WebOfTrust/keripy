@@ -265,22 +265,21 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         msg = hab.endorse(serder=exn)
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
 
-        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"E7wllQ4Ywe58X6MtVG4PrZtQ'
-                       b'Xt6G03fMiiqGMtrNbyjg","dt":"2022-01-04T11:58:55.154502+00:00","r'
-                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EEkeSkBA'
-                       b'RQU5Lt_gi-GUlEx3LJ7OZdfW5nY-y9KX3QVk","i":"ErO8qhYftaJsAbCb6HUrN'
-                       b'4tUyrV9dMd2VEt7SdG0wh50","ri":"Es6mQyppwSSN8ZpgGc0wV1iYLsqinZ11I'
-                       b'56iHxWUzUuw","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",'
-                       b'"a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR4s","i":"Ehw'
-                       b'C_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"2021-06-09T17:3'
-                       b'5:54.169967+00:00","LEI":"254900OPPU84GM83MG36"},"e":{}}}-VA0-FA'
-                       b'BErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAA'
-                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAbxVvMOA-Y'
-                       b'_9JAEKBzcQyEk_TIimGzTKlHg2QTETrGEArLig2YfsJnWxEN6dNKEDE2wCtnWxxX'
-                       b'z9nDMuMFNYqDw-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt'
-                       b'7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd'
-                       b'2VEt7SdG0wh50-AABAA-TcfdDgPVs9IeC7X2YZO1JFtQFVAqM_UFafLwWW_Bogu0'
-                       b'wy0qPtXSHfOOzPfWsfUBixvJhgGlxRyJ8UEn4ffAQ')
+        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"E7DVj7iNeIAGO-XqXFLqOisv'
+                       b'RyDw9ut0EiVNkyr6NEFI","r":"/credential/issue","a":{"v":"ACDC10JS'
+                       b'ON00019e_","d":"EEkeSkBARQU5Lt_gi-GUlEx3LJ7OZdfW5nY-y9KX3QVk","i'
+                       b'":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50","ri":"Es6mQyppw'
+                       b'SSN8ZpgGc0wV1iYLsqinZ11I56iHxWUzUuw","s":"ExBYRwKdVGTWFq1M3Irewj'
+                       b'KRhKusW9p9fdsdD0aSTWQI","a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbsc'
+                       b'IlAuQiDOjdcR4s","i":"EhwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c'
+                       b'0","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM'
+                       b'83MG36"},"e":{}}}-VA0-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG'
+                       b'0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt'
+                       b'7SdG0wh50-AABAAPT2XjJ7ZfUVnuIsWegl1XJnOA0udZzaFpzM491u2GYNyp3V_c'
+                       b'JLCcRjth3FOb37yCZLGhwmquyPZWMsroKpKAg-JAB5AABAA-a-FABErO8qhYftaJ'
+                       b'sAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhY'
+                       b'ftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAA-TcfdDgPVs9IeC7X2YZO1'
+                       b'JFtQFVAqM_UFafLwWW_Bogu0wy0qPtXSHfOOzPfWsfUBixvJhgGlxRyJ8UEn4ffAQ')
 
         saider = verifier.reger.saved.get(keys=cred.said)
         assert saider is not None
@@ -346,29 +345,29 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
 
         # attach the transposed signatures for the embedded credential
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
-        assert msg == (b'{"v":"KERI10JSON000239_","t":"exn","d":"E7wllQ4Ywe58X6MtVG4PrZtQ'
-                       b'Xt6G03fMiiqGMtrNbyjg","dt":"2022-01-04T11:58:55.154502+00:00","r'
-                       b'":"/credential/issue","a":{"v":"ACDC10JSON00019e_","d":"EEkeSkBA'
-                       b'RQU5Lt_gi-GUlEx3LJ7OZdfW5nY-y9KX3QVk","i":"ErO8qhYftaJsAbCb6HUrN'
-                       b'4tUyrV9dMd2VEt7SdG0wh50","ri":"Es6mQyppwSSN8ZpgGc0wV1iYLsqinZ11I'
-                       b'56iHxWUzUuw","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",'
-                       b'"a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbscIlAuQiDOjdcR4s","i":"Ehw'
-                       b'C_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0","dt":"2021-06-09T17:3'
-                       b'5:54.169967+00:00","LEI":"254900OPPU84GM83MG36"},"e":{}}}-VA0-FA'
-                       b'BErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAA'
-                       b'AAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAbxVvMOA-Y'
-                       b'_9JAEKBzcQyEk_TIimGzTKlHg2QTETrGEArLig2YfsJnWxEN6dNKEDE2wCtnWxxX'
-                       b'z9nDMuMFNYqDw-KAD6AABAAA--JAB5AACAA-a-a-i-FABErO8qhYftaJsAbCb6HU'
-                       b'rN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbC'
-                       b'b6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAASkVgGSxVHfa9d1OaV7W9VCs63H3Aq'
-                       b'AiQOtj-fJRUIAcHR4hrVgQtGyGl-WOisK97zqrrXxoDXh-8AJ9gSulnDQ-JAB4AA'
-                       b'B-a-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAA'
-                       b'AAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAAl'
-                       b'jDTBx1Dboc1O1YSBYzdiAXH0Vj50MDTdNEf71q8qFbip5gjH9elvVIB6jDeEWY_i'
-                       b'TG6Dc9D0zd3NO0QeQJzDg-JAB5AABAA-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV'
-                       b'9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4t'
-                       b'UyrV9dMd2VEt7SdG0wh50-AABAA-TcfdDgPVs9IeC7X2YZO1JFtQFVAqM_UFafLw'
-                       b'WW_Bogu0wy0qPtXSHfOOzPfWsfUBixvJhgGlxRyJ8UEn4ffAQ')
+        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"E7DVj7iNeIAGO-XqXFLqOisv'
+                       b'RyDw9ut0EiVNkyr6NEFI","r":"/credential/issue","a":{"v":"ACDC10JS'
+                       b'ON00019e_","d":"EEkeSkBARQU5Lt_gi-GUlEx3LJ7OZdfW5nY-y9KX3QVk","i'
+                       b'":"ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50","ri":"Es6mQyppw'
+                       b'SSN8ZpgGc0wV1iYLsqinZ11I56iHxWUzUuw","s":"ExBYRwKdVGTWFq1M3Irewj'
+                       b'KRhKusW9p9fdsdD0aSTWQI","a":{"d":"EleCRONxsoQpnG82kdu68VfQjvdbsc'
+                       b'IlAuQiDOjdcR4s","i":"EhwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c'
+                       b'0","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM'
+                       b'83MG36"},"e":{}}}-VA0-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG'
+                       b'0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt'
+                       b'7SdG0wh50-AABAAPT2XjJ7ZfUVnuIsWegl1XJnOA0udZzaFpzM491u2GYNyp3V_c'
+                       b'JLCcRjth3FOb37yCZLGhwmquyPZWMsroKpKAg-KAD6AABAAA--JAB5AACAA-a-a-'
+                       b'i-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAA'
+                       b'AAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAASkVgG'
+                       b'SxVHfa9d1OaV7W9VCs63H3AqAiQOtj-fJRUIAcHR4hrVgQtGyGl-WOisK97zqrrX'
+                       b'xoDXh-8AJ9gSulnDQ-JAB4AAB-a-a-FABErO8qhYftaJsAbCb6HUrN4tUyrV9dMd'
+                       b'2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAAAErO8qhYftaJsAbCb6HUrN4tUyrV'
+                       b'9dMd2VEt7SdG0wh50-AABAAljDTBx1Dboc1O1YSBYzdiAXH0Vj50MDTdNEf71q8q'
+                       b'Fbip5gjH9elvVIB6jDeEWY_iTG6Dc9D0zd3NO0QeQJzDg-JAB5AABAA-a-FABErO'
+                       b'8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh500AAAAAAAAAAAAAAAAAAAAAA'
+                       b'AErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50-AABAA-TcfdDgPVs9Ie'
+                       b'C7X2YZO1JFtQFVAqM_UFafLwWW_Bogu0wy0qPtXSHfOOzPfWsfUBixvJhgGlxRyJ'
+                       b'8UEn4ffAQ')
 
     # signing SAD with non-transferable identifier
     with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):

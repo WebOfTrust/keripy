@@ -1108,6 +1108,7 @@ class Parser:
             try:
                 vry.processCredential(**args)
             except AttributeError as e:
+                print(e)
                 raise kering.ValidationError("No verifier to process so dropped credential"
                                              "= {}.".format(creder.pretty()))
 

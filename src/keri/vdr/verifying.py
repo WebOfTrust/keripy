@@ -249,7 +249,6 @@ class Verifier:
         self.reger.logCred(creder, sadsigers, sadcigars)
         return self.reger.mre.put(keys=key, val=coring.Dater())
 
-
     def escrowMIE(self, creder, sadsigers, sadcigars):
         """ Missing Issuer Escrow
 
