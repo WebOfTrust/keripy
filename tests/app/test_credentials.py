@@ -58,6 +58,10 @@ class TestDoer(doing.DoDoer):
             createMbxEndRole(hab2, hab.phab.pre, wanHab.pre, "http://127.0.0.1:5642/")
             createMbxEndRole(hab3, hab.phab.pre, wanHab.pre, "http://127.0.0.1:5642/")
 
+        createMbxEndRole(hab1, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
+        createMbxEndRole(hab2, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
+        createMbxEndRole(hab3, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
+
         # Create Regery for each participant
         self.rgy1 = credentialing.Regery(hby=hby1, name="test_1", temp=True)
         self.rgy2 = credentialing.Regery(hby=hby2, name="test_2", temp=True)
@@ -226,7 +230,8 @@ def loadApp(hby, rgy, verifier, notifs):
     counselor = grouping.Counselor(hby=hby)
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
-    mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"])
+    mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"],
+                                      verifier=verifier)
     servery = booting.Servery(port=1234)
     doers = kiwiing.loadEnds(hby=hby,
                              rep=repd,

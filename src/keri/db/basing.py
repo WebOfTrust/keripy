@@ -763,6 +763,9 @@ class Baser(dbing.LMDBer):
         # exchange source prefix
         self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
 
+        # exchange pathed attachments
+        self.epath = subing.IoSetSuber(db=self, subkey=".epath")
+
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
         self.kdts = subing.CesrSuber(db=self, subkey='kdts.', klas=coring.Dater)

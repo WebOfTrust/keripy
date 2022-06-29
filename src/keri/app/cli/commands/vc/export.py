@@ -124,7 +124,7 @@ class ExportDoer(doing.DoDoer):
         if self.tels:
             if creder.status is not None:
                 self.outputTEL(creder.status)
-            self.outputTEL(creder.said)
+                self.outputTEL(creder.said)
 
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')

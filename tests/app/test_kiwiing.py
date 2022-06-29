@@ -8,6 +8,7 @@ import os
 
 import falcon
 from falcon import testing
+from hio.base import doing
 
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping, booting
@@ -291,7 +292,6 @@ def test_multisig_incept():
         assert len(icpEnd.postman.evts) == 2
 
 
-
 def test_multisig_rotation():
     prefix = "test"
     with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
@@ -468,16 +468,20 @@ def test_identifier_ends():
         registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
         credentialer = credentialing.Credentialer(hby=hby, rgy=regery, registrar=registrar, verifier=verifier)
 
-        _ = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
-                             rgy=regery,
-                             verifier=verifier,
-                             app=app, path="/",
-                             registrar=registrar,
-                             credentialer=credentialer,
-                             servery=booting.Servery(port=1234),
-                             bootConfig=dict(),
-                             mbx=None, counselor=counselor)
+        doers = kiwiing.loadEnds(hby=hby,
+                                 rep=repd,
+                                 rgy=regery,
+                                 verifier=verifier,
+                                 app=app, path="/",
+                                 registrar=registrar,
+                                 credentialer=credentialer,
+                                 servery=booting.Servery(port=1234),
+                                 bootConfig=dict(),
+                                 mbx=None, counselor=counselor)
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=doers)
+        doist.enter()
 
         client = testing.TestClient(app)
 
@@ -1006,7 +1010,7 @@ def test_keystate_end():
                              servery=booting.Servery(port=1234),
                              bootConfig=dict(),
                              app=app, path="/",
-                             mbx=None, counselor=counselor,)
+                             mbx=None, counselor=counselor, )
         client = testing.TestClient(app)
 
         result = client.simulate_get(path=f"/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
@@ -1036,7 +1040,7 @@ def test_schema_ends():
                              credentialer=None,
                              servery=booting.Servery(port=1234),
                              bootConfig=dict(),
-                             mbx=None, counselor=None,)
+                             mbx=None, counselor=None, )
         client = testing.TestClient(app)
 
         sed = dict()
@@ -1239,4 +1243,3 @@ def test_escrow_end(mockHelpingNowUTC):
         assert response.status == falcon.HTTP_200
         assert len(response.json) == 1
         assert len(response.json['likely-duplicitous-events']) == 0
-

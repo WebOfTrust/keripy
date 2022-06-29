@@ -227,10 +227,10 @@ def test_multisig_incept(mockHelpingNowUTC):
         exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'ExkZdDu4RqsP_R7wui_7-QJJng77l66gAOKBuxKphG6s'
-        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAILCAkxYduA'
-                       b'Zgx3V0aTc0iKHduGinIjKpWs7y5scyPd-9DdhN3NWkgpUFpzLkO24nedDLUza0Iw'
-                       b'am2Tz8NDGtCw')
+        assert exn.saidb == b'EawKhRpkR4gS9vXHg4SJlMZ9sPhgbHbX6jb9wdkXJsBk'
+        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAASAO0yXsOqB'
+                       b'3b0X1FeTWW0zj8EUnw1ZgEXa1aEKxB_I9p1bOgqPwXD7-rsyHuglEhCNqi2Z6u-D'
+                       b'P9deRXxv5fDg')
         data = exn.ked["a"]
         assert data["aids"] == aids
         assert data["ked"] == hab.kever.serder.ked
@@ -242,10 +242,10 @@ def test_multisig_rotate(mockHelpingNowUTC):
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'EJH2ebApTHUr_BGDeRoPrdZZ2QQEfZNE8jTB5jm4-y-I'
-        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAGnL9rbBs5u'
-                       b'j4pxCI-KLEJb6Rf5FdhmXIP1RB1DVsY9JhVBs3QuV7Hn77V_uhpoCvgnO41bZA8j'
-                       b'1nudfyo5tfDw')
+        assert exn.saidb == b'EU3uP2KgAGpMocaQUKtLUT18L93QbTu_aJ-wWQBHU-mw'
+        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAAac_9tzL2U'
+                       b'67a7gD8x_0mOCMViQ_KMYamSdxIggWCzNpjLb40S9jEX-NjXJpZR4DXs2j8llesd'
+                       b'PA5xAdWdCgCg')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre
@@ -262,10 +262,10 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EmEstKjLzZNZOioX3_2ITfKepSLxyKm6v-mm9zjHfh3U'
-        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAR4RQ94hFc6'
-                       b'lOMwTcg3Xj2pKfRTYv8FBIvqTpxg2blMIGbaa4i9Ar_4BOJh58XA010gUCcrMMwI'
-                       b'g7GzDjkXksCw')
+        assert exn.saidb == b'ErNtK4G1SCZM4YVXTiJ7zkUlQRmwLQ8EGnQWyc67HsnQ'
+        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAkYKROLj5QW'
+                       b'i9F6K2N40Ppi1GsT10u9k9N6Xf4BMoOtTwSJj7ZB9OeKHF4a2XHsSNwgxmH2yC0u'
+                       b'aIQzu9UXqPCg')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre

@@ -21,7 +21,7 @@ logger = help.ogler.getLogger()
 
 class Boatswain(doing.DoDoer):
     """
-    Sends messages to Delegator of an identifier and wait for the anchoring evcent to
+    Sends messages to Delegator of an identifier and wait for the anchoring event to
     be processed to ensure the inception or rotation event has been approved by the delegator.
 
     Removes all Doers and exits as Done once the event has been anchored.
@@ -71,6 +71,7 @@ class Boatswain(doing.DoDoer):
                 pre = msg["pre"]
 
                 if pre not in self.hby.habs:
+                    print("not in hab")
                     continue
 
                 # load the hab of the delegated identifier to anchor
@@ -86,7 +87,9 @@ class Boatswain(doing.DoDoer):
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
+                if hab.phab:
+                    phab = hab.phab
+                elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:
                         witDoer = agenting.WitnessReceiptor(hby=self.hby)
@@ -108,7 +111,9 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.aids)
+                # exn of /oobis of all multisig participants to rootgar
+                # self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="oobis", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
@@ -162,7 +167,7 @@ class Boatswain(doing.DoDoer):
         return hab
 
 
-def loadHandlers(hby, exc, mbx, controller):
+def loadHandlers(hby, exc, mbx, controller, oobiery):
     """ Load handlers for the peer-to-peer delegation protocols
 
     Parameters:
@@ -170,10 +175,13 @@ def loadHandlers(hby, exc, mbx, controller):
         exc (Exchanger): Peer-to-peer message router
         mbx (Mailboxer): Database for storing mailbox messages
         controller (str): qb64 identifier prefix of controller
+        oobiery: (Oobiery): OOBI loader
 
     """
-    req = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
-    exc.addHandler(req)
+    delreq = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
+    exc.addHandler(delreq)
+    oobireq = OobiRequestHandler(hby=hby, mbx=mbx, oobiery=oobiery, controller=controller)
+    exc.addHandler(oobireq)
 
 
 class DelegateRequestHandler(doing.DoDoer):
@@ -203,7 +211,7 @@ class DelegateRequestHandler(doing.DoDoer):
     def do(self, tymth, tock=0.0, **opts):
         """
 
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
             payload is dict representing the body of a multisig/incept message
@@ -245,23 +253,127 @@ class DelegateRequestHandler(doing.DoDoer):
                     delpre=delpre,
                     ked=pay["ked"]
                 )
+                if "aids" in pay:
+                    data["aids"] = pay["aids"]
+
                 raw = json.dumps(data).encode("utf-8")
 
                 if self.controller is not None:
                     self.mbx.storeMsg(self.controller+"/delegate", raw)
 
+                # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
+                # multisig group
+
                 yield
             yield
 
 
-def delegateRequestExn(hab, delpre, ked):
+def delegateRequestExn(hab, delpre, ked, aids=None):
     data = dict(
         delpre=delpre,
         ked=ked
     )
 
+    if aids is not None:
+        data["aids"] = aids
+
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
+                              payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims
+
+
+class OobiRequestHandler(doing.DoDoer):
+    """
+    Handler for oobi notification EXN messages
+
+    """
+    resource = "/oobis"
+
+    def __init__(self, hby, mbx, oobiery, controller, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            oobiery (Oobiery) OOBI loader
+            controller (str) qb64 identity prefix of controller
+
+        """
+        self.hby = hby
+        self.mbx = mbx
+        self.controller = controller
+        self.oobiery = oobiery
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(OobiRequestHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages processing new contacts via OOBIs
+
+        Parameters:
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                prefixer = msg["pre"]
+                pay = msg["payload"]
+                if "dest" not in pay:
+                    print(f"invalid oobi request message, missing dest.  evt=: {msg}")
+                    continue
+                pre = pay["dest"]
+
+                if "oobialias" not in pay:
+                    print(f"invalid oobi message, missing oobialias.  evt=: {msg}")
+                    continue
+                oobialias = pay["oobialias"]
+
+                if "oobi" not in pay:
+                    print(f"invalid oobi message, missing oobi.  evt=: {msg}")
+                    continue
+                oobi = pay["oobi"]
+
+                hab = self.hby.habs[pre]
+
+                src = prefixer.qb64
+                self.oobiery.oobis.append(dict(alias=hab.name, oobialias=oobialias, url=oobi))
+
+                data = dict(
+                    src=src,
+                    r='/oobi',
+                    alias=hab.name,
+                    oobialias=oobialias,
+                    oobi=oobi
+                )
+                raw = json.dumps(data).encode("utf-8")
+
+                # new verified contact
+                if self.controller is not None:
+                    self.mbx.storeMsg(self.controller+"/oobi", raw)
+
+                yield
+            yield
+
+
+def oobiRequestExn(hab, dest, oobialias, oobi):
+    data = dict(
+        dest=dest,
+        oobialias=oobialias,
+        oobi=oobi
+    )
+
+    # Create `exn` peer to peer message to notify other participants UI
+    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
                               payload=data)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]

@@ -5,7 +5,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, habbing, grouping
+from keri.app import indirecting, habbing, grouping, connecting
 from keri.app.cli.common import existing
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
@@ -24,7 +24,7 @@ parser.add_argument('--edges', '-e', help='AC/DC Edge links',
                     default=None)
 parser.add_argument('--rules', help='AC/DC Rules Section',
                     default=None)
-parser.add_argument('--recipient', '-R', help='qb64 identifier prefix of the recipient of the credential',
+parser.add_argument('--recipient', '-R', help='alias or qb64 identifier prefix of the recipient of the credential',
                     default=None)
 parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=None, action="store", required=False)
 parser.add_argument('--credential', help='Full credential, \'@\' allowed', default=None, action="store",
@@ -125,15 +125,26 @@ class CredentialIssuer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.counselor = grouping.Counselor(hby=self.hby)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        self.org = connecting.Organizer(hby=self.hby)
 
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"])
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+                                          verifier=self.verifier)
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
+
         try:
             if credential is None:
+                if recipient in self.hby.kevers:
+                    recp = recipient
+                else:
+                    recp = self.org.find("alias", recipient)
+                    if len(recp) != 1:
+                        raise ValueError(f"invalid recipient {recipient}")
+                    recp = recp[0]['id']
+
                 self.creder = self.credentialer.create(regname=registryName,
-                                                       recp=recipient,
+                                                       recp=recp,
                                                        schema=schema,
                                                        source=edges,
                                                        rules=rules,

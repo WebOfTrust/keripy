@@ -82,7 +82,8 @@ class KiwiServer(doing.DoDoer):
                                verfers=self.hab.kever.verfers,
                                indexed=False)
 
-        signage = ending.Signage(markers=sigers, indexed=False)
+        signage = ending.Signage(markers=sigers, indexed=False, signer=None, ordinal=None, digest=None,
+                                 kind=None)
         sheaders = ending.signature([signage])
 
         self.hab.recreate(serder, opre, verfers)
@@ -145,7 +146,8 @@ class WatcherClientRotateDoer(doing.DoDoer):
                                        verfers=self.hab.kever.verfers,
                                        indexed=True)
 
-                signage = ending.Signage(markers=sigers, indexed=True)
+                signage = ending.Signage(markers=sigers, indexed=True, signer=None, ordinal=None, digest=None,
+                                         kind=None)
                 headers = ending.signature([signage])
 
                 client, clientDoer = agenting.httpClient(self.hab, watcher)

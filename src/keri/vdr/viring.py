@@ -306,6 +306,9 @@ class Reger(dbing.LMDBer):
         # Credential Issuance Escrow
         self.crie = proving.CrederSuber(db=self, subkey="drie.")
 
+        # Credential Sent Escrow
+        self.crse = proving.CrederSuber(db=self, subkey="crse.")
+
         # Credential Missing Signature Escrow
         self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
 

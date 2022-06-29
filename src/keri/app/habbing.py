@@ -413,7 +413,6 @@ class Habery:
                                                 f"{pre} name={name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
-            hab.reconfigure()
             hab.inited = True
             self.habs[hab.pre] = hab
             if habord.pid:
@@ -457,8 +456,8 @@ class Habery:
         """Make new Group Hab with name using pre from hab as local identifier, pre is generated from **kwa
 
         Parameters: (Passthrough to hab.make)
-            group (str): human readable alias for group identfier
-            hab (Hab): Habititat of local identifier to use as participant in group
+            group (str): human readable alias for group identifier
+            hab (Hab): Habitat of local identifier to use as participant in group
             secrecies (list): of list of secrets to preload key pairs if any
             iridx (int): initial rotation index after ingestion of secrecies
             code (str): prefix derivation code
@@ -477,12 +476,12 @@ class Habery:
         aids = list(kwa['aids'])
         del kwa['aids']
         if phab.pre not in aids:
-            raise kering.ConfigurationError("Local identifer must be member of aids ={}"
+            raise kering.ConfigurationError("Local identifier must be member of aids ={}"
                                             .format(aids))
 
         for aid in aids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifer {aid} not recognized from group aids ={aids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={aids}")
 
         mskeys, msdigers = self.extractKeysDigs(aids)
         kwa["mskeys"] = mskeys
@@ -896,7 +895,8 @@ class Hab:
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
-        self.reconfigure()  # should we do this for new Habs not loaded from db
+        if not self.phab:
+            self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
 
@@ -910,6 +910,9 @@ class Hab:
           dt: "isodatetime",
           curls: ["tcp://localhost:5620/"],
           iurls: ["tcp://localhost:5621/?name=eve"],
+          nurls: {
+              {"alias": "GLEIF Root", "oobi":  "http://localhost:3000/root"}
+          }
         }
 
         Config file is meant to be read only at init not changed by app at
@@ -936,6 +939,11 @@ class Hab:
                                                    scheme=scheme,
                                                    stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
+
+            if "nurls" in conf:
+                for oobi in conf["nurls"]:
+                    obr = basing.OobiRecord(date=help.toIso8601(dt), oobialias=oobi["alias"], alias=self.name)
+                    self.db.oobis.put(keys=(oobi["oobi"],), val=obr)
 
     def recreate(self, serder, opre, verfers):
         """ Recreate the Hab with new identifier prefix.
@@ -1229,10 +1237,11 @@ class Hab:
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign
-            if not self.phab:
-                kever = self.kever
-            else:  # group so use gid kever
-                kever = self.phab.kever
+            kever = self.kever
+            # if not self.phab:
+            #     kever = self.kever
+            # else:  # group so use gid kever
+            #     kever = self.phab.kever
 
             if last:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)
@@ -1271,9 +1280,16 @@ class Hab:
         """
         if not pre:
             pre = self.pre
+
         msgs = bytearray()
+        kever = self.kevers[pre]
+        if kever.delegated:
+            for msg in self.db.clonePreIter(pre=kever.delegator, fn=0):
+                msgs.extend(msg)
+
         for msg in self.db.clonePreIter(pre=pre, fn=fn):
             msgs.extend(msg)
+
         return msgs
 
     def replayAll(self, key=b''):

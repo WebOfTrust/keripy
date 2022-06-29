@@ -91,7 +91,7 @@ class WitnessReceiptor(doing.DoDoer):
                 # Check to see if we already have all the receipts we need for this event
                 wigs = hab.db.getWigs(dgkey)
                 if len(wigs) == len(wits):  # We have all the receipts, skip
-                    self.cues.append(msg)
+                    self.cues.append(evt)
                     continue
 
                 witers = []
@@ -481,7 +481,7 @@ class HttpWitnesser(doing.DoDoer):
         _ = (yield self.tock)
 
         while True:
-            while not self.client.responses:
+            while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
                 yield
@@ -541,7 +541,7 @@ def httpClient(hab, wit):
     """
     urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
     if not urls:
-        raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
+        logger.error(f"unable to query witness {wit}, no http endpoint")
 
     up = urlparse(urls[kering.Schemes.http])
     client = http.clienting.Client(hostname=up.hostname, port=up.port)

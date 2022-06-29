@@ -6,7 +6,6 @@ keri.app.forwarding module
 module for enveloping and forwarding KERI message
 """
 
-import random
 
 from hio.base import doing
 from hio.help import decking
@@ -65,6 +64,7 @@ class Postman(doing.DoDoer):
                 # Get the kever of the recipient and choose a witness
                 wit = agenting.mailbox(hab, recp)
                 if not wit:
+                    print(f"exiting because can't find wit for {recp}")
                     continue
 
                 msg = bytearray()
@@ -277,4 +277,3 @@ def introduce(hab, wit):
         msgs.extend(hab.replyEndRole(cid=hab.pre, role=kering.Roles.witness))
 
     return msgs
-

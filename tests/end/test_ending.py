@@ -9,17 +9,11 @@ import logging
 
 import falcon
 from falcon import testing
-
-import pytest
-
 from hio.base import tyming, doing
-from hio.core import wiring, http
 
 from keri import help
-from keri.app import keeping, habbing
-from keri.db import basing
+from keri.app import habbing
 from keri.core import coring
-
 from keri.end import ending
 
 logger = help.ogler.getLogger()
@@ -82,7 +76,8 @@ def test_signature_designature():
         sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
 
         # test signature with list markers as indexed sigers and defaults for indexed and signer
-        signage = ending.Signage(markers=sigers)
+        signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
+                                 kind=None)
         header = ending.signature([signage])  # put it in a list
         assert header == ({'Signature':
                            'indexed="?1";'
@@ -133,7 +128,8 @@ def test_signature_designature():
 
         # test signature with list markers as nonindexed cigars and defaults for indexed and signer
         cigars = hab.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
-        signage = ending.Signage(markers=cigars)
+        signage = ending.Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
+                                 kind=None)
         header = ending.signature([signage])
         assert header == ({'Signature':
                                'indexed="?0";'
@@ -158,9 +154,9 @@ def test_signature_designature():
         #  now combine into one header
         signages = []
         signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
-                                       kind="CESR"))
+                                       ordinal=None, digest=None, kind="CESR"))
         signages.append(ending.Signage(markers=cigars, indexed=False, signer=hab.pre,
-                                       kind="CESR"))
+                                       ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
         assert header == ({
@@ -200,10 +196,10 @@ def test_signature_designature():
         signages = []
         markers = {tags[i]: marker for i, marker in enumerate(sigers)}
         signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True,
-                                       kind="CESR"))
+                                       ordinal=None, digest=None, kind="CESR"))
         markers = {tags[i]: marker for i, marker in enumerate(cigars)}
         signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False,
-                                       kind="CESR"))
+                                       ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
         assert header == ({
@@ -373,7 +369,8 @@ def test_seid_api():
                         b'8080,"path":"/witness"}')
         # sign here  check for non-transferable
         sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
-        signage = ending.Signage(markers=sigers)
+        signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
+                                 kind=None)
         header = ending.signature([signage])
         assert header == ({'Signature':
                                'indexed="?1";'

@@ -256,21 +256,14 @@ class Counselor(doing.DoDoer):
                 keys = [verfer.qb64 for verfer in kever.verfers]
                 witer = ghab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
 
-                if kever.delegated:  # We are a delegated identfier, must wait for delegator approval
+                if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
+                    # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witer:  # We are elected to perform delegation and witnessing messaging
-                        print("We are the witnesser, sending to delegator")
+                        print(f"We are the witnesser, sending {pre} to delegator")
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         self.witq.query(src=ghab.phab.pre, pre=kever.delegator, anchor=anchor)
-
-                    # Move to escrow waiting for delegator approval
-                    if witer:
-                        # Send exn message for notification purposes
-                        srdr = coring.Serder(raw=bytes(sraw))
-                        exn, atc = delegating.delegateRequestExn(ghab.phab, delpre=kever.delegator, ked=srdr.ked)
-                        self.postman.send(src=ghab.phab.pre, dest=kever.delegator, topic="delegate", serder=exn,
-                                          attachment=atc)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -305,11 +298,11 @@ class Counselor(doing.DoDoer):
                 self.hby.db.gdee.rem(keys=(pre,))
 
                 if witer:  # We are elected witnesser, send off event to witnesses
-                    print("We are the witnesser, sending to witnesses")
+                    print(f"We are the witnesser, sending {pre} to witnesses")
                     self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
 
                 # Move to escrow waiting for witness receipts
-                print("Waiting for witness receipts")
+                print(f"Waiting for witness receipts for {pre}")
                 self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processPartialWitnessEscrow(self):
@@ -388,7 +381,7 @@ class MultisigInceptHandler(doing.DoDoer):
     def do(self, tymth, tock=0.0, **opts):
         """
 
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
             payload is dict representing the body of a multisig/incept message
@@ -450,11 +443,14 @@ class MultisigInceptHandler(doing.DoDoer):
             yield
 
 
-def multisigInceptExn(hab, aids, ked):
+def multisigInceptExn(hab, aids, ked, delegator=None):
     data = dict(
         aids=aids,
         ked=ked
     )
+
+    if delegator is not None:
+        data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=MultisigInceptHandler.resource, modifiers=dict(),
@@ -726,11 +722,15 @@ class MultisigIssueHandler(doing.DoDoer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 pl = msg["payload"]
-                pl["r"] = "/issue"
 
                 try:
                     creder = proving.Creder(ked=pl)
-                    self.mbx.storeMsg(self.controller+"/multisig", creder.raw)
+                    data = dict(
+                        r="/issue",
+                        ked=creder.ked
+                    )
+                    msg = json.dumps(data).encode("utf-8")
+                    self.mbx.storeMsg(self.controller+"/multisig", msg)
                 except ValueError as ex:
                     logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
                 yield

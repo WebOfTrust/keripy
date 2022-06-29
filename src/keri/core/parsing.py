@@ -458,6 +458,7 @@ class Parser:
         tvy = tvy if tvy is not None else self.tvy
         exc = exc if exc is not None else self.exc
         rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
 
         while ims:  # only process until ims empty
             try:
@@ -927,12 +928,7 @@ class Parser:
 
                         pims = ims[:pags]  # copy out substream pipeline group
                         del ims[:pags]  # strip off from ims
-
-                        path = yield from self._extractor(pims,
-                                                          klas=Pather,
-                                                          cold=cold,
-                                                          abort=pipelined)
-                        pathed.append((path, pims))
+                        pathed.append(pims)
 
                     else:
                         raise kering.UnexpectedCountCodeError("Unsupported count"
@@ -1112,6 +1108,7 @@ class Parser:
             try:
                 vry.processCredential(**args)
             except AttributeError as e:
+                print(e)
                 raise kering.ValidationError("No verifier to process so dropped credential"
                                              "= {}.".format(creder.pretty()))
 

@@ -10,6 +10,7 @@ from keri import kering
 from keri.app import habbing, delegating, storing, indirecting, agenting
 from keri.core import eventing, parsing, coring
 from keri.db import dbing
+from keri.end import ending
 from keri.peer import exchanging
 
 
@@ -144,10 +145,10 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EOzhG8zOQeJx9ioZ0Swm7KjYJk69Z6AWR8mSpuw16gh0'
-        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAkg_cTDALc_'
-                       b'uJ31MaLzHzRbWNvYoJQUHo1p0Y-otu73X-8wnGAJE0aNpZELS-wnxVxh-FfCPOhW'
-                       b'GutLk8HXjuBg')
+        assert exn.saidb == b'EDf6cgBdTjZ8wI7u-sTUfhBquA7YCjqbYSKUqNEmvb3s'
+        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA7Tk9lvwjgj'
+                       b'KBu7yOD4RbVIOnP_EDR8Bv728fPnOfP3BU8XNr1uAtkefCXgjp0Nl13MvHhdO_If'
+                       b'xqd9yP7qOqDg')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         assert data["ked"] == serder.ked
@@ -199,7 +200,9 @@ def test_delegation_request_handler(mockHelpingNowUTC):
 
         mbx = storing.Mailboxer(name=hab.name, temp=True)
         exc = exchanging.Exchanger(hby=hby, handlers=[])
-        delegating.loadHandlers(hby=hby, exc=exc, mbx=mbx, controller=ctrl)
+        oobiery = ending.Oobiery(hby=hby)
+
+        delegating.loadHandlers(hby=hby, exc=exc, mbx=mbx, controller=ctrl, oobiery=oobiery)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)

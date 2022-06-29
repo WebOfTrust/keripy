@@ -22,9 +22,11 @@ from ..core import coring, eventing, cueing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
+from ..help import helping
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
+from ..app.cli.common import oobiing
 
 logger = help.ogler.getLogger()
 
@@ -238,6 +240,7 @@ class IdentifierEnd(doing.DoDoer):
         if hab.phab:
             data["group"] = dict(
                 pid=hab.phab.pre,
+                aids=hab.aids,
                 accepted=hab.accepted
             )
 
@@ -260,7 +263,7 @@ class IdentifierEnd(doing.DoDoer):
             if kever.delegated:
                 data["delegated"] = kever.delegated
                 data["delegator"] = kever.delegator
-                dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
+                dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.lastEst.d)
                 anchor = self.hby.db.getAes(dgkey)
                 data["anchored"] = anchor is not None
 
@@ -404,6 +407,7 @@ class IdentifierEnd(doing.DoDoer):
             kwa["delpre"] = body["delpre"]
 
         hab = self.hby.makeHab(name=alias, **kwa)
+        self.extend([oobiing.OobiLoader(hby=self.hby, auto=True)])
         self.cues.append(dict(pre=hab.pre))
 
         icp = hab.makeOwnInception()
@@ -919,6 +923,97 @@ class CredentialEnd(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
 
+    def on_get_export(self, _, rep, alias, said):
+        """ Credentials GET endpoint
+
+        Parameters:
+            _: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name of identifier to load credentials for
+            said (str): SAID of credential to export
+
+        ---
+        summary:  Export credential and all supporting cryptographic material
+        description: Export credential and all supporting cryptographic material
+        tags:
+           - Credentials
+        parameters:
+           - in: path
+             name: alias
+             schema:
+               type: string
+             required: true
+             description: Human readable alias for the identifier to create
+           - in: path
+             name: said
+             schema:
+               type: string
+             required: true
+             description: SAID of credential to export
+        responses:
+           200:
+              description: Credential export.
+              content:
+                  application/json+cesr:
+                    schema:
+                        description: Credential
+                        type: object
+
+        """
+        hab = self.hby.habByName(name=alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid alias {} for credentials".format(alias)
+            return
+
+        data = self.outputCred(hab, said)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json+cesr"
+        rep.data = bytes(data)
+
+    def outputCred(self, hab, said):
+        out = bytearray()
+        creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
+        chains = creder.crd["e"]
+        saids = []
+        for key, source in chains.items():
+            if key == 'd':
+                continue
+
+            if not isinstance(source, dict):
+                continue
+
+            saids.append(source['n'])
+
+        for said in saids:
+            out.extend(self.outputCred(hab, said))
+
+        issr = creder.issuer
+        for msg in self.hby.db.clonePreIter(pre=issr):
+            serder = coring.Serder(raw=msg)
+            atc = msg[serder.size:]
+            out.extend(serder.raw)
+            out.extend(atc)
+
+        if creder.status is not None:
+            for msg in self.rgy.reger.clonePreIter(pre=creder.status):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+            for msg in self.rgy.reger.clonePreIter(pre=creder.said):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                out.extend(serder.raw)
+                out.extend(atc)
+
+        out.extend(creder.raw)
+        out.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True))
+
+        return out
+
     def on_post(self, req, rep, alias):
         """ Initiate a credential issuance
 
@@ -948,7 +1043,7 @@ class CredentialEnd(doing.DoDoer):
                   properties:
                     registry:
                       type: string
-                      description: AID of credential issuance/revocation registry (aka status)
+                      description: Alias of credential issuance/revocation registry (aka status)
                     recipient:
                       type: string
                       description: AID of credential issuance/revocation recipient
@@ -977,7 +1072,6 @@ class CredentialEnd(doing.DoDoer):
                         description: Credential
                         type: object
 
-
         """
         body = req.get_media()
         hab = self.hby.habByName(alias)
@@ -995,8 +1089,14 @@ class CredentialEnd(doing.DoDoer):
         data = body.get("credentialData")
 
         try:
-            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            _, edges = coring.Saider.saidify(sad=source)
+        except KeyError:
+            edges = source
+
+        try:
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
             self.credentialer.issue(creder=creder)
+
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
             rep.text = e.args[0]
@@ -1006,7 +1106,7 @@ class CredentialEnd(doing.DoDoer):
         self.evts.append(dict(topic="/credential", r="/iss/complete", d=creder.said))
 
         rep.status = falcon.HTTP_200
-        rep.data = creder.pretty().encode("utf-8")
+        rep.data = creder.raw
 
     def on_post_iss(self, req, rep, alias=None):
         """ Initiate a credential issuance from a group multisig identfier
@@ -1056,6 +1156,9 @@ class CredentialEnd(doing.DoDoer):
                             s:
                                type: string
                                description: SAID of reference chain schema
+                    rules:
+                      type: array
+                      description: list of credential chain sources (ACDC)
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
@@ -1084,8 +1187,14 @@ class CredentialEnd(doing.DoDoer):
         source = body.get("source")
         rules = body.get("rules")
         data = body.get("credentialData")
+
         try:
-            creder = self.credentialer.create(regname, recp, schema, source, rules, data)
+            _, edges = coring.Saider.saidify(sad=source)
+        except KeyError:
+            edges = source
+
+        try:
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
             self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
@@ -1535,7 +1644,7 @@ class MultisigInceptEnd(MultisigEndBase):
     """
 
     def __init__(self, hby, counselor, cues=None):
-        """ Create an endpoint resource for creating or participating in multisig group identfiiers
+        """ Create an endpoint resource for creating or participating in multisig group identifiers
 
         Parameters:
             hby (Habery): identifier database environment
@@ -1678,7 +1787,6 @@ class MultisigInceptEnd(MultisigEndBase):
             return
 
         if not ghab.accepted:
-            # Create /multig/incept exn message with icp event and witness oobis as payload events
             evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
         else:
             evt = ghab.makeOwnInception()
@@ -2196,12 +2304,13 @@ class OobiResource(doing.DoDoer):
         self.hby = hby
 
         self.oobiery = oobiery if oobiery is not None else ending.Oobiery(hby=self.hby)
-        doers = [self.oobiery, doing.doify(self.loadDo)]
+        self.postman = forwarding.Postman(hby=self.hby)
+        doers = [self.oobiery, self.postman, doing.doify(self.loadDo)]
 
         super(OobiResource, self).__init__(doers=doers)
 
     def on_get_alias(self, req, rep, alias=None):
-        """ Identifier GET endpoint
+        """ OOBI GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -2334,6 +2443,7 @@ class OobiResource(doing.DoDoer):
         if "url" in body:
             oobi = body["url"]
             oobialias = body["oobialias"]
+            # oobialias is alias name for new identifier, alias is local hab that will sign the data
             self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
         elif "rpy" in body:
             pass
@@ -2343,6 +2453,74 @@ class OobiResource(doing.DoDoer):
             return
 
         rep.status = falcon.HTTP_202
+
+    def on_post_share(self, req, rep, alias):
+        """ Share OOBI endpoint.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of the local identifier context for resolving this OOBI
+
+        ---
+        summary: Share OOBI and alias for remote identifier with other aids
+        description: Send all other participants in a group AID a copy of the OOBI with suggested alias
+        tags:
+           - OOBIs
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for AID to use to sign exn message
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: OOBI
+                    properties:
+                        oobis:
+                            type: array
+                            items:
+                               type: object
+                               properties:
+                                  alias:
+                                    type: string
+                                    description: alias to assign to the identifier resolved from this OOBI
+                                    required: true
+                                  url:
+                                    type: string
+                                    description:  URL OOBI
+        responses:
+           202:
+              description: OOBI resolution to key state successful
+
+        """
+        body = req.get_media()
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"Unknown identifier {alias}"
+            return
+
+        if hab.phab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"Identifer for {alias} is not a group hab, not supported"
+            return
+
+        oobis = body["oobis"]
+        for aid in hab.aids:
+            if aid == hab.phab.pre:
+                continue
+
+            for oobi in oobis:
+                exn, atc = delegating.oobiRequestExn(hab.phab, aid, oobi["alias"], oobi["url"])
+                self.postman.send(src=hab.phab.pre, dest=aid, topic="delegate", serder=exn, attachment=atc)
+
+        rep.status = falcon.HTTP_200
+        return
 
     def on_post(self, req, rep):
         """ Resolve OOBI endpoint.
@@ -2540,7 +2718,8 @@ class ChallengeEnd:
         words = body["words"]
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        dt = "2022-05-19T20:20:00.751126+00:00"
+        exn = exchanging.exchange(route="/challenge/response", payload=payload, date=dt)
         self.rep.reps.append(dict(src=hab.pre, dest=recpt, rep=exn, topic="challenge"))
 
         rep.status = falcon.HTTP_202
@@ -3170,6 +3349,8 @@ def loadEnds(app, *,
         registrar (Registrar): credential registry protocol manager
         counselor (Counselor): group multisig identifier communication manager
         credentialer (Credentialer): credential issuance protocol manager
+        servery (Servery):
+        bootConfig: (dict): original launch configuration of Servery
         notifications (Deck): cue to forward agent notifications to controller
         rxbs (bytearray): output queue of bytes for message processing
         queries (Deck): query cues for HttpEnd to start mailbox stream
@@ -3211,12 +3392,14 @@ def loadEnds(app, *,
 
     credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier, registrar=registrar, credentialer=credentialer)
     app.add_route("/credentials/{alias}", credsEnd)
+    app.add_route("/credentials/{alias}/{said}", credsEnd, suffix="export")
     app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
 
     oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
     app.add_route("/oobi/{alias}", oobiEnd, suffix="alias")
     app.add_route("/oobi", oobiEnd)
+    app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
 
     chacha = ChallengeEnd(hby=hby, rep=rep)
     app.add_route("/challenge", chacha)
@@ -3294,7 +3477,8 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
     grouping.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
-    delegating.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller)
+    oobiery = ending.Oobiery(hby=hby)
+    delegating.loadHandlers(hby=hby, exc=exchanger, mbx=mbx, controller=controller, oobiery=oobiery)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()
@@ -3325,7 +3509,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         servery=servery, bootConfig=bootConfig, rxbs=mbd.ims, queries=queries, **kwargs)
 
     servery.msgs.append(dict(app=app))
-    doers.extend([rep, counselor, registrar, credentialer, notifier])
+    doers.extend([rep, counselor, registrar, credentialer, notifier, oobiery])
     doers.extend(endDoers)
 
     return doers
