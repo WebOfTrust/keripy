@@ -6,7 +6,8 @@ name: GitHub Actions for keripy
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
+      - 'development'
   pull_request:
   workflow_dispatch:
 
