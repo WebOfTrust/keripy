@@ -1,4 +1,9 @@
 #!/bin/bash
+# To run this script you need to run the following command in separate terminals:
+#   > kli witness demo
+# and from the vLEI repo run:
+#   > vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/
+#
 
 # Create local environments for multisig group
 kli init --name multisig1 --salt 0AMDEyMzQ1Njc4OWxtbm9wcQ --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
@@ -25,9 +30,9 @@ kli oobi resolve --name multisig1 --oobi-alias holder --oobi http://127.0.0.1:56
 kli oobi resolve --name multisig2 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
 # Load Data OOBI for schema of credential to issue
-kli oobi resolve --name multisig1 --oobi-alias holder --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-kli oobi resolve --name multisig2 --oobi-alias holder --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name multisig1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name multisig2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name holder --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
 
 # In two seperate terminals, run the following commands:
 # kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-sample.json
@@ -43,6 +48,7 @@ kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/
 # kli multisig rotate --name multisig2 --alias multisig
 
 # Issue Credential
-# kli vc issue --name multisig1 --alias multisig --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI --data @scripts/demo/credential-data.json
+# kli vc issue --name multisig1 --alias multisig --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient EeWTHzoGK_dNn71CmJh-4iILvqHGXcqEoKGF4VUc6ZXI --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
 # kli vc issue --name multisig2 --alias multisig --credential @./credential.json
 
+# kli vc list --name holder --alias holder --poll
