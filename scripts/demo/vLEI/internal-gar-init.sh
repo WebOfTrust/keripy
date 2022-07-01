@@ -17,5 +17,5 @@ echo ""
 echo "intgar2 OOBIs"
 kli oobi generate --name intgar2 --alias intgar2 --role witness
 
-# kli multisig incept --name intgar1 --alias intgar1 --group "External GAR" --file scripts/demo/internal-gar-incept.json
-# kli multisig incept --name intgar2 --alias intgar2 --group "External GAR" --file scripts/demo/internal-gar-incept.json
+# kli multisig incept --name intgar1 --alias intgar1 --group "External GAR" --file ${KERI_DEMO_SCRIPT_DIR}/data/internal-gar-incept.json
+# kli multisig incept --name intgar2 --alias intgar2 --group "External GAR" --file ${KERI_DEMO_SCRIPT_DIR}/data/internal-gar-incept.json

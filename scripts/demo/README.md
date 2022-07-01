@@ -15,6 +15,9 @@ or
 
 depending on your shell.
 
+You also need to have `jq` installed on your machine as the scripts use it to pretty print the JSON results of many of the 
+commands.
+
 ### Python Requirements
 We recommend using a virtual environment manager like `venv` or `pyenv` to set up a virtual environment with the version
 of python listed in `setup.py` and `pip` for that version of Python.   Once that is done, install the required dependencies with:

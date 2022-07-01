@@ -34,6 +34,8 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 parser.add_argument("--poll", "-P", help="Poll mailboxes for any issued credentials", action="store_true")
+parser.add_argument("--issued", "-i", help="Display credentials that this AID has issued.",
+                    action="store_true")
 parser.add_argument("--said", "-s", help="Display only the SAID of found credentials, one per line.",
                     action="store_true")
 
@@ -48,16 +50,18 @@ def list_credentials(args):
                   bran=args.bran,
                   verbose=args.verbose,
                   poll=args.poll,
-                  said=args.said)
+                  said=args.said,
+                  issued=args.issued)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False):
+    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False):
         self.verbose = verbose
         self.poll = poll
         self.said = said
+        self.issued = issued
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -87,7 +91,7 @@ class ListDoer(doing.DoDoer):
 
         if self.poll:
             end = helping.nowUTC() + datetime.timedelta(seconds=5)
-            sys.stdout.write("Checking mailboxes for any issued credentials")
+            sys.stdout.write(f"Checking mailboxes for any {'issued' if self.issued else 'received'} credentials")
             sys.stdout.flush()
             while helping.nowUTC() < end:
                 sys.stdout.write(".")
@@ -97,12 +101,16 @@ class ListDoer(doing.DoDoer):
                 yield 1.0
             print("\n")
 
-        saids = self.rgy.reger.subjs.get(keys=self.hab.pre)
+        if self.issued:
+            saids = self.rgy.reger.issus.get(keys=self.hab.pre)
+        else:
+            saids = self.rgy.reger.subjs.get(keys=self.hab.pre)
+
         if self.said:
             for said in saids:
                 print(said.qb64)
         else:
-            print(f"Current credentials for {self.hab.name} ({self.hab.pre}):\n")
+            print(f"Current {'issued' if self.issued else 'received'} credentials for {self.hab.name} ({self.hab.pre}):\n")
             creds = self.rgy.reger.cloneCreds(saids)
             for idx, cred in enumerate(creds):
                 sad = cred['sad']
