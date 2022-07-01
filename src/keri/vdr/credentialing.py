@@ -410,7 +410,7 @@ class Registrar(doing.DoDoer):
             self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
-            print("Waiting for TEL event mulisig anchoring event")
+            print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
         return registry
@@ -456,7 +456,7 @@ class Registrar(doing.DoDoer):
             self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
-            print(f"Waiting for TEL event mulisig anchoring event {seqner.sn}")
+            print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
@@ -505,7 +505,7 @@ class Registrar(doing.DoDoer):
             self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
-            print(f"Waiting for TEL event mulisig anchoring event {seqner.sn}")
+            print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 

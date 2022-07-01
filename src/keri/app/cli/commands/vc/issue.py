@@ -135,7 +135,9 @@ class CredentialIssuer(doing.DoDoer):
 
         try:
             if credential is None:
-                if recipient in self.hby.kevers:
+                if recipient is None:
+                    recp = None
+                elif recipient in self.hby.kevers:
                     recp = recipient
                 else:
                     recp = self.org.find("alias", recipient)

@@ -21,8 +21,6 @@ def main():
         directing.runController(doers=doers, expire=0.0)
 
     except Exception as ex:
-        # print(f"ERR: {ex}")
-        # return -1
         raise ex
 
 
