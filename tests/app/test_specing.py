@@ -61,7 +61,7 @@ def test_spec_resource():
         assert "/lock" in paths
         lock = paths["/lock"]
         assert len(lock) == 1
-        assert "get" in lock
+        assert "post" in lock
 
         assert "/groups/{alias}/icp" in paths
         icp = paths["/groups/{alias}/icp"]
@@ -99,7 +99,7 @@ def test_spec_resource():
                       '"description": "human readable nickname for this agent", "example": "alice"}, "passcode": {'
                       '"type": "string", "description": "passcode for unlocking the agent and decrypting the '
                       'keystore", "example": "RwyY-KleGM-jbe1-cUiSz-p3Ce"}}}}}}, "responses": {"200": {"description": '
-                      '"JSON object containing status message"}}}}, "/lock": {"get": {"summary": "Lock", '
+                      '"JSON object containing status message"}}}}, "/lock": {"post": {"summary": "Lock", '
                       '"description": "Reloads the API to the boot version", "tags": ["Lock"], "responses": {"200": {'
                       '"description": "locked"}}}}, "/boot/{name}": {"get": {"summary": "Query KERI environment for '
                       'keystore name", "tags": ["Boot"], "parameters": [{"in": "path", "name": "name", "schema": {'
