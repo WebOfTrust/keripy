@@ -32,7 +32,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
-parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
+parser.add_argument("--verbose", "-V", help="print full JSON of all credentials", action="store_true")
 parser.add_argument("--poll", "-P", help="Poll mailboxes for any issued credentials", action="store_true")
 parser.add_argument("--issued", "-i", help="Display credentials that this AID has issued.",
                     action="store_true")

@@ -13,17 +13,16 @@ from keri.core import coring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Saidify a JSON file.')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
 parser.add_argument('--label', '-l', help='Field label to SAID-ify', default="d", required=False)
 
 
-
 def handler(args):
     """
-    Create KERI identifier prefix in specified key store with alias
+    Saidify the provided SAD
 
     Args:
         args(Namespace): arguments object from command line
@@ -32,7 +31,7 @@ def handler(args):
     return [doing.doify(saidify, **kwa)]
 
 
-def saidify(tymth, tock=0.0, **opts):
+def saidify(tock=0.0, **opts):
     _ = (yield tock)
 
     args = opts["args"]
@@ -43,6 +42,3 @@ def saidify(tymth, tock=0.0, **opts):
 
     with open(args.file, 'w') as f:
         json.dump(out, f, indent=2)
-
-
-

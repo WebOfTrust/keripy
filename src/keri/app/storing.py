@@ -89,7 +89,7 @@ class Mailboxer(dbing.LMDBer):
              The suffix is appended and stripped transparently.
 
          Parameters:
-             topic (bytes): Apparent effective key
+             topic (Option(bytes|str)): Apparent effective key
              fn (int) starting index
         """
         if hasattr(topic, "encode"):

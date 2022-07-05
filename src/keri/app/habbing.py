@@ -537,7 +537,7 @@ class Habery:
             self.db.close(clear=self.db.temp or clear)
 
         if self.cf:
-            self.cf.close(clear=self.cf.temp or clear)
+            self.cf.close(clear=self.cf.temp)
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """

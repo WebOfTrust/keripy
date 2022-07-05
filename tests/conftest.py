@@ -7,13 +7,16 @@ https://docs.pytest.org/en/latest/pythonpath.html
 """
 import os
 import shutil
+import multicommand
 
 import pytest
+from hio.base import doing
 
 from keri import kering
 from keri.core import scheming, coring
 from keri.db import basing
 from keri.help import helping
+from keri.app.cli import commands
 
 
 @pytest.fixture()
@@ -55,6 +58,7 @@ class DbSeed:
         Args:
             db (Baser): database to add records
             protocols (list) array of str protocol names to load URLs for.
+            temp (bool): flag for creating end for witnesses with temp databases
         Returns:
 
         """
@@ -224,8 +228,49 @@ class Helpers:
             shutil.rmtree(f'/usr/local/var/keri/reg/{name}')
         if os.path.exists(f'/usr/local/var/keri/cf/{name}.json'):
             os.remove(f'/usr/local/var/keri/cf/{name}.json')
+        if os.path.exists(f'/usr/local/var/keri/cf/{name}'):
+            shutil.rmtree(f'/usr/local/var/keri/cf/{name}')
 
 
 @pytest.fixture
 def helpers():
     return Helpers
+
+
+class CommandDoer(doing.DoDoer):
+    """
+    DoDoer for running a single command-line command by initializing
+    the doers for that command and executing them until they complete.
+
+    """
+
+    def __init__(self, command, **kwa):
+        self.command = command
+        super(CommandDoer, self).__init__(doers=[doing.doify(self.cmdDo)], **kwa)
+
+    def cmdDo(self, tymth, tock=0.0):
+        """  Execute single command from .command by parsing and executing the resulting doers """
+
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        parser = multicommand.create_parser(commands)
+        args = parser.parse_args(self.command)
+        assert args.handler is not None
+        doers = args.handler(args)
+
+        self.extend(doers)
+
+        while True:
+            done = True
+            for doer in doers:
+                if not doer.done:
+                    done = False
+
+            if done:
+                break
+            yield self.tock
+
+        return True
