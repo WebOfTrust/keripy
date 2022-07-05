@@ -5,7 +5,6 @@ keri.kli.commands module
 """
 import argparse
 import getpass
-from contextlib import contextmanager
 
 from hio import help
 from hio.base import doing
@@ -104,7 +103,7 @@ class InitDoer(doing.DoDoer):
         cf = None
         if configFile is not None:
             cf = configing.Configer(name=configFile,
-                                    base=base,
+                                    base="",
                                     headDirPath=configDir,
                                     temp=False,
                                     reopen=True,

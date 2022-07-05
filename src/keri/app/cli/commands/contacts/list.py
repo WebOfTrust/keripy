@@ -9,6 +9,7 @@ import argparse
 from hio import help
 from hio.base import doing
 
+from keri.app import connecting
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
 from keri.kering import ConfigurationError
@@ -39,26 +40,14 @@ def list(tymth, tock=0.0, **opts):
     _ = (yield tock)
     args = opts["args"]
     name = args.name
-    prefix = args.prefix
     base = args.base
     bran = args.bran
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
-
-
-
-            if prefix not in hby.kevers:
-                print(f"identifier prefix {prefix} is not known locally")
-                return -1
-            displaying.printExternal(hby, prefix)
-
-            if args.verbose:
-                cloner = hby.db.clonePreIter(pre=prefix, fn=0)  # create iterator at 0
-                for msg in cloner:
-                    srdr = coring.Serder(raw=msg)
-                    print(srdr.pretty())
-                    print()
+            org = connecting.Organizer(hby=hby)
+            for c in org.list():
+                print(c)
 
     except ConfigurationError as e:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )

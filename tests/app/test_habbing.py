@@ -7,7 +7,6 @@ import pytest
 
 import os
 import shutil
-import time
 
 from hio.base import doing, tyming
 
@@ -464,8 +463,8 @@ def test_make_load_hab_with_habery():
         assert bobHab.accepted
         assert bobHab.inited
 
-
     hby.close(clear=True)
+    hby.cf.close(clear=True)
     assert not os.path.exists(hby.cf.path)
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
@@ -511,6 +510,7 @@ def test_hab_rotate_with_witness():
         assert odig != hab.kever.serder.said
 
     hby.close(clear=True)
+    hby.cf.close(clear=True)
     assert not os.path.exists(hby.cf.path)
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
@@ -564,6 +564,7 @@ def test_habery_reinitialization():
         assert hab.kever.serder.said == ndig
 
     hby.close(clear=True)
+    hby.cf.close(clear=True)
     assert not os.path.exists(hby.cf.path)
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)

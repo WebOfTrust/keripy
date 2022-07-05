@@ -5,16 +5,15 @@ keri.kli.commands module
 """
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from json import JSONDecodeError
 
-import sys
 from hio import help
 from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
 from keri.app.cli.common import existing
-from keri.core import coring
 
 logger = help.ogler.getLogger()
 
@@ -94,7 +93,7 @@ class InceptDoer(doing.DoDoer):
         cf = None
         if config is not None:
             cf = configing.Configer(name=name,
-                                    base=base,
+                                    base="",
                                     headDirPath=config,
                                     temp=False,
                                     reopen=True,
