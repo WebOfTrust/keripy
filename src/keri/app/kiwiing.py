@@ -22,7 +22,6 @@ from ..core import coring, eventing, cueing
 from ..db import dbing
 from ..db.dbing import dgKey
 from ..end import ending
-from ..help import helping
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
@@ -42,7 +41,7 @@ class LockEnd(doing.DoDoer):
 
         super(LockEnd, self).__init__(doers=[])
 
-    def on_get(self, _, rep):
+    def on_post(self, _, rep):
         """ Lock POST endpoint
 
         Parameters:
@@ -60,15 +59,14 @@ class LockEnd(doing.DoDoer):
 
 
         """
-        doers = booting.setup(servery=self.servery, controller=self.bootConfig["controller"],
-                              configFile=self.bootConfig["configFile"],
-                              configDir=self.bootConfig["configDir"],
-                              insecure=self.bootConfig["insecure"],
-                              tcp=self.bootConfig["tcp"],
-                              adminHttpPort=self.bootConfig["adminHttpPort"],
-                              path=self.bootConfig["staticPath"],
-                              headDirPath=self.bootConfig["headDirPath"])
-        self.extend(doers)
+        booting.setup(servery=self.servery, controller=self.bootConfig["controller"],
+                      configFile=self.bootConfig["configFile"],
+                      configDir=self.bootConfig["configDir"],
+                      insecure=self.bootConfig["insecure"],
+                      tcp=self.bootConfig["tcp"],
+                      adminHttpPort=self.bootConfig["adminHttpPort"],
+                      path=self.bootConfig["staticPath"],
+                      headDirPath=self.bootConfig["headDirPath"])
 
         rep.status = falcon.HTTP_200
         body = dict(msg="locked")
@@ -1694,7 +1692,7 @@ class MultisigInceptEnd(MultisigEndBase):
                 isith = isith.split(",")
 
         inits["isith"] = isith
-        
+
         nsith = None
         if "nsith" in body:
             nsith = body["nsith"]
@@ -3453,7 +3451,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     """
 
     # setup doers
-    doers = [habbing.HaberyDoer(habery=hby)]
+    doers = [habbing.HaberyDoer(habery=hby), credentialing.RegeryDoer(rgy=rgy)]
 
     verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
     wallet = walleting.Wallet(reger=verifier.reger, name=hby.name)
@@ -3508,11 +3506,9 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         verifier=verifier, counselor=counselor, registrar=registrar, credentialer=credentialer,
                         servery=servery, bootConfig=bootConfig, rxbs=mbd.ims, queries=queries, **kwargs)
 
-    servery.msgs.append(dict(app=app))
     doers.extend([rep, counselor, registrar, credentialer, notifier, oobiery])
     doers.extend(endDoers)
-
-    return doers
+    servery.msgs.append(dict(app=app, doers=doers))
 
 
 def loadEvent(db, preb, dig):
