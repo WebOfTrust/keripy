@@ -334,23 +334,22 @@ class Counselor(doing.DoDoer):
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
 
-def loadHandlers(hby, exc, mbx, controller):
+def loadHandlers(hby, exc, notifier):
     """ Load handlers for the peer-to-peer distributed group multisig protocol
 
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        mbx (Mailboxer): Database for storing mailbox messages
-        controller (str): qb64 identifier prefix of controller
+        notifier (Notifier): Database for storing mailbox messages
 
     """
-    incept = MultisigInceptHandler(hby=hby, mbx=mbx, controller=controller)
+    incept = MultisigInceptHandler(hby=hby, notifier=notifier)
     exc.addHandler(incept)
-    rotate = MultisigRotateHandler(hby=hby, mbx=mbx, controller=controller)
+    rotate = MultisigRotateHandler(hby=hby, notifier=notifier)
     exc.addHandler(rotate)
-    interact = MultisigInteractHandler(hby=hby, mbx=mbx, controller=controller)
+    interact = MultisigInteractHandler(hby=hby, notifier=notifier)
     exc.addHandler(interact)
-    issue = MultisigIssueHandler(controller=controller, mbx=mbx)
+    issue = MultisigIssueHandler(notifier=notifier)
     exc.addHandler(issue)
 
 
@@ -361,18 +360,16 @@ class MultisigInceptHandler(doing.DoDoer):
     """
     resource = "/multisig/icp"
 
-    def __init__(self, hby, mbx, controller, **kwa):
+    def __init__(self, hby, notifier, **kwa):
         """
 
         Parameters:
             mbx (Mailboxer) of format str names accepted for offers
-            controller (str) qb64 identity prefix of controller
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.controller = controller
         self.hby = hby
-        self.mbx = mbx
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -429,15 +426,12 @@ class MultisigInceptHandler(doing.DoDoer):
                     continue
 
                 data = dict(
+                    r='/multisig/icp/init',
                     src=src,
-                    r='/icp/init',
                     aids=aids,
                     ked=pay["ked"]
                 )
-                raw = json.dumps(data).encode("utf-8")
-
-                if self.controller:
-                    self.mbx.storeMsg(self.controller+"/multisig", raw)
+                self.notifier.add(attrs=data)
 
                 yield
             yield
@@ -468,7 +462,7 @@ class MultisigRotateHandler(doing.DoDoer):
     """
     resource = "/multisig/rot"
 
-    def __init__(self, hby, mbx, controller, **kwa):
+    def __init__(self, hby, notifier, **kwa):
         """
 
         Parameters:
@@ -477,9 +471,8 @@ class MultisigRotateHandler(doing.DoDoer):
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.controller = controller
         self.hby = hby
-        self.mbx = mbx
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -533,8 +526,8 @@ class MultisigRotateHandler(doing.DoDoer):
                     continue
 
                 data = dict(
+                    r='/multisig/rot',
                     src=src,
-                    r='/rot',
                     aids=aids,
                 )
                 data["toad"] = pay["toad"] if "toad" in pay else None
@@ -543,13 +536,11 @@ class MultisigRotateHandler(doing.DoDoer):
                 data["cuts"] = pay["cuts"] if "cuts" in pay else []
                 data["isith"] = pay["isith"] if "isith" in pay else None
                 data["data"] = pay["data"] if "data" in pay else None
-                
-                raw = json.dumps(data).encode("utf-8")
 
-                if self.controller:
-                    self.mbx.storeMsg(self.controller+"/multisig", raw)
+                self.notifier.add(attrs=data)
 
                 yield
+
             yield
 
 
@@ -577,18 +568,16 @@ class MultisigInteractHandler(doing.DoDoer):
     """
     resource = "/multisig/ixn"
 
-    def __init__(self, hby, mbx, controller, **kwa):
+    def __init__(self, hby, notifier, **kwa):
         """
 
         Parameters:
             mbx (Mailboxer) of format str names accepted for offers
-            controller (str) qb64 identity prefix of controller
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.controller = controller
         self.hby = hby
-        self.mbx = mbx
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -640,17 +629,13 @@ class MultisigInteractHandler(doing.DoDoer):
                     continue
 
                 data = dict(
+                    r='/multisig/ixn',
                     src=src,
-                    r='/ixn',
                     aids=aids,
                 )
                 data["data"] = pay["data"] if "data" in pay else None
 
-                raw = json.dumps(data).encode("utf-8")
-
-                if self.controller:
-                    self.mbx.storeMsg(self.controller+"/multisig", raw)
-
+                self.notifier.add(data)
                 yield
             yield
 
@@ -686,7 +671,7 @@ class MultisigIssueHandler(doing.DoDoer):
     """
     resource = "/multisig/issue"
 
-    def __init__(self, mbx, controller, **kwa):
+    def __init__(self, notifier, **kwa):
         """
 
         Parameters:
@@ -695,8 +680,7 @@ class MultisigIssueHandler(doing.DoDoer):
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.controller = controller
-        self.mbx = mbx
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -726,11 +710,12 @@ class MultisigIssueHandler(doing.DoDoer):
                 try:
                     creder = proving.Creder(ked=pl)
                     data = dict(
-                        r="/issue",
+                        r="/multisig/issue",
                         ked=creder.ked
                     )
-                    msg = json.dumps(data).encode("utf-8")
-                    self.mbx.storeMsg(self.controller+"/multisig", msg)
+
+                    self.notifier.add(attrs=data)
+
                 except ValueError as ex:
                     logger.error(f"unable to process multisig credential issue proposal {pl}: {ex}")
                 yield

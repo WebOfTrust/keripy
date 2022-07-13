@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# To run this script you need to run the following 2 commands in separate terminals:
-#   > kli agent demo --config-file demo-witness-oobis-schema
+# To run this script you need to run the following command in a separate terminals:
 #   > kli witness demo
 # and from the vLEI repo run:
 #   > vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/

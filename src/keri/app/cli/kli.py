@@ -24,5 +24,6 @@ def main():
         print(f"ERR: {ex}")
         return -1
 
+
 if __name__ == "__main__":
     main()

@@ -12,13 +12,10 @@ import sys
 from hio import help
 from hio.base import doing
 
-from keri import kering
 from keri.app import indirecting, challenging, storing, connecting
-from keri.app.cli.common import existing, terming
-from keri.core import scheming
+from keri.app.cli.common import existing
 from keri.help import helping
 from keri.peer import exchanging
-from keri.vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 

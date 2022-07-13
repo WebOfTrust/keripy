@@ -1472,8 +1472,8 @@ class Dater(Matter):
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
                 dts = helping.nowIso8601()
-            if len(dts) != 32:
-                raise ValueError("Invalid length of date time string")
+            # if len(dts) != 32:
+            #     raise ValueError("Invalid length of date time string")
             if hasattr(dts, "decode"):
                 dts = dts.decode("utf-8")
             qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
@@ -3173,7 +3173,7 @@ class Saider(Matter):
     }
 
     def __init__(self, raw=None, *, code=None, sad=None,
-                 kind=None, label=Ids.d, **kwa):
+                 kind=None, label=Ids.d, ignore=None, **kwa):
         """
         See Matter.__init__ for inherited parameters
 
@@ -3183,6 +3183,8 @@ class Saider(Matter):
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
             label (str): id field label, one of Ids
+            ignore (list): fields to ignore when generating SAID
+
         """
         try:
             # when raw and code are both provided
@@ -3203,7 +3205,7 @@ class Saider(Matter):
                 raise ValueError("Unsupported digest code = {}.".format(code))
 
             # re-derive said raw bytes from sad and code, so code overrides label
-            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label)
+            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label, ignore=ignore)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if not self.digestive:
@@ -3240,7 +3242,8 @@ class Saider(Matter):
     def saidify(clas, sad: dict, *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d, **kwa):
+                label: str = Ids.d,
+                ignore: list = None, **kwa):
         """
         Derives said from sad and injects it into copy of sad and said and
         injected sad
@@ -3258,20 +3261,22 @@ class Saider(Matter):
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
             label (str): id field label from Ids in which to inject said
+            ignore (list): fields to ignore when generating SAID
 
         """
         if label not in sad:
             raise KeyError("Missing id field labeled={} in sad.".format(label))
-        raw, sad = clas._derive(sad=sad, code=code, kind=kind, label=label)
-        saider = clas(raw=raw, code=code, kind=kind, label=label, **kwa)
+        raw, sad = clas._derive(sad=sad, code=code, kind=kind, label=label, ignore=ignore)
+        saider = clas(raw=raw, code=code, kind=kind, label=label, ignore=ignore, **kwa)
         sad[label] = saider.qb64
-        return (saider, sad)
+        return saider, sad
 
     @classmethod
     def _derive(clas, sad: dict, *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d, ):
+                label: str = Ids.d,
+                ignore: list = None):
         """
         Derives raw said from sad with .Dummy filled sad[label]
 
@@ -3285,6 +3290,8 @@ class Saider(Matter):
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
+            ignore (list): fields to ignore when generating SAID
+
         """
         if code not in DigDex or code not in clas.Digests:
             raise ValueError("Unsupported digest code = {}.".format(code))
@@ -3295,11 +3302,16 @@ class Saider(Matter):
         if 'v' in sad:  # if versioned then need to set size in version string
             raw, ident, kind, sad, version = sizeify(ked=sad, kind=kind)
 
+        ser = dict(sad)
+        if ignore:
+            for f in ignore:
+                del ser[f]
+
         # string now has
         # correct size
         klas, size, length = clas.Digests[code]
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(sad, kind=kind)]  # raw pos arg class
+        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
         ckwa = dict()  # class keyword args
         if size:
             ckwa.update(digest_size=size)  # optional digest_size
@@ -3326,7 +3338,7 @@ class Saider(Matter):
         return self._derive(sad=sad, code=code, **kwa)
 
     def verify(self, sad, *, prefixed=False, versioned=True, code=None,
-               kind=None, label=Ids.d, **kwa):
+               kind=None, label=Ids.d, ignore=None, **kwa):
         """
         Returns:
             result (bool): True means derivation from sad with dummy label
@@ -3349,11 +3361,12 @@ class Saider(Matter):
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
+            ignore (list): fields to ignore when generating SAID
         """
         try:
             # override ensure code is self.code
-            raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label)
-            saider = Saider(raw=raw, code=self.code, **kwa)
+            raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label, ignore=ignore)
+            saider = Saider(raw=raw, code=self.code, ignore=ignore, **kwa)
             if self.qb64b != saider.qb64b:
                 return False  # not match .qb64b
 
@@ -4310,7 +4323,6 @@ class Sadder:
         else:
             raise ValueError("Both said and saider may not be None.")
 
-
     def _clone(self, sad):
         self._raw = sad.raw
         self._ked = sad.ked
@@ -4319,7 +4331,6 @@ class Sadder:
         self._size = sad.size
         self._version = sad.version
         self._saider = sad.saider
-
 
     @property
     def raw(self):
@@ -4976,3 +4987,91 @@ class Tholder:
 
         return False
 
+
+class Dicter:
+    """ Dicter class is base class for objects that can be stored in a Suber
+
+    Dicter classes can be initialized by a dict and then expose bytes of JSON
+    in the .raw property  Subclasses can add semantically appropriate properties
+    that extract / add specific keys to the underlying dict .pad
+
+    """
+
+    def __init__(self, raw=b'', pad=None, sad=None, label=Ids.i):
+        """ Create Dicter from either pad dict or raw bytes
+
+        Parameters:
+            raw(bytes): raw JSON of dicter class
+            pad(dict) data dict for class:
+            label (str): field name of the SAID field.
+
+        """
+        self._label = label
+        if raw:  # deserialize raw using property setter
+            self.raw = raw  # raw property setter does the deserialization
+        elif pad:  # serialize ked using property setter
+            self.pad = pad  # pad property setter does the serialization
+        elif sad:
+            self._clone(sad=sad)
+        else:
+            raise ValueError("Improper initialization need sad, raw or ked.")
+
+    def _clone(self, sad):
+        self._raw = sad.raw
+        self._pad = sad.pad
+        self._rid = sad.rid
+
+    @property
+    def raw(self):
+        """ raw property getter """
+        return self._raw
+
+    @raw.setter
+    def raw(self, raw):
+        """ raw property setter """
+        self._raw = raw
+        self._pad = json.loads(self._raw.decode("utf-8"))
+        if self._label not in self._pad or self._pad[self._label] == "":
+            self._pad[self._label] = randomNonce()
+
+        self._rid = self._pad[self._label]
+
+    @property
+    def pad(self):
+        """ pad property getter"""
+        return self._pad
+
+    @pad.setter
+    def pad(self, pad):
+        """ pad property setter """
+        self._pad = pad
+        if self._label not in self._pad or self._pad[self._label] == "":
+            self._pad[self._label] = randomNonce()
+
+        self._raw = json.dumps(self._pad).encode("utf-8")
+        self._rid = self._pad[self._label]
+
+    @property
+    def rid(self):
+        """ ID of dict data as str """
+        return self._rid
+
+    def pretty(self, *, size=1024):
+        """
+        Returns str JSON of .ked with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
+        """
+        return json.dumps(self.pad, indent=1)[:size if size is not None else None]
+
+
+def randomNonce():
+    """ Generate a random ed25519 seed and encode as qb64
+
+    Returns:
+        str: qb64 encoded ed25519 random seed
+    """
+    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+    return seedqb64

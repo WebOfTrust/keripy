@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting
+from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting, notifying
 from keri.core import scheming, coring, eventing, parsing
 from keri.db import basing
 from keri.vc import proving
@@ -67,8 +67,11 @@ class TestDoer(doing.DoDoer):
         self.rgy2 = credentialing.Regery(hby=hby2, name="test_2", temp=True)
         self.rgy3 = credentialing.Regery(hby=hby3, name="test_3", temp=True)
 
+        self.notifier1 = notifying.Notifier(hby=hby1)
         self.verifier1 = verifying.Verifier(hby=hby1, reger=self.rgy1.reger)
+        self.notifier2 = notifying.Notifier(hby=hby2)
         self.verifier2 = verifying.Verifier(hby=hby2, reger=self.rgy2.reger)
+        self.notifier3 = notifying.Notifier(hby=hby3)
         self.verifier3 = verifying.Verifier(hby=hby3, reger=self.rgy3.reger)
 
         # Load schema in database for each participant
@@ -77,10 +80,9 @@ class TestDoer(doing.DoDoer):
         loadSchema(hby3.db)
 
         # Create falcon app loaded with kiwiing ends for each participant
-        self.notifs = decking.Deck()
-        self.app1, doers1 = loadApp(hby1, self.rgy1, self.verifier1, self.notifs)
-        self.app2, doers2 = loadApp(hby2, self.rgy2, self.verifier2, self.notifs)
-        self.app3, doers3 = loadApp(hby3, self.rgy3, self.verifier3, self.notifs)
+        self.app1, doers1 = loadApp(hby1, self.rgy1, self.verifier1, self.notifier1)
+        self.app2, doers2 = loadApp(hby2, self.rgy2, self.verifier2, self.notifier2)
+        self.app3, doers3 = loadApp(hby3, self.rgy3, self.verifier3, self.notifier3)
         doers = wanDoers + doers1 + doers2 + doers3 + [doing.doify(self.escrowDo)]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
@@ -189,20 +191,20 @@ class TestDoer(doing.DoDoer):
             yield tock
 
         # Wait for the credential endpoint to notify the completion of the credential issuance
-        while len(self.notifs) != 6:
+
+        while len(self.notifier1.getNotes()) < 2 or len(self.notifier2.getNotes()) < 2 \
+                or len(self.notifier3.getNotes()) < 2:
             yield tock
 
-        for _ in range(3):
-            cue = self.notifs.popleft()
-            assert cue["kin"] == "notification"
-            assert cue["topic"] == "/multisig"
-            assert cue["msg"]["r"] == "/rot/complete"
-
-        for _ in range(3):
-            cue = self.notifs.popleft()
-            assert cue["kin"] == "notification"
-            assert cue["topic"] == "/multisig"
-            assert cue["msg"]["r"] == "/iss/complete"
+        notes1 = self.notifier1.getNotes()
+        assert notes1[0].pad['a']['r'] == "/multisig/rot/complete"
+        assert notes1[1].pad['a']['r'] == "/multisig/iss/complete"
+        notes2 = self.notifier2.getNotes()
+        assert notes2[0].pad['a']['r'] == "/multisig/rot/complete"
+        assert notes2[1].pad['a']['r'] == "/multisig/iss/complete"
+        notes3 = self.notifier3.getNotes()
+        assert notes3[0].pad['a']['r'] == "/multisig/rot/complete"
+        assert notes3[1].pad['a']['r'] == "/multisig/iss/complete"
 
         self.remove(self.toRemove)
 
@@ -223,7 +225,7 @@ def test_multisig_issue_agent():
         assert testDoer.done is True
 
 
-def loadApp(hby, rgy, verifier, notifs):
+def loadApp(hby, rgy, verifier, notifier):
     app = falcon.App()
 
     repd = storing.Respondant(hby=hby)
@@ -236,14 +238,15 @@ def loadApp(hby, rgy, verifier, notifs):
     doers = kiwiing.loadEnds(hby=hby,
                              rep=repd,
                              rgy=rgy,
-                             notifications=notifs,
+                             notifier=notifier,
+                             signaler=notifier.signaler,
                              verifier=verifier,
                              app=app, path="/",
                              registrar=registrar,
                              credentialer=credentialer,
                              servery=servery,
                              bootConfig=dict(),
-                             mbx=mbx, counselor=counselor)
+                             counselor=counselor)
     doers.extend([repd, counselor, registrar, credentialer, mbx])
     return app, doers
 

@@ -51,7 +51,7 @@ def test_habery():
     assert hby.mgr.seed == ""
     assert hby.mgr.aeid == ""
     assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    assert hby.mgr.pidx == 0
+    assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
 
@@ -76,14 +76,14 @@ def test_habery():
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
     assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    assert hby.mgr.pidx == 0
+    assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
 
     assert hby.rtr.routes
     assert hby.rvy.rtr == hby.rtr
     assert hby.kvy.rvy == hby.rvy
-    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.kvy == hby.kvy
     assert hby.psr.rvy == hby.rvy
 
     hby.cf.close(clear=True)
@@ -145,7 +145,7 @@ def test_habery():
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
     assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    assert hby.mgr.pidx == 0
+    assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
 
@@ -215,7 +215,7 @@ def test_habery():
     assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
     assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
     assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    assert hby.mgr.pidx == 0
+    assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
 
@@ -268,7 +268,7 @@ def test_habery():
         assert hby.mgr.seed == ""
         assert hby.mgr.aeid == ""
         assert hby.mgr.salt == habbing.SALT
-        assert hby.mgr.pidx == 0
+        assert hby.mgr.pidx == 1
         assert hby.mgr.algo == keeping.Algos.salty
         assert hby.mgr.tier == coring.Tiers.low
 
@@ -318,7 +318,7 @@ def test_habery():
         assert hby.mgr.seed == 'AZXIe9H4846eXjc7c1jp8XJ06xt2hwwhB-dzzpdS3eKk'
         assert hby.mgr.aeid == 'BgY4KXjfXwJnepwOrz_9s3WMtppLdsmeowZn7XMdZzrs'
         assert hby.mgr.salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-        assert hby.mgr.pidx == 0
+        assert hby.mgr.pidx == 1
         assert hby.mgr.algo == keeping.Algos.salty
         assert hby.mgr.tier == coring.Tiers.low
 
@@ -572,6 +572,29 @@ def test_habery_reinitialization():
     """End Test"""
 
 
+def test_habery_signatory():
+    with habbing.openHby() as hby:
+        signer = hby.signator
+
+        assert signer is not None
+        assert signer.pre == "B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE"
+
+        # Assert we get the same one in subsequent calls
+        sig2 = hby.signator
+        assert sig2 == signer
+        raw = b'this is the raw data'
+
+        # Sign some data
+        cig = signer.sign(ser=raw)
+        assert cig.qb64b == b'0BXERDelN3sj1w50Wg60QYAOyRAsa_HwKkx72y2PEczASEK9UKM_R-XdGjzNRGyhT9Q3E9c2ncW3hEHIk9JZMrCw'
+
+        # Verify the signature
+        assert signer.verify(ser=raw, cigar=cig) is True
+
+        # Make sure this new key doesn't effect the habery environment
+        assert len(hby.habs) == 0
+        assert len(hby.prefixes) == 0
+
 
 def test_habery_reconfigure(mockHelpingNowUTC):
     """
@@ -623,12 +646,15 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         curls = ["tcp://localhost:5620/"]
         iurls = [f"tcp://localhost:5621/?role={kering.Roles.peer}&name={pname}"]
         assert (conf := tamHby.cf.get()) == {}
-        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        conf = dict(dt=help.nowIso8601(), tam=dict(dt=help.nowIso8601(), curls=curls), iurls=iurls)
         tamHby.cf.put(conf)
 
         assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                'curls': ['tcp://localhost:5620/'],
-                                'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+                                   'tam': {
+                                       'dt': '2021-01-01T00:00:00.000000+00:00',
+                                       'curls': ['tcp://localhost:5620/']
+                                   },
+                                   'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre]
@@ -663,12 +689,15 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         curls = ["tcp://localhost:5621/"]
         iurls = [f"tcp://localhost:5620/?role={kering.Roles.peer}&name={cname}"]
         assert (conf := nelHby.cf.get()) == {}
-        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        conf = dict(dt=help.nowIso8601(), nel=dict(dt=help.nowIso8601(), curls=curls), iurls=iurls)
         nelHby.cf.put(conf)
 
         assert nelHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                'curls': ['tcp://localhost:5621/'],
-                                'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
+                                   'nel': {
+                                       'dt': '2021-01-01T00:00:00.000000+00:00',
+                                       'curls': ['tcp://localhost:5621/'],
+                                   },
+                                   'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
 
         # setup Nel's habitat nontrans
         nelHab = nelHby.makeHab(name="nel", isith=wsith, icount=1, transferable=False)

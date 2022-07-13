@@ -132,21 +132,20 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hby, rgy, mbx, controller, **kwa):
+    def __init__(self, hby, rgy, notifier, **kwa):
         """ Initialize instance
 
         Parameters:
             hab (Habitat): local identifier environment
             wallet (Wallet) credential wallet that will hold the issued credentials
             ims (Optional(bytearray)): inbound message stream to process
-            cues (Optional(decking.Deck)): outbound cue messages
+            notifier (Notifier): outbound notifications
             **kwa (dict): keyword arguments passed to DoDoer
 
         """
         self.hby = hby
         self.rgy = rgy
-        self.mbx = mbx
-        self.controller = controller
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -206,11 +205,7 @@ class IssueHandler(doing.DoDoer):
                     data["credential"]["sad"] = creder.crd
 
                 # TODO:  Get schema resolver and Organizer to load schema and contact info if any.
-                raw = json.dumps(data).encode("utf-8")
-
-                if self.controller is not None:
-                    self.mbx.storeMsg(self.controller + "/credential", raw)
-
+                self.notifier.add(attrs=data)
                 yield self.tock
 
             yield self.tock

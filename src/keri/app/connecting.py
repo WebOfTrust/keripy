@@ -1,9 +1,8 @@
 import json
 
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 
 from keri import kering
-from keri.core import coring, eventing
 
 
 class Organizer:
@@ -13,23 +12,18 @@ class Organizer:
         """ Create contact Organizer
 
         Parameters:
-            db (Baser): database for contact information
+            hby (Habery): database environment for contact information
         """
         self.hby = hby
 
-    def update(self, alias, pre, data):
+    def update(self, pre, data):
         """ Add or update contact information in data for the identfier prefix
 
         Parameters:
             pre (str): qb64 identifier prefix of contact information to update
             data (dict): data to add to or update in contact information
-            alias (str): human readable name of identifier to use to sign the challange/response
 
         """
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            raise kering.ValidationError(f"alias {alias} is not a valid identifier alias")
-
         existing = self.get(pre)
         if existing is None:
             existing = dict()
@@ -37,33 +31,29 @@ class Organizer:
         existing |= data
 
         raw = json.dumps(existing).encode("utf-8")
-        sigers = hab.sign(ser=raw, indexed=True)
+        cigar = self.hby.signator.sign(ser=raw)
 
-        seq = coring.Seqner(sn=hab.kever.lastEst.s)
-        self.hby.db.csds.pin(keys=(pre,), val=(hab.kever.prefixer, seq))
-        self.hby.db.csigs.pin(keys=(pre,), vals=sigers)
+        self.hby.db.ccigs.pin(keys=(pre,), val=cigar)
         self.hby.db.cons.pin(keys=(pre,), val=raw)
 
         for field, val in data.items():
             self.hby.db.cfld.pin(keys=(pre, field), val=val)
 
-    def replace(self, alias, pre, data):
+    def replace(self, pre, data):
         """ Replace all contact information for identifier prefix with data
 
         Parameters:
-            alias (str): human readable name of identifier to use to sign the challange/response
             pre (str): qb64 identifier prefix of contact information to replace
             data (dict): data to replace contact information with
 
         """
         self.rem(pre)
-        self.update(alias, pre, data)
+        self.update(pre, data)
 
-    def set(self, alias, pre, field, val):
+    def set(self, pre, field, val):
         """ Add or replace one value in contact information for identifier prefix
 
         Parameters:
-            alias (str): human readable name of identifier to use to sign the challange/response
             pre (str): qb64 identifier prefix for contact
             field (str): field to set
             val (Union[str,bytes]): data value
@@ -71,21 +61,20 @@ class Organizer:
         """
         data = self.get(pre)
         data[field] = val
-        self.replace(alias, pre, data)
+        self.replace(pre, data)
         self.hby.db.cfld.pin(keys=(pre, field), val=val)
 
-    def unset(self, alias, pre, field):
+    def unset(self, pre, field):
         """ Remove field from contact information for identifier prefix
 
         Parameters:
-            alias (str): human readable name of identifier to use to sign the challange/response
             pre (str): qb64 identifier prefix for contact
             field (str): field to remove
 
         """
         data = self.get(pre)
         del data[field]
-        self.replace(alias, pre, data)
+        self.replace(pre, data)
         self.hby.db.cfld.rem(keys=(pre, field))
 
     def rem(self, pre):
@@ -97,8 +86,7 @@ class Organizer:
         Returns:
 
         """
-        self.hby.db.csds.rem(keys=(pre,))
-        self.hby.db.csigs.rem(keys=(pre,))
+        self.hby.db.ccigs.rem(keys=(pre,))
         self.hby.db.cons.rem(keys=(pre,))
         return self.hby.db.cfld.trim(keys=(pre,))
 
@@ -115,12 +103,9 @@ class Organizer:
         raw = self.hby.db.cons.get(keys=(pre,))
         if raw is None:
             return None
-        prefixer, seqner = self.hby.db.csds.get(keys=(pre,))
-        sigers = self.hby.db.csigs.get(keys=(pre,))
+        cigar = self.hby.db.ccigs.get(keys=(pre,))
 
-        tholder, verfers = self.hby.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn)
-        ssigers, indices = eventing.verifySigs(raw=raw.encode("utf-8"), sigers=sigers, verfers=verfers)
-        if not tholder.satisfy(indices):  # at least one but not enough
+        if not self.hby.signator.verify(ser=raw.encode("utf-8"), cigar=cigar):
             raise kering.ValidationError(f"failed signature on {pre} contact data")
 
         data = json.loads(raw)
@@ -263,5 +248,3 @@ class Organizer:
                 break
             yield bytes(chunk)
             idx += 1
-
-

@@ -590,8 +590,14 @@ class Oobiery(doing.DoDoer):
                         obr.cid = match.group("cid")
                         obr.eid = match.group("eid")
                         obr.role = match.group("role")
-                        if "alias" in oobi and "oobialias" in oobi:
-                            obr.alias = oobi["alias"]
+                        params = parse.parse_qs(purl.query)
+
+                        # If name is hinted in query string, use it as alias
+                        if "name" in params:
+                            obr.oobialias = params["name"][0]
+
+                        # Override name if provided with OOBIRecord
+                        if "oobialias" in oobi:
                             obr.oobialias = oobi["oobialias"]
 
                         self.request(url, purl, obr)
@@ -605,9 +611,14 @@ class Oobiery(doing.DoDoer):
 
                     elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
                         obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
+                        params = parse.parse_qs(purl.query)
 
-                        if "alias" in oobi and "oobialias" in oobi:
-                            obr.alias = oobi["alias"]
+                        # If name is hinted in query string, use it as alias
+                        if "name" in params:
+                            obr.oobialias = params["name"][0]
+
+                        # Override name if provided with OOBIRecord
+                        if "oobialias" in oobi:
                             obr.oobialias = oobi["oobialias"]
                         self.request(url, purl, obr)
 
@@ -641,7 +652,7 @@ class Oobiery(doing.DoDoer):
                     if response["status"] == 404:
                         print(f"{oobi} not found")
                         obr = self.hby.db.oobis.get(oobi)
-                        retry = dict(url=oobi, alias=obr.alias, oobialias=obr.oobialias)
+                        retry = dict(url=oobi, oobialias=obr.oobialias)
                         self.retries.append(retry)
                         continue
 
@@ -657,8 +668,8 @@ class Oobiery(doing.DoDoer):
                         if "Keri-Aid" in response["headers"]:
                             obr.cid = response["headers"]["Keri-Aid"]
 
-                        if obr.alias is not None and obr.oobialias is not None and obr.cid:
-                            self.org.replace(alias=obr.alias, pre=obr.cid, data=dict(alias=obr.oobialias))
+                        if obr.oobialias is not None and obr.cid:
+                            self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias))
 
                     elif response["headers"]["Content-Type"] == "application/schema+json":
                         obr = self.hby.db.oobis.get(oobi)

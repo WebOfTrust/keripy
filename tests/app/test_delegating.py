@@ -7,7 +7,7 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-from keri.app import habbing, delegating, storing, indirecting, agenting
+from keri.app import habbing, delegating, storing, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
 from keri.db import dbing
 from keri.end import ending
@@ -162,8 +162,8 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
-        mbx = storing.Mailboxer(name=hab.name, temp=True)
-        handler = delegating.DelegateRequestHandler(hby=hby, mbx=mbx, controller=ctrl)
+        notifier = notifying.Notifier(hby=hby)
+        handler = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
 
         # Pass message missing keys:
         handler.msgs.append(dict(name="value"))
@@ -185,9 +185,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         assert doist.limit == limit
         doist.exit()
 
-        key = f"{ctrl}/delegate".encode("utf-8")
-        msgs = mbx.getTopicMsgs(topic=key)
-        assert len(msgs) == 1
+        assert len(notifier.getNotes()) == 1
 
     with habbing.openHab(name="test", temp=True) as (hby, hab):
 
@@ -198,11 +196,11 @@ def test_delegation_request_handler(mockHelpingNowUTC):
 
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=hab.pre, ked=serder.ked)
 
-        mbx = storing.Mailboxer(name=hab.name, temp=True)
+        notifier = notifying.Notifier(hby=hby)
         exc = exchanging.Exchanger(hby=hby, handlers=[])
         oobiery = ending.Oobiery(hby=hby)
 
-        delegating.loadHandlers(hby=hby, exc=exc, mbx=mbx, controller=ctrl, oobiery=oobiery)
+        delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier, oobiery=oobiery)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
@@ -222,14 +220,21 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         assert doist.limit == limit
         doist.exit()
 
-        key = f"{ctrl}/delegate".encode("utf-8")
-        msgs = mbx.getTopicMsgs(topic=key)
-        assert len(msgs) == 1
-        assert msgs[0] == (b'{"src": "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc", "r": "/request", "de'
-                           b'lpre": "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc", "ked": {"v": "KERI10J'
-                           b'SON00015f_", "t": "dip", "d": "E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI"'
-                           b', "i": "E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI", "s": "0", "kt": "1", '
-                           b'"k": ["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], "nt": "1", "n": ["DLO'
-                           b'NLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"], "bt": "0", "b": [], "c": [], "a'
-                           b'": [], "di": "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"}}')
-
+        notes = notifier.getNotes()
+        assert len(notes) == 1
+        note = notes[0]
+        assert note.pad['a']['r'] == '/delegate/request'
+        assert note.pad['a']['ked'] == {'a': [],
+                                        'b': [],
+                                        'bt': '0',
+                                        'c': [],
+                                        'd': 'E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI',
+                                        'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                        'i': 'E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI',
+                                        'k': ['DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs'],
+                                        'kt': '1',
+                                        'n': ['DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k'],
+                                        'nt': '1',
+                                        's': '0',
+                                        't': 'dip',
+                                        'v': 'KERI10JSON00015f_'}

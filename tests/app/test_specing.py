@@ -7,7 +7,7 @@ import json
 
 import falcon
 
-from keri.app import booting, specing, kiwiing, habbing, grouping
+from keri.app import booting, specing, kiwiing, habbing, grouping, notifying
 
 
 def test_spec_resource():
@@ -24,11 +24,12 @@ def test_spec_resource():
         app.add_route("/boot", bootEnd)
         app.add_route("/boot/{name}", bootEnd, suffix="name")
 
+        notifier = notifying.Notifier(hby=hby)
         # Add a few with no resolutions at the root (resource=None for /group)
         counselor = grouping.Counselor(hby=hby)
-        multiIcpEnd = kiwiing.MultisigInceptEnd(hby=hby, counselor=counselor)
+        multiIcpEnd = kiwiing.MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
         app.add_route("/groups/{alias}/icp", multiIcpEnd)
-        multiRotEnd = kiwiing.MultisigEventEnd(hby=hby, counselor=counselor)
+        multiRotEnd = kiwiing.MultisigEventEnd(hby=hby, counselor=counselor, notifier=notifier)
         app.add_route("/groups/{alias}/rot", multiRotEnd, suffix="rot")
 
         lockEnd = kiwiing.LockEnd(servery=booting.Servery(port=1234), bootConfig=dict())
