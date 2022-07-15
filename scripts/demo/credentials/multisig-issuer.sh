@@ -19,7 +19,7 @@ kli oobi resolve --name multisig2 --oobi-alias multisig1 --oobi http://127.0.0.1
 
 # Create the identifier to which the credential will be issued
 kli init --name holder --salt 0AMDEyMzQ1Njc4OWxtbm9qWc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
-kli incept --name holder --alias holder --file tests/app/cli/gleif-sample.json
+kli incept --name holder --alias holder --file ${KERI_DEMO_SCRIPT_DIR}/data/gleif-sample.json
 
 # Introduce multisig to Holder
 kli oobi resolve --name holder --oobi-alias multisig2 --oobi http://127.0.0.1:5642/oobi/EozYHef4je02EkMOA1IKM65WkIdSjfrL7XWDk_JzJL9o/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
