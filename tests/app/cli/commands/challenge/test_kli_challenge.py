@@ -36,7 +36,7 @@ def test_kli_challenge_commands(helpers, capsys, seeder):
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
-        base = secrets.token_urlsafe(8)
+        base = secrets.token_hex(8)
         test = ChallengeDoer(base, capsys)
         doers = wanDoers + wilDoers + wesDoers + [test]
 
