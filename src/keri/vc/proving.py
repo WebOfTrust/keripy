@@ -9,7 +9,7 @@ from typing import Union
 
 from .. import help
 from ..core import coring
-from ..core.coring import (Serials, Versify)
+from ..core.coring import (Serials, versify)
 from ..db import subing
 from ..kering import Version
 
@@ -44,7 +44,7 @@ def credential(schema,
         Creder: credential instance
 
     """
-    vs = Versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
+    vs = versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
 
     source = source if source is not None else {}
 

@@ -23,7 +23,7 @@ from keri.db import basing
 from keri.db.basing import openDB, Baser
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import MtrDex, MtrDex, MtrDex
-from keri.core.coring import Serials, Vstrings, Versify
+from keri.core.coring import Serials, Vstrings, versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 from keri.help import helping

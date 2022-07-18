@@ -20,7 +20,7 @@ from keri.core.coring import Seqner, Verfer, Signer, Nexter, Prefixer
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
-from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
+from keri.core.eventing import (TraitDex, LastEstLoc, Serials, versify,
                                 simple, ample)
 from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
                                 deReceiptTriple,
@@ -1500,7 +1500,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -1580,7 +1580,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -1624,7 +1624,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -1682,7 +1682,7 @@ def test_kever(mockHelpingNowUTC):
 
         baks = ["BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -1724,7 +1724,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -1765,7 +1765,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+        ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
                     d="",
                     i="",  # qual base 64 prefix
@@ -3860,7 +3860,7 @@ def test_process_nontransferable():
     toad = 0  # no witnesses
     nsigs = 1  # one attached signature unspecified index
 
-    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+    ked0 = dict(v=versify(kind=Serials.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aid0.qb64,  # qual base 64 prefix
@@ -3946,7 +3946,7 @@ def test_process_transferable():
     toad = 0  # no witnesses
     nsigs = 1  # one attached signature unspecified index
 
-    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+    ked0 = dict(v=versify(kind=Serials.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i="",  # qual base 64 prefix
@@ -4073,7 +4073,7 @@ def test_process_manual():
     index = 0
 
     # create key event dict
-    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+    ked0 = dict(v=versify(kind=Serials.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aidmat.qb64,  # qual base 64 prefix

@@ -14,7 +14,7 @@ from  ordered_set import OrderedSet as oset
 from hio.help import decking
 
 from . import coring
-from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
+from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder, Saider)
 from .. import help
@@ -600,7 +600,7 @@ def incept(keys,
         kind is serialization kind
         code is derivation code for prefix
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     sn = 0
     ilk = Ilks.icp
 
@@ -710,7 +710,7 @@ def delcept(keys,
         version is Version instance
         kind is serialization kind
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     sn = 0
     ilk = Ilks.dip
 
@@ -825,7 +825,7 @@ def rotate(pre,
         version is Version instance
         kind is serialization kind
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
 
     if sn < 1:
@@ -953,7 +953,7 @@ def deltate(pre,
         version is Version instance
         kind is serialization kind
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.drt
 
     if sn < 1:
@@ -1064,7 +1064,7 @@ def interact(pre,
         version is Version instance
         kind is serialization kind
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
 
     if sn < 1:
@@ -1102,7 +1102,7 @@ def receipt(pre,
         version is Version instance of receipt
         kind  is serialization kind of receipt
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.rct
 
     if sn < 0:
@@ -1194,7 +1194,7 @@ def state(pre,
     "di": "" when not delegated
     "r": ""  when no route
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -1318,7 +1318,7 @@ def query(route="",
       }
     }
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.qry
 
     ked = dict(v=vs,  # version string
@@ -1370,7 +1370,7 @@ def reply(route="",
     }
     """
     label = coring.Ids.d
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     if data is None:
         data = {}
 
@@ -1426,7 +1426,7 @@ def bare(route="",
       }
     }
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     if data is None:
         data = {}
 

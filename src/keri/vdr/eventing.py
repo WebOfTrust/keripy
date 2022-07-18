@@ -17,7 +17,7 @@ from keri import kering
 from keri.core import coring
 from .. import core
 from .. import help
-from ..core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
+from ..core.coring import (MtrDex, Serder, Serials, versify, Prefixer,
                            Ilks, Seqner, Verfer)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
 from ..db import basing, dbing
@@ -76,7 +76,7 @@ def incept(
 
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     isn = 0
     ilk = Ilks.vcp
 
@@ -159,7 +159,7 @@ def rotate(
     if sn < 1:
         raise ValueError("Invalid sn = {} for vrt.".format(sn))
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.vrt
 
     baks = baks if baks is not None else []
@@ -248,7 +248,7 @@ def issue(
 
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     ked = dict(v=vs,  # version string
                t=Ilks.iss,
                d="",
@@ -290,7 +290,7 @@ def revoke(
 
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     isn = 1
     ilk = Ilks.rev
 
@@ -339,7 +339,7 @@ def backerIssue(
 
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     isn = 0
     ilk = Ilks.bis
 
@@ -392,7 +392,7 @@ def backerRevoke(
 
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
     isn = 1
     ilk = Ilks.brv
 
@@ -475,7 +475,7 @@ def state(pre,
     }
 
     """
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -578,7 +578,7 @@ def vcstate(vcpre,
     }
     """
 
-    vs = Versify(version=version, kind=kind, size=0)
+    vs = versify(version=version, kind=kind, size=0)
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))

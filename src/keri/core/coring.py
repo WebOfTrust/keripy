@@ -74,7 +74,7 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def Versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
+def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
@@ -86,16 +86,16 @@ def Versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
     return VERFMT.format(ident, version[0], version[1], kind, size, VERRAWSIZE)
 
 
-Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
-                     mgpk=Versify(kind=Serials.mgpk, size=0),
-                     cbor=Versify(kind=Serials.cbor, size=0))
+Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
+                     mgpk=versify(kind=Serials.mgpk, size=0),
+                     cbor=versify(kind=Serials.cbor, size=0))
 
 VEREX = b'(?P<ident>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
-def Deversify(vs):
+def deversify(vs):
     """
     Returns tuple(ident, kind, version, size)
       Where:
@@ -132,7 +132,7 @@ def Deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 
-def Sizeify(ked, kind=None):
+def sizeify(ked, kind=None):
     """
     ked is key event dict
     kind is serialization if given else use one given in ked
@@ -148,7 +148,7 @@ def Sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    ident, knd, version, size = Deversify(ked["v"])  # extract kind and version
+    ident, knd, version, size = deversify(ked["v"])  # extract kind and version
     if version != Version:
         raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                               version.minor))
@@ -168,7 +168,7 @@ def Sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = Versify(ident=ident, version=version, kind=kind, size=size)
+    vs = versify(ident=ident, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
@@ -1237,14 +1237,16 @@ class Dater(Matter):
     ISO-8601 formatted datetimes.
 
     Dater provides a custom Base64 coding of an ASCII RFC-3339 profile of an
-    ISO-8601 datetime by replacing the three non-Base64 characters, ':.+' with
-    the Base64 equivalents, 'cdp' respectively.
+    ISO-8601 datetime by replacing (using translate) the three non-Base64 characters,
+    ':.+' with the Base64 equivalents, 'cdp' respectively.
+
     Dater provides a more compact representation than would be obtained by converting
     the raw ASCII RFC-3339 profile ISO-8601 datetime to Base64.
     Dater supports datetimes as attached crypto material in replay of events for
     the datetime of when the event was first seen.
-    Restricted to specific 32 byte variant of ISO-8601 date time with microseconds
-    and UTC offset in HH:MM (See RFC-3339).
+    The datetime textual representation is restricted to a specific 32 byte
+    variant (profile) of ISO-8601 datetime with microseconds and UTC offset in
+    HH:MM (See RFC-3339).
     Uses default initialization derivation code = MtrDex.DateTime.
     Raises error on init if code not  MtrDex.DateTime
 
@@ -1253,10 +1255,25 @@ class Dater(Matter):
     '2020-08-22T17:50:09.988921+00:00'
     '2020-08-22T17:50:09.988921-01:00'
 
-    The fully encoded versions are respectively
+    The fully encoded qualified Base64, .qb64 versions are respectively
 
     '1AAG2020-08-22T17c50c09d988921p00c00'
     '1AAG2020-08-22T17c50c09d988921-01c00'
+
+
+    The qualified binary version, .qb2 is the Base64 decoding the qualified Base64,
+    qb64, '1AAG2020-08-22T17c50c09d988921p00c00'
+
+    The raw binary of the fully encoded version is the Base64 decoding of the
+    the datetime only portion, '2020-08-22T17c50c09d988921p00c00'
+
+    Use the properties to get the different representations
+    .dts is ASCII RFC-3339 of ISO-8601
+    .qb64 is qualified Base64 encoding with derivation code proem and ':.+'
+        replaced with 'cdp'
+    .qb2 is qualified binary decoding of the .qb64
+    .code is text CESR derivation code
+    .raw is binary version of the converted datetime only portion of .qb64
 
     Example uses: attached first seen couples with fn+dt
 
@@ -1286,8 +1303,8 @@ class Dater(Matter):
     Methods:
 
     """
-    ToB64 = str.maketrans(":.+", "cdp")
-    FromB64 = str.maketrans("cdp", ":.+")
+    ToB64 = str.maketrans(":.+", "cdp")  #  translate characters
+    FromB64 = str.maketrans("cdp", ":.+")  #  translate characters
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, dts=None, **kwa):
@@ -2908,7 +2925,7 @@ class Prefixer(Matter):
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
         ked["d"] = ked["i"]
-        raw, ident, kind, ked, version = Sizeify(ked=ked)
+        raw, ident, kind, ked, version = sizeify(ked=ked)
         dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
 
@@ -3046,7 +3063,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, knd, _, _ = Deversify(sad['v'])
+            _, knd, _, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
@@ -3110,7 +3127,7 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, ident, kind, sad, version = Sizeify(ked=sad, kind=kind)
+            raw, ident, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         # string now has
         # correct size
@@ -4104,7 +4121,7 @@ class Sadder:
 
         Assumes only supports Version
         """
-        return Sizeify(ked=ked, kind=kind)
+        return sizeify(ked=ked, kind=kind)
 
     def compare(self, said=None):
         """
