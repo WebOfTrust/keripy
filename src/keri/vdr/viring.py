@@ -349,12 +349,12 @@ class Reger(dbing.LMDBer):
                 sad=creder.crd,
                 pre=creder.issuer,
                 sadsigers=[dict(
-                    path=pather.text,
+                    path=pather.bext,
                     pre=prefixer.qb64,
                     sn=seqner.sn,
                     d=saider.qb64
                 ) for (pather, prefixer, seqner, saider, sigers) in sadsigers],
-                sadcigars=[dict(path=pather.text, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
+                sadcigars=[dict(path=pather.bext, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
                 chains=chains,
                 status=status.ked,
             )

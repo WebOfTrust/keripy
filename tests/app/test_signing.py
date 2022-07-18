@@ -236,7 +236,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         assert len(sadsigers) == 1
 
         (pather, prefixer, seqner, saider, sigers) = sadsigers[0]
-        assert pather.text == "-"
+        assert pather.bext == "-"
         assert prefixer.qb64 == hab.pre
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d
@@ -251,7 +251,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         assert len(sadsigers) == 1
 
         (pather, prefixer, seqner, saider, sigers) = sadsigers[0]
-        assert pather.text == "-a-b-c"  # new emdded location
+        assert pather.bext == "-a-b-c"  # new emdded location
         assert prefixer.qb64 == hab.pre
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d

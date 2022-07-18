@@ -587,9 +587,9 @@ DigDex = DigCodex()  # Make instance
 
 
 @dataclass(frozen=True)
-class TextCodex:
+class BextCodex:
     """
-    TextCodex is codex all variable sized Base64 Text derivation codes.
+    BextCodex is codex all variable sized Base64 Text (Bext) derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
@@ -604,7 +604,7 @@ class TextCodex:
         return iter(astuple(self))
 
 
-TexDex = TextCodex()  # Make instance
+BexDex = BextCodex()  # Make instance
 
 # namedtuple for size entries in matter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
@@ -1360,32 +1360,32 @@ class Dater(Matter):
         return helping.fromIso8601(self.dts)
 
 
-class Texter(Matter):
+class Bexter(Matter):
     """
-    Texter is subclass of Matter, cryptographic material, for variable length
-    strings that only contain Base64 URL safe characters. When created using
-    the 'text' paramaeter, the encoded matter in qb64 format in the text domain
-    is more compact than would be the case if the string were passed in as raw
-    bytes. The text is used as is to form the value part of the qb64 version not
-    including the leader.
+    Bexter is subclass of Matter, cryptographic material, for variable length
+    strings that only contain Base64 URL safe characters, i.e. Base64 text (bext).
+    When created using the 'bext' paramaeter, the encoded matter in qb64 format
+    in the text domain is more compact than would be the case if the string were
+    passed in as raw bytes. The text is used as is to form the value part of the
+    qb64 version not including the leader.
 
-    Due to ambiguity that arises for  text that starts with 'A' and whose length
-    is a multiple of 3 or 4 the leading 'A' may be stripped.
+    Due to ambiguity that arises for bext that starts with an 'A' and whose length
+    is a multiple of 3 or 4. Best with a leading 'A' may have that 'A' stripped.
 
     Examples: strings:
-    text = ""
+    bext = ""
     qb64 = '4AAA'
 
-    text = "-"
+    bext = "-"
     qb64 = '6AABAAA-'
 
-    text = "-A"
+    bext = "-A"
     qb64 = '5AABAA-A'
 
-    text = "-A-"
+    bext = "-A-"
     qb64 = '4AABA-A-'
 
-    text = "-A-B"
+    bext = "-A-B"
     qb64 = '4AAB-A-B'
 
     Example uses: pathing for nested SADs and SAIDs
@@ -1420,7 +1420,7 @@ class Texter(Matter):
     """
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.StrB64_L0, text=None, **kwa):
+                 code=MtrDex.StrB64_L0, bext=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -1431,57 +1431,57 @@ class Texter(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-            text is the variable sized Base64 text string
+            bext is the variable sized Base64 text string
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if text is None:
-                raise EmptyMaterialError("Missing text string.")
-            if hasattr(text, "encode"):
-                text = text.encode("utf-8")
-            if not Reb64.match(text):
+            if bext is None:
+                raise EmptyMaterialError("Missing bext string.")
+            if hasattr(bext, "encode"):
+                bext = bext.encode("utf-8")
+            if not Reb64.match(bext):
                 raise ValueError("Invalid Base64.")
-            raw = self._rawify(text)
+            raw = self._rawify(bext)
 
-        super(Texter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+        super(Bexter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
-        if self.code not in TexDex:
-            raise ValidationError("Invalid code = {} for Texter."
+        if self.code not in BexDex:
+            raise ValidationError("Invalid code = {} for Bexter."
                                   "".format(self.code))
 
-    def _rawify(self, text):
+    def _rawify(self, bext):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter
 
         Parameters:
             text (bytes): Base64 bytes
         """
-        ts = len(text) % 4  # text size mod 4
+        ts = len(bext) % 4  # bext size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
         ls = (3 - ts) % 3  # post conv lead size in bytes
-        base = b'A' * ws + text  # pre pad with wad of zeros in Base64 == 'A'
+        base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
         raw = decodeB64(base)[ls:]  # convert and remove leader
         return raw  # raw binary equivalent of text
 
     @property
-    def text(self):
+    def bext(self):
         """
-        Property test:  value portion Base64 str
+        Property bext:  value portion Base64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
         _, _, _, ls = self.Sizes[self.code]
-        text = encodeB64(bytes([0] * ls) + self.raw)
+        bext = encodeB64(bytes([0] * ls) + self.raw)
         ws = 0
-        if ls == 0 and text:
-            if text[0] == ord(b'A'):  # strip leading 'A' zero pad
+        if ls == 0 and bext:
+            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
                 ws = 1
         else:
             ws = (ls + 1) % 4
-        return text.decode('utf-8')[ws:]
+        return bext.decode('utf-8')[ws:]
 
 
-class Pather(Texter):
+class Pather(Bexter):
     """
-    Pather is a subclass of Texter that provides SAD Path language specific functionality
+    Pather is a subclass of Bexter that provides SAD Path language specific functionality
     for variable length strings that only contain Base64 URL safe characters.  Pather allows
     the specification of SAD Paths as a list of field components which will be converted to the
     Base64 URL safe character representation.
@@ -1512,28 +1512,29 @@ class Pather(Texter):
 
     """
 
-    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None, text=None,
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None, bext=None,
                  code=MtrDex.StrB64_L0, path=None, **kwa):
         """
-        Inherited Parameters:  (see Matter)
+        Inherited Parameters:  (see Bexter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
+            bext is the variable sized Base64 text string
 
         Parameters:
             path (list): array of path field components
         """
 
-        if raw is None and text is None and qb64b is None and qb64 is None and qb2 is None:
+        if raw is None and bext is None and qb64b is None and qb64 is None and qb2 is None:
             if path is None:
                 raise EmptyMaterialError("Missing path list.")
 
-            text = self._textify(path)
+            bext = self._bextify(path)
 
-        super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2, text=text,
+        super(Pather, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2, bext=bext,
                                      code=code, **kwa)
 
     @property
@@ -1546,10 +1547,10 @@ class Pather(Texter):
             list: array of field specs of the path
 
         """
-        if not self.text.startswith("-"):
+        if not self.bext.startswith("-"):
             raise Exception("invalid SAD ptr")
 
-        path = self.text.strip("-").split("-")
+        path = self.bext.strip("-").split("-")
         return path if path[0] != '' else []
 
     def root(self, root):
@@ -1564,6 +1565,7 @@ class Pather(Texter):
             Pather: new path anchored at root
         """
         return Pather(path=root.path + self.path)
+
 
     def strip(self, root):
         """ Returns a new Pather with root stipped off the front if it exists
@@ -1589,7 +1591,7 @@ class Pather(Texter):
         return Pather(path=path)
 
     def startswith(self, path):
-        """ Returns True is path is the root of self
+        """ Returns True if path is the root of self
 
         Parameters:
             path (Pather): the path to check against self
@@ -1599,7 +1601,7 @@ class Pather(Texter):
 
         """
 
-        return self.text.startswith(path.text)
+        return self.bext.startswith(path.bext)
 
     def resolve(self, sad):
         """ Recurses thru value following ptr
@@ -1612,7 +1614,8 @@ class Pather(Texter):
         """
         return self._resolve(sad, self.path)
 
-    def rawify(self, serder):
+
+    def tail(self, serder):
         """ Recurses thru value following .path and returns terminal value
 
         Finds the value at this path and applies the version string rules of the serder
@@ -1633,14 +1636,16 @@ class Pather(Texter):
         elif isinstance(val, list):
             return dumps(val, serder.kind)
         else:
-            raise ValueError("Non-rawifiable value at {} of {}"
+            raise ValueError("Bad tail value at {} of {}"
                              .format(self.path, serder.ked))
 
+
     @staticmethod
-    def _textify(path):
-        """ Returns raw value equivalent of array of path field components.
+    def _bextify(path):
+        """ Returns Base64 text delimited equivalent of path components
 
         Suitable for variable sized matter
+
 
         Parameters:
             path (list): array of path field components
@@ -1649,23 +1654,20 @@ class Pather(Texter):
             str:  textual representation of SAD path
 
         """
-        text = "-"
-        if not path:
-            return text
-
+        vath = []  # valid path components
         for p in path:
-            if isinstance(p, str):
-                text += p
-            elif hasattr(p, "decode"):
-                text += p.decode("utf-8")
+            if hasattr(p, "decode"):
+                p = p.decode("utf-8")
+
             elif isinstance(p, int):
-                text += str(p)
-            else:
-                raise ValueError("Invalid Path.")
+                p = str(p)
 
-            text += "-"
+            if not Reb64.match(p.encode("utf-8")):
+                raise ValueError(f"Non Base64 path component = {p}.")
 
-        return text[:-1]
+            vath.append(p)
+
+        return ("-" + "-".join(vath))
 
     def _resolve(self, val, ptr):
         """ Recurses thru value following ptr
@@ -1708,6 +1710,7 @@ class Pather(Texter):
             raise ValueError("invalid traversal type")
 
         return self._resolve(cur, ptr)
+
 
 
 class Verfer(Matter):
@@ -4436,6 +4439,129 @@ class Serder(Sadder):
         like 1024 for ogler.logger
         """
         return json.dumps(self.ked, indent=1)[:size if size is not None else None]
+
+
+
+
+class TholderNew(Bexter):
+    """
+    Tholder is subclass of Bexter: Supports cryptographic material, for variable
+    length fractionally weighted threshold strings that only contain Base64
+    URL-safe characters, i.e. Base64 text (bext).
+
+    When created using the 'bext' paramaeter, the encoded matter in qb64 format
+    in the text domain is more compact than would be the case if the string were
+    passed in as raw bytes. The text is used as is to form the value part of the
+    qb64 version not including the leader.
+
+    Due to ambiguity that arises for bext that starts with an 'A' and whose length
+    is a multiple of 3 or 4. Best with a leading 'A' may have that 'A' stripped.
+
+    Examples: strings:
+    bext = ""
+    qb64 = '4AAA'
+
+    bext = "-"
+    qb64 = '6AABAAA-'
+
+    bext = "-A"
+    qb64 = '5AABAA-A'
+
+    bext = "-A-"
+    qb64 = '4AABA-A-'
+
+    bext = "-A-B"
+    qb64 = '4AAB-A-B'
+
+    Example uses: pathing for nested SADs and SAIDs
+
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        .pad  is int number of pad chars given raw
+
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .transferable is Boolean, True when transferable derivation code False otherwise
+
+    Properties:
+        .text is the Base64 text value, .qb64 with text code and leader removed.
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    Methods:
+
+    """
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=MtrDex.StrB64_L0, bext=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            bext is the variable sized Base64 text string
+        """
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if bext is None:
+                raise EmptyMaterialError("Missing bext string.")
+            if hasattr(bext, "encode"):
+                bext = bext.encode("utf-8")
+            if not Reb64.match(bext):
+                raise ValueError("Invalid Base64.")
+            raw = self._rawify(bext)
+
+        super(TholderNew, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                     code=code, **kwa)
+        if self.code not in BexDex:
+            raise ValidationError("Invalid code = {} for Bexter."
+                                  "".format(self.code))
+
+    def _rawify(self, bext):
+        """Returns raw value equivalent of Base64 text.
+        Suitable for variable sized matter
+
+        Parameters:
+            text (bytes): Base64 bytes
+        """
+        ts = len(bext) % 4  # bext size mod 4
+        ws = (4 - ts) % 4  # pre conv wad size in chars
+        ls = (3 - ts) % 3  # post conv lead size in bytes
+        base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
+        raw = decodeB64(base)[ls:]  # convert and remove leader
+        return raw  # raw binary equivalent of text
+
+    @property
+    def bext(self):
+        """
+        Property bext:  value portion Base64 str
+        Returns the value portion of .qb64 with text code and leader removed
+        """
+        _, _, _, ls = self.Sizes[self.code]
+        bext = encodeB64(bytes([0] * ls) + self.raw)
+        ws = 0
+        if ls == 0 and bext:
+            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
+                ws = 1
+        else:
+            ws = (ls + 1) % 4
+        return bext.decode('utf-8')[ws:]
 
 
 class Tholder:
