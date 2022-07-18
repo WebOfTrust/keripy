@@ -12,7 +12,7 @@ from hio.base import doing
 from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
-from keri.core.coring import Serials, Versify
+from keri.core.coring import Serials, versify
 from keri.core.coring import Signer
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
@@ -111,7 +111,7 @@ def test_baser():
     preb = 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = Versify(kind=Serials.json, size=20)
+    vs = versify(kind=Serials.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
     ked = dict(vs=vs, pre=preb.decode("utf-8"),
@@ -1809,7 +1809,7 @@ def test_fetchkeldel():
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = Versify(kind=Serials.json, size=20)
+    vs = versify(kind=Serials.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
     ked = dict(vs=vs, pre=preb.decode("utf-8"),

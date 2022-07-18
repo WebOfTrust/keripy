@@ -74,7 +74,7 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def Versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
+def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
@@ -86,16 +86,16 @@ def Versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
     return VERFMT.format(ident, version[0], version[1], kind, size, VERRAWSIZE)
 
 
-Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
-                     mgpk=Versify(kind=Serials.mgpk, size=0),
-                     cbor=Versify(kind=Serials.cbor, size=0))
+Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
+                     mgpk=versify(kind=Serials.mgpk, size=0),
+                     cbor=versify(kind=Serials.cbor, size=0))
 
 VEREX = b'(?P<ident>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
-def Deversify(vs):
+def deversify(vs):
     """
     Returns tuple(ident, kind, version, size)
       Where:
@@ -132,7 +132,7 @@ def Deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 
-def Sizeify(ked, kind=None):
+def sizeify(ked, kind=None):
     """
     ked is key event dict
     kind is serialization if given else use one given in ked
@@ -148,7 +148,7 @@ def Sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    ident, knd, version, size = Deversify(ked["v"])  # extract kind and version
+    ident, knd, version, size = deversify(ked["v"])  # extract kind and version
     if version != Version:
         raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                               version.minor))
@@ -168,7 +168,7 @@ def Sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = Versify(ident=ident, version=version, kind=kind, size=size)
+    vs = versify(ident=ident, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
@@ -2925,7 +2925,7 @@ class Prefixer(Matter):
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
         ked["d"] = ked["i"]
-        raw, ident, kind, ked, version = Sizeify(ked=ked)
+        raw, ident, kind, ked, version = sizeify(ked=ked)
         dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
 
@@ -3063,7 +3063,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, knd, _, _ = Deversify(sad['v'])
+            _, knd, _, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
@@ -3127,7 +3127,7 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, ident, kind, sad, version = Sizeify(ked=sad, kind=kind)
+            raw, ident, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         # string now has
         # correct size
@@ -4121,7 +4121,7 @@ class Sadder:
 
         Assumes only supports Version
         """
-        return Sizeify(ked=ked, kind=kind)
+        return sizeify(ked=ked, kind=kind)
 
     def compare(self, said=None):
         """

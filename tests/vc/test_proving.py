@@ -104,7 +104,7 @@ def test_credentialer():
         Creder()
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=coring.Versify(ident=coring.Idents.acdc, kind=Serials.json, size=0),
+        v=coring.versify(ident=coring.Idents.acdc, kind=Serials.json, size=0),
         d="",
         s="abc",
         i="i",
@@ -138,7 +138,7 @@ def test_credentialer():
     assert creder.size == 168
 
     d2 = dict(d)
-    d2["v"] = coring.Versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
+    d2["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
     creder = Creder(ked=d2)
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
     assert creder.issuer == "i"
@@ -161,7 +161,7 @@ def test_credentialer():
     assert creder.crd == d2
 
     d3 = dict(d)
-    d3["v"] = coring.Versify(ident=coring.Idents.acdc, kind=Serials.mgpk, size=0)
+    d3["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.mgpk, size=0)
     creder = Creder(ked=d3)
 
     assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"

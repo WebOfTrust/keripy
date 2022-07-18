@@ -26,7 +26,7 @@ from keri.core.coring import (Sizage, MtrDex, Matter,
                               IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
-from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
+from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
                               B64_CHARS, Reb64, nabSextets)
@@ -3181,7 +3181,7 @@ def test_prefixer():
         prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
 
     # Test digest derivation from inception ked
-    vs = Versify(version=Version, kind=Serials.json, size=0)
+    vs = versify(version=Version, kind=Serials.json, size=0)
     sn = 0
     ilk = Ilks.icp
     sith = "1"
@@ -3474,7 +3474,7 @@ def test_saider():
 
     # Load from vaccuous dict
     label = Ids.d
-    vs = Versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
+    vs = versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(
         v=vs,
@@ -3554,7 +3554,7 @@ def test_saider():
     assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
-    vs = Versify(version=Version, kind=Serials.mgpk, size=0)  # vaccuous size == 0
+    vs = versify(version=Version, kind=Serials.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
     sad9 = dict(sad4)
     sad9['v'] = vs
@@ -3693,64 +3693,64 @@ def test_versify():
     """
     Test Versify support
     """
-    vs = Versify(kind=Serials.json, size=0)
+    vs = versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 0
 
-    vs = Versify(kind=Serials.json, size=65)
+    vs = versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 65
 
-    vs = Versify(ident=Idents.acdc, kind=Serials.json, size=86)
+    vs = versify(ident=Idents.acdc, kind=Serials.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.acdc
     assert kind == Serials.json
     assert version == Version
     assert size == 86
 
-    vs = Versify(kind=Serials.mgpk, size=0)
+    vs = versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 0
 
-    vs = Versify(kind=Serials.mgpk, size=65)
+    vs = versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 65
 
-    vs = Versify(kind=Serials.cbor, size=0)
+    vs = versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 0
 
-    vs = Versify(kind=Serials.cbor, size=65)
+    vs = versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = Deversify(vs)
+    ident, kind, version, size = deversify(vs)
     assert ident == Idents.keri
     assert kind == Serials.cbor
     assert version == Version
@@ -3789,7 +3789,7 @@ def test_serder():
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e1s == ((b'{"v":"KERI10JSON00006f_","d":"EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU",'
                     b'"i":"ABCDEFG","s":"0001","t":"rot"}'))
-    vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
+    vs = versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON00006f_'
     e1["v"] = vs  # has real length
     pretty = serder.pretty()
@@ -3837,7 +3837,7 @@ def test_serder():
     e2s = msgpack.dumps(e2)
     assert e2s == ((b'\x85\xa1v\xb1KERI10MGPK000000_\xa1d\xd9,EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4f'
                     b'c1nGuyTwU\xa1i\xa7ABCDEFG\xa1s\xa40001\xa1t\xa3rot'))
-    vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
+    vs = versify(kind=Serials.mgpk, size=len(e2s))  # use real length
     assert vs == 'KERI10MGPK00005c_'
     e2["v"] = vs  # has real length
     _, e2 = coring.Saider.saidify(sad=e2)
@@ -3878,7 +3878,7 @@ def test_serder():
     e3s = cbor.dumps(e3)
     assert e3s == (b'\xa5avqKERI10CBOR000000_adx,EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwUaig'
                    b'ABCDEFGasd0001atcrot')
-    vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
+    vs = versify(kind=Serials.cbor, size=len(e3s))  # use real length
     assert vs == 'KERI10CBOR00005c_'
     e3["v"] = vs  # has real length
     _, e3 = coring.Saider.saidify(sad=e3)
@@ -3914,7 +3914,7 @@ def test_serder():
     assert ked3 == e3
     assert vrs3 == vers3
 
-    e4 = dict(v=Versify(ident=Idents.acdc, kind=Serials.json, size=0),
+    e4 = dict(v=versify(ident=Idents.acdc, kind=Serials.json, size=0),
               d="",
               i="ABCDEFG",
               s="0001",
@@ -3925,7 +3925,7 @@ def test_serder():
     e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EwXDowQGbBZTbz7vArhInaRqxLNWAsqQAzuLCioknTtk",'
                    b'"i":"ABCDEFG","s":"0001","t":"rot"}')
-    vs = Versify(ident=Idents.acdc, kind=Serials.json, size=len(e4s))  # use real length
+    vs = versify(ident=Idents.acdc, kind=Serials.json, size=len(e4s))  # use real length
     assert vs == 'ACDC10JSON00006f_'
     e4["v"] = vs  # has real length
     serder = Sadder(ked=e4)
@@ -4058,7 +4058,7 @@ def test_serder():
     assert evt2.kind == Serials.cbor
     evt2.kind = Serials.json
     assert evt2.kind == Serials.json
-    ident, knd, version, size = Deversify(evt2.ked["v"])
+    ident, knd, version, size = deversify(evt2.ked["v"])
     assert ident == Idents.keri
     assert knd == Serials.json
 
