@@ -289,7 +289,7 @@ def test_matter():
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tag': '1AAF',
+        'Tern': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'TBD1': '2AAA',
@@ -1245,15 +1245,15 @@ def test_matter():
     assert raw == b'\xf8\x9c\xff'
     txt = encodeB64(raw)
     assert txt == b'-Jz_'
-    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    qb64b = MtrDex.Tern.encode("utf-8") + txt
     assert qb64b == b'1AAF-Jz_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
 
-    matter = Matter(raw=raw, code=MtrDex.Tag)
+    matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1262,7 +1262,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1271,7 +1271,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1280,7 +1280,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1293,15 +1293,15 @@ def test_matter():
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    qb64b = MtrDex.Tern.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
 
-    matter = Matter(raw=raw, code=MtrDex.Tag)
+    matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1310,7 +1310,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1319,7 +1319,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1328,7 +1328,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2

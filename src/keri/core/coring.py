@@ -178,6 +178,18 @@ def sizeify(ked, kind=None):
     return raw, ident, kind, ked, version
 
 
+
+def randomNonce():
+    """ Generate a random ed25519 seed and encode as qb64
+
+    Returns:
+        str: qb64 encoded ed25519 random seed
+    """
+    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+    return seedqb64
+
+
 # Base64 utilities
 BASE64_PAD = b'='
 
@@ -474,7 +486,7 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
+    Tern:                  str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
     TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
@@ -605,6 +617,7 @@ class BextCodex:
 
 
 BexDex = BextCodex()  # Make instance
+
 
 # namedtuple for size entries in matter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
@@ -4443,8 +4456,39 @@ class Serder(Sadder):
 
 
 
-class TholderNew(Bexter):
+class TholderNew:
     """
+    Tholder is KERI Signing Threshold Satisfaction class
+    .satisfy method evaluates satisfaction based on ordered list of indices of
+    verified signatures where indices correspond to offsets in key list of
+    associated signatures.
+
+    ClassMethods
+        .fromLimen returns corresponding sith as str or list from a limen str
+
+    Has the following public properties:
+
+    Properties:
+        .sith is original signing threshold as str or list of str ratios
+        .thold is parsed signing threshold as int or list of Fractions
+        .limen is the extracted string for the next commitment to the threshold
+            [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] is extracted as
+            '1/2,1/2,1/4,1/4,1/4&1,1'
+        .weighted is Boolean True if fractional weighted threshold False if numeric
+        .size is int of minimun size of keys list
+
+    Hidden:
+        ._sith is original signing threshold
+        ._thold is parsed signing threshold maybe int or list of clauses
+        ._limen is extracted string for the next commitment to threshold
+        ._weighted is Boolean, True if fractional weighted threshold False if numeric
+        ._size is int minimum size of of keys list
+        ._satisfy is method reference of threshold specified verification method
+        ._satisfy_numeric is numeric threshold verification method
+        ._satisfy_weighted is fractional weighted threshold verification method
+
+
+
     Tholder is subclass of Bexter: Supports cryptographic material, for variable
     length fractionally weighted threshold strings that only contain Base64
     URL-safe characters, i.e. Base64 text (bext).
@@ -4502,10 +4546,49 @@ class TholderNew(Bexter):
 
     Methods:
 
+    lassMethods
+        .fromLimen returns corresponding sith as str or list from a limen str
+
+    Has the following public properties:
+
+    Properties:
+        .sith is original signing threshold as str or list of str ratios
+        .thold is parsed signing threshold as int or list of Fractions
+        .limen is the extracted string for the next commitment to the threshold
+            [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] is extracted as
+            '1/2,1/2,1/4,1/4,1/4&1,1'
+        .weighted is Boolean True if fractional weighted threshold False if numeric
+        .size is int of minimun size of keys list
+
+    Hidden:
+        ._sith is original signing threshold
+        ._thold is parsed signing threshold maybe int or list of clauses
+        ._limen is extracted string for the next commitment to threshold
+        ._weighted is Boolean, True if fractional weighted threshold False if numeric
+        ._size is int minimum size of of keys list
+        ._satisfy is method reference of threshold specified verification method
+        ._satisfy_numeric is numeric threshold verification method
+        ._satisfy_weighted is fractional weighted threshold verification method
+
+
+
     """
 
+    @classmethod
+    def fromLimen(cls, limen):
+        """
+        Returns signing threshold from limen str
+        """
+        sith = limen
+        if '/' in limen:  # weighted threshold
+            sith = []
+            clauses = limen.split('&')
+            for clause in clauses:
+                sith.append(clause.split(','))
+        return sith
+
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.StrB64_L0, bext=None, **kwa):
+                 code=MtrDex.StrB64_L0, bext=None, sith='', limen='', **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -4514,24 +4597,102 @@ class TholderNew(Bexter):
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
+            bext is the variable sized Base64 text string
 
         Parameters:
-            bext is the variable sized Base64 text string
-        """
-        if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if bext is None:
-                raise EmptyMaterialError("Missing bext string.")
-            if hasattr(bext, "encode"):
-                bext = bext.encode("utf-8")
-            if not Reb64.match(bext):
-                raise ValueError("Invalid Base64.")
-            raw = self._rawify(bext)
 
-        super(TholderNew, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                     code=code, **kwa)
-        if self.code not in BexDex:
-            raise ValidationError("Invalid code = {} for Bexter."
-                                  "".format(self.code))
+        Parameters:
+            sith is signing threshold expressed as:
+                either hex string of threshold number
+                or int of threshold number
+                or fractional weight clauses.
+
+                Fractional weight clauses may be either an iterable of
+                fraction strings or an iterable of iterables of fraction strings.
+
+        """
+
+        if raw is None and qb64b is None and qb64 is None and qb2 is None and bext is None:
+
+            if isinstance(sith, str):
+                sith = int(sith, 16)
+
+            if isinstance(sith, int):
+                thold = sith
+                if thold < 0:
+                    raise ValueError("Invalid sith = {} < 0.".format(thold))
+                self._thold = thold
+                self._size = self._thold  # used to verify that keys list size is at least size
+                self._weighted = False
+                self._satisfy = self._satisfy_numeric
+                self._sith = "{:x}".format(sith)  # store in event form as str
+                self._limen = self._sith  # just use hex string
+
+            else:  # assumes iterable of weights or iterable of iterables of weights
+                self._sith = sith
+                self._weighted = True
+                if not sith:  # empty iterable
+                    raise ValueError("Invalid sith = {}, empty weight list.".format(sith))
+
+                mask = [isinstance(w, str) for w in sith]
+                if mask and all(mask):  # not empty and all strings
+                    sith = [sith]  # make list of list so uniform
+                elif any(mask):  # some strings but not all
+                    raise ValueError("Invalid sith = {} some weights non non string."
+                                         "".format(sith))
+
+                # replace fractional strings with fractions
+                thold = []
+                for clause in sith:  # convert string fractions to Fractions
+                    thold.append([Fraction(w) for w in clause])  # append list of Fractions
+
+                for clause in thold:  # sum of fractions in clause must be >= 1
+                    if not (sum(clause) >= 1):
+                        raise ValueError("Invalid sith clause = {}, all clause weight "
+                                             "sums must be >= 1.".format(thold))
+
+                self._thold = thold
+                self._size = sum(len(clause) for clause in thold)
+                self._satisfy = self._satisfy_weighted
+
+                # extract limen from sith by joining ratio str elements of each
+                # clause with "," and joining clauses with "&"
+                # [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] becomes
+                # '1/2,1/2,1/4,1/4,1/4&1,1'
+                self._limen = "&".join([",".join(clause) for clause in sith])
+
+
+
+
+
+        #if self.code not in BexDex:
+        #    raise ValidationError("Invalid code = {} for Bexter."
+        #                         "".format(self.code))
+
+
+    @property
+    def dts(self):
+        """
+        Property dts:  date-time-stamp str
+        Returns .qb64 translated to RFC-3339 profile of ISO 8601 datetime str
+        """
+        return self.qb64[self.Sizes[self.code].hs:].translate(self.FromB64)
+
+    @property
+    def dtsb(self):
+        """
+        Property dtsb:  date-time-stamp bytes
+        Returns .qb64 translated to RFC-3339 profile of ISO 8601 datetime bytes
+        """
+        return self.qb64[self.Sizes[self.code].hs:].translate(self.FromB64).encode("utf-8")
+
+    @property
+    def datetime(self):
+        """
+        Property datetime:
+        Returns datetime.datetime instance converted from .dts
+        """
+        return helping.fromIso8601(self.dts)
 
     def _rawify(self, bext):
         """Returns raw value equivalent of Base64 text.
@@ -4564,9 +4725,97 @@ class TholderNew(Bexter):
         return bext.decode('utf-8')[ws:]
 
 
+    @property
+    def sith(self):
+        """ sith property getter """
+        return self._sith
+
+    @property
+    def thold(self):
+        """ thold property getter """
+        return self._thold
+
+    @property
+    def weighted(self):
+        """ weighted property getter """
+        return self._weighted
+
+    @property
+    def size(self):
+        """ size property getter """
+        return self._size
+
+    @property
+    def limen(self):
+        """ limen property getter """
+        return self._limen
+
+    def satisfy(self, indices):
+        """
+        Returns True if indices list of verified signature key indices satisfies
+        threshold, False otherwise.
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+        """
+        return (self._satisfy(indices=indices))
+
+    def _satisfy_numeric(self, indices):
+        """
+        Returns True if satisfies numeric threshold False otherwise
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+        """
+        try:
+            if self.thold > 0 and len(indices) >= self.thold:  # at least one
+                return True
+
+        except Exception as ex:
+            return False
+
+        return False
+
+    def _satisfy_weighted(self, indices):
+        """
+        Returns True if satifies fractional weighted threshold False otherwise
+
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+
+        """
+        try:
+            if not indices:  # empty indices
+                return False
+
+            # remove duplicates with set, sort low to high
+            indices = sorted(set(indices))
+            sats = [False] * self.size  # default all satifactions to False
+            for idx in indices:
+                sats[idx] = True  # set verified signature index to True
+
+            wio = 0  # weight index offset
+            for clause in self.thold:
+                cw = 0  # init clause weight
+                for w in clause:
+                    if sats[wio]:  # verified signature so weight applies
+                        cw += w
+                    wio += 1
+                if cw < 1:  # each clause must sum to at least 1
+                    return False
+
+            return True  # all clauses including final one cw >= 1
+
+        except Exception as ex:
+            return False
+
+        return False
+
+
 class Tholder:
     """
-    Tholder is KERI Signing Threshold Satisfactionclass
+    Tholder is KERI Signing Threshold Satisfaction class
     .satisfy method evaluates satisfaction based on ordered list of indices of
     verified signatures where indices correspond to offsets in key list of
     associated signatures.
@@ -4619,13 +4868,11 @@ class Tholder:
             sith is signing threshold expressed as:
                 either hex string of threshold number
                 or int of threshold number
-                or iterable of strs of fractional weight clauses.
+                or fractional weight clauses.
 
                 Fractional weight clauses may be either an iterable of
                 fraction strings or an iterable of iterables of fraction strings.
 
-                The verify method appropriately evaluates each of the threshold
-                forms.
 
         """
         if isinstance(sith, str):
@@ -4762,13 +5009,3 @@ class Tholder:
 
         return False
 
-
-def randomNonce():
-    """ Generate a random ed25519 seed and encode as qb64
-
-    Returns:
-        str: qb64 encoded ed25519 random seed
-    """
-    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
-    return seedqb64
