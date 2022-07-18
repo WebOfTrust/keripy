@@ -1237,14 +1237,16 @@ class Dater(Matter):
     ISO-8601 formatted datetimes.
 
     Dater provides a custom Base64 coding of an ASCII RFC-3339 profile of an
-    ISO-8601 datetime by replacing the three non-Base64 characters, ':.+' with
-    the Base64 equivalents, 'cdp' respectively.
+    ISO-8601 datetime by replacing (using translate) the three non-Base64 characters,
+    ':.+' with the Base64 equivalents, 'cdp' respectively.
+
     Dater provides a more compact representation than would be obtained by converting
     the raw ASCII RFC-3339 profile ISO-8601 datetime to Base64.
     Dater supports datetimes as attached crypto material in replay of events for
     the datetime of when the event was first seen.
-    Restricted to specific 32 byte variant of ISO-8601 date time with microseconds
-    and UTC offset in HH:MM (See RFC-3339).
+    The datetime textual representation is restricted to a specific 32 byte
+    variant (profile) of ISO-8601 datetime with microseconds and UTC offset in
+    HH:MM (See RFC-3339).
     Uses default initialization derivation code = MtrDex.DateTime.
     Raises error on init if code not  MtrDex.DateTime
 
@@ -1253,10 +1255,25 @@ class Dater(Matter):
     '2020-08-22T17:50:09.988921+00:00'
     '2020-08-22T17:50:09.988921-01:00'
 
-    The fully encoded versions are respectively
+    The fully encoded qualified Base64, .qb64 versions are respectively
 
     '1AAG2020-08-22T17c50c09d988921p00c00'
     '1AAG2020-08-22T17c50c09d988921-01c00'
+
+
+    The qualified binary version, .qb2 is the Base64 decoding the qualified Base64,
+    qb64, '1AAG2020-08-22T17c50c09d988921p00c00'
+
+    The raw binary of the fully encoded version is the Base64 decoding of the
+    the datetime only portion, '2020-08-22T17c50c09d988921p00c00'
+
+    Use the properties to get the different representations
+    .dts is ASCII RFC-3339 of ISO-8601
+    .qb64 is qualified Base64 encoding with derivation code proem and ':.+'
+        replaced with 'cdp'
+    .qb2 is qualified binary decoding of the .qb64
+    .code is text CESR derivation code
+    .raw is binary version of the converted datetime only portion of .qb64
 
     Example uses: attached first seen couples with fn+dt
 
@@ -1286,8 +1303,8 @@ class Dater(Matter):
     Methods:
 
     """
-    ToB64 = str.maketrans(":.+", "cdp")
-    FromB64 = str.maketrans("cdp", ":.+")
+    ToB64 = str.maketrans(":.+", "cdp")  #  translate characters
+    FromB64 = str.maketrans("cdp", ":.+")  #  translate characters
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, dts=None, **kwa):
