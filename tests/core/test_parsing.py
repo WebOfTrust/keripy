@@ -302,7 +302,7 @@ def test_pathed_material(mockHelpingNowUTC):
         attachments = msg["attachments"]
         assert len(attachments) == 2
         (path1, attachment1) = attachments[0]
-        assert path1.text == "-0"
+        assert path1.bext == "-0"
         assert attachment1 == (b'-VBq-AABAA57gKX2fuFDQueMfjVZP2t8TKxyR8GrUkQV9ykAt0UAdQzk24E2c4g4X4pJmu9z8Ab6iolHfxY'
                                b'YqWXubUDA7LCQ-BADAAakx_iP6JIlUg8gb45IdMJI9IXU1F3OrUCSG0RYXPt_-vcFTJ7f_MOTnC8fwc4kLO'
                                b'_57z_kZFwnjpw_zJNY83BwABOQbSEplzc_AK76CK18GVcy4NeNMh3FMAd19nO3oQYiW2_v6BTRDKuSAvTA7'
@@ -310,7 +310,7 @@ def test_pathed_material(mockHelpingNowUTC):
                                b'epAHx5Pu9BBmoM0i53tGBXWRkYAe-yBA-EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2022-02-27T18c02c09'
                                b'd640135p00c00')
         (path2, attachment2) = attachments[1]
-        assert path2.text == "-1"
+        assert path2.bext == "-1"
         assert attachment2 == (b'-VBq-AABAAh8GcgHc4gvZzNOHxcjGMDxQZkuHeR9H4w7MKWlIyeg-4Cx815rya5RBTpsjlg0DhYcacQutrJ'
                                b'HI4jzS5tj7UBQ-BADAAPZd8UNgjPNGE0mLWhF81jQW10KtKwPwn0A18jnSZekoiC3meFqZFObZphYDsI8PG'
                                b'JY9j7Xv7klG7jTdL0DkjDgABNMO7i7vjVfi7G-AbeDbnu1zl86Ia_BSWVLt6ykylfGRZaIIaWBC-YrsX1bQ'

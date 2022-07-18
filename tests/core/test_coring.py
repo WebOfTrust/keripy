@@ -19,7 +19,7 @@ import pytest
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
-from keri.core.coring import Seqner, Siger, Dater, Texter
+from keri.core.coring import Seqner, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
@@ -2240,65 +2240,68 @@ def test_texter():
     Test Texter variable sized Base64 text subclass of Matter
     """
     with pytest.raises(EmptyMaterialError):
-        texter = Texter()
+        texter = Bexter()
 
     text = "@!"
     with pytest.raises(ValueError):
-        texter = Texter(text=text)
+        texter = Bexter(bext=text)
 
     text = ""
-    texter = Texter(text=text)
+    texter = Bexter(bext=text)
     assert texter.code == MtrDex.StrB64_L0
     assert texter.both == '4AAA'
     assert texter.raw == b''
     assert texter.qb64 == '4AAA'
     assert texter.qb2 == b'\xe0\x00\x00'
-    assert texter.text == text
+    assert texter.bext == text
 
     text = "-"
-    texter = Texter(text=text)
+    texter = Bexter(bext=text)
     assert texter.code == MtrDex.StrB64_L2
     assert texter.both == '6AAB'
     assert texter.raw == b'>'
     assert texter.qb64 == '6AABAAA-'
     assert texter.qb2 == b'\xe8\x00\x01\x00\x00>'
-    assert texter.text == text
+    assert texter.bext == text
 
     text = "-A"
-    texter = Texter(text=text)
+    texter = Bexter(bext=text)
     assert texter.code == MtrDex.StrB64_L1
     assert texter.both == '5AAB'
     assert texter.raw == b'\x0f\x80'
     assert texter.qb64 == '5AABAA-A'
     assert texter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
-    assert texter.text == text
+    assert texter.bext == text
 
     text = "-A-"
-    texter = Texter(text=text)
+    texter = Bexter(bext=text)
     assert texter.code == MtrDex.StrB64_L0
     assert texter.both == '4AAB'
     assert texter.raw == b'\x03\xe0>'
     assert texter.qb64 == '4AABA-A-'
     assert texter.qb2 == b'\xe0\x00\x01\x03\xe0>'
-    assert texter.text == text
+    assert texter.bext == text
 
     text = "-A-B"
-    texter = Texter(text=text)
+    texter = Bexter(bext=text)
     assert texter.code == MtrDex.StrB64_L0
     assert texter.both == '4AAB'
     assert texter.raw == b'\xf8\x0f\x81'
     assert texter.qb64 == '4AAB-A-B'
     assert texter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
-    assert texter.text == text
+    assert texter.bext == text
 
     """ Done Test """
 
 
 def test_pather():
+    """
+    """
+
     sad = dict(a=dict(z="value", b=dict(x=1, y=2, c="test")))
     path = []
     pather = coring.Pather(path=path)
-    assert pather.text == "-"
+    assert pather.bext == "-"
     assert pather.qb64 == "6AABAAA-"
     assert pather.raw == b'>'
     assert pather.resolve(sad) == sad
@@ -2306,7 +2309,7 @@ def test_pather():
 
     path = ["a", "b", "c"]
     pather = coring.Pather(path=path)
-    assert pather.text == "-a-b-c"
+    assert pather.bext == "-a-b-c"
     assert pather.qb64 == "5AACAA-a-b-c"
     assert pather.raw == b'\x0f\x9a\xf9\xbf\x9c'
     assert pather.resolve(sad) == "test"
@@ -2314,7 +2317,7 @@ def test_pather():
 
     path = ["0", "1", "2"]
     pather = coring.Pather(path=path)
-    assert pather.text == "-0-1-2"
+    assert pather.bext == "-0-1-2"
     assert pather.qb64 == "5AACAA-0-1-2"
     assert pather.raw == b'\x0f\xb4\xfb_\xb6'
     assert pather.resolve(sad) == "test"
@@ -2323,7 +2326,7 @@ def test_pather():
     sad = dict(field0=dict(z="value", field1=dict(field2=1, field3=2, c="test")))
     path = ["field0"]
     pather = coring.Pather(path=path)
-    assert pather.text == "-field0"
+    assert pather.bext == "-field0"
     assert pather.qb64 == "4AACA-field0"
     assert pather.raw == b'\x03\xe7\xe2zWt'
     assert pather.resolve(sad) == {'field1': {'c': 'test', 'field2': 1, 'field3': 2}, 'z': 'value'}
@@ -2331,7 +2334,7 @@ def test_pather():
 
     path = ["field0", "field1", "field3"]
     pather = coring.Pather(path=path)
-    assert pather.text == "-field0-field1-field3"
+    assert pather.bext == "-field0-field1-field3"
     assert pather.qb64 == "6AAGAAA-field0-field1-field3"
     assert pather.raw == b">~'\xa5wO\x9f\x89\xe9]\xd7\xe7\xe2zWw"
     assert pather.resolve(sad) == 2
@@ -2339,7 +2342,7 @@ def test_pather():
 
     path = ["field0", "1", "0"]
     pather = coring.Pather(path=path)
-    assert pather.text == "-field0-1-0"
+    assert pather.bext == "-field0-1-0"
     assert pather.qb64 == "4AADA-field0-1-0"
     assert pather.raw == b'\x03\xe7\xe2zWt\xfb_\xb4'
     assert pather.resolve(sad) == 1
@@ -2347,16 +2350,16 @@ def test_pather():
 
     sad = dict(field0=dict(z=dict(field2=1, field3=2, c="test"), field1="value"))
     text = "-0-z-2"
-    pather = coring.Pather(text=text)
-    assert pather.text == text
+    pather = coring.Pather(bext=text)
+    assert pather.bext == text
     assert pather.qb64 == "5AACAA-0-z-2"
     assert pather.raw == b'\x0f\xb4\xfb?\xb6'
     assert pather.resolve(sad) == "test"
     assert pather.path == ["0", "z", "2"]
 
     text = "-0-a"
-    pather = coring.Pather(text=text)
-    assert pather.text == text
+    pather = coring.Pather(bext=text)
+    assert pather.bext == text
     assert pather.qb64 == "4AAB-0-a"
     assert pather.raw == b'\xfbO\x9a'
     with pytest.raises(KeyError):
@@ -2364,19 +2367,23 @@ def test_pather():
     assert pather.path == ["0", "a"]
 
     text = "-0-field1-0"
-    pather = coring.Pather(text=text)
-    assert pather.text == text
+    pather = coring.Pather(bext=text)
+    assert pather.bext == text
     assert pather.qb64 == "4AADA-0-field1-0"
     assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
     with pytest.raises(ValueError):
         pather.resolve(sad)
     assert pather.path == ["0", "field1", "0"]
 
-    text = "-a"
-    a = coring.Pather(text=text)
-    b = coring.Pather(text="-a-b")
+    path = ["Not$Base64", "@moreso", "*again"]
+    with pytest.raises(ValueError):
+        pather = coring.Pather(path=path)
 
-    pather = coring.Pather(text=text)
+    text = "-a"
+    a = coring.Pather(bext=text)
+    b = coring.Pather(bext="-a-b")
+
+    pather = coring.Pather(bext=text)
     assert pather.startswith(a)
     assert not pather.startswith(b)
 
@@ -2386,7 +2393,7 @@ def test_pather():
     pnew = pather.strip(b)
     assert pnew.path == pather.path
 
-    pather = coring.Pather(text="-a-b-c-d-e-f")
+    pather = coring.Pather(bext="-a-b-c-d-e-f")
     assert pather.startswith(a)
     assert pather.startswith(b)
 

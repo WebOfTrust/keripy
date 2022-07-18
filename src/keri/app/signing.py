@@ -76,7 +76,7 @@ def signPaths(hab, serder, paths):
         prefixer, seqner, saider, indices = transSeal(hab)
         for path in paths:
             pather = coring.Pather(path=path)
-            data = pather.rawify(serder=serder)
+            data = pather.tail(serder=serder)
 
             sigers = hab.sign(ser=data,
                               verfers=hab.kever.verfers,
@@ -86,7 +86,7 @@ def signPaths(hab, serder, paths):
     else:
         for path in paths:
             pather = coring.Pather(path=path)
-            data = pather.rawify(serder=serder)
+            data = pather.tail(serder=serder)
             cigars = hab.sign(ser=data,
                               verfers=hab.kever.verfers,
                               indexed=False)

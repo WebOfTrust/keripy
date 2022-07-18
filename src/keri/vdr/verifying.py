@@ -92,7 +92,7 @@ class Verifier:
 
     def processCredential(self, creder, sadsigers=None, sadcigars=None):
         """ Credential data and signature(s) verification
-        
+
         Verify the data of the credential against the schema, the SAID of the credential and
         the CESR Proof on the credential and if valid, store the credential
 
@@ -157,7 +157,7 @@ class Verifier:
 
         rooted = False
         for (pather, prefixer, seqner, saider, sigers) in sadsigers:
-            if pather.text != "-":
+            if pather.bext != "-":
                 continue
 
             rooted = True
@@ -179,7 +179,7 @@ class Verifier:
         if not rooted:
             print("Missing root signature for ", vcid)
             raise kering.MissingSignatureError("No root signature on credential with paths {}"
-                                               " for evt = {}.".format([pather.text for (pather, _, _, _, _)
+                                               " for evt = {}.".format([pather.bext for (pather, _, _, _, _)
                                                                        in sadsigers],
                                                                        creder.crd))
 

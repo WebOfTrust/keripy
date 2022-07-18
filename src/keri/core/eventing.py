@@ -1586,7 +1586,7 @@ def proofize(sadtsgs=None, *, sadsigers=None, sadcigars=None, pipelined=False):
                                   count=(len(atc) // 4)).qb64b)
 
     if count > 1:
-        root = coring.Pather(text="-")
+        root = coring.Pather(bext="-")
         msg.extend(coring.Counter(code=coring.CtrDex.SadPathSigGroup, count=count).qb64b)
         msg.extend(root.qb64b)
 
