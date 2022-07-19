@@ -473,7 +473,7 @@ class MatterCodex:
     Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
-    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number
+    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
     Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
@@ -491,18 +491,18 @@ class MatterCodex:
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
     TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
     TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
-    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
-    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
-    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
-    Str_L0:               str = '4B'    # String Leader Size 0
-    Str_L1:               str = '5B'    # String Leader Size 1
-    Str_L2:               str = '6B'    # String Leader Size 2
-    Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
-    Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
-    Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
+    StrB64_L0:            str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:            str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:            str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Str_L0:               str = '4B'  # String Leader Size 0
+    Str_L1:               str = '5B'  # String Leader Size 1
+    Str_L2:               str = '6B'  # String Leader Size 2
+    Str_Big_L0:           str = '7AAB'  # String Big Leader Size 0
+    Str_Big_L1:           str = '8AAB'  # String Big Leader Size 1
+    Str_Big_L2:           str = '9AAB'  # String Big Leader Size 2
 
 
     def __iter__(self):
@@ -596,6 +596,27 @@ class DigCodex:
 
 
 DigDex = DigCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class NumCodex:
+    """
+    NumCodex is codex of Base64 derivation codes for compactly representing
+    numbers across a wide rage of sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Short:   str = 'M'  # Short 2 byte b2 number or 3 char b64 str
+    Long:    str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    Big:     str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    Huge:    str = '0A'  # Huge 16 byte b2 number or 22 char b64 str (see Salt_128)
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NumDex = NumCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -1211,20 +1232,20 @@ class Seqner(Matter):
             snh is hex string of sequence number
 
         """
-        if sn is None:
-            if snh is None:
-                sn = 0
-            else:
-                sn = int(snh, 16)
-
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if sn is None:
+                if snh is None:
+                    sn = 0
+                else:
+                    sn = int(snh, 16)
+
             raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
         super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
 
         if self.code != MtrDex.Salt_128:
-            raise ValidationError("Invalid code = {} for SeqNumber."
+            raise ValidationError("Invalid code = {} for Seqner."
                                   "".format(self.code))
 
     @property
@@ -1242,6 +1263,111 @@ class Seqner(Matter):
         Returns .sn int converted to hex str
         """
         return f"{self.sn:x}"  # "{:x}".format(self.sn)
+
+
+class Number(Matter):
+    """
+    Number is subclass of Matter, cryptographic material, for ordinal numbers
+    such as sequence numbers or first seen ordering numbers.
+    Seqner provides fully qualified format for ordinals (sequence numbers etc)
+    when provided as attached cryptographic material elements.
+
+    Useful when parsing attached receipt groupings with sn from stream or database
+
+    Uses default initialization code = CryTwoDex.Salt_128
+    Raises error on init if code not CryTwoDex.Salt_128
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .transferable is Boolean, True when transferable derivation code False otherwise
+
+    Properties:
+        .num is int representation of number
+        .numh is hex string representation of number with no leading zeros
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    Methods:
+    """
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=NumDex.Short, num=None, numh=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            num is int number
+            numh is hex string of num
+
+        """
+
+
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if num is None:
+                if numh is None:
+                    num = 0
+                else:
+                    num = int(numh, 16)
+
+            if num <= (256 ** 2 - 1):  # make short version of code
+                code = NumDex.Short
+
+            elif num <= (256 ** 4 - 1):  # make long version of code
+                code = code = NumDex.Long
+
+            elif num <= (256 ** 8 - 1):  # make big version of code
+                code = code = NumDex.Big
+
+            elif num <= (256 ** 16 - 1):  # make huge version of code
+                code = code = NumDex.Huge
+
+            else:
+                raise ValueError(f"Invalid num = {num}, too large to encode.")
+
+            raw = num.to_bytes(Matter._rawSize(code), 'big')
+
+        super(Number, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                     code=code, **kwa)
+
+        if self.code not in NumDex:
+            raise ValidationError("Invalid code = {} for Number."
+                                  "".format(self.code))
+
+    @property
+    def num(self):
+        """
+        Property num: number as int
+        Returns .raw converted to int
+        """
+        return int.from_bytes(self.raw, 'big')
+
+    @property
+    def numh(self):
+        """
+        Property numh:  number as hex
+        Returns .num int converted to hex str
+        """
+        return f"{self.num:x}"
 
 
 class Dater(Matter):
@@ -4575,16 +4701,58 @@ class TholderNew:
     """
 
     @classmethod
-    def fromLimen(cls, limen):
+    def limen2Sith(cls, limen):
         """
-        Returns signing threshold from limen str
+        Returns signing threshold as sith from limen
         """
+
+
+
+        # classify based on code of limen
+
+
         sith = limen
-        if '/' in limen:  # weighted threshold
-            sith = []
-            clauses = limen.split('&')
-            for clause in clauses:
-                sith.append(clause.split(','))
+        # weighted threshold
+        # strip code
+        # convert from
+        sith = []
+        clauses = limen.split('a')
+        for clause in clauses:
+            sith.append(clause.split('c'))
+        return sith
+
+    @classmethod
+    def limen2Thold(cls, limen):
+        """
+        Returns signing threshold as thold from limen
+        """
+        # classify based on code of limen
+
+
+        sith = limen
+        # weighted threshold
+        # strip code
+        # convert from
+        sith = []
+        clauses = limen.split('a')
+        for clause in clauses:
+            sith.append(clause.split('c'))
+        return sith
+
+    @classmethod
+    def sith2Thold(cls, sith):
+        """
+        Returns signing threshold as thold from sith
+        """
+
+        thold = []
+        # weighted threshold
+        # strip code
+        # convert from
+        sith = []
+        clauses = limen.split('a')
+        for clause in clauses:
+            sith.append(clause.split('c'))
         return sith
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
@@ -4602,13 +4770,23 @@ class TholderNew:
         Parameters:
 
         Parameters:
-            sith is signing threshold expressed as:
-                either hex string of threshold number
-                or int of threshold number
-                or fractional weight clauses.
+            limen is qualified signing threshold (current or next) expressed as either:
+                Number.qb64 or .qb64b of integer threshold or
+                Bexter.qb64 or .qb64b of fractional weight clauses which may be either:
+                    Base64 delimited clauses of fractions
+                    Base64 delimited clauses of fractions
 
-                Fractional weight clauses may be either an iterable of
-                fraction strings or an iterable of iterables of fraction strings.
+            sith is signing threshold (current or next) expressed as either:
+                hex string of threshold number or
+                int of threshold number or
+                fractional weight clauses which may be expressed as either:
+                    an iterable of fraction strings or
+                    an iterable of iterables of fraction strings.
+
+
+
+            thold is signing threshold
+
 
         """
 

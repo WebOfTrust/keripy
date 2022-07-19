@@ -19,7 +19,7 @@ import pytest
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
-from keri.core.coring import Seqner, Siger, Dater, Bexter
+from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
@@ -2116,6 +2116,370 @@ def test_seqner():
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
+
+    """ Done Test """
+
+def test_number():
+    """
+    Test Number subclass of Matter
+    """
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=b'')
+
+    number = Number()  # defaults to zero
+    assert number.code == NumDex.Short
+    assert number.raw == b'\x00\x00'
+    assert number.qb64 == 'MAAA'
+    assert number.qb64b == b'MAAA'
+    assert number.qb2 == b'0\x00\x00'
+    assert number.num == 0
+    assert number.numh == '0'
+
+    num = (256 ** 2 - 1)
+    assert num == 65535
+    numh = f"{num:x}"
+    assert numh == 'ffff'
+    code = NumDex.Short
+    raw = b'\xff\xff'
+    nqb64 = 'M__8'
+    nqb2 = b'3\xff\xfc'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 4 - 1)
+    assert num == 4294967295
+    numh = f"{num:x}"
+    assert numh == 'ffffffff'
+    raw = b'\xff\xff\xff\xff'
+    code = NumDex.Long
+    nqb64 = '0H_____w'
+    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 8 - 1)
+    assert num == 18446744073709551615
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Big
+    nqb64 = 'N__________8'
+    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 16 - 1)
+    assert num == 340282366920938463463374607431768211455
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Huge
+    nqb64 = '0A_____________________w'
+    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # tests with wrong size raw for code short
+    num = (256 ** 2 - 1)
+    assert num == 65535
+    numh = f"{num:x}"
+    assert numh == 'ffff'
+    raw = b'\xff\xff'
+    code = NumDex.Short
+    nqb64 = 'M__8'
+    nqb2 = b'3\xff\xfc'
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code long
+    num = (256 ** 4 - 1)
+    assert num == 4294967295
+    numh = f"{num:x}"
+    assert numh == 'ffffffff'
+    raw = b'\xff\xff\xff\xff'
+    code = NumDex.Long
+    nqb64 = '0H_____w'
+    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code big
+    num = (256 ** 8 - 1)
+    assert num == 18446744073709551615
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Big
+    nqb64 = 'N__________8'
+    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code huge
+    num = (256 ** 16 - 1)
+    assert num == 340282366920938463463374607431768211455
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Huge
+    nqb64 = '0A_____________________w'
+    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
 
     """ Done Test """
 
@@ -4319,4 +4683,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_counter()
+    test_number()
