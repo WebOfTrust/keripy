@@ -13,7 +13,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby:
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
@@ -83,7 +83,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby:
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
@@ -172,10 +172,10 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
          habbing.openHby(name="bam", base="test") as bamHby:
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1,transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, wits=[wesHab.pre])
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, wits=[wesHab.pre])
         assert bobHab.pre == "EGaV8sWx4qxaWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs"
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
@@ -286,10 +286,10 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
          habbing.openHby(name="bam", base="test") as bamHby:
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1,transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
@@ -367,7 +367,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby:
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1,)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)

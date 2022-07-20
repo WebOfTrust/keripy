@@ -34,7 +34,7 @@ def test_indexed_witness_replay():
          habbing.openHby(name="wil", base="test", salt=salt) as wilHby:
 
         # witnesses first so can setup inception event for cam
-        wsith = 1
+        wsith = '1'
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
@@ -66,7 +66,7 @@ def test_indexed_witness_replay():
 
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
-        csith = 2  # hex str of threshold int
+        csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.werfers) == len(wits)
@@ -80,7 +80,7 @@ def test_indexed_witness_replay():
         camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
         # setup Van's habitat trans multisig
-        vsith = 2  # two of three signing threshold
+        vsith = '2'  # two of three signing threshold
         vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
@@ -298,7 +298,7 @@ def test_nonindexed_witness_receipts():
          habbing.openHby(name="wil", base="test", salt=salt) as wilHby:
 
         # witnesses first so can setup inception event for cam
-        wsith = 1
+        wsith =  '1'  # hex str
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
@@ -330,7 +330,7 @@ def test_nonindexed_witness_receipts():
 
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
-        csith = 2  # hex str of threshold int
+        csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.werfers) == len(wits)
@@ -344,7 +344,7 @@ def test_nonindexed_witness_receipts():
         camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
         # setup Van's habitat trans multisig
-        vsith = 2  # two of three signing threshold
+        vsith = '2'  # two of three signing threshold
         vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
@@ -575,10 +575,10 @@ def test_out_of_order_witnessed_events():
          habbing.openHby(name="bam", base="test") as bamHby:
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name='wes', isith=1, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith='1', icount=1, transferable=False)
         assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
 
-        bobHab = bobHby.makeHab(name='bob', isith=1, icount=1, wits=[wesHab.pre])
+        bobHab = bobHby.makeHab(name='bob', isith='1', icount=1, wits=[wesHab.pre])
         assert bobHab.pre == "EfDNEAeF-UHrU7RfoEry1RHKGNlG__BsVx0qkMBoRhu0"
 
         # Create Bob's icp, pass to Wes and generate receipt.

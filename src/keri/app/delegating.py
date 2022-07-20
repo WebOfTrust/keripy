@@ -157,9 +157,9 @@ class Boatswain(doing.DoDoer):
             transferable=True,
             wits=kever.wits,
             icount=1,
-            isith=1,
+            isith='1',
             ncount=0,
-            nsith=0,
+            nsith='0',
             toad=kever.toad,
         )
 

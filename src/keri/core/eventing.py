@@ -612,7 +612,7 @@ def incept(keys,
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     if nsith is None:
-        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
 
     if nkeys is None:
         nkeys = []
@@ -722,7 +722,7 @@ def delcept(keys,
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     if nsith is None:
-        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
 
 
     if nkeys is None:
@@ -839,7 +839,7 @@ def rotate(pre,
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     if nsith is None:
-        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
 
 
     if nkeys is None:
@@ -967,7 +967,7 @@ def deltate(pre,
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     if nsith is None:
-        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
 
     if nkeys is None:
         nkeys = []
@@ -1213,7 +1213,7 @@ def state(pre,
         raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     if nsith is None:
-        nsith = 0 if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
 
     if nkeys is None:
         nkeys = []
@@ -2550,7 +2550,7 @@ class Kever:
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,
                       sith=self.tholder.sith,
-                      nsith=self.ntholder.sith if self.ntholder else 0,
+                      nsith=self.ntholder.sith if self.ntholder else '0',
                       nkeys=self.nexter.digs if self.nexter else [],
                       toad=self.toad,
                       wits=self.wits,

@@ -4767,7 +4767,6 @@ class TholderNew:
             index is int of count of attached receipts for CryCntDex codes
             bext is the variable sized Base64 text string
 
-        Parameters:
 
         Parameters:
             limen is qualified signing threshold (current or next) expressed as either:
@@ -4778,15 +4777,20 @@ class TholderNew:
 
             sith is signing threshold (current or next) expressed as either:
                 hex string of threshold number or
-                int of threshold number or
+                int of threshold number or  (reconsider changing this)
                 fractional weight clauses which may be expressed as either:
                     an iterable of fraction strings or
                     an iterable of iterables of fraction strings.
 
+            thold is signing threshold (current or next) expressed as either:
+                int of threshold number (M of N)
+                fractional weight clauses which may be expressed as either:
+                    an iterable of Fractions or
+                    an iterable of iterables of Fractions.
 
-
-            thold is signing threshold
-
+        The limen representation is suitable for serialization in CESR
+        The sith representation is suitable for serialization in JSON, CBOR, MGPK
+        The thold representation is suitable for computing the satisfaction of a threshold
 
         """
 
@@ -5053,18 +5057,19 @@ class Tholder:
 
 
         """
-        if isinstance(sith, str):
-            sith = int(sith, 16)
-
         if isinstance(sith, int):
-            thold = sith
+            raise ValueError(f"Expected hex str got int = {sith}.")
+
+        if isinstance(sith, str):  # if isinstance(sith, int):
+            thold = int(sith, 16)
+            #thold = sith
             if thold < 0:
                 raise ValueError("Invalid sith = {} < 0.".format(thold))
             self._thold = thold
             self._size = self._thold  # used to verify that keys list size is at least size
             self._weighted = False
             self._satisfy = self._satisfy_numeric
-            self._sith = "{:x}".format(sith)  # store in event form as str
+            self._sith = "{:x}".format(thold)  # store in event form as str
             self._limen = self._sith  # just use hex string
 
         else:  # assumes iterable of weights or iterable of iterables of weights

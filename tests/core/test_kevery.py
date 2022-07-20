@@ -272,9 +272,9 @@ def test_witness_state():
             "BA6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXNOKSu0",
         ]
 
-        #hab = habbing.Habitat(name="controller", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+        #hab = habbing.Habitat(name="controller", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
                               #wits=[wits[0], wits[1]], temp=True)
-        hab = hby.makeHab(name="controller", isith=1, icount=1, transferable=True,
+        hab = hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
                               wits=[wits[0], wits[1]])
 
         wit0 = hab.kvy.fetchWitnessState(hab.pre, 0)
@@ -359,27 +359,27 @@ def test_stale_event_receipts():
 
         # setup Wes's habitat nontrans
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=1, icount=1, transferable=False, temp=True)
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
+                                 #isith='1', icount=1, transferable=False, temp=True)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
         assert wesHab.pre == "BK4OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c"
 
         # setup Wan's habitat nontrans
         #wanHab = habbing.Habitat(name='wan', ks=wanKS, db=wanDB,
-                                 #isith=1, icount=1, transferable=False, temp=True)
-        wanHab = wanHby.makeHab(name="wan", isith=1, icount=1, transferable=False,)
+                                 #isith='1', icount=1, transferable=False, temp=True)
+        wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False,)
         assert wanHab.pre == "BBtKPeN9p4lum6qDRa28fDfVShFk6c39FlBgHBsCq148"
 
         # setup Wil's habitat nontrans
         #wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
-                                 #isith=1, icount=1, transferable=False, temp=True)
-        wilHab = wilHby.makeHab(name="wil", isith=1, icount=1, transferable=False,)
+                                 #isith='1', icount=1, transferable=False, temp=True)
+        wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False,)
         assert wilHab.pre == "BRetJdWSxemd-ej8OLpEFfYuyv1VZECKGMuGjB-M05BA"
 
         # setup Bob's transferable habitat with wil, wes and wan as witnesses
         awits = [wesHab, wilHab, wanHab]
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
                                  #wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, temp=True)
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True,
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
         assert bobHab.pre == "EOI2V_nrmRn1UtXuJvRWQCVoImvKl1YAbwZY_TutEvaU"
 

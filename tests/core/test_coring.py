@@ -4587,7 +4587,7 @@ def test_tholder():
     assert tholder.satisfy(indices=list(range(tholder.thold)))
     assert tholder.limen == "b"
 
-    tholder = Tholder(sith=15)
+    tholder = Tholder(sith=f'{15:x}')
     assert tholder.sith == "f"
     assert tholder.thold == 15
     assert not tholder.weighted

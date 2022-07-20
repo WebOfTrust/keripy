@@ -67,14 +67,14 @@ def test_keystate(mockHelpingNowUTC):
 
         # setup Wes's habitat nontrans
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=1, icount=1,
+                                 #isith='1', icount=1,
                                  #salt=salt, transferable=False, temp=True)
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
                                  #wits=[wesHab.pre], temp=True)
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True,
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
                                 wits=[wesHab.pre],)
         assert bobHab.pre == "EGaV8sWx4qxaWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs"
 
@@ -134,14 +134,14 @@ def test_keystate(mockHelpingNowUTC):
 
         # setup Wes's habitat nontrans
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=1, icount=1,
+                                 #isith='1', icount=1,
                                  #salt=salt, transferable=False, temp=True)
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
         #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
                                  #transferable=True, temp=True)
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Create Bob's icp, pass to Wes.
@@ -166,9 +166,9 @@ def test_keystate(mockHelpingNowUTC):
 
         msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
 
-        #bamHab = habbing.Habitat(name="bam", ks=bamKS, db=bamDB, isith=1, icount=1,
+        #bamHab = habbing.Habitat(name="bam", ks=bamKS, db=bamDB, isith='1', icount=1,
                                  #transferable=True, temp=True)
-        bamHab = bamHby.makeHab(name="bam", isith=1, icount=1, transferable=True)
+        bamHab = bamHby.makeHab(name="bam", isith='1', icount=1, transferable=True)
 
         # Set Wes has Bam's watcher
         habr = bamHab.db.habs.get("bam")
@@ -211,14 +211,14 @@ def test_keystate(mockHelpingNowUTC):
 
         # setup Wes's habitat nontrans
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=1, icount=1,
+                                 #isith='1', icount=1,
                                  #salt=salt, transferable=False, temp=True)
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
         assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
 
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1,
                                  #transferable=True, temp=True)
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Create Bob's icp, pass to Wes.
@@ -257,10 +257,10 @@ def test_keystate(mockHelpingNowUTC):
     with habbing.openHby(name="bob", base="test") as bobHby, \
          habbing.openHby(name="bam", base="test") as bamHby:
 
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1,
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1,
                                  #transferable=True,
                                  #wits=[], temp=True)
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
 
         # Get ksn from Bob and verify

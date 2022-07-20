@@ -531,13 +531,13 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         # setup the witness
         witHab = witHby.makeHab(name="Wit",
-                                 isith=1,
+                                 isith='1',
                                  icount=1,
                                  transferable=False)
         #witHab = habbing.Habitat(name='Wit',
                                  #ks=witKS,
                                  #db=witDB,
-                                 #isith=1,
+                                 #isith='1',
                                  #icount=1,
                                  #temp=True,
                                  #transferable=False)

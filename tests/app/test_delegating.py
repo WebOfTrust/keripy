@@ -87,7 +87,7 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     while palHab.pre not in delHby.kevers:
         yield tock
 
-    delHab = delHby.makeHab(name="del", icount=1, isith=1, ncount=1, nsith=1,
+    delHab = delHby.makeHab(name="del", icount=1, isith='1', ncount=1, nsith='1',
                             wits=[wesHab.pre],
                             delpre=palHab.pre)
     assert delHab.pre == "EZfxaw5f7Jfan89IQGgQu8MVsk0ch9hlZ7Ykticq7zeg"

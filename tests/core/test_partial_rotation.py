@@ -43,7 +43,7 @@ def test_partial_rotation():
         # raises ValueError because nsith 2 is invalud for 1 nkey
         with pytest.raises(ValueError):
             _ = eventing.incept(keys=[signers[0].verfer.qb64],
-                                nsith=2,
+                                nsith='2',
                                 nkeys=nkeys,
                                 code=coring.MtrDex.Blake3_256)
 
@@ -57,7 +57,7 @@ def test_partial_rotation():
         ]
 
         serder = eventing.incept(keys=[signers[0].verfer.qb64],
-                                 nsith=2,  # next signed event must satisfy this along with the new `kt`
+                                 nsith='2',  # next signed event must satisfy this along with the new `kt`
                                  nkeys=nkeys,
                                  code=coring.MtrDex.Blake3_256)
 
@@ -82,10 +82,10 @@ def test_partial_rotation():
             coring.Diger(ser=signers[10].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith=3,
+                                 sith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
-                                 nsith=4,
+                                 nsith='4',
                                  nkeys=nkeys,
                                  sn=1)
 
@@ -119,10 +119,10 @@ def test_partial_rotation():
             coring.Diger(ser=signers[15].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith=3,
+                                 sith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
-                                 nsith=2,
+                                 nsith='2',
                                  nkeys=nkeys,
                                  sn=2)
 
@@ -203,10 +203,10 @@ def test_partial_rotation():
         ]
         nkeys = []
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith=2,
+                                 sith='2',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
-                                 nsith=0,
+                                 nsith='0',
                                  nkeys=nkeys,
                                  sn=2)
 
