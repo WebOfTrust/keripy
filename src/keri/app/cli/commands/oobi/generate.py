@@ -68,3 +68,10 @@ def generate(tymth, tock=0.0, **opts):
             
                 up = urlparse(urls[kering.Schemes.http])
                 print(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+        elif role in (kering.Roles.controller,):
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            if not urls:
+                print(f"{alias} identifier {hab.pre} does not have any controller endpoints")
+                return
+            up = urlparse(urls[kering.Schemes.http])
+            print(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
