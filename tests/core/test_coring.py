@@ -2133,7 +2133,7 @@ def test_number():
     assert number.qb64b == b'MAAA'
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
-    assert number.numh == '0'
+    assert number.hen == '0'
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -2151,16 +2151,16 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
-    number = Number(numh=numh)
+    number = Number(hen=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2169,7 +2169,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2178,7 +2178,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2187,7 +2187,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     num = (256 ** 4 - 1)
     assert num == 4294967295
@@ -2205,16 +2205,16 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
-    number = Number(numh=numh)
+    number = Number(hen=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2223,7 +2223,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2232,7 +2232,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2241,7 +2241,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     num = (256 ** 8 - 1)
     assert num == 18446744073709551615
@@ -2259,16 +2259,16 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
-    number = Number(numh=numh)
+    number = Number(hen=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2277,7 +2277,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2286,7 +2286,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2295,7 +2295,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     num = (256 ** 16 - 1)
     assert num == 340282366920938463463374607431768211455
@@ -2313,16 +2313,16 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
-    number = Number(numh=numh)
+    number = Number(hen=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2331,7 +2331,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2340,7 +2340,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2349,7 +2349,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -2373,7 +2373,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2405,7 +2405,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2438,7 +2438,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2471,7 +2471,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.numh == numh
+    assert number.hen == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'

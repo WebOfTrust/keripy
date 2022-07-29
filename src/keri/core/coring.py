@@ -1291,7 +1291,7 @@ class Number(Matter):
 
     Properties:
         .num is int representation of number
-        .numh is hex string representation of number with no leading zeros
+        .hen is hex string representation of number with no leading zeros
 
     Hidden:
         ._pad is method to compute  .pad property
@@ -1305,7 +1305,7 @@ class Number(Matter):
     """
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=NumDex.Short, num=None, numh=None, **kwa):
+                 code=NumDex.Short, num=None, hen=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -1317,17 +1317,17 @@ class Number(Matter):
 
         Parameters:
             num is int number
-            numh is hex string of num
+            hen is hex string equivalent of int number
 
         """
 
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if num is None:
-                if numh is None:
+                if hen is None:
                     num = 0
                 else:
-                    num = int(numh, 16)
+                    num = int(hen, 16)
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
@@ -1362,9 +1362,9 @@ class Number(Matter):
         return int.from_bytes(self.raw, 'big')
 
     @property
-    def numh(self):
+    def hen(self):
         """
-        Property numh:  number as hex
+        Property hex:  number as hex string no leading zeros
         Returns .num int converted to hex str
         """
         return f"{self.num:x}"
