@@ -2133,7 +2133,7 @@ def test_number():
     assert number.qb64b == b'MAAA'
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
-    assert number.hen == '0'
+    assert number.numh == '0'
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -2151,7 +2151,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(hen=numh)
     assert number.code == code
@@ -2160,7 +2160,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2169,7 +2169,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2178,7 +2178,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2187,7 +2187,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     num = (256 ** 4 - 1)
     assert num == 4294967295
@@ -2205,7 +2205,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(hen=numh)
     assert number.code == code
@@ -2214,7 +2214,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2223,7 +2223,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2232,7 +2232,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2241,7 +2241,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     num = (256 ** 8 - 1)
     assert num == 18446744073709551615
@@ -2259,7 +2259,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(hen=numh)
     assert number.code == code
@@ -2268,7 +2268,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2277,7 +2277,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2286,7 +2286,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2295,7 +2295,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     num = (256 ** 16 - 1)
     assert num == 340282366920938463463374607431768211455
@@ -2313,7 +2313,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(hen=numh)
     assert number.code == code
@@ -2322,7 +2322,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2331,7 +2331,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2340,7 +2340,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2349,7 +2349,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -2373,7 +2373,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2405,7 +2405,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2438,7 +2438,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2471,7 +2471,7 @@ def test_number():
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
     assert number.num == num
-    assert number.hen == numh
+    assert number.numh == numh
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -2480,6 +2480,23 @@ def test_number():
 
     with pytest.raises(RawMaterialError):
         number = Number(raw=raw2bad, code=code)
+
+    num = 1
+    numh = f"{num:x}"
+    assert numh == '1'
+    code = NumDex.Short
+    raw = b'\x00\x01'
+    nqb64 = 'MAAE'
+    nqb2 = b'0\x00\x04'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
 
     """ Done Test """
 
@@ -4558,23 +4575,6 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
-    # test classmethod .fromLimen()
-
-    limen = '2'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == '2'
-    assert Tholder(sith=sith).limen == limen
-
-    limen = '1/2,1/2,1/4,1/4,1/4&1,1'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == [['1/2', '1/2', '1/4', '1/4', '1/4'], ['1', '1']]
-    assert Tholder(sith=sith).limen == limen
-
-    limen = '1/1'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == [['1/1']]
-    assert Tholder(sith=sith).limen == limen
-
     with pytest.raises(ValueError):
         tholder = Tholder()
 
@@ -4585,7 +4585,7 @@ def test_tholder():
     assert tholder.size == tholder.thold
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == "b"
+    assert tholder.limen == b'MAAs'
 
     tholder = Tholder(sith=f'{15:x}')
     assert tholder.sith == "f"
@@ -4594,7 +4594,34 @@ def test_tholder():
     assert tholder.size == tholder.thold
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == "f"
+    assert tholder.limen == b'MAA8'
+
+    tholder = Tholder(sith=11)
+    assert tholder.sith == "b"
+    assert tholder.thold == 11
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == b'MAAs'
+
+    tholder = Tholder(sith=2)
+    assert tholder.sith == "2"
+    assert tholder.thold == 2
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == b'MAAI'
+
+    tholder = Tholder(sith=1)
+    assert tholder.sith == "1"
+    assert tholder.thold == 1
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.satisfy(indices=[0])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == b'MAAE'
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=-1)
@@ -4632,7 +4659,7 @@ def test_tholder():
                               Fraction(1, 4)]]
     assert tholder.weighted
     assert tholder.size == 5
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
     assert tholder.satisfy(indices=[0, 2, 4])
     assert tholder.satisfy(indices=[0, 1])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4651,7 +4678,7 @@ def test_tholder():
                               Fraction(1, 4)]]
     assert tholder.weighted
     assert tholder.size == 5
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
     assert tholder.satisfy(indices=[1, 2, 3])
     assert tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4671,7 +4698,7 @@ def test_tholder():
                              [Fraction(1, 1), Fraction(1, 1)]]
     assert tholder.weighted
     assert tholder.size == 7
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4&1,1'
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
     assert tholder.satisfy(indices=[1, 2, 3, 5])
     assert tholder.satisfy(indices=[0, 1, 6])
     assert not tholder.satisfy(indices=[0, 1])
@@ -4683,4 +4710,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_number()
+    test_tholder()
