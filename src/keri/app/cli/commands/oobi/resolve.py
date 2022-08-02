@@ -8,8 +8,8 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing
-from keri.app.cli.common import existing, oobiing
+from keri.app import habbing, oobiing
+from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 

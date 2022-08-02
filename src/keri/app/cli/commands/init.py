@@ -9,8 +9,7 @@ import getpass
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, configing
-from keri.app.cli.common import oobiing
+from keri.app import habbing, configing, oobiing
 from keri.app.keeping import Algos
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing

@@ -13,10 +13,22 @@ import pytest
 from hio.base import doing
 
 from keri import kering
-from keri.core import scheming, coring
+from keri.core import scheming, coring, routing, eventing, parsing
 from keri.db import basing
 from keri.help import helping
+from keri import help
+
 from keri.app.cli import commands
+
+
+WitnessUrls = {
+    "wan:tcp": "tcp://127.0.0.1:5632/",
+    "wan:http": "http://127.0.0.1:5642/",
+    "wes:tcp": "tcp://127.0.0.1:5634/",
+    "wes:http": "http://127.0.0.1:5644/",
+    "wil:tcp": "tcp://127.0.0.1:5633/",
+    "wil:http": "http://127.0.0.1:5643/",
+}
 
 
 @pytest.fixture()
@@ -52,7 +64,41 @@ def seeder():
 
 class DbSeed:
     @staticmethod
-    def seedWitEnds(db, protocols=None, temp=True):
+    def seedWitEnds(db, witHabs, protocols=None):
+        """ Add endpoint and location records for well known test witnesses
+
+        Args:
+            db (Baser): database to add records
+            witHabs (list): list of witness Habs for whom to create Ends
+            protocols (list) array of str protocol names to load URLs for.
+        Returns:
+
+        """
+
+        rtr = routing.Router()
+        rvy = routing.Revery(db=db, rtr=rtr)
+        kvy = eventing.Kevery(db=db, lax=False, local=True, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
+
+        if protocols is None:
+            protocols = [kering.Schemes.tcp, kering.Schemes.http]
+
+        for scheme in protocols:
+            msgs = bytearray()
+            for hab in witHabs:
+                url = WitnessUrls[f"{hab.name}:{scheme}"]
+                msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                            role=kering.Roles.controller,
+                                            stamp=help.nowIso8601()))
+
+                msgs.extend(hab.makeLocScheme(url=url,
+                                              scheme=scheme,
+                                              stamp=help.nowIso8601()))
+                psr.parse(ims=msgs)
+
+    @staticmethod
+    def __seedWitEnds__(db, protocols=None, temp=True):
         """ Add endpoint and location records for well known test witnesses
 
         Args:
@@ -105,18 +151,18 @@ class DbSeed:
             wesHttpLocKeys = (wits['wes'], kering.Schemes.http)
             db.locs.pin(keys=wesHttpLocKeys, val=httplocer)  # overwrite
 
-        wilEndKeys = ('B7L80wOpOxsItVk1p4tYiK6vNjVVLExvhB5yGEuk864U', "controller",
-                      'B7L80wOpOxsItVk1p4tYiK6vNjVVLExvhB5yGEuk864U')
+        wilEndKeys = (wits['wil'], "controller",
+                      wits['wil'])
         ender = basing.EndpointRecord(allowed=True)  # create new record
         db.ends.pin(keys=wilEndKeys, val=ender)  # overwrite
         if kering.Schemes.tcp in protocols:
             locer = basing.LocationRecord(url="tcp://127.0.0.1:5633/")  # create new record
-            wilLocKeys = ('B7L80wOpOxsItVk1p4tYiK6vNjVVLExvhB5yGEuk864U', kering.Schemes.tcp)
+            wilLocKeys = (wits['wil'], kering.Schemes.tcp)
             db.locs.pin(keys=wilLocKeys, val=locer)  # overwrite
 
         if kering.Schemes.http in protocols:
             httplocer = basing.LocationRecord(url="http://127.0.0.1:5643/")  # create new record
-            wilHttpLocKeys = ('B7L80wOpOxsItVk1p4tYiK6vNjVVLExvhB5yGEuk864U', kering.Schemes.http)
+            wilHttpLocKeys = (wits['wil'], kering.Schemes.http)
             db.locs.pin(keys=wilHttpLocKeys, val=httplocer)  # overwrite
 
     @staticmethod
