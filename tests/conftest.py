@@ -98,74 +98,6 @@ class DbSeed:
                 psr.parse(ims=msgs)
 
     @staticmethod
-    def __seedWitEnds__(db, protocols=None, temp=True):
-        """ Add endpoint and location records for well known test witnesses
-
-        Args:
-            db (Baser): database to add records
-            protocols (list) array of str protocol names to load URLs for.
-            temp (bool): flag for creating end for witnesses with temp databases
-        Returns:
-
-        """
-        if protocols is None:
-            protocols = [kering.Schemes.tcp, kering.Schemes.http]
-
-        wits = dict()
-        if temp:
-            wits['wan'] = 'B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw'
-            wits['wes'] = 'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas'
-            wits['wil'] = 'B7L80wOpOxsItVk1p4tYiK6vNjVVLExvhB5yGEuk864U'
-        else:
-            wits['wan'] = 'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo'
-            wits['wes'] = 'Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c'
-            wits['wil'] = 'BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw'
-
-        wanEndKeys = (wits['wan'], "controller",
-                      wits['wan'])
-        ender = basing.EndpointRecord(allowed=True)  # create new record
-        db.ends.pin(keys=wanEndKeys, val=ender)  # overwrite
-
-        if kering.Schemes.tcp in protocols:
-            locer = basing.LocationRecord(url="tcp://127.0.0.1:5632/")  # create new record
-            wanLocKeys = (wits['wan'], kering.Schemes.tcp)
-            db.locs.pin(keys=wanLocKeys, val=locer)  # overwrite
-
-        if kering.Schemes.http in protocols:
-            httplocer = basing.LocationRecord(url="http://127.0.0.1:5642/")  # create new record
-            wanHttpLocKeys = (wits['wan'], kering.Schemes.http)
-            db.locs.pin(keys=wanHttpLocKeys, val=httplocer)  # overwrite
-
-        wesEndKeys = (wits['wes'], "controller",
-                      wits['wes'])
-        ender = basing.EndpointRecord(allowed=True)  # create new record
-        db.ends.pin(keys=wesEndKeys, val=ender)  # overwrite
-
-        if kering.Schemes.tcp in protocols:
-            locer = basing.LocationRecord(url="tcp://127.0.0.1:5634/")  # create new record
-            wesLocKeys = (wits['wes'], kering.Schemes.tcp)
-            db.locs.pin(keys=wesLocKeys, val=locer)  # overwrite
-
-        if kering.Schemes.http in protocols:
-            httplocer = basing.LocationRecord(url="http://127.0.0.1:5644/")  # create new record
-            wesHttpLocKeys = (wits['wes'], kering.Schemes.http)
-            db.locs.pin(keys=wesHttpLocKeys, val=httplocer)  # overwrite
-
-        wilEndKeys = (wits['wil'], "controller",
-                      wits['wil'])
-        ender = basing.EndpointRecord(allowed=True)  # create new record
-        db.ends.pin(keys=wilEndKeys, val=ender)  # overwrite
-        if kering.Schemes.tcp in protocols:
-            locer = basing.LocationRecord(url="tcp://127.0.0.1:5633/")  # create new record
-            wilLocKeys = (wits['wil'], kering.Schemes.tcp)
-            db.locs.pin(keys=wilLocKeys, val=locer)  # overwrite
-
-        if kering.Schemes.http in protocols:
-            httplocer = basing.LocationRecord(url="http://127.0.0.1:5643/")  # create new record
-            wilHttpLocKeys = (wits['wil'], kering.Schemes.http)
-            db.locs.pin(keys=wilHttpLocKeys, val=httplocer)  # overwrite
-
-    @staticmethod
     def seedWatcherEnds(db, protocols=None):
         """ Add endpoint and location records for well known test watchers
 
@@ -276,6 +208,16 @@ class Helpers:
             os.remove(f'/usr/local/var/keri/cf/{name}.json')
         if os.path.exists(f'/usr/local/var/keri/cf/{name}'):
             shutil.rmtree(f'/usr/local/var/keri/cf/{name}')
+        if os.path.exists(f'~/.keri/db/{name}'):
+            shutil.rmtree(f'~/.keri/db/{name}')
+        if os.path.exists(f'~/.keri/ks/{name}'):
+            shutil.rmtree(f'~/.keri/ks/{name}')
+        if os.path.exists(f'~/.keri/reg/{name}'):
+            shutil.rmtree(f'~/.keri/reg/{name}')
+        if os.path.exists(f'~/.keri/cf/{name}.json'):
+            os.remove(f'~/.keri/cf/{name}.json')
+        if os.path.exists(f'~/.keri/cf/{name}'):
+            shutil.rmtree(f'~/.keri/cf/{name}')
 
 
 @pytest.fixture

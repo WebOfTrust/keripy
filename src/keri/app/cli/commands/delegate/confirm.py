@@ -27,6 +27,7 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--interact", "-i", help="anchor the delegation approval in an interaction event.  "
                                              "Default is to use a rotation event.", action="store_true")
+parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
 
 
 def confirm(args):
@@ -41,15 +42,16 @@ def confirm(args):
     bran = args.bran
     alias = args.alias
     interact = args.interact
+    auto = args.auto
 
-    confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact)
+    confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto)
 
     doers = [confirmDoer]
     return doers
 
 
 class ConfirmDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran, interact=False):
+    def __init__(self, name, base, alias, bran, interact=False, auto=False):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -59,6 +61,7 @@ class ConfirmDoer(doing.DoDoer):
         self.alias = alias
         self.hby = hby
         self.interact = interact
+        self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
 
     def confirmDo(self, tymth, tock=0.0):
@@ -102,8 +105,14 @@ class ConfirmDoer(doing.DoDoer):
 
                 if delpre in self.hby.prefixes:
                     hab = self.hby.habs[delpre]
-                    yn = input(f"Delegation {typ} request from {eserder.pre}.\nAccept [Y|n]? ")
-                    if yn in ('', 'y', 'Y'):
+
+                    if self.auto:
+                        approve = True
+                    else:
+                        yn = input(f"Delegation {typ} request from {eserder.pre}.\nAccept [Y|n]? ")
+                        approve = yn in ('', 'y', 'Y')
+
+                    if approve:
                         cur = hab.kever.sn
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)

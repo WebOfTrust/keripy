@@ -24,17 +24,41 @@ kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0
 kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/Ef9Bhn_LeAU3rq8Rf3XHi5C1XmNdIM5uxv2DwWQT6qd8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
 # In 2 delegator terminal windows run the following
-# kli multisig incept --name delegator1 --alias delegator1 --group delegator --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json
-# kli multisig incept --name delegator2 --alias delegator2 --group delegator --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json
+kli multisig incept --name delegator1 --alias delegator1 --group delegator --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json &
+pid=$!
+PID_LIST+=" $pid"
+
+kli multisig incept --name delegator2 --alias delegator2 --group delegator --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json &
+pid=$!
+PID_LIST+=" $pid"
+
+# Wait for the multisig delegator to be created
+wait $PID_LIST
 
 # Delegator does not need an oobi for delegate.
-# kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-# kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
-# In 2 delegate terminal windows run the following
-# kli multisig incept --name delegate1 --alias delegate1 --group delegate --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json
-# kli multisig incept --name delegate2 --alias delegate2 --group delegate --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json
+# Run the delegate commands in parallel so they can collaborate and request delegation
+kli multisig incept --name delegate1 --alias delegate1 --group delegate --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json &
+pid=$!
+PID_LIST+=" $pid"
 
-# In 2 delegator terminal windows run the following to anchor the delegate's inception event
-# kli multisig interact --name delegator1 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json
-# kli multisig interact --name delegator2 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json
+kli multisig incept --name delegate2 --alias delegate2 --group delegate --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json &
+pid=$!
+PID_LIST+=" $pid"
+
+# Wait for 3 seconds to allow the delegation request to complete and then launch the approval in parallel
+sleep 3
+
+kli multisig interact --name delegator1 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
+pid=$!
+PID_LIST+=" $pid"
+
+kli multisig interact --name delegator2 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
+
+kli status --name delegate2 --alias delegate
