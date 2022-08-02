@@ -2153,7 +2153,7 @@ def test_number():
     assert number.num == num
     assert number.numh == numh
 
-    number = Number(hen=numh)
+    number = Number(numh=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
@@ -2207,7 +2207,7 @@ def test_number():
     assert number.num == num
     assert number.numh == numh
 
-    number = Number(hen=numh)
+    number = Number(numh=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
@@ -2261,7 +2261,7 @@ def test_number():
     assert number.num == num
     assert number.numh == numh
 
-    number = Number(hen=numh)
+    number = Number(numh=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
@@ -2315,7 +2315,7 @@ def test_number():
     assert number.num == num
     assert number.numh == numh
 
-    number = Number(hen=numh)
+    number = Number(numh=numh)
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
@@ -2616,61 +2616,61 @@ def test_dater():
     """ Done Test """
 
 
-def test_texter():
+def test_bexter():
     """
-    Test Texter variable sized Base64 text subclass of Matter
+    Test Bexter variable sized Base64 text subclass of Matter
     """
     with pytest.raises(EmptyMaterialError):
-        texter = Bexter()
+        bexter = Bexter()
 
     text = "@!"
     with pytest.raises(ValueError):
-        texter = Bexter(bext=text)
+        bexter = Bexter(bext=text)
 
     text = ""
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAA'
-    assert texter.raw == b''
-    assert texter.qb64 == '4AAA'
-    assert texter.qb2 == b'\xe0\x00\x00'
-    assert texter.bext == text
+    bexter = Bexter(bext=text)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAA'
+    assert bexter.raw == b''
+    assert bexter.qb64 == '4AAA'
+    assert bexter.qb2 == b'\xe0\x00\x00'
+    assert bexter.bext == text
 
     text = "-"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L2
-    assert texter.both == '6AAB'
-    assert texter.raw == b'>'
-    assert texter.qb64 == '6AABAAA-'
-    assert texter.qb2 == b'\xe8\x00\x01\x00\x00>'
-    assert texter.bext == text
+    bexter = Bexter(bext=text)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAB'
+    assert bexter.raw == b'>'
+    assert bexter.qb64 == '6AABAAA-'
+    assert bexter.qb2 == b'\xe8\x00\x01\x00\x00>'
+    assert bexter.bext == text
 
     text = "-A"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L1
-    assert texter.both == '5AAB'
-    assert texter.raw == b'\x0f\x80'
-    assert texter.qb64 == '5AABAA-A'
-    assert texter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
-    assert texter.bext == text
+    bexter = Bexter(bext=text)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x0f\x80'
+    assert bexter.qb64 == '5AABAA-A'
+    assert bexter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
+    assert bexter.bext == text
 
     text = "-A-"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAB'
-    assert texter.raw == b'\x03\xe0>'
-    assert texter.qb64 == '4AABA-A-'
-    assert texter.qb2 == b'\xe0\x00\x01\x03\xe0>'
-    assert texter.bext == text
+    bexter = Bexter(bext=text)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x03\xe0>'
+    assert bexter.qb64 == '4AABA-A-'
+    assert bexter.qb2 == b'\xe0\x00\x01\x03\xe0>'
+    assert bexter.bext == text
 
     text = "-A-B"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAB'
-    assert texter.raw == b'\xf8\x0f\x81'
-    assert texter.qb64 == '4AAB-A-B'
-    assert texter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
-    assert texter.bext == text
+    bexter = Bexter(bext=text)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\xf8\x0f\x81'
+    assert bexter.qb64 == '4AAB-A-B'
+    assert bexter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
+    assert bexter.bext == text
 
     """ Done Test """
 

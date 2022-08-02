@@ -1305,7 +1305,7 @@ class Number(Matter):
     """
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=NumDex.Short, num=None, hen=None, **kwa):
+                 code=NumDex.Short, num=None, numh=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -1317,17 +1317,17 @@ class Number(Matter):
 
         Parameters:
             num is int number
-            hen is hex string equivalent of int number
+            numh is hex string equivalent of int number
 
         """
 
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if num is None:
-                if hen is None:
+                if numh is None:
                     num = 0
                 else:
-                    num = int(hen, 16)
+                    num = int(numh, 16)
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
@@ -1509,7 +1509,7 @@ class Bexter(Matter):
     qb64 version not including the leader.
 
     Due to ambiguity that arises for bext that starts with an 'A' and whose length
-    is a multiple of 3 or 4. Best with a leading 'A' may have that 'A' stripped.
+    is a multiple of 3 or 4. Bext with a leading 'A' may have that 'A' stripped.
 
     Examples: strings:
     bext = ""
@@ -4593,11 +4593,7 @@ class Tholder:
     Properties:
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimun size of keys list
-        .sith is original signing threshold suitable for value to be serialized
-            as json, cbor, mgpk in key event message as either:
-                non-negative hex number str or
-                list of str rational number fractions >= 0 and <= 1 or
-                list of list of str rational number fractions >= 0 and <= 1
+
 
         .limen is qualified b64 signing threshold suitable for CESR serialization.
             either Number.qb64b or Bexter.qb64b.
@@ -4606,8 +4602,16 @@ class Tholder:
               is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
               and ANDed clauses are delimited by 'a'.
 
+        .sith is original signing threshold suitable for value to be serialized
+            as json, cbor, mgpk in key event message as either:
+                non-negative hex number str or
+                list of str rational number fractions >= 0 and <= 1 or
+                list of list of str rational number fractions >= 0 and <= 1
+
         .thold is parsed signing threshold suitable for calculating satisfaction.
             either as int or list of Fractions
+
+        .num is int signing threshold when not ._weighted
 
     Methods:
         .satisfy returns bool, True means ilist of verified signature key indices satisfies
@@ -4627,15 +4631,18 @@ class Tholder:
 
     """
 
-    def __init__(self, sith='', limen='',  thold=''):
+    ToB64 = str.maketrans("/,&", "sca")  #  translate characters
+    FromB64 = str.maketrans("sca", "/,&")  #  translate characters
+
+    def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
         Accepts signing threshold in various forms so that may output correct
         forms for serialization and/or calculation of satisfaction.
 
         Parameters:
             sith is signing threshold (current or next) expressed as either:
-                non-negative int of threshold number
-                non-gegative hex string of threshold number
+                non-negative int of threshold number (M-of-N threshold)
+                non-gegative hex string of threshold number (M-of-N threshold)
                 fractional weight clauses which may be expressed as either:
                     an iterable of rational number fraction strings  >= 0 and <= 1
                     an iterable of iterables of rational number fraction strings >= 0 and <= 1
@@ -4669,62 +4676,35 @@ class Tholder:
 
 
         """
-        if isinstance(sith, int):
-            thold = sith
-            if thold < 0:
-                raise ValueError(f"Non-positive int threshold = {sith}.")
-            self._weighted = False
-            self._thold = thold
-            self._size = self._thold  # used to verify that keys list size is at least size
-            self._satisfy = self._satisfy_numeric
-            self._sith = "{:x}".format(thold)  # store in key event form as str
-            self._number = Number(num=thold)
-            self._bexter = None
+        if thold is not None:
+            pass
 
-        elif isinstance(sith, str):  # if isinstance(sith, int):
+        elif limen is not None:
+            matter = Matter(qb64b=limen, **kwa)
+            if matter.code in NumDex:
+                self._processUnweighted(thold=number.num)
 
-            thold = int(sith, 16)
-            if thold < 0:
-                raise ValueError(f"Non-positive int threshold = {sith}.")
-            self._weighted = False
-            self._thold = thold
-            self._size = self._thold  # used to verify that keys list size is at least size
-            self._satisfy = self._satisfy_numeric
-            self._sith = "{:x}".format(thold)  # store in key event form as str
-            self._number = Number(num=thold)
-            self._bexter = None
+            elif matter.code in BexDex:
+                bexter =  Bexter(raw=matter.raw, code=matter.code)
+                bext = bexter.bext.replace('s', '/')
+                # get clauses
+                thold = [clause.split('c') for clause in bext.split('a')]
+                thold = [[Fraction(w) for w in clause] for clause in thold]
 
-        else:  # assumes iterable of weights or iterable of iterables of weights
 
-            if not sith:  # empty iterable
-                raise ValueError("Invalid sith = {}, empty weight list.".format(sith))
-            self._weighted = True
-            self._sith = sith  # save key event form
+            else:
+                raise ValueError(f"Invalid code for limen = {matter.code}.")
 
-            mask = [isinstance(w, str) for w in sith]  # list of strings
-            if mask and all(mask):  # not empty and all strings
-                sith = [sith]  # make list of list so uniform
-            elif any(mask):  # some strings but not all
-                raise ValueError("Invalid sith = {} some weights non non string."
-                                 "".format(sith))
+        else:
+            if isinstance(sith, int):
+                self._processUnweighted(thold=sith)
 
-            # replace fractional strings with fractions
-            thold = []
-            for clause in sith:  # convert string fractions to Fractions
-                thold.append([Fraction(w) for w in clause])  # append list of Fractions
+            elif isinstance(sith, str):  #
+                self._processUnweighted(thold=int(sith, 16))
 
-            for clause in thold:  # sum of fractions in clause must be >= 1
-                if not (sum(clause) >= 1):
-                    raise ValueError("Invalid sith clause = {}, all clause weight "
-                                     "sums must be >= 1.".format(thold))
+            else:  # assumes iterable of weights or iterable of iterables of weights
+                self._processWeighted(sith=sith)
 
-            self._thold = thold
-            self._size = sum(len(clause) for clause in thold)
-            self._satisfy = self._satisfy_weighted
-            bext = "a".join(["c".join(clause) for clause in sith])
-            bext = bext.replace("/", "s")
-            self._bexter = Bexter(bext=bext)
-            self._number = None
 
 
     @property
@@ -4738,6 +4718,11 @@ class Tholder:
         return self._size
 
     @property
+    def limen(self):
+        """ limen property getter """
+        return self._bexter.qb64b if self._weighted else self._number.qb64b
+
+    @property
     def sith(self):
         """ sith property getter """
         return self._sith
@@ -4748,9 +4733,73 @@ class Tholder:
         return self._thold
 
     @property
-    def limen(self):
-        """ limen property getter """
-        return self._bexter.qb64b if self._weighted else self._number.qb64b
+    def num(self):
+        """ sith property getter """
+        return self._number.num if not self._weighted else None
+
+
+
+    def _processUnweighted(self, thold=0):
+        """
+        Process attributes for unweighted (numeric) threshold thold
+
+        Parameters:
+            thold (int): non-negative threshold number M-of-N threshold
+
+        """
+        if thold < 0:
+            raise ValueError(f"Non-positive int threshold = {thold}.")
+        self._thold = thold
+        self._weighted = False
+        self._size = self._thold  # used to verify that keys list size is at least size
+        self._satisfy = self._satisfy_numeric
+        self._sith = "{:x}".format(thold)  # store in key event form as str
+        self._number = Number(num=thold)
+        self._bexter = None
+
+    def _processWeighted(self, sith=[]):
+        """
+        Process attributes for fractionall weighted threshold sith
+
+        Parameters:
+            sith (iterable):  iterable or iterable or iterables of
+                rational number fraction strings  >= 0 and <= 1
+
+        """
+        if not sith:  # empty iterable
+            raise ValueError(f"Empty weight list = {sith}.")
+
+        self._sith = sith  # save key event form
+        self._weighted = True
+        mask = [isinstance(w, str) for w in sith]  # list of strings
+        if mask and all(mask):  # not empty and all strings
+            sith = [sith]  # make list of list so uniform
+        elif any(mask):  # some strings but not all
+            raise ValueError("Invalid sith = {} some weights non non string."
+                             "".format(sith))
+
+        # replace fractional strings with fractions
+        thold = []
+        for clause in sith:  # convert string fractions to Fractions
+            thold.append([Fraction(w) for w in clause])  # append list of Fractions
+
+        for clause in thold:  # sum of fractions in clause must be >= 1
+            if not (sum(clause) >= 1):
+                raise ValueError(f"Invalid sith clause = {thold}, all clause weight "
+                                 f"sums must be >= 1.")
+
+        self._thold = thold
+        self._size = sum(len(clause) for clause in thold)
+        self._satisfy = self._satisfy_weighted
+        # make str of fractions
+        bext = [[f"{f.numerator}s{f.denominator}" if f.denominator > 1 else f"1"
+                                           for f in clause]
+                                                           for clause in thold]
+        bext = "a".join(["c".join(clause) for clause in bext])
+        #bext = bext.replace("/", "s")
+
+        self._bexter = Bexter(bext=bext)
+        self._number = None
 
     def satisfy(self, indices):
         """
