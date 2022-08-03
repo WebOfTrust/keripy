@@ -151,6 +151,9 @@ def streamCESRRequests(client, ims, path=None):
        client (Client): hio http Client that will send the message as a CESR request
        path (str): path to post to
 
+    Returns
+       int: Number of individual requests posted
+
     """
     path = path if path is not None else "/"
 
@@ -161,6 +164,7 @@ def streamCESRRequests(client, ims, path=None):
                                     "".format(cold))
 
     # Otherwise its a message cold start
+    cnt = 0
     while ims:  # extract and deserialize message from ims
         try:
             serder = coring.Serder(raw=ims)
@@ -188,5 +192,8 @@ def streamCESRRequests(client, ims, path=None):
             headers=headers,
             body=body
         )
+        cnt += 1
+
+    return cnt
 
 

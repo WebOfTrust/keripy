@@ -14,9 +14,19 @@ kli oobi resolve --name multisig2 --oobi-alias multisig1 --oobi http://127.0.0.1
 kli oobi resolve --name multisig1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 kli oobi resolve --name multisig2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
 
-# kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-sample.json
-# kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-sample.json
+kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-sample.json &
+pid=$!
+PID_LIST+=" $pid"
+kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-sample.json &
+pid=$!
+PID_LIST+=" $pid"
 
-# In other console run the following:
-# kli delegate confirm --name delegator --alias delegator
+# Wait a few seconds for the multisig commands to request delegation
+sleep 2
+kli delegate confirm --name delegator --alias delegator -Y &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
+
 

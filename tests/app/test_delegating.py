@@ -19,13 +19,13 @@ def test_boatswain(seeder):
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.tcp])
-        seeder.seedWitEnds(delHby.db, protocols=[kering.Schemes.tcp])
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.WitnessReceiptor(hby=palHby)
         bts = delegating.Boatswain(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
 
         opts = dict(
             wesHab=wesHab,
