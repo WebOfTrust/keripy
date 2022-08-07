@@ -2623,54 +2623,112 @@ def test_bexter():
     with pytest.raises(EmptyMaterialError):
         bexter = Bexter()
 
-    text = "@!"
+    bext = "@!"
     with pytest.raises(ValueError):
-        bexter = Bexter(bext=text)
+        bexter = Bexter(bext=bext)
 
-    text = ""
-    bexter = Bexter(bext=text)
+    bext = ""
+    bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAA'
     assert bexter.raw == b''
     assert bexter.qb64 == '4AAA'
     assert bexter.qb2 == b'\xe0\x00\x00'
-    assert bexter.bext == text
+    assert bexter.bext == bext
 
-    text = "-"
-    bexter = Bexter(bext=text)
+    bext = "-"
+    bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L2
     assert bexter.both == '6AAB'
     assert bexter.raw == b'>'
     assert bexter.qb64 == '6AABAAA-'
     assert bexter.qb2 == b'\xe8\x00\x01\x00\x00>'
-    assert bexter.bext == text
+    assert bexter.bext == bext
 
-    text = "-A"
-    bexter = Bexter(bext=text)
+    bext = "-A"
+    bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L1
     assert bexter.both == '5AAB'
     assert bexter.raw == b'\x0f\x80'
     assert bexter.qb64 == '5AABAA-A'
     assert bexter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
-    assert bexter.bext == text
+    assert bexter.bext == bext
 
-    text = "-A-"
-    bexter = Bexter(bext=text)
+    bext = "-A-"
+    bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\x03\xe0>'
     assert bexter.qb64 == '4AABA-A-'
     assert bexter.qb2 == b'\xe0\x00\x01\x03\xe0>'
-    assert bexter.bext == text
+    assert bexter.bext == bext
 
-    text = "-A-B"
-    bexter = Bexter(bext=text)
+    bext = "-A-B"
+    bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\xf8\x0f\x81'
     assert bexter.qb64 == '4AAB-A-B'
     assert bexter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
-    assert bexter.bext == text
+    assert bexter.bext == bext
+
+
+
+    bext = "A"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAB'
+    assert bexter.raw == b'\x00'
+    assert bexter.qb64 == '6AABAAAA'
+    assert bexter.qb2 == b'\xe8\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AA"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x00\x00'
+    assert bexter.qb64 == '5AABAAAA'
+    assert bexter.qb2 ==b'\xe4\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    # test of ambiguity with bext that starts with "A" and is multiple of 3 or 4
+    bext = "AAA"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00\x00'
+    assert bexter.qb64 == '4AABAAAA'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AAAA"  # multiple of four loses leading 'A' for round trip of bext
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00\x00'
+    assert bexter.qb64 == '4AABAAAA'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00\x00'
+    assert bexter.bext == 'AAA' != bext
+
+    bext = "ABB"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00A'
+    assert bexter.qb64 == '4AABAABB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00A'
+    assert bexter.bext == bext
+
+    bext = "ABBB"  # multiple of four loses leading 'A' for round trip of bext
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x10A'
+    assert bexter.qb64 == '4AABABBB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
+    assert bexter.bext == 'BBB' != bext
+
 
     """ Done Test """
 
@@ -4710,4 +4768,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_tholder()
+    test_bexter()

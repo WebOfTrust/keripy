@@ -660,9 +660,12 @@ class Matter:
     Attributes:
 
     Properties:
-        code (str): derivation code to indicate cypher suite
-        size (int): number of quadlets of variable sized material including
-                    lead bytes otherwise None
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
         rize (int): number of bytes of raw material not including
                     lead bytes
         raw (bytes): crypto material only without code
@@ -677,8 +680,9 @@ class Matter:
         _raw (bytes): value for .raw property
         _rsize (bytes): value for .rsize property. Raw size in bytes when
             variable sized material else None.
-        _size (int): value for .size property. Number of quadlets of variable
-            sized material else None.
+        _size (int): value for .size property. Number of triplets of bytes
+            including lead bytes (quadlets of chars) of variable sized material
+            else None.
         _infil (types.MethodType): creates qb64b from .raw and .code
                                    (fully qualified Base64)
         _exfil (types.MethodType): extracts .code and .raw from qb64b
@@ -747,7 +751,7 @@ class Matter:
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
-    # Bards table maps first code char. converted to binary sextext  to hard size,
+    # Bards table maps first code char. converted to binary sextext of hard size,
     # hs. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
 
@@ -769,7 +773,7 @@ class Matter:
         Needs either (raw and code and optionally size and rsize)
                or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and option size and rsize provided
+        When raw and code and optional size and rsize provided
             then validate that code is correct for length of raw, size, rsize
             and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign
@@ -881,27 +885,32 @@ class Matter:
     @property
     def code(self):
         """
-        Returns ._code which is the hard part of full text code
+        Returns ._code which is the hard part only of full text code.
+        Some codes only have a hard part. Soft part is for variable sized matter.
         Makes .code read only
         """
         return self._code
+
+    @property
+    def both(self):
+        """
+        Returns both hard and soft parts of full text code
+        """
+        _, ss, _, _ = self.Sizes[self.code]
+        return (f"{self.code}{intToB64(self.size, l=ss)}")
+
 
     @property
     def size(self):
         """
         Returns ._size int or None if not variable sized matter
         Makes .size read only
-        ._size (int): number of quadlets of variable sized material else None
+
+        Number of triplets of bytes including lead bytes (quadlets of chars)
+        of variable sized material. Value of soft size, ss, part of full text code.
         """
         return self._size
 
-    @property
-    def both(self):
-        """
-        Returns both hard and soft parts that are the complete text code
-        """
-        _, ss, _, _ = self.Sizes[self.code]
-        return (f"{self.code}{intToB64(self.size, l=ss)}")
 
     @property
     def fullSize(self):
@@ -1509,7 +1518,8 @@ class Bexter(Matter):
     qb64 version not including the leader.
 
     Due to ambiguity that arises for bext that starts with an 'A' and whose length
-    is a multiple of 3 or 4. Bext with a leading 'A' may have that 'A' stripped.
+    is either a multiple of 3 or 4. Bext with a leading 'A' whose length is a multiple
+    of four may have the leading 'A' stripped when round tripping.
 
     Examples: strings:
     bext = ""
