@@ -115,25 +115,47 @@ class WitnessReceiptor(doing.DoDoer):
                     _ = yield self.tock
 
                 # generate all rct msgs to send to all witnesses
-                wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
-                rserder = eventing.receipt(pre=ser.pre,
-                                           sn=sn,
-                                           said=ser.said)
-                rctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+                awigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
 
-                # this is a little brute forcey and can be improved by gathering receipts
-                # along the way and passing them out as we go and only sending the
-                # required ones here
+                # make sure all witnesses have fully receipted KERL and know about each other
                 for witer in witers:
-                    witer.msgs.append(bytearray(rctMsg))
+                    ewits = []
+                    wigers = []
+                    for i, wit in enumerate(wits):
+                        if wit == witer.wit:
+                            continue
+                        ewits.append(wit)
+                        wigers.append(awigers[i])
+
+                    if len(wigers) == 0:
+                        continue
+
+                    rctMsg = bytearray()
+
+                    # Now that the witnesses have not met each other, send them each other's receipts
+                    if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
+                        rctMsg.extend(self.replay(eids=ewits))
+                    elif ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt) and \
+                            ("ba" in ser.ked and witer.wit in ser.ked["ba"]):  # Newly added witness, introduce to all
+                        rctMsg.extend(self.replay(eids=ewits))
+
+                    rserder = eventing.receipt(pre=ser.pre,
+                                               sn=sn,
+                                               said=ser.said)
+                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers))
+
+                    witer.msgs.append(rctMsg)
                     _ = (yield self.tock)
 
-                total = len(witers) * 2
-                count = 0
-                while count < total:
+                while True:
+                    done = True
                     for witer in witers:
-                        count += len(witer.sent)
-                    _ = (yield self.tock)
+                        if not witer.idle:
+                            yield 1.0
+                            done = False
+                            break
+                    if done:
+                        break
 
                 self.remove(witers)
 
@@ -141,6 +163,26 @@ class WitnessReceiptor(doing.DoDoer):
                 yield self.tock
 
             yield self.tock
+
+    def replay(self, eids):
+        msgs = bytearray()
+        for eid in eids:
+            for scheme in kering.Schemes:
+                keys = (eid, scheme)
+                said = self.hby.db.lans.get(keys=keys)
+                if said is not None:
+                    serder = self.hby.db.rpys.get(keys=(said.qb64,))
+                    cigars = self.hby.db.scgs.get(keys=(said.qb64,))
+
+                    if len(cigars) == 1:
+                        (verfer, cigar) = cigars[0]
+                        cigar.verfer = verfer
+                    else:
+                        cigar = None
+                    msgs.extend(eventing.messagize(serder=serder,
+                                                   cigars=[cigar],
+                                                   pipelined=True))
+        return msgs
 
 
 class WitnessInquisitor(doing.DoDoer):
@@ -343,6 +385,7 @@ class TCPWitnesser(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.url = url
+        self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -365,7 +408,6 @@ class TCPWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-
         up = urlparse(self.url)
         if up.scheme != kering.Schemes.tcp:
             raise ValueError(f"invalid scheme {up.scheme} for TcpWitnesser")
@@ -383,6 +425,7 @@ class TCPWitnesser(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
+            self.posted += 1
 
             client.tx(msg)  # send to connected remote
 
@@ -414,6 +457,10 @@ class TCPWitnesser(doing.DoDoer):
         """
         yield from self.parser.parsator()  # process messages continuously
 
+    @property
+    def idle(self):
+        return len(self.sent) == self.posted
+
 
 class HttpWitnesser(doing.DoDoer):
     """
@@ -432,6 +479,7 @@ class HttpWitnesser(doing.DoDoer):
         """
         self.hab = hab
         self.wit = wit
+        self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -465,7 +513,7 @@ class HttpWitnesser(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            httping.streamCESRRequests(client=self.client, ims=msg)
+            self.posted += httping.streamCESRRequests(client=self.client, ims=msg)
             while self.client.requests:
                 yield self.tock
 
@@ -486,6 +534,10 @@ class HttpWitnesser(doing.DoDoer):
                 self.sent.append(rep)
                 yield
             yield
+
+    @property
+    def idle(self):
+        return self.posted == len(self.sent)
 
 
 def mailbox(hab, cid):
@@ -548,4 +600,3 @@ def httpClient(hab, wit):
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
-

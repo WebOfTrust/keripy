@@ -692,7 +692,7 @@ def test_oobi_ends(seeder):
             'role': 'controller'}
 
         # Seed with witness endpoints
-        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.http, kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http, kering.Schemes.tcp])
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
         assert result.status == falcon.HTTP_200

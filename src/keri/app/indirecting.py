@@ -15,8 +15,7 @@ from hio.core.tcp import serving
 from hio.help import decking
 
 
-from . import directing, storing, httping, forwarding, agenting
-from .cli.common import oobiing
+from . import directing, storing, httping, forwarding, agenting, oobiing
 from .. import help, kering
 from ..core import eventing, parsing, routing
 from ..core.coring import Ilks
@@ -49,9 +48,11 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
     exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
+    oobiery = ending.Oobiery(hby=hby)
+
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby)
-
+    oobiRes = oobiing.loadEnds(app=app, hby=hby, oobiery=oobiery, prefix="/ext")
     rep = storing.Respondant(hby=hby, mbx=mbx)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
@@ -93,7 +94,8 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
                             responses=rep.cues, queries=httpEnd.qrycues)
 
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, obl, witStart])
+    doers.extend(oobiRes)
+    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, obl, witStart, oobiery])
 
     return doers
 

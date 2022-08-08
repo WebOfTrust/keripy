@@ -9,7 +9,7 @@ import itertools
 from hio.base import doing
 
 from .. import help
-from ..core import eventing
+from ..core import eventing, routing
 from ..core import parsing
 from ..vdr.eventing import Tevery
 
@@ -557,25 +557,31 @@ class Reactant(doing.DoDoer):
                       doing.doify(self.escrowDo)])
 
         #  neeeds unique kevery with ims per remoter connnection
+        rvy = routing.Revery(db=hab.db)
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
-                                      local=False)
+                                      local=False,
+                                      rvy=rvy)
 
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,
                                  db=self.hab.db,
-                                 local=False)
+                                 local=False, rvy=rvy)
+            self.tevery.registerReplyRoutes(router=rvy.rtr)
         else:
             self.tevery = None
 
         if self.exchanger is not None:
             doers.extend([doing.doify(self.exchangerDo)])
 
+        self.kevery.registerReplyRoutes(router=rvy.rtr)
+
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
                                      tvy=self.tevery,
-                                     exc=self.exchanger)
+                                     exc=self.exchanger,
+                                     rvy=rvy)
 
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:

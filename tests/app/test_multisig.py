@@ -25,11 +25,11 @@ class TestDoer(doing.DoDoer):
         self.hby2 = hby2
         self.hab1 = hab1
         self.hab2 = hab2
-        seeder.seedWitEnds(self.hby1.db, protocols=[kering.Schemes.http])
-        seeder.seedWitEnds(self.hby2.db, protocols=[kering.Schemes.http])
 
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wanHab = wanHby.habByName("wan")
+        seeder.seedWitEnds(self.hby1.db, witHabs=[wanHab], protocols=[kering.Schemes.http])
+        seeder.seedWitEnds(self.hby2.db, witHabs=[wanHab], protocols=[kering.Schemes.http])
         # Verify the group identifier was incepted properly and matches the identifiers
         assert wanHab.pre == "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
         assert hab1.pre == "EJTo9FQNKETP4Ux5bwE43go-uN04TMnI3auceEv9Ms2A"

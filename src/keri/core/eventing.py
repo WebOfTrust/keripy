@@ -2926,7 +2926,6 @@ class Kevery:
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
-
         if ldig is not None:  # verify digs match
             ldig = bytes(ldig).decode("utf-8")
             # retrieve event by dig assumes if ldig is not None that event exists at ldig

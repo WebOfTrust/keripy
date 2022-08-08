@@ -1512,7 +1512,7 @@ class Hab:
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
 
-    def makeLocScheme(self, url, scheme="http", stamp=None):
+    def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
         """
         Returns:
            msg (bytearray): reply message of own url service endpoint at scheme
@@ -1520,12 +1520,14 @@ class Hab:
         Parameters:
             url (str): url of endpoint, may have scheme missing or not
                        If url is empty then nullifies location
+            eid (str): qb64 of endpoint provider to be authorized
             scheme (str): url scheme must matche scheme in url if any
             stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime.
                           None means use now.
 
         """
-        data = dict(eid=self.pre, scheme=scheme, url=url)
+        eid = eid if eid is not None else self.pre
+        data = dict(eid=eid, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
 
     def replyLocScheme(self, eid, scheme=None):
@@ -1552,8 +1554,25 @@ class Hab:
 
         urls = self.fetchUrls(eid=eid, scheme=scheme)
         for rscheme, url in urls.firsts():
-            msgs.extend(self.makeLocScheme(url=url, scheme=rscheme))
+            msgs.extend(self.makeLocScheme(eid=eid, url=url, scheme=rscheme))
 
+        return msgs
+
+    def loadLocScheme(self, eid, scheme=None):
+        msgs = bytearray()
+        keys = (eid, scheme)
+        for (pre, _), said in self.db.lans.getItemIter(keys=keys):
+            serder = self.db.rpys.get(keys=(said.qb64,))
+            cigars = self.db.scgs.get(keys=(said.qb64,))
+
+            if len(cigars) == 1:
+                (verfer, cigar) = cigars[0]
+                cigar.verfer = verfer
+            else:
+                cigar = None
+            msgs.extend(eventing.messagize(serder=serder,
+                                           cigars=[cigar],
+                                           pipelined=True))
         return msgs
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
@@ -1603,7 +1622,10 @@ class Hab:
                 # latest key state for cid
                 for eid in kever.wits:
                     if not eids or eid in eids:
-                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                        if eid == self.pre:
+                            msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                        else:
+                            msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                         if not witness:  # we are not witness, send auth records
                             msgs.extend(self.makeEndRole(eid=eid, role=role))
                 if witness:  # we are witness, set KEL as authz

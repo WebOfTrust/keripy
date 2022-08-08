@@ -3,8 +3,9 @@
 tests.app.agenting module
 
 """
+import time
 
-from hio.base import doing
+from hio.base import doing, tyming
 
 from keri import kering
 from keri.core import coring
@@ -21,7 +22,6 @@ def test_withness_receiptor(seeder):
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
-        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.tcp])
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
@@ -29,50 +29,87 @@ def test_withness_receiptor(seeder):
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
 
-        palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre], transferable=True)
-
-        witDoer = agenting.WitnessReceiptor(hby=palHby)
-        witDoer.msgs.append(dict(pre=palHab.pre))
+        rctDoer = ReceiptDoer(hby=palHby, wanHab=wanHab, wilHab=wilHab, wesHab=wesHab)
 
         limit = 5.0
         tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [witDoer]
-        doist.do(doers=doers)
-        doist.remove(doers)
+        doers = wanDoers + wilDoers + wesDoers + [rctDoer]
+        doist = doing.Doist(limit=limit, tock=tock, doers=doers)
+        doist.enter()
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+
+        while not (rctDoer.done or tymer.expired):
+            doist.recur()
+            time.sleep(doist.tock)
+
         doist.exit()
+
+        assert rctDoer.done is True
+
+
+class ReceiptDoer(doing.DoDoer):
+    """ Test scenario of witness receipts. """
+
+    def __init__(self, hby, wanHab, wilHab, wesHab):
+        self.hby = hby
+        self.wanHab = wanHab
+        self.wilHab = wilHab
+        self.wesHab = wesHab
+
+        super(ReceiptDoer, self).__init__(doers=[doing.doify(self.testDo)])
+
+    def testDo(self, tymth, tock=0.0):
+        """ Execute a series of kli commands for this test scenario """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        palHab = self.hby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre], transferable=True)
+
+        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        witDoer.msgs.append(dict(pre=palHab.pre))
+        self.extend([witDoer])
 
         kev = palHab.kever
         ser = kev.serder
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
-        wigs = wanHab.db.getWigs(dgkey)
-        assert len(wigs) == 2
-        wigs = wilHab.db.getWigs(dgkey)
-        assert len(wigs) == 2
+        while True:
+            wilWigs = self.wilHab.db.getWigs(dgkey)
+            wanWigs = self.wanHab.db.getWigs(dgkey)
+            if len(wilWigs) == 2 and len(wanWigs) == 2:
+                break
+            yield self.tock
 
-        palHab.rotate(adds=[wesHab.pre])
+        # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
+        keys = (self.wanHab.pre, kering.Schemes.tcp)
+        said = self.wilHab.db.lans.get(keys=keys)
+        assert said is not None
+        keys = (self.wilHab.pre, kering.Schemes.tcp)
+        said = self.wanHab.db.lans.get(keys=keys)
+        assert said is not None
 
-        witDoer = agenting.WitnessReceiptor(hby=palHby)
+        palHab.rotate(adds=[self.wesHab.pre])
+
         witDoer.msgs.append(dict(pre=palHab.pre, sn=1))
 
-        limit = 5.0
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [witDoer]
-        doist.do(doers=doers)
-        doist.exit()
-
         kev = palHab.kever
         ser = kev.serder
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
-        wigs = wanHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
-        wigs = wilHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
-        wigs = wesHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
+
+        while True:
+            wilWigs = self.wilHab.db.getWigs(dgkey)
+            wanWigs = self.wanHab.db.getWigs(dgkey)
+            wesWigs = self.wesHab.db.getWigs(dgkey)
+            if len(wilWigs) == 3 and len(wanWigs) == 3 and len(wesWigs) == 3:
+                break
+            yield self.tock
+
+        self.remove([witDoer])
+        return True
 
 
 def test_witness_sender(seeder):
@@ -81,16 +118,14 @@ def test_witness_sender(seeder):
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
-        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.tcp])
-
-        pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby)
+        pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder)
         directing.runController(doers=[pdoer], expire=15.0)
         assert pdoer.done is True
 
 
 class PublishDoer(doing.DoDoer):
 
-    def __init__(self, wanHby, wilHby, wesHby, palHby):
+    def __init__(self, wanHby, wilHby, wesHby, palHby, seeder):
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
@@ -98,6 +133,7 @@ class PublishDoer(doing.DoDoer):
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
 
         self.palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
 
@@ -153,12 +189,12 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-        seeder.seedWitEnds(palHby.db, protocols=[kering.Schemes.tcp])
-        seeder.seedWitEnds(qinHby.db, protocols=[kering.Schemes.tcp])
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
 
         palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
         qinHab = qinHby.makeHab(name="qin", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
@@ -177,7 +213,7 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         palWitq = agenting.WitnessInquisitor(hby=palHby)
         palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits)
 
-        limit = 1.0
+        limit = 5.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
         doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]

@@ -1023,6 +1023,7 @@ class Parser:
                         rvy.processReply(serder, tsgs=tsgs)  # trans
 
                 except AttributeError as e:
+                    print("ASDFASDFASDFASDF", e)
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 

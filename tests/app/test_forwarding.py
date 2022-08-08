@@ -19,12 +19,12 @@ def test_postman(seeder):
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             habbing.openHby(name="repTest",  temp=True) as recpHby:
 
-        seeder.seedWitEnds(hby.db)
-        seeder.seedWitEnds(wesHby.db)
-        seeder.seedWitEnds(recpHby.db)
         mbx = storing.Mailboxer(name="wes", temp=True)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
