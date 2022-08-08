@@ -153,7 +153,7 @@ def test_weighted():
         # get current keys as verfers and next digests as digers
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
-        nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
+        nxtsith = [["1/2", "1/2", "1/2"], ["1", "1"]]
         verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
         assert cst == sith
         assert nst == nxtsith
@@ -176,21 +176,21 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0002aa_","t":"rot","d":"EpaAOKbdwjjI7CAikCJDCr6r'
-                                b'zmN14frB_cwif4MBnsTk","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                                b'IaJ5L7M","s":"3","p":"EXlVGTrAuFlYjj1o1389Vfr1SecFYKJq4J9HkjlPyV'
-                                b'qY","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAjDceIEs66xPMY4'
-                                b'Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM61BA-s0A5F4",'
-                                b'"DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"nt":[["1/2","1/'
-                                b'2","1/2"],["1/1","1/1"]],"n":["Ehru1umWyy696CK10v2ROEOv8csx-S4Kt'
-                                b'YZHF4RbV3gc","EdsEn6HJLVLrhle11lqgImN0s7BQV03CfqxYpxs0qcrg","ED2'
-                                b'DjOJWZyGUxGr_CFKA45dsmV72LvIvJWcB1xpuVGvM","EMwx5v3RMAjQ0GHdg5VR'
-                                b'7XG2-2Cg4Kgslmn2lMCJ-oYs","EHN09tKWiJl83SPiBB_KDN1TKDutErXADGnl3'
-                                b'TSx7ZLk"],"bt":"0","br":[],"ba":[],"a":[]}-AADAAHjkEbbFN_QkGinYu'
-                                b'rCnQphjMOgfDdfuIyVNgn9krq-vYuJSlwhilVWquumLiJL7oCOJmF6aFDWcKKScN'
-                                b'KiPHDgABQsjiEna5VZ7vE5ayRPswdjW2z19xRUyg4pktVGGw3yv9OvP6XUDRbvxU'
-                                b's36hndwWE6y894bVbx5XUWWe5jDnCgACMMQCX8qjNcbHik2ukkv9mV45p3wgcxhu'
-                                b'k_LMpXwt8KUT0eRwBHtnYuhFvXHYIDvaLTao4RxBg8AJhx8L-OdsDg')
+        assert msg == (b'{"v":"KERI10JSON0002a6_","t":"rot","d":"EJu4siBEUInk1EV9vbqPvQns'
+                    b'o1DzcIeGZWfisviDocDc","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
+                    b'IaJ5L7M","s":"3","p":"EXlVGTrAuFlYjj1o1389Vfr1SecFYKJq4J9HkjlPyV'
+                    b'qY","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAjDceIEs66xPMY4'
+                    b'Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM61BA-s0A5F4",'
+                    b'"DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"nt":[["1/2","1/'
+                    b'2","1/2"],["1","1"]],"n":["Ehru1umWyy696CK10v2ROEOv8csx-S4KtYZHF'
+                    b'4RbV3gc","EdsEn6HJLVLrhle11lqgImN0s7BQV03CfqxYpxs0qcrg","ED2DjOJ'
+                    b'WZyGUxGr_CFKA45dsmV72LvIvJWcB1xpuVGvM","EMwx5v3RMAjQ0GHdg5VR7XG2'
+                    b'-2Cg4Kgslmn2lMCJ-oYs","EHN09tKWiJl83SPiBB_KDN1TKDutErXADGnl3TSx7'
+                    b'ZLk"],"bt":"0","br":[],"ba":[],"a":[]}-AADAAZA24WH0lELqqxgy-itSH'
+                    b'TdpTDEmlFNfFI26g8o0s9Kab4K01vFfBeU-6attg2La5LjrrtR2DSKtFFfqoMqDN'
+                    b'BwAB69hZiy38iU9Amdza0Zo8oHzO-V92gPcR-jf7diZUxoo9O1QjCe7tYrMFOdvY'
+                    b'Bbiw_EIkDdNXSF7FeqtWXiSdBgACfD1FDYJZUzN20WE2wEUKzgKVjPEqifvS--tE'
+                    b'VC0ypT7deJhWUm3AEVXraARFq-YwgsCq3vkaKiBpjhRbmH9lDw')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
@@ -203,7 +203,7 @@ def test_weighted():
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
         verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
-        assert cst == nst == nxtsith
+        assert cst == nst == [['1/2', '1/2', '1/2'], ['1', '1']] # normalized nxtsith
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
@@ -223,26 +223,26 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000318_","t":"rot","d":"EL9yfne-tGwzQvcwIBAEfLUb'
-                                b'Vys6JF9ejzbd1mZmfKHc","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                                b'IaJ5L7M","s":"4","p":"EpaAOKbdwjjI7CAikCJDCr6rzmN14frB_cwif4MBns'
-                                b'Tk","kt":[["1/2","1/2","1/2"],["1/1","1/1"]],"k":["DToUWoemnetqJ'
-                                b'oLFIqDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMDIW6n-0NGFubbX'
-                                b'iZhzWZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9b6QhPS8IkQ","'
-                                b'Dxj5pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5zr5eH8EUVQXyAa'
-                                b'xWfQUWkGCId-QDCvvxMT77ibj2Q"],"nt":[["1/2","1/2","1/2"],["1/1","'
-                                b'1/1"]],"n":["E3oSx8M1W9oMIqORgzoxTMtq4loSjOLs_IBYT7-IykMk","E1HU'
-                                b'bg5n7JAOr8eSimUkgKNLZGuOoPFzuif3p8uSyxyc","E4uh2oW3SCRE09y8lkOXq'
-                                b'T_bNwYyTxqi8azw2OP-USmc","ElNsZ_J-kqXAEfEqsQ_3nWXTg2v8oLHMzGbNFQ'
-                                b'yq1bM4","EAu4l6xy-_8a_jaDhftZCN8jjus7h17BJVPc8L9naTHE"],"bt":"0"'
-                                b',"br":[],"ba":[],"a":[]}-AAFAArIHrHuHj5D4H6y3lLMsFh3puF3r7iq5Loy'
-                                b'at_UBNVrlxvdsawSfw2aaUGPewlIacEU4qmXE_jfnkkYuu9ILyAAABXdCyY-Lzp_'
-                                b'erM6e75ucr69f543Z1B14siUu2VvNhmXDtg5oB7Huzk5R-pq51QwiokdEEKVnqfw'
-                                b'UkDAFS8UGeAQACQ7LP-P8pvxjNTn-WI6p4mfUVk-yw321gyzoI9L2MKHtyLBm_NL'
-                                b'86wqjXrhPHw8efeHMr7hYPf_om7YZ3RTJPDQADefKpouU2FmtypJV9QgJw4Jl7te'
-                                b'ujJU-dsXlGdfdSVTRNIjv2RmGWuL0_r3F3pU4A_5ZVuOx7WjpHqwuh7gA0CwAEeR'
-                                b'KbC2k_f7Im0HR7fqbLsaUvKMpF2Y14CYVKI-dabphSRRiB24_17hjSENPKO7t_4r'
-                                b'7UTdxAqoTWUjCb1babCA')
+        assert msg == (b'{"v":"KERI10JSON000310_","t":"rot","d":"E11RNfhRRYbJAx5sbXA8VNNV'
+                    b'I_mz0kdfxSpbRZViRuO0","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
+                    b'IaJ5L7M","s":"4","p":"EJu4siBEUInk1EV9vbqPvQnso1DzcIeGZWfisviDoc'
+                    b'Dc","kt":[["1/2","1/2","1/2"],["1","1"]],"k":["DToUWoemnetqJoLFI'
+                    b'qDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMDIW6n-0NGFubbXiZhz'
+                    b'WZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9b6QhPS8IkQ","Dxj5'
+                    b'pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5zr5eH8EUVQXyAaxWfQ'
+                    b'UWkGCId-QDCvvxMT77ibj2Q"],"nt":[["1/2","1/2","1/2"],["1","1"]],"'
+                    b'n":["E3oSx8M1W9oMIqORgzoxTMtq4loSjOLs_IBYT7-IykMk","E1HUbg5n7JAO'
+                    b'r8eSimUkgKNLZGuOoPFzuif3p8uSyxyc","E4uh2oW3SCRE09y8lkOXqT_bNwYyT'
+                    b'xqi8azw2OP-USmc","ElNsZ_J-kqXAEfEqsQ_3nWXTg2v8oLHMzGbNFQyq1bM4",'
+                    b'"EAu4l6xy-_8a_jaDhftZCN8jjus7h17BJVPc8L9naTHE"],"bt":"0","br":[]'
+                    b',"ba":[],"a":[]}-AAFAA8sdMp1v0bt_91hxkh3U-mLzir6Z5Gs9lmTB3ch7dd0'
+                    b'p9Bvku1zAWnmkIaTyJMoKGkKlx9wC7LosYcOUAePRgCgABFSRL7O27FngrElv6zw'
+                    b'veqdYl2JSWeWdrsU_I7yTbsF2939vdDQ5I4a2ZBi7ucBK9WjuMlHQazZwGv0nLaO'
+                    b'CkDgACQ1B_SOjBu6zrUg5MwNQRIthxlcYv11O0R429JZ7GvhRH0AkFDVihHOwNM2'
+                    b'E1A0oWoZSWoScTYAzK0EruE-V9BQADVxK4iC3UewzxMp26WjnNdsOMhD7xsJaMCb'
+                    b'tlcgzxhHRdddq8yfEPHpYB3cfx0uy3NX1HjmXiLv3X7TkfJyEBDgAEfTLiGaq23Y'
+                    b'ke9IJ3V87Sct_opATFoduNqXZRbVCruORL-mOTQP6pVUoIDMvqgSx7q4C-KbLxZL'
+                    b'sgV_Df4OJ7BQ')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)

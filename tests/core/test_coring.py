@@ -2720,6 +2720,15 @@ def test_bexter():
     assert bexter.qb2 == b'\xe0\x00\x01\x00\x00A'
     assert bexter.bext == bext
 
+    bext = "BBB"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x10A'
+    assert bexter.qb64 == '4AABABBB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
+    assert bexter.bext == bext
+
     bext = "ABBB"  # multiple of four loses leading 'A' for round trip of bext
     bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L0
@@ -4637,49 +4646,83 @@ def test_tholder():
         tholder = Tholder()
 
     tholder = Tholder(sith="b")
-    assert tholder.sith == "b"
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert not tholder.weighted
-    assert tholder.size == tholder.thold
-    assert not tholder.satisfy(indices=[0, 1, 2])
-    assert tholder.satisfy(indices=list(range(tholder.thold)))
     assert tholder.limen == b'MAAs'
-
-    tholder = Tholder(sith=f'{15:x}')
-    assert tholder.sith == "f"
-    assert tholder.thold == 15
-    assert not tholder.weighted
-    assert tholder.size == tholder.thold
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == b'MAA8'
 
     tholder = Tholder(sith=11)
-    assert tholder.sith == "b"
-    assert tholder.thold == 11
     assert not tholder.weighted
     assert tholder.size == tholder.thold
+    assert tholder.thold == 11
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(limen=b'MAAs')
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 11
     assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(thold=11)
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 11
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(sith=f'{15:x}')
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 15
+    assert tholder.limen == b'MAA8'
+    assert tholder.sith == "f"
+    assert tholder.json == '"f"'
+    assert tholder.num == 15
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
 
     tholder = Tholder(sith=2)
-    assert tholder.sith == "2"
-    assert tholder.thold == 2
     assert not tholder.weighted
     assert tholder.size == tholder.thold
+    assert tholder.thold == 2
+    assert tholder.limen == b'MAAI'
+    assert tholder.sith == "2"
+    assert tholder.json == '"2"'
+    assert tholder.num == 2
     assert tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == b'MAAI'
+
 
     tholder = Tholder(sith=1)
-    assert tholder.sith == "1"
-    assert tholder.thold == 1
     assert not tholder.weighted
     assert tholder.size == tholder.thold
+    assert tholder.thold == 1
+    assert tholder.limen == b'MAAE'
+    assert tholder.sith == "1"
+    assert tholder.json == '"1"'
+    assert tholder.num == 1
     assert tholder.satisfy(indices=[0])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == b'MAAE'
+
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=-1)
@@ -4708,16 +4751,36 @@ def test_tholder():
     with pytest.raises(TypeError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "3/2"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "3/2"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "2/1"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "2/1"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "2"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "2"]])
+
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
-    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.weighted
+    assert tholder.size == 5
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)]]
-    assert tholder.weighted
-    assert tholder.size == 5
     assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4"]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[0, 2, 4])
     assert tholder.satisfy(indices=[0, 1])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4727,16 +4790,40 @@ def test_tholder():
     assert not tholder.satisfy(indices=[0, 2])
     assert not tholder.satisfy(indices=[2, 3, 4])
 
+    tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4", "0"])
+    assert tholder.weighted
+    assert tholder.size == 6
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(0, 1)]]
+    assert tholder.limen == b'6AAGAAA1s2c1s2c1s4c1s4c1s4c0'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4", "0"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4", "0"]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[0, 2, 4])
+    assert tholder.satisfy(indices=[0, 1])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1])
+    assert not tholder.satisfy(indices=[0, 2, 5])
+    assert not tholder.satisfy(indices=[2, 3, 4, 5])
+
     tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"]])
-    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"]]
+    assert tholder.weighted
+    assert tholder.size == 5
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)]]
-    assert tholder.weighted
-    assert tholder.size == 5
     assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4"]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[1, 2, 3])
     assert tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4746,17 +4833,84 @@ def test_tholder():
     assert not tholder.satisfy(indices=[0, 2])
     assert not tholder.satisfy(indices=[2, 3, 4])
 
-    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
-    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1/1", "1"]])
+    assert tholder.weighted
+    assert tholder.size == 7
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)],
                              [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(sith='[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1/1", "1"]]')
     assert tholder.weighted
     assert tholder.size == 7
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
     assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(limen=b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1')
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(thold=[[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]])
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[1, 2, 3, 5])
     assert tholder.satisfy(indices=[0, 1, 6])
     assert not tholder.satisfy(indices=[0, 1])
@@ -4768,4 +4922,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_bexter()
+    test_tholder()

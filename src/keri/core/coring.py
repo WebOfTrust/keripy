@@ -6,6 +6,7 @@ keri.core.coring module
 import re
 import json
 from typing import Union
+from collections.abc import Iterable
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -1517,11 +1518,21 @@ class Bexter(Matter):
     passed in as raw bytes. The text is used as is to form the value part of the
     qb64 version not including the leader.
 
-    Due to ambiguity that arises for bext that starts with an 'A' and whose length
-    is either a multiple of 3 or 4. Bext with a leading 'A' whose length is a multiple
-    of four may have the leading 'A' stripped when round tripping.
+    Due to ambiguity that arises from pre-padding bext whose length is a multiple of
+    three with one or more 'A' chars. Any bext that starts with an 'A' and whose length
+    is either a multiple of 3 or 4 may not round trip. Bext with a leading 'A'
+    whose length is a multiple of four may have the leading 'A' stripped when
+    round tripping.
 
-    Examples: strings:
+        Bexter(bext='ABBB').bext == 'BBB'
+        Bexter(bext='BBB').bext == 'BBB'
+        Bexter(bext='ABBB').qb64 == '4AABABBB' == Bexter(bext='BBB').qb64
+
+    To avoid this problem, only use for applications of base 64 strings that
+    never start with 'A'
+
+    Examples: base64 text strings:
+
     bext = ""
     qb64 = '4AAA'
 
@@ -1537,7 +1548,10 @@ class Bexter(Matter):
     bext = "-A-B"
     qb64 = '4AAB-A-B'
 
-    Example uses: pathing for nested SADs and SAIDs
+
+    Example uses:
+        CESR encoded paths for nested SADs and SAIDs
+        CESR encoded fractionally weighted threshold expressions
 
 
     Attributes:
@@ -4589,7 +4603,12 @@ class Serder(Sadder):
         """
         return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
-
+# Todo
+# accept JSON representation of sith for cli input
+# thold is base representation so derive sith from thold not keep sith around
+# generate json sith from thold
+# refactor process weighted from thold input and add other methods to generate
+# thold
 
 class Tholder:
     """
@@ -4641,9 +4660,6 @@ class Tholder:
 
     """
 
-    ToB64 = str.maketrans("/,&", "sca")  #  translate characters
-    FromB64 = str.maketrans("sca", "/,&")  #  translate characters
-
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
         Accepts signing threshold in various forms so that may output correct
@@ -4652,7 +4668,9 @@ class Tholder:
         Parameters:
             sith is signing threshold (current or next) expressed as either:
                 non-negative int of threshold number (M-of-N threshold)
-                non-gegative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                non-negative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
                 fractional weight clauses which may be expressed as either:
                     an iterable of rational number fraction strings  >= 0 and <= 1
                     an iterable of iterables of rational number fraction strings >= 0 and <= 1
@@ -4687,40 +4705,27 @@ class Tholder:
 
         """
         if thold is not None:
-            pass
+            self._processThold(thold=thold)
 
         elif limen is not None:
-            matter = Matter(qb64b=limen, **kwa)
-            if matter.code in NumDex:
-                self._processUnweighted(thold=number.num)
+            self._processLimen(limen=limen, **kwa)  # kwa for strip
 
-            elif matter.code in BexDex:
-                bexter =  Bexter(raw=matter.raw, code=matter.code)
-                bext = bexter.bext.replace('s', '/')
-                # get clauses
-                thold = [clause.split('c') for clause in bext.split('a')]
-                thold = [[Fraction(w) for w in clause] for clause in thold]
-
-
-            else:
-                raise ValueError(f"Invalid code for limen = {matter.code}.")
+        elif sith is not None:
+            self._processSith(sith=sith)
 
         else:
-            if isinstance(sith, int):
-                self._processUnweighted(thold=sith)
-
-            elif isinstance(sith, str):  #
-                self._processUnweighted(thold=int(sith, 16))
-
-            else:  # assumes iterable of weights or iterable of iterables of weights
-                self._processWeighted(sith=sith)
-
+            raise ValueError("Missing threshold expression.")
 
 
     @property
     def weighted(self):
         """ weighted property getter """
         return self._weighted
+
+    @property
+    def thold(self):
+        """ thold property getter """
+        return self._thold
 
     @property
     def size(self):
@@ -4735,18 +4740,119 @@ class Tholder:
     @property
     def sith(self):
         """ sith property getter """
-        return self._sith
+        # make sith expression of thold
+        if self.weighted:
+            sith = [[f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                                           for f in clause]
+                                                   for clause in self.thold]
+            if len(sith) == 1:
+                sith = sith[0]  # simplify list of one clause to clause
+        else:
+            sith = f"{self.thold:x}"
+
+        return sith
 
     @property
-    def thold(self):
-        """ thold property getter """
-        return self._thold
+    def json(self):
+        """Returns json serialization of sith expression
+        """
+        return json.dumps(self.sith)
+
 
     @property
     def num(self):
         """ sith property getter """
-        return self._number.num if not self._weighted else None
+        return self.thold if not self._weighted else None
 
+
+
+    def _processThold(self, thold: int | Iterable):
+        """Process thold input
+
+        Parameters:
+            thold (int | Iterable): computable thold expression
+        """
+        if isinstance(thold, int):
+            self._processUnweighted(thold=thold)
+
+        else:
+            self._processWeighted(thold=thold)
+
+
+    def _processLimen(self, limen: str | bytes, **kwa):
+        """Process limen input
+
+        Parameters:
+            limen (str): CESR encoded qb64 threshold (weighted or unweighted)
+        """
+        matter = Matter(qb64b=limen, **kwa)  # kwa for strip of stream
+        if matter.code in NumDex:
+            number = Number(raw=matter.raw, code=matter.code, **kwa)
+            self._processUnweighted(thold=number.num)
+
+        elif matter.code in BexDex:
+            # Convert to fractional thold expression
+            bexter = Bexter(raw=matter.raw, code=matter.code, **kwa)
+            t = bexter.bext.replace('s', '/')
+            # get clauses
+            thold = [clause.split('c') for clause in t.split('a')]
+            thold = [[self._checkWeight(Fraction(w)) for w in clause]
+                                                        for clause in thold]
+            self._processWeighted(thold=thold)
+
+        else:
+            raise ValueError(f"Invalid code for limen = {matter.code}.")
+
+
+    def _processSith(self, sith: int | str | Iterable):
+        """
+        Process attributes for fractionall weighted threshold sith
+
+        Parameters:
+            sith is signing threshold (current or next) expressed as either:
+                non-negative int of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                non-negative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                fractional weight clauses which may be expressed as either:
+                    an iterable of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+                    an iterable of iterables of rational number fraction weight strings
+                       each denoted w where 0 <= w <= 1>= 0
+                JSON serialized str of either:
+                    list of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+                    list of list of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+
+                when any w is 0 or 1 then representation is 0 or 1 not 0/1 or 1/1
+        """
+        if isinstance(sith, int):
+            self._processUnweighted(thold=sith)
+
+        elif isinstance(sith, str) and '[' not in sith:
+            self._processUnweighted(thold=int(sith, 16))
+
+        else:  # assumes iterable of weights or iterable of iterables of weights
+            if isinstance(sith, str):  # json of weighted sith from cli
+                sith = json.loads(sith)  # deserialize
+
+            if not sith:  # empty iterable
+                raise ValueError(f"Empty weight list = {sith}.")
+
+            mask = [isinstance(w, str) for w in sith]  # list of strings
+            if mask and all(mask):  # not empty and all strings
+                sith = [sith]  # make list of list so uniform
+            elif any(mask):  # some strings but not all
+                raise ValueError("Invalid sith = {} some weights non non string."
+                                 "".format(sith))
+
+            # replace fractional strings with fractions
+            thold = []
+            for clause in sith:  # convert string fractions to Fractions
+                thold.append([self._checkWeight(Fraction(w)) for w in clause])  # append list of Fractions
+
+            self._processWeighted(thold=thold)
 
 
     def _processUnweighted(self, thold=0):
@@ -4763,53 +4869,48 @@ class Tholder:
         self._weighted = False
         self._size = self._thold  # used to verify that keys list size is at least size
         self._satisfy = self._satisfy_numeric
-        self._sith = "{:x}".format(thold)  # store in key event form as str
         self._number = Number(num=thold)
         self._bexter = None
 
-    def _processWeighted(self, sith=[]):
+
+    def _processWeighted(self, thold=[]):
         """
-        Process attributes for fractionall weighted threshold sith
+        Process attributes for fractionall weighted threshold thold
 
         Parameters:
-            sith (iterable):  iterable or iterable or iterables of
+            thold (iterable):  iterable or iterable or iterables of
                 rational number fraction strings  >= 0 and <= 1
 
         """
-        if not sith:  # empty iterable
-            raise ValueError(f"Empty weight list = {sith}.")
-
-        self._sith = sith  # save key event form
-        self._weighted = True
-        mask = [isinstance(w, str) for w in sith]  # list of strings
-        if mask and all(mask):  # not empty and all strings
-            sith = [sith]  # make list of list so uniform
-        elif any(mask):  # some strings but not all
-            raise ValueError("Invalid sith = {} some weights non non string."
-                             "".format(sith))
-
-        # replace fractional strings with fractions
-        thold = []
-        for clause in sith:  # convert string fractions to Fractions
-            thold.append([Fraction(w) for w in clause])  # append list of Fractions
-
         for clause in thold:  # sum of fractions in clause must be >= 1
             if not (sum(clause) >= 1):
                 raise ValueError(f"Invalid sith clause = {thold}, all clause weight "
                                  f"sums must be >= 1.")
 
         self._thold = thold
+        self._weighted = True
         self._size = sum(len(clause) for clause in thold)
         self._satisfy = self._satisfy_weighted
-        # make str of fractions
-        bext = [[f"{f.numerator}s{f.denominator}" if f.denominator > 1 else f"1"
+        # make bext str of thold for .bexter for limen
+        bext = [[f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}"
                                            for f in clause]
                                                            for clause in thold]
         bext = "a".join(["c".join(clause) for clause in bext])
-        #bext = bext.replace("/", "s")
-
-        self._bexter = Bexter(bext=bext)
         self._number = None
+        self._bexter = Bexter(bext=bext)
+
+
+    @staticmethod
+    def _checkWeight(w: Fraction) -> Fraction:
+        """Returns w if 0 <= w <= 1 Else raises ValueError
+
+        Parameters:
+            w (Fraction): Threshold weight Fraction
+        """
+        if not 0 <= w <= 1:
+            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+        return w
+
 
     def satisfy(self, indices):
         """
@@ -4820,6 +4921,7 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         return (self._satisfy(indices=indices))
+
 
     def _satisfy_numeric(self, indices):
         """
@@ -4836,6 +4938,7 @@ class Tholder:
             return False
 
         return False
+
 
     def _satisfy_weighted(self, indices):
         """

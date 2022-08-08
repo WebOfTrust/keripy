@@ -663,7 +663,7 @@ def incept(keys,
                k=keys,  # list of qb64
                nt=ntholder.sith,
                n=nkeys,  # hash qual Base64
-               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               bt=f"{toad:x}",  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                a=data,  # list of seal dicts
@@ -779,7 +779,7 @@ def delcept(keys,
                k=keys,  # list of qb64
                nt=ntholder.sith,  # hex string no leading zeros lowercase or list
                n=nkeys,  # hash qual Base64
-               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               bt=f"{toad:x}",  # hex string no leading zeros lowercase
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config and permission ordered mappings may be empty
                a=data,  # list of seal dicts
@@ -930,7 +930,7 @@ def rotate(pre,
                k=keys,  # list of qb64
                nt=ntholder.sith, # hex string no leading zeros lowercase or list
                n=nkeys,  # hash qual Base64
-               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               bt=f"{toad:x}",  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals
@@ -1065,7 +1065,7 @@ def deltate(pre,
                k=keys,  # list of qb64
                nt=ntholder.sith, # hex string no leading zeros lowercase or list
                n=nkeys,
-               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               bt=f"{toad:x}",  # hex string no leading zeros lowercase
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals ordered mappings may be empty
@@ -1106,7 +1106,7 @@ def interact(pre,
                t=ilk,
                d="",
                i=pre,  # qb64 prefix
-               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               s=f"{sn:x}",  # hex string no leading zeros lowercase
                p=dig,  # qb64 digest of prior event
                a=data,  # list of seals
                )
@@ -1142,7 +1142,7 @@ def receipt(pre,
                t=ilk,  # Ilks.rct
                d=said,  # qb64 digest of receipted event
                i=pre,  # qb64 prefix
-               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               s=f"{sn:x}",  # hex string no leading zeros lowercase
                )
 
     return Serder(ked=ked)  # return serialized ked
