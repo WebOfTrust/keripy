@@ -1691,10 +1691,10 @@ def test_clean_baser():
     name = "nat"
     # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
     with habbing.openHby(name=name) as hby:  # default is temp=True
-        natHab = hby.makeHab(name=name, isith=2, icount=3)
+        natHab = hby.makeHab(name=name, isith='2', icount=3)
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
-                                #isith=2, icount=3, temp=True)
+                                #isith='2', icount=3, temp=True)
         assert natHab.name == 'nat'
         assert natHab.ks == hby.ks # natKS
         assert natHab.db == hby.db # natDB
@@ -1743,7 +1743,7 @@ def test_clean_baser():
                                       keys=[verfer.qb64 for verfer in natHab.kever.verfers],
                                       dig=natHab.kever.serder.said,
                                       sn=natHab.kever.sn+1,
-                                      sith=2,
+                                      sith='2',
                                       nkeys=natHab.kever.nexter.digs)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())

@@ -54,8 +54,9 @@ class PubLot:
         kidx (int): key index of starting key in key set in sequence wrt to all
                     public keys. Example if each set has 3 keys then ridx 2 has
                     kidx of 2*3 = 6.
-        st (Union[str, int, list]): signing theshold for key set at ridx. May be
-                    int, str, or list based on threshold expression type.
+        st (Union[str, list]): signing theshold for key set at ridx. May be
+                    str, or list based on threshold expression type. Suitable for
+                    serializing  by Komer and compat with sith of Tholder.
         dt (str): datetime in ISO8601 format of when key set was first created
 
 
@@ -63,7 +64,7 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list qb64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st: Union[str, int, list] = '0' # signing threshold
+    st: Union[str, list] = '0' # signing threshold
     dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):

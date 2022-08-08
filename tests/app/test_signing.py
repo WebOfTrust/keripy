@@ -131,7 +131,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
     with configing.openCF(name="mel", base="mel", temp=True) as cf, \
             habbing.openHby(name="mel", temp=True, salt=coring.Salter(raw=b'0123456789abcdef').qb64b,
                             base="mel", cf=cf) as hby:
-        hab = hby.makeHab(name="mel", icount=3, isith=3, ncount=3, nsith=3)
+        hab = hby.makeHab(name="mel", icount=3, isith='3', ncount=3, nsith='3')
         seeder.seedSchema(hby.db)
 
         md = dict(

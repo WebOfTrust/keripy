@@ -87,8 +87,8 @@ class TestDoer(doing.DoDoer):
         icpd = dict(aids=[self.hab1.pre, self.hab2.pre],
                     transferable=True,
                     toad=0,
-                    isith=2,
-                    nsith=2
+                    isith='2',
+                    nsith='2'
                     )
 
         b = json.dumps(icpd).encode("utf-8")
@@ -127,8 +127,8 @@ class TestDoer(doing.DoDoer):
 
         rotd = dict(aids=[self.hab1.pre, self.hab2.pre],
                     toad=0,
-                    isith=2,
-                    nsith=2
+                    isith='2',
+                    nsith='2'
                     )
 
         b = json.dumps(rotd).encode("utf-8")

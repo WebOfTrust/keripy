@@ -38,7 +38,7 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         aids = [hab1.pre, hab2.pre, hab3.pre]
-        inits = dict(aids=aids, isith=2, nsith=2, toad=0, wits=[])
+        inits = dict(aids=aids, isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", phab=hab1, **inits)
@@ -88,11 +88,11 @@ def test_counselor():
 
         # Partial rotation
         aids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, aids=aids, sith=2, toad=0, cuts=list(), adds=list())
+        counselor.rotate(ghab=ghab, aids=aids, sith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.aids == aids
-        assert rec.sith == 2
+        assert rec.sith == '2'
         assert rec.toad == 0
 
         counselor.processEscrows()  # process escrows to get witness-less event to next step
@@ -190,8 +190,8 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             aids=aids,
             toad=0,
             wits=[],
-            isith=3,
-            nsith=3
+            isith='3',
+            nsith='3'
         )
 
         ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", phab=hab1, **inits)
@@ -238,18 +238,22 @@ def test_multisig_incept(mockHelpingNowUTC):
 
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith=2, toad=0, cuts=[],
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'EU3uP2KgAGpMocaQUKtLUT18L93QbTu_aJ-wWQBHU-mw'
-        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAAac_9tzL2U'
-                       b'67a7gD8x_0mOCMViQ_KMYamSdxIggWCzNpjLb40S9jEX-NjXJpZR4DXs2j8llesd'
-                       b'PA5xAdWdCgCg')
+        assert exn.saidb == b'EeDS5AxBqN7s8zxUOK6zAezrxLAw4wObbklPBe3QPS34'  # b'EU3uP2KgAGpMocaQUKtLUT18L93QbTu_aJ-wWQBHU-mw'
+        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAw-IgLaJmLh'
+                       b'ac8aFvdWcmh40H-ccUKNUdXM6qZQlYTt8owRZwEKVW7013mXNQ35Sr3x_BMHYkrg'
+                       b'amjVPBAikdAA')
+
+        #(b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAAac_9tzL2U'
+                       #b'67a7gD8x_0mOCMViQ_KMYamSdxIggWCzNpjLb40S9jEX-NjXJpZR4DXs2j8llesd'
+                       #b'PA5xAdWdCgCg')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre
-        assert data["sith"] == 2
+        assert data["sith"] == '2'
         assert data["toad"] == 0
         assert data["cuts"] == []
         assert data["adds"] == []
@@ -380,7 +384,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
     with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith=2, toad=0, cuts=[],
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
         mbx = storing.Mailboxer(name=ghab1.name, temp=True)
         exc = exchanging.Exchanger(hby=hby1, handlers=[])

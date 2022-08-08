@@ -605,7 +605,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
          habbing.openHby(name='nel', base="test", salt=salt) as nelHby:
 
         # witnesses first so can setup inception event for tam
-        wsith = 1
+        wsith = '1'
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
@@ -632,7 +632,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre]
-        tsith = 1  # hex str of threshold int
+        tsith = '1'  # hex str of threshold int
         tamHab = tamHby.makeHab(name="tam", isith=tsith, icount=3, toad=2, wits=wits)
         assert tamHab.kever.prefixer.transferable
         assert len(tamHab.iserder.werfers) == len(wits)
@@ -641,7 +641,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         assert tamHab.kever.wits == wits
         assert tamHab.kever.toad == 2
         assert tamHab.kever.sn == 0
-        assert tamHab.kever.tholder.thold == tsith == 1
+        assert tamHab.kever.tholder.thold == 1 == int(tsith,16)
         # create non-local kevery for Tam to process non-local msgs
         tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
         # create non-local parer for Tam to process non-local msgs

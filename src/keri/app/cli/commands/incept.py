@@ -3,10 +3,11 @@
 keri.kli.commands module
 
 """
-import argparse
-import json
 import sys
+import argparse
+from typing import Union
 from dataclasses import dataclass
+import json
 from json import JSONDecodeError
 
 from hio import help
@@ -43,9 +44,9 @@ class InceptOptions:
     transferable: bool
     wits: list
     icount: int
-    isith: int
+    isith:  Union[str, list]
     ncount: int
-    nsith: int
+    nsith:  Union[str, list] = '0'
     toad: int = 0
     delpre: str = None
     estOnly: bool = False

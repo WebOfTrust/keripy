@@ -256,7 +256,7 @@ def test_partial_signed_escrow():
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
-        assert nst == nxtsith
+        assert nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -287,7 +287,7 @@ def test_partial_signed_escrow():
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
-        assert cst == nst == nxtsith
+        assert cst == nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -659,7 +659,7 @@ def test_out_of_order_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
         assert cst == sith
-        assert nst == nxtsith
+        assert nst == [['1/2', '1/2', '1/2'], ['1', '1']] # normalized nxtsith
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -1253,7 +1253,7 @@ def test_unverified_trans_receipt_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
         assert cst == sith
-        assert nst == nxtsith
+        assert nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],

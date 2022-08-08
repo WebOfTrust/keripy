@@ -104,7 +104,7 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, 
 
     with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
         if (hab := hby.habByName(name)) is None:
-            hab = hby.makeHab(name=name, icount=1, isith=1, ncount=1, nsith=1, **kwa)
+            hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', **kwa)
 
         yield hby, hab
 
@@ -812,7 +812,7 @@ class Hab:
             ncount = icount
         if not transferable:
             ncount = 0  # next count
-            nsith = 0
+            nsith = '0'
             code = coring.MtrDex.Ed25519N
 
         if mskeys:

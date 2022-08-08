@@ -19,7 +19,7 @@ import pytest
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
-from keri.core.coring import Seqner, Siger, Dater, Bexter
+from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
@@ -289,7 +289,7 @@ def test_matter():
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tag': '1AAF',
+        'Tern': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'TBD1': '2AAA',
@@ -1245,15 +1245,15 @@ def test_matter():
     assert raw == b'\xf8\x9c\xff'
     txt = encodeB64(raw)
     assert txt == b'-Jz_'
-    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    qb64b = MtrDex.Tern.encode("utf-8") + txt
     assert qb64b == b'1AAF-Jz_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
 
-    matter = Matter(raw=raw, code=MtrDex.Tag)
+    matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1262,7 +1262,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1271,7 +1271,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1280,7 +1280,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1293,15 +1293,15 @@ def test_matter():
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    qb64b = MtrDex.Tern.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
 
-    matter = Matter(raw=raw, code=MtrDex.Tag)
+    matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1310,7 +1310,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1319,7 +1319,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1328,7 +1328,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tag
+    assert matter.code == MtrDex.Tern
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -2119,6 +2119,387 @@ def test_seqner():
 
     """ Done Test """
 
+def test_number():
+    """
+    Test Number subclass of Matter
+    """
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=b'')
+
+    number = Number()  # defaults to zero
+    assert number.code == NumDex.Short
+    assert number.raw == b'\x00\x00'
+    assert number.qb64 == 'MAAA'
+    assert number.qb64b == b'MAAA'
+    assert number.qb2 == b'0\x00\x00'
+    assert number.num == 0
+    assert number.numh == '0'
+
+    num = (256 ** 2 - 1)
+    assert num == 65535
+    numh = f"{num:x}"
+    assert numh == 'ffff'
+    code = NumDex.Short
+    raw = b'\xff\xff'
+    nqb64 = 'M__8'
+    nqb2 = b'3\xff\xfc'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 4 - 1)
+    assert num == 4294967295
+    numh = f"{num:x}"
+    assert numh == 'ffffffff'
+    raw = b'\xff\xff\xff\xff'
+    code = NumDex.Long
+    nqb64 = '0H_____w'
+    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 8 - 1)
+    assert num == 18446744073709551615
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Big
+    nqb64 = 'N__________8'
+    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    num = (256 ** 16 - 1)
+    assert num == 340282366920938463463374607431768211455
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Huge
+    nqb64 = '0A_____________________w'
+    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # tests with wrong size raw for code short
+    num = (256 ** 2 - 1)
+    assert num == 65535
+    numh = f"{num:x}"
+    assert numh == 'ffff'
+    raw = b'\xff\xff'
+    code = NumDex.Short
+    nqb64 = 'M__8'
+    nqb2 = b'3\xff\xfc'
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code long
+    num = (256 ** 4 - 1)
+    assert num == 4294967295
+    numh = f"{num:x}"
+    assert numh == 'ffffffff'
+    raw = b'\xff\xff\xff\xff'
+    code = NumDex.Long
+    nqb64 = '0H_____w'
+    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code big
+    num = (256 ** 8 - 1)
+    assert num == 18446744073709551615
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Big
+    nqb64 = 'N__________8'
+    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    # tests with wrong size raw for code huge
+    num = (256 ** 16 - 1)
+    assert num == 340282366920938463463374607431768211455
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Huge
+    nqb64 = '0A_____________________w'
+    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+
+
+    # raw to large for code, then truncates
+    raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) > len(raw)
+
+    number = Number(raw=raw2bad, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    # raw to small for code raises error
+    raw2bad = b'\xff'
+    assert raw != raw2bad
+    assert len(raw2bad) < len(raw)
+
+    with pytest.raises(RawMaterialError):
+        number = Number(raw=raw2bad, code=code)
+
+    num = 1
+    numh = f"{num:x}"
+    assert numh == '1'
+    code = NumDex.Short
+    raw = b'\x00\x01'
+    nqb64 = 'MAAE'
+    nqb2 = b'0\x00\x04'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    """ Done Test """
+
 
 def test_dater():
     """
@@ -2235,61 +2616,128 @@ def test_dater():
     """ Done Test """
 
 
-def test_texter():
+def test_bexter():
     """
-    Test Texter variable sized Base64 text subclass of Matter
+    Test Bexter variable sized Base64 text subclass of Matter
     """
     with pytest.raises(EmptyMaterialError):
-        texter = Bexter()
+        bexter = Bexter()
 
-    text = "@!"
+    bext = "@!"
     with pytest.raises(ValueError):
-        texter = Bexter(bext=text)
+        bexter = Bexter(bext=bext)
 
-    text = ""
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAA'
-    assert texter.raw == b''
-    assert texter.qb64 == '4AAA'
-    assert texter.qb2 == b'\xe0\x00\x00'
-    assert texter.bext == text
+    bext = ""
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAA'
+    assert bexter.raw == b''
+    assert bexter.qb64 == '4AAA'
+    assert bexter.qb2 == b'\xe0\x00\x00'
+    assert bexter.bext == bext
 
-    text = "-"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L2
-    assert texter.both == '6AAB'
-    assert texter.raw == b'>'
-    assert texter.qb64 == '6AABAAA-'
-    assert texter.qb2 == b'\xe8\x00\x01\x00\x00>'
-    assert texter.bext == text
+    bext = "-"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAB'
+    assert bexter.raw == b'>'
+    assert bexter.qb64 == '6AABAAA-'
+    assert bexter.qb2 == b'\xe8\x00\x01\x00\x00>'
+    assert bexter.bext == bext
 
-    text = "-A"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L1
-    assert texter.both == '5AAB'
-    assert texter.raw == b'\x0f\x80'
-    assert texter.qb64 == '5AABAA-A'
-    assert texter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
-    assert texter.bext == text
+    bext = "-A"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x0f\x80'
+    assert bexter.qb64 == '5AABAA-A'
+    assert bexter.qb2 == b'\xe4\x00\x01\x00\x0f\x80'
+    assert bexter.bext == bext
 
-    text = "-A-"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAB'
-    assert texter.raw == b'\x03\xe0>'
-    assert texter.qb64 == '4AABA-A-'
-    assert texter.qb2 == b'\xe0\x00\x01\x03\xe0>'
-    assert texter.bext == text
+    bext = "-A-"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x03\xe0>'
+    assert bexter.qb64 == '4AABA-A-'
+    assert bexter.qb2 == b'\xe0\x00\x01\x03\xe0>'
+    assert bexter.bext == bext
 
-    text = "-A-B"
-    texter = Bexter(bext=text)
-    assert texter.code == MtrDex.StrB64_L0
-    assert texter.both == '4AAB'
-    assert texter.raw == b'\xf8\x0f\x81'
-    assert texter.qb64 == '4AAB-A-B'
-    assert texter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
-    assert texter.bext == text
+    bext = "-A-B"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\xf8\x0f\x81'
+    assert bexter.qb64 == '4AAB-A-B'
+    assert bexter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
+    assert bexter.bext == bext
+
+
+
+    bext = "A"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAB'
+    assert bexter.raw == b'\x00'
+    assert bexter.qb64 == '6AABAAAA'
+    assert bexter.qb2 == b'\xe8\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AA"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x00\x00'
+    assert bexter.qb64 == '5AABAAAA'
+    assert bexter.qb2 ==b'\xe4\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    # test of ambiguity with bext that starts with "A" and is multiple of 3 or 4
+    bext = "AAA"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00\x00'
+    assert bexter.qb64 == '4AABAAAA'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AAAA"  # multiple of four loses leading 'A' for round trip of bext
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00\x00'
+    assert bexter.qb64 == '4AABAAAA'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00\x00'
+    assert bexter.bext == 'AAA' != bext
+
+    bext = "ABB"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x00A'
+    assert bexter.qb64 == '4AABAABB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x00A'
+    assert bexter.bext == bext
+
+    bext = "BBB"  # multiple of three
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x10A'
+    assert bexter.qb64 == '4AABABBB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
+    assert bexter.bext == bext
+
+    bext = "ABBB"  # multiple of four loses leading 'A' for round trip of bext
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x10A'
+    assert bexter.qb64 == '4AABABBB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
+    assert bexter.bext == 'BBB' != bext
+
 
     """ Done Test """
 
@@ -4194,43 +4642,87 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
-    # test classmethod .fromLimen()
-
-    limen = '2'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == '2'
-    assert Tholder(sith=sith).limen == limen
-
-    limen = '1/2,1/2,1/4,1/4,1/4&1,1'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == [['1/2', '1/2', '1/4', '1/4', '1/4'], ['1', '1']]
-    assert Tholder(sith=sith).limen == limen
-
-    limen = '1/1'
-    sith = Tholder.fromLimen(limen=limen)
-    assert sith == [['1/1']]
-    assert Tholder(sith=sith).limen == limen
-
     with pytest.raises(ValueError):
         tholder = Tholder()
 
     tholder = Tholder(sith="b")
-    assert tholder.sith == "b"
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert not tholder.weighted
-    assert tholder.size == tholder.thold
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == "b"
 
-    tholder = Tholder(sith=15)
-    assert tholder.sith == "f"
-    assert tholder.thold == 15
+    tholder = Tholder(sith=11)
     assert not tholder.weighted
     assert tholder.size == tholder.thold
+    assert tholder.thold == 11
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
-    assert tholder.limen == "f"
+
+    tholder = Tholder(limen=b'MAAs')
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 11
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(thold=11)
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 11
+    assert tholder.limen == b'MAAs'
+    assert tholder.sith == "b"
+    assert tholder.json == '"b"'
+    assert tholder.num == 11
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(sith=f'{15:x}')
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 15
+    assert tholder.limen == b'MAA8'
+    assert tholder.sith == "f"
+    assert tholder.json == '"f"'
+    assert tholder.num == 15
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+    tholder = Tholder(sith=2)
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 2
+    assert tholder.limen == b'MAAI'
+    assert tholder.sith == "2"
+    assert tholder.json == '"2"'
+    assert tholder.num == 2
+    assert tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
+
+    tholder = Tholder(sith=1)
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert tholder.thold == 1
+    assert tholder.limen == b'MAAE'
+    assert tholder.sith == "1"
+    assert tholder.json == '"1"'
+    assert tholder.num == 1
+    assert tholder.satisfy(indices=[0])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=-1)
@@ -4259,16 +4751,36 @@ def test_tholder():
     with pytest.raises(TypeError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "3/2"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "3/2"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "2/1"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "2/1"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", "2"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2", "2"]])
+
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
-    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.weighted
+    assert tholder.size == 5
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)]]
-    assert tholder.weighted
-    assert tholder.size == 5
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4"]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[0, 2, 4])
     assert tholder.satisfy(indices=[0, 1])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4278,16 +4790,40 @@ def test_tholder():
     assert not tholder.satisfy(indices=[0, 2])
     assert not tholder.satisfy(indices=[2, 3, 4])
 
+    tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4", "0"])
+    assert tholder.weighted
+    assert tholder.size == 6
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(0, 1)]]
+    assert tholder.limen == b'6AAGAAA1s2c1s2c1s4c1s4c1s4c0'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4", "0"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4", "0"]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[0, 2, 4])
+    assert tholder.satisfy(indices=[0, 1])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1])
+    assert not tholder.satisfy(indices=[0, 2, 5])
+    assert not tholder.satisfy(indices=[2, 3, 4, 5])
+
     tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"]])
-    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"]]
+    assert tholder.weighted
+    assert tholder.size == 5
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)]]
-    assert tholder.weighted
-    assert tholder.size == 5
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4"]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[1, 2, 3])
     assert tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -4297,17 +4833,84 @@ def test_tholder():
     assert not tholder.satisfy(indices=[0, 2])
     assert not tholder.satisfy(indices=[2, 3, 4])
 
-    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
-    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1/1", "1"]])
+    assert tholder.weighted
+    assert tholder.size == 7
     assert tholder.thold == [[Fraction(1, 2),
                               Fraction(1, 2),
                               Fraction(1, 4),
                               Fraction(1, 4),
                               Fraction(1, 4)],
                              [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(sith='[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1/1", "1"]]')
     assert tholder.weighted
     assert tholder.size == 7
-    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4&1,1'
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(limen=b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1')
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+    tholder = Tholder(thold=[[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]])
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)],
+                             [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.limen == b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1'
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.json == '[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]'
+    assert tholder.num == None
     assert tholder.satisfy(indices=[1, 2, 3, 5])
     assert tholder.satisfy(indices=[0, 1, 6])
     assert not tholder.satisfy(indices=[0, 1])
@@ -4319,4 +4922,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_counter()
+    test_tholder()

@@ -201,8 +201,8 @@ def test_multisig_incept():
                 "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
             ],
             toad=2,
-            isith=2,
-            nsith=2
+            isith='2',
+            nsith='2'
 
         )
         b = json.dumps(body).encode("utf-8")
@@ -328,8 +328,8 @@ def test_multisig_rotation():
                 "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
             ],
             toad=2,
-            isith=2,
-            nsith=2
+            isith='2',
+            nsith='2'
 
         )
         b = json.dumps(body).encode("utf-8")
@@ -361,7 +361,7 @@ def test_multisig_rotation():
                                    'E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068',
                                    'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI']
         assert payload['cuts'] == []
-        assert payload['sith'] == 2
+        assert payload['sith'] == '2'
         assert payload['toad'] == 2
         assert payload['data'] is None
 
@@ -499,7 +499,7 @@ def test_identifier_ends():
                                 'toad': 0,
                                 'witnesses': []}]
 
-        req = dict(isith=1, count=1)
+        req = dict(isith='1', count=1)
         result = client.simulate_put(path="/ids/test/rot", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
 
@@ -532,7 +532,7 @@ def test_identifier_ends():
                                 'toad': 0,
                                 'witnesses': []}]
 
-        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False)
+        req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
         result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         assert result.json == {'a': [],
@@ -550,12 +550,12 @@ def test_identifier_ends():
                                'v': 'KERI10JSON00012b_'}
 
         # Try to reuse the alias
-        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False)
+        req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
         result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_400
 
         # Create a delegated identifier
-        req = dict(transferable=True, wits=[], toad=0, isith=1, count=1, nsith=1, ncount=1, estOnly=False,
+        req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False,
                    delpre="ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc")
         result = client.simulate_post(path="/ids/test3", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200

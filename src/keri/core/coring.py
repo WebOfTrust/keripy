@@ -6,6 +6,7 @@ keri.core.coring module
 import re
 import json
 from typing import Union
+from collections.abc import Iterable
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -176,6 +177,18 @@ def sizeify(ked, kind=None):
     ked["v"] = vs  # update ked
 
     return raw, ident, kind, ked, version
+
+
+
+def randomNonce():
+    """ Generate a random ed25519 seed and encode as qb64
+
+    Returns:
+        str: qb64 encoded ed25519 random seed
+    """
+    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+    return seedqb64
 
 
 # Base64 utilities
@@ -461,7 +474,7 @@ class MatterCodex:
     Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
-    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number
+    Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
     Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
@@ -474,23 +487,23 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
+    Tern:                  str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
     TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
     TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
-    StrB64_L0:            str = '4A'    # String Base64 Only Leader Size 0
-    StrB64_L1:            str = '5A'    # String Base64 Only Leader Size 1
-    StrB64_L2:            str = '6A'    # String Base64 Only Leader Size 2
-    StrB64_Big_L0:        str = '7AAA'    # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1:        str = '8AAA'    # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2:        str = '9AAA'    # String Base64 Only Big Leader Size 2
-    Str_L0:               str = '4B'    # String Leader Size 0
-    Str_L1:               str = '5B'    # String Leader Size 1
-    Str_L2:               str = '6B'    # String Leader Size 2
-    Str_Big_L0:           str = '7AAB'    # String Big Leader Size 0
-    Str_Big_L1:           str = '8AAB'    # String Big Leader Size 1
-    Str_Big_L2:           str = '9AAB'    # String Big Leader Size 2
+    StrB64_L0:            str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:            str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:            str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Leader Size 0
+    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Leader Size 1
+    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Leader Size 2
+    Str_L0:               str = '4B'  # String Leader Size 0
+    Str_L1:               str = '5B'  # String Leader Size 1
+    Str_L2:               str = '6B'  # String Leader Size 2
+    Str_Big_L0:           str = '7AAB'  # String Big Leader Size 0
+    Str_Big_L1:           str = '8AAB'  # String Big Leader Size 1
+    Str_Big_L2:           str = '9AAB'  # String Big Leader Size 2
 
 
     def __iter__(self):
@@ -587,6 +600,27 @@ DigDex = DigCodex()  # Make instance
 
 
 @dataclass(frozen=True)
+class NumCodex:
+    """
+    NumCodex is codex of Base64 derivation codes for compactly representing
+    numbers across a wide rage of sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Short:   str = 'M'  # Short 2 byte b2 number or 3 char b64 str
+    Long:    str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    Big:     str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    Huge:    str = '0A'  # Huge 16 byte b2 number or 22 char b64 str (see Salt_128)
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NumDex = NumCodex()  # Make instance
+
+
+@dataclass(frozen=True)
 class BextCodex:
     """
     BextCodex is codex all variable sized Base64 Text (Bext) derivation codes.
@@ -605,6 +639,7 @@ class BextCodex:
 
 
 BexDex = BextCodex()  # Make instance
+
 
 # namedtuple for size entries in matter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
@@ -626,9 +661,12 @@ class Matter:
     Attributes:
 
     Properties:
-        code (str): derivation code to indicate cypher suite
-        size (int): number of quadlets of variable sized material including
-                    lead bytes otherwise None
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
         rize (int): number of bytes of raw material not including
                     lead bytes
         raw (bytes): crypto material only without code
@@ -643,8 +681,9 @@ class Matter:
         _raw (bytes): value for .raw property
         _rsize (bytes): value for .rsize property. Raw size in bytes when
             variable sized material else None.
-        _size (int): value for .size property. Number of quadlets of variable
-            sized material else None.
+        _size (int): value for .size property. Number of triplets of bytes
+            including lead bytes (quadlets of chars) of variable sized material
+            else None.
         _infil (types.MethodType): creates qb64b from .raw and .code
                                    (fully qualified Base64)
         _exfil (types.MethodType): extracts .code and .raw from qb64b
@@ -713,7 +752,7 @@ class Matter:
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
-    # Bards table maps first code char. converted to binary sextext  to hard size,
+    # Bards table maps first code char. converted to binary sextext of hard size,
     # hs. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
 
@@ -735,7 +774,7 @@ class Matter:
         Needs either (raw and code and optionally size and rsize)
                or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and option size and rsize provided
+        When raw and code and optional size and rsize provided
             then validate that code is correct for length of raw, size, rsize
             and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign
@@ -847,27 +886,32 @@ class Matter:
     @property
     def code(self):
         """
-        Returns ._code which is the hard part of full text code
+        Returns ._code which is the hard part only of full text code.
+        Some codes only have a hard part. Soft part is for variable sized matter.
         Makes .code read only
         """
         return self._code
+
+    @property
+    def both(self):
+        """
+        Returns both hard and soft parts of full text code
+        """
+        _, ss, _, _ = self.Sizes[self.code]
+        return (f"{self.code}{intToB64(self.size, l=ss)}")
+
 
     @property
     def size(self):
         """
         Returns ._size int or None if not variable sized matter
         Makes .size read only
-        ._size (int): number of quadlets of variable sized material else None
+
+        Number of triplets of bytes including lead bytes (quadlets of chars)
+        of variable sized material. Value of soft size, ss, part of full text code.
         """
         return self._size
 
-    @property
-    def both(self):
-        """
-        Returns both hard and soft parts that are the complete text code
-        """
-        _, ss, _, _ = self.Sizes[self.code]
-        return (f"{self.code}{intToB64(self.size, l=ss)}")
 
     @property
     def fullSize(self):
@@ -1198,20 +1242,20 @@ class Seqner(Matter):
             snh is hex string of sequence number
 
         """
-        if sn is None:
-            if snh is None:
-                sn = 0
-            else:
-                sn = int(snh, 16)
-
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if sn is None:
+                if snh is None:
+                    sn = 0
+                else:
+                    sn = int(snh, 16)
+
             raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
         super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
 
         if self.code != MtrDex.Salt_128:
-            raise ValidationError("Invalid code = {} for SeqNumber."
+            raise ValidationError("Invalid code = {} for Seqner."
                                   "".format(self.code))
 
     @property
@@ -1229,6 +1273,111 @@ class Seqner(Matter):
         Returns .sn int converted to hex str
         """
         return f"{self.sn:x}"  # "{:x}".format(self.sn)
+
+
+class Number(Matter):
+    """
+    Number is subclass of Matter, cryptographic material, for ordinal numbers
+    such as sequence numbers or first seen ordering numbers.
+    Seqner provides fully qualified format for ordinals (sequence numbers etc)
+    when provided as attached cryptographic material elements.
+
+    Useful when parsing attached receipt groupings with sn from stream or database
+
+    Uses default initialization code = CryTwoDex.Salt_128
+    Raises error on init if code not CryTwoDex.Salt_128
+
+    Attributes:
+
+    Inherited Properties:  (See Matter)
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .transferable is Boolean, True when transferable derivation code False otherwise
+
+    Properties:
+        .num is int representation of number
+        .hen is hex string representation of number with no leading zeros
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    Methods:
+    """
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=NumDex.Short, num=None, numh=None, **kwa):
+        """
+        Inherited Parameters:  (see Matter)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+            num is int number
+            numh is hex string equivalent of int number
+
+        """
+
+
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            if num is None:
+                if numh is None:
+                    num = 0
+                else:
+                    num = int(numh, 16)
+
+            if num <= (256 ** 2 - 1):  # make short version of code
+                code = NumDex.Short
+
+            elif num <= (256 ** 4 - 1):  # make long version of code
+                code = code = NumDex.Long
+
+            elif num <= (256 ** 8 - 1):  # make big version of code
+                code = code = NumDex.Big
+
+            elif num <= (256 ** 16 - 1):  # make huge version of code
+                code = code = NumDex.Huge
+
+            else:
+                raise ValueError(f"Invalid num = {num}, too large to encode.")
+
+            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian
+
+        super(Number, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                     code=code, **kwa)
+
+        if self.code not in NumDex:
+            raise ValidationError("Invalid code = {} for Number."
+                                  "".format(self.code))
+
+    @property
+    def num(self):
+        """
+        Property num: number as int
+        Returns .raw converted to int
+        """
+        return int.from_bytes(self.raw, 'big')
+
+    @property
+    def numh(self):
+        """
+        Property numh:  number as hex string no leading zeros
+        Returns .num int converted to hex str
+        """
+        return f"{self.num:x}"
 
 
 class Dater(Matter):
@@ -1369,10 +1518,21 @@ class Bexter(Matter):
     passed in as raw bytes. The text is used as is to form the value part of the
     qb64 version not including the leader.
 
-    Due to ambiguity that arises for bext that starts with an 'A' and whose length
-    is a multiple of 3 or 4. Best with a leading 'A' may have that 'A' stripped.
+    Due to ambiguity that arises from pre-padding bext whose length is a multiple of
+    three with one or more 'A' chars. Any bext that starts with an 'A' and whose length
+    is either a multiple of 3 or 4 may not round trip. Bext with a leading 'A'
+    whose length is a multiple of four may have the leading 'A' stripped when
+    round tripping.
 
-    Examples: strings:
+        Bexter(bext='ABBB').bext == 'BBB'
+        Bexter(bext='BBB').bext == 'BBB'
+        Bexter(bext='ABBB').qb64 == '4AABABBB' == Bexter(bext='BBB').qb64
+
+    To avoid this problem, only use for applications of base 64 strings that
+    never start with 'A'
+
+    Examples: base64 text strings:
+
     bext = ""
     qb64 = '4AAA'
 
@@ -1388,7 +1548,10 @@ class Bexter(Matter):
     bext = "-A-B"
     qb64 = '4AAB-A-B'
 
-    Example uses: pathing for nested SADs and SAIDs
+
+    Example uses:
+        CESR encoded paths for nested SADs and SAIDs
+        CESR encoded fractionally weighted threshold expressions
 
 
     Attributes:
@@ -1465,7 +1628,7 @@ class Bexter(Matter):
     @property
     def bext(self):
         """
-        Property bext:  value portion Base64 str
+        Property bext: Base64 text value portion of qualified b64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
         _, _, _, ls = self.Sizes[self.code]
@@ -4440,157 +4603,56 @@ class Serder(Sadder):
         """
         return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
-
-
-
-class TholderNew(Bexter):
-    """
-    Tholder is subclass of Bexter: Supports cryptographic material, for variable
-    length fractionally weighted threshold strings that only contain Base64
-    URL-safe characters, i.e. Base64 text (bext).
-
-    When created using the 'bext' paramaeter, the encoded matter in qb64 format
-    in the text domain is more compact than would be the case if the string were
-    passed in as raw bytes. The text is used as is to form the value part of the
-    qb64 version not including the leader.
-
-    Due to ambiguity that arises for bext that starts with an 'A' and whose length
-    is a multiple of 3 or 4. Best with a leading 'A' may have that 'A' stripped.
-
-    Examples: strings:
-    bext = ""
-    qb64 = '4AAA'
-
-    bext = "-"
-    qb64 = '6AABAAA-'
-
-    bext = "-A"
-    qb64 = '5AABAA-A'
-
-    bext = "-A-"
-    qb64 = '4AABA-A-'
-
-    bext = "-A-B"
-    qb64 = '4AAB-A-B'
-
-    Example uses: pathing for nested SADs and SAIDs
-
-
-    Attributes:
-
-    Inherited Properties:  (See Matter)
-        .pad  is int number of pad chars given raw
-
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
-
-    Properties:
-        .text is the Base64 text value, .qb64 with text code and leader removed.
-
-    Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
-
-    Methods:
-
-    """
-
-    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.StrB64_L0, bext=None, **kwa):
-        """
-        Inherited Parameters:  (see Matter)
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-            bext is the variable sized Base64 text string
-        """
-        if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if bext is None:
-                raise EmptyMaterialError("Missing bext string.")
-            if hasattr(bext, "encode"):
-                bext = bext.encode("utf-8")
-            if not Reb64.match(bext):
-                raise ValueError("Invalid Base64.")
-            raw = self._rawify(bext)
-
-        super(TholderNew, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
-                                     code=code, **kwa)
-        if self.code not in BexDex:
-            raise ValidationError("Invalid code = {} for Bexter."
-                                  "".format(self.code))
-
-    def _rawify(self, bext):
-        """Returns raw value equivalent of Base64 text.
-        Suitable for variable sized matter
-
-        Parameters:
-            text (bytes): Base64 bytes
-        """
-        ts = len(bext) % 4  # bext size mod 4
-        ws = (4 - ts) % 4  # pre conv wad size in chars
-        ls = (3 - ts) % 3  # post conv lead size in bytes
-        base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
-        raw = decodeB64(base)[ls:]  # convert and remove leader
-        return raw  # raw binary equivalent of text
-
-    @property
-    def bext(self):
-        """
-        Property bext:  value portion Base64 str
-        Returns the value portion of .qb64 with text code and leader removed
-        """
-        _, _, _, ls = self.Sizes[self.code]
-        bext = encodeB64(bytes([0] * ls) + self.raw)
-        ws = 0
-        if ls == 0 and bext:
-            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                ws = 1
-        else:
-            ws = (ls + 1) % 4
-        return bext.decode('utf-8')[ws:]
-
+# Todo
+# accept JSON representation of sith for cli input
+# thold is base representation so derive sith from thold not keep sith around
+# generate json sith from thold
+# refactor process weighted from thold input and add other methods to generate
+# thold
 
 class Tholder:
     """
-    Tholder is KERI Signing Threshold Satisfactionclass
+    Tholder is KERI Signing Threshold Satisfaction class
     .satisfy method evaluates satisfaction based on ordered list of indices of
     verified signatures where indices correspond to offsets in key list of
     associated signatures.
 
-    ClassMethods
-        .fromLimen returns corresponding sith as str or list from a limen str
-
     Has the following public properties:
 
     Properties:
-        .sith is original signing threshold as str or list of str ratios
-        .thold is parsed signing threshold as int or list of Fractions
-        .limen is the extracted string for the next commitment to the threshold
-            [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] is extracted as
-            '1/2,1/2,1/4,1/4,1/4&1,1'
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimun size of keys list
 
+
+        .limen is qualified b64 signing threshold suitable for CESR serialization.
+            either Number.qb64b or Bexter.qb64b.
+            The b64 portion of limen  with code stripped (Bexter.bext) of
+              [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+              is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
+              and ANDed clauses are delimited by 'a'.
+
+        .sith is original signing threshold suitable for value to be serialized
+            as json, cbor, mgpk in key event message as either:
+                non-negative hex number str or
+                list of str rational number fractions >= 0 and <= 1 or
+                list of list of str rational number fractions >= 0 and <= 1
+
+        .thold is parsed signing threshold suitable for calculating satisfaction.
+            either as int or list of Fractions
+
+        .num is int signing threshold when not ._weighted
+
+    Methods:
+        .satisfy returns bool, True means ilist of verified signature key indices satisfies
+             threshold, False otherwise.
+
     Hidden:
-        ._sith is original signing threshold
-        ._thold is parsed signing threshold maybe int or list of clauses
-        ._limen is extracted string for the next commitment to threshold
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
         ._size is int minimum size of of keys list
+        ._sith is signing threshold for .sith property
+        ._thold is signing threshold for .thold propery
+        ._bexter is Bexter instance of weighted signing threshold or None
+        ._number is Number instance of integer threshold or None
         ._satisfy is method reference of threshold specified verification method
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method
@@ -4598,97 +4660,72 @@ class Tholder:
 
     """
 
-    @classmethod
-    def fromLimen(cls, limen):
+    def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
-        Returns signing threshold from limen str
-        """
-        sith = limen
-        if '/' in limen:  # weighted threshold
-            sith = []
-            clauses = limen.split('&')
-            for clause in clauses:
-                sith.append(clause.split(','))
-        return sith
-
-    def __init__(self, sith=''):
-        """
-        Parse threshold
+        Accepts signing threshold in various forms so that may output correct
+        forms for serialization and/or calculation of satisfaction.
 
         Parameters:
-            sith is signing threshold expressed as:
-                either hex string of threshold number
-                or int of threshold number
-                or iterable of strs of fractional weight clauses.
+            sith is signing threshold (current or next) expressed as either:
+                non-negative int of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                non-negative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                fractional weight clauses which may be expressed as either:
+                    an iterable of rational number fraction strings  >= 0 and <= 1
+                    an iterable of iterables of rational number fraction strings >= 0 and <= 1
+                JSON serialized str of either:
+                   list of rational number fraction strings >= 0 and <= 1  or
+                   list of list of rational number fraction strings >= 0 and <= 1
 
-                Fractional weight clauses may be either an iterable of
-                fraction strings or an iterable of iterables of fraction strings.
 
-                The verify method appropriately evaluates each of the threshold
-                forms.
+            limen is qualified signing threshold (current or next) expressed as either:
+                Number.qb64 or .qb64b of integer threshold or
+                Bexter.qb64 or .qb64b of fractional weight clauses which may be either:
+                    Base64 delimited clauses of fractions
+                    Base64 delimited clauses of fractions
+
+            thold is signing threshold (current or next) is suitable for computing
+                the satisfaction of a threshold and is expressed as either:
+                    int of threshold number (M of N)
+                    fractional weight clauses which may be expressed as either:
+                        an iterable of Fractions or
+                        an iterable of iterables of Fractions.
+
+        The sith representation is meant to parse threhold expressions from
+           deserializations of JSON, CBOR, or MGPK key event message fields  or
+           the command line or configuration files.
+
+        The limen representation is meant to parse threshold expressions from
+           CESR serializations of key event message fields or attachments.
+
+        The thold representation is meant to accept thresholds from computable
+            expressions for satisfaction of a threshold
+
 
         """
-        if isinstance(sith, str):
-            sith = int(sith, 16)
+        if thold is not None:
+            self._processThold(thold=thold)
 
-        if isinstance(sith, int):
-            thold = sith
-            if thold < 0:
-                raise ValueError("Invalid sith = {} < 0.".format(thold))
-            self._thold = thold
-            self._size = self._thold  # used to verify that keys list size is at least size
-            self._weighted = False
-            self._satisfy = self._satisfy_numeric
-            self._sith = "{:x}".format(sith)  # store in event form as str
-            self._limen = self._sith  # just use hex string
+        elif limen is not None:
+            self._processLimen(limen=limen, **kwa)  # kwa for strip
 
-        else:  # assumes iterable of weights or iterable of iterables of weights
-            self._sith = sith
-            self._weighted = True
-            if not sith:  # empty iterable
-                raise ValueError("Invalid sith = {}, empty weight list.".format(sith))
+        elif sith is not None:
+            self._processSith(sith=sith)
 
-            mask = [isinstance(w, str) for w in sith]
-            if mask and all(mask):  # not empty and all strings
-                sith = [sith]  # make list of list so uniform
-            elif any(mask):  # some strings but not all
-                raise ValueError("Invalid sith = {} some weights non non string."
-                                 "".format(sith))
+        else:
+            raise ValueError("Missing threshold expression.")
 
-            # replace fractional strings with fractions
-            thold = []
-            for clause in sith:  # convert string fractions to Fractions
-                thold.append([Fraction(w) for w in clause])  # append list of Fractions
-
-            for clause in thold:  # sum of fractions in clause must be >= 1
-                if not (sum(clause) >= 1):
-                    raise ValueError("Invalid sith clause = {}, all clause weight "
-                                     "sums must be >= 1.".format(thold))
-
-            self._thold = thold
-            self._size = sum(len(clause) for clause in thold)
-            self._satisfy = self._satisfy_weighted
-
-            # extract limen from sith by joining ratio str elements of each
-            # clause with "," and joining clauses with "&"
-            # [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] becomes
-            # '1/2,1/2,1/4,1/4,1/4&1,1'
-            self._limen = "&".join([",".join(clause) for clause in sith])
-
-    @property
-    def sith(self):
-        """ sith property getter """
-        return self._sith
-
-    @property
-    def thold(self):
-        """ thold property getter """
-        return self._thold
 
     @property
     def weighted(self):
         """ weighted property getter """
         return self._weighted
+
+    @property
+    def thold(self):
+        """ thold property getter """
+        return self._thold
 
     @property
     def size(self):
@@ -4698,7 +4735,182 @@ class Tholder:
     @property
     def limen(self):
         """ limen property getter """
-        return self._limen
+        return self._bexter.qb64b if self._weighted else self._number.qb64b
+
+    @property
+    def sith(self):
+        """ sith property getter """
+        # make sith expression of thold
+        if self.weighted:
+            sith = [[f"{f.numerator}/{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                                           for f in clause]
+                                                   for clause in self.thold]
+            if len(sith) == 1:
+                sith = sith[0]  # simplify list of one clause to clause
+        else:
+            sith = f"{self.thold:x}"
+
+        return sith
+
+    @property
+    def json(self):
+        """Returns json serialization of sith expression
+        """
+        return json.dumps(self.sith)
+
+
+    @property
+    def num(self):
+        """ sith property getter """
+        return self.thold if not self._weighted else None
+
+
+
+    def _processThold(self, thold: int | Iterable):
+        """Process thold input
+
+        Parameters:
+            thold (int | Iterable): computable thold expression
+        """
+        if isinstance(thold, int):
+            self._processUnweighted(thold=thold)
+
+        else:
+            self._processWeighted(thold=thold)
+
+
+    def _processLimen(self, limen: str | bytes, **kwa):
+        """Process limen input
+
+        Parameters:
+            limen (str): CESR encoded qb64 threshold (weighted or unweighted)
+        """
+        matter = Matter(qb64b=limen, **kwa)  # kwa for strip of stream
+        if matter.code in NumDex:
+            number = Number(raw=matter.raw, code=matter.code, **kwa)
+            self._processUnweighted(thold=number.num)
+
+        elif matter.code in BexDex:
+            # Convert to fractional thold expression
+            bexter = Bexter(raw=matter.raw, code=matter.code, **kwa)
+            t = bexter.bext.replace('s', '/')
+            # get clauses
+            thold = [clause.split('c') for clause in t.split('a')]
+            thold = [[self._checkWeight(Fraction(w)) for w in clause]
+                                                        for clause in thold]
+            self._processWeighted(thold=thold)
+
+        else:
+            raise ValueError(f"Invalid code for limen = {matter.code}.")
+
+
+    def _processSith(self, sith: int | str | Iterable):
+        """
+        Process attributes for fractionall weighted threshold sith
+
+        Parameters:
+            sith is signing threshold (current or next) expressed as either:
+                non-negative int of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                non-negative hex string of threshold number (M-of-N threshold)
+                    next threshold may be zero
+                fractional weight clauses which may be expressed as either:
+                    an iterable of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+                    an iterable of iterables of rational number fraction weight strings
+                       each denoted w where 0 <= w <= 1>= 0
+                JSON serialized str of either:
+                    list of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+                    list of list of rational number fraction weight strings
+                        each denoted w where 0 <= w <= 1
+
+                when any w is 0 or 1 then representation is 0 or 1 not 0/1 or 1/1
+        """
+        if isinstance(sith, int):
+            self._processUnweighted(thold=sith)
+
+        elif isinstance(sith, str) and '[' not in sith:
+            self._processUnweighted(thold=int(sith, 16))
+
+        else:  # assumes iterable of weights or iterable of iterables of weights
+            if isinstance(sith, str):  # json of weighted sith from cli
+                sith = json.loads(sith)  # deserialize
+
+            if not sith:  # empty iterable
+                raise ValueError(f"Empty weight list = {sith}.")
+
+            mask = [isinstance(w, str) for w in sith]  # list of strings
+            if mask and all(mask):  # not empty and all strings
+                sith = [sith]  # make list of list so uniform
+            elif any(mask):  # some strings but not all
+                raise ValueError("Invalid sith = {} some weights non non string."
+                                 "".format(sith))
+
+            # replace fractional strings with fractions
+            thold = []
+            for clause in sith:  # convert string fractions to Fractions
+                thold.append([self._checkWeight(Fraction(w)) for w in clause])  # append list of Fractions
+
+            self._processWeighted(thold=thold)
+
+
+    def _processUnweighted(self, thold=0):
+        """
+        Process attributes for unweighted (numeric) threshold thold
+
+        Parameters:
+            thold (int): non-negative threshold number M-of-N threshold
+
+        """
+        if thold < 0:
+            raise ValueError(f"Non-positive int threshold = {thold}.")
+        self._thold = thold
+        self._weighted = False
+        self._size = self._thold  # used to verify that keys list size is at least size
+        self._satisfy = self._satisfy_numeric
+        self._number = Number(num=thold)
+        self._bexter = None
+
+
+    def _processWeighted(self, thold=[]):
+        """
+        Process attributes for fractionall weighted threshold thold
+
+        Parameters:
+            thold (iterable):  iterable or iterable or iterables of
+                rational number fraction strings  >= 0 and <= 1
+
+        """
+        for clause in thold:  # sum of fractions in clause must be >= 1
+            if not (sum(clause) >= 1):
+                raise ValueError(f"Invalid sith clause = {thold}, all clause weight "
+                                 f"sums must be >= 1.")
+
+        self._thold = thold
+        self._weighted = True
+        self._size = sum(len(clause) for clause in thold)
+        self._satisfy = self._satisfy_weighted
+        # make bext str of thold for .bexter for limen
+        bext = [[f"{f.numerator}s{f.denominator}" if (0 < f < 1) else f"{int(f)}"
+                                           for f in clause]
+                                                           for clause in thold]
+        bext = "a".join(["c".join(clause) for clause in bext])
+        self._number = None
+        self._bexter = Bexter(bext=bext)
+
+
+    @staticmethod
+    def _checkWeight(w: Fraction) -> Fraction:
+        """Returns w if 0 <= w <= 1 Else raises ValueError
+
+        Parameters:
+            w (Fraction): Threshold weight Fraction
+        """
+        if not 0 <= w <= 1:
+            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+        return w
+
 
     def satisfy(self, indices):
         """
@@ -4709,6 +4921,7 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         return (self._satisfy(indices=indices))
+
 
     def _satisfy_numeric(self, indices):
         """
@@ -4725,6 +4938,7 @@ class Tholder:
             return False
 
         return False
+
 
     def _satisfy_weighted(self, indices):
         """
@@ -4762,13 +4976,3 @@ class Tholder:
 
         return False
 
-
-def randomNonce():
-    """ Generate a random ed25519 seed and encode as qb64
-
-    Returns:
-        str: qb64 encoded ed25519 random seed
-    """
-    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
-    return seedqb64

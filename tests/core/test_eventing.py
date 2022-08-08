@@ -4147,7 +4147,7 @@ def test_reload_kever(mockHelpingNowUTC):
 
     with habbing.openHby(name="nat", base="test") as natHby:
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = natHby.makeHab(name="nat", isith=2, icount=3)
+        natHab = natHby.makeHab(name="nat", isith='2', icount=3)
         assert natHab.name == 'nat'
         assert natHab.ks == natHby.ks
         assert natHab.db == natHby.db

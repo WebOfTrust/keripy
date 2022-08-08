@@ -35,9 +35,9 @@ def test_broker_nontrans():
     with dbing.openLMDB() as brokerdb, \
         habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
 
-        wesHab = wesHby.makeHab(name="wes", isith=1, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False)
         #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=1, icount=1,
+                                 #isith='1', icount=1,
                                  #salt=salt, transferable=False, temp=True)
 
         bork = escrowing.Broker(db=brokerdb, subkey="test")
@@ -95,13 +95,13 @@ def test_broker_nontrans():
 def test_broker_trans():
     #with dbing.openLMDB() as db, \
             #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith=1, icount=1, transferable=True,
+        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
                                  #wits=[], temp=True)
 
     with dbing.openLMDB() as brokerdb, \
         habbing.openHby(name="bob", base="test") as bobHby:
 
-        bobHab = bobHby.makeHab(name="bob", isith=1, icount=1, transferable=True)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
 
         bork = escrowing.Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
