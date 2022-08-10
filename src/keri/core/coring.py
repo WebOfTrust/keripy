@@ -1290,26 +1290,36 @@ class Number(Matter):
     Attributes:
 
     Inherited Properties:  (See Matter)
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
+        rize (int): number of bytes of raw material not including lead bytes
+        raw (bytes): crypto material only without code
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
 
     Properties:
-        .num is int representation of number
-        .hen is hex string representation of number with no leading zeros
+        num  (int): int representation of number
+        humh (str): hex string representation of number with no leading zeros
 
     Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+        _code (str): value for .code property
+        _raw (bytes): value for .raw property
+        _rsize (bytes): value for .rsize property. Raw size in bytes when
+            variable sized material else None.
+        _size (int): value for .size property. Number of triplets of bytes
+            including lead bytes (quadlets of chars) of variable sized material
+            else None.
+        _infil (types.MethodType): creates qb64b from .raw and .code
+                                   (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b
+                                   (fully qualified Base64)
 
     Methods:
     """
@@ -1318,26 +1328,32 @@ class Number(Matter):
                  code=NumDex.Short, num=None, numh=None, **kwa):
         """
         Inherited Parameters:  (see Matter)
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+            raw (bytes): unqualified crypto material usable for crypto operations
+            code (str): stable (hard) part of derivation code
+            rize (int): raw size in bytes when variable sized material else None
+            qb64b (bytes): fully qualified crypto material Base64
+            qb64 (str, bytes):  fully qualified crypto material Base64
+            qb2 (bytes): fully qualified crypto material Base2
+            strip (bool): True means strip (delete) matter from input stream
+            bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            num is int number
-            numh is hex string equivalent of int number
+            num (int | str):  int number or hex str of int number
+            numh (str):  string equivalent of int number
 
         """
 
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
+
             if num is None:
                 if numh is None:
                     num = 0
                 else:
                     num = int(numh, 16)
+            else:
+                if isinstance(num, str):  # handle case where num is hex str
+                    num = int(num, 16)
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short

@@ -2126,6 +2126,12 @@ def test_number():
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
 
+    with pytest.raises(ValueError):
+        number = Number(num='')
+
+    with pytest.raises(ValueError):
+        number = Number(numh='')
+
     number = Number()  # defaults to zero
     assert number.code == NumDex.Short
     assert number.raw == b'\x00\x00'
@@ -2145,6 +2151,15 @@ def test_number():
     nqb2 = b'3\xff\xfc'
 
     number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+
+    number = Number(num=numh)  # num can be hext str too
     assert number.code == code
     assert number.raw == raw
     assert number.qb64 == nqb64
