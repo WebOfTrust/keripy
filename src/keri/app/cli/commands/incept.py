@@ -44,9 +44,9 @@ class InceptOptions:
     transferable: bool
     wits: list
     icount: int
-    isith:  Union[str, list]
+    isith:  int | str | list
     ncount: int
-    nsith:  Union[str, list] = '0'
+    nsith:  int | str | list = '0'
     toad: int = 0
     delpre: str = None
     estOnly: bool = False
