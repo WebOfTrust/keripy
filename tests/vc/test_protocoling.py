@@ -5,7 +5,7 @@ tests.vc.protocoling module
 """
 from hio.base import doing
 
-from keri.app import habbing, indirecting, signing, storing
+from keri.app import habbing, indirecting, signing, storing, notifying
 from keri.core import coring, scheming, eventing, parsing
 from keri.core.eventing import SealEvent
 from keri.peer import exchanging
@@ -47,7 +47,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
         sidRgy = credentialing.Regery(hby=sidHby, name="bob", temp=True)
         sidVer = verifying.Verifier(hby=sidHby, reger=sidRgy.reger)
 
-        sidMbx = storing.Mailboxer(temp=True)
+        notifier = notifying.Notifier(hby=sidHby)
         issuer = sidRgy.makeRegistry(prefix=sidHab.pre, name="sid")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         sidHab.interact(data=[rseal])
@@ -56,7 +56,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
         sidRgy.processEscrows()
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, mbx=sidMbx, controller=sidHab.pre)
+        redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, notifier=notifier)
         redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"

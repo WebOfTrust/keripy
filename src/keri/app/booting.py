@@ -401,7 +401,7 @@ class BootEnd(doing.DoDoer):
         rep.data = json.dumps(body).encode("utf-8")
 
 
-def setup(servery, controller="", configFile=None, configDir=None, insecure=True, tcp=5621, adminHttpPort=5623, path="",
+def setup(servery, controller="", configFile=None, configDir=None, insecure=True, path="",
           headDirPath=None):
     """ Set up an agent in bootloader mode """
     app = falcon.App(middleware=falcon.CORSMiddleware(
@@ -414,9 +414,7 @@ def setup(servery, controller="", configFile=None, configDir=None, insecure=True
     kwargs = dict(
         controller=controller,
         insecure=insecure,
-        tcp=tcp,
         staticPath=path,
-        adminHttpPort=adminHttpPort,
     )
 
     ends = loadEnds(app=app, configFile=configFile, configDir=configDir, path=path, servery=servery,

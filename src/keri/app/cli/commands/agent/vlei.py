@@ -27,72 +27,72 @@ def vlei(args):
     rootGAR1 = booting.Servery(port=5620)
     booting.setup(servery=rootGAR1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-root-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5720, adminHttpPort=5620,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
     # RootGAR2
     rootGAR2 = booting.Servery(port=5621)
     booting.setup(servery=rootGAR2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-root-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5721, adminHttpPort=5621,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     # ExtGAR1
     extGAR1 = booting.Servery(port=5622)
     booting.setup(servery=extGAR1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-gar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5722, adminHttpPort=5622,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
     # ExtGAR2
     extGAR2 = booting.Servery(port=5623)
     booting.setup(servery=extGAR2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-gar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5723, adminHttpPort=5623,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     # IntGAR1
     intGAR1 = booting.Servery(port=5624)
     booting.setup(servery=intGAR1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-gar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5724, adminHttpPort=5624,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
     # IntGAR2
     intGAR2 = booting.Servery(port=5625)
     booting.setup(servery=intGAR2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-gar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5725, adminHttpPort=5625,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     # QAR1
     qar1 = booting.Servery(port=5626)
     booting.setup(servery=qar1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-qar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5726, adminHttpPort=5626,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
     # QAR2
     qar2 = booting.Servery(port=5627)
     booting.setup(servery=qar2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-qar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5727, adminHttpPort=5627,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     # LAR1
     lar1 = booting.Servery(port=5628)
     booting.setup(servery=lar1, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-qar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5728, adminHttpPort=5628,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
     # LAR2
     lar2 = booting.Servery(port=5629)
     booting.setup(servery=lar2, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-qar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5729, adminHttpPort=5629,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     # Person
     person = booting.Servery(port=5630)
     booting.setup(servery=person, controller="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
                   configFile="vlei-qar-oobis-schema",
-                  configDir="./scripts", insecure=True, tcp=5730, adminHttpPort=5630,
+                  configDir="./scripts", insecure=True,
                   path=start.STATIC_DIR_PATH)
 
     return [rootGAR1, rootGAR2, extGAR1, extGAR2, intGAR1, intGAR2, qar1, qar2, lar1, lar2, person]

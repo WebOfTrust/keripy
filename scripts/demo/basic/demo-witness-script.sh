@@ -38,7 +38,6 @@ isSuccess
 
 kli status --name witness-test --alias trans-wits
 
-# TODO: Fix, this currently blocks because of a problem getting receipts from newly added witnesses.
 kli rotate --name witness-test --alias trans-wits --witness-add Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c
 isSuccess
 

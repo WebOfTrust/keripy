@@ -3,7 +3,9 @@
   "iurls": [
     "http://127.0.0.1:5642/oobi/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo/controller",
     "http://127.0.0.1:5643/oobi/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw/controller",
-    "http://127.0.0.1:5644/oobi/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c/controller"
+    "http://127.0.0.1:5644/oobi/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c/controller",
+    "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-external?name=GLEIF%20External",
+    "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-internal?name=GLEIF%20Internal"
   ],
   "durls": [
     "http://127.0.0.1:7723/oobi/E2RzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0",
@@ -11,9 +13,5 @@
     "http://127.0.0.1:7723/oobi/EKrJtKr528-QBE9VkhKLwpXXGJ4YyVrzYWSkR7KpsNdw",
     "http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs",
     "http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
-  ],
-  "nurls": [
-    {"alias": "GLEIF External", "oobi":  "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-external"},
-    {"alias": "GLEIF Internal", "oobi":  "http://127.0.0.1:7723/.well-known/keri/oobi/gleif-internal"}
   ]
 }

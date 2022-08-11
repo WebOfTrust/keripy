@@ -3,23 +3,20 @@
 keri.vc.challenging module
 
 """
-import json
 
 from hio.base import doing
 from hio.help import decking
 
 
-def loadHandlers(hby, exc, mbx, controller):
+def loadHandlers(signaler, exc):
     """ Load handlers for the peer-to-peer challenge response protocol
 
     Parameters:
-        hby (Habery): Database and keystore for environment
+        signaler (Signaler): Signaler for transient messages for the controller of the agent
         exc (Exchanger): Peer-to-peer message router
-        mbx (Mailboxer): Database for storing mailbox messages
-        controller (str): qb64 identifier prefix of controller
 
     """
-    chacha = ChallengeHandler(hby=hby, mbx=mbx, controller=controller)
+    chacha = ChallengeHandler(signaler=signaler)
     exc.addHandler(chacha)
 
 
@@ -28,14 +25,12 @@ class ChallengeHandler(doing.Doer):
 
     resource = "/challenge/response"
 
-    def __init__(self, hby, mbx, controller):
+    def __init__(self, signaler):
         """ Initialize peer to peer challange response messsage """
 
-        self.hby = hby
-        self.mbx = mbx
-        self.controller = controller
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
+        self.signaler = signaler
         super(ChallengeHandler, self).__init__()
 
     def do(self, tymth, *, tock=0.0, **opts):
@@ -61,13 +56,11 @@ class ChallengeHandler(doing.Doer):
                 words = payload["words"]
 
                 msg = dict(
-                    r="/challenge",
                     signer=signer.qb64,
                     words=words
                 )
 
-                raw = json.dumps(msg).encode("utf-8")
-                self.mbx.storeMsg(self.controller+"/challenge", raw)
+                self.signaler.push(msg, topic="/challenge")
 
                 yield self.tock
             yield self.tock

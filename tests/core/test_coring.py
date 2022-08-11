@@ -4025,6 +4025,32 @@ def test_saider():
     assert saider.qb64 == said9
     assert saider.verify(sad10, prefixed=True)
 
+    # ignore some fields from SAID calculation
+    sad = dict(
+        d="",
+        first="John",
+        last="Doe",
+        read=False
+    )
+
+    saider1 = Saider(sad=sad, ignore=["read"])
+    assert saider1.qb64 == "EFqbqvO9-rTIXp4jsLOuDd1RWGqDZzA2RKgm_IdY-Pek"
+
+    saider2, sad2 = Saider.saidify(sad=sad, ignore=["read"])
+    assert saider2.qb64 == "EFqbqvO9-rTIXp4jsLOuDd1RWGqDZzA2RKgm_IdY-Pek"
+    assert sad2["d"] == saider1.qb64
+    assert sad2["read"] is False
+
+    assert saider1.verify(sad=sad2, prefixed=True, ignore=["read"]) is True
+
+    # Change the 'read' field that is ignored and make sure it still verifies
+    sad2["read"] = True
+    assert saider1.verify(sad=sad2, prefixed=True, ignore=["read"]) is True
+
+    saider3 = Saider(sad=sad2, ignore=["read"])
+    assert saider3.qb64 == saider2.qb64
+    assert sad2["read"] is True
+
     """Done Test"""
 
 

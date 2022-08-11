@@ -613,7 +613,7 @@ def test_replay_all():
 
         # now setup replay
         debAllFelMsgs = debHab.replayAll()
-        assert len(debAllFelMsgs) == 12082
+        assert len(debAllFelMsgs) == 12495
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = eventing.Kevery(db=artHab.db,
@@ -629,9 +629,9 @@ def test_replay_all():
         parsing.Parser().parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
-        assert len(artKevery.cues) == 9
+        assert len(artKevery.cues) == 10
         artAllFelMsgs = artHab.replayAll()
-        assert len(artAllFelMsgs) == 11287
+        assert len(artAllFelMsgs) == 12113
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)

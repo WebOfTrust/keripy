@@ -33,15 +33,15 @@ def test_organizer():
                 zip="70605",
                 company="GLEIF", alias="sally")
 
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
+    with habbing.openHby(name="test", temp=True) as hby:
         org = connecting.Organizer(hby=hby)
 
-        org.replace(alias=hab.name, pre=joe, data=joed)
-        org.replace(alias=hab.name, pre=bob, data=bobd)
-        org.replace(alias=hab.name, pre=ken, data=kend)
-        org.replace(alias=hab.name, pre=jen, data=jend)
-        org.replace(alias=hab.name, pre=wil, data=wild)
-        org.replace(alias=hab.name, pre=sal, data=sald)
+        org.replace(pre=joe, data=joed)
+        org.replace(pre=bob, data=bobd)
+        org.replace(pre=ken, data=kend)
+        org.replace(pre=jen, data=jend)
+        org.replace(pre=wil, data=wild)
+        org.replace(pre=sal, data=sald)
 
         contacts = org.list()
         assert len(contacts) == 6
@@ -71,17 +71,17 @@ def test_organizer():
         assert d["id"] == jen
         assert d["first"] == "Jen"
         assert d["last"] == "Jones"
-        org.set(alias=hab.name, pre=jen, field="last", val="Smith")
+        org.set(pre=jen, field="last", val="Smith")
         d = org.get(pre=jen)
         assert d["last"] == "Smith"
 
-        org.unset(alias=hab.name, pre=jen, field="first")
+        org.unset(pre=jen, field="first")
         d = org.get(pre=jen)
         assert d["id"] == jen
         assert "first" not in d
         assert d["last"] == "Smith"
 
-        org.update(alias=hab.name, pre=ken, data=dict(
+        org.update(pre=ken, data=dict(
             first="Kenneth",
             mobile="222-555-1212"
         ))
@@ -98,7 +98,7 @@ def test_organizer():
                      'state': 'NJ',
                      'zip': '08807'}
 
-        org.replace(alias=hab.name, pre=ken, data=kend)
+        org.replace(pre=ken, data=kend)
         d = org.get(pre=ken)
         assert d == {'address': '28 Williams Ave.',
                      'alias': 'ken',
@@ -113,7 +113,7 @@ def test_organizer():
         org.rem(pre=wil)
         d = org.get(pre=wil)
         assert d is None
-        org.replace(alias=hab.name, pre=wil, data=wild)
+        org.replace(pre=wil, data=wild)
 
         companies = org.values(field="company")
         assert companies == ["GLEIF", "HCF"]
@@ -132,9 +132,6 @@ def test_organizer():
         assert wil in data
         assert sal in data
 
-        # Rotate identifier and make sure data still validates.
-        hab.rotate()
-        assert hab.kever.sn == 1
         d = org.get(pre=ken)
         assert d == {'address': '28 Williams Ave.',
                      'alias': 'ken',
@@ -148,8 +145,8 @@ def test_organizer():
 
         # Update the Jen's data signature by signing garbage
         nonce = coring.randomNonce()
-        sigers = hab.sign(ser=nonce.encode("utf-8"))
-        hby.db.csigs.pin(keys=(jen,), vals=sigers)
+        cigar = hby.signator.sign(ser=nonce.encode("utf-8"))
+        hby.db.ccigs.pin(keys=(jen,), val=cigar)
         with pytest.raises(kering.ValidationError):
             org.get(pre=jen)
 

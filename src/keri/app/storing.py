@@ -3,14 +3,12 @@
 keri.app.storing module
 
 """
-import json
-import random
 import itertools
-
-from  ordered_set import OrderedSet as oset
+import random
 
 from hio.base import doing
 from hio.help import decking
+from ordered_set import OrderedSet as oset
 
 from . import httping, agenting, forwarding
 from .. import help
@@ -337,52 +335,3 @@ class Respondant(doing.DoDoer):
                         self.postman.send(src=src, dest=dest, topic="reply", serder=serder, attachment=atc)
 
             yield self.tock
-
-
-class Notifier(doing.Doer):
-
-    def __init__(self, controller, mbx, notifs=None, **kwa):
-        self.controller = controller
-        self.mbx = mbx
-        self.notifs = notifs if notifs is not None else decking.Deck()
-
-        super(Notifier, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.5, **opts):
-        """ Handle incoming messages by storing notifications in the controller's mailbox
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-        """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            if not self.notifs:
-                yield self.tock
-                continue
-
-            notif = self.notifs.popleft()
-            kin = notif["kin"]
-
-            if kin == "notification":
-                tpc = notif["topic"]
-                if not tpc.startswith("/"):
-                    tpc = "/" + tpc
-                msg = notif["msg"]
-                raw = json.dumps(msg).encode("utf-8")
-                self.mbx.storeMsg(self.controller+tpc, raw)
-
-            yield self.tock
-

@@ -4,10 +4,11 @@ tests.app.signing module
 
 """
 
-from keri.app import habbing, configing
+from keri.app import habbing, configing, keeping
 from keri.app import signing
 from keri.core import coring, parsing, eventing
 from keri.core.eventing import SealEvent
+from keri.db import basing
 from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import verifying, credentialing
@@ -399,5 +400,49 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         assert tp == (b'-VAm-JAB5AACAA-a-b-c-CABBBtKPeN9p4lum6qDRa28fDfVShFk6c39FlBgHBsC'
                       b'q1480B3qBqHAenL-XeNQPAT_e7fJV5I6UvqM2JKPQ8WwxkpVaPWA0EWRmchQB4aH'
                       b'RLWK992DftQ5FDQVGF4xRUrUJhAQ')
-
     """End Test"""
+
+
+def test_signatory():
+    salt = coring.Salter(raw=b'0123456789abcdef')  # init sig Salter
+
+    with basing.openDB(name="sig") as db, keeping.openKS(name="sig") as ks, \
+            habbing.openHab(name="sig", salt=salt.raw) as (sigHby, sigHab):
+        # Init signatory
+        signer = sigHby.signator
+
+        assert signer.pre == "B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE"
+        assert signer._hab.kever.verfers[0].qb64b == b'B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE'
+        spre = signer.db.hbys .get(habbing.SIGNER)
+        assert spre == "B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE"
+
+        raw = b'this is the raw data'
+        cig = signer.sign(ser=raw)
+        assert cig.qb64b == b'0BXERDelN3sj1w50Wg60QYAOyRAsa_HwKkx72y2PEczASEK9UKM_R-XdGjzNRGyhT9Q3E9c2ncW3hEHIk9JZMrCw'
+
+        assert signer.verify(ser=raw, cigar=cig) is True
+
+        bad = b'0B9h1y8Dq7Pj7xbEj6Ja-ew9nzu-bX5_wQKu5Yw3472-ghptsrEFDyD6o4Lk0L7Ym9oWCuGj_UAc-ltI9p7F9999'
+        badcig = coring.Cigar(qb64b=bad)
+        assert signer.verify(ser=raw, cigar=badcig) is False
+
+        verfer = coring.Verfer(qb64="B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE")
+        assert verfer.verify(cig.raw, raw) is True
+
+        # Create a second, should have the same key
+        mgr = keeping.Manager(ks=ks, salt=salt.qb64)
+        kvy = eventing.Kevery(db=db)
+        sig2 = habbing.Signator(db=db, temp=True, ks=ks, mgr=mgr, cf=sigHab.cf, rtr=None,
+                                rvy=None, kvy=kvy, psr=None)
+        assert sig2._hab.pre == "B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE"
+        assert sig2._hab.kever.verfers[0].qb64b == b'B3ku7RGqm2YkL6JcSV0wyuUR7DtDTW17Z8uCqVupb3NE'
+        assert sig2.verify(ser=raw, cigar=cig) is True
+        cig2 = sig2.sign(ser=raw)
+        assert cig2.qb64b == cig2.qb64b
+        assert signer.verify(ser=raw, cigar=cig2) is True
+
+        raw2 = b'second text to sign that is a little longer'
+        cig3 = sig2.sign(ser=raw2)
+        assert cig3.qb64b == b'0B_VcSVoSnGk8TMCjBZrVz8H_gAVvG6aogowaM36wQZut-3ZPNcqoK_5Lw-2mipouA8O8IJpi18YtJ4T9PCaaNAQ'
+        assert signer.verify(ser=raw2, cigar=cig3) is True
+

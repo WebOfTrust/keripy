@@ -1763,7 +1763,8 @@ def test_clean_baser():
             assert copy.path.endswith("/keri/clean/db/nat")
             assert copy.env.stat()['entries'] >= 18
 
-        assert len(natHab.kevers) == 1
+        # Nat's kever and the signatory kever
+        assert len(natHab.kevers) == 2
         # now clean it
         natHab.db.clean()
 

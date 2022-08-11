@@ -915,127 +915,35 @@ class HttpEnd:
             rep.status = falcon.HTTP_200
             rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
 
-    def on_post_mbx(self, req, rep):
-        """
-        Handles POST for KERI mailbox service.
 
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+class QryRpyMailboxIterable:
 
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 description: KERI event message
-                 properties:
-                    pre:
-                       type: string
-                       description: qb64 identifier prefix of mailbox to stream
-                    topics:
-                       type: object
-                       description: map of topic names to current message index for topic
-                       properties:
-                          /reply:
-                             type: integer
-                             default: 0
-                          /replay:
-                             type: integer
-                             default: 0
-                          /receipt:
-                             type: integer
-                             default: 0
-                          /challenge:
-                             type: integer
-                             default: 0
-                          /multisig:
-                             type: integer
-                             default: 0
+    def __init__(self, cues, mbx, said, retry=5000):
+        self.mbx = mbx
+        self.retry = retry
+        self.cues = cues
+        self.said = said
+        self.iter = None
 
+    def __iter__(self):
+        return self
 
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
-        """
-        if req.method == "OPTIONS":
-            rep.status = falcon.HTTP_200
-            return
+    def __next__(self):
+        if self.iter is None:
+            if self.cues:
+                cue = self.cues.popleft()
+                serder = cue["serder"]
+                if serder.said == self.said:
+                    kin = cue["kin"]
+                    if kin == "stream":
+                        self.iter = iter(MailboxIterable(mbx=self.mbx, pre=cue["pre"], topics=cue["topics"],
+                                                         retry=self.retry))
+                else:
+                    self.cues.append(cue)
 
-        rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('connection', "close")
+            return b''
 
-        body = req.get_media()
-        pre = body["pre"]
-        topics = body["topics"]
-
-        rep.set_header('Content-Type', "text/event-stream")
-        rep.status = falcon.HTTP_200
-        rep.stream = MailboxIterable(mbx=self.mbx, pre=pre, topics=topics)
-
-    def on_get_mbx(self, req, rep):
-        """
-        Handles GET requests as a stream of SSE events
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
-        parameters:
-          - in: query
-            name: pre
-            schema:
-              type: string
-            required: true
-            description: qb64 identifier prefix of mailbox to read
-          - in: query
-            name: topics
-            schema:
-               type: array
-               items:
-                  type: string
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
-        """
-        pre = req.params["pre"]
-        pt = req.params["topics"]
-
-        rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('connection', "close")
-        rep.set_header('Content-Type', "text/event-stream")
-
-        topics = dict()
-        if isinstance(pt, list):
-            for t in pt:
-                key, val = t.split("=")
-                topics[key] = int(val)
-        else:
-            key, val = pt.split("=")
-            topics[key] = int(val)
-
-        rep.stream = MailboxIterable(mbx=self.mbx, pre=pre, topics=topics)
+        return next(self.iter)
 
 
 class MailboxIterable:
@@ -1074,33 +982,3 @@ class MailboxIterable:
             return data
 
         raise StopIteration
-
-
-class QryRpyMailboxIterable:
-
-    def __init__(self, cues, mbx, said, retry=5000):
-        self.mbx = mbx
-        self.retry = retry
-        self.cues = cues
-        self.said = said
-        self.iter = None
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.iter is None:
-            if self.cues:
-                cue = self.cues.popleft()
-                serder = cue["serder"]
-                if serder.said == self.said:
-                    kin = cue["kin"]
-                    if kin == "stream":
-                        self.iter = iter(MailboxIterable(mbx=self.mbx, pre=cue["pre"], topics=cue["topics"],
-                                                         retry=self.retry))
-                else:
-                    self.cues.append(cue)
-
-            return b''
-
-        return next(self.iter)

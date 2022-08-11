@@ -71,7 +71,6 @@ class Boatswain(doing.DoDoer):
                 pre = msg["pre"]
 
                 if pre not in self.hby.habs:
-                    print("not in hab")
                     continue
 
                 # load the hab of the delegated identifier to anchor
@@ -167,20 +166,19 @@ class Boatswain(doing.DoDoer):
         return hab
 
 
-def loadHandlers(hby, exc, mbx, controller, oobiery):
+def loadHandlers(hby, exc, notifier, oobiery):
     """ Load handlers for the peer-to-peer delegation protocols
 
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        mbx (Mailboxer): Database for storing mailbox messages
-        controller (str): qb64 identifier prefix of controller
+        notifier (Notifier): Outbound notifications
         oobiery: (Oobiery): OOBI loader
 
     """
-    delreq = DelegateRequestHandler(hby=hby, mbx=mbx, controller=controller)
+    delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(delreq)
-    oobireq = OobiRequestHandler(hby=hby, mbx=mbx, oobiery=oobiery, controller=controller)
+    oobireq = OobiRequestHandler(hby=hby, notifier=notifier, oobiery=oobiery)
     exc.addHandler(oobireq)
 
 
@@ -191,7 +189,7 @@ class DelegateRequestHandler(doing.DoDoer):
     """
     resource = "/delegate/request"
 
-    def __init__(self, hby, mbx, controller, **kwa):
+    def __init__(self, hby, notifier, **kwa):
         """
 
         Parameters:
@@ -200,9 +198,8 @@ class DelegateRequestHandler(doing.DoDoer):
             cues (decking.Deck) of outbound cue messages from handler
 
         """
-        self.controller = controller
         self.hby = hby
-        self.mbx = mbx
+        self.notifier = notifier
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -249,18 +246,14 @@ class DelegateRequestHandler(doing.DoDoer):
 
                 data = dict(
                     src=src,
-                    r='/request',
+                    r='/delegate/request',
                     delpre=delpre,
                     ked=pay["ked"]
                 )
                 if "aids" in pay:
                     data["aids"] = pay["aids"]
 
-                raw = json.dumps(data).encode("utf-8")
-
-                if self.controller is not None:
-                    self.mbx.storeMsg(self.controller+"/delegate", raw)
-
+                self.notifier.add(attrs=data)
                 # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
                 # multisig group
 
@@ -293,18 +286,16 @@ class OobiRequestHandler(doing.DoDoer):
     """
     resource = "/oobis"
 
-    def __init__(self, hby, mbx, oobiery, controller, **kwa):
+    def __init__(self, hby, notifier, oobiery, **kwa):
         """
 
         Parameters:
             mbx (Mailboxer) of format str names accepted for offers
             oobiery (Oobiery) OOBI loader
-            controller (str) qb64 identity prefix of controller
 
         """
         self.hby = hby
-        self.mbx = mbx
-        self.controller = controller
+        self.notifier = notifier
         self.oobiery = oobiery
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
@@ -349,17 +340,14 @@ class OobiRequestHandler(doing.DoDoer):
                 self.oobiery.oobis.append(dict(alias=hab.name, oobialias=oobialias, url=oobi))
 
                 data = dict(
+                    r="/oobi",
                     src=src,
-                    r='/oobi',
                     alias=hab.name,
                     oobialias=oobialias,
                     oobi=oobi
                 )
-                raw = json.dumps(data).encode("utf-8")
 
-                # new verified contact
-                if self.controller is not None:
-                    self.mbx.storeMsg(self.controller+"/oobi", raw)
+                self.notifier.add(attrs=data)
 
                 yield
             yield
