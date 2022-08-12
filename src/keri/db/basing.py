@@ -801,6 +801,18 @@ class Baser(dbing.LMDBer):
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
+        # escrow OOBIs that failed to load, retriable, keyed by oobi URL
+        self.eoobi = koming.Komer(db=self,
+                                  subkey='eoobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # OOBIs with outstand client requests.
+        self.coobi = koming.Komer(db=self,
+                                  subkey='coobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
         # JSON schema SADs keys by the SAID
         self.schema = subing.SchemerSuber(db=self,
                                           subkey='schema.')

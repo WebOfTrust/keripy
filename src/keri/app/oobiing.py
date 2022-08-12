@@ -8,101 +8,19 @@ from urllib.parse import urlparse
 
 import falcon
 from hio.base import doing
-from hio.help import decking
 
 from keri import kering
 from keri.app import forwarding, delegating
-from keri.end import ending
+from keri.db import basing
+from keri.help import helping
 
 
-def loadEnds(app, *, hby, oobiery, prefix=""):
-    oobiEnd = OobiResource(hby=hby, oobiery=oobiery)
-    app.add_route(prefix+"/oobi/{alias}", oobiEnd, suffix="alias")
+def loadEnds(app, *, hby, prefix=""):
+    oobiEnd = OobiResource(hby=hby)
     app.add_route(prefix+"/oobi", oobiEnd)
     app.add_route(prefix+"/oobi/groups/{alias}/share", oobiEnd, suffix="share")
 
     return [oobiEnd]
-
-
-class OobiLoader(doing.DoDoer):
-    """ DoDoer for loading oobis and waiting for the results """
-
-    def __init__(self, hby, oobis=None, auto=False):
-        """
-
-        Parameters:
-            hby (Habery) database environment with preloaded oobis:
-            oobis (list): optional list of oobis to load
-            auto (bool): True means load oobis from database
-        """
-
-        self.processed = 0
-        self.db = hby.db
-        self.oobis = oobis if oobis is not None else decking.Deck()
-
-        self.oobiery = ending.Oobiery(hby=hby)
-        if auto:
-            for ((oobi,), _) in self.db.oobis.getItemIter():
-                self.oobiery.oobis.append(dict(url=oobi))
-                self.oobis.append(oobi)
-
-        doers = [self.oobiery, doing.doify(self.loadDo)]
-
-        super(OobiLoader, self).__init__(doers=doers)
-
-    def queue(self, oobis):
-        """ Queue up a list of oobis to process, then exit
-
-        Parameters:
-            oobis (list): list of OOBIs to resolve.
-
-        """
-        for oobi in oobis:
-            self.oobiery.oobis.append(oobi)
-            self.oobis.append(oobi["url"])
-
-    def loadDo(self, tymth, tock=0.0):
-        """ Load oobis
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Returns:  doifiable Doist compatible generator method for loading oobis using
-        the Oobiery
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while not self.oobis:  # wait until we have some OOBIs to process
-            yield self.tock
-
-        while True:
-            if not self.oobis:
-                yield self.tock
-                break
-
-            while self.oobiery.cues:
-                cue = self.oobiery.cues.popleft()
-                kin = cue["kin"]
-                oobi = cue["oobi"]
-                if kin in ("resolved",):
-                    print(oobi, "succeeded")
-                    self.oobis.remove(oobi)
-                if kin in ("failed",):
-                    print(oobi, "failed")
-                    self.oobis.remove(oobi)
-
-                self.db.oobis.rem(keys=(oobi, ))
-
-                yield 0.25
-
-            yield self.tock
-
-        self.remove([self.oobiery])
 
 
 class OobiResource(doing.DoDoer):
@@ -111,7 +29,7 @@ class OobiResource(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, oobiery=None):
+    def __init__(self, hby):
         """ Create Endpoints for discovery and resolution of OOBIs
 
         Parameters:
@@ -120,9 +38,8 @@ class OobiResource(doing.DoDoer):
         """
         self.hby = hby
 
-        self.oobiery = oobiery if oobiery is not None else ending.Oobiery(hby=self.hby)
         self.postman = forwarding.Postman(hby=self.hby)
-        doers = [self.oobiery, self.postman, doing.doify(self.loadDo)]
+        doers = [self.postman]
 
         super(OobiResource, self).__init__(doers=doers)
 
@@ -201,13 +118,12 @@ class OobiResource(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
-    def on_post_alias(self, req, rep, alias):
+    def on_post(self, req, rep):
         """ Resolve OOBI endpoint.
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: human readable name of the local identifier context for resolving this OOBI
 
         ---
         summary: Resolve OOBI and assign an alias for the remote identifier
@@ -215,13 +131,6 @@ class OobiResource(doing.DoDoer):
                      data for resolved identifier
         tags:
            - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the oobi to resolve
         requestBody:
             required: true
             content:
@@ -232,7 +141,7 @@ class OobiResource(doing.DoDoer):
                         oobialias:
                           type: string
                           description: alias to assign to the identifier resolved from this OOBI
-                          required: true
+                          required: false
                         url:
                           type: string
                           description:  URL OOBI
@@ -246,24 +155,20 @@ class OobiResource(doing.DoDoer):
         """
         body = req.get_media()
 
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            rep.status = falcon.HTTP_404
-            rep.text = "invalid alias, not found"
-            return
-
-        if "oobialias" not in body:
-            rep.status = falcon.HTTP_400
-            rep.text = "invalid request, oobialias is required"
-            return
-
         if "url" in body:
             oobi = body["url"]
-            oobialias = body["oobialias"]
-            # oobialias is alias name for new identifier, alias is local hab that will sign the data
-            self.oobiery.oobis.append(dict(alias=alias, oobialias=oobialias, url=oobi))
+
+            obr = basing.OobiRecord(date=helping.nowIso8601())
+            if "oobialias" in body:
+                obr.oobialias = body["oobialias"]
+
+            self.hby.db.oobis.pin(keys=(oobi,), val=obr)
+
         elif "rpy" in body:
-            pass
+            rep.status = falcon.HTTP_501
+            rep.text = "'rpy' support not implemented yet'"
+            return
+
         else:
             rep.status = falcon.HTTP_400
             rep.text = "invalid OOBI request body, either 'rpy' or 'url' is required"
@@ -338,83 +243,3 @@ class OobiResource(doing.DoDoer):
 
         rep.status = falcon.HTTP_200
         return
-
-    def on_post(self, req, rep):
-        """ Resolve OOBI endpoint.
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-
-        ---
-        summary: Resolve OOBI
-        description: Resolve OOBI URL or `rpy` message by process results of request
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the oobi to resolve
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                    description: OOBI
-                    properties:
-                        url:
-                          type: string
-                          description:  URL OOBI
-                        rpy:
-                          type: object
-                          description: unsigned KERI `rpy` event message with endpoints
-        responses:
-           202:
-              description: OOBI resolution to key state successful
-
-        """
-        body = req.get_media()
-
-        if "url" in body:
-            oobi = body["url"]
-            self.oobiery.oobis.append(dict(url=oobi))
-        elif "rpy" in body:
-            pass
-        else:
-            rep.status = falcon.HTTP_400
-            rep.text = "invalid OOBI request body, either 'rpy' or 'url' is required"
-            return
-
-        rep.status = falcon.HTTP_202
-
-    def loadDo(self, tymth, tock=0.0):
-        """ Load oobis
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Returns:  doifiable Doist compatible generator method for loading oobis using
-        the Oobiery
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            if self.oobiery.cues:
-                cue = self.oobiery.cues.popleft()
-                kin = cue["kin"]
-                if kin in ("resolved",):
-                    pass
-                if kin in ("failed",):
-                    pass
-
-                break
-
-            yield 1.0

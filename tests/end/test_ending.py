@@ -6,15 +6,19 @@ Includes Falcon ReST endpoints for testing purposes
 
 """
 import logging
+import time
 
 import falcon
 from falcon import testing
 from hio.base import tyming, doing
 
-from keri import help
+from keri import help, kering
 from keri.app import habbing
 from keri.core import coring
+from keri.db import basing
 from keri.end import ending
+from keri.app import oobiing
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -54,8 +58,8 @@ def test_signature_designature():
     reopen = True
 
     # setup databases  for dependency injection
-    #ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
-    #db = basing.Baser(name=name, temp=temp, reopen=reopen)
+    # ks = keeping.Keeper(name=name, temp=temp, reopen=reopen)
+    # db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # Setup Habery and Hab
     with habbing.openHby(name=name, base=base) as hby:
@@ -63,7 +67,7 @@ def test_signature_designature():
         hab = hby.makeHab(name=name, icount=3)
 
         # setup habitat
-        #hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
+        # hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
         assert hab.pre == 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
         digest = hab.kever.serder.said
         assert digest == 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
@@ -80,12 +84,12 @@ def test_signature_designature():
                                  kind=None)
         header = ending.signature([signage])  # put it in a list
         assert header == ({'Signature':
-                           'indexed="?1";'
-                           '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
-                           '-2jAQ";'
-                           '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                           '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                           '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+                               'indexed="?1";'
+                               '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
+                               '-2jAQ";'
+                               '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                               '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -134,9 +138,11 @@ def test_signature_designature():
         assert header == ({'Signature':
                                'indexed="?0";'
                                'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-                               '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                               '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
+                               '-2jAQ";'
                                'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-                               '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                               '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
+                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
                                'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
                                '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ'
                                '"'})
@@ -324,7 +330,6 @@ def test_get_static_sink():
     assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
 
-
 def test_seid_api():
     """
     Test the eid endpoint api using falcon TestClient
@@ -417,6 +422,47 @@ def test_get_admin():
     """Done Test"""
 
 
+def test_get_oobi():
+    """
+    Uses falcon TestClient
+    """
+    # Setup Habery and Hab
+    name = 'oobi'
+    base = 'test'
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    with habbing.openHby(name=name, base=base, salt=salt) as hby:
+        hab = hby.makeHab(name=name)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=kering.Roles.controller,
+                                    stamp=help.nowIso8601()))
+
+        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
+                                      scheme=kering.Schemes.http,
+                                      stamp=help.nowIso8601()))
+        hab.psr.parse(ims=msgs)
+
+        # must do it here to inject into Falcon endpoint resource instances
+        tymist = tyming.Tymist(tyme=0.0)
+
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+
+        client = testing.TestClient(app=app)
+
+        rep = client.simulate_get('/oobi', )
+        assert rep.status == falcon.HTTP_OK
+        serder = coring.Serder(raw=rep.text.encode("utf-8"))
+        assert serder.ked['t'] == coring.Ilks.rpy
+        assert serder.ked['r'] == "/loc/scheme"
+        assert serder.ked['a']['eid'] == hab.pre
+        assert serder.ked['a']['scheme'] == kering.Schemes.http
+        assert serder.ked['a']['url'] == "http://127.0.0.1:5555"
+        print(serder.pretty())
+
+    """Done Test"""
+
+
 def test_end_demo():
     """
     Run with rest api client like Paw or PostMan
@@ -440,6 +486,40 @@ def test_end_demo():
     doist.do(doers=doers, limit=1)
 
     logger.error("\nWeb Server shutdown on port %s.\n\n", webPort)
+
+
+def test_oobiery():
+    with habbing.openHby(name="oobi") as hby:
+        oobiery = ending.Oobiery(hby=hby)
+
+        url = 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
+              '/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/oobi/E2RzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/oobi?name=Blind'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        endDoers = oobiing.loadEnds(app, hby=hby)
+
+        limit = 2.0
+        tock = 0.03125
+        doers = endDoers + [oobiery]
+        doist = doing.Doist(limit=limit, tock=tock)
+        doist.do(doers=doers)
+
+        assert doist.limit == limit
+
+        doist.exit()
+
+    """Done Test"""
 
 
 if __name__ == '__main__':

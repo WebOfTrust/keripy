@@ -403,7 +403,6 @@ class IdentifierEnd(doing.DoDoer):
             kwa["delpre"] = body["delpre"]
 
         hab = self.hby.makeHab(name=alias, **kwa)
-        self.extend([oobiing.OobiLoader(hby=self.hby, auto=True)])
         self.cues.append(dict(pre=hab.pre))
 
         icp = hab.makeOwnInception()
@@ -3160,8 +3159,7 @@ def loadEnds(app, *,
              registrar,
              credentialer,
              servery,
-             bootConfig,
-             oobiery=None):
+             bootConfig):
     """
     Load endpoints for KIWI admin interface into the provided Falcon app
 
@@ -3179,7 +3177,6 @@ def loadEnds(app, *,
         credentialer (Credentialer): credential issuance protocol manager
         servery (Servery):
         bootConfig: (dict): original launch configuration of Servery
-        oobiery (Optional[Oobiery]): optional OOBI loader
 
     Returns:
         list: doers from registering endpoints
@@ -3222,7 +3219,7 @@ def loadEnds(app, *,
     app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
 
-    oobiEnd = oobiing.OobiResource(hby=hby, oobiery=oobiery)
+    oobiEnd = oobiing.OobiResource(hby=hby)
     app.add_route("/oobi/{alias}", oobiEnd, suffix="alias")
     app.add_route("/oobi", oobiEnd)
     app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
@@ -3304,7 +3301,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     challenging.loadHandlers(signaler=signaler, exc=exchanger)
     grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiery = ending.Oobiery(hby=hby)
-    delegating.loadHandlers(hby=hby, exc=exchanger, notifier=notifier, oobiery=oobiery)
+    delegating.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()
@@ -3333,9 +3330,36 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler,
                         **kwargs)
 
-    doers.extend([rep, counselor, registrar, credentialer, oobiery])
+    obi = dict(oobiery=oobiery)
+    doers.extend([rep, counselor, registrar, credentialer, oobiery, doing.doify(oobiCueDo, **obi)])
     doers.extend(endDoers)
     servery.msgs.append(dict(app=app, doers=doers))
+
+
+def oobiCueDo(tymth, tock=0.0, **opts):
+    """ Process Client responses by parsing the messages and removing the client/doer
+
+    Parameters:
+        tymth (function): injected function wrapper closure returned by .tymen() of
+            Tymist instance. Calling tymth() returns associated Tymist .tyme.
+        tock (float): injected initial tock value
+
+    """
+    obi = opts["oobiery"]
+    _ = (yield tock)
+
+    while True:
+        while obi.cues:
+            cue = obi.cues.popleft()
+            kin = cue["kin"]
+            oobi = cue["oobi"]
+            if kin in ("resolved",):
+                print(oobi, "succeeded")
+            elif kin in ("failed",):
+                print(oobi, "failed")
+
+            yield 0.25
+        yield tock
 
 
 def loadEvent(db, preb, dig):

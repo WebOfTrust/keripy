@@ -8,8 +8,11 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, oobiing
+from keri.app import habbing
 from keri.app.cli.common import existing
+from keri.db import basing
+from keri.end import ending
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -60,15 +63,14 @@ class OobiDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
-        self.obl = oobiing.OobiLoader(hby=self.hby)
-        if oobiAlias is None:
-            msg = dict(url=oobi)
-        else:
-            msg = dict(oobialias=oobiAlias, url=oobi)
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        if oobiAlias is not None:
+            obr.oobialias = oobiAlias
 
-        self.obl.queue([msg])
+        self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-        doers = [self.hbyDoer, self.obl, doing.doify(self.waitDo)]
+        self.obi = ending.Oobiery(hby=self.hby)
+        doers = [self.hbyDoer, self.obi, doing.doify(self.waitDo)]
 
         super(OobiDoer, self).__init__(doers=doers)
 
@@ -88,7 +90,12 @@ class OobiDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        while not self.obl.done:
+        while not self.obi.cues:
             yield 0.25
 
-        self.remove([self.hbyDoer, self.obl])
+        cue = self.obi.cues.popleft()
+        kin = cue["kin"]
+        oobi = cue["oobi"]
+        print(oobi, kin)
+
+        self.remove([self.hbyDoer, self.obi])
