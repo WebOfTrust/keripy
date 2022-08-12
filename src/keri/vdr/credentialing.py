@@ -35,7 +35,7 @@ class Regery:
         self.cues = cues if cues is not None else decking.Deck()
 
         self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp)
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True)
+        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
 
         self.regs = {}  # List of local registries
@@ -817,6 +817,12 @@ class Credentialer(doing.DoDoer):
                     vci = source.said
 
                     issr = source.crd["i"]
+                    for msg in self.hby.db.clonePreIter(pre=issr):
+                        serder = coring.Serder(raw=msg)
+                        atc = msg[serder.size:]
+                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
+                                          attachment=atc)
+
                     for msg in self.verifier.reger.clonePreIter(pre=vci):
                         serder = coring.Serder(raw=msg)
                         atc = msg[serder.size:]
@@ -827,12 +833,6 @@ class Credentialer(doing.DoDoer):
                         serder = coring.Serder(raw=msg)
                         atc = msg[serder.size:]
                         self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                    for msg in self.hby.db.clonePreIter(pre=issr):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
 
                     serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(source.said)
                     atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
