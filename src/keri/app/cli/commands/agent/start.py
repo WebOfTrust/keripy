@@ -77,6 +77,5 @@ def launch(args):
     servery = booting.Servery(port=int(args.admin_http_port), keypath=args.keypath, certpath=args.certpath,
                               cafilepath=args.cafilepath)  # Manager of HTTP server environments
     booting.setup(servery=servery, controller=args.controller, configFile=args.configFile,
-                  configDir=args.configDir, insecure=args.insecure, tcp=int(args.tcp),
-                  adminHttpPort=int(args.admin_http_port), path=args.path)
+                  configDir=args.configDir, insecure=args.insecure, path=args.path)
     return [servery]
