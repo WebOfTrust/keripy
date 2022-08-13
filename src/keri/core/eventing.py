@@ -15,7 +15,7 @@ from hio.help import decking
 
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
-                     Seqner, Siger, Cigar, Dater,
+                     Number, Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
@@ -570,6 +570,7 @@ def fetchTsgs(db, saider, snh=None):
 
     return tsgs
 
+MaxIntThold = 2 ** 32 - 1
 
 def incept(keys,
            sith=None,
@@ -582,38 +583,43 @@ def incept(keys,
            version=Version,
            kind=Serials.json,
            code=None,
+           intive = False,
            ):
     """
     Returns serder of inception event message.
     Utility function to automate creation of inception events.
 
-     Parameters:
-        keys is list of qb64 signing keys
-        sith is string, or list format for signing threshold
-        nkeys is list of qb64 next key digests
-        nsith is string, or list format for next signing threshold
-        toad is int, or str hex of witness threshold
-        wits is list of qb64 witness prefixes
-        cnfg is list of strings TraitDex of configuration trait strings
-        data is list of seal dicts
-        version is Version instance
-        kind is serialization kind
-        code is derivation code for prefix
+    Parameters:
+        keys  (list): qb64 current signing keys
+        sith (int | str | list): current signing threshold input to Tholder
+        nkeys (list): qb64 current signing key digests
+        nsith int | str | list): next signing threshold input to Tholder
+        toad (int | str ): witness threshold number if str then hex str
+        wits (list): qb64 witness identifier prefixes
+        cnfg (list): configuration traits from TraitDex
+        data (list): seal dicts
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        code (str): derivation code for computed prefix
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+            not hex str when numeric threshold
     """
     vs = versify(version=version, kind=kind, size=0)
-    sn = 0
+    sner = Number(num=0)
     ilk = Ilks.icp
 
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
+    #if isinstance(sith, int):
+        #sith = max(1, sith)
+        #sith = f"{sith:x}"
 
     if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+        sith = max(1, ceil(len(keys) / 2))
 
     tholder = Tholder(sith=sith)
+    if tholder.num is not None and tholder.num < 1:
+        raise ValueError(f"Incept sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
@@ -627,11 +633,12 @@ def incept(keys,
 
     ntholder = Tholder(sith=nsith)
     if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+        raise ValueError(f"Invalid nsith = {nsith} for keys = {nkeys}")
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
+
 
     if isinstance(toad, str):
         toad = "{:x}".format(toad)
@@ -640,13 +647,14 @@ def incept(keys,
             toad = 0
         else:  # compute default f and m for len(wits)
             toad = ample(len(wits))
+    toader = Number(num=toad)
 
     if wits:
-        if toad < 1 or toad > len(wits):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
     else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        if toader.num != 0:  # invalid toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
 
     cnfg = cnfg if cnfg is not None else []
 
@@ -658,12 +666,12 @@ def incept(keys,
                t=ilk,
                d="",   # qb64 SAID
                i="",  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
-               kt=sith,  # hex string no leading zeros lowercase
+               s=sner.numh,  # hex string no leading zeros lowercase
+               kt=tholder.sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                nt=ntholder.sith,
                n=nkeys,  # hash qual Base64
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
+               bt= toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                a=data,  # list of seal dicts

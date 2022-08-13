@@ -9,6 +9,7 @@ import json
 from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
+from builtins import OverflowError
 
 import blake3
 import cbor2 as cbor
@@ -2131,6 +2132,9 @@ def test_number():
 
     with pytest.raises(ValueError):
         number = Number(numh='')
+
+    with pytest.raises(OverflowError):
+        number = Number(num=-5)
 
     number = Number()  # defaults to zero
     assert number.code == NumDex.Short
