@@ -640,9 +640,9 @@ def incept(keys,
         raise ValueError(f"Invalid wits = {wits}, has duplicates.")
 
 
-    if isinstance(toad, str):
-        toad = "{:x}".format(toad)
-    elif toad is None:
+    #if isinstance(toad, str):
+        #toad = "{:x}".format(toad)
+    if toad is None:
         if not wits:
             toad = 0
         else:  # compute default f and m for len(wits)
@@ -667,11 +667,13 @@ def incept(keys,
                d="",   # qb64 SAID
                i="",  # qb64 prefix
                s=sner.numh,  # hex string no leading zeros lowercase
-               kt=tholder.sith,  # hex string no leading zeros lowercase
+               kt=(tholder.num if intive and tholder.num is not None and
+                    tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=ntholder.sith,
+               nt=(ntholder.num if intive and tholder.num is not None and
+                    ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,  # hash qual Base64
-               bt= toader.num if intive and toader.num <= MaxIntThold else toader.numh,
+               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                a=data,  # list of seal dicts
