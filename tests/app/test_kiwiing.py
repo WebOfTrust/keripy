@@ -677,8 +677,7 @@ def test_oobi_ends(seeder):
                              registrar=None,
                              credentialer=None,
                              servery=booting.Servery(port=1234),
-                             bootConfig=dict(),
-                             oobiery=oobiery)
+                             bootConfig=dict())
         client = testing.TestClient(app)
 
         result = client.simulate_get(path="/oobi/test?role=witness")
@@ -723,48 +722,46 @@ def test_oobi_ends(seeder):
         data = dict(rpy={})
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
-        assert result.status == falcon.HTTP_202
+        assert result.status == falcon.HTTP_501
 
         data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
         b = json.dumps(data).encode("utf-8")
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
-        assert len(oobiery.oobis) == 1
-        oobi = oobiery.oobis.popleft()
-        assert oobi == {'url': 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'}
-
-        # Post without a URL or RPY
-        data = dict(oobialias="sal")
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi/pal", body=b)
-        assert result.status == falcon.HTTP_400
+        assert oobiery.hby.db.oobis.cntAll() == 1
+        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        assert item is not None
+        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        oobiery.hby.db.oobis.rem(keys=(url,))
 
         # Post an RPY
         data = dict(oobialias="sal", rpy={})
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi/pal", body=b)
-        assert result.status == falcon.HTTP_202
+        result = client.simulate_post(path="/oobi", body=b)
+        assert result.status == falcon.HTTP_501
 
         # POST without an oobialias
         data = dict(url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
         b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi/pal", body=b)
-        assert result.status == falcon.HTTP_400
-
-        # Post to an unknown local alias
-        data = dict(oobialias="sal",
-                    url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/")
-        b = json.dumps(data).encode("utf-8")
-        result = client.simulate_post(path="/oobi/jim", body=b)
-        assert result.status == falcon.HTTP_404
-
-        result = client.simulate_post(path="/oobi/pal", body=b)
+        result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
-        assert len(oobiery.oobis) == 1
-        oobi = oobiery.oobis.popleft()
-        assert oobi == {'alias': 'pal',
-                        'oobialias': 'sal',
-                        'url': 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'}
+        assert oobiery.hby.db.oobis.cntAll() == 1
+        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        assert item is not None
+        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        assert item.oobialias is None
+        oobiery.hby.db.oobis.rem(keys=(url,))
+
+        data = dict(oobialias="sal", url="http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
+                                         "/witness/")
+        b = json.dumps(data).encode("utf-8")
+        result = client.simulate_post(path="/oobi", body=b)
+        assert result.status == falcon.HTTP_202
+        assert oobiery.hby.db.oobis.cntAll() == 1
+        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        assert item is not None
+        assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
+        assert item.oobialias == 'sal'
 
 
 def test_challenge_ends(seeder):

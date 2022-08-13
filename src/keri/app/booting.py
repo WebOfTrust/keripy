@@ -163,8 +163,6 @@ class BootEnd(doing.DoDoer):
         self.configDir = configDir
         self.headDirPath = headDirPath
         self.msgs = decking.Deck()
-        self.hby = None
-        self.rgy = None
         self.bootConfig = dict(
             configFile=configFile,
             configDir=configDir,
@@ -172,39 +170,8 @@ class BootEnd(doing.DoDoer):
         ) | kwa
         self._kiwinits = kwa
 
-        doers = [doing.doify(self.loadDo)]
+        doers = []
         super(BootEnd, self).__init__(doers=doers)
-
-    def loadDo(self, tymth, tock=0.0):
-        """ Load oobis and close Habery when done
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Returns:  doifiable Doist compatible generator method for loading oobis using
-                  the Oobiery
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while not self.hby:
-            yield self.tock
-
-        obl = oobiing.OobiLoader(hby=self.hby, auto=True)
-        self.extend([obl])
-
-        while not obl.done:
-            yield self.tock
-
-        self.hby.close()
-        self.hby = None
-
-        while True:
-            yield 10.0
 
     def on_get_name(self, _, rep, name=None):
         """ GET endpoint for
@@ -317,8 +284,9 @@ class BootEnd(doing.DoDoer):
 
         hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, headDirPath=self.headDirPath, **kwa)
         rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
-        self.hby = hby
-        self.rgy = rgy
+
+        hby.close()
+        rgy.close()
 
         rep.status = falcon.HTTP_200
         body = dict(name=name, msg="Agent and keystore created")

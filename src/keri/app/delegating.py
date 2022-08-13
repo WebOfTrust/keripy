@@ -13,7 +13,8 @@ from hio.help import decking
 
 from . import agenting, forwarding
 from ..core import coring
-from ..db import dbing
+from ..db import dbing, basing
+from ..help import helping
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -166,19 +167,18 @@ class Boatswain(doing.DoDoer):
         return hab
 
 
-def loadHandlers(hby, exc, notifier, oobiery):
+def loadHandlers(hby, exc, notifier):
     """ Load handlers for the peer-to-peer delegation protocols
 
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
         notifier (Notifier): Outbound notifications
-        oobiery: (Oobiery): OOBI loader
 
     """
     delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(delreq)
-    oobireq = OobiRequestHandler(hby=hby, notifier=notifier, oobiery=oobiery)
+    oobireq = OobiRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(oobireq)
 
 
@@ -286,7 +286,7 @@ class OobiRequestHandler(doing.DoDoer):
     """
     resource = "/oobis"
 
-    def __init__(self, hby, notifier, oobiery, **kwa):
+    def __init__(self, hby, notifier, **kwa):
         """
 
         Parameters:
@@ -296,7 +296,6 @@ class OobiRequestHandler(doing.DoDoer):
         """
         self.hby = hby
         self.notifier = notifier
-        self.oobiery = oobiery
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -337,7 +336,8 @@ class OobiRequestHandler(doing.DoDoer):
                 hab = self.hby.habs[pre]
 
                 src = prefixer.qb64
-                self.oobiery.oobis.append(dict(alias=hab.name, oobialias=oobialias, url=oobi))
+                obr = basing.OobiRecord(oobialias=oobialias, date=helping.nowIso8601())
+                self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
                 data = dict(
                     r="/oobi",

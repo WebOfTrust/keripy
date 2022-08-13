@@ -51,8 +51,8 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     oobiery = ending.Oobiery(hby=hby)
 
     app = falcon.App(cors_enable=True)
-    ending.loadEnds(app=app, hby=hby)
-    oobiRes = oobiing.loadEnds(app=app, hby=hby, oobiery=oobiery, prefix="/ext")
+    ending.loadEnds(app=app, hby=hby, default=hab.pre)
+    oobiRes = oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
     rep = storing.Respondant(hby=hby, mbx=mbx)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
@@ -88,14 +88,13 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     serverDoer = serving.ServerDoer(server=server)
 
     directant = directing.Directant(hab=hab, server=server, verifier=verfer)
-    obl = oobiing.OobiLoader(hby=hby, auto=True)
 
     witStart = WitnessStart(hab=hab, parser=parser, cues=cues,
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
                             responses=rep.cues, queries=httpEnd.qrycues)
 
     doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, obl, witStart, oobiery])
+    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, oobiery])
 
     return doers
 

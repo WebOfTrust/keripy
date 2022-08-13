@@ -200,7 +200,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         exc = exchanging.Exchanger(hby=hby, handlers=[])
         oobiery = ending.Oobiery(hby=hby)
 
-        delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier, oobiery=oobiery)
+        delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)

@@ -34,7 +34,8 @@ class Regery:
         self.temp = temp
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp)
+        self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
+                                                           reopen=True)
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
 
@@ -102,7 +103,7 @@ class Regery:
         self.tvy.processEscrows()
 
     def close(self):
-        if self.reger.inited:
+        if self.reger.opened:
             self.reger.close()
 
 

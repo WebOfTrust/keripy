@@ -26,8 +26,6 @@ from .. import help
 from .. import kering
 from ..app import habbing, connecting
 from ..core import coring
-from ..db import basing
-from ..help import nowIso8601
 
 logger = help.ogler.getLogger()
 
@@ -404,10 +402,18 @@ class OOBIEnd:
 
     """
 
-    def __init__(self, hby: habbing.Habery):
-        self.hby = hby
+    def __init__(self, hby: habbing.Habery, default=None):
+        """  End point for responding to OOBIs
 
-    def on_get(self, req, rep, aid, role=None, eid=None):
+        Parameters:
+            hby (Habery): database environment
+            default (str) qb64 AID of the 'self' of the node for
+
+        """
+        self.hby = hby
+        self.default = default
+
+    def on_get(self, req, rep, aid=None, role=None, eid=None):
         """  GET endoint for OOBI resource
 
         Parameters:
@@ -418,6 +424,14 @@ class OOBIEnd:
             eid: qb64 identifier prefix of participant in role
 
         """
+
+        if aid is None:
+            if self.default is None:
+                rep.status = falcon.HTTP_NOT_FOUND
+                rep.text = "no blind oobi for this node"
+                return
+
+            aid = self.default
 
         if aid not in self.hby.kevers:
             rep.status = falcon.HTTP_NOT_FOUND
@@ -443,7 +457,7 @@ class OOBIEnd:
             rep.status = falcon.HTTP_200  # This is the default status
             rep.set_header(OOBI_AID_HEADER, aid)
             rep.content_type = "application/json+cesr"
-            rep.data = msgs
+            rep.data = bytes(msgs)
         else:
             rep.status = falcon.HTTP_NOT_FOUND
 
@@ -454,7 +468,7 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEnds(app, *, tymth=None, hby=None):
+def loadEnds(app, *, tymth=None, hby=None, default=None):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
@@ -466,6 +480,7 @@ def loadEnds(app, *, tymth=None, hby=None):
         app(falcon.App): Falcon Rest app for endpoint route registration
         tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
         hby(Habery): glocal database environment
+        default (str) qb64 AID of the 'self' of the node for
 
     """
     sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
@@ -479,9 +494,11 @@ def loadEnds(app, *, tymth=None, hby=None):
     # handles all requests to '/admin' URL path
     app.add_route('/admin', AdminEnd(tymth=tymth, hby=hby))
 
-    app.add_route("/oobi/{aid}", OOBIEnd(hby=hby))
-    app.add_route("/oobi/{aid}/{role}", OOBIEnd(hby=hby))
-    app.add_route("/oobi/{aid}/{role}/{eid}", OOBIEnd(hby=hby))
+    end = OOBIEnd(hby=hby, default=default)
+    app.add_route("/oobi", end)
+    app.add_route("/oobi/{aid}", end)
+    app.add_route("/oobi/{aid}/{role}", end)
+    app.add_route("/oobi/{aid}/{role}/{eid}", end)
 
 
 def setup(name="who", temp=False, tymth=None, sith=None, count=1,
@@ -534,12 +551,11 @@ class Oobiery(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, oobis=None, cues=None):
+    def __init__(self, hby, cues=None):
         """  DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
-            db (Baser): database instance
-            oobis (decking.Deck): inbound cue of oobis to process
+            hby (Habery): database environment
             cues (decking.Deck): outbound cues from processing oobis
         """
 
@@ -551,10 +567,8 @@ class Oobiery(doing.DoDoer):
         kvy.registerReplyRoutes(router=rtr)
         self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
 
-        self.oobis = oobis if oobis is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.retries = decking.Deck()
-        self.clients = decking.Deck()
+        self.clients = dict()
 
         super(Oobiery, self).__init__(doers=[doing.doify(self.scoobiDo), doing.doify(self.clientsDo),
                                              doing.doify(self.retryDo)])
@@ -575,55 +589,48 @@ class Oobiery(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.oobis:
-                oobi = self.oobis.popleft()
+            # There should be only one OOBIERY that minds the OOBI table, this should read from the table
+            # like an escrow
+            for (url, ), obr in self.hby.db.oobis.getItemIter():
                 try:
-                    url = oobi["url"]
                     purl = parse.urlparse(url)
 
                     if purl.path == "/oobi":  # Self and Blinded Introductions
-                        print("blinded")
+                        params = parse.parse_qs(purl.query)
+
+                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
+                        if "name" in params and obr.oobialias is None:
+                            obr.oobialias = params["name"][0]
+
+                        self.request(url, purl, obr)
 
                     elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
-
                         obr.cid = match.group("cid")
                         obr.eid = match.group("eid")
                         obr.role = match.group("role")
                         params = parse.parse_qs(purl.query)
 
-                        # If name is hinted in query string, use it as alias
-                        if "name" in params:
+                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
+                        if "name" in params and obr.oobialias is None:
                             obr.oobialias = params["name"][0]
-
-                        # Override name if provided with OOBIRecord
-                        if "oobialias" in oobi:
-                            obr.oobialias = oobi["oobialias"]
 
                         self.request(url, purl, obr)
 
                     elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
-
                         obr.said = match.group("said")
-
                         self.request(url, purl, obr)
 
                     elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
-                        obr = self.hby.db.oobis.get(keys=(url, )) or basing.OobiRecord(date=nowIso8601())
                         params = parse.parse_qs(purl.query)
 
-                        # If name is hinted in query string, use it as alias
-                        if "name" in params:
+                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
+                        if "name" in params and obr.oobialias is None:
                             obr.oobialias = params["name"][0]
 
-                        # Override name if provided with OOBIRecord
-                        if "oobialias" in oobi:
-                            obr.oobialias = oobi["oobialias"]
                         self.request(url, purl, obr)
 
                 except ValueError as ex:
-                    print("error requesting invalid OOBI URL {}", oobi)
+                    print("error requesting invalid OOBI URL {}", url)
                 yield self.tock
 
             yield self.tock
@@ -642,55 +649,57 @@ class Oobiery(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.clients:
-                (oobi, client, clientDoer) = self.clients.popleft()
+            for (url, ), obr in self.hby.db.coobi.getItemIter():
+                if url not in self.clients:
+                    purl = parse.urlparse(url)
+                    self.request(url, purl, obr)
+                    continue
+
+                (client, clientDoer) = self.clients[url]
 
                 if client.responses:
                     response = client.responses.popleft()
                     self.remove([clientDoer])
 
                     if response["status"] == 404:
-                        print(f"{oobi} not found")
-                        obr = self.hby.db.oobis.get(oobi)
-                        retry = dict(url=oobi, oobialias=obr.oobialias)
-                        self.retries.append(retry)
-                        continue
+                        print(f"{url} not found")
+                        self.hby.db.coobi.rem(keys=(url,))
+                        self.hby.db.eoobi.pin(keys=(url,), val=obr)
 
-                    if not response["status"] == 200:
-                        self.cues.append(dict(kin="failed", oobi=oobi))
+                    elif not response["status"] == 200:
+                        self.hby.db.coobi.rem(keys=(url,))
                         print("invalid status for oobi response: {}".format(response["status"]))
-                        continue
+                        self.cues.append(dict(kin="failed", oobi=url))
 
-                    if response["headers"]["Content-Type"] == "application/json+cesr":
+                    elif response["headers"]["Content-Type"] == "application/json+cesr":
                         self.parser.parse(ims=bytearray(response["body"]))
-                        self.cues.append(dict(kin="resolved", oobi=oobi))
-                        obr = self.hby.db.oobis.get(oobi)
                         if "Keri-Aid" in response["headers"]:
                             obr.cid = response["headers"]["Keri-Aid"]
 
                         if obr.oobialias is not None and obr.cid:
                             self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias))
 
+                        self.hby.db.coobi.rem(keys=(url,))
+                        self.cues.append(dict(kin="resolved", oobi=url))
+
                     elif response["headers"]["Content-Type"] == "application/schema+json":
-                        obr = self.hby.db.oobis.get(oobi)
                         try:
                             schemer = scheming.Schemer(raw=bytearray(response["body"]))
                             if schemer.said == obr.said:
                                 self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
-                                self.cues.append(dict(kin="resolved", oobi=oobi))
+                                self.cues.append(dict(kin="resolved", oobi=url))
                             else:
-                                self.cues.append(dict(kin="failed", oobi=oobi))
+                                self.cues.append(dict(kin="failed", oobi=url))
 
                         except Exception:
-                            self.cues.append(dict(kin="failed", oobi=oobi))
+                            self.cues.append(dict(kin="failed", oobi=url))
+
+                        self.hby.db.coobi.rem(keys=(url,))
 
                     else:
-                        self.cues.append(dict(kin="failed", oobi=oobi))
+                        self.cues.append(dict(kin="failed", oobi=url))
                         print("invalid content type for oobi response: {}"
                               .format(response["headers"]["Content-Type"]))
-
-                else:
-                    self.clients.append((oobi, client, clientDoer))
 
                 yield self.tock
 
@@ -711,16 +720,14 @@ class Oobiery(doing.DoDoer):
 
         retryDelay = 10.0
         while True:
-            while self.retries:
-                retry = self.retries.popleft()
-                self.oobis.append(retry)
-
+            for (url, ), obr in self.hby.db.eoobi.getItemIter():
+                self.hby.db.eoobi.rem(keys=(url,))
+                self.hby.db.oobis.pin(keys=(url,), val=obr)
                 yield retryDelay
 
             yield retryDelay
 
     def request(self, url, purl, obr):
-        self.hby.db.oobis.pin(keys=(url,), val=obr)
 
         client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
         clientDoer = http.clienting.ClientDoer(client=client)
@@ -732,4 +739,6 @@ class Oobiery(doing.DoDoer):
             qargs=parse.parse_qs(purl.query),
         )
 
-        self.clients.append((url, client, clientDoer))
+        self.clients[url] = (client, clientDoer)
+        self.hby.db.oobis.rem(keys=(url,))
+        self.hby.db.coobi.pin(keys=(url,), val=obr)
