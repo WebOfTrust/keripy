@@ -64,7 +64,7 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list qb64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st: Union[str, list] = '0' # signing threshold
+    st: int | str | list = '0' # signing threshold
     dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
