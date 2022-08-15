@@ -590,12 +590,12 @@ def incept(keys,
     Utility function to automate creation of inception events.
 
     Parameters:
-        keys  (list): qb64 current signing keys
+        keys  (list): current signing keys qb64
         sith (int | str | list): current signing threshold input to Tholder
-        nkeys (list): qb64 current signing key digests
+        nkeys (list): current signing key digests qb64
         nsith int | str | list): next signing threshold input to Tholder
         toad (int | str ): witness threshold number if str then hex str
-        wits (list): qb64 witness identifier prefixes
+        wits (list): witness identifier prefixes qb64
         cnfg (list): configuration traits from TraitDex
         data (list): seal dicts
         version (Version): KERI protocol version string
@@ -605,12 +605,8 @@ def incept(keys,
             not hex str when numeric threshold
     """
     vs = versify(version=version, kind=kind, size=0)
-    sner = Number(num=0)
+    sner = Number(num=0)  # sn for incept must be 0
     ilk = Ilks.icp
-
-    #if isinstance(sith, int):
-        #sith = max(1, sith)
-        #sith = f"{sith:x}"
 
     if sith is None:
         sith = max(1, ceil(len(keys) / 2))
@@ -639,9 +635,6 @@ def incept(keys,
     if len(oset(wits)) != len(wits):
         raise ValueError(f"Invalid wits = {wits}, has duplicates.")
 
-
-    #if isinstance(toad, str):
-        #toad = "{:x}".format(toad)
     if toad is None:
         if not wits:
             toad = 0
@@ -829,26 +822,30 @@ def rotate(pre,
            data=None,
            version=Version,
            kind=Serials.json,
+           intive = False,
            ):
     """
     Returns serder of rotation event message.
     Utility function to automate creation of rotation events.
 
-     Parameters:
-        pre is identifier prefix qb64
-        keys is list of qb64 signing keys
-        dig is digest of previous event qb64
-        sn is int sequence number
-        sith is string or list format for signing threshold
-        nkeys is list of qb64 next key digests
-        nsith is string, or list format for next signing threshold
-        toad is int or str hex of witness threshold
-        wits is list of prior witness prefixes qb64
-        cuts is list of witness prefixes to cut qb64
-        adds is list of witness prefixes to add qb64
-        data is list of seal dicts
-        version is Version instance
-        kind is serialization kind
+    Parameters:
+        pre (str): identifier prefix qb64
+        keys  (list): current signing keys qb64
+        dig (str): said of previous event qb64
+        sn (int | str): sequence number int or hex str
+        sith (int | str | list): current signing threshold input to Tholder
+        nkeys (list): current signing key digests qb64
+        nsith int | str | list): next signing threshold input to Tholder
+        toad (int | str ): witness threshold number if str then hex str
+        wits (list): prior witness identifier prefixes qb64
+        cuts (list): witness prefixes to cut qb64
+        adds (list): witness prefixes to add qb64
+        data (list): seal dicts
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+            not hex str when numeric threshold
+
     """
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
