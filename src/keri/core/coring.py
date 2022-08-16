@@ -179,7 +179,6 @@ def sizeify(ked, kind=None):
     return raw, ident, kind, ked, version
 
 
-
 def randomNonce():
     """ Generate a random ed25519 seed and encode as qb64
 

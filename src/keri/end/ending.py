@@ -453,11 +453,16 @@ class OOBIEnd:
             eids.append(eid)
 
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
+        if not msgs and role is None:
+            msgs = hab.replyToOobi(aid=aid, role=kering.Roles.witness, eids=eids)
+            msgs.extend(hab.replay(aid))
+
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status
             rep.set_header(OOBI_AID_HEADER, aid)
             rep.content_type = "application/json+cesr"
             rep.data = bytes(msgs)
+
         else:
             rep.status = falcon.HTTP_NOT_FOUND
 
@@ -468,7 +473,7 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEnds(app, *, tymth=None, hby=None, default=None):
+def loadEnds(app, hby, *, tymth=None, default=None):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
@@ -478,8 +483,8 @@ def loadEnds(app, *, tymth=None, hby=None, default=None):
 
     Parameters:
         app(falcon.App): Falcon Rest app for endpoint route registration
-        tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
         hby(Habery): glocal database environment
+        tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
         default (str) qb64 AID of the 'self' of the node for
 
     """

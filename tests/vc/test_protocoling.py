@@ -10,9 +10,9 @@ from keri.core import coring, scheming, eventing, parsing
 from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vc import protocoling
-from keri.vc.protocoling import IssueHandler, PresentationRequestHandler
+from keri.vc.protocoling import IssueHandler, PresentationRequestHandler, PresentationProofHandler, \
+    presentationExchangeExn
 from keri.vc.proving import credential
-from keri.vc.walleting import Wallet
 from keri.vdr import verifying, credentialing
 
 
@@ -205,7 +205,6 @@ def test_proving(seeder, mockCoringRandomNonce):
         assert creder.said == "EHfB6aCydzucwhKwN6Yr4zUxNSm4Ahefp17jIuquYIwc"
 
         msg = signing.ratify(sidHab, serder=creder)
-        hanWallet = Wallet(reger=hanReg.reger)
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -221,14 +220,14 @@ def test_proving(seeder, mockCoringRandomNonce):
         assert hanReg.reger.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        hanRequestHandler = PresentationRequestHandler(hby=hanHby, wallet=hanWallet)
-        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler])
+        notifier = notifying.Notifier(hby=hanHby)
+        hanRequestHandler = PresentationRequestHandler(hby=hanHby, notifier=notifier)
+        hanPresentHandler = PresentationProofHandler(notifier=notifier)
+        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler, hanPresentHandler])
 
         # Create the issue credential payload
         pl = dict(
-            input_descriptors=[
-                dict(s=schema)
-            ]
+            s=schema
         )
 
         # Create the `exn` message for presentation request
@@ -241,24 +240,35 @@ def test_proving(seeder, mockCoringRandomNonce):
         doist.do(doers=[hanExc])
         assert doist.tyme == limit
 
-        resp = hanRequestHandler.cues.popleft()
+        resp = notifier.signaler.signals.popleft()
         assert resp is not None
+        notifier.noter.rem(resp.rid)
 
-        respSer = coring.Serder(raw=resp["rep"].raw)
-        assert respSer.ked['t'] == coring.Ilks.exn
-        assert respSer.ked['r'] == "/presentation/proof"
-        data = respSer.ked['a']
-        assert "presentation_submission" in data
+        note = resp.attrs["note"]
+        a = note["a"]
+        assert a["schema"] == dict(
+            n=schema
+        )
 
-        pe = data["presentation_submission"]
-        assert "descriptor_map" in pe
+        exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
+        assert exn.ked['r'] == "/presentation"
+        assert atc == (b'-HABEJcjV4DalEqAtaOdlEcjNvo75HCs0lN5K3BbQwJ5kN6o-AABAA9O7ltaU6-h'
+                       b'bObeoagHuOPzduOjIp7QssrtblFnY9NvaUGYJaQHIldzsW-geWkXTVJ160QM8LQ5'
+                       b'5bZa0W68e3BA')
 
-        dm = pe["descriptor_map"]
-        assert len(dm) == 1
-        assert dm[0]["id"] == schema
+        msg = bytearray(exn.raw)
+        msg.extend(atc)
+        parsing.Parser().parse(ims=msg, kvy=hanKvy, exc=hanExc)
+        doist.do(doers=[hanExc])
+        assert doist.tyme == limit * 2
 
-        assert "verifiableCredential" in data
-        vcs = data["verifiableCredential"]
-        assert len(vcs) == 1
-
-        assert vcs[0] == "EHfB6aCydzucwhKwN6Yr4zUxNSm4Ahefp17jIuquYIwc"
+        resp = notifier.signaler.signals.popleft()
+        assert resp is not None
+        note = resp.attrs["note"]
+        a = note["a"]
+        assert a == {
+            'r': "/presentation",
+            'issuer': {'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'},
+            'schema': {'n': 'ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI'},
+            'credential': {'n': 'EHfB6aCydzucwhKwN6Yr4zUxNSm4Ahefp17jIuquYIwc'}
+        }
