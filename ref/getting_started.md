@@ -103,12 +103,12 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # -------------------------------Basic Rotation-----------------------------
-    # this gets: AttributeError: 'Nexter' object has no attribute 'qb64'
     verfers, digers, _, _ = mgr.rotate(verfers[0].qb64)  # generate new keys
 
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
+    # this gets: AttributeError: 'Nexter' object has no attribute 'qb64'
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
