@@ -36,7 +36,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     # Init key pair manager
     mgr = keeping.Manager(ks=kpr, salt=salt)
-    verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0)
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
@@ -47,10 +47,10 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -59,8 +59,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -72,8 +72,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 #### Rotation
 
 ##### Non Transferable
-In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a 
-non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning 
+In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a
+non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning
 your identifier.
 
 ##### Transferable
@@ -81,10 +81,10 @@ your identifier.
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -93,8 +93,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -103,7 +103,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # -------------------------------Basic Rotation-----------------------------
-    verfers, digers = mgr.rotate(verfers[0].qb64)  # generate new keys
+    # this gets: AttributeError: 'Nexter' object has no attribute 'qb64'
+    verfers, digers, _, _ = mgr.rotate(verfers[0].qb64)  # generate new keys
 
     # create rotation event
     identifier = srdr.pre
@@ -127,10 +128,10 @@ identifier prefix with a content digest (hash) of the inception statement and th
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # -----------------------Non Transferable Identifiers-----------------------
     # --------------------------------------------------------------------------
@@ -140,13 +141,13 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False)  # set a non transferable derivation code
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0, transferable=False)  # set a non transferable derivation code
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
-    
+
     # ----------Abandoned Self-Addressing Identifier(Non Transferable)----------
     # Has a transferable derivation code, but contains an empty pre-rotation key.  Essentially the identifier has been 
     # abandoned.  This example is for illustration purposes only you should never need to abandon a self-addressing 
@@ -154,8 +155,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0, transferable=True)
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)  # empty nxt i.e. abandoned
     print(srdr.raw.decode("utf-8"))
@@ -166,10 +167,10 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -178,8 +179,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -200,10 +201,10 @@ your identifier.
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -212,8 +213,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -223,11 +224,12 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # --------------------------Self-Addressing Rotation------------------------
-    verfers, digers = mgr.rotate(verfers[0].qb64)  # generate new keys
+    verfers, digers, _, _ = mgr.rotate(verfers[0].qb64)  # generate new keys
 
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
+    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
@@ -248,20 +250,20 @@ This type is not supported by KERI
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # -----------------------Non Transferable Identifiers-----------------------
     # --------------------------------------------------------------------------
-    
+
     # ------------Self-Addressing Non Transferable Multisig Identifier----------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=3, ncount=0, transferable=False)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=3, ncount=0, transferable=False)
 
     srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
@@ -272,10 +274,10 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -284,8 +286,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=3, ncount=3, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=3, ncount=3, transferable=True)
 
     keys = [verfer.qb64 for verfer in verfers]
 
@@ -306,10 +308,10 @@ your identifier.
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # --------------------------Transferable Identifiers------------------------
     # --------------------------------------------------------------------------
@@ -319,8 +321,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=3, ncount=3, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=3, ncount=3, transferable=True)
 
     keys = [verfer.qb64 for verfer in verfers]
 
@@ -330,11 +332,12 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # ---------Self-Addressing Transferable Multisig Identifier Rotation--------
-    verfers, digers = mgr.rotate(verfers[0].qb64, count=3)  # generate 3 new keys
+    verfers, digers, _, _ = mgr.rotate(verfers[0].qb64, count=3)  # generate 3 new keys
 
     # create rotation event
     identifier = srdr.pre
     keys = [verfer.qb64 for verfer in verfers]
+    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
     nxtKeyDig = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
@@ -469,25 +472,23 @@ There is a function that will handle all this for you called messagize().
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1)
 
     keys = [verfers[0].qb64]
-
     srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
-    
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
-    
+
     # Create the message
+    # this gets : TypeError: messagize() takes 1 positional argument but 2 were given
     msg = eventing.messagize(srdr, sigers)
     print(msg)
     print()
@@ -501,22 +502,21 @@ creating an event message.
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1)
 
     keys = [verfers[0].qb64]
 
     srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
-    
+
     # Create Signatures
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 ```
@@ -525,27 +525,27 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1)
 
     keys = [verfers[0].qb64]
 
     srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
-    
+
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
-    
+
     # Create the message
+    # this gets : TypeError: messagize() takes 1 positional argument but 2 were given
     msg = eventing.messagize(srdr, sigers)
-    
+
     # --------------------------------Validation--------------------------------
     kevery = eventing.Kevery(db=db)
     valid = True
@@ -553,7 +553,7 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
         kevery.processOne(ims=msg)
     except Exception:
         valid = False
-    
+
     print("Valid: {}".format(valid))
     print()
 ```
@@ -563,16 +563,16 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -582,11 +582,12 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # -------------------------------Basic Rotation-----------------------------
-    verfers, digers = mgr.rotate(verfers[0].qb64)  # generate new keys
+    verfers, digers, _, _ = mgr.rotate(verfers[0].qb64)  # generate new keys
 
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
+    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
     nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)  # Create rotation event
@@ -604,16 +605,16 @@ identifier a rotation event is created and the pre rotated key is set to an empt
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=1, transferable=True)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, _, _ = mgr.incept(icount=1, ncount=1, transferable=True)
 
     keys = [verfers[0].qb64]
 
@@ -623,8 +624,8 @@ with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # ------------------------------Basic Abandonment---------------------------
-    verfers, digers = mgr.rotate(verfers[0].qb64,
-                                 count=0)  # grab inception next keys but generate no next keys for rotation
+    verfers, digers, _, _ = mgr.rotate(verfers[0].qb64,
+                                       count=0)  # grab inception next keys but generate no next keys for rotation
 
     # create rotation event
     identifier = srdr.pre
