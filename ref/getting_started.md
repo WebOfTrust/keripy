@@ -36,7 +36,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     # Init key pair manager
     mgr = keeping.Manager(ks=kpr, salt=salt)
-    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0)
+    verfers, _, _, _ = mgr.incept(icount=1, ncount=0)
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
@@ -142,7 +142,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     # Init key pair manager
     mgr = keeping.Manager(ks=kpr, salt=salt)
-    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0, transferable=False)  # set a non transferable derivation code
+    verfers, _, _, _ = mgr.incept(icount=1, ncount=0, transferable=False)  # set a non transferable derivation code
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
@@ -156,7 +156,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     # Init key pair manager
     mgr = keeping.Manager(ks=kpr, salt=salt)
-    verfers, digers, _, _ = mgr.incept(icount=1, ncount=0, transferable=True)
+    verfers, _, _, _ = mgr.incept(icount=1, ncount=0, transferable=True)
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)  # empty nxt i.e. abandoned
     print(srdr.raw.decode("utf-8"))
@@ -263,7 +263,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     # Init key pair manager
     mgr = keeping.Manager(ks=kpr, salt=salt)
-    verfers, digers, _, _ = mgr.incept(icount=3, ncount=0, transferable=False)
+    verfers, _, _, _ = mgr.incept(icount=3, ncount=0, transferable=False)
 
     srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
