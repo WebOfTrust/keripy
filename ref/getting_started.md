@@ -518,6 +518,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
+import keri.core.parsing as parsing
 import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
@@ -542,9 +543,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     kevery = eventing.Kevery(db=db)
     valid = True
     try:
-        # This is not defined (it should probably be `processEvent`).
-        # Also, the real error is masked by this "catch".
-        kevery.processOne(ims=msg)
+        parsing.Parser().parseOne(ims=msg, kvy=kevery)
     except Exception:
         valid = False
 
