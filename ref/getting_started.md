@@ -108,8 +108,6 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
-    # this gets: AttributeError: 'Nexter' object has no attribute 'qb64'
-    nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
@@ -229,8 +227,6 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
-    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
-    nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
@@ -337,8 +333,6 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # create rotation event
     identifier = srdr.pre
     keys = [verfer.qb64 for verfer in verfers]
-    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
-    nxtKeyDig = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
 
@@ -488,8 +482,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
     # Create the message
-    # this gets : TypeError: messagize() takes 1 positional argument but 2 were given
-    msg = eventing.messagize(srdr, sigers)
+    msg = eventing.messagize(srdr, sigers=sigers)
     print(msg)
     print()
 ```
@@ -543,13 +536,14 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
     # Create the message
-    # this gets : TypeError: messagize() takes 1 positional argument but 2 were given
-    msg = eventing.messagize(srdr, sigers)
+    msg = eventing.messagize(srdr, sigers=sigers)
 
     # --------------------------------Validation--------------------------------
     kevery = eventing.Kevery(db=db)
     valid = True
     try:
+        # This is not defined (it should probably be `processEvent`).
+        # Also, the real error is masked by this "catch".
         kevery.processOne(ims=msg)
     except Exception:
         valid = False
@@ -587,8 +581,6 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # create rotation event
     identifier = srdr.pre
     keys = [verfers[0].qb64]
-    # this gets : AttributeError: 'Nexter' object has no attribute 'qb64'
-    nxtKeyDig = coring.Nexter(digs=[digers[0].qb64]).qb64
     icpDigest = srdr.saider.qb64
     srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)  # Create rotation event
 
