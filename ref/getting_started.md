@@ -23,20 +23,20 @@ derivation code prepended to Base-64 encoding of a public digital signing key.
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
-import keri.base.keeping as keeping
+import keri.app.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
+with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # -----------------------Non Transferable Identifiers-----------------------
     # --------------------------------------------------------------------------
-    
+
     # ---------------------Basic Non Transferable Identifier--------------------
     salt = coring.Salter().qb64
 
     # Init key pair manager
-    mgr = keeping.Manager(keeper=kpr, salt=salt)
-    verfers, digers = mgr.incept(icount=1, ncount=0)
+    mgr = keeping.Manager(ks=kpr, salt=salt)
+    verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0)
 
     srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
