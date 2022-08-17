@@ -573,6 +573,7 @@ def fetchTsgs(db, saider, snh=None):
 MaxIntThold = 2 ** 32 - 1
 
 def incept(keys,
+           *,
            sith=None,
            nkeys=None,
            nsith=None,
@@ -613,23 +614,22 @@ def incept(keys,
 
     tholder = Tholder(sith=sith)
     if tholder.num is not None and tholder.num < 1:
-        raise ValueError(f"Incept sith = {tholder.num} less than 1.")
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
         raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
 
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
     if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
+        nsith = max(0, ceil(len(nkeys) / 2))
 
     ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
     if ntholder.size > len(nkeys):
-        raise ValueError(f"Invalid nsith = {nsith} for keys = {nkeys}")
+            raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
+
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -811,6 +811,7 @@ def delcept(keys,
 def rotate(pre,
            keys,
            dig,
+           *,
            sn=1,
            sith=None,
            nkeys=None,
@@ -848,40 +849,36 @@ def rotate(pre,
 
     """
     vs = versify(version=version, kind=kind, size=0)
+    sner = Number(num=sn)
+    if sner.num < 1:  # sn for rotate must be >= 1
+        raise ValueError(f"Invalid sn = 0x{sner.numh} for rot.")
     ilk = Ilks.rot
 
-    if sn < 1:
-        raise ValueError("Invalid sn = {} for rot.".format(sn))
-
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
-
     if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+        sith = max(1, ceil(len(keys) / 2))
 
     tholder = Tholder(sith=sith)
+    if tholder.num is not None and tholder.num < 1:
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
 
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
     if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
+        nsith = max(0, ceil(len(nkeys) / 2))
 
     ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
     if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
 
     wits = wits if wits is not None else []
     witset = oset(wits)
     if len(witset) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
 
     cuts = cuts if cuts is not None else []
     cutset = oset(cuts)
@@ -908,36 +905,36 @@ def rotate(pre,
         raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
                          "and adds = {}.".format(wits, cuts, adds))
 
-    if isinstance(toad, str):
-        toad = "{:x}".format(toad)
-    elif toad is None:
+    if toad is None:
         if not newitset:
             toad = 0
-        else:  # compute default f and m for len(newitset)
+        else:  # compute default f and m for len(wits)
             toad = ample(len(newitset))
+    toader = Number(num=toad)
 
     if newitset:
-        if toad < 1 or toad > len(newitset):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+        if toader.num < 1 or toader.num > len(newitset):  # out of bounds toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
     else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+        if toader.num != 0:  # invalid toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
+
 
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
                t=ilk,
-               d="",
+               d="",  # qb64 SAID
                i=pre,  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
+               s=sner.numh,  # hex string no leading zeros lowercase
                p=dig,  # qb64 digest of prior event
-               kt=tholder.sith,  # hex string no leading zeros lowercase or list
+               kt=(tholder.num if intive and tholder.num is not None and
+                    tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=ntholder.sith, # hex string no leading zeros lowercase or list
+               nt=(ntholder.num if intive and tholder.num is not None and
+                    ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,  # hash qual Base64
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
+               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals
