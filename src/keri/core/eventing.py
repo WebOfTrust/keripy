@@ -585,6 +585,7 @@ def incept(keys,
            kind=Serials.json,
            code=None,
            intive = False,
+           delpre=None,
            ):
     """
     Returns serder of inception event message.
@@ -592,22 +593,24 @@ def incept(keys,
 
     Parameters:
         keys  (list): current signing keys qb64
-        sith (int | str | list): current signing threshold input to Tholder
-        nkeys (list): current signing key digests qb64
-        nsith int | str | list): next signing threshold input to Tholder
-        toad (int | str ): witness threshold number if str then hex str
-        wits (list): witness identifier prefixes qb64
-        cnfg (list): configuration traits from TraitDex
-        data (list): seal dicts
+        sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): witness identifier prefixes qb64
+        cnfg (list | None): configuration traits from TraitDex
+        data (list | None): seal dicts
         version (Version): KERI protocol version string
         kind (str): serialization kind from Serials
-        code (str): derivation code for computed prefix
+        code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
             not hex str when numeric threshold
+        delpre (str | None): delegator identifier prefix qb64. When not None
+            makes this a msg type "dip", delegated inception event.
     """
     vs = versify(version=version, kind=kind, size=0)
     sner = Number(num=0)  # sn for incept must be 0
-    ilk = Ilks.icp
+    ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
 
     if sith is None:
         sith = max(1, ceil(len(keys) / 2))
@@ -672,8 +675,14 @@ def incept(keys,
                a=data,  # list of seal dicts
                )
 
-    if code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # not self-addressing code
+    if delpre is not None:  # delegated inception with ilk = dip
+        ked['di'] = delpre
+        if code is None:
+            code = MtrDex.Blake3_256  # Defaults to self addressing digest
+
+
+    if delpre is None and code is None and len(keys) == 1:
+        prefixer = Prefixer(qb64=keys[0])  # defaults to not self-addressing code
         if prefixer.digestive:
             raise ValueError("Invalid code, digestive={}, must be derived from"
                              " ked.".format(prefixer.code))
@@ -681,6 +690,11 @@ def incept(keys,
         # raises derivation error if non-empty nxt but ephemeral code
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
+        if delpre is not None:
+            if not prefixer.digestive:
+                raise ValueError(f"Invalid derivation code = {prefixer.code} "
+                                 f"for delegation. Must be digestive")
+
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
     if prefixer.digestive:
         ked["d"] = prefixer.qb64
@@ -689,123 +703,30 @@ def incept(keys,
 
     return Serder(ked=ked)  # return serialized ked
 
-
-def delcept(keys,
-            delpre,
-            code=None,
-            sith=None,
-            nkeys=None,
-            nsith=None,
-            toad=None,
-            wits=None,
-            cnfg=None,
-            data=None,
-            version=Version,
-            kind=Serials.json,
-            ):
+def delcept(keys, delpre, **kwa):
     """
     Returns serder of delegated inception event message.
     Utility function to automate creation of delegated inception events.
+    Syntactic suger that calls incept but with delpre.
 
-     Parameters:
-        keys is list of qb64 keys
-        delpre is qb64 of delegators's prefix
-        code is derivation code for prefix
-        sith is string, or list format for signing threshold
-        nkeys is list of qb64 next key digests
-        nsith is string, or list format for signing threshold
-        toad is int of str hex of witness threshold
-        wits is list of qb64 witness prefixes
-        cnfg is list of configuration trait dicts including permissions dicts
-        data is list of seal dicts
-        version is Version instance
-        kind is serialization kind
+    Parameters:
+        keys  (list): current signing keys qb64
+        sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): witness identifier prefixes qb64
+        cnfg (list | None): configuration traits from TraitDex
+        data (list | None): seal dicts
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        code (str | None): derivation code for computed prefix
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+            not hex str when numeric threshold
+        delpre (str | None): delegator identifier prefix qb64. When not None
+            makes this a msg type "dip", delegated inception event.
     """
-    vs = versify(version=version, kind=kind, size=0)
-    sn = 0
-    ilk = Ilks.dip
-
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
-
-    if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
-
-    tholder = Tholder(sith=sith)
-    if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-
-    if nkeys is None:
-        nkeys = []
-
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
-    if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
-
-    ntholder = Tholder(sith=nsith)
-    if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
-
-    wits = wits if wits is not None else []
-    if len(oset(wits)) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
-
-    if isinstance(toad, str):
-        toad = "{:x}".format(toad)
-    elif toad is None:
-        if not wits:
-            toad = 0
-        else:  # compute default f and m for len(wits)
-            toad = ample(len(wits))
-
-    if wits:
-        if toad < 1 or toad > len(wits):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
-    else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
-
-    cnfg = cnfg if cnfg is not None else []
-
-    data = data if data is not None else []
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               d="",
-               i="",  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
-               kt=tholder.sith,  # hex string no leading zeros lowercase or list
-               k=keys,  # list of qb64
-               nt=ntholder.sith,  # hex string no leading zeros lowercase or list
-               n=nkeys,  # hash qual Base64
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
-               b=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config and permission ordered mappings may be empty
-               a=data,  # list of seal dicts
-               di=delpre  # qb64 delegator prefix
-               )
-
-    if code is None:
-        code = MtrDex.Blake3_256  # Default digest
-
-    # raises derivation error if non-empty nxt but ephemeral code
-    prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
-
-    if not prefixer.digestive:
-        raise ValueError("Invalid derivation code = {} for delegation. Must be"
-                         " digestive".format(prefixer.code))
-
-    ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    if prefixer.digestive:
-        ked["d"] = prefixer.qb64
-    else:
-        _, ked = coring.Saider.saidify(sad=ked)
-
-    return Serder(ked=ked)  # return serialized ked
+    return incept(keys=keys, delpre=delpre, **kwa)
 
 
 def rotate(pre,
