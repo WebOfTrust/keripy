@@ -269,7 +269,7 @@ class PresentationRequestHandler(doing.Doer):
 
     resource = "/presentation/request"
 
-    def __init__(self, hby, wallet, cues=None, **kwa):
+    def __init__(self, hby, notifier, cues=None, **kwa):
         """ Create an `exn` request handler for processing credential presentation requests
 
         Parameters
@@ -281,7 +281,7 @@ class PresentationRequestHandler(doing.Doer):
         self.hby = hby
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.wallet = wallet
+        self.notifier = notifier
 
         super(PresentationRequestHandler, self).__init__(**kwa)
 
@@ -308,24 +308,36 @@ class PresentationRequestHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
-                requestor = msg["pre"]
-                descriptors = payload["input_descriptors"]
+                if "i" not in payload and "s" not in payload and "n" not in payload:
+                    print(f"invalid credential request message, one of i, s and n are required fields.  evt=: "
+                          f"{payload}")
+                    continue
 
-                matches = []
-                for descriptor in descriptors:
-                    schema = descriptor["s"]
-                    credentials = self.wallet.getCredentials(schema)
-                    if len(credentials) > 0:
-                        matches.append(credentials[0])
+                data = dict(
+                    r='/presentation/request',
+                    issuer={},
+                    schema={},
+                    credential={}
+                )
 
-                if len(matches) > 0:
-                    pe = presentationExchangeExn(db=self.hby.db, reger=self.wallet.reger, credentials=matches)
-                    exn = exchanging.exchange(route="/presentation/proof", payload=pe)
-                    self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
+                if "i" in payload:
+                    data["issuer"] = dict(
+                        i=payload["i"]
+                    )
+                if "s" in payload:
+                    data["schema"] = dict(
+                        n=payload["s"]
+                    )
+                if "i" in payload:
+                    data["credential"] = dict(
+                        n=payload["n"]
+                    )
 
-                yield
+                self.notifier.add(attrs=data)
 
-            yield
+                yield self.tock
+
+            yield self.tock
 
 
 class PresentationProofHandler(doing.Doer):
@@ -333,48 +345,11 @@ class PresentationProofHandler(doing.Doer):
 
       The payload of the message is expected to have the following format:
 
-        {
-          "presentation_submission": {
-              "id": "a30e3b91-fb77-4d22-95fa-871689c322e2",
-              "definition_id": "32f54163-7166-48f1-93d8-ff217bdb0653",
-              "descriptor_map": [
-                   {
-                     "id": "gleif_vlei",
-                     "format": "cesr",
-                     "path": "$.verifiableCredential[0]"
-                   }
-              ]
-          },
-          "verifiableCredential": [
-              {
-                "vc": {
-                   "v": "KERI10JSON00011c_", //KERI Version String
-                   "x": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the Schema
-                   "q": {
-                        "type": [
-                            "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI"
-                        ],
-                        "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
-                        "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",  //Identifier prefix of
-                        the issuer
-                        "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
-                        "credentialSubject": {
-                            "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
-                            "lei": "254900OPPU84GM83MG36"
-                        }
-                    } // embedded verifiable credential
-                }
-                "proof": "-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE
-                -YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI
-                -AABAALK_6pkUjCx76CTE7pNrKlhC84ewgZbs-4ciTvLcxkwUaWX7ukpr55P9RtJhlHxdtz3kN0zfM0HrtFitKuPy3BA"
-              }
-           ]
-        }
     """
 
-    resource = "/presentation/proof"
+    resource = "/presentation"
 
-    def __init__(self, cues=None, proofs=None, **kwa):
+    def __init__(self, notifier, cues=None, **kwa):
         """ Initialize instance
 
         Parameters:
@@ -384,8 +359,8 @@ class PresentationProofHandler(doing.Doer):
 
         """
         self.msgs = decking.Deck()
+        self.notifier = notifier
         self.cues = cues if cues is not None else decking.Deck()
-        self.proofs = proofs if proofs is not None else decking.Deck()
 
         super(PresentationProofHandler, self).__init__(**kwa)
 
@@ -413,84 +388,59 @@ class PresentationProofHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
-                pre = msg["pre"]
 
-                if "presentation_submission" not in payload:
-                    raise ValueError("invalid presentation proof payload")
+                if "i" not in payload or "s" not in payload or "n" not in payload:
+                    print(f"invalid credential presentation message, i, s and n are required fields.  evt=: "
+                          f"{payload}")
+                    continue
 
-                if "verifiableCredential" not in payload:
-                    raise ValueError("invalid presentation proof payload")
+                iaid = payload["i"]
+                ssaid = payload["s"]
+                csaid = payload["n"]
 
-                pe = payload["presentation_submission"]
-                vcs = payload["verifiableCredential"]
-
-                if "descriptor_map" not in pe:
-                    raise ValueError("invalud presentation submission in proof payload")
-
-                # TODO:  Find verifiable credential in vcs based on `path`
-                dm = pe["descriptor_map"]
-                print(dm)
-
-                vcs.reverse()
-                for vc in vcs:
-                    self.proofs.append((pre, vc))
-
-                yield
-
+                data = dict(
+                    r='/presentation',
+                    issuer=dict(
+                        i=iaid
+                    ),
+                    schema=dict(
+                        n=ssaid
+                    ),
+                    credential=dict(
+                        n=csaid
+                    )
+                )
+                self.notifier.add(attrs=data)
             yield
 
 
-def presentationExchangeExn(db, reger, credentials):
+def presentationExchangeExn(hab, reger, said):
     """ Create a presentation exchange.
 
     Create presentation exchange body containing the credential and event logs
     needed to provide proof of holding a valid credential
 
     Parameters:
-        db (Baser): is the environment database
+        hab (Hab): is the environment database
         reger (Registry): is the credential registry database
-        credentials (list): is the list of credential instances
+        said (str): qb64 SAID of the credential to present
 
     Returns:
         dict: presentation dict for credential
 
     """
-    dm = []
-    vcs = []
+    creder = reger.creds.get(said)
+    if creder is None:
+        raise ValueError(f"unable to find credential {said} to present")
 
-    for idx, (creder, sadsigers, sadcigars) in enumerate(credentials):
-        said = creder.said
-        regk = creder.status
-
-        issr = creder.crd["i"]
-
-        msgs = bytearray()
-        for msg in db.clonePreIter(pre=issr):
-            msgs.extend(msg)
-
-        for msg in reger.clonePreIter(pre=regk):
-            msgs.extend(msg)
-
-        for msg in reger.clonePreIter(pre=said):
-            msgs.extend(msg)
-
-        dm.append(dict(
-            id=creder.schema,
-            format="cesr",
-            path="$.verifiableCredential[{}]".format(idx)
-        ))
-
-        craw = signing.provision(creder, sadsigers=sadsigers, sadcigars=sadcigars)
-        vcs.append(creder.said)
-
-        sources = reger.sources(db, creder)
-        vcs.extend([creder.said for creder, msgs in sources])
-
-    d = dict(
-        presentation_submission=dict(
-            descriptor_map=dm
-        ),
-        verifiableCredential=vcs,
+    data = dict(
+        i=creder.issuer,
+        s=creder.schema,
+        n=said,
     )
 
-    return d
+    exn = exchanging.exchange(route="/presentation", payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims

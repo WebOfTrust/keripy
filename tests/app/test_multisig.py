@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, agenting, booting, notifying
 from keri.core import coring, eventing, parsing
+from keri.vdr import credentialing
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -186,10 +187,11 @@ def loadApp(hby, notifier):
     repd = storing.Respondant(hby=hby)
     counselor = grouping.Counselor(hby=hby)
     mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"])
+    regery = credentialing.Regery(hby=hby, name="test", temp=True)
 
     doers = kiwiing.loadEnds(hby=hby,
                              rep=repd,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,

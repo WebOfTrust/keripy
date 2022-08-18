@@ -61,8 +61,6 @@ class LockEnd(doing.DoDoer):
                       configFile=self.bootConfig["configFile"],
                       configDir=self.bootConfig["configDir"],
                       insecure=self.bootConfig["insecure"],
-                      tcp=self.bootConfig["tcp"],
-                      adminHttpPort=self.bootConfig["adminHttpPort"],
                       path=self.bootConfig["staticPath"],
                       headDirPath=self.bootConfig["headDirPath"])
 
@@ -1517,37 +1515,82 @@ class CredentialEnd(doing.DoDoer):
             yield self.tock
 
 
-class PresentationEnd:
+class PresentationEnd(doing.DoDoer):
     """
     ReST API for admin of credential presentation requests
 
     """
 
-    def __init__(self, rep):
-        self.rep = rep
+    def __init__(self, hby, reger):
+        """ Create endpoint handler for credential presentations and requests
 
-    def on_post(self, req, rep):
-        """  Presentation POST endpoint
+        Parameters:
+            hby (Habery): database environment for identifiers
+            reger (Reger): database environment for credentials
+
+        """
+        self.hby = hby
+        self.reger = reger
+        self.org = connecting.Organizer(hby=hby)
+        self.postman = forwarding.Postman(hby=self.hby)
+
+        super(PresentationEnd, self).__init__(doers=[self.postman])
+
+    def on_post_request(self, req, rep, alias):
+        """  Presentation Request POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
+            alias (str): human readable name for Hab
 
         ---
         summary: Request credential presentation
         description: Send a credential presentation request peer to peer (exn) message to recipient
         tags:
-           - Presentation
+           - Credentials
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    recipient:
+                      type: string
+                      required: true
+                      description: qb64 AID to send presentation request to
+                    schema:
+                      type: string
+                      required: true
+                      description: qb64 SAID of schema for credential being requested
+                    issuer:
+                      type: string
+                      required: false
+                      description: qb64 AID of issuer of credential being requested
         responses:
            202:
               description:  credential presentation request message sent
 
         """
-        body = req.get_media()
-        recipientIdentifier = body.get("recipient")
-        if recipientIdentifier is None:
+        hab = self.hby.habByName(alias)
+        if hab is None:
             rep.status = falcon.HTTP_400
-            rep.text = "recipient is required, none provided"
+            rep.text = f"Invalid alias {alias} for credential request"
+            return None
+
+        body = req.get_media()
+        recp = body.get("recipient")
+        if recp is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "recp is required, none provided"
             return
 
         schema = body.get("schema")
@@ -1557,13 +1600,105 @@ class PresentationEnd:
             return
 
         pl = dict(
-            input_descriptors=[
-                dict(x=schema)
-            ]
+            s=schema
         )
 
+        issuer = body.get("issuer")
+        if issuer is not None:
+            pl['i'] = issuer
+
         exn = exchanging.exchange(route="/presentation/request", payload=pl)
-        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
+        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        del ims[:exn.size]
+        self.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=ims)
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_present(self, req, rep, alias):
+        """  Presentation POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias (str): human readable name for Hab
+
+        ---
+        summary: Send credential presentation
+        description: Send a credential presentation peer to peer (exn) message to recipient
+        tags:
+           - Credentials
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the holder of credential
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    said:
+                      type: string
+                      required: true
+                      description: qb64 SAID of credential to send
+                    recipient:
+                      type: string
+                      required: true
+                      description: qb64 AID to send credential presentation to
+                    include:
+                      type: boolean
+                      required: true
+                      default: true
+                      description: flag indicating whether to stream credential alongside presentation exn
+        responses:
+           202:
+              description:  credential presentation message sent
+
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"Invalid alias {alias} for credential presentation"
+            return None
+
+        body = req.get_media()
+        said = body.get("said")
+        if said is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "said is required, none provided"
+            return
+
+        creder = self.reger.creds.get(said)
+        if creder is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"credential {said} not found"
+            return
+
+        recipient = body.get("recipient")
+        if recipient is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "recipient is required, none provided"
+            return
+
+        if recipient in self.hby.kevers:
+            recp = recipient
+        else:
+            recp = self.org.find("alias", recipient)
+            if len(recp) != 1:
+                raise ValueError(f"invalid recipient {recipient}")
+            recp = recp[0]['id']
+
+        include = body.get("include")
+        if include:
+            credentialing.sendCredential(self.hby, hab=hab, reger=self.reger, postman=self.postman, creder=creder,
+                                         recp=recp)
+
+        exn, atc = protocoling.presentationExchangeExn(hab=hab, reger=self.reger, said=said)
+        self.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_202
 
@@ -3203,9 +3338,6 @@ def loadEnds(app, *,
     registryEnd = RegistryEnd(hby=hby, rgy=rgy, registrar=registrar)
     app.add_route("/registries", registryEnd)
 
-    presentationEnd = PresentationEnd(rep=rep)
-    app.add_route("/presentation", presentationEnd)
-
     multiIcpEnd = MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
     app.add_route("/groups/{alias}/icp", multiIcpEnd)
     multiEvtEnd = MultisigEventEnd(hby=hby, counselor=counselor, notifier=notifier)
@@ -3218,6 +3350,10 @@ def loadEnds(app, *,
     app.add_route("/credentials/{alias}/{said}", credsEnd, suffix="export")
     app.add_route("/groups/{alias}/credentials", credsEnd, suffix="iss")
     app.add_route("/groups/{alias}/credentials/{said}/rev", credsEnd, suffix="rev")
+
+    presentationEnd = PresentationEnd(hby=hby, reger=rgy.reger)
+    app.add_route("/credentials/{alias}/presentations", presentationEnd, suffix="present")
+    app.add_route("/credentials/{alias}/requests", presentationEnd, suffix="request")
 
     oobiEnd = oobiing.OobiResource(hby=hby)
     app.add_route("/oobi/{alias}", oobiEnd, suffix="alias")
@@ -3253,7 +3389,7 @@ def loadEnds(app, *,
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, lockEnd]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, presentationEnd, lockEnd]
 
 
 def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, staticPath="", **kwargs):
@@ -3283,17 +3419,15 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
 
     handlers = []
 
-    proofs = decking.Deck()
-
     mbx = storing.Mailboxer(name=hby.name)
     counselor = grouping.Counselor(hby=hby)
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
 
     issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=notifier)
-    requestHandler = protocoling.PresentationRequestHandler(hby=hby, wallet=wallet)
+    requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=notifier)
     applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier, name=hby.name)
-    proofHandler = protocoling.PresentationProofHandler(proofs=proofs)
+    proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
 
     handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler])
 
@@ -3327,8 +3461,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
 
     endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, verifier=verifier,
                         counselor=counselor, registrar=registrar, credentialer=credentialer,
-                        servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler,
-                        **kwargs)
+                        servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler)
 
     obi = dict(oobiery=oobiery)
     doers.extend([rep, counselor, registrar, credentialer, oobiery, doing.doify(oobiCueDo, **obi)])

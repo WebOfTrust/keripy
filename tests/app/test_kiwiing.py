@@ -11,7 +11,7 @@ from falcon import testing
 from hio.base import doing
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, booting, notifying
+from keri.app import habbing, storing, kiwiing, grouping, booting, notifying, signing, connecting
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
@@ -666,9 +666,10 @@ def test_oobi_ends(seeder):
         notifier = notifying.Notifier(hby=palHby)
         oobiery = ending.Oobiery(hby=palHby)
         app = falcon.App()
+        regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,
                              rep=None,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -729,7 +730,7 @@ def test_oobi_ends(seeder):
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
         assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
         oobiery.hby.db.oobis.rem(keys=(url,))
@@ -746,7 +747,7 @@ def test_oobi_ends(seeder):
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
         assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
         assert item.oobialias is None
@@ -758,7 +759,7 @@ def test_oobi_ends(seeder):
         result = client.simulate_post(path="/oobi", body=b)
         assert result.status == falcon.HTTP_202
         assert oobiery.hby.db.oobis.cntAll() == 1
-        (url,),  item = next(oobiery.hby.db.oobis.getItemIter())
+        (url,), item = next(oobiery.hby.db.oobis.getItemIter())
         assert item is not None
         assert url == 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness/'
         assert item.oobialias == 'sal'
@@ -773,9 +774,10 @@ def test_challenge_ends(seeder):
         app = falcon.App()
         notifier = notifying.Notifier(hby=palHby)
         repd = storing.Respondant(hby=palHby)
+        regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,
                              rep=repd,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -846,11 +848,12 @@ def test_contact_ends(seeder):
         for aid in aids:
             assert aid in palHab.kevers
 
+        regery = credentialing.Regery(hby=kenHby, name=hab.name, temp=True)
         notifier = notifying.Notifier(hby=palHby)
         app = falcon.App()
         _ = kiwiing.loadEnds(hby=palHby,
                              rep=None,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -1014,12 +1017,13 @@ def test_keystate_end():
 
         app = falcon.App()
 
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
         notifier = notifying.Notifier(hby=hby)
         counselor = grouping.Counselor(hby=hby)
 
         _ = kiwiing.loadEnds(hby=hby,
                              rep=None,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -1050,9 +1054,10 @@ def test_schema_ends():
     with habbing.openHby(name="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby:
         app = falcon.App()
         notifier = notifying.Notifier(hby=hby)
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
         _ = kiwiing.loadEnds(hby=hby,
                              rep=None,
-                             rgy=None,
+                             rgy=regery,
                              verifier=None,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -1268,3 +1273,208 @@ def test_escrow_end(mockHelpingNowUTC):
         assert response.status == falcon.HTTP_200
         assert len(response.json) == 1
         assert len(response.json['likely-duplicitous-events']) == 0
+
+
+def test_presentation_ends(seeder, mockCoringRandomNonce):
+    with habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
+        seeder.seedSchema(palHby.db)
+        seeder.seedSchema(kenHby.db)
+        palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
+        kvy = eventing.Kevery(db=palHab.db, local=False, lax=True)
+        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+
+        msgs = bytearray()
+        aids = []
+        hab = kenHby.makeHab(name=f"ken", icount=1, ncount=1, wits=[])
+        aids.append(hab.pre)
+        msgs.extend(hab.makeOwnInception())
+        parsing.Parser().parse(ims=msgs, kvy=kvy)
+
+        for aid in aids:
+            assert aid in palHab.kevers
+
+        org = connecting.Organizer(hby=palHby)
+        org.set(hab.pre, field="alias", val="ken")
+
+        palReg = credentialing.Regery(hby=palHby, name="han", temp=True)
+        notifier = notifying.Notifier(hby=palHby)
+        app = falcon.App()
+        ends = kiwiing.loadEnds(hby=palHby,
+                                rep=None,
+                                rgy=palReg,
+                                verifier=None,
+                                notifier=notifier,
+                                signaler=notifier.signaler,
+                                app=app, path="/",
+                                registrar=None,
+                                credentialer=None,
+                                servery=booting.Servery(port=1234),
+                                bootConfig=dict(),
+                                counselor=None)
+        presentEnd = None
+        for end in ends:
+            if isinstance(end, kiwiing.PresentationEnd):
+                presentEnd = end
+        assert presentEnd is not None
+
+        client = testing.TestClient(app)
+
+        # Create a credential that we will present
+        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        credSubject = dict(
+            d="",
+            i=palHab.pre,
+            dt="2021-06-27T21:26:21.233257+00:00",
+            LEI="254900OPPU84GM83MG36",
+        )
+        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+
+        issuer = palReg.makeRegistry(prefix=palHab.pre, name="han")
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        palHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=palHab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=palHab.kever.serder.saider)
+        palReg.processEscrows()
+
+        verifier = verifying.Verifier(hby=palHby, reger=palReg.reger)
+
+        creder = proving.credential(issuer=palHab.pre,
+                                    schema=schema,
+                                    subject=d,
+                                    status=issuer.regk,
+                                    )
+
+        assert creder.said == "EIcj3D6xSD_B33h9Q2JTlkz2BXZuOYaPkY7qMOFMYb-s"
+
+        msg = signing.ratify(palHab, serder=creder)
+
+        iss = issuer.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        palHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=palHab.kever.sn)
+        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=palHab.kever.serder.saider)
+        palReg.processEscrows()
+
+        parsing.Parser().parse(ims=msg, vry=verifier)
+
+        # verify we can load serialized VC by SAID
+        key = creder.said.encode("utf-8")
+        assert palReg.reger.creds.get(key) is not None
+
+        # Valid request asking for just the exn
+        body = dict(
+            said=creder.said,
+            recipient=hab.pre,
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_202
+        assert len(presentEnd.postman.evts) == 1
+        presentEnd.postman.evts.popleft()
+
+        # Valid request using alias for recipient
+        body = dict(
+            said=creder.said,
+            recipient="ken",
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_202
+        assert len(presentEnd.postman.evts) == 1
+        presentEnd.postman.evts.popleft()
+
+        # now ask to include the credential and associated data
+        body = dict(
+            said=creder.said,
+            recipient=hab.pre,
+            include=True
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_202
+        assert len(presentEnd.postman.evts) == 7
+
+        # Bad alias
+        body = dict(
+            said=creder.said,
+            recipient=hab.pre,
+            include=True
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/jim/presentations", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "Invalid alias jim for credential presentation"
+
+        # No SAID in body
+        body = dict(
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "said is required, none provided"
+
+        # No recipient in body
+        body = dict(
+            said=creder.said,
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "recipient is required, none provided"
+
+        # SAID for a non-existant credential
+        body = dict(
+            said="ABC",
+            recipient=hab.pre,
+            include=True
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/presentations", body=raw)
+        assert response.status == falcon.HTTP_404
+        assert response.text == "credential ABC not found"
+
+        presentEnd.postman.evts.clear()
+
+        # Valid request using alias for recipient
+        body = dict(
+            schema=creder.said,
+            recipient="ken",
+            issuer=palHab.pre,
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/requests", body=raw)
+        assert response.status == falcon.HTTP_202
+        assert len(presentEnd.postman.evts) == 1
+        presentEnd.postman.evts.popleft()
+
+        # Valid request using alias for recipient
+        body = dict(
+            schema=creder.said,
+            recipient="ken",
+            issuer=palHab.pre,
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/jim/requests", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "Invalid alias jim for credential request"
+
+        # Valid request using alias for recipient
+        body = dict(
+            schema=creder.said,
+            issuer=palHab.pre,
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/requests", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "recp is required, none provided"
+
+        # Valid request using alias for recipient
+        body = dict(
+            issuer=palHab.pre,
+            recipient="ken",
+        )
+        raw = json.dumps(body).encode("utf-8")
+        response = client.simulate_post("/credentials/pal/requests", body=raw)
+        assert response.status == falcon.HTTP_400
+        assert response.text == "schema is required, none provided"
