@@ -497,12 +497,12 @@ class MatterCodex:
     StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Leader Size 0
     StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Leader Size 1
     StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Leader Size 2
-    Str_L0:               str = '4B'  # String Leader Size 0
-    Str_L1:               str = '5B'  # String Leader Size 1
-    Str_L2:               str = '6B'  # String Leader Size 2
-    Str_Big_L0:           str = '7AAB'  # String Big Leader Size 0
-    Str_Big_L1:           str = '8AAB'  # String Big Leader Size 1
-    Str_Big_L2:           str = '9AAB'  # String Big Leader Size 2
+    Bytes_L0:               str = '4B'  # Byte String Leader Size 0
+    Bytes_L1:               str = '5B'  # Byte String Leader Size 1
+    Bytes_L2:               str = '6B'  # ByteString Leader Size 2
+    Bytes_Big_L0:           str = '7AAB'  # Byte String Big Leader Size 0
+    Bytes_Big_L1:           str = '8AAB'  # Byte String Big Leader Size 1
+    Bytes_Big_L2:           str = '9AAB'  # Byte String Big Leader Size 2
 
 
     def __iter__(self):

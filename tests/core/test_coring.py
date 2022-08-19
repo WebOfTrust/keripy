@@ -301,12 +301,12 @@ def test_matter():
         'StrB64_Big_L0': '7AAA',
         'StrB64_Big_L1': '8AAA',
         'StrB64_Big_L2': '9AAA',
-        'Str_L0': '4B',
-        'Str_L1': '5B',
-        'Str_L2': '6B',
-        'Str_Big_L0': '7AAB',
-        'Str_Big_L1': '8AAB',
-        'Str_Big_L2': '9AAB',
+        'Bytes_L0': '4B',
+        'Bytes_L1': '5B',
+        'Bytes_L2': '6B',
+        'Bytes_Big_L0': '7AAB',
+        'Bytes_Big_L1': '8AAB',
+        'Bytes_Big_L2': '9AAB',
     }
 
     assert Matter.Codex == MtrDex
@@ -691,7 +691,7 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 1
-    code = MtrDex.Str_L1
+    code = MtrDex.Bytes_L1
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
@@ -760,8 +760,8 @@ def test_matter():
     assert matter.raw == raw
 
     # test variable sized with leader 1 with code replacement
-    code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 1 raw
-    code = MtrDex.Str_L1
+    code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 1 raw
+    code = MtrDex.Bytes_L1
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
@@ -781,8 +781,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 1 with code replacement
-    code2 = MtrDex.Str_L2  # use leader 0 code but with lead size 1 raw
-    code = MtrDex.Str_L1
+    code2 = MtrDex.Bytes_L2  # use leader 0 code but with lead size 1 raw
+    code = MtrDex.Bytes_L1
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
@@ -818,7 +818,7 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 2
-    code = MtrDex.Str_L2
+    code = MtrDex.Bytes_L2
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
@@ -873,8 +873,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 2 with code replacement
-    code0 = MtrDex.Str_L0  # use leader 0 code but with lead size 2 raw
-    code = MtrDex.Str_L2
+    code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 2 raw
+    code = MtrDex.Bytes_L2
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
@@ -894,8 +894,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 2 with code replacement
-    code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 2 raw
-    code = MtrDex.Str_L2
+    code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 2 raw
+    code = MtrDex.Bytes_L2
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 2
@@ -931,7 +931,7 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 0
-    code = MtrDex.Str_L0
+    code = MtrDex.Bytes_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 0
     assert Matter._leadSize(code) == 0
@@ -986,8 +986,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 0 with code replacement
-    code1 = MtrDex.Str_L1  # use leader 1 code but with lead size 0 raw
-    code = MtrDex.Str_L0
+    code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 0 raw
+    code = MtrDex.Bytes_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
@@ -1007,8 +1007,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test variable sized with leader 0 with code replacement
-    code1 = MtrDex.Str_L2  # use leader 2 code but with lead size 0 raw
-    code = MtrDex.Str_L0
+    code1 = MtrDex.Bytes_L2  # use leader 2 code but with lead size 0 raw
+    code = MtrDex.Bytes_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
@@ -1044,8 +1044,8 @@ def test_matter():
     assert matter.digestive == False
 
     # text big code substitution for size bigger than 4095  4k
-    code0 = MtrDex.Str_L0
-    code = MtrDex.Str_Big_L0
+    code0 = MtrDex.Bytes_L0
+    code = MtrDex.Bytes_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
@@ -1062,8 +1062,8 @@ def test_matter():
     assert matter.fullSize == 16520  # chars
 
     # text big code substitution for size bigger than 4095  4k replacement
-    code1 = MtrDex.Str_L1
-    code = MtrDex.Str_Big_L0
+    code1 = MtrDex.Bytes_L1
+    code = MtrDex.Bytes_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
@@ -1075,8 +1075,8 @@ def test_matter():
     assert matter.fullSize == 16520  # chars
 
     # text big code substitution for size bigger than 4095  4k
-    code2 = MtrDex.Str_L2
-    code = MtrDex.Str_Big_L0
+    code2 = MtrDex.Bytes_L2
+    code = MtrDex.Bytes_Big_L0
     with pytest.raises(InvalidCodeSizeError):
         assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 0
