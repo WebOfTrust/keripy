@@ -401,10 +401,11 @@ def test_matter():
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BGlOiUdp5sMmfotHfCWQKEzWR91C72AH0lT84c0um-Qj' #'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  # str
+    prefix = 'BGlOiUdp5sMmfotHfCWQKEzWR91C72AH0lT84c0um-Qj'  # str
     prefixb = prefix.encode("utf-8")  # bytes
-    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
-              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
+    prebin = (b'\x04iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1'
+              b'\xcd.\x9b\xe4#')
+
 
     with pytest.raises(EmptyMaterialError):
         matter = Matter()
@@ -415,6 +416,7 @@ def test_matter():
     with pytest.raises(EmptyMaterialError):
         matter = Matter(raw=verkey, code='')
 
+    # test from raw
     matter = Matter(raw=verkey)  # default code is MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.code == MtrDex.Ed25519N
@@ -422,30 +424,35 @@ def test_matter():
     assert matter.size == None
     assert matter.fullSize == 44
     assert matter.qb64 == prefix
-
     matter._exfil(prefixb)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
-
     assert matter.qb2 == prebin
+    matter._bexfil(prebin)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
     assert matter.transferable == False
     assert matter.digestive == False
-
+    # test round trip
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
 
-    matter._exfil(prefixb)
-    assert matter.code == MtrDex.Ed25519N
-    assert matter.raw == verkey
-
+    # Test from qb64b
     matter = Matter(qb64b=prefixb)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
+    # Test from qb64b as str
+    matter = Matter(qb64b=prefix)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+
+    # Test from qb64
     matter = Matter(qb64=prefix)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
+    # Test from qb64 as bytes
     matter = Matter(qb64=prefixb)  # works for either
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
@@ -460,6 +467,7 @@ def test_matter():
     with pytest.raises(ShortageError):
         matter = Matter(qb64=shortprefix)
 
+    # test from qb2
     matter = Matter(qb2=prebin)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
@@ -526,10 +534,10 @@ def test_matter():
 
     # Test strip
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  # str
+    prefix = 'BGlOiUdp5sMmfotHfCWQKEzWR91C72AH0lT84c0um-Qj'  # str
     prefixb = prefix.encode("utf-8")  # bytes
-    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
-              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
+    prebin = (b'\x04iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1'
+              b'\xcd.\x9b\xe4#')
 
     # strip ignored if qb64
     matter = Matter(qb64=prefix, strip=True)
@@ -590,7 +598,9 @@ def test_matter():
     assert ims == extra  # stripped not include extra
 
     # test fix sized with leader 1
-    code = MtrDex.TBD1
+    # TBD1 = '2AAA'  # Testing purposes only fixed with lead size 1
+
+    code = MtrDex.TBD1  # '2AAA'
     assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'ab'
@@ -643,7 +653,8 @@ def test_matter():
     assert matter.digestive == False
 
     # test fix sized with leader 2
-    code = MtrDex.TBD2
+    # TBD2 = '3AAA'  # Testing purposes only of fixed with lead size 2
+    code = MtrDex.TBD2  # '3AAA'
     assert Matter._rawSize(code) == 1
     assert Matter._leadSize(code) == 2
     raw = b'z'

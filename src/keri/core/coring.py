@@ -280,7 +280,7 @@ def b2ToB64(b, l):
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
-    i = int.from_bytes(b[:n], 'big')
+    i = int.from_bytes(b[:n], 'big')  # convert only first n bytes to int
     i >>= 2 * (l % 4)  # shift out padding bits make right aligned
     return (intToB64(i, l))
 
@@ -489,14 +489,14 @@ class MatterCodex:
     Tern:                 str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
-    TBD1:                 str = '2AAA'  # Testing purposes only of 1 lead size
-    TBD2:                 str = '3AAA'  # Testing purposes only of 2 lead size
-    StrB64_L0:            str = '4A'  # String Base64 Only Leader Size 0
-    StrB64_L1:            str = '5A'  # String Base64 Only Leader Size 1
-    StrB64_L2:            str = '6A'  # String Base64 Only Leader Size 2
-    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Leader Size 0
-    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Leader Size 1
-    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Leader Size 2
+    TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
+    TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
+    StrB64_L0:            str = '4A'  # String Base64 Only Lead Size 0
+    StrB64_L1:            str = '5A'  # String Base64 Only Lead Size 1
+    StrB64_L2:            str = '6A'  # String Base64 Only Lead Size 2
+    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Lead Size 0
+    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Lead Size 1
+    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Lead Size 2
     Bytes_L0:               str = '4B'  # Byte String Leader Size 0
     Bytes_L1:               str = '5B'  # Byte String Leader Size 1
     Bytes_L2:               str = '6B'  # ByteString Leader Size 2
@@ -1003,19 +1003,23 @@ class Matter:
                                           "".format(size, code))
             # both is hard code + size converted to ss B64 chars
             both = f"{code}{intToB64(size, l=ss)}"
+
             if len(both) % 4 != ps - ls:  # adjusted pad given lead bytes
-                raise InvalidCodeSizeError(f"Invalid code = {both} for converted"
-                                           f" raw pad size= {ps}.")
+                raise InvalidCodeSizeError(f"Invalid code={both} for converted"
+                                           f" raw pad size={ps}.")
             # prepad, convert, and prepend
             return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw))
 
-        else:  #fixed size so prepad
+        else:  # fixed size so prepad but lead ls may not be zero
             both = code
-            if (len(both) % 4) != ps:  # both + prepad must be multiple of 4
-                raise InvalidCodeSizeError(f"Invalid code = {both} for converted"
-                                           f" raw pad size= {ps}.")
+            cs = len(both)
+            if (cs % 4) != ps - ls:  # adjusted pad given lead bytes
+                raise InvalidCodeSizeError(f"Invalid code={both} for converted"
+                                           f" raw pad size={ps}.")
             # prepad, convert, and replace upfront
-            return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[len(both):])
+            # when fixed and ls != 0 then cs % 4 is zero and ps==ls
+            # otherwise  fixed and ls == 0 then cs % 4 == ps
+            return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
 
 
     def old_infil(self):
@@ -1049,6 +1053,7 @@ class Matter:
                                        "pad size= {}.".format(both, ps))
         # prepend derivation code and strip off trailing pad characters
         return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw)[:-ps if ps else None])
+
 
     def _exfil(self, qb64b):
         """
@@ -1108,9 +1113,9 @@ class Matter:
             qb64b = qb64b.encode("utf-8")
 
         if fs:  # not variable length
-            ps = cs %  4  # pad size ps = cs mod 4, same pad chars and lead bytes
-            base = ps * b'A' +  qb64b[cs:]  # replace prepend code with prepad zeros
-            raw = decodeB64(base)[ps:]  # decode and strip off ps prepad bytes
+            ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
+            base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
+            raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
         else:  # variable length
             base = qb64b[cs:]  # strip off prepend code leaving lead
             raw = decodeB64(base)[ls:]  # decode and strip off ls lead bytes
@@ -1187,6 +1192,7 @@ class Matter:
         self._size = size
         self._raw = raw
 
+
     def _binfil(self):
         """
         Returns bytes of fully qualified base2 bytes, that is .qb2
@@ -1218,8 +1224,54 @@ class Matter:
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                        .format(cs, len(code)))
+
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
-        bcode = b64ToInt(both).to_bytes(n, 'big')  # right aligned b2 code
+        # convert code to right align b2 int then left shift in pad bits
+        # then convert to bytes
+        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
+        full = bcode + bytes([0] * ls) + raw
+        bfs = len(full)
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
+
+        return full
+
+    def old_binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 + self.raw left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex value
+        size = self.size  # optional size if variable length
+        raw = self.raw  # bytes or bytearray
+
+        hs, ss, fs, ls = self.Sizes[code]
+        cs = hs + ss
+
+        if fs is None:  # compute both and fs from size
+            cs = hs + ss  # both hard + soft size
+            if cs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                           "variable length material. cs={}.".format(cs))
+
+            if size < 0 or size > (64 ** ss - 1):
+                raise InvalidVarSizeError("Invalid size={} for code={}."
+                                          "".format(size, code))
+            # both is hard code + converted index
+            both = f"{code}{intToB64(size, l=ss)}"
+            fs = hs + ss + (size * 4)
+        else:
+            both = code
+
+        if len(both) != cs:
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+                                       .format(cs, len(code)))
+
+        n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
+        # convert code to right align b2 int then left shift in pad bits
+        # then convert to bytes
+        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
 
         full = bcode + bytes([0] * ls) + raw
         bfs = len(full)
@@ -1230,7 +1282,72 @@ class Matter:
         i = int.from_bytes(full, 'big') << (2 * (cs % 4))  # left shift in pad bits
         return (i.to_bytes(bfs, 'big'))
 
+
     def _bexfil(self, qb2):
+        """
+        Extracts self.code and self.raw from qualified base2 bytes qb2
+        """
+        if not qb2:  # empty need more bytes
+            raise ShortageError("Empty material, Need more bytes.")
+
+        first = nabSextets(qb2, 1)  # extract first sextet as code selector
+        if first not in self.Bards:
+            if first[0] == b'\xf8':  # b64ToB2('-')
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Matter.")
+            elif first[0] == b'\xfc':  # b64ToB2('_')
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                            "while extracing Matter.")
+            else:
+                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
+
+        hs = self.Bards[first]  # get code hard size equvalent sextets
+        bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
+        if len(qb2) < bhs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
+
+        code = b2ToB64(qb2, hs)  # extract and convert hard part of code
+        if code not in self.Sizes:
+            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
+
+        hs, ss, fs, ls = self.Sizes[code]
+        cs = hs + ss  # both hs and ss
+        size = None
+        if not fs:  # compute fs from size chars in ss part of code
+            if cs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. cs={}.".format(cs))
+            bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+            if len(qb2) < bcs:  # need more bytes
+                raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
+
+            both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
+            size = b64ToInt(both[hs:hs + ss])  # get size
+            fs = (size * 4) + cs
+
+        # assumes that unit tests on Matter and MatterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs
+
+        bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
+        if len(qb2) < bfs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
+        qb2 = qb2[:bfs]  # fully qualified primitive code plus material
+
+        # right shift to right align raw material
+        #i = int.from_bytes(qb2, 'big') >> (2 * (cs % 4))
+        # i >>= 2 * (cs % 4)
+        bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        raw = qb2[(bcs + ls):]  # extract raw strip leader bytes
+
+        if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
+            raise ConversionError("Improperly qualified material = {}".format(qb2))
+
+        self._code = code
+        self._size = size
+        self._raw = raw
+
+    def old_bexfil(self, qb2):
         """
         Extracts self.code and self.raw from qualified base2 bytes qb2
         """
