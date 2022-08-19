@@ -1107,10 +1107,8 @@ class Matter:
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
-
-        ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
-
         if fs:  # not variable length
+            ps = cs %  4  # pad size ps = cs mod 4, same pad chars and lead bytes
             base = ps * b'A' +  qb64b[cs:]  # replace prepend code with prepad zeros
             raw = decodeB64(base)[ps:]  # decode and strip off ps prepad bytes
         else:  # variable length
