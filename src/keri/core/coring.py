@@ -981,6 +981,47 @@ class Matter:
         """
         Returns bytes of fully qualified base64 characters
         self.code + converted self.raw to Base64 with pad chars stripped
+
+        cs = hs + ss
+        fs = (size * 4) + cs
+
+        """
+        code = self.code  # hard size codex value
+        size = self.size  # size if variable length, None otherwise
+        raw = self.raw  # bytes or bytearray
+
+        ps = ((3 - (len(raw) % 3)) % 3)  # pad size chars or lead size bytes
+        hs, ss, fs, ls = self.Sizes[code]
+        if fs is None:  # variable sized, compute code ss value from .size
+            cs = hs + ss  # both hard + soft size
+            if cs % 4:
+                raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
+                                           f"variable length material. cs={cs}.")
+
+            if size < 0 or size > (64 ** ss - 1):
+                raise InvalidVarSizeError("Invalid size={} for code={}."
+                                          "".format(size, code))
+            # both is hard code + size converted to ss B64 chars
+            both = f"{code}{intToB64(size, l=ss)}"
+            if len(both) % 4 != ps - ls:  # adjusted pad given lead bytes
+                raise InvalidCodeSizeError(f"Invalid code = {both} for converted"
+                                           f" raw pad size= {ps}.")
+            # prepad, convert, and prepend
+            return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw))
+
+        else:  #fixed size so prepad
+            both = code
+            if (len(both) % 4) != ps:  # both + prepad must be multiple of 4
+                raise InvalidCodeSizeError(f"Invalid code = {both} for converted"
+                                           f" raw pad size= {ps}.")
+            # prepad, convert, and replace upfront
+            return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[len(both):])
+
+
+    def old_infil(self):
+        """
+        Returns bytes of fully qualified base64 characters
+        self.code + converted self.raw to Base64 with pad chars stripped
         """
         code = self.code  # hard size codex value
         size = self.size  # size if variable length, None otherwise
@@ -1010,6 +1051,80 @@ class Matter:
         return (both.encode("utf-8") + encodeB64(bytes([0] * ls) + raw)[:-ps if ps else None])
 
     def _exfil(self, qb64b):
+        """
+        Extracts self.code and self.raw from qualified base64 bytes qb64b
+
+        cs = hs + ss
+        fs = (size * 4) + cs
+        """
+        if not qb64b:  # empty need more bytes
+            raise ShortageError("Empty material, Need more characters.")
+
+        first = qb64b[:1]  # extract first char code selector
+        if hasattr(first, "decode"):
+            first = first.decode("utf-8")
+        if first not in self.Hards:
+            if first[0] == '-':
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Matter.")
+            elif first[0] == '_':
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                            "while extracing Matter.")
+            else:
+                raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
+
+        hs = self.Hards[first]  # get hard code size
+        if len(qb64b) < hs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
+
+        code = qb64b[:hs]  # extract hard code
+        if hasattr(code, "decode"):
+            code = code.decode("utf-8")
+        if code not in self.Sizes:
+            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
+
+        hs, ss, fs, ls = self.Sizes[code]  # assumes hs in both tables match
+        cs = hs + ss  # both hs and ss
+        size = None
+        if not fs:  # compute fs from size chars in ss part of code
+            if cs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. cs={}.".format(cs))
+            size = qb64b[hs:hs + ss]  # extract size chars
+            if hasattr(size, "decode"):
+                size = size.decode("utf-8")
+            size = b64ToInt(size)  # compute int size
+            fs = (size * 4) + cs
+
+        # assumes that unit tests on Matter and MatterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
+        # fs is None
+
+        if len(qb64b) < fs:  # need more bytes
+            raise ShortageError("Need {} more chars.".format(fs - len(qb64b)))
+        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
+            qb64b = qb64b.encode("utf-8")
+
+
+        ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
+
+        if fs:  # not variable length
+            base = ps * b'A' +  qb64b[cs:]  # replace prepend code with prepad zeros
+            raw = decodeB64(base)[ps:]  # decode and strip off ps prepad bytes
+        else:  # variable length
+            base = qb64b[cs:]  # strip off prepend code leaving lead
+            raw = decodeB64(base)[ls:]  # decode and strip off ls lead bytes
+
+        if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
+            raise ConversionError("Improperly qualified material = {}".format(qb64b))
+
+        self._code = code
+        self._size = size
+        self._raw = raw
+
+    def old_exfil(self, qb64b):
         """
         Extracts self.code and self.raw from qualified base64 bytes qb64b
         """

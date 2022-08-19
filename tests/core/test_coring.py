@@ -401,7 +401,7 @@ def test_matter():
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  # str
+    prefix = 'BGlOiUdp5sMmfotHfCWQKEzWR91C72AH0lT84c0um-Qj' #'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  # str
     prefixb = prefix.encode("utf-8")  # bytes
     prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
               b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
@@ -422,6 +422,11 @@ def test_matter():
     assert matter.size == None
     assert matter.fullSize == 44
     assert matter.qb64 == prefix
+
+    matter._exfil(prefixb)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
@@ -4967,4 +4972,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_tholder()
+    test_matter()
