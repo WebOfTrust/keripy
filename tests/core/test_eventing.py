@@ -849,8 +849,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
     assert saider.qb64 == serder0.said
 
-
-
     saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
     assert saider.qb64 == serder0.said
 
@@ -892,29 +890,32 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=keys2, sn=1)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=keys2, sn=1, intive=True)  # intive
+    assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
-    assert serder1.ked["t"] == Ilks.rot
-    assert serder1.ked["n"] == keys2
     assert serder1.ked["p"] == serder0.said
-    assert serder1.raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"E4cK99hX4C0AdlzihyusaT6zOShm6mPCXSlg'
-                           b'9sBWSTSQ","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"1","p":"EK'
-                           b'WhDaMeK0DPrGcdem78_dPpofitWMAg7ZvZceMGi2_4","kt":"1","k":["DHgZa-u7veNZkqk2A'
-                           b'xCnxrINGKfQ0bRiaf9FdA_-_49A"],"nt":"1","n":["E1082xCJjDJW4LFEpDkePQyHc1P4gNS'
-                           b'U2Fl89uwafq3I"],"bt":"0","br":[],"ba":[],"a":[]}')
+    assert serder1.ked["kt"] == 1
+    assert serder1.ked["nt"] == 1
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == 0
+    assert serder1.raw == (b'{"v":"KERI10JSON00015a_","t":"rot","d":"EZZHIQHG0ij0gLE92AHl7VOMyU3LUeRJ7Kfu'
+                            b'naUiKU1w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"1","p":"EK'
+                            b'WhDaMeK0DPrGcdem78_dPpofitWMAg7ZvZceMGi2_4","kt":1,"k":["DHgZa-u7veNZkqk2AxC'
+                            b'nxrINGKfQ0bRiaf9FdA_-_49A"],"nt":1,"n":["E1082xCJjDJW4LFEpDkePQyHc1P4gNSU2Fl'
+                            b'89uwafq3I"],"bt":0,"br":[],"ba":[],"a":[]}')
     saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
     assert serder1.said == saider.qb64
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
-    assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["p"] == serder1.said
-    assert serder2.raw ==(b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EInKU64yZ9yUCog0e9fu4gVaLifTa8xtpLyM'
-                          b'YOhX8w9w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2","p":"E4'
-                          b'cK99hX4C0AdlzihyusaT6zOShm6mPCXSlg9sBWSTSQ","a":[]}')
+    assert serder2.raw ==(b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
+                          b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2","p":"EZ'
+                          b'ZHIQHG0ij0gLE92AHl7VOMyU3LUeRJ7KfunaUiKU1w","a":[]}')
 
     # Receipt
     serder3 = receipt(pre=pre, sn=0, said=serder2.said)
@@ -922,8 +923,19 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
     assert serder3.ked["d"] == serder2.said
-    assert serder3.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EInKU64yZ9yUCog0e9fu4gVaLifTa8xtpLyM'
-                           b'YOhX8w9w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0"}')
+    assert serder3.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
+                           b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0"}')
+
+
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
+
+    assert serder4.ked["i"] == pre
+    assert serder4.ked["s"] == "2"
+    assert serder4.ked["t"] == Ilks.rct
+    assert serder4.ked["d"] == serder2.said
+    assert serder4.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
+                           b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2"}')
+
 
     # Receipt  transferable identifier
     serderA = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256)
@@ -935,23 +947,14 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert seal.i == serderA.ked["i"]
     assert seal.d == serderA.said
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
-
-    assert serder4.ked["i"] == pre
-    assert serder4.ked["s"] == "2"
-    assert serder4.ked["t"] == Ilks.rct
-    assert serder4.ked["d"] == serder2.said
-    assert serder4.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EInKU64yZ9yUCog0e9fu4gVaLifTa8xtpLyM'
-                           b'YOhX8w9w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2"}')
-
     siger = signer0.sign(ser=serderA.raw, index=0)
     msg = messagize(serder=serder4, sigers=[siger], seal=seal)
-    assert msg == bytearray(b'{"v":"KERI10JSON000091_","t":"rct","d":"EInKU64yZ9yUCog0e9fu4gVa'
-                            b'LifTa8xtpLyMYOhX8w9w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1'
-                            b'x4ejhcc","s":"2"}-FABEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yM'
-                            b's0AAAAAAAAAAAAAAAAAAAAAAAEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_'
-                            b'Z4yMs-AABAAL8Wa4NvM8X7djH5lAm2SmmV568mGYpwZ5yR9yOYdbJq9tUMlK3Ldc'
-                            b'8dKIzj8rH29J5UD2syn3IENWdvmOUtpAw')
+    assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnN'
+                b'u1DmEFaZ8QVpKoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1'
+                b'x4ejhcc","s":"2"}-FABEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yM'
+                b's0AAAAAAAAAAAAAAAAAAAAAAAEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_'
+                b'Z4yMs-AABAAL8Wa4NvM8X7djH5lAm2SmmV568mGYpwZ5yR9yOYdbJq9tUMlK3Ldc'
+                b'8dKIzj8rH29J5UD2syn3IENWdvmOUtpAw')
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -4333,4 +4336,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_keyeventfuncs()
+    pass

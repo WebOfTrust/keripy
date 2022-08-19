@@ -573,6 +573,7 @@ def fetchTsgs(db, saider, snh=None):
 MaxIntThold = 2 ** 32 - 1
 
 def incept(keys,
+           *,
            sith=None,
            nkeys=None,
            nsith=None,
@@ -584,6 +585,7 @@ def incept(keys,
            kind=Serials.json,
            code=None,
            intive = False,
+           delpre=None,
            ):
     """
     Returns serder of inception event message.
@@ -591,45 +593,46 @@ def incept(keys,
 
     Parameters:
         keys  (list): current signing keys qb64
-        sith (int | str | list): current signing threshold input to Tholder
-        nkeys (list): current signing key digests qb64
-        nsith int | str | list): next signing threshold input to Tholder
-        toad (int | str ): witness threshold number if str then hex str
-        wits (list): witness identifier prefixes qb64
-        cnfg (list): configuration traits from TraitDex
-        data (list): seal dicts
+        sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): witness identifier prefixes qb64
+        cnfg (list | None): configuration traits from TraitDex
+        data (list | None): seal dicts
         version (Version): KERI protocol version string
         kind (str): serialization kind from Serials
-        code (str): derivation code for computed prefix
+        code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
             not hex str when numeric threshold
+        delpre (str | None): delegator identifier prefix qb64. When not None
+            makes this a msg type "dip", delegated inception event.
     """
     vs = versify(version=version, kind=kind, size=0)
+    ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
-    ilk = Ilks.icp
 
     if sith is None:
         sith = max(1, ceil(len(keys) / 2))
 
     tholder = Tholder(sith=sith)
     if tholder.num is not None and tholder.num < 1:
-        raise ValueError(f"Incept sith = {tholder.num} less than 1.")
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
         raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
 
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
     if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
+        nsith = max(0, ceil(len(nkeys) / 2))
 
     ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
     if ntholder.size > len(nkeys):
-        raise ValueError(f"Invalid nsith = {nsith} for keys = {nkeys}")
+            raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
+
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -672,8 +675,14 @@ def incept(keys,
                a=data,  # list of seal dicts
                )
 
-    if code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # not self-addressing code
+    if delpre is not None:  # delegated inception with ilk = dip
+        ked['di'] = delpre
+        if code is None:
+            code = MtrDex.Blake3_256  # Defaults to self addressing digest
+
+
+    if delpre is None and code is None and len(keys) == 1:
+        prefixer = Prefixer(qb64=keys[0])  # defaults to not self-addressing code
         if prefixer.digestive:
             raise ValueError("Invalid code, digestive={}, must be derived from"
                              " ked.".format(prefixer.code))
@@ -681,6 +690,11 @@ def incept(keys,
         # raises derivation error if non-empty nxt but ephemeral code
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
+        if delpre is not None:
+            if not prefixer.digestive:
+                raise ValueError(f"Invalid derivation code = {prefixer.code} "
+                                 f"for delegation. Must be digestive")
+
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
     if prefixer.digestive:
         ked["d"] = prefixer.qb64
@@ -689,128 +703,37 @@ def incept(keys,
 
     return Serder(ked=ked)  # return serialized ked
 
-
-def delcept(keys,
-            delpre,
-            code=None,
-            sith=None,
-            nkeys=None,
-            nsith=None,
-            toad=None,
-            wits=None,
-            cnfg=None,
-            data=None,
-            version=Version,
-            kind=Serials.json,
-            ):
+def delcept(keys, delpre, **kwa):
     """
     Returns serder of delegated inception event message.
     Utility function to automate creation of delegated inception events.
+    Syntactic suger that calls incept but with delpre so ilk is dip.
 
-     Parameters:
-        keys is list of qb64 keys
-        delpre is qb64 of delegators's prefix
-        code is derivation code for prefix
-        sith is string, or list format for signing threshold
-        nkeys is list of qb64 next key digests
-        nsith is string, or list format for signing threshold
-        toad is int of str hex of witness threshold
-        wits is list of qb64 witness prefixes
-        cnfg is list of configuration trait dicts including permissions dicts
-        data is list of seal dicts
-        version is Version instance
-        kind is serialization kind
+    Parameters:
+        keys  (list): current signing keys qb64
+        sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): witness identifier prefixes qb64
+        cnfg (list | None): configuration traits from TraitDex
+        data (list | None): seal dicts
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        code (str | None): derivation code for computed prefix
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+            not hex str when numeric threshold
+        delpre (str | None): delegator identifier prefix qb64. When not None
+            makes this a msg type "dip", delegated inception event.
     """
-    vs = versify(version=version, kind=kind, size=0)
-    sn = 0
-    ilk = Ilks.dip
-
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
-
-    if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
-
-    tholder = Tholder(sith=sith)
-    if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-
-    if nkeys is None:
-        nkeys = []
-
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
-    if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
-
-    ntholder = Tholder(sith=nsith)
-    if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
-
-    wits = wits if wits is not None else []
-    if len(oset(wits)) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
-
-    if isinstance(toad, str):
-        toad = "{:x}".format(toad)
-    elif toad is None:
-        if not wits:
-            toad = 0
-        else:  # compute default f and m for len(wits)
-            toad = ample(len(wits))
-
-    if wits:
-        if toad < 1 or toad > len(wits):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
-    else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
-
-    cnfg = cnfg if cnfg is not None else []
-
-    data = data if data is not None else []
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               d="",
-               i="",  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
-               kt=tholder.sith,  # hex string no leading zeros lowercase or list
-               k=keys,  # list of qb64
-               nt=ntholder.sith,  # hex string no leading zeros lowercase or list
-               n=nkeys,  # hash qual Base64
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
-               b=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config and permission ordered mappings may be empty
-               a=data,  # list of seal dicts
-               di=delpre  # qb64 delegator prefix
-               )
-
-    if code is None:
-        code = MtrDex.Blake3_256  # Default digest
-
-    # raises derivation error if non-empty nxt but ephemeral code
-    prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
-
-    if not prefixer.digestive:
-        raise ValueError("Invalid derivation code = {} for delegation. Must be"
-                         " digestive".format(prefixer.code))
-
-    ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    if prefixer.digestive:
-        ked["d"] = prefixer.qb64
-    else:
-        _, ked = coring.Saider.saidify(sad=ked)
-
-    return Serder(ked=ked)  # return serialized ked
+    return incept(keys=keys, delpre=delpre, **kwa)
 
 
 def rotate(pre,
            keys,
            dig,
+           *,
+           ilk=Ilks.rot,
            sn=1,
            sith=None,
            nkeys=None,
@@ -832,6 +755,7 @@ def rotate(pre,
         pre (str): identifier prefix qb64
         keys  (list): current signing keys qb64
         dig (str): said of previous event qb64
+        ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
         sn (int | str): sequence number int or hex str
         sith (int | str | list): current signing threshold input to Tholder
         nkeys (list): current signing key digests qb64
@@ -848,40 +772,38 @@ def rotate(pre,
 
     """
     vs = versify(version=version, kind=kind, size=0)
-    ilk = Ilks.rot
-
-    if sn < 1:
-        raise ValueError("Invalid sn = {} for rot.".format(sn))
-
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
+    ilk = ilk
+    if ilk not in (Ilks.rot, Ilks.drt):
+        raise  ValueError(f"Invalid ilk ={ilk} for rot or drt.")
+    sner = Number(num=sn)
+    if sner.num < 1:  # sn for rotate must be >= 1
+        raise ValueError(f"Invalid sn = 0x{sner.numh} for rot or drt.")
 
     if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+        sith = max(1, ceil(len(keys) / 2))
 
     tholder = Tholder(sith=sith)
+    if tholder.num is not None and tholder.num < 1:
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
 
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
     if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
+        nsith = max(0, ceil(len(nkeys) / 2))
 
     ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
     if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
 
     wits = wits if wits is not None else []
     witset = oset(wits)
     if len(witset) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
 
     cuts = cuts if cuts is not None else []
     cutset = oset(cuts)
@@ -908,36 +830,36 @@ def rotate(pre,
         raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
                          "and adds = {}.".format(wits, cuts, adds))
 
-    if isinstance(toad, str):
-        toad = "{:x}".format(toad)
-    elif toad is None:
+    if toad is None:
         if not newitset:
             toad = 0
-        else:  # compute default f and m for len(newitset)
+        else:  # compute default f and m for len(wits)
             toad = ample(len(newitset))
+    toader = Number(num=toad)
 
     if newitset:
-        if toad < 1 or toad > len(newitset):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+        if toader.num < 1 or toader.num > len(newitset):  # out of bounds toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
     else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+        if toader.num != 0:  # invalid toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
+
 
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
                t=ilk,
-               d="",
+               d="",  # qb64 SAID
                i=pre,  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
+               s=sner.numh,  # hex string no leading zeros lowercase
                p=dig,  # qb64 digest of prior event
-               kt=tholder.sith,  # hex string no leading zeros lowercase or list
+               kt=(tholder.num if intive and tholder.num is not None and
+                    tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=ntholder.sith, # hex string no leading zeros lowercase or list
+               nt=(ntholder.num if intive and tholder.num is not None and
+                    ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,  # hash qual Base64
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
+               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                a=data,  # list of seals
@@ -946,140 +868,40 @@ def rotate(pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-
 def deltate(pre,
-            keys,
-            dig,
-            sn=1,
-            sith=None,
-            nkeys=None,
-            nsith=None,
-            toad=None,
-            wits=None,  # prior existing wits
-            cuts=None,
-            adds=None,
-            data=None,
-            version=Version,
-            kind=Serials.json,
-            ):
+           keys,
+           dig,
+           ilk=Ilks.drt,
+           **kwa
+           ):
     """
     Returns serder of delegated rotation event message.
     Utility function to automate creation of delegated rotation events.
+    Syntactic suger that calls rotate but with ilk set to drt.
 
-     Parameters:
-        pre is identifier prefix qb64
-        keys is list of qb64 signing keys
-        dig is digest of previous event qb64
-        sn is int sequence number
-        sith is string, or list format for next signing threshold
-        nkeys is list of qb64 next key digests
-        nsith is string, or list format for next signing threshold
-        toad is int or str hex of witness threshold
-        wits is list of prior witness prefixes qb64
-        cuts is list of witness prefixes to cut qb64
-        adds is list of witness prefixes to add qb64
-        data is list of seals
-        version is Version instance
-        kind is serialization kind
+
+    Parameters:
+        pre (str): identifier prefix qb64
+        keys  (list): current signing keys qb64
+        dig (str): said of previous event qb64
+        ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
+        sn (int | str): sequence number int or hex str
+        sith (int | str | list): current signing threshold input to Tholder
+        nkeys (list): current signing key digests qb64
+        nsith int | str | list): next signing threshold input to Tholder
+        toad (int | str ): witness threshold number if str then hex str
+        wits (list): prior witness identifier prefixes qb64
+        cuts (list): witness prefixes to cut qb64
+        adds (list): witness prefixes to add qb64
+        data (list): seal dicts
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+            not hex str when numeric threshold
+
     """
-    vs = versify(version=version, kind=kind, size=0)
-    ilk = Ilks.drt
+    return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
 
-    if sn < 1:
-        raise ValueError("Invalid sn = {} for rot.".format(sn))
-
-    if isinstance(sith, int):
-        sith = max(1, sith)
-        sith = f"{sith:x}"
-
-    if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
-
-    tholder = Tholder(sith=sith)
-    if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-
-    if nkeys is None:
-        nkeys = []
-
-    if isinstance(nsith, int):
-        nsith = max(0, nsith)
-        nsith = f"{nsith:x}"
-
-    if nsith is None:
-        nsith = "{:x}".format(max(0, ceil(len(nkeys) / 2)))
-
-    ntholder = Tholder(sith=nsith)
-    if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
-
-    wits = wits if wits is not None else []
-    witset = oset(wits)
-    if len(witset) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
-
-    cuts = cuts if cuts is not None else []
-    cutset = oset(cuts)
-    if len(cutset) != len(cuts):
-        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
-
-    if (witset & cutset) != cutset:  # some cuts not in wits
-        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
-
-    adds = adds if adds is not None else []
-    addset = oset(adds)
-    if len(addset) != len(adds):
-        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
-
-    if cutset & addset:  # non empty intersection
-        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
-
-    if witset & addset:  # non empty intersection
-        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
-
-    newitset = (witset - cutset) | addset
-
-    if len(newitset) != (len(wits) - len(cuts) + len(adds)):  # redundant?
-        raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
-                         "and adds = {}.".format(wits, cuts, adds))
-
-    if isinstance(toad, str):
-        toad = int(toad, 16)
-    elif toad is None:
-        if not newitset:
-            toad = 0
-        else:  # compute default f and m for len(newitset)
-            toad = ample(len(newitset))
-
-    if newitset:
-        if toad < 1 or toad > len(newitset):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
-    else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
-
-    data = data if data is not None else []
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               d="",
-               i=pre,  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
-               p=dig,  # qb64 digest of prior event
-               kt=tholder.sith,  # hex string no leading zeros lowercase or list
-               k=keys,  # list of qb64
-               nt=ntholder.sith, # hex string no leading zeros lowercase or list
-               n=nkeys,
-               bt=f"{toad:x}",  # hex string no leading zeros lowercase
-               br=cuts,  # list of qb64 may be empty
-               ba=adds,  # list of qb64 may be empty
-               a=data,  # list of seals ordered mappings may be empty
-               )
-    _, ked = coring.Saider.saidify(sad=ked)
-
-    return Serder(ked=ked)  # return serialized ked
 
 
 def interact(pre,
@@ -1095,7 +917,7 @@ def interact(pre,
 
      Parameters:
         pre is identifier prefix qb64
-        dig is digest of previous event qb64
+        dig is said digest of previous event qb64
         sn is int sequence number
         data is list of dicts of comitted data such as seals
         version is Version instance
@@ -1103,9 +925,10 @@ def interact(pre,
     """
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
+    sner = Number(num=sn)
+    if sner.num < 1:  # sn for rotate must be >= 1
+        raise ValueError(f"Invalid sn = 0x{sner.numh} for ixn.")
 
-    if sn < 1:
-        raise ValueError("Invalid sn = {} for ixn.".format(sn))
 
     data = data if data is not None else []
 
@@ -1113,7 +936,7 @@ def interact(pre,
                t=ilk,
                d="",
                i=pre,  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
+               s=sner.numh,  # hex string no leading zeros lowercase
                p=dig,  # qb64 digest of prior event
                a=data,  # list of seals
                )
@@ -1125,6 +948,7 @@ def interact(pre,
 def receipt(pre,
             sn,
             said,
+            *,
             version=Version,
             kind=Serials.json
             ):
@@ -1135,21 +959,22 @@ def receipt(pre,
      Parameters:
         pre is qb64 str of prefix of event being receipted
         sn  is int sequence number of event being receipted
-        dig is qb64 of digest of event being receipted
+        said is qb64 of said of event being receipted
         version is Version instance of receipt
         kind  is serialization kind of receipt
     """
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.rct
 
-    if sn < 0:
-        raise ValueError("Invalid sn = {} for rct.".format(sn))
+    sner = Number(num=sn)
+    if sner.num < 0:  # sn for rotate must be >= 1
+        raise ValueError(f"Invalid sn = 0x{sner.numh} for rect.")
 
     ked = dict(v=vs,  # version string
                t=ilk,  # Ilks.rct
                d=said,  # qb64 digest of receipted event
                i=pre,  # qb64 prefix
-               s=f"{sn:x}",  # hex string no leading zeros lowercase
+               s=sner.numh,  # hex string no leading zeros lowercase
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -1181,8 +1006,8 @@ def state(pre,
     Parameters:
         pre (str): identifier prefix qb64
         sn (int); sequence number of latest event
-        pig (str): qb64 digest of prior event
-        dig (str): qb64 digest of latest (current) event
+        pig (str): qb64 said of prior event
+        dig (str): qb64 said of latest (current) event
         eilk (str): event (message) type (ilk) of latest (current) event
         keys is list of qb64 signing keys
         eevt is namedtuple of fields from latest establishment event s,d,wr,wa
@@ -1429,6 +1254,22 @@ def reply(route="",
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
+def prod(route="",
+         replyRoute="",
+         pre=None,
+         digs=None,
+         version=Version,
+         kind=Serials.json          ):
+    """
+    Returns serder of prod, 'prd', msg to request disclosure via bare, 'bre' msg
+    of data anchored via seal(s) on KEL for identifier prefix, pre, when given
+    by all SAIDs given in digs list.
+    TBD
+
+
+    """
+    pass
+
 def bare(route="",
            data=None,
            version=Version,
@@ -1444,7 +1285,7 @@ def bare(route="",
      Parameters:
         route is route path string that indicates data flow handler (behavior)
             to processs the exposure
-        data is list of dicts of comitted data such as seals
+        data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
         version is Version instance
         kind is serialization kind
 
@@ -1453,30 +1294,34 @@ def bare(route="",
       "t" : "bre",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "sealed/processor",
+      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
       "a" :
-      {
-         "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "dt": "2020-08-22T17:50:12.988921+00:00",
-         "name": "John Jones",
-         "role": "Founder",
-      }
+        {
+          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+            {
+               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+               "dt": "2020-08-22T17:50:12.988921+00:00",
+               "name": "John Jones",
+               "role": "Founder",
+            }
+        }
     }
     """
     vs = versify(version=version, kind=kind, size=0)
-    if data is None:
-        data = {}
 
     sad = dict(v=vs,  # version string
                t=Ilks.bre,
                d="",
                r=route if route is not None else "",  # route
-               a=data if data else {},  # attributes
+               a=data if data else {},  # dict of SADs
                )
 
     _, sad = coring.Saider.saidify(sad=sad)
 
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
+
+
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
