@@ -59,7 +59,7 @@ class Organizer:
             val (Union[str,bytes]): data value
 
         """
-        data = self.get(pre)
+        data = self.get(pre) or dict()
         data[field] = val
         self.replace(pre, data)
         self.hby.db.cfld.pin(keys=(pre, field), val=val)

@@ -32,12 +32,12 @@ curl -s -X POST "http://localhost:5625/ids/intgar2" -H "accept: */*" -H "Content
 sleep 3
 
 # OOBI between local QARs
-curl -s -X POST "http://localhost:5626/oobi/qar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qar2\", \"url\":\"http://127.0.0.1:5642/oobi/EUS3cZM8f55JyMpIAMAirr91369PbEkY2WqI28Uo4uys/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
-curl -s -X POST "http://localhost:5627/oobi/qar2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qar1\", \"url\":\"http://127.0.0.1:5642/oobi/EKyS_K3auADxLDhKN2JiT0k6neX_LwfGJQxGg4f7Gp3g/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
+curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qar2\", \"url\":\"http://127.0.0.1:5642/oobi/EUS3cZM8f55JyMpIAMAirr91369PbEkY2WqI28Uo4uys/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
+curl -s -X POST "http://localhost:5627/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qar1\", \"url\":\"http://127.0.0.1:5642/oobi/EKyS_K3auADxLDhKN2JiT0k6neX_LwfGJQxGg4f7Gp3g/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
 
 # OOBI between local IntGARs
-curl -s -X POST "http://localhost:5624/oobi/intgar1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"intgar2\", \"url\":\"http://127.0.0.1:5642/oobi/ECV586ydtrGHiVSeU_wJQCxGm3HQCMaSiD-vzSKm-AqI/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
-curl -s -X POST "http://localhost:5625/oobi/intgar2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"intgar1\", \"url\":\"http://127.0.0.1:5642/oobi/EeoS9aaqWggd6hTBDbvM7aKTSxDrM1R4tZp-Vg2IVkMA/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
+curl -s -X POST "http://localhost:5624/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"intgar2\", \"url\":\"http://127.0.0.1:5642/oobi/ECV586ydtrGHiVSeU_wJQCxGm3HQCMaSiD-vzSKm-AqI/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
+curl -s -X POST "http://localhost:5625/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"intgar1\", \"url\":\"http://127.0.0.1:5642/oobi/EeoS9aaqWggd6hTBDbvM7aKTSxDrM1R4tZp-Vg2IVkMA/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\"}" | jq
 sleep 3
 
 # Initiate and join QVI multisig AID
