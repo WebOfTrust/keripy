@@ -16,7 +16,7 @@ from hio.help import decking
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Number, Seqner, Siger, Cigar, Dater,
-                     Verfer, Diger, Nexter, Prefixer, Serder, Tholder, Saider)
+                     Verfer, Diger, Prefixer, Nexter, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
 from ..db import basing

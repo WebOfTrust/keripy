@@ -428,9 +428,9 @@ def generateSigners(salt=None, count=8, transferable=True):
     return signers
 
 
-def generateSecrets(salt=None, count=8):
+def generatePrivates(salt=None, count=8):
     """
-    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
+    Returns list of fully qualified Base64 secret Ed25519 seeds  i.e private keys
 
     Parameters:
         salt is bytes 16 byte long root cryptomatter from which seeds for Signers
@@ -440,7 +440,22 @@ def generateSecrets(salt=None, count=8):
     """
     signers = generateSigners(salt=salt, count=count)
 
-    return [signer.qb64 for signer in signers]  # fetch the qb64 as secret
+    return [signer.qb64 for signer in signers]  # fetch sigkey as private key
+
+
+def generatePublics(salt=None, count=8, transferable=True):
+    """
+    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
+
+    Parameters:
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
+            in list are derived
+            random salt created if not provided
+        count is number of signers in list
+    """
+    signers = generateSigners(salt=salt, count=count, transferable=transferable)
+
+    return [signer.verfer.qb64 for signer in signers]  # fetch verkey as public key
 
 
 # secret derivation security tier
@@ -459,7 +474,7 @@ class MatterCodex:
 
     Ed25519_Seed:         str = 'A'  # Ed25519 256 bit random seed for private key
     Ed25519N:             str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519.
+    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519 or Ed25519N.
     Ed25519:              str = 'D'  # Ed25519 verification key basic derivation
     Blake3_256:           str = 'E'  # Blake3 256 bit digest self-addressing derivation.
     Blake2b_256:          str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
@@ -2882,6 +2897,7 @@ class Nexter:
     def digers(self):
         return [Diger(qb64=dig) for dig in self.digs]
 
+
 class Prefixer(Matter):
     """
     Prefixer is Matter subclass for autonomic identifier prefix using
@@ -3276,7 +3292,9 @@ class Saider(Matter):
         return dumps(sad, kind=kind)
 
     @classmethod
-    def saidify(clas, sad: dict, *,
+    def saidify(clas,
+                sad: dict,
+                *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
                 label: str = Ids.d,
