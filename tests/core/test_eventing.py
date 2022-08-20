@@ -16,7 +16,7 @@ from keri.core import coring, eventing, parsing
 from keri.core.coring import Ilks, Diger
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 from keri.core.coring import Salter, Serder, Siger, Cigar
-from keri.core.coring import Seqner, Verfer, Signer, Nexter, Prefixer
+from keri.core.coring import Seqner, Verfer, Signer, Prefixer, Nexter
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)

@@ -27,9 +27,9 @@ from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
                               IdrDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
-                              Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
+                              Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import generateSigners, generateSecrets
+from keri.core.coring import generateSigners, generatePrivates, generatePublics
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
@@ -3054,7 +3054,7 @@ def test_cigar():
     with pytest.raises(EmptyMaterialError):
         cigar = Cigar()
 
-    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64 = '0BCdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     cigar = Cigar(qb64=qsig64)
     assert cigar.code == MtrDex.Ed25519_Sig
@@ -3171,12 +3171,13 @@ def test_cipher():
     seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
             b'\xde\x06\xc0+')
     seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
-    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+    assert seedqb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
+    #b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
 
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     salt = b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
     saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
-    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+    assert saltqb64b == b'0AA2CGQNobs5jXCNoMATSody'
 
     # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
@@ -3232,12 +3233,12 @@ def test_encrypter():
     seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
             b'\xde\x06\xc0+')
     seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
-    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+    assert seedqb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
 
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     salt = b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
     saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
-    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+    assert saltqb64b == b'0AA2CGQNobs5jXCNoMATSody'
 
     # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
@@ -3251,7 +3252,7 @@ def test_encrypter():
 
     encrypter = Encrypter(raw=pubkey)
     assert encrypter.code == MtrDex.X25519
-    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
     assert encrypter.verifySeed(seed=cryptsigner.qb64)
 
@@ -3269,19 +3270,19 @@ def test_encrypter():
 
     encrypter = Encrypter(verkey=verfer.qb64)
     assert encrypter.code == MtrDex.X25519
-    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
 
     encrypter = Encrypter(verkey=verfer.qb64b)
     assert encrypter.code == MtrDex.X25519
-    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
 
     # user Prefixer to generate original verkey
     prefixer = Prefixer(qb64=verfer.qb64)
     encrypter = Encrypter(verkey=prefixer.qb64b)
     assert encrypter.code == MtrDex.X25519
-    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
     """ Done Test """
 
@@ -3303,7 +3304,7 @@ def test_decrypter():
     assert signer.verfer.code == MtrDex.Ed25519
     assert signer.verfer.transferable  # default
     seedqb64b = signer.qb64b
-    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+    assert seedqb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
     # also works for Matter
     assert seedqb64b == Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
 
@@ -3312,7 +3313,7 @@ def test_decrypter():
     salter = Salter(raw=salt, code=MtrDex.Salt_128)
     assert salter.code == MtrDex.Salt_128
     saltqb64b = salter.qb64b
-    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+    assert saltqb64b == b'0AA2CGQNobs5jXCNoMATSody'
     # also works for Matter
     assert saltqb64b == Matter(raw=salt, code=MtrDex.Salt_128).qb64b  #
 
@@ -3329,7 +3330,7 @@ def test_decrypter():
     # create encrypter
     encrypter = Encrypter(raw=pubkey)
     assert encrypter.code == MtrDex.X25519
-    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.qb64 == 'CAF7Wr3XNq5hArcOuBJzaY6Nd23jgtUVI6KDfb3VngkR'
     assert encrypter.raw == pubkey
 
     # create cipher of seed
@@ -3340,7 +3341,7 @@ def test_decrypter():
     # create decrypter from prikey
     decrypter = Decrypter(raw=prikey)
     assert decrypter.code == MtrDex.X25519_Private
-    assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
+    assert decrypter.qb64 == 'OLCFxqMz1z1UUS0TEJnvZP_zXHcuYdQsSGBWdOZeY5VQ'
     assert decrypter.raw == prikey
 
     # decrypt seed cipher using ser
@@ -3373,16 +3374,18 @@ def test_decrypter():
     assert desalter.code == MtrDex.Salt_128
 
     # use previously stored fully qualified seed cipher with different nonce
-    cipherseed = (b'PfOkgdZ9HWVOMBAA40yt3aAdOfz6Je7UGyBhglvBvogZu7kkmvEX6VeIPbLm'
-                  b'hB2WoFdubO145uCyK2nUj1UI6HSZPq47iQUayS9snsTOy-Pzk1E7818lNpBeoV0g')
+    # get from seedcipher above
+    cipherseed = ('PM9jOGWNYfjM_oLXJNaQ8UlFSAV5ACjsUY7J16xfzrlpc9Ve3A5WYrZ4o_'
+                  'NHtP5lhp78Usspl9fyFdnCdItNd5JyqZ6dt8SXOt6TOqOCs-gy0obrwFkPPqBvVkEw')
     designer = decrypter.decrypt(ser=cipherseed, transferable=signer.verfer.transferable)
     assert designer.qb64b == seedqb64b
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
 
     # use previously stored fully qualified salt cipher with different nonce
-    ciphersalt = (b'1AAHMehug8lCovEq5MCKoCyt-ECyAv4mgakKZzKPPZRxtx81UftRWvUNhK3'
-                  b'22qYi7vGpma9u6aZhO9D75xcKtLmiwhZqM7E35vbT')
+    # get from saltcipher above
+    ciphersalt = ('1AAHjlR2QR9J5Et67Wy-ZaVdTryN6T6ohg44r73GLRPnHw-5S3ABFkhWy'
+                  'IwLOI6TXUB_5CT13S8JvknxLxBaF8ANPK9FSOPD8tYu')
     desalter = decrypter.decrypt(ser=ciphersalt)
     assert desalter.qb64b == saltqb64b
     assert desalter.code == MtrDex.Salt_128
@@ -3390,7 +3393,7 @@ def test_decrypter():
     # Create new decrypter but use seed parameter to init prikey
     decrypter = Decrypter(seed=cryptsigner.qb64b)
     assert decrypter.code == MtrDex.X25519_Private
-    assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
+    assert decrypter.qb64 == 'OLCFxqMz1z1UUS0TEJnvZP_zXHcuYdQsSGBWdOZeY5VQ'
     assert decrypter.raw == prikey
 
     # decrypt ciphersalt
@@ -3413,27 +3416,31 @@ def test_salter():
 
     salter = Salter(raw=raw)
     assert salter.raw == raw
-    assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salter.qb64 == '0AAwMTIzNDU2Nzg5YWJjZGVm'  #'0AMDEyMzQ1Njc4OWFiY2RlZg'
 
     signer = salter.signer(path="01", temp=True)  # defaults to Ed25519
     assert signer.code == MtrDex.Ed25519_Seed
     assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519
     assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
-    assert signer.qb64 == 'Aw-yoFnFZ21ikGGtacpiK3AVrvuz3TZD6dfew9POqzRE'
-    assert signer.verfer.qb64 == 'DVgXBkk4w3LcWScQIvy1RpBlEFTJD3EK_oXxyQb5QKsI'
+    assert signer.qb64 == 'AMPsqBZxWdtYpBhrWnKYitwFa77s902Q-nX3sPTzqs0R'
+    #'Aw-yoFnFZ21ikGGtacpiK3AVrvuz3TZD6dfew9POqzRE'
+    assert signer.verfer.qb64 == 'DFYFwZJOMNy3FknECL8tUaQZRBUyQ9xCv6F8ckG-UCrC'  #
+    # 'DVgXBkk4w3LcWScQIvy1RpBlEFTJD3EK_oXxyQb5QKsI'
 
     signer = salter.signer(path="01")  # defaults to Ed25519 temp = False level="low"
     assert signer.code == MtrDex.Ed25519_Seed
     assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519
     assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
-    assert signer.qb64 == 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
-    assert signer.verfer.qb64 == 'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
+    assert signer.qb64 == 'AEkqQiNTexWB9fTLpgJp_lXW63tFlT-Y0_mgQww4o-dC'
+    # 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
+    assert signer.verfer.qb64 == 'DPJGyH9H1M_SUSf18RzX8OqdyhxEyZJpKm5Em0PnpsWd'
+    #'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
 
-    salter = Salter(qb64='0AMDEyMzQ1Njc4OWFiY2RlZg')
+    salter = Salter(qb64='0AAwMTIzNDU2Nzg5YWJjZGVm')
     assert salter.raw == raw
-    assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salter.qb64 == '0AAwMTIzNDU2Nzg5YWJjZGVm'
 
     with pytest.raises(ShortageError):
         salter = Salter(qb64='')
@@ -3451,22 +3458,22 @@ def test_generatesigners():
     for signer in signers:
         assert signer.verfer.code == MtrDex.Ed25519N
 
-    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    assert len(root) == 16
-    signers = generateSigners(salt=root, count=4)  # default is transferable
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(salt) == 16
+    signers = generateSigners(salt=salt, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == MtrDex.Ed25519_Seed
         assert signer.verfer.code == MtrDex.Ed25519
 
     sigkeys = [signer.qb64 for signer in signers]
-    assert sigkeys == ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                       'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                       'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                       'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
+    assert sigkeys == ['AK8F6AAiYDpXlWdj2O5F5-6wNCCNJh2A4XOlqwR_HwwH',
+                       'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
+                       'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
+                       'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP']
 
-    secrets = generateSecrets(salt=root, count=4)
+    secrets = generatePrivates(salt=salt, count=4)
     assert secrets == sigkeys
 
     """ End Test """
@@ -3504,10 +3511,13 @@ def test_diger():
     assert diger.code == MtrDex.Blake3_256
     assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
-    assert diger.qb64b == b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    assert diger.qb64b == b'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    #b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
 
-    digb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    dig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    digb = b'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    #b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    #'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     diger = Diger(qb64b=digb)
     assert diger.qb64b == digb
     assert diger.qb64 == dig
@@ -3597,26 +3607,19 @@ def test_nexter():
     Test the support functionality for Nexter subclass of Diger
     """
     # create something to digest and verify
-    # verkey, sigkey = pysodium.crypto_sign_keypair()
-    # verfer = Verfer(raw=verkey)
-    # assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
-
-    keys = ['BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE',
-            'BujP_71bmWFVcvFmkE9uS8BTZ54GIstZ20nj_UloF8Rk',
-            'B8T4xkb8En6o0Uo5ZImco1_08gT5zcYnXzizUPVNzicw']
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    #keys = generatePublics(salt=salt, count=3, transferable=False)
+    keys = ['BDjXHlcskwOzNj8rYbV8IQ6ox2TW_KkbA1K3-n0EU0un',
+            'BCtkdESN5eexElVLcJl8Ub0Q0GqNjK2xOvvW3HbZc8zi',
+            'BHugAkJxy4Pc_Sdm2UeT4Z8ofzrbvztfvnjlTRrLiffn']
 
     keydigs = [blake3.blake3(key.encode("utf-8")).digest() for key in keys]
-    assert keydigs == [
-        b'\x98\x1d\xba\xc8\xcc\xeb\xa0\x80\xa1\xfa\x8aJ5\xd9\x18\xc8\xfd4\xd2L\x1e\xbdM|Y\x02=\xe4\x96\x89\x0e6',
-        b';\x80\x97\xa7\xc8,\xd3"`\xd5\xf1a$\xbb9\x84~\xa7z\xa2p\x84Q\x18\xee\xfa\xc9\x11\xd3\xde\xf3\xb2',
-        b'-e\x99\x13 i\x8e\xb7\xcc\xd5E4\x9f}J#"\x17\x96Z\xc2\xa0\xb1\x0e#\x95\x07\x0f\xdc{[\x12']
-
     digers = [Diger(raw=keydig, code=MtrDex.Blake3_256) for keydig in keydigs]
     digs = [diger.qb64 for diger in digers]
 
-    assert digs == ['EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                    'EO4CXp8gs0yJg1fFhJLs5hH6neqJwhFEY7vrJEdPe87I',
-                    'ELWWZEyBpjrfM1UU0n31KIyIXllrCoLEOI5UHD9x7WxI']
+    assert digs == ['EP9XvFnpQP4vnaTNDNAMU2T7nxDPe1EZLUaiABcLRfS4',
+                    'EHvq9OoHtwITL51Q4hsMPy6bA0kTd6AGANkSZ1Ud7otV',
+                    'EN3_XOnc8mia3RHZOzpZhc1J-ckILqTS0KGZNTROvGtW']
 
     #  defaults provide Blake3_256 digester
     nexter = Nexter(digs=digs)  # compute limen/sith from digs
@@ -3633,18 +3636,19 @@ def test_nexter():
     assert nexter.verify(ked=ked)
 
     #  Test support for partial rotation
-    keys = [
-        "B6MUd25DuIUaJ6A3nIUay-JeMwWfAcfZcB2u0Vk_k3xE",
-        "BroOPXDvoc9c92GD489iMBp31x9s4asfQSlSNQd-o6d4",
-        "B3YjMzoTrqsZO6iOhab5L-IHVfTtRzc4hQV4XaUiyBTc",
-        "B9A-LD70YW7MkD5xZlrRLzAqPNuxfFoqAIFpe0xy-uvg",
-        "BLazW7nktYdVqRiWRFF-y-bVY-bqJT_AC-X8qAht8YiE",
-        "Bzb6FZt7473h-XIhEMlTSYzpehTVRZ0T9wa_A1Npiwr4",
-        "BpvXdM-xd24gS_ewVp_eS_G3piJh_0kohhNfiWXEW_o0",
-        "BEVlWXsK0fyYUnd-B5_ruTfZQEfTuYlS3ZL3tCSfcRos",
-        "BDRogzlpHFDjciNgt1a2S04Dk33YSA8UNXvQbxOqLl6o",
-        "B12eAgbg9V9fFTKw38S-NnV3bw3jYeKOVixP2leJGMIU",
-    ]
+    #keys = generatePublics(salt=salt, count=10, transferable=False)
+
+    keys =['BErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
+            'BFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
+            'BE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
+            'BCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
+            'BNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
+            'BOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
+            'BFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
+            'BE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY',
+            'BFEiwXM50PUNUlKW1MgbN3f1cjnTcvL7wVc8sfKiZR93',
+            'BBMMFVAVQGfJlklgkEvG9Z7qBX3JOYbZTAVKJKiHTXIu']
+
     digers = [Diger(raw=blake3.blake3(key.encode("utf-8")).digest(), code=MtrDex.Blake3_256) for key in keys]
 
     # grab first 5 for our nexter
@@ -3683,19 +3687,23 @@ def test_prefixer():
     """
     Test the support functionality for prefixer subclass of crymat
     """
-    preN = 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
-    pre = 'DrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    preN = 'BKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    # 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    #'DrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
               b'`\xf7\xbf\x8a\x18\x8a`q')
     verfer = Verfer(raw=verkey)
-    assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    assert verfer.qb64 == 'BKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    #'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
 
     nxtkey = (b"\xa6_\x894J\xf25T\xc1\x83#\x06\x98L\xa6\xef\x1a\xb3h\xeaA:x'\xda\x04\x88\xb2"
               b'\xc4_\xf6\x00')
     nxtfer = Verfer(raw=nxtkey, code=MtrDex.Ed25519)
-    assert nxtfer.qb64 == 'Dpl-JNEryNVTBgyMGmEym7xqzaOpBOngn2gSIssRf9gA'
+    assert nxtfer.qb64 == 'DKZfiTRK8jVUwYMjBphMpu8as2jqQTp4J9oEiLLEX_YA'
+    #'Dpl-JNEryNVTBgyMGmEym7xqzaOpBOngn2gSIssRf9gA'
 
     with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer()
@@ -3813,7 +3821,8 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EREh4RHCZHUy5nPrY131A4h4RuDAOynRQdQY0PLJybEQ'
+    assert prefixer.qb64 == 'ELEjyRTtmfyp4VpTBTkv_b6KONMS1V8-EW-aGJ5P_QMo'
+    #'EREh4RHCZHUy5nPrY131A4h4RuDAOynRQdQY0PLJybEQ'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3832,21 +3841,24 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EDve7ZqtIsIMrx6UVZRTcnLgEnYGGV2is_JI_Ps3hEnE'
+    assert prefixer.qb64 == 'EHZUmVPq9cXFvGwWP4ohwA27XlsWHBxxu4xFiXp8UOol'
+    #'EDve7ZqtIsIMrx6UVZRTcnLgEnYGGV2is_JI_Ps3hEnE'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
+
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    #secrets = generateSecrets(salt=salt,  count=8)
+
     # test with fractionally weighted sith
-    secrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
+    secrets =  ['AK8F6AAiYDpXlWdj2O5F5-6wNCCNJh2A4XOlqwR_HwwH',
+                'AOs8-zNPPh0EhavdrCfCiTk9nGeO8e6VxUCzwdKXJAd0',
+                'AHMBU5PsIJN2U9m7j0SGyvs8YD8fkym2noELzxIrzfdG',
+                'AJZ7ZLd7unQ4IkMUwE69NXcvDO9rrmmRH_Xk3TPu9BpP',
+                'ANfkMQ5LKPfjEdQPK2c_zWsOn4GgLWsnWvIa25EVVbtR',
+                'ACrmDHtPQjnM8H9pyKA-QBNdfZ-xixTlRZTS8WXCrrMH',
+                'AMRXyU3ErhBNdRSDX1zKlrbZGRp1GfCmkRIa58gF07I8',
+                'AC6vsNVCpHa6acGcxk7c-D1mBHlptPrAx8zr-bKvesSW']
 
     # create signers from secrets
     signers = [Signer(qb64=secret) for secret in secrets]  # faster
@@ -3870,7 +3882,7 @@ def test_prefixer():
                )
 
     prefixer1 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer1.qb64 == 'EJUqcw-yS7Fqk5XAU8-MRwl25hMfURhc1wKqLDG7QZhQ'
+    assert prefixer1.qb64 == 'EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T'
     assert prefixer1.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3889,16 +3901,16 @@ def test_prefixer():
                )
 
     prefixer2 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer2.qb64 == 'EN1epXqakc6DCsQqPUFVYlz6so0M0BJdDuQy53nBQI4Q'
+    assert prefixer2.qb64 == 'EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb'
     assert prefixer2.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 != prefixer1.qb64  # semantic diff -> syntactic diff
 
     sith = "1"
-    seal = dict(i='EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q',
+    seal = dict(i='EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T',
                 s='2',
                 t=Ilks.ixn,
-                d='E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
+                d='EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb')
 
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
@@ -3914,7 +3926,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ExjPDXRhIuAmgsnKGjrwudZAYuAqHf5SLMPvVscvHh9Y'
+    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3925,7 +3937,7 @@ def test_prefixer():
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
                         allows=[MtrDex.Blake3_256, MtrDex.Ed25519])
-    assert prefixer.qb64 == 'ExjPDXRhIuAmgsnKGjrwudZAYuAqHf5SLMPvVscvHh9Y'
+    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -3984,14 +3996,24 @@ def test_saider():
     label = Ids.dollar
 
     # Test with valid said qb64
-    said0 = "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
+    said0 = 'EBG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA'
     saider = Saider(qb64=said0)  # raw and code from qb64
     assert saider.code == code == MtrDex.Blake3_256  # code from said
     assert saider.qb64 == said0
 
+    ser0 = (b'{"$id": "", "$schema": '
+            b'"http://json-schema.org/draft-07/schema#", "type": "object", "properties": {"a": {"type": "string"}, '
+            b'"b": {"type": "number"}, "c": {"type": "string", "format": "date-time"}}}')
+
+    sad0 = json.loads(ser0)
+
+    saider, sad = Saider.saidify(sad=sad0, label=label)
+    assert saider.qb64 == 'EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw'
+    said0 = 'EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw'
+
     # Test with JSON Schema for SAD
     # serialized with valid said in $id field as JSON Schema
-    ser0 = (b'{"$id": "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA", "$schema": '
+    ser0 = (b'{"$id": "EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw", "$schema": '
             b'"http://json-schema.org/draft-07/schema#", "type": "object", "properties": {"a": {"type": "string"}, '
             b'"b": {"type": "number"}, "c": {"type": "string", "format": "date-time"}}}')
 
@@ -4038,7 +4060,7 @@ def test_saider():
     # Use different code not the default
     code = MtrDex.Blake2b_256
 
-    said2 = 'FW1_1lgNJ69QPnJK-pD5s8cinFFYhnGN8nuyz8Mdrezg'
+    said2 = 'FG1_1lgNJ69QPnJK-pD5s8cinFFYhnGN8nuyz8Mdrezg'
     saider = Saider(qb64=said2, label=label)
     assert saider.code == code == MtrDex.Blake2b_256
     assert saider.qb64 == said2
@@ -4047,6 +4069,15 @@ def test_saider():
             b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
             b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
     sad2 = json.loads(ser2)
+    saider, sad = Saider.saidify(sad=sad2, code = MtrDex.Blake2b_256, label='$id')
+    assert saider.qb64 == 'FFtf9ZYDSevUD5ySvqQ-bPHIpxRWIZxjfJ7ss_DHa3s4'
+    said2 = 'FFtf9ZYDSevUD5ySvqQ-bPHIpxRWIZxjfJ7ss_DHa3s4'
+
+    ser2 = (b'{"$id":"FFtf9ZYDSevUD5ySvqQ-bPHIpxRWIZxjfJ7ss_DHa3s4","$schema":"http://json'
+            b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
+            b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
+    sad2 = json.loads(ser2)
+
     assert saider.verify(sad2, prefixed=True, label=label)  # kind default
 
     # Initialize from dict needs code
@@ -4092,15 +4123,15 @@ def test_saider():
         dt="2020-08-22T17:50:12.988921+00:00",
         r="logs/processor",
         a=dict(
-            d="EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-            i="EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+            d="EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg",
+            i="EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb",
             name="John Jones",
             role="Founder",
         ),
     )
     saider = Saider(sad=sad4)  # default version string code, kind, and label
     assert saider.code == code == MtrDex.Blake3_256
-    assert saider.qb64 == 'EG_Sps9RzkJ3BWczwDNTnsf3UigMIoL5iGH9lF5ArqEs'
+    assert saider.qb64 == 'ELzewBpZHSENRP-sL_G_2Ji4YDdNkns9AzFzufleJqdw'
     assert saider.verify(sad4, prefixed=False, versioned=False)  # kind and label default
     assert not saider.verify(sad4, prefixed=False)  # kind and label default
     assert not saider.verify(sad4, prefixed=True, versioned=False)  # kind and label default
@@ -4121,10 +4152,10 @@ def test_saider():
 
     ser5 = coring.dumps(ked=sad5, kind=kind)
 
-    assert ser5 == (b'{"v":"KERI10JSON000000_","t":"rep","d":"EG_Sps9RzkJ3BWczwDNTnsf3UigMIoL5iGH9'
-                    b'lF5ArqEs","dt":"2020-08-22T17:50:12.988921+00:00","r":"logs/processor","a":{'
-                    b'"d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","i":"EAoTNZH3ULvYAfSVPzhz'
-                    b'S6baU6JR2nmwyZ-i0d8JZ5CM","name":"John Jones","role":"Founder"}}')
+    assert ser5 == (b'{"v":"KERI10JSON000000_","t":"rep","d":"ELzewBpZHSENRP-sL_G_2Ji4YDdNkns9AzFz'
+                    b'ufleJqdw","dt":"2020-08-22T17:50:12.988921+00:00","r":"logs/processor","a":{'
+                    b'"d":"EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg","i":"EB0_D51cTh_q6uOQ-byF'
+                    b'iv5oNXZ-cxdqCqBAa4JmBLtb","name":"John Jones","role":"Founder"}}')
 
     sad3 = coring.loads(ser5)
     assert not saider.verify(sad3, prefixed=True)
@@ -4170,7 +4201,7 @@ def test_saider():
     saider = Saider(sad=sad9)  # default code and label not default kind
     assert saider.code == code == MtrDex.Blake3_256
     said9 = saider.qb64
-    assert said9 == 'EG6Dn_o1YwiZrY8fFvrpiHcoUBTR95Nnq3BxdaO2lBmM' != said3
+    assert said9 == 'EJyT3AEkPq3clvvZ2IZN_cU0kcbcDiAnNRULl_tTWzJo' != said3
     assert saider.verify(sad9, prefixed=False, versioned=False)
     assert not saider.verify(sad9, prefixed=True)
     assert not saider.verify(sad3, prefixed=False)
@@ -4188,11 +4219,11 @@ def test_saider():
     )
 
     saider1 = Saider(sad=sad, ignore=["read"])
-    assert saider1.qb64 == "EFqbqvO9-rTIXp4jsLOuDd1RWGqDZzA2RKgm_IdY-Pek"
+    assert saider1.qb64 == 'EBam6rzvfq0yF6eI7Czrg3dUVhqg2cwNkSoJvyHWPj3p'
 
     saider2, sad2 = Saider.saidify(sad=sad, ignore=["read"])
-    assert saider2.qb64 == "EFqbqvO9-rTIXp4jsLOuDd1RWGqDZzA2RKgm_IdY-Pek"
-    assert sad2["d"] == saider1.qb64
+    assert saider2.qb64 == saider1.qb64
+    assert sad2["d"] == saider2.qb64 == saider1.qb64
     assert sad2["read"] is False
 
     assert saider1.verify(sad=sad2, prefixed=True, ignore=["read"]) is True
@@ -4411,18 +4442,19 @@ def test_serder():
     assert serder.ked == e1
     assert serder.kind == Serials.json
     assert serder.version == Versionage(major=1, minor=0)
-    assert serder.said == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
-    assert serder.saidb == b'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert serder.said == 'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
+    #'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert serder.saidb == b'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
     assert serder.size == 111
     assert serder.verfers == []
-    assert serder.raw == (b'{"v":"KERI10JSON00006f_","d":"EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU",'
+    assert serder.raw == (b'{"v":"KERI10JSON00006f_","d":"EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",'
                           b'"i":"ABCDEFG","s":"0001","t":"rot"}')
     assert serder.sn == 1
     assert serder.pre == "ABCDEFG"
     assert serder.preb == b"ABCDEFG"
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert e1s == ((b'{"v":"KERI10JSON00006f_","d":"EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU",'
+    assert e1s == ((b'{"v":"KERI10JSON00006f_","d":"EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",'
                     b'"i":"ABCDEFG","s":"0001","t":"rot"}'))
     vs = versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON00006f_'
@@ -4430,7 +4462,7 @@ def test_serder():
     pretty = serder.pretty()
     assert pretty == ('{\n'
                       ' "v": "KERI10JSON00006f_",\n'
-                      ' "d": "EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU",\n'
+                      ' "d": "EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F",\n'
                       ' "i": "ABCDEFG",\n'
                       ' "s": "0001",\n'
                       ' "t": "rot"\n'
@@ -4470,8 +4502,8 @@ def test_serder():
     e2 = dict(e1)
     e2["v"] = Vstrings.mgpk
     e2s = msgpack.dumps(e2)
-    assert e2s == ((b'\x85\xa1v\xb1KERI10MGPK000000_\xa1d\xd9,EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4f'
-                    b'c1nGuyTwU\xa1i\xa7ABCDEFG\xa1s\xa40001\xa1t\xa3rot'))
+    assert e2s == (b'\x85\xa1v\xb1KERI10MGPK000000_\xa1d\xd9,EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH'
+                   b'3NZxrsk8F\xa1i\xa7ABCDEFG\xa1s\xa40001\xa1t\xa3rot')
     vs = versify(kind=Serials.mgpk, size=len(e2s))  # use real length
     assert vs == 'KERI10MGPK00005c_'
     e2["v"] = vs  # has real length
@@ -4511,7 +4543,7 @@ def test_serder():
     e3 = dict(e1)
     e3["v"] = Vstrings.cbor
     e3s = cbor.dumps(e3)
-    assert e3s == (b'\xa5avqKERI10CBOR000000_adx,EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwUaig'
+    assert e3s == (b'\xa5avqKERI10CBOR000000_adx,EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8Faig'
                    b'ABCDEFGasd0001atcrot')
     vs = versify(kind=Serials.cbor, size=len(e3s))  # use real length
     assert vs == 'KERI10CBOR00005c_'
@@ -4558,7 +4590,7 @@ def test_serder():
     print()
     print(e4)
     e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EwXDowQGbBZTbz7vArhInaRqxLNWAsqQAzuLCioknTtk",'
+    assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",'
                    b'"i":"ABCDEFG","s":"0001","t":"rot"}')
     vs = versify(ident=Idents.acdc, kind=Serials.json, size=len(e4s))  # use real length
     assert vs == 'ACDC10JSON00006f_'
@@ -4567,7 +4599,7 @@ def test_serder():
     pretty = serder.pretty()
     assert pretty == ('{\n'
                       ' "v": "ACDC10JSON00006f_",\n'
-                      ' "d": "EwXDowQGbBZTbz7vArhInaRqxLNWAsqQAzuLCioknTtk",\n'
+                      ' "d": "EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",\n'
                       ' "i": "ABCDEFG",\n'
                       ' "s": "0001",\n'
                       ' "t": "rot"\n'
@@ -4602,7 +4634,7 @@ def test_serder():
     assert len(evt1.saider.raw) == 32
     assert len(evt1.said) == 44
     assert len(evt1.said) == Matter.Sizes[MtrDex.Blake3_256].fs
-    assert evt1.said == 'EgzrpOMEx_A-dvAruhmptnIbP2c55WZAd4fc1nGuyTwU'
+    assert evt1.said == 'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
     assert evt1.saider.verify(evt1.ked)
 
     evt1 = Serder(ked=ked1)
@@ -4660,7 +4692,7 @@ def test_serder():
     assert evt1.size == size2
     assert evt1.raw == e2ss[:size2]
     assert evt1.version == vers1
-    assert evt1.said == 'Ey-vff1yzcQf5Zxd8sMY6L6tGM1DErjo-q8FyB0CCDyk'
+    assert evt1.said == 'EMvr339cs3EH-WcXfLDGOi-rRjNQxK46PqvBcgdAgg8p'
     assert evt1.saider.verify(evt1.ked)
 
     #  round trip
@@ -4743,16 +4775,24 @@ def test_serder():
     # assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256))  # codes not match
     # assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)  # codes not match
 
+
+
     # need tests will fully populated serder for icp rot dip drt
-    pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
-    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    #aids = generatePublics(salt=None, count=3, transferable=False)
+    aids = ['BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI',
+            'BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4',
+            'BEejlxZytU7gjUwtgkmNKmBWiFPKSsXjk_uxzoun8dtK']
+
+
+    pre0 = aids[0]
+    wit0 = aids[1]
+    wit1 = aids[2]
     srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
-    assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"ENivF7rlDvQORxeomP1eGWclQr-hlq49YG6n'
-                        b'EgOb2RIQ","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
-                        b'","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"0","n":[],"bt":'
-                        b'"2","b":["B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed2Tpxc8KeCEWoq3_R'
-                        b'KKRjU_3P-chSser9J4eAtAK6I"],"c":[],"a":[]}')
+    assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQK'
+                        b'VXvg7oqd","i":"BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI","s":"0","kt":"1'
+                        b'","k":["BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI"],"nt":"0","n":[],"bt":'
+                        b'"2","b":["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4","BEejlxZytU7gjUwtgkm'
+                        b'NKmBWiFPKSsXjk_uxzoun8dtK"],"c":[],"a":[]}')
     # test for serder.verfers and serder.werfers
     assert srdr.pre == pre0
     assert srdr.sn == 0
@@ -4763,29 +4803,29 @@ def test_serder():
     ked = {
         "v": "KERI10JSON00011c_",
         "t": "rep",
-        "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+        "d": "EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd",
         "dt": "2020-08-22T17:50:12.988921+00:00",
         "r": "logs/processor",
         "a":
             {
-                "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-                "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                "d": "EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd",
+                "i": "BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI",
                 "name": "John Jones",
                 "role": "Founder",
             }
     }
     srdr = Serder(ked=ked)
-    assert srdr.said == "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
-    assert srdr.saidb == b"EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+    assert srdr.said == 'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
+    assert srdr.saidb == b'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
 
     # test tholder
     ked = dict(v="KERI10JSON000000_",  # version string
                t="icp",
                d="",
-               i="BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",  # qb64 prefix
+               i="BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI",  # qb64 prefix
                s="0",  # hex string no leading zeros lowercase
                kt="1",  # hex string no leading zeros lowercase
-               k=["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],  # list of qb64
+               k=["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4"],  # list of qb64
                n="",  # hash qual Base64
                bt="0",  # hex string no leading zeros lowercase
                b=[],  # list of qb64 may be empty
@@ -4825,11 +4865,13 @@ def test_tholder():
     with pytest.raises(ValueError):
         tholder = Tholder()
 
+    limen = b'MAAL'
+
     tholder = Tholder(sith="b")
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert tholder.limen == b'MAAs'
+    assert tholder.limen == limen
     assert tholder.sith == "b"
     assert tholder.json == '"b"'
     assert tholder.num == 11
@@ -4840,18 +4882,18 @@ def test_tholder():
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert tholder.limen == b'MAAs'
+    assert tholder.limen == limen
     assert tholder.sith == "b"
     assert tholder.json == '"b"'
     assert tholder.num == 11
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
 
-    tholder = Tholder(limen=b'MAAs')
+    tholder = Tholder(limen=limen)
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert tholder.limen == b'MAAs'
+    assert tholder.limen == limen
     assert tholder.sith == "b"
     assert tholder.json == '"b"'
     assert tholder.num == 11
@@ -4862,7 +4904,7 @@ def test_tholder():
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 11
-    assert tholder.limen == b'MAAs'
+    assert tholder.limen == limen
     assert tholder.sith == "b"
     assert tholder.json == '"b"'
     assert tholder.num == 11
@@ -4873,7 +4915,7 @@ def test_tholder():
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 15
-    assert tholder.limen == b'MAA8'
+    assert tholder.limen == b'MAAP'
     assert tholder.sith == "f"
     assert tholder.json == '"f"'
     assert tholder.num == 15
@@ -4884,7 +4926,7 @@ def test_tholder():
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 2
-    assert tholder.limen == b'MAAI'
+    assert tholder.limen == b'MAAC'  # b'MAAI'
     assert tholder.sith == "2"
     assert tholder.json == '"2"'
     assert tholder.num == 2
@@ -4896,7 +4938,7 @@ def test_tholder():
     assert not tholder.weighted
     assert tholder.size == tholder.thold
     assert tholder.thold == 1
-    assert tholder.limen == b'MAAE'
+    assert tholder.limen == b'MAAB'  # b'MAAE'
     assert tholder.sith == "1"
     assert tholder.json == '"1"'
     assert tholder.num == 1
@@ -5102,4 +5144,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_number()
+    test_saider()
