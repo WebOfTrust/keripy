@@ -10,6 +10,7 @@ from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
 from builtins import OverflowError
+from math import ceil
 
 import blake3
 import cbor2 as cbor
@@ -1170,14 +1171,17 @@ def test_matter():
     assert raw == b'\xf7\x7f'
     cs = len(MtrDex.Short)
     assert cs == 1
-    txt = encodeB64(bytes([0]*cs) + raw)
+    ps = cs % 4
+    assert ps == 1
+    txt = encodeB64(bytes([0]*ps) + raw)
     assert txt == b'APd_'  # b'938='
-    qb64b = MtrDex.Short.encode("utf-8") + txt[cs:]
+    qb64b = MtrDex.Short.encode("utf-8") + txt[ps:]
     assert qb64b == b'MPd_'  # b'M938'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'0\xf7\x7f'  # b'3\xdd\xfc'
-    assert qb2[cs:] == raw  # stable value in qb2
+    bs = ceil((cs * 3) / 4)
+    assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
     matter = Matter(raw=raw, code=MtrDex.Short)
@@ -1186,7 +1190,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1196,7 +1201,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1206,7 +1212,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1216,7 +1223,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1227,13 +1235,16 @@ def test_matter():
     assert raw == b'\xf7\xf3?\x7f'
     cs = len(MtrDex.Long)
     assert cs == 2
-    txt = encodeB64(bytes([0]*cs) + raw)
+    ps = cs % 4
+    assert ps == 2
+    txt = encodeB64(bytes([0]*ps) + raw)
     assert txt == b'AAD38z9_'  # b'9_M_fw=='
-    qb64b = MtrDex.Long.encode("utf-8") + txt[cs:]
+    qb64b = MtrDex.Long.encode("utf-8") + txt[ps:]
     assert qb64b == b'0HD38z9_'  # b'0H9_M_fw'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd0p\xf7\xf3?\x7f'  # b'\xd0\x7f\x7f3\xf7\xf0'
+    bs = ceil((cs * 3) / 4)
     assert qb2[cs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
@@ -1243,7 +1254,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1253,7 +1265,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1263,7 +1276,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1273,7 +1287,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
-    assert matter.qb2[len(matter.code):] == matter.raw
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1282,13 +1297,20 @@ def test_matter():
     assert val == 16293119
     raw = val.to_bytes(3, 'big')
     assert raw == b'\xf8\x9c\xff'
-    txt = encodeB64(raw)
+    cs = len(MtrDex.Tern)
+    assert cs == 4
+    ps = cs % 4
+    assert ps == 0
+    txt = encodeB64(bytes([0]*ps) + raw)
     assert txt == b'-Jz_'
-    qb64b = MtrDex.Tern.encode("utf-8") + txt
+    qb64b = MtrDex.Tern.encode("utf-8") + txt[ps:]
     assert qb64b == b'1AAF-Jz_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
+    bs = ceil((cs * 3) / 4)
+    assert qb2[bs:] == raw  # stable value in qb2
+    assert encodeB64(qb2) == qb64b
 
     matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
@@ -1296,6 +1318,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1305,6 +1329,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1314,6 +1340,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1323,6 +1351,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1332,11 +1362,19 @@ def test_matter():
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
+    cs = len(MtrDex.Tern)
+    assert cs == 4
+    ps = cs % 4
+    assert ps == 0
+    txt = encodeB64(bytes([0]*ps) + raw)
     qb64b = MtrDex.Tern.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
     assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
+    bs = ceil((cs * 3) / 4)
+    assert qb2[bs:] == raw  # stable value in qb2
+    assert encodeB64(qb2) == qb64b
 
     matter = Matter(raw=raw, code=MtrDex.Tern)
     assert matter.raw == raw
@@ -1353,6 +1391,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -1371,6 +1411,8 @@ def test_matter():
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
+    bs = ceil((len(matter.code) * 3) / 4)
+    assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
 
@@ -2101,24 +2143,27 @@ def test_seqner():
     assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
-    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAABQ'
-    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAF'  # '0AAAAAAAAAAAAAAAAAAAAABQ'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAF'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
+    # b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
     number = Seqner(snh='a')
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\n'
     assert number.code == MtrDex.Salt_128
     assert number.sn == 10
     assert number.snh == 'a'
-    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAACg'
-    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAACg'
-    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa0'
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAK'  # '0AAAAAAAAAAAAAAAAAAAAACg'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAK'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\n'
+    # b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa0'
 
     # More tests
     snraw = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
-    snqb64b = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    snqb64 = '0AAAAAAAAAAAAAAAAAAAAABQ'
-    snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
+    snqb64b = b'0AAAAAAAAAAAAAAAAAAAAAAF'  # b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    snqb64 = '0AAAAAAAAAAAAAAAAAAAAAAF'  # '0AAAAAAAAAAAAAAAAAAAAABQ'
+    snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
+    #b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
     number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
@@ -2189,8 +2234,8 @@ def test_number():
     assert numh == 'ffff'
     code = NumDex.Short
     raw = b'\xff\xff'
-    nqb64 = 'M__8'
-    nqb2 = b'3\xff\xfc'
+    nqb64 = 'MP__'  # 'M__8'
+    nqb2 = b'0\xff\xff'  # b'3\xff\xfc'
 
     number = Number(num=num)
     assert number.code == code
@@ -2198,6 +2243,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2207,6 +2254,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2216,6 +2265,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2225,6 +2276,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2234,6 +2287,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2243,6 +2298,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2252,8 +2309,8 @@ def test_number():
     assert numh == 'ffffffff'
     raw = b'\xff\xff\xff\xff'
     code = NumDex.Long
-    nqb64 = '0H_____w'
-    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+    nqb64 = '0HD_____'  # '0H_____w'
+    nqb2 = b'\xd0p\xff\xff\xff\xff'  # b'\xd0\x7f\xff\xff\xff\xf0'
 
     number = Number(num=num)
     assert number.code == code
@@ -2261,6 +2318,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2270,6 +2329,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2279,6 +2340,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2297,6 +2360,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2306,8 +2371,8 @@ def test_number():
     assert numh == 'ffffffffffffffff'
     raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
     code = NumDex.Big
-    nqb64 = 'N__________8'
-    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+    nqb64 = 'NP__________'  # 'N__________8'
+    nqb2 = b'4\xff\xff\xff\xff\xff\xff\xff\xff'  # b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
 
     number = Number(num=num)
     assert number.code == code
@@ -2315,6 +2380,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2324,6 +2391,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2333,6 +2402,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2342,6 +2413,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2351,6 +2424,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2360,8 +2435,9 @@ def test_number():
     assert numh == 'ffffffffffffffffffffffffffffffff'
     raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     code = NumDex.Huge
-    nqb64 = '0A_____________________w'
-    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+    nqb64 = '0AD_____________________'  # '0A_____________________w'
+    nqb2 = b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    #b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
 
     number = Number(num=num)
     assert number.code == code
@@ -2369,6 +2445,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2378,6 +2456,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2387,6 +2467,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2396,6 +2478,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2405,6 +2489,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2415,8 +2501,8 @@ def test_number():
     assert numh == 'ffff'
     raw = b'\xff\xff'
     code = NumDex.Short
-    nqb64 = 'M__8'
-    nqb2 = b'3\xff\xfc'
+    nqb64 = 'MP__'  # 'M__8'
+    nqb2 = b'0\xff\xff'  # b'3\xff\xfc'
 
     # raw to large for code, then truncates
     raw2bad = b'\xff\xff\xff\xff'
@@ -2429,6 +2515,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2447,8 +2535,8 @@ def test_number():
     assert numh == 'ffffffff'
     raw = b'\xff\xff\xff\xff'
     code = NumDex.Long
-    nqb64 = '0H_____w'
-    nqb2 = b'\xd0\x7f\xff\xff\xff\xf0'
+    nqb64 = '0HD_____'  # '0H_____w'
+    nqb2 = b'\xd0p\xff\xff\xff\xff'  # b'\xd0\x7f\xff\xff\xff\xf0'
 
     # raw to large for code, then truncates
     raw2bad = b'\xff\xff\xff\xff\xff'
@@ -2461,6 +2549,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2479,8 +2569,8 @@ def test_number():
     assert numh == 'ffffffffffffffff'
     raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
     code = NumDex.Big
-    nqb64 = 'N__________8'
-    nqb2 = b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+    nqb64 = 'NP__________'  #'N__________8'
+    nqb2 = b'4\xff\xff\xff\xff\xff\xff\xff\xff' # b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
 
 
     # raw to large for code, then truncates
@@ -2494,6 +2584,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2512,8 +2604,9 @@ def test_number():
     assert numh == 'ffffffffffffffffffffffffffffffff'
     raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     code = NumDex.Huge
-    nqb64 = '0A_____________________w'
-    nqb2 = b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+    nqb64 = '0AD_____________________'  # '0A_____________________w'
+    nqb2 = b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    #b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
 
 
     # raw to large for code, then truncates
@@ -2527,6 +2620,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -2543,8 +2638,8 @@ def test_number():
     assert numh == '1'
     code = NumDex.Short
     raw = b'\x00\x01'
-    nqb64 = 'MAAE'
-    nqb2 = b'0\x00\x04'
+    nqb64 = 'MAAB'  # 'MAAE'
+    nqb2 = b'0\x00\x01'  # b'0\x00\x04'
 
     number = Number(num=num)
     assert number.code == code
@@ -2552,6 +2647,8 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
 
@@ -5005,4 +5102,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_number()
