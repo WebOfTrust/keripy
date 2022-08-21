@@ -1485,31 +1485,35 @@ def test_indexer():
 
     assert len(sig) == 64
 
-    sig64b = encodeB64(sig)
+    ps = (3 - (len(sig) % 3)) % 3  # same pad size char and lead size bytes
+    sig64b = encodeB64(bytes([0]* ps) +  sig)  # prepad with ps bytes of zeros
     sig64 = sig64b.decode("utf-8")
     assert len(sig64) == 88
-    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+    assert sig64 == 'AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
 
-    # replace pad "==" with code "AA"
+    # replace prepad  with code "A" plus index 0 == "A"
     qsc = IdrDex.Ed25519_Sig + intToB64(0, l=1)
     assert qsc == 'AA'
     qscb = qsc.encode("utf-8")
-    qsig64 = qsc + sig64[:-2]
-    assert qsig64 == 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64 = qsc + sig64[ps:]  # strip off prepad chars
+    assert qsig64 == 'AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
     assert len(qsig64) == 88
     qsig64b = qsig64.encode("utf-8")
 
     qsig2b = decodeB64(qsig64b)
     assert len(qsig2b) == 66
-    assert qsig2b == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-                      b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-                      b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+    assert qsig2b == (b"\x00\x00\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm"
+                      b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
+                      b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
 
     indexer = Indexer(raw=sig)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
     assert indexer.qb64 == qsig64
+    indexer._exfil(qsig64b)
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.raw == sig
     assert indexer.qb2 == qsig2b
 
     # test wrong size of raw
@@ -5144,4 +5148,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_saider()
+    test_indexer()

@@ -1045,7 +1045,7 @@ class Matter:
         fs = (size * 4) + cs
         """
         if not qb64b:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
+            raise ShortageError("Empty material.")
 
         first = qb64b[:1]  # extract first char code selector
         if hasattr(first, "decode"):
@@ -1058,25 +1058,25 @@ class Matter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                             "while extracing Matter.")
             else:
-                raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
+                raise UnexpectedCodeError(f"Unsupported code start char={first}.")
 
         hs = self.Hards[first]  # get hard code size
         if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
+            raise ShortageError(f"Need {hs - len(qb64b)} more characters.")
 
-        code = qb64b[:hs]  # extract hard code
-        if hasattr(code, "decode"):
-            code = code.decode("utf-8")
-        if code not in self.Sizes:
-            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
+        hard = qb64b[:hs]  # extract hard code
+        if hasattr(hard, "decode"):
+            hard = hard.decode("utf-8")
+        if hard not in self.Sizes:
+            raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[code]  # assumes hs in both tables match
+        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables match
         cs = hs + ss  # both hs and ss
         size = None
         if not fs:  # compute fs from size chars in ss part of code
             if cs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
+                raise ValidationError(f"Whole code size not multiple of 4 for "
+                                      f"variable length material. cs={cs}.")
             size = qb64b[hs:hs + ss]  # extract size chars
             if hasattr(size, "decode"):
                 size = size.decode("utf-8")
@@ -1089,23 +1089,24 @@ class Matter:
         # fs is None
 
         if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs - len(qb64b)))
+            raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
+
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
-        if fs:  # not variable length
+        if fs:  # not variable length with maybe lead
             ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
             base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
             raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
-        else:  # variable length
+        else:  # variable length with maybe lead assumes cs % 4 == 0
             base = qb64b[cs:]  # strip off prepend code leaving lead
             raw = decodeB64(base)[ls:]  # decode and strip off ls lead bytes
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
-            raise ConversionError("Improperly qualified material = {}".format(qb64b))
+            raise ConversionError(f"Improperly qualified material = {qb64b}")
 
-        self._code = code
+        self._code = hard  # hard only
         self._size = size
         self._raw = raw
 
@@ -3478,7 +3479,8 @@ IdxSigDex = IndexedSigCodex()  # Make instance
 class Indexer:
     """
     Indexer is fully qualified cryptographic material primitive base class for
-    indexed primitives.
+    indexed primitives. Indexed codes are a mix of indexed and variable length
+    because code table has two char codes for compact variable length.
 
     Sub classes are derivation code and key event element context specific.
 
@@ -3658,6 +3660,38 @@ class Indexer:
         """
         Returns fully qualified attached sig base64 bytes computed from
         self.raw, self.code and self.index.
+
+        cs = hs + ss
+        fs = (size * 4) + cs
+
+        """
+        code = self.code  # codex value chars hard code
+        index = self.index  # index value int used for soft
+        raw = self.raw  # bytes or bytearray
+
+        ps = (3 - (len(raw) % 3)) % 3  # same pad size chars & lead size bytes
+        hs, ss, fs, ls = self.Sizes[code]
+
+        if index < 0 or index > (64 ** ss - 1):
+            raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
+
+        # both is hard code + converted index
+        both = "{}{}".format(code, intToB64(index, l=ss))
+
+        # check valid pad size for whole code size, assumes ls is zero
+        cs = len(both)
+        if (cs % 4) != ps - ls:  # adjusted pad given lead bytes
+            raise InvalidCodeSizeError(f"Invalid code={both} for converted"
+                                       f" raw pad size={ps}.")
+
+        # prepend pad bytes, convert, then replace pad chars with full derivation
+        # code including index,
+        return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
+
+    def old_infil(self):
+        """
+        Returns fully qualified attached sig base64 bytes computed from
+        self.raw, self.code and self.index.
         """
         code = self.code  # codex value chars hard code
         index = self.index  # index value int used for soft
@@ -3672,7 +3706,7 @@ class Indexer:
         # both is hard code + converted index
         both = "{}{}".format(code, intToB64(index, l=ss))
 
-        ps = (3 - (len(raw) % 3)) % 3  # pad size
+        ps = (3 - (len(raw) % 3)) % 3  # same pad size char and lead size bytes
         # check valid pad size for whole code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
             raise InvalidCodeSizeError("Invalid code = {} for converted raw pad size = {}."
@@ -3681,6 +3715,80 @@ class Indexer:
         return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
     def _exfil(self, qb64b):
+        """
+        Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
+
+        cs = hs + ss
+        fs = (size * 4) + cs
+        """
+        if not qb64b:  # empty need more bytes
+            raise ShortageError("Empty material.")
+
+        first = qb64b[:1]  # extract first char code selector
+        if hasattr(first, "decode"):
+            first = first.decode("utf-8")
+        if first not in self.Hards:
+            if first[0] == '-':
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Indexer.")
+            elif first[0] == '_':
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                            "while extracing Indexer.")
+            else:
+                raise UnexpectedCodeError(f"Unsupported code start char={first}.")
+
+        hs = self.Hards[first]  # get hard code size
+        if len(qb64b) < hs:  # need more bytes
+            raise ShortageError(f"Need {hs - len(qb64b)} more characters.")
+
+        hard = qb64b[:hs]  # get hard code
+        if hasattr(hard, "decode"):
+            hard = hard.decode("utf-8")
+        if hard not in self.Sizes:
+            raise UnexpectedCodeError(f"Unsupported code ={hard}.")
+
+        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables consistent
+        cs = hs + ss  # both hard + soft code size
+        # assumes that unit tests on Indexer and IndexerCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
+        # assumes no variable length indexed codes so fs is not None
+
+        if len(qb64b) < cs:  # need more bytes
+            raise ShortageError(f"Need {cs - len(qb64b)} more characters.")
+
+        index = qb64b[hs:hs + ss]  # extract index/size chars
+        if hasattr(index, "decode"):
+            index = index.decode("utf-8")
+        index = b64ToInt(index)  # compute int index
+
+        # index is index for some codes and variable length for others
+        if not fs:  # compute fs from index which means variable length
+            if cs % 4:
+                raise ValidationError(f"Whole code size not multiple of 4 for "
+                                      f"variable length material. cs={cs}.")
+            fs = (index * 4) + cs
+
+        if len(qb64b) < fs:  # need more bytes
+            raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
+
+        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
+            qb64b = qb64b.encode("utf-8")
+
+        # strip off prepended code and append pad characters
+        ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
+        base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
+        raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
+
+        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+            raise ConversionError(f"Improperly qualified material = {qb64b}")
+
+        self._code = hard
+        self._index = index
+        self._raw = raw
+
+    def old_exfil(self, qb64b):
         """
         Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
         """
@@ -3747,6 +3855,7 @@ class Indexer:
         self._code = hard
         self._index = index
         self._raw = raw
+
 
     def _binfil(self):
         """
