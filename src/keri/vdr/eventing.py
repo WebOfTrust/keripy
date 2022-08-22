@@ -584,7 +584,7 @@ def vcstate(vcpre,
         raise ValueError("Negative sn = {} in key state.".format(sn))
 
     if eilk not in (Ilks.iss, Ilks.bis, Ilks.rev, Ilks.brv):
-        raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
+        raise ValueError("Invalid event type et=  in key state.".format(eilk))
 
     if dts is None:
         dts = helping.nowIso8601()
@@ -1179,6 +1179,7 @@ class Tever:
                                          "".format(serder.ked))
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider)
+            self.cues.append(dict(kin="revoked", serder=serder))
 
         elif ilk in (Ilks.brv,):  # backer revoke
             if self.noBackers is True:
@@ -1194,6 +1195,7 @@ class Tever:
                                         baks=baks)
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider, bigers=bigers)
+            self.cues.append(dict(kin="revoked", serder=serder))
 
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1240,6 +1242,7 @@ class Tever:
                        said=vcdig.decode("utf-8"),
                        sn=vcsn,
                        ri=self.prefixer.qb64,
+                       dts=serder.ked['dt'],
                        eilk=vcilk,
                        ra=ra,
                        a=dict(s=seqner.sn, d=saider.qb64),
