@@ -1489,14 +1489,16 @@ def test_indexer():
     sig64b = encodeB64(bytes([0]* ps) +  sig)  # prepad with ps bytes of zeros
     sig64 = sig64b.decode("utf-8")
     assert len(sig64) == 88
-    assert sig64 == 'AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    assert sig64 == ('AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwq'
+                     'ezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ')
 
     # replace prepad  with code "A" plus index 0 == "A"
     qsc = IdrDex.Ed25519_Sig + intToB64(0, l=1)
     assert qsc == 'AA'
     qscb = qsc.encode("utf-8")
-    qsig64 = qsc + sig64[ps:]  # strip off prepad chars
-    assert qsig64 == 'AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qsig64 = qsc + sig64[ps:]  # replace prepad chars with clause
+    assert qsig64 == ('AACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFw'
+                      'qezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ')
     assert len(qsig64) == 88
     qsig64b = qsig64.encode("utf-8")
 
@@ -1515,6 +1517,9 @@ def test_indexer():
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
     assert indexer.qb2 == qsig2b
+    indexer._bexfil(qsig2b)
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.raw == sig
 
     # test wrong size of raw
     longsig = sig + bytes([10, 11, 12])
@@ -1574,14 +1579,17 @@ def test_indexer():
     qsc = IdrDex.Ed25519_Sig + intToB64(5, l=1)
     assert qsc == 'AF'
     qscb = qsc.encode("utf-8")
-    qsig64 = qsc + sig64[:-2]
-    assert qsig64 == 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64 = qsc + sig64[ps:]  # replace prepad chars with code
+    assert qsig64 == ('AFCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZF'
+                      'wqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ')
     assert len(qsig64) == 88
     qsig64b = qsig64.encode("utf-8")
 
-    qsig2b = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-              b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-              b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+    qsig2b = decodeB64(qsig64b)
+    assert len(qsig2b) == 66
+    qsig2b = (b"\x00P\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm"
+              b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
+              b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
 
     indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5)
     assert indexer.raw == sig
@@ -1590,6 +1598,20 @@ def test_indexer():
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
+    indexer._exfil(qsig64b)
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.raw == sig
+    assert indexer.qb2 == qsig2b
+    indexer._bexfil(qsig2b)
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.raw == sig
+
+    indexer = Indexer(raw=sig)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0  #default index is zero
+    assert indexer.qb64 != qsig64
+    assert indexer.qb2 != qsig2b
 
     indexer = Indexer(qb2=qsig2b)
     assert indexer.raw == sig
@@ -3950,14 +3972,17 @@ def test_prefixer():
 
 def test_siger():
     """
-    Test Siger subclass of Sigmat
+    Test Siger subclass of Indexer
     """
     with pytest.raises(EmptyMaterialError):
         siger = Siger()
 
-    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64 = ('AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd'
+              '7K_H9-1298F4Id1DxvIoEmCQ')
+    #'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
     qsig64b = qsig64.encode("utf-8")
-    assert qsig64b == b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert qsig64b == (b'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGR'
+                       b'cKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ')
 
     siger = Siger(qb64b=qsig64b)
     assert siger.code == IdrDex.Ed25519_Sig
