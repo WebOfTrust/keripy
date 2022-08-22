@@ -12,7 +12,6 @@ from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
-from math import ceil
 from fractions import Fraction
 
 import cbor2 as cbor
@@ -843,7 +842,7 @@ class Matter:
 
             else:
                 hs, ss, fs, ls = self.Sizes[code]  # get sizes assumes ls consistent
-                if fs is None:  # invalid
+                if not fs:  # invalid
                     raise InvalidVarSizeError(r"Unsupported variable size "
                                               f"code={code}.")
                 rize = Matter._rawSize(code)
@@ -1007,7 +1006,7 @@ class Matter:
 
         ps = ((3 - (len(raw) % 3)) % 3)  # pad size chars or lead size bytes
         hs, ss, fs, ls = self.Sizes[code]
-        if fs is None:  # variable sized, compute code ss value from .size
+        if not fs:  # variable sized, compute code ss value from .size
             cs = hs + ss  # both hard + soft size
             if cs % 4:
                 raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
@@ -1124,8 +1123,7 @@ class Matter:
         hs, ss, fs, ls = self.Sizes[code]
         cs = hs + ss
 
-        if fs is None:  # compute both and fs from size
-            cs = hs + ss  # both hard + soft size
+        if not fs:  # compute both and fs from size
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                            "variable length material. cs={}.".format(cs))
@@ -1144,7 +1142,7 @@ class Matter:
                                        .format(cs, len(code)))
 
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
-        # convert code to right align b2 int then left shift in pad bits
+        # convert code both to right align b2 int then left shift in pad bits
         # then convert to bytes
         bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
         full = bcode + bytes([0] * ls) + raw
@@ -1171,25 +1169,26 @@ class Matter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                             "while extracing Matter.")
             else:
-                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError(f"Unsupported code start sextet={first}.")
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
         bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
+            raise ShortageError(f"Need {bhs - len(qb2)} more bytes.")
 
-        code = b2ToB64(qb2, hs)  # extract and convert hard part of code
-        if code not in self.Sizes:
-            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
+        hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
+        if hard not in self.Sizes:
+            raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         size = None
         if not fs:  # compute fs from size chars in ss part of code
             if cs % 4:
                 raise ValidationError("Whole code size not multiple of 4 for "
                                       "variable length material. cs={}.".format(cs))
-            bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+
             if len(qb2) < bcs:  # need more bytes
                 raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
@@ -1204,18 +1203,14 @@ class Matter:
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
-        qb2 = qb2[:bfs]  # fully qualified primitive code plus material
 
-        # right shift to right align raw material
-        #i = int.from_bytes(qb2, 'big') >> (2 * (cs % 4))
-        # i >>= 2 * (cs % 4)
-        bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
-        raw = qb2[(bcs + ls):]  # extract raw strip leader bytes
+        qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
+        raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
-            raise ConversionError("Improperly qualified material = {}".format(qb2))
+            raise ConversionError(r"Improperly qualified material = {qb2}")
 
-        self._code = code
+        self._code = hard
         self._size = size
         self._raw = raw
 
@@ -3449,7 +3444,7 @@ class IndexerCodex:
     Ed25519_Sig: str = 'A'  # Ed25519 signature.
     ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
     Ed448_Sig: str = '0A'  # Ed448 signature.
-    Label: str = '0B'  # Variable len label L=N*4 <= 4095 char quadlets
+    Label: str = '0B'  # Var len label L=N*4 <= 4095 char quadlets includes code
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -3688,31 +3683,6 @@ class Indexer:
         # code including index,
         return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
 
-    def old_infil(self):
-        """
-        Returns fully qualified attached sig base64 bytes computed from
-        self.raw, self.code and self.index.
-        """
-        code = self.code  # codex value chars hard code
-        index = self.index  # index value int used for soft
-        raw = self.raw  # bytes or bytearray
-
-        hs, ss, fs, ls = self.Sizes[code]
-
-        if index < 0 or index > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid index={} for code={}."
-                                       "".format(index, code))
-
-        # both is hard code + converted index
-        both = "{}{}".format(code, intToB64(index, l=ss))
-
-        ps = (3 - (len(raw) % 3)) % 3  # same pad size char and lead size bytes
-        # check valid pad size for whole code size
-        if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
-            raise InvalidCodeSizeError("Invalid code = {} for converted raw pad size = {}."
-                                       .format(both, ps))
-        # prepending full derivation code with index and strip off trailing pad characters
-        return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
     def _exfil(self, qb64b):
         """
@@ -3788,74 +3758,6 @@ class Indexer:
         self._index = index
         self._raw = raw
 
-    def old_exfil(self, qb64b):
-        """
-        Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
-        """
-        if not qb64b:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
-
-        first = qb64b[:1]  # extract first char code selector
-        if hasattr(first, "decode"):
-            first = first.decode("utf-8")
-        if first not in self.Hards:
-            if first[0] == '-':
-                raise UnexpectedCountCodeError("Unexpected count code start"
-                                               "while extracing Indexer.")
-            elif first[0] == '_':
-                raise UnexpectedOpCodeError("Unexpected  op code start"
-                                            "while extracing Indexer.")
-            else:
-                raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
-
-        hs = self.Hards[first]  # get hard code size
-        if len(qb64b) < hs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
-
-        hard = qb64b[:hs]  # get hard code
-        if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
-        if hard not in self.Sizes:
-            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
-
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables consistent
-        cs = hs + ss  # both hard + soft code size
-        # assumes that unit tests on Indexer and IndexerCodex ensure that
-        # .Codes and .Sizes are well formed.
-        # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
-
-        if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs - len(qb64b)))
-
-        index = qb64b[hs:hs + ss]  # extract index chars
-        if hasattr(index, "decode"):
-            index = index.decode("utf-8")
-        index = b64ToInt(index)  # compute int index
-
-        if not fs:  # compute fs from index
-            if cs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. cs={}.".format(cs))
-            fs = (index * 4) + cs
-
-        if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs - len(qb64b)))
-
-        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
-        if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
-            qb64b = qb64b.encode("utf-8")
-
-        # strip off prepended code and append pad characters
-        ps = cs % 4  # pad size ps = cs mod 4
-        base = qb64b[cs:] + ps * BASE64_PAD
-        raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
-            raise ConversionError("Improperly qualified material = {}".format(qb64b))
-
-        self._code = hard
-        self._index = index
-        self._raw = raw
-
 
     def _binfil(self):
         """
@@ -3879,23 +3781,24 @@ class Indexer:
             raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
-        both = "{}{}".format(code, intToB64(index, l=ss))
+        both = f"{code}{intToB64(index, l=ss)}"
 
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                        .format(cs, len(both)))
 
         n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code + index
-        bcode = b64ToInt(both).to_bytes(n, 'big')  # right aligned b2 code
-
-        full = bcode + raw
+        # convert code both to right align b2 int then left shift in pad bits
+        # then convert to bytes
+        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
+        full = bcode + bytes([0] * ls) + raw
         bfs = len(full)
-        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
-            raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
-                                       .format(both, len(raw)))
 
-        i = int.from_bytes(full, 'big') << (2 * (cs % 4))  # left shift in pad bits
-        return (i.to_bytes(bfs, 'big'))
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
+
+        return full
+
 
     def _bexfil(self, qb2):
         """
@@ -3913,16 +3816,16 @@ class Indexer:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                             "while extracing Matter.")
             else:
-                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError(f"Unsupported code start sextet={first}.")
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
-        bhs = sceil(hs * 3 / 4)  # bcs is min bytes to hold hs sextets
+        bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
+            raise ShortageError(f"Need {bhs - len(qb2)} more bytes.")
 
         hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
-            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
         hs, ss, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
@@ -3930,7 +3833,7 @@ class Indexer:
         # .Codes and .Sizes are well formed.
         # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
 
-        bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         if len(qb2) < bcs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
@@ -3943,16 +3846,11 @@ class Indexer:
         if len(qb2) < bfs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
-        qb2 = qb2[:bfs]  # fully qualified primitive code plus material
+        qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
+        raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
 
-        # right shift to right align raw material
-        i = int.from_bytes(qb2, 'big')
-        i >>= 2 * (cs % 4)
-
-        raw = i.to_bytes(bfs, 'big')[bcs:]  # extract raw
-
-        if len(raw) != (len(qb2) - bcs):  # exact lengths
-            raise ConversionError("Improperly qualified material = {}".format(qb2))
+        if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
+            raise ConversionError(f"Improperly qualified material = {qb2}")
 
         self._code = hard
         self._index = index
@@ -4347,7 +4245,7 @@ class Counter:
         # .Codes and .Sizes are well formed.
         # hs consistent and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
 
-        bcs = ceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         if len(qb2) < bcs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
