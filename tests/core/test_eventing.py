@@ -4024,7 +4024,7 @@ def test_process_nontransferable():
     # extract attached sigs
     keys = rser0.ked["k"]
     for i in range(nrsigs):  # verify each attached signature
-        rsig = Indexer(qb64=msgb0)
+        rsig = Siger(qb64=msgb0)
         assert rsig.index == 0
         verfer = Verfer(qb64=keys[rsig.index])
         assert verfer.qb64 == aid0.qb64
@@ -4115,7 +4115,7 @@ def test_process_transferable():
     # extract attached sigs
     keys = rser0.ked["k"]
     for i in range(nrsigs):  # verify each attached signature
-        rsig = Indexer(qb64=msgb0)
+        rsig = Siger(qb64=msgb0)
         assert rsig.index == 0
         verfer = Verfer(qb64=keys[rsig.index])
         assert verfer.qb64 == aid0.qb64
@@ -4153,7 +4153,8 @@ def test_process_manual():
 
     # create qualified pre in basic format
     aidmat = Matter(raw=verkey, code=MtrDex.Ed25519)
-    assert aidmat.qb64 == 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+    assert aidmat.qb64 == 'DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL'
+    # 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
     # create qualified next public key in basic format
     nxtseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -4167,23 +4168,20 @@ def test_process_manual():
     assert verkey == b'\xf5DOB:<\xcd\x16\x18\x9b\x83L\xa5\x0c\x98X\x90C\x1a\xb30O\xa5\x0f\xe39l\xa6\xdfX\x185'
     assert len(verkey) == 32
 
-    # create qualified nxt key in basic format
-    nxtkeymat = Matter(raw=verkey, code=MtrDex.Ed25519)
-    assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
-
     # create nxt digest
     nxtsith = "{:x}".format(1)  # lowecase hex no leading zeros
     assert nxtsith == "1"
-    nxts = []  # create list to concatenate for hashing
-    nxts.append(nxtsith.encode("utf-8"))
-    nxts.append(nxtkeymat.qb64.encode("utf-8"))
-    nxtsraw = b''.join(nxts)
-    assert nxtsraw == b'1D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
-    nxtdig = blake3.blake3(nxtsraw).digest()
-    assert nxtdig == b'\xdeWy\xd3=\xcb`\xce\xe9\x99\x0cF\xdd\xb2C6\x03\xa7F\rS\xd6\xfem\x99\x89\xac`<\xaa\x88\xd2'
 
+    # create qualified nxt key in basic format
+    nxtkeymat = Matter(raw=verkey, code=MtrDex.Ed25519)
+    assert nxtkeymat.qb64 == 'DPVET0I6PM0WGJuDTKUMmFiQQxqzME-lD-M5bKbfWBg1'
+    #'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+    nxtdig = blake3.blake3(verkey).digest()
+    assert nxtdig == (b"7\x16$m\xb0oA\x171\x94\xf3\xb3\x80\xe03\x00\x167\xf4'\xd8N\xa82D\xed_`"
+                      b'\xbc\x13\xfe\x11')
     nxtdigmat = Matter(raw=nxtdig, code=MtrDex.Blake3_256)
-    assert nxtdigmat.qb64 == 'E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI'
+    assert nxtdigmat.qb64 == 'EDcWJG2wb0EXMZTzs4DgMwAWN_Qn2E6oMkTtX2C8E_4R'
+    nxts = [nxtdigmat.qb64]
 
     sn = 0
     sith = 1
@@ -4198,7 +4196,8 @@ def test_process_manual():
                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                 k=[aidmat.qb64],  # list of signing keys each qual Base64
-                n=nxtdigmat.qb64,  # hash qual Base64
+                nt=nxtsith,
+                n=nxts,
                 wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                 w=[],  # list of qual Base64 may be empty
                 c=[],  # list of config ordered mappings may be empty
@@ -4206,16 +4205,16 @@ def test_process_manual():
     _, ked0 = coring.Saider.saidify(sad=ked0)
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"v":"KERI10JSON000119_","t":"icp","d":"Ehh5mZwnWswxUiQS1rIIrEgM6eFYpsk9AXWZ'
-                          b'oynyqrrc","i":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s","s":"0","kt":"1'
-                          b'","k":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s"],"n":"E3ld50z3LYM7pmQx'
-                          b'G3bJDNgOnRg1T1v5tmYmsYDyqiNI","wt":"0","w":[],"c":[]}')
+    assert txsrdr.raw == (b'{"v":"KERI10JSON000124_","t":"icp","d":"EKlLyOddVoxzsk8UaJFvYA2YDusEenTpaYXk'
+                          b'MLtCpUbh","i":"DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL","s":"0","kt":"1'
+                          b'","k":["DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL"],"nt":"1","n":["EDcWJG'
+                          b'2wb0EXMZTzs4DgMwAWN_Qn2E6oMkTtX2C8E_4R"],"wt":"0","w":[],"c":[]}')
 
-    assert txsrdr.size == 281
+    assert txsrdr.size == 292
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = coring.Saider(sad=ked0, code=MtrDex.Blake3_256)
-    assert txdigmat.qb64 == 'Ehh5mZwnWswxUiQS1rIIrEgM6eFYpsk9AXWZoynyqrrc'
+    assert txdigmat.qb64 == 'EKlLyOddVoxzsk8UaJFvYA2YDusEenTpaYXkMLtCpUbh'
 
     assert txsrdr.said == txdigmat.qb64
 
@@ -4225,14 +4224,15 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = Indexer(raw=sig0raw, code=IdrDex.Ed25519_Sig, index=index)
-    assert txsigmat.qb64 == 'AAPXCeDIOQtggPdzKgAcBGT5Vhr8js6N-o8TVod9_NheNTzuZJdkDagFVb90MTG0yK1VXwuZe3cVxIi9w-8JlOAA'
+    txsigmat = Siger(raw=sig0raw, code=IdrDex.Ed25519_Sig, index=index)
+    assert txsigmat.qb64 == ('AAClimpgQX2jFTbYlTebmxIVRpE1SzPCcHdyNm-EsBJAOUVXH'
+                             'bdRBd6wbpePWsuEcWIK-k9kbX-PagPVG6lsKhcP')
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 369  # 281 + 88
+    assert len(msgb) == 380  # 292 + 88
 
     #  Recieve side
     rxsrdr = Serder(raw=msgb)
@@ -4241,7 +4241,7 @@ def test_process_manual():
 
     rxsigqb64 = msgb[rxsrdr.size:].decode("utf-8")
     assert len(rxsigqb64) == len(txsigmat.qb64)
-    rxsigmat = Indexer(qb64=rxsigqb64)
+    rxsigmat = Siger(qb64=rxsigqb64)
     assert rxsigmat.index == index
 
     rxaidqb64 = rxsrdr.ked["i"]
@@ -4336,4 +4336,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    pass
+    test_process_manual()
