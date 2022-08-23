@@ -32,9 +32,7 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
 
-    CredentialExpiry = 3600
-
-    def __init__(self, hby, reger=None, creds=None, cues=None):
+    def __init__(self, hby, reger=None, creds=None, cues=None, expiry=3600):
         """
         Initialize Verifier instance
 
@@ -49,6 +47,7 @@ class Verifier:
         self.reger = reger if reger is not None else Reger(name=self.hby.name, temp=True)
         self.creds = creds if creds is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
+        self.CredentialExpiry = expiry
 
         self.inited = False
         self.tvy = None
