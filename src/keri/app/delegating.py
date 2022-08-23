@@ -6,6 +6,7 @@ keri.app.delegating module
 module for enveloping and forwarding KERI message
 """
 import json
+from urllib import parse
 
 from hio import help
 from hio.base import doing
@@ -178,8 +179,6 @@ def loadHandlers(hby, exc, notifier):
     """
     delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(delreq)
-    oobireq = OobiRequestHandler(hby=hby, notifier=notifier)
-    exc.addHandler(oobireq)
 
 
 class DelegateRequestHandler(doing.DoDoer):
@@ -278,92 +277,3 @@ def delegateRequestExn(hab, delpre, ked, aids=None):
 
     return exn, ims
 
-
-class OobiRequestHandler(doing.DoDoer):
-    """
-    Handler for oobi notification EXN messages
-
-    """
-    resource = "/oobis"
-
-    def __init__(self, hby, notifier, **kwa):
-        """
-
-        Parameters:
-            mbx (Mailboxer) of format str names accepted for offers
-            oobiery (Oobiery) OOBI loader
-
-        """
-        self.hby = hby
-        self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
-
-        super(OobiRequestHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages processing new contacts via OOBIs
-
-        Parameters:
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                prefixer = msg["pre"]
-                pay = msg["payload"]
-                if "dest" not in pay:
-                    print(f"invalid oobi request message, missing dest.  evt=: {msg}")
-                    continue
-                pre = pay["dest"]
-
-                if "oobialias" not in pay:
-                    print(f"invalid oobi message, missing oobialias.  evt=: {msg}")
-                    continue
-                oobialias = pay["oobialias"]
-
-                if "oobi" not in pay:
-                    print(f"invalid oobi message, missing oobi.  evt=: {msg}")
-                    continue
-                oobi = pay["oobi"]
-
-                hab = self.hby.habs[pre]
-
-                src = prefixer.qb64
-                obr = basing.OobiRecord(oobialias=oobialias, date=helping.nowIso8601())
-                self.hby.db.oobis.pin(keys=(oobi,), val=obr)
-
-                data = dict(
-                    r="/oobi",
-                    src=src,
-                    alias=hab.name,
-                    oobialias=oobialias,
-                    oobi=oobi
-                )
-
-                self.notifier.add(attrs=data)
-
-                yield
-            yield
-
-
-def oobiRequestExn(hab, dest, oobialias, oobi):
-    data = dict(
-        dest=dest,
-        oobialias=oobialias,
-        oobi=oobi
-    )
-
-    # Create `exn` peer to peer message to notify other participants UI
-    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
-                              payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
-    del ims[:exn.size]
-
-    return exn, ims

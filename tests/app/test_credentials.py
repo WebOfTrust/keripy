@@ -9,7 +9,6 @@ import os
 import falcon
 from falcon import testing
 from hio.base import doing
-from hio.help import decking
 
 from keri import kering
 from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting, notifying

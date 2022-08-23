@@ -380,7 +380,7 @@ class LMDBer(filing.Filer):
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs,
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=104857600,
                              mode=self.perm, readonly=self.readonly)
         self.opened = True if opened and self.env else False
         return self.opened

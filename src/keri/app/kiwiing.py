@@ -3436,6 +3436,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiery = ending.Oobiery(hby=hby)
     delegating.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
+    oobiing.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
 
     rep = storing.Respondant(hby=hby, mbx=mbx)
     cues = decking.Deck()
@@ -3444,7 +3445,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                                       verifier=verifier,
                                       rep=rep,
                                       topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
-                                              "/challenge"],
+                                              "/challenge", "/oobi"],
                                       cues=cues)
     # configure a kevery
     doers.extend([exchanger, mbd, rep])
