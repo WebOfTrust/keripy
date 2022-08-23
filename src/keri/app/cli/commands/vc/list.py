@@ -38,6 +38,8 @@ parser.add_argument("--issued", "-i", help="Display credentials that this AID ha
                     action="store_true")
 parser.add_argument("--said", "-s", help="Display only the SAID of found credentials, one per line.",
                     action="store_true")
+parser.add_argument("--expanded", "-e", help="Display fully expanded credential with chained credentials attached",
+                    default=None, action="store_true")                    
 
 
 def list_credentials(args):
@@ -51,17 +53,19 @@ def list_credentials(args):
                   verbose=args.verbose,
                   poll=args.poll,
                   said=args.said,
-                  issued=args.issued)
+                  issued=args.issued,
+                  expanded=args.expanded)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False):
+    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False, expanded=False):
         self.verbose = verbose
         self.poll = poll
         self.said = said
         self.issued = issued
+        self.expanded = expanded
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -112,30 +116,36 @@ class ListDoer(doing.DoDoer):
         else:
             print(f"Current {'issued' if self.issued else 'received'} credentials for {self.hab.name} ({self.hab.pre}):\n")
             creds = self.rgy.reger.cloneCreds(saids)
-            for idx, cred in enumerate(creds):
-                sad = cred['sad']
-                status = cred["status"]
-                schema = sad['s']
-                scraw = self.mbx.verifier.resolver.resolve(schema)
-                if not scraw:
-                    raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            if self.expanded:
+                print("   Fully expanded credentials with chained credentials: ")                
+                credsjson = json.dumps(creds, indent=2)
+                for line in credsjson.splitlines():
+                            print(f"\t{line}")
+            else:    
+                for idx, cred in enumerate(creds):
+                    sad = cred['sad']
+                    status = cred["status"]
+                    schema = sad['s']
+                    scraw = self.mbx.verifier.resolver.resolve(schema)
+                    if not scraw:
+                        raise kering.ConfigurationError("Credential schema {} not found".format(schema))
 
-                schemer = scheming.Schemer(raw=scraw)
-                print(f"Crecential #{idx+1}: {sad['d']}")
-                print(f"    Type: {schemer.sed['title']}")
-                if status['et'] == 'iss' or status['et'] == 'bis':
-                    print(f"    Status: Issued {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
-                elif status['et'] == 'rev' or status['et'] == 'brv':
-                    print(f"    Status: Revoked {terming.Colors.FAIL}{terming.Symbols.FAILED}{terming.Colors.ENDC}")
-                else:
-                    print(f"    Status: Unknown")
-                print(f"    Issued by {sad['i']}")
-                print(f"    Issued on {status['dt']}")
+                    schemer = scheming.Schemer(raw=scraw)
+                    print(f"Crecential #{idx+1}: {sad['d']}")
+                    print(f"    Type: {schemer.sed['title']}")
+                    if status['et'] == 'iss' or status['et'] == 'bis':
+                        print(f"    Status: Issued {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
+                    elif status['et'] == 'rev' or status['et'] == 'brv':
+                        print(f"    Status: Revoked {terming.Colors.FAIL}{terming.Symbols.FAILED}{terming.Colors.ENDC}")
+                    else:
+                        print(f"    Status: Unknown")
+                    print(f"    Issued by {sad['i']}")
+                    print(f"    Issued on {status['dt']}")
 
-                if self.verbose:
-                    bsad = json.dumps(sad, indent=2)
-                    print("    Full Credential:")
-                    for line in bsad.splitlines():
-                        print(f"\t{line}")
+                    if self.verbose:
+                        bsad = json.dumps(sad, indent=2)
+                        print("    Full Credential:")
+                        for line in bsad.splitlines():
+                            print(f"\t{line}")
 
         self.remove([self.mbx])

@@ -647,7 +647,7 @@ class KeyStateEnd:
         description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
                       identifier along with the KEL and all associated signatures and receipts
         tags:
-           - Ket Event Log
+           - Key Event Log
         parameters:
           - in: path
             name: prefix
@@ -2466,7 +2466,7 @@ class ChallengeEnd:
         rep.data = json.dumps(msg).encode("utf-8")
 
     def on_post_resolve(self, req, rep, alias):
-        """ Challenge GET endpoint
+        """ Challenge POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -3282,6 +3282,210 @@ class EscrowEnd:
         rep.data = json.dumps(event, indent=2).encode("utf-8")
 
 
+class SignerEnd:
+    """ Resource for Signing Endpoints """
+
+    def __init__(self, hby):
+        """ Initialize Signing Endpoint
+
+        Parameters:
+            hby (Habery): identifier database and keystore environment            
+
+        """
+        self.hby = hby        
+
+    def on_post(self, req, rep, alias):
+        """ Signing POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign data
+
+        ---
+        summary:  Sign arbitrary data and return signature(s)
+        description:  Sign arbitrary data with current keys and return signature(s)
+        tags:
+           - Signing
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Signing request
+                    properties:
+                        data:
+                          type: string
+                          description: arbitrary data to sign                    
+        responses:
+           200:
+              description: Signature(s) and current public keys
+              content:
+                  application/json:
+                    schema:
+                        description: Signature(s) and Key state information for current identifier
+                        type: array
+                        items:
+                           type: object
+                           properties:                              
+                              prefix:
+                                 description: qualified base64 identifier prefix
+                                 type: string                             
+                              public_keys:
+                                 description: list of current public keys
+                                 type: array
+                                 items:
+                                    type: string
+                              signatures:
+                                 description: list of signatures
+                                 type: array
+                                 items:
+                                    type: string                              
+        """
+        hab = self.hby.habByName(alias)        
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"alias {alias} is not a valid reference to an identfier"
+            return
+
+        body = req.get_media()
+        if "data" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "signing requires 'data'"
+            return
+        
+        data = body["data"]
+        sigers = hab.sign(ser=data.encode("utf-8"),
+                              verfers=hab.kever.verfers,
+                              indexed=True)        
+        res = dict(
+            prefix=hab.pre,
+            public_keys=[verfer.qb64 for verfer in hab.kever.verfers],            
+            signatures=[sig.qb64 for sig in sigers]
+        )
+        
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
+class VerifierEnd:
+    """ Resource for signature(s) Verification  Endpoints """
+
+    def __init__(self, hby):
+        """ Initialize signature(s) Verification Endpoint
+
+        Parameters:
+            hby (Habery): identifier database and keystore environment            
+
+        """
+        self.hby = hby        
+
+    def on_post(self, req, rep, alias):
+        """ Signature(s) Verification POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign data
+
+        ---
+        summary:  Verify signature(s)
+        description:  Verify signature(s) on arbitrary data
+        tags:
+           - Signature Verification
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Verification request
+                    properties:
+                        data:
+                          type: string
+                          description: Original signed text
+                        prefix:
+                          type: string
+                          description: Identifier prefix of the signer
+                        signatures:
+                          type: array
+                          items:
+                            type: string
+                          description: list of signatures to verify
+        responses:
+           200:
+              description: Verification status
+        """
+        
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"alias {alias} is not a valid reference to an identfier"
+            return
+
+        body = req.get_media()
+        if "data" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "verification requires original signed data"
+            return
+        if "prefix" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "requires signer prefix"
+            return        
+        if "signatures" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "requires signature(s) for verification"
+            return
+        
+        data = body["data"]
+        signatures = body["signatures"]
+        prefix = body["prefix"]
+
+        kever = hab.kevers[prefix]
+        sigers = [coring.Siger(qb64=sig) for sig in signatures]
+        
+        ser = data.encode("utf-8")
+        verfers = kever.verfers
+
+        res=dict()
+        verStatus=[]
+
+        try:
+            for siger in sigers:
+                    if siger.index >= len(verfers):
+                        raise kering.ValidationError("Index = {} too large for keys."
+                                                    "".format(siger.index))
+                    siger.verfer = verfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, ser):  # verify each sig
+                        verStatus.append(dict(isValid=True,signature=siger.qb64))
+                        # verStatus.append(dict(isValid=True,signature=siger.qb64, index=siger.index,public_key=siger.verfer.qb64))
+                    else:                        
+                        verStatus.append(dict(isValid=False,signature=siger.qb64))
+            res["status"]=verStatus
+
+            rep.status = falcon.HTTP_200        
+            rep.content_type = "application/json"
+            rep.data = json.dumps(res).encode("utf-8")
+
+        except (ValueError, TypeError, Exception) as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+
+
 def loadEnds(app, *,
              path,
              hby,
@@ -3382,6 +3586,12 @@ def loadEnds(app, *,
     escrowEnd = EscrowEnd(db=hby.db)
     app.add_route("/escrows", escrowEnd)
     app.add_route("/escrows/{pre}/{dig}", escrowEnd, suffix="partial")
+
+    signerEnd = SignerEnd(hby=hby)    
+    app.add_route("/sign/{alias}", signerEnd)
+
+    sigVerificationEnd = VerifierEnd(hby=hby)    
+    app.add_route("/verify/{alias}", sigVerificationEnd)
 
     signalEnd = signaling.loadEnds(app, signals=signaler.signals)
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd, signalEnd,
