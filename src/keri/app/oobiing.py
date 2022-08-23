@@ -4,15 +4,17 @@ keri.kli.common.oobiing module
 
 """
 import json
+from urllib import parse
 from urllib.parse import urlparse
 
 import falcon
 from hio.base import doing
-
+from hio.help import decking
 from keri import kering
-from keri.app import forwarding, delegating
+from keri.app import forwarding
 from keri.db import basing
 from keri.help import helping
+from keri.peer import exchanging
 
 
 def loadEnds(app, *, hby, prefix=""):
@@ -21,6 +23,19 @@ def loadEnds(app, *, hby, prefix=""):
     app.add_route(prefix+"/oobi/groups/{alias}/share", oobiEnd, suffix="share")
 
     return [oobiEnd]
+
+
+def loadHandlers(hby, exc, notifier):
+    """ Load handlers for the peer-to-peer delegation protocols
+
+    Parameters:
+        hby (Habery): Database and keystore for environment
+        exc (Exchanger): Peer-to-peer message router
+        notifier (Notifier): Outbound notifications
+
+    """
+    oobireq = OobiRequestHandler(hby=hby, notifier=notifier)
+    exc.addHandler(oobireq)
 
 
 class OobiResource(doing.DoDoer):
@@ -34,7 +49,7 @@ class OobiResource(doing.DoDoer):
 
         Parameters:
             hby (Habery): identifier database environment
-            oobiery (Optioanl[Oobiery]): optional OOBI loader
+
         """
         self.hby = hby
 
@@ -206,15 +221,8 @@ class OobiResource(doing.DoDoer):
                         oobis:
                             type: array
                             items:
-                               type: object
-                               properties:
-                                  alias:
-                                    type: string
-                                    description: alias to assign to the identifier resolved from this OOBI
-                                    required: true
-                                  url:
-                                    type: string
-                                    description:  URL OOBI
+                                type: string
+                                description:  URL OOBI
         responses:
            202:
               description: OOBI resolution to key state successful
@@ -238,8 +246,88 @@ class OobiResource(doing.DoDoer):
                 continue
 
             for oobi in oobis:
-                exn, atc = delegating.oobiRequestExn(hab.phab, aid, oobi["alias"], oobi["url"])
-                self.postman.send(src=hab.phab.pre, dest=aid, topic="delegate", serder=exn, attachment=atc)
+                exn, atc = oobiRequestExn(hab.phab, aid, oobi)
+                self.postman.send(src=hab.phab.pre, dest=aid, topic="oobi", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_200
         return
+
+
+class OobiRequestHandler(doing.Doer):
+    """
+    Handler for oobi notification EXN messages
+
+    """
+    resource = "/oobis"
+
+    def __init__(self, hby, notifier, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            oobiery (Oobiery) OOBI loader
+
+        """
+        self.hby = hby
+        self.notifier = notifier
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(OobiRequestHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages processing new contacts via OOBIs
+
+        Parameters:
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                prefixer = msg["pre"]
+                pay = msg["payload"]
+                if "oobi" not in pay:
+                    print(f"invalid oobi message, missing oobi.  evt=: {msg}")
+                    continue
+                oobi = pay["oobi"]
+
+                src = prefixer.qb64
+                obr = basing.OobiRecord(date=helping.nowIso8601())
+                self.hby.db.oobis.pin(keys=(oobi,), val=obr)
+
+                data = dict(
+                    r="/oobi",
+                    src=src,
+                    oobi=oobi
+                )
+
+                purl = parse.urlparse(oobi)
+                params = parse.parse_qs(purl.query)
+                if "name" in params:
+                    data["oobialias"] = params["name"][0]
+
+                self.notifier.add(attrs=data)
+
+                yield
+            yield
+
+
+def oobiRequestExn(hab, dest, oobi):
+    data = dict(
+        dest=dest,
+        oobi=oobi
+    )
+
+    # Create `exn` peer to peer message to notify other participants UI
+    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
+                              payload=data)
+    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    del ims[:exn.size]
+
+    return exn, ims
