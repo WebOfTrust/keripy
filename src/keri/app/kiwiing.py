@@ -882,6 +882,12 @@ class CredentialEnd(doing.DoDoer):
                 type: string
              description:  type of credential to return, [issued|received]
              required: true
+           - in: query
+             name: schema
+             schema:
+                type: string
+             description:  schema to filter by if provided
+             required: false
         responses:
            200:
               description: Credential list.
@@ -895,6 +901,7 @@ class CredentialEnd(doing.DoDoer):
 
         """
         typ = req.params.get("type")
+        schema = req.params.get("schema")
 
         hab = self.hby.habByName(name=alias)
         if hab is None:
@@ -906,11 +913,18 @@ class CredentialEnd(doing.DoDoer):
         creds = []
         if typ == "issued":
             saids = self.rgy.reger.issus.get(keys=hab.pre)
-            creds = self.rgy.reger.cloneCreds(saids)
-
         elif typ == "received":
-            saids = self.verifier.reger.subjs.get(keys=hab.pre)
-            creds = self.verifier.reger.cloneCreds(saids)
+            saids = self.rgy.reger.subjs.get(keys=hab.pre)
+        else:
+            rep.status = falcon.HTTP_400
+            rep.text = f"Invalid type {typ}"
+            return
+
+        if schema is not None:
+            scads = self.rgy.reger.schms.get(keys=schema)
+            saids = [saider for saider in saids if saider.qb64 in [saider.qb64 for saider in scads]]
+
+        creds = self.rgy.reger.cloneCreds(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

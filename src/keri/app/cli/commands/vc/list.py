@@ -38,6 +38,8 @@ parser.add_argument("--issued", "-i", help="Display credentials that this AID ha
                     action="store_true")
 parser.add_argument("--said", "-s", help="Display only the SAID of found credentials, one per line.",
                     action="store_true")
+parser.add_argument("--schema", help="Display only credentials with the given schema SAID.",
+                    action="store", default=None)
 
 
 def list_credentials(args):
@@ -51,17 +53,19 @@ def list_credentials(args):
                   verbose=args.verbose,
                   poll=args.poll,
                   said=args.said,
-                  issued=args.issued)
+                  issued=args.issued,
+                  schema=args.schema)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False):
+    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False, schema=None):
         self.verbose = verbose
         self.poll = poll
         self.said = said
         self.issued = issued
+        self.schema = schema
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -105,6 +109,10 @@ class ListDoer(doing.DoDoer):
             saids = self.rgy.reger.issus.get(keys=self.hab.pre)
         else:
             saids = self.rgy.reger.subjs.get(keys=self.hab.pre)
+
+        if self.schema is not None:
+            scads = self.rgy.reger.schms.get(keys=self.schema)
+            saids = [saider for saider in saids if saider.qb64 in [saider.qb64 for saider in scads]]
 
         if self.said:
             for said in saids:

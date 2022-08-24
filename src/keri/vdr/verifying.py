@@ -32,7 +32,7 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
 
-    def __init__(self, hby, reger=None, creds=None, cues=None, expiry=3600):
+    def __init__(self, hby, reger=None, creds=None, cues=None, expiry=36000000000):
         """
         Initialize Verifier instance
 
@@ -207,7 +207,7 @@ class Verifier:
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
                     self.escrowMCE(creder, sadsigers, sadcigars)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
-                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})}"
+                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
                 elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):
                     raise kering.RevokedChainError("Failure to verify credential {} chain {}({})"

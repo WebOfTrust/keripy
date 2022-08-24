@@ -21,8 +21,8 @@ curl -s -X POST "http://localhost:5723/ids/Bob" -H "accept: */*" -H "Content-Typ
 # curl -s -X POST "http://localhost:5923/ids/Han" -H "accept: */*" -H "Content-Type: application/json" -d "{\"transferable\":true,\"wits\":[\"BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo\", \"BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\",\"Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"],\"toad\":3, \"icount\":1,\"ncount\":1,\"isith\":1,\"nsith\":1}" | jq
 sleep 3
 
-curl -s -X POST "http://localhost:5623/oobi/Alice" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"Bob\", \"url\":\"http://127.0.0.1:5643/oobi/EHvJernk0fXfDpWRt93NeuTzZUOrvfnPaH7__63PJdqw/witness/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\"}" | jq
-curl -s -X POST "http://localhost:5723/oobi/Bob" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"Alice\", \"url\":\"http://127.0.0.1:5644/oobi/ERFmtKcQCd8xW7Rzl-PqyJ1QAfJYlfdMxYRVncPBMDkk/witness/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"}" | jq
+curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"Bob\", \"url\":\"http://127.0.0.1:5643/oobi/EHvJernk0fXfDpWRt93NeuTzZUOrvfnPaH7__63PJdqw/witness/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw\"}" | jq
+curl -s -X POST "http://localhost:5723/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"Alice\", \"url\":\"http://127.0.0.1:5644/oobi/ERFmtKcQCd8xW7Rzl-PqyJ1QAfJYlfdMxYRVncPBMDkk/witness/Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c\"}" | jq
 
 sleep 2
 echo "Alice's Contacts:"
