@@ -13,7 +13,6 @@ from hio.help import ogling
 from keri import help
 
 
-
 def test_openogler():
     """
     Test context manager openOgler

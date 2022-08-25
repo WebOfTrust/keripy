@@ -3,7 +3,7 @@
   "o": "AND",
   "auth": {
     "n": .[1],
-    "s": "EDpuiVPt4_sa1pShx6vOCnseru1edVPeNvRaQm6HrmMI",
+    "s": "ELG17Q0M-uLZcjidzVbF7KBkoUhZa1ie3Az3Q_8aYi8s",
     "o": "NI2I"
   },
   "qvi": {

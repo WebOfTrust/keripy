@@ -67,6 +67,7 @@ echo 'create registries'
 sleep 3
 curl -s -X POST "http://localhost:5623/registries" -H "accept: */*" -H "Content-Type: application/json" -d "{\"alias\":\"external\",\"baks\":[],\"estOnly\":false,\"name\":\"vLEI-external\",\"noBackers\":true,\"toad\":0}" | jq
 curl -s -X POST "http://localhost:5626/registries" -H "accept: */*" -H "Content-Type: application/json" -d "{\"alias\":\"qvi\",\"baks\":[],\"estOnly\":false,\"name\":\"vLEI-qvi\",\"noBackers\":true,\"toad\":0}" | jq
+curl -s -X POST "http://localhost:5628/registries" -H "accept: */*" -H "Content-Type: application/json" -d "{\"alias\":\"legal-entity\",\"baks\":[],\"estOnly\":false,\"name\":\"vLEI-legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"noBackers\":true,\"toad\":0}" | jq
 curl -s -X POST "http://localhost:5630/registries" -H "accept: */*" -H "Content-Type: application/json" -d "{\"alias\":\"person\",\"baks\":[],\"estOnly\":false,\"name\":\"vLEI-person\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"noBackers\":true,\"toad\":0}" | jq
 sleep 5
 
@@ -91,26 +92,39 @@ echo "LE retrieves Credentials..."
 curl -s -X GET "http://localhost:5628/credentials/legal-entity?type=received" -H "accept: application/json" | jq
 sleep 3
 
+# Issue OOR Authorization credential from LE to QVI
+echo 'LE issues OOR authorization credential to person'
+LE_SAID=$(curl -s -X GET "http://localhost:5628/credentials/legal-entity?type=received" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
+echo $LE_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-auth-edges-filter.jq > /tmp/oor-auth-edges.json
+OOR_AUTH_EDGES=`cat /tmp/oor-auth-edges.json`
+
+curl -s -X POST "http://localhost:5628/credentials/legal-entity" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"AID\": \"Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE\", \"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM\",\"registry\":\"vLEI-legal-entity\",\"schema\":\"EDpuiVPt4_sa1pShx6vOCnseru1edVPeNvRaQm6HrmMI\",\"source\":$OOR_AUTH_EDGES,\"rules\":$RULES}" | jq
+sleep 8
+echo "QVI retrieves Credentials..."
+curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json" | jq
+sleep 3
+
 # Issue OOR credential from QVI to Person
 echo 'qvi issues OOR credential to person'
-LE_SAID=$(curl -s -X GET "http://localhost:5628/credentials/legal-entity?type=received" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
-echo "[$QVI_SAID, $LE_SAID]" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-edges-filter.jq > /tmp/oor-edges.json
+AUTH_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received&schema=EDpuiVPt4_sa1pShx6vOCnseru1edVPeNvRaQm6HrmMI" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
+echo "[$QVI_SAID, $AUTH_SAID]" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-edges-filter.jq > /tmp/oor-edges.json
 OOR_EDGES=`cat /tmp/oor-edges.json`
 
-curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE\",\"registry\":\"vLEI-qvi\",\"schema\":\"E2RzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE\",\"registry\":\"vLEI-qvi\",\"schema\":\"EzWz2j8AzVxFr3g1vy6NTERpy5GNZIOyjhkoniMMGUY4\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
 sleep 8
 echo "Person retrieves Credentials..."
 curl -s -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" | jq
 sleep 3
 
 echo "iXBRL data attestation from person"
-OOR_SAID=$(curl -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
+OOR_SAID=$(curl -s -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
 echo $OOR_SAID
-echo \"$OOR_SAID\" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-edges-filter.jq > /tmp/xbrl-edges.json
-kli saidify --file /tmp/xbrl-edges.json
+echo $OOR_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-edges-filter.jq > /tmp/xbrl-edges.json
 XBRL_EDGES=`cat /tmp/xbrl-edges.json`
-XBRL_DATA=`cat ../data/xbrl-data.json`
-curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"Ehwr6tZh6XakKBKWQW07otQ9uCwg0g7CF-dPz9qb_fwQ\",\"source\":$XBRL_EDGES}" | jq
+NOW=`date -u +"%Y-%m-%dT%H:%M:%S+00:00"`
+echo \"$NOW\" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-data.jq > /tmp/xbrl-data.json
+XBRL_DATA=`cat /tmp/xbrl-data.json`
+curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"EH9jKc3FQ0O2hvp7YPG5sFBgM7wUFVy4OlssP038w6j0\",\"source\":$XBRL_EDGES}" | jq
 sleep 4
 echo "Person retrieves attestation..."
-curl -s -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" -d "{\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
+curl -s -X GET "http://localhost:5630/credentials/person?type=issued" -H "accept: application/json" -d "{\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
