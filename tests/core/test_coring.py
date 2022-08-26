@@ -2253,6 +2253,7 @@ def test_number():
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
     assert number.numh == '0'
+    assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -2262,6 +2263,7 @@ def test_number():
     raw = b'\xff\xff'
     nqb64 = 'MP__'  # 'M__8'
     nqb2 = b'0\xff\xff'  # b'3\xff\xfc'
+    assert hex(int.from_bytes(nqb2, 'big')) == '0x30ffff'
 
     number = Number(num=num)
     assert number.code == code
@@ -2666,6 +2668,7 @@ def test_number():
     raw = b'\x00\x01'
     nqb64 = 'MAAB'  # 'MAAE'
     nqb2 = b'0\x00\x01'  # b'0\x00\x04'
+    assert hex(int.from_bytes(nqb2, 'big')) == '0x300001'
 
     number = Number(num=num)
     assert number.code == code
