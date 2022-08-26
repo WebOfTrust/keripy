@@ -428,15 +428,10 @@ def test_dequadruple():
     """
     test test_dequadruple function
     """
-    spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-
-    spreb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdigb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sigb = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    spre = 'DCuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = '0AAAAAAAAAAAAAAAAAAAAAAC'
+    sdig = 'EMLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = 'AFCdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     # str
     quadruple = spre + ssnu + sdig + sig
@@ -448,30 +443,30 @@ def test_dequadruple():
     assert len(quadruple) == 200
 
     # bytes
-    quadruple = spreb + ssnub + sdigb + sigb
+    quadruple = (spre + ssnu + sdig + sig).encode("utf-8")
     sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quadruple) == 200
 
     # memoryview
     quadruple = memoryview(quadruple)
     sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quadruple) == 200
 
     # bytearray
     quadruple = bytearray(quadruple)
     sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quadruple) == 200
 
     # test strip delete
@@ -483,7 +478,7 @@ def test_dequadruple():
     assert len(quadruple) == 200  # immutable so no strip delete
 
     # bytes
-    quadruple = spreb + ssnub + sdigb + sigb
+    quadruple = quadruple.encode("utf-8")
     assert len(quadruple) == 200
     with pytest.raises(TypeError):  # immutable so no strip delete
         sprefixer, sseqner, sdiger, siger = deTransReceiptQuadruple(quadruple, strip=True)
@@ -500,10 +495,10 @@ def test_dequadruple():
     quadruple = bytearray(quadruple)
     assert len(quadruple) == 200
     sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple, strip=True)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quadruple) == 0  # mutable so strip delete
 
     """end test"""
@@ -513,17 +508,11 @@ def test_dequintuple():
     """
     test dequintuple function
     """
-    edig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-
-    edigb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    spreb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdigb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sigb = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    edig = 'EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    spre = 'DCuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = '0AAAAAAAAAAAAAAAAAAAAAAC'
+    sdig = 'EMLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = 'AFCdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     # str
     sealet = spre + ssnu + sdig
@@ -537,33 +526,33 @@ def test_dequintuple():
     assert len(quintuple) == 244
 
     # bytes
-    quintuple = edigb + spreb + ssnub + sdigb + sigb
+    quintuple = quintuple.encode("utf-8")
     ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert ediger.qb64b == edig.encode("utf-8")
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quintuple) == 244
 
     # memoryview
     quintuple = memoryview(quintuple)
     ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert ediger.qb64b == edig.encode("utf-8")
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quintuple) == 244
 
     # bytearray
     quintuple = bytearray(quintuple)
     ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert ediger.qb64b == edig.encode("utf-8")
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quintuple) == 244
 
     # test deletive
@@ -576,7 +565,7 @@ def test_dequintuple():
     assert len(quintuple) == 244  # immutable so no strip delete
 
     # bytes
-    quintuple = edigb + spreb + ssnub + sdigb + sigb
+    quintuple = quintuple.encode("utf-8")
     assert len(quintuple) == 244
     with pytest.raises(TypeError):
         ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(quintuple, strip=True)
@@ -593,11 +582,11 @@ def test_dequintuple():
     quintuple = bytearray(quintuple)
     assert len(quintuple) == 244
     ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple, strip=True)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
+    assert ediger.qb64b == edig.encode("utf-8")
+    assert sprefixer.qb64b == spre.encode("utf-8")
+    assert sseqner.qb64b == ssnu.encode("utf-8")
+    assert sdiger.qb64b == sdig.encode("utf-8")
+    assert siger.qb64b == sig.encode("utf-8")
     assert len(quintuple) == 0  # mutable so strip delete
 
     """end test"""
@@ -4336,4 +4325,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_process_manual()
+    test_dequintuple()

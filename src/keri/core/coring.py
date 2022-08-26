@@ -483,8 +483,8 @@ class MatterCodex:
     ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
     Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
     X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
-    Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
-    Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    Short:                str = 'M'  # Short 2 byte b2 number
+    Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
     Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
@@ -494,7 +494,7 @@ class MatterCodex:
     Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-    Long:                 str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    Long:                 str = '0H'  # Long 4 byte b2 number
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -621,10 +621,10 @@ class NumCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Short:   str = 'M'  # Short 2 byte b2 number or 3 char b64 str
-    Long:    str = '0H'  # Long 4 byte b2 number or 6 char b54 str
-    Big:     str = 'N'  # Big 8 byte b2 number or 11 char b64 str
-    Huge:    str = '0A'  # Huge 16 byte b2 number or 22 char b64 str (see Salt_128)
+    Short:   str = 'M'  # Short 2 byte b2 number
+    Long:    str = '0H'  # Long 4 byte b2 number
+    Big:     str = 'N'  # Big 8 byte b2 number
+    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
 
     def __iter__(self):
         return iter(astuple(self))
@@ -765,6 +765,7 @@ class Matter:
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
+
     # Bards table maps first code char. converted to binary sextext of hard size,
     # hs. Used for ._bexfil.
     Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
