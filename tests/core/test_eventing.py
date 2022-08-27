@@ -137,10 +137,8 @@ def test_dewitnesscouple():
     """
     test deWitnessCouple function
     """
-    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    wig = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    wigb = b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    dig = 'EK2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    wig = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     # str
     couple = dig + wig
@@ -151,27 +149,27 @@ def test_dewitnesscouple():
     assert len(couple) == 132  # not strip delete
 
     # bytes
-    couple = digb + wigb
+    couple = couple.encode("utf-8")
     assert len(couple) == 132
     diger, wiger = deWitnessCouple(couple)
-    assert diger.qb64b == digb
-    assert wiger.qb64b == wigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert wiger.qb64b == wig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # memoryview
     couple = memoryview(couple)
     assert len(couple) == 132
     diger, wiger = deWitnessCouple(couple)
-    assert diger.qb64b == digb
-    assert wiger.qb64b == wigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert wiger.qb64b == wig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # bytearray
     couple = bytearray(couple)
     assert len(couple) == 132
     diger, wiger = deWitnessCouple(couple)
-    assert diger.qb64b == digb
-    assert wiger.qb64b == wigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert wiger.qb64b == wig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # test strip delete
@@ -183,7 +181,7 @@ def test_dewitnesscouple():
     assert len(couple) == 132  # immutable so no delete
 
     # bytes
-    couple = digb + wigb
+    couple = couple.encode("utf-8")
     with pytest.raises(TypeError):  # immutable bytes so no delete
         diger, wiger = deWitnessCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
@@ -197,8 +195,8 @@ def test_dewitnesscouple():
     # bytearray
     couple = bytearray(couple)
     diger, wiger = deWitnessCouple(couple, strip=True)
-    assert diger.qb64b == digb
-    assert wiger.qb64b == wigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert wiger.qb64b == wig.encode("utf-8")
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
