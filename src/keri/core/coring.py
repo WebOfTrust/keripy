@@ -413,7 +413,7 @@ def generateSigners(salt=None, count=8, transferable=True):
 
     signers = []
     for i in range(count):
-        path = "{:x}".format(i)
+        path = f"{i:x}"
         # algorithm default is argon2id
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
@@ -2275,6 +2275,15 @@ class Salter(Matter):
                             temp=temp)
 
         return (Signer(raw=seed, code=code, transferable=transferable))
+
+    def signers(self, count=1, path="", **kwa):
+        """
+        Returns list of count number of Signer instances.
+
+        See .signer for parameters used to create each signer.
+
+        """
+        return [self.signer(path=f"{path}{i:x}", **kwa) for i in range(count)]
 
 
 class Cipher(Matter):
