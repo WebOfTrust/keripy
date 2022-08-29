@@ -13,10 +13,10 @@ from keri import help
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri.core import coring, eventing, parsing
-from keri.core.coring import Ilks, Diger
-from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
-from keri.core.coring import Salter, Serder, Siger, Cigar
-from keri.core.coring import Seqner, Verfer, Signer, Prefixer, Nexter
+from keri.core.coring import (Ilks, Diger, MtrDex, Matter, IdrDex, Indexer,
+                              CtrDex, Counter, Salter, Serder, Siger, Cigar,
+                              Seqner, Verfer, Signer, Prefixer, Nexter,
+                              generateSigners)
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
@@ -1595,9 +1595,10 @@ def test_kever(mockHelpingNowUTC):
         assert skp1.code == MtrDex.Ed25519_Seed
         assert skp1.verfer.code == MtrDex.Ed25519
         # compute nxt digest
+        # transferable so nxt is not empty
         nexter = Diger(ser=skp1.verfer.qb64b)
         nxt = [nexter.qb64]
-        assert nxt == ['EK-TF941B0sh9R48gp9pbwgWVR8aw10OpE7VUQMRUUU0']  # transferable so nxt is not empty
+        assert nxt == ['EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7hOrWj']
 
         sn = 0  # inception event so 0
         toad = 0  # no witnesses
@@ -1620,9 +1621,9 @@ def test_kever(mockHelpingNowUTC):
         # Derive AID from ked
         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
         assert aid0.code == MtrDex.Ed25519
-        assert aid0.qb64 == skp0.verfer.qb64 == 'DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4'
+        assert aid0.qb64 == skp0.verfer.qb64 == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
         _, ked0 = coring.Saider.saidify(sad=ked0)
-        assert ked0['d'] == "EXo8l7KYph7GtQepz37He-AN6MAhfRqqk91O4WqRF_-I"
+        assert ked0['d'] == 'EOm-FWMD-CxK0-FC6NUj35kptATRCztnY7Q0B3En7B8g'
 
         # update ked with pre
         ked0["i"] = aid0.qb64
@@ -1654,12 +1655,12 @@ def test_kever(mockHelpingNowUTC):
         assert serderK.sn == kever.sn
         assert ([verfer.qb64 for verfer in serderK.verfers] ==
                 [verfer.qb64 for verfer in kever.verfers])
-        assert serderK.raw == (b'{"v":"KERI10JSON0001b6_","i":"DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4",'
-                               b'"s":"0","p":"","d":"EXo8l7KYph7GtQepz37He-AN6MAhfRqqk91O4WqRF_-I","f":"0","d'
-                               b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DBQOqSaf6GqV'
-                               b'AoPxb4UARrklS8kLYj3JqsR6b4AASDd4"],"nt":"0","n":["EK-TF941B0sh9R48gp9pbwgWVR'
-                               b'8aw10OpE7VUQMRUUU0"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EXo8l7KYph7Gt'
-                               b'Qepz37He-AN6MAhfRqqk91O4WqRF_-I","br":[],"ba":[]},"di":""}')
+        assert serderK.raw == (b'{"v":"KERI10JSON0001b6_","i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e",'
+                            b'"s":"0","p":"","d":"EOm-FWMD-CxK0-FC6NUj35kptATRCztnY7Q0B3En7B8g","f":"0","d'
+                            b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hql'
+                            b'QKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"0","n":["EAKUR-LmLHWMwXTLWQ1QjxHrih'
+                            b'BmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EOm-FWMD-CxK0'
+                            b'-FC6NUj35kptATRCztnY7Q0B3En7B8g","br":[],"ba":[]},"di":""}')
 
     with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict
@@ -1783,7 +1784,7 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        baks = ["BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
+        baks = ["BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
 
         ked0 = dict(v=versify(kind=Serials.json, size=0),
                     t=Ilks.icp,
@@ -1822,7 +1823,7 @@ def test_kever(mockHelpingNowUTC):
         # retry with valid empty baks
         baks = []
         # use some data, also invalid
-        a = [dict(i="E_z8Wqqom6eeIFsng3cGQiUJ1uiNelCrR9VgFlk_8QAM")]
+        a = [dict(i="EAz8Wqqom6eeIFsng3cGQiUJ1uiNelCrR9VgFlk_8QAM")]
         sn = 0  # inception event so 0
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
@@ -1911,44 +1912,19 @@ def test_keyeventsequence_0():
     Test generation of a sequence of key events
 
     """
-    # manual process to generate a list of secrets
-    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    # root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    # root = '0AZxWJGkCkpDcHuVG4GM1KVw'
-    # rooter = CryMat(qb64=root)
-    # assert rooter.qb64 == root
-    # assert rooter.code == CryTwoDex.Seed_128
-    # signers = generateSigners(root=rooter.raw, count=8, transferable=True)
-    # secrets = [signer.qb64 for signer in signers]
-    # secrets =generateSecrets(root=rooter.raw, count=8, transferable=True)
-
-    # Test sequence of events given set of secrets
-    secrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
-
     #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [signer.qb64 for signer in signers] == secrets
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    signers = generateSigners(salt=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
-    assert pubkeys == [
-        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
-        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
-        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
-        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
-        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
-        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
-        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
-        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
-    ]
+    assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
+                    'DFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
+                    'DE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
+                    'DCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
+                    'DNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
+                    'DOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
+                    'DFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
+                    'DE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY']
 
     with openDB(name="controller") as conlgr:
         event_digs = []  # list of event digs in sequence
@@ -1959,16 +1935,16 @@ def test_keyeventsequence_0():
         keys1 = [signers[1].verfer.qb64]
         nexter1 = coring.Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [nexter1.qb64]  # transferable so nxt is not empty
-        assert nxt1 == ['E67B6WkwQrEfSA2MylxmF28HJc_HxfHRyK1kRXSYeMiI']
+        assert nxt1 == ['EIQsSW4KMrLzY1HQI9H_XxY6MyzhaFFXhG6fdBb5Wxta']
         serder0 = incept(keys=keys0, nkeys=nxt1)
         pre = serder0.ked["i"]
         event_digs.append(serder0.said)
-        assert serder0.ked["i"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert serder0.ked["i"] == signers[0].verfer.qb64
         assert serder0.ked["s"] == '0'
         assert serder0.ked["kt"] == '1'
         assert serder0.ked["k"] == keys0
         assert serder0.ked["n"] == nxt1
-        assert serder0.said == 'ELeMG3OOxWi5n1Zud603_Bn6Hzm3hIRZXlQnSgC5lU7A'
+        assert serder0.said == 'ECLgCt_5bprUe0SF1XCR94Zo5ShSEZO8cLf0dH3pwZxU'
 
         # sign serialization and verify signature
         sig0 = signers[0].sign(serder0.raw, index=0)
@@ -1990,7 +1966,7 @@ def test_keyeventsequence_0():
         keys2 = [signers[2].verfer.qb64]
         nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
-        assert nxt2 == ['EL-1w3eYVzNy0-RQV6r2ZORG-Y4gmOF-S7t9aeZMERXU']
+        assert nxt2 == ['EHuvLs1hmwxo4ImDoCpaAermYVQhiPsPDNaZsz4bcgko']
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=nxt2, sn=1)
         event_digs.append(serder1.said)
         assert serder1.ked["i"] == pre
@@ -2182,33 +2158,19 @@ def test_keyeventsequence_1():
     Test when EstOnly trait in config of inception event. Establishment only
     """
 
-    # Test sequence of events given set of secrets
-    secrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
-
     #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [signer.qb64 for signer in signers] == secrets
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    signers = generateSigners(salt=salt, count=8, transferable=True)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
-    assert pubkeys == [
-        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
-        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
-        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
-        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
-        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
-        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
-        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
-        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
-    ]
+    assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
+                    'DFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
+                    'DE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
+                    'DCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
+                    'DNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
+                    'DOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
+                    'DFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
+                    'DE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY']
 
     # New Sequence establishment only
     with openDB(name="controller") as conlgr:
@@ -2224,7 +2186,7 @@ def test_keyeventsequence_1():
         serder0 = incept(keys=keys0, nkeys=nxt1, cnfg=cnfg)
         event_digs.append(serder0.said)
         pre = serder0.ked["i"]
-        assert serder0.ked["i"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert serder0.ked["i"] == signers[0].verfer.qb64
         assert serder0.ked["s"] == '0'
         assert serder0.ked["kt"] == '1'
         assert serder0.ked["k"] == keys0
@@ -2261,7 +2223,6 @@ def test_keyeventsequence_1():
         # compute nxt digest from keys2  but from event0
         nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
-        assert nxt2 == ['EL-1w3eYVzNy0-RQV6r2ZORG-Y4gmOF-S7t9aeZMERXU']
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=nxt2, sn=1)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
@@ -2294,25 +2255,24 @@ def test_multisig_digprefix():
     Test multisig with self-addressing (digest) pre
     """
 
-    # Test sequence of events given set of secrets
-    secrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
+    #  create signers
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    signers = generateSigners(salt=salt, count=8, transferable=True)
+
+    pubkeys = [signer.verfer.qb64 for signer in signers]
+    assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
+                    'DFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
+                    'DE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
+                    'DCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
+                    'DNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
+                    'DOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
+                    'DFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
+                    'DE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY']
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
 
         # create event stream
         msgs = bytearray()
-        #  create signers
-        signers = [Signer(qb64=secret) for secret in secrets]  # faster
-        assert [siger.qb64 for siger in signers] == secrets
 
         # Event 0  Inception Transferable (nxt digest not empty)
         #  2 0f 3 multisig
@@ -2339,18 +2299,18 @@ def test_multisig_digprefix():
         for siger in sigers:
             msgs.extend(siger.qb64b)
 
-        assert msgs == bytearray(b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EZrJQSdhdiyXNpEzHo-dR0EE'
-                                 b'bLfcIopBSImdLnQGOKkg","i":"EZrJQSdhdiyXNpEzHo-dR0EEbLfcIopBSImdL'
-                                 b'nQGOKkg","s":"0","kt":"2","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
-                                 b'OoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI","DT'
-                                 b'1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8"],"nt":"2","n":["E_Ik'
-                                 b'dcjsIFrFba-LS1sJDjpec_4vM3XtIPa6D51GcUIw","EU28GjHFKeXzncPxgwlHQ'
-                                 b'Z0iO7f09Y89vy-3VkZ23bBI","E2PRzip7UZ5UTA_1ucb5eoAzxeRS3sIThrSbZh'
-                                 b'dRaZY8"],"bt":"0","b":[],"c":[],"a":[]}-AADAAzclB26m4VWp5R8ANlTU'
-                                 b'2qhqE6GA9siAK_vhtqtNNR6qhVed-xEoXRadnL5Jc0kxPZi8XUqSk5KSaOnke_Sx'
-                                 b'XDAABX--x4JGI0Dp0Ran-t1LMg3NEgizu1Jb85LTImofYqD6jz9w5TTPNAmj7rfI'
-                                 b'Fvd4mfJ_ioH0Z0mzLWuIvTIFCBAACQTiHacY3flY9y_Wup66bNzcyQvJUT-WGkv4'
-                                 b'CPgqkMwq5mOEFf2ps74bur1AE9OSGgrEBlcOQ9HWuTcr80FMKCg')
+        assert msgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EBfxc4RiVY6saIFmUfEtETs1'
+                    b'FcqmktZW88UkbnOg0Qen","i":"EBfxc4RiVY6saIFmUfEtETs1FcqmktZW88Ukb'
+                    b'nOg0Qen","s":"0","kt":"2","k":["DErocgXD2RGSyvn3MObcx59jeOsEQhv2'
+                    b'TqHirVkzrp0Q","DFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS","DE'
+                    b'9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f"],"nt":"2","n":["EDJk'
+                    b'5EEpC4-tQ7YDwBiKbpaZahh1QCyQOnZRF7p2i8k8","EAXfDjKvUFRj-IEB_o4y-'
+                    b'Y_qeJAjYfZtOMD9e7vHNFss","EN8l6yJC2PxribTN0xfri6bLz34Qvj-x3cNwcV'
+                    b'3DvT2m"],"bt":"0","b":[],"c":[],"a":[]}-AADAAD4SyJSYlsQG22MGXzRG'
+                    b'z2PTMqpkgOyUfq7cS99sC2BCWwdVmEMKiTEeWe5kv-l_d9auxdadQuArLtAGEArW'
+                    b'8wEABD0z_vQmFImZXfdR-0lclcpZFfkJJJNXDcUNrf7a-mGsxNLprJo-LROwDkH5'
+                    b'm7tVrb-a1jcor2dHD9Jez-r4bQIACBFeU05ywfZycLdR0FxCvAR9BfV9im8tWe1D'
+                    b'glezqJLf-vHRQSChY1KafbYNc96hYYpbuN90WzuCRMgV8KgRsEC')
 
         # Event 1 Rotation Transferable
         keys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
@@ -2449,21 +2409,9 @@ def test_recovery():
     """
     Test Recovery event
     """
-    # set of secrets
-    secrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
-
     #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [signer.qb64 for signer in signers] == secrets
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    signers = generateSigners(salt=salt, count=8, transferable=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence to verify against database
@@ -2692,48 +2640,24 @@ def test_receipt():
     """
     Test event receipt message and attached couplets
     """
-    # manual process to generate a list of secrets
-    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    # secrets = generateSecrets(root=root, count=8)
 
-    #  Direct Mode coe is controller, val is validator
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=salt)
 
-    # set of secrets  (seeds for private keys)
-    coeSecrets = [
-        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-    ]
+    #  create coe's signers
+    coeSigners = salter.signers(count=8, path='coe', temp=True)
+    coeSigners[0].verfer.qb64 == 'DC8kCMHKrYZewclvG9vj1R1nSspiRwPi-ByqRwFuyq4i'
 
-    #  create signers
-    coeSigners = [Signer(qb64=secret) for secret in coeSecrets]
-    assert [signer.qb64 for signer in coeSigners] == coeSecrets
+    #  create val signer
+    valSigner = salter.signers(count=1, path='val', transferable=False, temp=True)[0]
+    assert valSigner.verfer.qb64 != coeSigners[0].verfer.qb64
 
-    # set of secrets (seeds for private keys)
-    valSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
-
-    #  create signers
-    valSigners = [Signer(qb64=secret) for secret in valSecrets]
-    assert [signer.qb64 for signer in valSigners] == valSecrets
 
     # create receipt signer prefixer  default code is non-transferable
-    valSigner = Signer(qb64=valSecrets[0], transferable=False)
     valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
     assert valPrefixer.code == MtrDex.Ed25519N
     valpre = valPrefixer.qb64
-    assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+    assert valpre == 'BF5b1hKlY38RoAhR7G8CExP4qjHFvbHx25Drp5Jj2j4p'
 
     with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger:
         coeKevery = Kevery(db=coeLogger)
@@ -2753,7 +2677,7 @@ def test_receipt():
 
         assert sn == int(serder.ked["s"], 16) == 0
         coepre = serder.ked["i"]
-        assert coepre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert coepre == 'DC8kCMHKrYZewclvG9vj1R1nSspiRwPi-ByqRwFuyq4i'
 
         event_digs.append(serder.said)
         # create sig counter
@@ -2784,8 +2708,8 @@ def test_receipt():
                            said=coeKever.serder.saider.qb64)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        assert valCigar.qb64 == \
-               '0BEaTtTANB15o8ekvghBiJXAqIPRP-fpZtSwmjTZCH89FE1zg6OaLz9llY6_yUpXIXTBcTjHEUHCul9kOf-9rRBw'
+        assert valCigar.qb64 == ('0BADE2aOlwLi6OCF-jzRWSPuaOo916ADjwhA92hBQ1km'
+                                 'LSSYdzDiZIpJNFf0uislNR8uhCbB6x2Y1I6rqbNeBXwF')
         recnt = Counter(code=CtrDex.NonTransReceiptCouples, count=1)
         assert recnt.qb64 == '-CAB'
 
@@ -2793,11 +2717,12 @@ def test_receipt():
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
-        assert res == bytearray(b'{"v":"KERI10JSON000091_","t":"rct","d":"ELeMG3OOxWi5n1Zud603_Bn6'
-                                b'Hzm3hIRZXlQnSgC5lU7A","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKt'
-                                b'WTOunRA","s":"0"}-CABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiM'
-                                b'c0BEaTtTANB15o8ekvghBiJXAqIPRP-fpZtSwmjTZCH89FE1zg6OaLz9llY6_yUp'
-                                b'XIXTBcTjHEUHCul9kOf-9rRBw')
+        assert res == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EK5yV6IiXCZ-EXkFrBDhrf0I'
+                    b'cXLjkixyMeV2cji1po1O","i":"DC8kCMHKrYZewclvG9vj1R1nSspiRwPi-ByqR'
+                    b'wFuyq4i","s":"0"}-CABBF5b1hKlY38RoAhR7G8CExP4qjHFvbHx25Drp5Jj2j4'
+                    b'p0BADE2aOlwLi6OCF-jzRWSPuaOo916ADjwhA92hBQ1kmLSSYdzDiZIpJNFf0uis'
+                    b'lNR8uhCbB6x2Y1I6rqbNeBXwF')
+
 
         parsing.Parser().parse(ims=res, kvy=coeKevery)
         # coeKevery.process(ims=res)  #  coe process the receipt from val
@@ -2830,7 +2755,7 @@ def test_receipt():
 
         # create invalid receipt stale use valid sn so in database but invalid dig
         # so bad receipt
-        fake = coring.Diger(qb64="E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI").qb64
+        fake = coring.Diger(qb64="EAdapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI").qb64
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=coeKever.sn,
                            said=fake)
@@ -4321,4 +4246,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_messagize()
+    test_receipt()
