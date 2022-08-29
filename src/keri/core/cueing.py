@@ -10,7 +10,7 @@ from hio.help import decking
 class Funneler(doing.Doer):
     """ Cue message funnel
 
-    Funnler represents a cue message funnel taking messages from any number
+    Funneler represents a cue message funnel taking messages from any number
     of destination cues and funneling them into one destination cue.
 
     """
