@@ -612,12 +612,14 @@ def test_identifier_ends():
                                't': 'ixn',
                                'v': 'KERI10JSON0000de_'}
 
-        req = dict(id="ignored", name="Wile", company="ACME")
-        result = client.simulate_put("/ids/bad", body=json.dumps(req).encode("utf-8"))
+        req = dict(id="ignored", name="Wile", company="ACME", email="wile-coyote@acme.com")
+        result = client.simulate_put("/ids/bad/metadata", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_404  # Unknown alias
+        result = client.simulate_post("/ids/bad/metadata", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_404  # Unknown alias
 
         # Update contact data for identifier
-        result = client.simulate_put("/ids/test", body=json.dumps(req).encode("utf-8"))
+        result = client.simulate_put("/ids/test/metadata", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         res = dict(req)
         res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
@@ -627,7 +629,9 @@ def test_identifier_ends():
         result = client.simulate_get("/ids/test")
         assert result.status == falcon.HTTP_200
         assert result.json == {'isith': '1',
-                               'metadata': {'company': 'ACME', 'name': 'Wile'},
+                               'metadata': {'company': 'ACME',
+                                            'email': 'wile-coyote@acme.com',
+                                            'name': 'Wile'},
                                'name': 'test',
                                'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
                                'nsith': '1',
@@ -642,7 +646,9 @@ def test_identifier_ends():
         result = client.simulate_get("/ids")
         assert result.status == falcon.HTTP_200
         assert result.json[0] == {'isith': '1',
-                                  'metadata': {'company': 'ACME', 'name': 'Wile'},
+                                  'metadata': {'company': 'ACME',
+                                               'email': 'wile-coyote@acme.com',
+                                               'name': 'Wile'},
                                   'name': 'test',
                                   'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
                                   'nsith': '1',
@@ -652,6 +658,58 @@ def test_identifier_ends():
                                   'seq_no': 2,
                                   'toad': 0,
                                   'witnesses': []}
+
+        # Change the alias for the identifier
+        req = dict(alias="another_test")
+        result = client.simulate_put("/ids/test/metadata", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+
+        result = client.simulate_get("/ids")
+        assert result.status == falcon.HTTP_200
+        assert result.json[0] == {'isith': '1',
+                                  'metadata': {'company': 'ACME',
+                                               'email': 'wile-coyote@acme.com',
+                                               'name': 'Wile'},
+                                  'name': 'another_test',
+                                  'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
+                                  'nsith': '1',
+                                  'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                  'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
+                                  'receipts': 0,
+                                  'seq_no': 2,
+                                  'toad': 0,
+                                  'witnesses': []}
+
+        # Verify the old ID is no longer valid and the new one now works
+        result = client.simulate_get("/ids/test")
+        assert result.status == falcon.HTTP_404
+        result = client.simulate_get("/ids/another_test")
+        assert result.status == falcon.HTTP_200
+
+        # Replace all metadata with a post
+        req = dict(id="ignored", name="Alfred Lanning", company="USR Corp")
+        result = client.simulate_post("/ids/another_test/metadata", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        res = dict(req)
+        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert result.json == res
+
+        # Alias can be changed with POST too
+        req = dict(alias="final_test")
+        result = client.simulate_post("/ids/another_test/metadata", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_200
+        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+
+        # Bad post doesn't work either
+        result = client.simulate_post("/ids/test/metadata", body=json.dumps(req).encode("utf-8"))
+        assert result.status == falcon.HTTP_404
+
+        # Verify the old ID is no longer valid and the new one now works
+        result = client.simulate_get("/ids/another_test")
+        assert result.status == falcon.HTTP_404
+        result = client.simulate_get("/ids/final_test")
+        assert result.status == falcon.HTTP_200
 
 
 def test_oobi_ends(seeder):
@@ -937,12 +995,23 @@ def test_contact_ends(seeder):
 
         response = client.simulate_get("/contacts", query_string="group=company")
         assert response.status == falcon.HTTP_200
+        assert len(response.json) == 2
 
         gleif = response.json["GLEIF"]
         data = {d["id"]: d for d in gleif}
         assert aids[0] in data
         assert aids[1] in data
         assert aids[3] in data
+
+        pros = response.json["ProSapien"]
+        data = {d["id"]: d for d in pros}
+        assert aids[2] in data
+        assert aids[4] in data
+
+        # Begins with search on company name
+        response = client.simulate_get("/contacts", query_string="group=company&filter_value=Pro")
+        assert response.status == falcon.HTTP_200
+        assert len(response.json) == 1
 
         pros = response.json["ProSapien"]
         data = {d["id"]: d for d in pros}
@@ -959,10 +1028,23 @@ def test_contact_ends(seeder):
                                   'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
                                   'last': 'Burns3'}]
 
+        # Begins with search on last name
         response = client.simulate_get("/contacts",
-                                       query_string="filter_field=last&filter_value=Burns3&filter_value=Burns1")
+                                       query_string="filter_field=last&filter_value=Burns")
         assert response.status == falcon.HTTP_200
-        assert response.json == [{'company': 'GLEIF',
+        assert response.json == [{'company': 'ProSapien',
+                                  'first': 'Ken2',
+                                  'id': 'EF2EBiBL7RJ84ilErw8PyMEbABX_wJIL2VHNqLOdq5cw',
+                                  'last': 'Burns2'},
+                                 {'company': 'GLEIF',
+                                  'first': 'Ken0',
+                                  'id': 'ESiaJt8ax_Vts0RafqPUTWCstVsKIDQB5BcE4Q6AyKRQ',
+                                  'last': 'Burns0'},
+                                 {'company': 'ProSapien',
+                                  'first': 'Ken4',
+                                  'id': 'EWgyARhlWPWWC3DD1kr-hKKR3EK10FUSpY78IGWrmf7M',
+                                  'last': 'Burns4'},
+                                 {'company': 'GLEIF',
                                   'first': 'Ken3',
                                   'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
                                   'last': 'Burns3'},

@@ -219,6 +219,11 @@ class IdentifierEnd(doing.DoDoer):
                                  type: integer
         """
         hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.content_type = f"no identifier for alias {alias}"
+            return
+
         info = self.info(hab)
 
         rep.status = falcon.HTTP_200
@@ -268,7 +273,7 @@ class IdentifierEnd(doing.DoDoer):
 
         return data
 
-    def on_put_alias(self, req, rep, alias):
+    def on_put_metadata(self, req, rep, alias):
         """ Identifier PUT endpoint
 
         Parameters:
@@ -315,7 +320,88 @@ class IdentifierEnd(doing.DoDoer):
         if "id" in body:
             del body["id"]
 
+        if "alias" in body:
+            newAlias = body["alias"]
+            del body["alias"]
+            if not newAlias:
+                rep.status = falcon.HTTP_400
+                rep.text = f"invalid new alias for identifier {hab.pre}."
+                return
+
+            habord = hab.db.habs.get(keys=alias)
+            hab.db.habs.put(keys=newAlias,
+                            val=habord)
+            hab.db.habs.rem(keys=alias)
+            self.hby.loadHabs()
+
         self.org.update(hab.pre, body)
+        contact = self.org.get(hab.pre)
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(contact).encode("utf-8")
+
+    def on_post_metadata(self, req, rep, alias):
+        """ Identifier Metadata POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to replace contact information
+
+        ---
+        summary:  Replace metadata associated with the identfier of the alias
+        description:  Replace metadata associated with the identfier of the alias
+        tags:
+           - Identifiers
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: human readable name of identifier prefix to replace metadata
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           200:
+              description: Updated contact information for remote identifier
+           400:
+              description: Invalid identfier used to update contact information
+           404:
+              description: Prefix not found in identifier contact information
+        """
+        body = req.get_media()
+        hab = self.hby.habByName(name=alias)
+
+        if hab is None:
+            rep.status = falcon.HTTP_404
+            rep.text = f"{alias} does not represent a known identifier."
+            return
+
+        if "id" in body:
+            del body["id"]
+
+        if "alias" in body:
+            newAlias = body["alias"]
+            if not newAlias:
+                rep.status = falcon.HTTP_400
+                rep.text = f"invalid new alias for identifier {hab.pre}."
+                return
+
+            del body["alias"]
+            habord = hab.db.habs.get(keys=alias)
+            hab.db.habs.put(keys=newAlias,
+                            val=habord)
+            hab.db.habs.rem(keys=alias)
+            self.hby.loadHabs()
+
+        self.org.replace(hab.pre, body)
         contact = self.org.get(hab.pre)
 
         rep.status = falcon.HTTP_200
@@ -2723,9 +2809,11 @@ class ContactEnd:
 
         group = req.params.get("group")
         field = req.params.get("filter_field")
+        val = req.params.get("filter_value")
+
         if group is not None:
             data = dict()
-            values = self.org.values(group)
+            values = self.org.values(group, val)
             for value in values:
                 contacts = self.org.find(group, value)
                 data[value] = contacts
@@ -3343,6 +3431,7 @@ def loadEnds(app, *,
     identifierEnd = IdentifierEnd(hby=hby)
     app.add_route("/ids", identifierEnd)
     app.add_route("/ids/{alias}", identifierEnd, suffix="alias")
+    app.add_route("/ids/{alias}/metadata", identifierEnd, suffix="metadata")
     app.add_route("/ids/{alias}/rot", identifierEnd, suffix="rot")
     app.add_route("/ids/{alias}/ixn", identifierEnd, suffix="ixn")
 
