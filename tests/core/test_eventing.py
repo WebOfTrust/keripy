@@ -687,12 +687,12 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.verfer.code == MtrDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  # default nxt is empty so abandoned
-    assert serder.ked["i"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["i"] == 'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
-    assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EwslIRt-LtDgutEmsju1WAM9dAf3wzrivvNP'
-                          b'En8ANo4k","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
-                          b'","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"0","n":[],"bt":'
-                          b'"0","b":[],"c":[],"a":[]}')
+    assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EMW0zK3bagYPO6gx3w7Ua90f-I7x5kGIaI4X'
+                        b'eq9W8_As","i":"BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1'
+                        b'","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":'
+                        b'"0","b":[],"c":[],"a":[]}')
     saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
     assert saider.verify(serder.ked) is True
 
@@ -714,12 +714,13 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.verfer.code == MtrDex.Ed25519
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  # default nxt is empty so abandoned
-    assert serder.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
-    assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EdPc03U4_IgGhLQqQP2qxi1s-3r8UHzxFk8i'
-                          b'NO72bap4","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
-                          b'","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"0","n":[],"bt":'
-                          b'"0","b":[],"c":[],"a":[]}')
+    assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EPLRRJFe2FHdXKVTkSEX4xb4x-YaPFJ2Xds1'
+                    b'vhtNTd4n","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1'
+                    b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":'
+                    b'"0","b":[],"c":[],"a":[]}')
+
     saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
     assert saider.verify(serder.ked) is True
 
@@ -733,20 +734,20 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
-    assert nxt1 == ['EpitDPyhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk']
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
-    assert serder0.ked['d'] == serder0.ked["i"] == 'EUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yMs'
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
     assert serder0.ked["s"] == '0'
     assert serder0.ked["kt"] == "1"
     assert serder0.ked["nt"] == "1"
     assert serder0.ked["n"] == nxt1
     assert serder0.ked["bt"] == '0'  # hex str
-    assert serder0.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_'
-                           b'BX_Z4yMs","i":"EUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yMs","s":"0","kt":"1'
-                           b'","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"1","n":["EpitDP'
-                           b'yhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serder0.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
+                           b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
+                           b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
+                           b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
 
 
     # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
@@ -759,20 +760,20 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
-    assert nxt1 == ['EpitDPyhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk']
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
-    assert serder0.ked['d'] == serder0.ked["i"] == 'EQOajxCqUPHy2143jpFkVpdDfe0hmWiKd3gGgsnNxGP4'
+    assert serder0.ked['d'] == pre == 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
     assert serder0.ked["s"] == '0'
     assert serder0.ked["kt"] == 1
     assert serder0.ked["nt"] == 1
     assert serder0.ked["n"] == nxt1
     assert serder0.ked["bt"] == 0
-    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"EQOajxCqUPHy2143jpFkVpdDfe0hmWiKd3gG'
-                           b'gsnNxGP4","i":"EQOajxCqUPHy2143jpFkVpdDfe0hmWiKd3gGgsnNxGP4","s":"0","kt":1,'
-                           b'"k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":1,"n":["EpitDPyhh6'
-                           b'qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":0,"b":[],"c":[],"a":[]}')
+    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5u'
+                        b'k-WxvhsL","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,'
+                        b'"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr'
+                        b'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
 
 
     # Inception: Transferable not abandoned i.e. next not empty, Intive True
@@ -785,20 +786,20 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
-    assert nxt1 == ['EpitDPyhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk']
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, nkeys=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
-    assert serder0.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder0.ked["s"] == '0'
     assert serder0.ked["kt"] == 1
     assert serder0.ked["nt"] == 1
     assert serder0.ked["n"] == nxt1
     assert serder0.ked["bt"] == 0  # int not hex str
-    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"Eah7u3tcwgkdoRC5RF37YPr6fpD0qBaBhGYe'
-                           b'tE-NGhjc","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":1,'
-                           b'"k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":1,"n":["EpitDPyhh6'
-                           b'qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":0,"b":[],"c":[],"a":[]}')
+    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"EFSJqZE0K0WU95dmccrg_8EKSuVSrt4kGIZN'
+                        b'jqWFA_HL","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":1,'
+                        b'"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr'
+                        b'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
 
     # Inception: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -810,20 +811,20 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
-    assert nxt1 == ['EpitDPyhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk']
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, nkeys=nxt1)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
-    assert serder0.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder0.ked["s"] == '0'
     assert serder0.ked["kt"] == "1"
     assert serder0.ked["nt"] == "1"
     assert serder0.ked["n"] == nxt1
     assert serder0.ked["bt"] == "0"  # hex str
-    assert serder0.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EKWhDaMeK0DPrGcdem78_dPpofitWMAg7ZvZ'
-                           b'ceMGi2_4","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0","kt":"1'
-                           b'","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"1","n":["EpitDP'
-                           b'yhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serder0.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EJQUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEK'
+                        b'TwIiTBPj","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1'
+                        b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
 
     saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
     assert saider.qb64 == serder0.said
@@ -850,11 +851,12 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder1.ked["nt"] == "1"
     assert serder1.ked["n"] == keys2
     assert serder1.ked["bt"] == '0'  # hex str
-    assert serder1.raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"E4cK99hX4C0AdlzihyusaT6zOShm6mPCXSlg'
-                           b'9sBWSTSQ","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"1","p":"EK'
-                           b'WhDaMeK0DPrGcdem78_dPpofitWMAg7ZvZceMGi2_4","kt":"1","k":["DHgZa-u7veNZkqk2A'
-                           b'xCnxrINGKfQ0bRiaf9FdA_-_49A"],"nt":"1","n":["E1082xCJjDJW4LFEpDkePQyHc1P4gNS'
-                           b'U2Fl89uwafq3I"],"bt":"0","br":[],"ba":[],"a":[]}')
+    assert serder1.raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EFl8nvRCbN2xQJI75nBXp-gaXuHJw8zheVjw'
+                        b'MN_rB-pb","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"1","p":"EJ'
+                        b'QUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEKTwIiTBPj","kt":"1","k":["DB4GWvru73jWZKpNg'
+                        b'MQp8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":"1","n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSb'
+                        b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
+
     saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
     assert serder1.said == saider.qb64
 
@@ -878,11 +880,12 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder1.ked["nt"] == 1
     assert serder1.ked["n"] == keys2
     assert serder1.ked["bt"] == 0
-    assert serder1.raw == (b'{"v":"KERI10JSON00015a_","t":"rot","d":"EZZHIQHG0ij0gLE92AHl7VOMyU3LUeRJ7Kfu'
-                            b'naUiKU1w","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"1","p":"EK'
-                            b'WhDaMeK0DPrGcdem78_dPpofitWMAg7ZvZceMGi2_4","kt":1,"k":["DHgZa-u7veNZkqk2AxC'
-                            b'nxrINGKfQ0bRiaf9FdA_-_49A"],"nt":1,"n":["E1082xCJjDJW4LFEpDkePQyHc1P4gNSU2Fl'
-                            b'89uwafq3I"],"bt":0,"br":[],"ba":[],"a":[]}')
+    assert serder1.raw == (b'{"v":"KERI10JSON00015a_","t":"rot","d":"ECauhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Eb'
+                        b'dzm4E-kQ","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"1","p":"EJ'
+                        b'QUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEKTwIiTBPj","kt":1,"k":["DB4GWvru73jWZKpNgMQ'
+                        b'p8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":1,"n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSbLJrE'
+                        b'n21c2zVaU"],"bt":0,"br":[],"ba":[],"a":[]}')
+
     saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
     assert serder1.said == saider.qb64
 
@@ -892,9 +895,9 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
     assert serder2.ked["p"] == serder1.said
-    assert serder2.raw ==(b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
-                          b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2","p":"EZ'
-                          b'ZHIQHG0ij0gLE92AHl7VOMyU3LUeRJ7KfunaUiKU1w","a":[]}')
+    assert serder2.raw == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"2","p":"EC'
+                           b'auhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Ebdzm4E-kQ","a":[]}')
 
     # Receipt
     serder3 = receipt(pre=pre, sn=0, said=serder2.said)
@@ -902,8 +905,9 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
     assert serder3.ked["d"] == serder2.said
-    assert serder3.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
-                           b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"0"}')
+    assert serder3.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0"}')
+
 
 
     serder4 = receipt(pre=pre, sn=2, said=serder2.said)
@@ -912,28 +916,28 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder4.ked["s"] == "2"
     assert serder4.ked["t"] == Ilks.rct
     assert serder4.ked["d"] == serder2.said
-    assert serder4.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnNu1DmEFaZ8QVp'
-                           b'KoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","s":"2"}')
+    assert serder4.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"2"}')
 
 
     # Receipt  transferable identifier
     serderA = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256)
-    assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_'
-                           b'BX_Z4yMs","i":"EUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yMs","s":"0","kt":"1'
-                           b'","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],"nt":"1","n":["EpitDP'
-                           b'yhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":"0","b":[],"c":[],"a":[]}')
+    assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
+                        b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
+                        b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
     seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.said)
     assert seal.i == serderA.ked["i"]
     assert seal.d == serderA.said
 
     siger = signer0.sign(ser=serderA.raw, index=0)
     msg = messagize(serder=serder4, sigers=[siger], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EgYtBibVBjnK2uw57gDRrOnN'
-                b'u1DmEFaZ8QVpKoZY52E0","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1'
-                b'x4ejhcc","s":"2"}-FABEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_Z4yM'
-                b's0AAAAAAAAAAAAAAAAAAAAAAAEUGHc8RcfrYg3Gg-kwRqrPoJJv6Cl3r1fUs_BX_'
-                b'Z4yMs-AABAAL8Wa4NvM8X7djH5lAm2SmmV568mGYpwZ5yR9yOYdbJq9tUMlK3Ldc'
-                b'8dKIzj8rH29J5UD2syn3IENWdvmOUtpAw')
+    assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjm'
+                b'S28Xqf3zRJ8T6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpN'
+                b'ceHo4XH","s":"2"}-FABEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0'
+                b'C0AAAAAAAAAAAAAAAAAAAAAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV'
+                b'8BB0C-AABAAAPitVKfl6dG9dY4-7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdB'
+                b'NjJaCDrEc7kAIqbLsCMCKf26-Onxz-DoP')
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -948,19 +952,19 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     nexterD = Nexter(keys=keysD)  # default sith is 1
     nxtD = nexterD.digs  # transferable so nxt is not empty
 
-    delpre = 'ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
     serderD = delcept(keys=keysD, delpre=delpre, nkeys=nxtD)
     pre = serderD.ked["i"]
-    assert serderD.ked["i"] == 'ECaG4EEg_L2cX3XAE4CGb5JxpHcZ5gMCD8Z8Plaf3_UU'
+    assert serderD.ked["i"] == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
     assert serderD.ked["s"] == '0'
     assert serderD.ked["t"] == Ilks.dip
     assert serderD.ked["n"] == nxtD
-    assert serderD.raw == (b'{"v":"KERI10JSON00015f_","t":"dip","d":"ECaG4EEg_L2cX3XAE4CGb5JxpHcZ5gMCD8Z8'
-                           b'Plaf3_UU","i":"ECaG4EEg_L2cX3XAE4CGb5JxpHcZ5gMCD8Z8Plaf3_UU","s":"0","kt":"1'
-                           b'","k":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"nt":"1","n":["EpitDP'
-                           b'yhh6qvfj0tMgO8RiBz5LV07OobY84WKs15XQHk"],"bt":"0","b":[],"c":[],"a":[],"di":'
-                           b'"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
-    assert serderD.said == "ECaG4EEg_L2cX3XAE4CGb5JxpHcZ5gMCD8Z8Plaf3_UU"
+    assert serderD.raw == (b'{"v":"KERI10JSON00015f_","t":"dip","d":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYU'
+                        b'bUztxaiH","i":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH","s":"0","kt":"1'
+                        b'","k":["DB4GWvru73jWZKpNgMQp8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[],"di":'
+                        b'"EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
+    assert serderD.said == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
 
     # Delegated Rotation:
     # Transferable not abandoned i.e. next not empty
@@ -974,10 +978,10 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     nexterR = Nexter(keys=keysR)  # default sith is 1
     nxtR = nexterR.digs  # transferable so nxt is not empty
 
-    delpre = 'ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
     serderR = deltate(pre=pre,
                       keys=keysR,
-                      dig='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                      dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
                       nkeys=nxtR)
 
@@ -985,12 +989,12 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serderR.ked["s"] == '4'
     assert serderR.ked["t"] == Ilks.drt
     assert serderR.ked["n"] == nxtR
-    assert serderR.raw == (b'{"v":"KERI10JSON000160_","t":"drt","d":"EwKpz0HE3_eGARUswRQOWw7nvJiKxznWToCQ'
-                           b'Cb5SrOJE","i":"ECaG4EEg_L2cX3XAE4CGb5JxpHcZ5gMCD8Z8Plaf3_UU","s":"4","p":"Eg'
-                           b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","kt":"1","k":["D8u3hipCxZnkM_O0j'
-                           b'faZLJMk9ERI428T0psRO0JVgh4c"],"nt":"1","n":["E1082xCJjDJW4LFEpDkePQyHc1P4gNS'
-                           b'U2Fl89uwafq3I"],"bt":"0","br":[],"ba":[],"a":[]}')
-    assert serderR.said == 'EwKpz0HE3_eGARUswRQOWw7nvJiKxznWToCQCb5SrOJE'
+    assert serderR.raw == (b'{"v":"KERI10JSON000160_","t":"drt","d":"EMBBBkaLV7i6wNgfz3giib2ItrHsr548mtIf'
+                        b'lW0Hrbuv","i":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH","s":"4","p":"EA'
+                        b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","kt":"1","k":["DPLt4YqQsWZ5DPztI'
+                        b'32mSyTJPRESONvE9KbETtCVYIeH"],"nt":"1","n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSb'
+                        b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
+    assert serderR.said == 'EMBBBkaLV7i6wNgfz3giib2ItrHsr548mtIflW0Hrbuv'
 
     """ Done Test """
 
@@ -4181,7 +4185,7 @@ def test_reload_kever(mockHelpingNowUTC):
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'EbjxjMV9atsoyxBVAnoe3B22Gprbu1dvYTpubyxrOfSk'
+        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre, ldig))))
@@ -4189,17 +4193,15 @@ def test_reload_kever(mockHelpingNowUTC):
         nstate = natHab.kever.state()
 
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
-        assert state.raw == (
-             b'{"v":"KERI10JSON00029e_","i":"EXB_8Qm1dNl-0kXq1c5H8wsT4bzKjuvduJPY0fn6blMM",'
-             b'"s":"6","p":"EDsxS0J2wVS7h1xLeeF0EgPDLWk-NCBDMtLmGuuP-9ys","d":"EbjxjMV9atso'
-             b'yxBVAnoe3B22Gprbu1dvYTpubyxrOfSk","f":"6","dt":"2021-01-01T00:00:00.000000+0'
-             b'0:00","et":"ixn","kt":"2","k":["DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew'
-             b'","D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg","D36Ev0IqfpZ2wg0QbbTtPilJ2N'
-             b'owjFT1IqF954cLB-9M"],"nt":"2","n":["EBoVvSj1Y_Lm1nvIP-wGSlAv-O2Xfy6uNZEHiceA'
-             b'o5s0","EjnuygssSKA4D6cX1O6KPrroQv0EBLZ6W9X6TH2z1FzU","EwUwluAAcCqy2FsV9Vuh5u'
-             b'zrJ0tWrPz0h32DvFEXAC70"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EKqCJJbQL'
-             b'utszUHQO2TxDRFFLwnFLAjhDklXWCtEQgmY","br":[],"ba":[]},"di":""}')
-        assert state.sn == 6
+        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EOBNRu7nI3s2QFQrD4LetS2UWRJrzKNPcsw2XDx1x6Cm",'
+                            b'"s":"6","p":"EFQpW7GwJIZt9LKyWysUtjDFnK1aOuW-yqUbcP3P18fQ","d":"ECAz38cyQUbT'
+                            b'wqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm","f":"6","dt":"2021-01-01T00:00:00.000000+0'
+                            b'0:00","et":"ixn","kt":"2","k":["DONBcMaTYq7Ev6Y53Byqa0am0rT8pbvjIruZ5W9cTPZV'
+                            b'","DL7hp3C_te3DcKch9y-YZHYIGm6SWa--BSWk2tW9ssd2","DIrb7ekU9osCq8ODJawt3tK-d9'
+                            b'Gt7wfDYzTGIXdgHdmf"],"nt":"2","n":["EJGhEEOoVWmX7xQjx6gZPpwPsWadjsWTUfxMgbfq'
+                            b'Knog","EHD-8SIj3FK-10vbFpp1XiXd8G72tp1R3TvIToYXKDy0","EJjc7LHmjUQMogxaL4Sjbn'
+                            b'zARCnBHAhbSRcx8wBI6WPy"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EE-iBrNVo'
+                            b'x_eGv-OiJz95Gg1mTTCUArO7tcO0ZxL6h2y","br":[],"ba":[]},"di":""}')
         assert state.ked["f"] == '6'
         assert state.ked == nstate.ked
 
@@ -4212,16 +4214,16 @@ def test_reload_kever(mockHelpingNowUTC):
 
         kstate = kever.state()
         assert kstate.ked == state.ked
-        assert state.raw == (
-            b'{"v":"KERI10JSON00029e_","i":"EXB_8Qm1dNl-0kXq1c5H8wsT4bzKjuvduJPY0fn6blMM",'
-            b'"s":"6","p":"EDsxS0J2wVS7h1xLeeF0EgPDLWk-NCBDMtLmGuuP-9ys","d":"EbjxjMV9atso'
-            b'yxBVAnoe3B22Gprbu1dvYTpubyxrOfSk","f":"6","dt":"2021-01-01T00:00:00.000000+0'
-            b'0:00","et":"ixn","kt":"2","k":["DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew'
-            b'","D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg","D36Ev0IqfpZ2wg0QbbTtPilJ2N'
-            b'owjFT1IqF954cLB-9M"],"nt":"2","n":["EBoVvSj1Y_Lm1nvIP-wGSlAv-O2Xfy6uNZEHiceA'
-            b'o5s0","EjnuygssSKA4D6cX1O6KPrroQv0EBLZ6W9X6TH2z1FzU","EwUwluAAcCqy2FsV9Vuh5u'
-            b'zrJ0tWrPz0h32DvFEXAC70"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EKqCJJbQL'
-            b'utszUHQO2TxDRFFLwnFLAjhDklXWCtEQgmY","br":[],"ba":[]},"di":""}')
+        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EOBNRu7nI3s2QFQrD4LetS2UWRJrzKNPcsw2XDx1x6Cm",'
+                            b'"s":"6","p":"EFQpW7GwJIZt9LKyWysUtjDFnK1aOuW-yqUbcP3P18fQ","d":"ECAz38cyQUbT'
+                            b'wqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm","f":"6","dt":"2021-01-01T00:00:00.000000+0'
+                            b'0:00","et":"ixn","kt":"2","k":["DONBcMaTYq7Ev6Y53Byqa0am0rT8pbvjIruZ5W9cTPZV'
+                            b'","DL7hp3C_te3DcKch9y-YZHYIGm6SWa--BSWk2tW9ssd2","DIrb7ekU9osCq8ODJawt3tK-d9'
+                            b'Gt7wfDYzTGIXdgHdmf"],"nt":"2","n":["EJGhEEOoVWmX7xQjx6gZPpwPsWadjsWTUfxMgbfq'
+                            b'Knog","EHD-8SIj3FK-10vbFpp1XiXd8G72tp1R3TvIToYXKDy0","EJjc7LHmjUQMogxaL4Sjbn'
+                            b'zARCnBHAhbSRcx8wBI6WPy"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EE-iBrNVo'
+                            b'x_eGv-OiJz95Gg1mTTCUArO7tcO0ZxL6h2y","br":[],"ba":[]},"di":""}')
+
 
     assert not os.path.exists(natHby.ks.path)
     assert not os.path.exists(natHby.db.path)
@@ -4231,4 +4233,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_process_nontransferable()
+    test_process_manual()
