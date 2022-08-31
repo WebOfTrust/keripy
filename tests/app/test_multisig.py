@@ -10,7 +10,8 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, agenting, booting, notifying
+from keri.app import (habbing, storing, kiwiing, grouping, indirecting,
+                      directing, agenting, booting, notifying)
 from keri.core import coring, eventing, parsing
 from keri.vdr import credentialing
 
@@ -168,19 +169,6 @@ class TestDoer(doing.DoDoer):
 wanPre = "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
 
 
-def test_multisig_identifier_ends(seeder):
-    salt = coring.Salter(raw=b'wann-the-witness').qb64
-    with habbing.openHab(name="multisig1", temp=True, wits=[wanPre]) as (hby1, hab1), \
-            habbing.openHab(name="multisig2", temp=True, wits=[wanPre]) as (hby2, hab2), \
-            habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
-        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
-
-        # Run all participants
-        directing.runController(doers=[testDoer], expire=30.0)
-
-        assert testDoer.done is True
-
-
 def loadApp(hby, notifier):
     app = falcon.App()
 
@@ -203,3 +191,21 @@ def loadApp(hby, notifier):
                              counselor=counselor)
     doers.extend([repd, counselor, mbx])
     return app, doers
+
+
+def test_multisig_identifier_ends(seeder):
+    salt = coring.Salter(raw=b'wann-the-witness').qb64
+    with habbing.openHab(name="multisig1", temp=True, wits=[wanPre]) as (hby1, hab1), \
+            habbing.openHab(name="multisig2", temp=True, wits=[wanPre]) as (hby2, hab2), \
+            habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
+        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
+
+        # Run all participants
+        directing.runController(doers=[testDoer], expire=30.0)
+
+        assert testDoer.done is True
+
+
+if __name__ == "__main__":
+    pass
+    #test_multisig_identifier_ends(seeder)
