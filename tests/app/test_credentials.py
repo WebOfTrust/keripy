@@ -33,11 +33,11 @@ class TestDoer(doing.DoDoer):
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wanHab = wanHby.habByName("wan")
         # Verify the group identifier was incepted properly and matches the identifiers
-        assert wanHab.pre == "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
-        assert hab1.phab.pre == "E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c"
-        assert hab2.phab.pre == "E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
-        assert hab3.phab.pre == "ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI"
-        gid = "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
+        assert wanHab.pre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
+        assert hab1.phab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
+        assert hab2.phab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
+        assert hab3.phab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
+        gid = 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
         assert hab1.pre == hab2.pre == hab3.pre == gid
         assert hab1.name == "test_group1"
         assert hab2.name == "test_group2"
@@ -256,7 +256,7 @@ def loadSchema(db):
     with open(filepath) as f:
         sed = json.load(f)
         schemer = scheming.Schemer(sed=sed)
-        assert schemer.said == "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
+        assert schemer.said == 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'
         db.schema.pin(keys=(schemer.said,), val=schemer)
 
 

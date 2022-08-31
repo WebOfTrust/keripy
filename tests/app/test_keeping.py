@@ -24,10 +24,10 @@ def test_dataclasses():
     """
     test key set tracking and creation dataclasses
     """
-    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
-    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+    pre = b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc' # b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4' # b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    pri = b'AAOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M' # b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+    seed = '0ABxWJGkCkpDcHuVG4GM1KVw'
 
     pl = keeping.PubLot()
     assert isinstance(pl, keeping.PubLot)
@@ -164,14 +164,13 @@ def test_key_funcs():
     """
     Test key utility functions
     """
-    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    preb = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    pre = 'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    preb = pre.encode("utf-8")
     ri = 3
 
-    assert keeping.riKey(pre, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-                                        b'.00000000000000000000000000000003')
-    assert keeping.riKey(preb, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-                                        b'.00000000000000000000000000000003')
+    assert keeping.riKey(pre, ri) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                      b'.00000000000000000000000000000003')
+    assert keeping.riKey(preb, ri) == keeping.riKey(pre, ri)
 
     with pytest.raises(TypeError):
         keeping.riKey(pre, sn='3')
@@ -326,17 +325,17 @@ def test_keeper():
         assert isinstance(keeper.pris.sdb, lmdb._Database)
         assert isinstance(keeper.sits.sdb, lmdb._Database)
 
-        salta = '0AZxWJGkCkpDcHuVG4GM1KVw'
-        saltb = '0AHuVG4GM1KVwZxWJGkCkpDc'
-        pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
-        prib = b'AJ2cZeCy4MaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6hA'
-        puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-        pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
-        pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
-        pubd = 'BzE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9'
-        pube = 'BJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4MaOa6eOC'
-        prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-        preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
+        salta = '0ABxWJGkCkpDcHuVG4GM1KVw'
+        saltb = '0ACuVG4GM1KVwZxWJGkCkpDc'
+        pria = b'AAOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+        prib = b'AB2cZeCy4MaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6hA'
+        puba = b'DAAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        pubb = b'DBXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
+        pubc = b'DCPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
+        pubd = 'BDE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9'
+        pube = 'BEQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4MaOa6eOC'
+        prea = b'EAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+        preb = b'EBPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
 
 
         #  test .gbls Suber  methods
@@ -653,7 +652,7 @@ def test_creator():
 
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
-    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     creator = keeping.SaltyCreator(salt=salt)
     assert isinstance(creator, keeping.SaltyCreator)
     assert isinstance(creator, keeping.Creator)
@@ -666,20 +665,20 @@ def test_creator():
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
-    assert signer.qb64 == 'A8wl7SXA6nCdf0-S9fWaHbq-XMZiXpFaBYZyVzwIBAn0'
+    assert signer.qb64 == 'APMJe0lwOpwnX9PkvX1mh26vlzGYl6RWgWGclc8CAQJ9'
     assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.NonTransDex
-    assert signer.verfer.qb64 == 'DxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ'
+    assert signer.verfer.qb64 == 'DMZy6qbgnKzvCE594tQ4SPs6pIECXTYQBH7BkC4hNY3E'
 
     signers = creator.create(count=1, transferable=False, temp=True)
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
-    assert signer.qb64 == 'AwasAzSejEulG1472bEZP7LNhKsoXAky40jgqWZKTbp4'
+    assert signer.qb64 == 'AMGrAM0noxLpRteO9mxGT-yzYSrKFwJMuNI4KlmSk26e'
     assert signer.verfer.code == coring.MtrDex.Ed25519N
     assert signer.verfer.code in coring.NonTransDex
-    assert signer.verfer.qb64 == 'BVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
+    assert signer.verfer.qb64 == 'BFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT'
 
     creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)
     assert isinstance(creator, keeping.SaltyCreator)
@@ -708,8 +707,10 @@ def test_manager():
     salt = coring.Salter(raw=raw).qb64
     stem = "red"
 
-    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
 
+
+    # the particular serialization does not matter test purposes
     ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
                     b'70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
                     b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
@@ -737,7 +738,7 @@ def test_manager():
         assert manager.pidx == 1
 
         spre = verfers[0].qb64b
-        assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
+        assert spre == b'DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT'
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -749,11 +750,11 @@ def test_manager():
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert ps.new.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
         assert ps.new.ridx == 0
         assert ps.new.kidx == 0
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.nxt.pubs == ['DHByVjuBrM1D9K71TuE5dq1HVDNS5-aLD-wcIlHiVoXX']
         assert ps.nxt.ridx == 1
         assert ps.nxt.kidx == 1
 
@@ -767,7 +768,7 @@ def test_manager():
         assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
+        assert digs == ['EBhBRqVbqhhP7Ciah5pMIOdsY5Mm1ITm2Fjqb028tylu']
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
@@ -786,7 +787,7 @@ def test_manager():
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
         assert psigs == vsigs
-        assert psigs == ['AAGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # Test sign with indices
         indices = [3]
@@ -797,7 +798,7 @@ def test_manager():
             assert isinstance(siger, coring.Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
-        assert psigs == ['ADGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
@@ -814,7 +815,7 @@ def test_manager():
         psigs = [cigar.qb64 for cigar in pcigars]
         vsigs = [cigar.qb64 for cigar in vcigars]
         assert psigs == vsigs
-        assert psigs == ['0BGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['0BAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # salty algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
@@ -832,13 +833,13 @@ def test_manager():
         assert pp.tier == coring.Tiers.low
 
         ps = manager.ks.sits.get(spre)
-        assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.new.pubs == ['DHByVjuBrM1D9K71TuE5dq1HVDNS5-aLD-wcIlHiVoXX']
         assert ps.new.ridx == 1
         assert ps.new.kidx == 1
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DChDVbFPb1e0IW06klnK47arfwEPwpN5-S1_tfRY3hhY']
+        assert ps.nxt.pubs == ['DAoQ1WxT29XtCFtOpJZyuO2q38BD8KTefktf7X0WN4YW']
         assert ps.nxt.ridx == 2
         assert ps.nxt.kidx == 2
 
@@ -846,7 +847,7 @@ def test_manager():
         assert keys == ps.new.pubs
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['E7tSvjXR2dsFq0SptSFYjDpwk52qHaIhbgKd3_7xGwz4']
+        assert digs == ['EJczV8HmnEWZiEHw2lVuSatrvzCmJOZ3zpa7JFfrnjau']
 
         assert oldpubs == ps.old.pubs
 
@@ -967,7 +968,7 @@ def test_manager():
         assert manager.pidx == 4
 
         spre = verfers[0].qb64b
-        assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
+        assert spre == b'DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM'
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 3
@@ -979,11 +980,11 @@ def test_manager():
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs == ['D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw']
+        assert ps.new.pubs == ['DOtu4gX3oc4feusD8wWIykLhjkpiJHXEe29eJ2b_1CyM']
         assert ps.new.ridx == 0
         assert ps.new.kidx == 0
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DHNnq96NI0Bmle_VINGcgX8_VSpxbl3am7ZT6_66Fe8Q']
+        assert ps.nxt.pubs == ['DBzZ6vejSNAZpXv1SDRnIF_P1UqcW5d2pu2U-v-uhXvE']
         assert ps.nxt.ridx == 1
         assert ps.nxt.kidx == 1
 
@@ -991,7 +992,7 @@ def test_manager():
         assert keys == ps.new.pubs
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['EAQ7QvfBLj0OrGTqzJZGutLJowUht_zBA6213agRQ8hA']
+        assert digs == ['EIGjhyyBRcqCkPE9bmkph7morew0wW0ak-rQ-dHCH-M2']
 
 
         #  attempt to reincept same first pub
@@ -1014,7 +1015,7 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
         wit0pre = verfers[0].qb64
-        assert verfers[0].qb64 == 'B5M0jhHM3vTo15w12pOUYRwxJNaIVS96wSqbFZH-inyc'
+        assert verfers[0].qb64 == 'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n'
         assert verfers[0].code == coring.MtrDex.Ed25519N
         assert not digers
 
@@ -1023,7 +1024,7 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
         wit1pre = verfers[0].qb64
-        assert verfers[0].qb64 == 'BAH_nE1cfiGjEMK0Ac8U8N51npjBOjyZt3D-_QA4c4y0'
+        assert verfers[0].qb64 == 'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt'
         assert verfers[0].code == coring.MtrDex.Ed25519N
         assert not digers
 
@@ -1031,36 +1032,36 @@ def test_manager():
 
         # test .ingest of sequences of keys at default iridx == 0
         secrecies = [
-                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
-                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
-                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
-                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
-                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
-                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
-                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
-                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                        ['AAwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['ABzz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['ACwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['ADntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['AE-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AFuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AGFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['AHq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
                     ]
 
         # verify current state
         assert manager.aeid == ''
         assert manager.pidx == 6
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
         iridx =  0
         ipre, verferies = manager.ingest(secrecies=secrecies)  # use default iridx
-        assert ipre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert ipre == 'DNsGfyf7JArtQgioD7BdVwRulGAsQk5REIKSTjFJqE0a'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
-                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
-                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
-                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
-                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
-                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
-                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
-                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
-                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                                ['DNsGfyf7JArtQgioD7BdVwRulGAsQk5REIKSTjFJqE0a'],
+                                ['DJ4j3Lg1viS9sOjrS57i61sXcLO852LDMALqIApud8vX'],
+                                ['DMU5BgkqtKK_srvx5WKicoeTuKWoBaEPvR4TWqdyJF4S'],
+                                ['DCztsxTVwwmcsyzCoP1BJ6sG8ujOvhlEYNJq61o8Hk9P'],
+                                ['DHprr5pG4D1DUujsDqLRTrFwkpEqcoOfC2C3DMUbSgno'],
+                                ['DH0JLItMfXTGoYNdhIsgI1o3eMpyTnAzC1zlUjlX3GHM'],
+                                ['DO65xRVt3BdHq7LsfEZvtoOeVjqO1Um1odlV-aO03hw3'],
+                                ['DOljYz7bLR3lkH4j3o9foQ_zkwzGCAPxbLVhqQlIVW-Z']
                             ]
 
         # test .pris db
@@ -1107,37 +1108,37 @@ def test_manager():
         # test .ingest of sequences of keys at iridx == 3
 
         secrecies = [
-                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
-                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
-                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
-                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
-                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
-                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
-                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
-                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                        ['AAzz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['ABwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['ACwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['ADntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['AE-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AFuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AGFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['AHq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
                     ]
 
         # verify current state
         assert manager.aeid == ''
         assert manager.pidx == 7
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
 
         iridx = 3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
-        assert ipre == 'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'
+        assert ipre == 'DNBXynUR9FpjCmqK79waLfN__r3S7eKnmUgqIdrXVqY8'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
-                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
-                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
-                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
-                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
-                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
-                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
-                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
-                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                                ['DNBXynUR9FpjCmqK79waLfN__r3S7eKnmUgqIdrXVqY8'],
+                                ['DC-3hIkglkRPXYUtKkujoBs2xtVnc_hlDteFx9zlrdtI'],
+                                ['DMU5BgkqtKK_srvx5WKicoeTuKWoBaEPvR4TWqdyJF4S'],
+                                ['DCztsxTVwwmcsyzCoP1BJ6sG8ujOvhlEYNJq61o8Hk9P'],
+                                ['DHprr5pG4D1DUujsDqLRTrFwkpEqcoOfC2C3DMUbSgno'],
+                                ['DH0JLItMfXTGoYNdhIsgI1o3eMpyTnAzC1zlUjlX3GHM'],
+                                ['DO65xRVt3BdHq7LsfEZvtoOeVjqO1Um1odlV-aO03hw3'],
+                                ['DOljYz7bLR3lkH4j3o9foQ_zkwzGCAPxbLVhqQlIVW-Z']
                             ]
 
         # test .pris db
@@ -1183,37 +1184,37 @@ def test_manager():
 
         # test .ingest of sequences of keys at iridx == len(secrecies -1) == 7
         secrecies = [
-                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
-                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
-                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
-                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
-                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
-                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
-                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
-                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                        ['AAwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['ABwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['ACzz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['ADntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['AE-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AFuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AGFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['AHq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
                     ]
 
         # verify current state
         assert manager.aeid == ''
         assert manager.pidx == 8
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
 
         iridx = 7
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
-        assert ipre == 'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'
+        assert ipre == 'DK2H8iQ_oCiCA7Aa4D4nN9LeNUFQl5grfrqpmgm8griH'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
-                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
-                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
-                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
-                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
-                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
-                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
-                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
-                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                                ['DK2H8iQ_oCiCA7Aa4D4nN9LeNUFQl5grfrqpmgm8griH'],
+                                ['DC-3hIkglkRPXYUtKkujoBs2xtVnc_hlDteFx9zlrdtI'],
+                                ['DEoIHvq8J883tZGN1f_env0iYAUtzPo9zgoOIWLsrwqv'],
+                                ['DCztsxTVwwmcsyzCoP1BJ6sG8ujOvhlEYNJq61o8Hk9P'],
+                                ['DHprr5pG4D1DUujsDqLRTrFwkpEqcoOfC2C3DMUbSgno'],
+                                ['DH0JLItMfXTGoYNdhIsgI1o3eMpyTnAzC1zlUjlX3GHM'],
+                                ['DO65xRVt3BdHq7LsfEZvtoOeVjqO1Um1odlV-aO03hw3'],
+                                ['DOljYz7bLR3lkH4j3o9foQ_zkwzGCAPxbLVhqQlIVW-Z']
                             ]
 
         # test .pris db
@@ -1260,51 +1261,51 @@ def test_manager():
         # test .ingest multi-sig of sequences of keys at default iridx == 0
         secrecies = [
                         [
-                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
+                            'AAjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'ABUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'AC-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
                         ],
                         [
-                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                            'AD2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
                         ],
                         [
-                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                            'AE5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'AFlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AGgumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
                         ],
                         [
-                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                            'AHW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
                         ]
                     ]
 
         #  verify current state
         assert manager.aeid == ''
         assert manager.pidx == 9
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
 
         iridx = 0
         ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)  # default iridx
-        assert ipre == 'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        assert ipre == 'DJCWSFm1mJUjFXUk5SsckjZvSYCbCJhUBJjns2WFC1n0'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
                                 [
-                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
-                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
-                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+                                    'DJCWSFm1mJUjFXUk5SsckjZvSYCbCJhUBJjns2WFC1n0',
+                                    'DPlKkrIewJfuBCjCRYFoyWFVhd_MW5AkN6aiWTTVYX2Q',
+                                    'DKc4NCaCGxzNEswLAZ-YB0Wsb0bkfWwz4L25rZjO7E8R'
                                 ],
                                 [
-                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                    'DCPJ1uslUstUK_NnEhcGqqHmPFlVfZga6WJf69_2HFWD'
                                 ],
                                 [
-                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
-                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
-                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                    'DNPTqeHJ--bJDAzPXf8OKOB-JAFJDBPBKg99bH7D490u',
+                                    'DLKjI1dMeNUtJAiT_KqMumUJomUBBhEw_tLhmDbAorE1',
+                                    'DMzm2BYz3wZqNf0-ZnlLeggWYD37-5bylk8opPfuV_8t'
                                 ],
                                 [
-                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                    'DJcjoRESNkUn4IrJNLNLHPE-373NMn6g3g6LDiJJhalB'
                                 ]
                             ]
 
@@ -1354,50 +1355,50 @@ def test_manager():
         # test .ingest multi-sig of sequences of keys at iridx == 1
         secrecies = [
                         [
-                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
+                            'AAUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'ABjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'AC-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
                         ],
                         [
-                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                            'AD2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
                         ],
                         [
-                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                            'AE5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'AFlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AGgumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
                         ],
                         [
-                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                            'AHW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
                         ]
                     ]
 
         #  verify current state
         assert manager.aeid == ''
         assert manager.pidx == 10
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
         iridx = 1
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
-        assert ipre == 'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI'
+        assert ipre == 'DHc6ZvVpAjLq_digYYZMhq0OlEnnbCrgSvcxPJQY_oAE'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
                                 [
-                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
-                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
-                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+                                    'DHc6ZvVpAjLq_digYYZMhq0OlEnnbCrgSvcxPJQY_oAE',
+                                    'DPmRWtx8nwSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV',
+                                    'DKc4NCaCGxzNEswLAZ-YB0Wsb0bkfWwz4L25rZjO7E8R'
                                 ],
                                 [
-                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                    'DCPJ1uslUstUK_NnEhcGqqHmPFlVfZga6WJf69_2HFWD'
                                 ],
                                 [
-                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
-                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
-                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                    'DNPTqeHJ--bJDAzPXf8OKOB-JAFJDBPBKg99bH7D490u',
+                                    'DLKjI1dMeNUtJAiT_KqMumUJomUBBhEw_tLhmDbAorE1',
+                                    'DMzm2BYz3wZqNf0-ZnlLeggWYD37-5bylk8opPfuV_8t'
                                 ],
                                 [
-                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                    'DJcjoRESNkUn4IrJNLNLHPE-373NMn6g3g6LDiJJhalB'
                                 ]
                             ]
 
@@ -1447,50 +1448,50 @@ def test_manager():
         # iridx == len(secrecies) -1 == 3
         secrecies = [
                         [
-                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'AA-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                            'ABUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'ACjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
                         ],
                         [
-                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                            'AD2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
                         ],
                         [
-                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                            'AE5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'AFlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AGgumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
                         ],
                         [
-                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                            'AEW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
                         ]
                     ]
 
         #  verify current state
         assert manager.aeid == ''
         assert manager.pidx == 11
-        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
         assert manager.tier == coring.Tiers.low
         iridx =  3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
-        assert ipre == 'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+        assert ipre == 'DO1mU48dTzyFtHjqH744gl0QoEIMxphSC4qbgMoEuyq7'
         publicies = []
         for verfers in verferies:
             publicies.append([verfer.qb64 for verfer in verfers])
         assert publicies == [
                                 [
-                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s',
-                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
-                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
+                                    'DO1mU48dTzyFtHjqH744gl0QoEIMxphSC4qbgMoEuyq7',
+                                    'DPlKkrIewJfuBCjCRYFoyWFVhd_MW5AkN6aiWTTVYX2Q',
+                                    'DM7JN7tHARmh5XyYePxcFg0CB9CcHdXR3g3gJD1VZ7XI'
                                 ],
                                 [
-                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                    'DCPJ1uslUstUK_NnEhcGqqHmPFlVfZga6WJf69_2HFWD'
                                 ],
                                 [
-                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
-                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
-                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                    'DNPTqeHJ--bJDAzPXf8OKOB-JAFJDBPBKg99bH7D490u',
+                                    'DLKjI1dMeNUtJAiT_KqMumUJomUBBhEw_tLhmDbAorE1',
+                                    'DMzm2BYz3wZqNf0-ZnlLeggWYD37-5bylk8opPfuV_8t'
                                 ],
                                 [
-                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                    'DLbpfBp9HJCgzVq9w5kbwFE5kgIiqfLzhCjaxZo8hp5x'
                                 ]
                             ]
 
@@ -1550,7 +1551,7 @@ def test_manager_with_aeid():
     rawsalt = b'0123456789abcdef'
     salter = coring.Salter(raw=rawsalt)
     salt = salter.qb64
-    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
 
 
@@ -1560,7 +1561,7 @@ def test_manager_with_aeid():
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
-    assert aeid0 == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
+    assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
     decrypter0 = coring.Decrypter(seed=seed0)
     encrypter0 = coring.Encrypter(verkey=aeid0)
     assert encrypter0.verifySeed(seed=seed0)
@@ -1572,12 +1573,12 @@ def test_manager_with_aeid():
                            transferable=False)
     seed1 = cryptsigner1.qb64
     aeid1 = cryptsigner1.verfer.qb64
-    assert aeid1 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+    assert aeid1 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
     decrypter1 = coring.Decrypter(seed=seed1)
     encrypter1 = coring.Encrypter(verkey=aeid1)
     assert encrypter1.verifySeed(seed=seed1)
 
-    # something to sign
+    # something to sign doesn't matter what for testing purposes
     ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
                     b'70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
                     b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
@@ -1590,8 +1591,8 @@ def test_manager_with_aeid():
         manager = keeping.Manager(ks=keeper, seed=seed0, salt=salt, aeid=aeid0, )
         assert manager.ks.opened
         assert manager.inited
-        assert manager._inits == {'aeid': 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE',
-                                  'salt': '0AMDEyMzQ1Njc4OWFiY2RlZg'}
+        assert manager._inits == {'salt': '0AAwMTIzNDU2Nzg5YWJjZGVm',
+                                  'aeid': 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'}
 
         # Validate encryption decryption inited
         assert manager.encrypter.qb64 == encrypter0.qb64  #  aeid provided
@@ -1615,7 +1616,7 @@ def test_manager_with_aeid():
         assert manager.pidx == 1
 
         spre = verfers[0].qb64b
-        assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
+        assert spre == b'DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT'
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -1627,11 +1628,11 @@ def test_manager_with_aeid():
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert ps.new.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
         assert ps.new.ridx == 0
         assert ps.new.kidx == 0
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.nxt.pubs == ['DHByVjuBrM1D9K71TuE5dq1HVDNS5-aLD-wcIlHiVoXX']
         assert ps.nxt.ridx == 1
         assert ps.nxt.kidx == 1
 
@@ -1645,7 +1646,7 @@ def test_manager_with_aeid():
         assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
+        assert digs == ['EBhBRqVbqhhP7Ciah5pMIOdsY5Mm1ITm2Fjqb028tylu']
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
@@ -1664,7 +1665,7 @@ def test_manager_with_aeid():
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
         assert psigs == vsigs
-        assert psigs == ['AAGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['AAAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # Test sign with indices
         indices = [3]
@@ -1675,7 +1676,7 @@ def test_manager_with_aeid():
             assert isinstance(siger, coring.Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
-        assert psigs == ['ADGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
@@ -1692,7 +1693,7 @@ def test_manager_with_aeid():
         psigs = [cigar.qb64 for cigar in pcigars]
         vsigs = [cigar.qb64 for cigar in vcigars]
         assert psigs == vsigs
-        assert psigs == ['0BGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+        assert psigs == ['0BAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
 
         # salty algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
@@ -1710,24 +1711,23 @@ def test_manager_with_aeid():
         assert pp.tier == coring.Tiers.low
 
         ps = manager.ks.sits.get(spre)
-        assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.new.pubs == ['DHByVjuBrM1D9K71TuE5dq1HVDNS5-aLD-wcIlHiVoXX']
         assert ps.new.ridx == 1
         assert ps.new.kidx == 1
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DChDVbFPb1e0IW06klnK47arfwEPwpN5-S1_tfRY3hhY']
+        assert ps.nxt.pubs == ['DAoQ1WxT29XtCFtOpJZyuO2q38BD8KTefktf7X0WN4YW']
         assert ps.nxt.ridx == 2
         assert ps.nxt.kidx == 2
 
         keys = [verfer.qb64 for verfer in verfers]
         assert keys == ps.new.pubs
 
-        digs = [diger.qb64 for diger in  digers]
-        assert digs == ['E7tSvjXR2dsFq0SptSFYjDpwk52qHaIhbgKd3_7xGwz4']
+        digs = [diger.qb64 for diger in digers]
+        assert digs == ['EJczV8HmnEWZiEHw2lVuSatrvzCmJOZ3zpa7JFfrnjau']
 
         assert oldpubs == ps.old.pubs
-
 
         # Update aeid and seed
         manager.updateAeid(aeid=aeid1, seed=seed1)
@@ -1789,4 +1789,4 @@ def test_manager_with_aeid():
 
 
 if __name__ == "__main__":
-    test_manager()
+    test_creator()
