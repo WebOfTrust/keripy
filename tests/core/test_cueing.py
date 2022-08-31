@@ -77,3 +77,5 @@ def test_funneler():
     assert len(src3) == 0
 
 
+if __name__ == "__main__":
+    test_funneler()
