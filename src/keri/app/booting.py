@@ -196,10 +196,10 @@ class BootEnd(doing.DoDoer):
             description: predetermined name of keep keystore
             example: alice
         responses:
-           200:
-              description: No keystore exists
-           404:
+           202:
               description: Keystore exists
+           404:
+              description: No keystore exists
 
         """
         if name is None:
@@ -220,7 +220,7 @@ class BootEnd(doing.DoDoer):
             return
 
         ks.close()
-        rep.status = falcon.HTTP_200
+        rep.status = falcon.HTTP_202
 
     def on_post(self, req, rep):
         """ POST endpoint for creating a new environment (keystore and database)

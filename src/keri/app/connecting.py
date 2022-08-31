@@ -1,3 +1,9 @@
+# -*- encoding: utf-8 -*-
+"""
+keri.app.connecting module
+
+"""
+import re
 import json
 
 from ordered_set import OrderedSet as oset
@@ -150,30 +156,32 @@ class Organizer:
             list: All contacts that match the val in field
 
         """
-        if not isinstance(val, list):
-            val = [val]
-
         pres = []
+        prog = re.compile(f".*{val}.*", re.I)
         for (pre, f), v in self.hby.db.cfld.getItemIter():
-            if f == field and v in val:
+            if f == field and prog.match(v):
                 pres.append(pre)
 
         return [self.get(pre) for pre in pres]
 
-    def values(self, field):
+    def values(self, field, val=None):
         """ Find unique values for field in all contacts
 
         Args:
             field (str): field to load values for
+            val (Optional(str|None): optional filter for the value of the grouped field
 
         Returns:
             list: Unique values from all contacts for field
 
         """
+        prog = re.compile(f".*{val}.*", re.I) if val is not None else None
+
         vals = oset()
         for (pre, f), v in self.hby.db.cfld.getItemIter():
             if f == field:
-                vals.add(v)
+                if prog is None or prog.match(v):
+                    vals.add(v)
 
         return list(vals)
 
