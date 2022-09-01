@@ -730,8 +730,6 @@ class Manager:
 
         if self.salt is None:  # never before initialized
             self.salt = salt
-        # else force salt to be qb64
-        # salt =coring.Salter(qb64=salt).qb64
 
         if self.tier is None:  # never before initialized
             self.tier = tier  # init to default

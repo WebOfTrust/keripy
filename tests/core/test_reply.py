@@ -63,36 +63,27 @@ def test_reply(mockHelpingNowUTC):
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=raw)
-    salt = salter.qb64
-    assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
-
-    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
-         habbing.openHby(name="wok", base="test", salt=salt) as wokHby, \
-         habbing.openHby(name="wam", base="test", salt=salt) as wamHby,  \
-         habbing.openHby(name="tam", base="test", salt=salt) as tamHby,  \
-         habbing.openHby(name="wat", base="test", salt=salt) as watHby,  \
-         habbing.openHby(name="wel", base="test", salt=salt) as welHby, \
-         habbing.openHby(name="nel", base="test", salt=salt) as nelHby:
+    salt =  Salter(raw=raw).qb64
+    assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
+    # makHab uses stem=name to make different names have differnt AID pre
+    with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
+         habbing.openHby(name="wok", base="test", salt=salt) as wokHby,
+         habbing.openHby(name="wam", base="test", salt=salt) as wamHby,
+         habbing.openHby(name="tam", base="test", salt=salt) as tamHby,
+         habbing.openHby(name="wat", base="test", salt=salt) as watHby,
+         habbing.openHby(name="wel", base="test", salt=salt) as welHby,
+         habbing.openHby(name="nel", base="test", salt=salt) as nelHby):
 
         # witnesses first so can setup inception event for tam
         wsith = '1'
 
         # setup Wes's habitat nontrans
-        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
-        #assert wesHab.ks == wesKS
-        #assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
         wesPrs = parsing.Parser(kvy=wesKvy)
 
         # setup Wok's habitat nontrans
-        #wokHab = habbing.Habitat(name='wok', ks=wokKS, db=wokDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
         #assert wokHab.ks == wokKS
         #assert wokHab.db == wokDB
@@ -101,9 +92,6 @@ def test_reply(mockHelpingNowUTC):
         wokPrs = parsing.Parser(kvy=wokKvy)
 
         # setup Wam's habitat nontrans
-        #wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
-                                 #isith=wsith, icount=1,
-                                 #salt=salt, transferable=False, temp=True)  # stem is .name
         wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
         #assert wamHab.ks == wamKS
         #assert wamHab.db == wamDB
@@ -173,7 +161,7 @@ def test_reply(mockHelpingNowUTC):
         # create non-local parer for Nel to process non-local msgs
         nelPrs = parsing.Parser(kvy=nelKvy, rvy=nelRvy)
 
-        assert nelHab.pre == 'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'
+        assert nelHab.pre == 'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
         assert nelHab.kever.verfers[0].qb64 == nelHab.pre
 
@@ -193,22 +181,22 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"El8evbsys_Z2gIEluLw6pr31EYpH6Cu52fjn'
-                               b'RN8X8mKc","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
-                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
-                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpL'
+                            b'ZAkcoMkk","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
+                            b'cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y","role":"watcher","eid":"'
+                            b'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr"}}')
 
-        assert serderR.said == 'El8evbsys_Z2gIEluLw6pr31EYpH6Cu52fjnRN8X8mKc'
+        assert serderR.said == 'EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpLZAkcoMkk'
 
         # Sign Reply
         msg = nelHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"El8evbsys_Z2gIEluLw6pr31'
-                       b'EYpH6Cu52fjnRN8X8mKc","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/end/role/add","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
-                       b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
-                       b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
-                       b'TApyPvI0BaLjdO2H6j7Z8g3UpGGRwKQJ0Lz_sngwxLLPM72bGajVeIVXiqRAB0Eo'
-                       b'yweFc3wzUfgECAksyvsB9wyqdeXGJAA')
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV'
+                    b'5y7zuT5z-ZpLZAkcoMkk","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/add","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
+                    b'r_xUwKcj7y","role":"watcher","eid":"BF6YSJGAtVNmq3b7dpBi04Q0Ydqv'
+                    b'Tfsk9PFkkZaR8LRr"}}-VAi-CABBLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_x'
+                    b'UwKcj7y0BDa3HMDHpdGb9rQ1wsYmQdGMoeFrO2OguTUBXU6kvJjqb2ucmAka59hU'
+                    b'9SC-z3YbRGuJchnBIA2N5Q9ja843OkG')
 
         # use Tam's parser and kevery to process
         tamPrs.parse(ims=bytearray(msg))
@@ -259,22 +247,22 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EKrW_70GQTYiBMjZYQGDE68eDMLaOOuBlY78'
-                               b'pW1HRPbg","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/cut","a":{"'
-                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
-                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_k'
+                            b'fp7hmqHY","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/cut","a":{"'
+                            b'cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y","role":"watcher","eid":"'
+                            b'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr"}}')
 
-        assert serderR.said == 'EKrW_70GQTYiBMjZYQGDE68eDMLaOOuBlY78pW1HRPbg'
+        assert serderR.said == 'EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_kfp7hmqHY'
 
         # Sign Reply
         msg = nelHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EKrW_70GQTYiBMjZYQGDE68e'
-                       b'DMLaOOuBlY78pW1HRPbg","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/end/role/cut","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
-                       b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
-                       b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
-                       b'TApyPvI0Bgq_j5W7FeoD3JeSEUjgNlF3iwKMNeX2244CPp0hmWYl8roNvC0vSeyt'
-                       b'84rm5l_OwA63X5sR_y_S_zgfEtJF_Cw')
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKas'
+                    b'yBuz_GoYIU_kfp7hmqHY","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
+                    b'r_xUwKcj7y","role":"watcher","eid":"BF6YSJGAtVNmq3b7dpBi04Q0Ydqv'
+                    b'Tfsk9PFkkZaR8LRr"}}-VAi-CABBLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_x'
+                    b'UwKcj7y0BBegucvx6h-fQGlrdqLmzYKa02eKYmngDvUgc_4DJa5_t5AmnDmTe6n7'
+                    b'ky2bbOZn9qWpSUgSNtnivpNB9NeTIcG')
 
         # use Tam's parser and kevery to process
         tamPrs.parse(ims=bytearray(msg))
@@ -322,22 +310,22 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_1)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_1
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKy'
-                               b'G2XWpP7Y","dt":"2021-01-01T00:00:01.000000+00:00","r":"/end/role/cut","a":{"'
-                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
-                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ELGR7LbL2Ik4gd9Odc_BfmetxQKrnZawMwEP'
+                            b'NR5vBWrI","dt":"2021-01-01T00:00:01.000000+00:00","r":"/end/role/cut","a":{"'
+                            b'cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y","role":"watcher","eid":"'
+                            b'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr"}}')
 
-        assert serderR.said == 'EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKyG2XWpP7Y'
+        assert serderR.said == 'ELGR7LbL2Ik4gd9Odc_BfmetxQKrnZawMwEPNR5vBWrI'
 
         # Sign Reply
         msg = nelHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-Gyi'
-                       b'O75k4MqkuMKyG2XWpP7Y","dt":"2021-01-01T00:00:01.000000+00:00","r'
-                       b'":"/end/role/cut","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
-                       b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
-                       b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
-                       b'TApyPvI0BUrzk2jcq5YtdMuW4s4U6FuGrfHNZZAn4pzfzzsEcfIsgfMbhJ1ozpWl'
-                       b'YPYdR3wbryWUkxfWqtbNwDWlBdTblAQ')
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ELGR7LbL2Ik4gd9Odc_Bfmet'
+                    b'xQKrnZawMwEPNR5vBWrI","dt":"2021-01-01T00:00:01.000000+00:00","r'
+                    b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
+                    b'r_xUwKcj7y","role":"watcher","eid":"BF6YSJGAtVNmq3b7dpBi04Q0Ydqv'
+                    b'Tfsk9PFkkZaR8LRr"}}-VAi-CABBLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_x'
+                    b'UwKcj7y0BAuuOGujYKbo-4bbL3tSA2cXExHtTjqbJqXeoRRchn6CBttw5Poxm7sz'
+                    b'kPUiilPHqHPqV4PUZpmN7sxL1quhMsG')
 
         # use Tam's parser and kevery to process
         tamPrs.parse(ims=bytearray(msg))
@@ -455,26 +443,27 @@ def test_reply(mockHelpingNowUTC):
         # get all watchers in ends
         items = [(keys, ender.allowed) for keys, ender
                  in tamHab.db.ends.getItemIter(keys=(nelHab.pre, role))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          False)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                           False)]
+
 
         # get all watchers in ends
         items = [(keys, ender.allowed) for keys, ender
                  in nelHab.db.ends.getItemIter(keys=(nelHab.pre, role))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          False)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                           False)]
 
         # restore wat as watcher
         data = dict(cid=nelHab.pre,
@@ -521,22 +510,23 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EuAfTbTUnkflpg3jRS6UZ4_KoSCVQ6_hpOjo'
-                               b'sEpeiXWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                               b'd":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs","scheme":"http","url":"htt'
-                               b'p://localhost:8080/watcher/wat"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ECvGf7-4WSGJgpm1KvzD5_r5MDD6tcDvJ3JT'
+                            b'nmd8CRPp","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr","scheme":"http","url":"htt'
+                            b'p://localhost:8080/watcher/wat"}}')
 
-        assert serderR.said == 'EuAfTbTUnkflpg3jRS6UZ4_KoSCVQ6_hpOjosEpeiXWU'
+
+        assert serderR.said == 'ECvGf7-4WSGJgpm1KvzD5_r5MDD6tcDvJ3JTnmd8CRPp'
 
         # Sign Reply
         msg = watHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EuAfTbTUnkflpg3jRS6UZ4_K'
-                       b'oSCVQ6_hpOjosEpeiXWU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/loc/scheme","a":{"eid":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WS'
-                       b'RlpHwtGs","scheme":"http","url":"http://localhost:8080/watcher/w'
-                       b'at"}}-VAi-CABBXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs0BwAeTU'
-                       b'CYDXu4RYWGcOWeRvcUrIeM2XL4z2Uvzl16A4RZ60xKuis92kTaMxRYcwg-qbZuya'
-                       b'FNgzthKfSY03VomDg')
+        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ECvGf7-4WSGJgpm1KvzD5_r5'
+                    b'MDD6tcDvJ3JTnmd8CRPp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFk'
+                    b'kZaR8LRr","scheme":"http","url":"http://localhost:8080/watcher/w'
+                    b'at"}}-VAi-CABBF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr0BAPHOj'
+                    b'hO9Ctpq7BAICbWfAFHCLt6ya5cAafLXtLWJUrUtJUWlT--OVjl659ZA1FBf6uWqJ'
+                    b'A-Ex8S0jpC1bAFYYJ')
 
         # use Tam's parser and kevery to process
         tamPrs.parse(ims=bytearray(msg))
@@ -596,26 +586,27 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"Ekd189yFsX1eLhQ2NffI6AaF8ZxKXyej_jfn'
-                               b'4wMNJq-w","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
-                               b'cid":"EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0","role":"witness","eid":"'
-                               b'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5sZlO96AX0Jh-d'
+                        b'UD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
+                        b'cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e","role":"witness","eid":"'
+                        b'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom"}}')
 
-        assert serderR.said == 'Ekd189yFsX1eLhQ2NffI6AaF8ZxKXyej_jfn4wMNJq-w'
+
+        assert serderR.said == 'EHC0gHTxQ16xL9vT9n7OBu5sZlO96AX0Jh-dUD42QLDA'
 
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"Ekd189yFsX1eLhQ2NffI6AaF'
-                       b'8ZxKXyej_jfn4wMNJq-w","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/end/role/add","a":{"cid":"EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_v'
-                       b'tPbPPglDK0","role":"witness","eid":"BFUOWBaJz-sB_6b-_u_P9W8hgBQ8'
-                       b'Su9mAtN9cY2sVGiY"}}-VBg-FABEhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPb'
-                       b'PPglDK00AAAAAAAAAAAAAAAAAAAAAAAEhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_'
-                       b'vtPbPPglDK0-AADAATiGjpZDg1yRqXF8MCmFDHwyQjDhlW2H0_E69OMadr9GOXtD'
-                       b'5ZdT1-RlE6MQpmVQmuLYY5JrIuRev2rp7uh6PAwABxnyvlaARkPXW6XTa5eBuFBo'
-                       b'UCRCGrI8WK8N80B7XFil2Gt4g02PrsVmgZCvuE44d3neCeJ29D4neyItmGz5nBwA'
-                       b'CfBrfHowPaBBliHpSQk5o3f_wu8H7deO_upUE0I1qB4sRaHhDH4a28u7fS6UH9xl'
-                       b'-9_BiQbDYRYhhn2yH0bl_AQ')
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5s'
+                    b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/add","a":{"cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
+                    b'HG4-mHua6e","role":"witness","eid":"BBVDlgWic_rAf-m_v7vz_VvIYAUP'
+                    b'ErvZgLTfXGNrFRom"}}-VBg-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4'
+                    b'-mHua6e0AAAAAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-C'
+                    b'KHG4-mHua6e-AADAABAppmVvSGqtmE4Esa87Etz1nEFpyxGSqVaOCOJ-yvNs_EqH'
+                    b'NRXwBmIgTHb9J36eKuUh2IyiTPGFsJcfKbIo5QNABBWpvKJtVJvSt575kmW9PVl8'
+                    b'UoojGp3AnFnFjmgxwZhvbBTrp9iSFZ5XeeR-vRV3BztCBKSlw3eQWOLhbFUydIFA'
+                    b'CD9cNMh0xdMIf_YEpjyg9I0hIC1kO6CktzTLURCBjJNAuzOxp1NRn-8ujWYmXrNN'
+                    b'73t4gdsnZwIFn8z57XeKW0G')
 
         # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -655,26 +646,26 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"EbAwspDQjS-Ve-tzDtAuzx4K8uhh-0AyXWZr'
-                               b'SKm64PFQ","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                               b'd":"EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0","scheme":"http","url":"htt'
-                               b'p://localhost:8080/controller/tam"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJuCgtDOHKXL8Gx'
+                            b'dIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e","scheme":"http","url":"htt'
+                            b'p://localhost:8080/controller/tam"}}')
 
-        assert serderR.said == 'EbAwspDQjS-Ve-tzDtAuzx4K8uhh-0AyXWZrSKm64PFQ'
+        assert serderR.said == 'ELoGi_w2FKTRR2FU6UjclHJuCgtDOHKXL8GxdIt5ZGtf'
 
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"EbAwspDQjS-Ve-tzDtAuzx4K'
-                       b'8uhh-0AyXWZrSKm64PFQ","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/loc/scheme","a":{"eid":"EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtP'
-                       b'bPPglDK0","scheme":"http","url":"http://localhost:8080/controlle'
-                       b'r/tam"}}-VBg-FABEhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK00AAA'
-                       b'AAAAAAAAAAAAAAAAAAAAEhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0'
-                       b'-AADAAbKvjN_n2vekrW8HDcyo-zlUatI7GRMaxg7DpLMgrtxCBZNwYOLoturPS1Q'
-                       b'2CHyg1bmc__ilw2kjqq5po-6oZDAABCVRE_ciDlCBQtLq1GxqOLIS1w-aFPOlZFQ'
-                       b'tTrBMPl0PWwEewonv9BRXPLVvoMwTsiii1dFSVoW8zp0OXLYNFBAACUwwIoXD5BL'
-                       b'3zBrZfutOyeO1ShSY-1hjDsOrCzpxEsgUIY0ob1V5Z701NDJO6NXqxy3Xjie6wMc'
-                       b'j1Ui8xxi1sCA')
+        assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJu'
+                    b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG'
+                    b'4-mHua6e","scheme":"http","url":"http://localhost:8080/controlle'
+                    b'r/tam"}}-VBg-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e0AAA'
+                    b'AAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'
+                    b'-AADAAAE-R2roSYmjUEkk44DwNh26bYZvacAsLaOIzgAC47coa0bOk4KdLYyfy-t'
+                    b'AmUMQ7QY0Dp87Ks7tFnW-8SWjMQJABCPas0sa6FAQre8TEbvavW5ip00DnifkeRU'
+                    b'9wQOsjomEIsccSeoDYEeIEKPiAO2zRCsxqlPfgsgPFH1jeaWUFQAACD9pt3Ijcc0'
+                    b'_7fcemVbCID_n8DOWTHhwWZ6K_xRQ_9bb6RHGzVJNWtxO-gI_A7eBt1yE76uLVCA'
+                    b'dXTHHDvmhH4A')
 
         # use Tam's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -817,22 +808,22 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data, )
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ESlxGHZLKc8yZHI1y4xiUNCRDy3dwjaGsHaD'
-                               b'UccwnjGM","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                               b'd":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc","scheme":"http","url":"htt'
-                               b'p://localhost:8080/witness/wok"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EN0OizQsqguCvvhE4mkxn4anHCEBvEaRRjNv'
+                            b'fsffVzLv","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX","scheme":"http","url":"htt'
+                            b'p://localhost:8080/witness/wok"}}')
 
-        assert serderR.said == 'ESlxGHZLKc8yZHI1y4xiUNCRDy3dwjaGsHaDUccwnjGM'
+        assert serderR.said == 'EN0OizQsqguCvvhE4mkxn4anHCEBvEaRRjNvfsffVzLv'
 
         # Sign Reply
         msg = wokHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ESlxGHZLKc8yZHI1y4xiUNCR'
-                       b'Dy3dwjaGsHaDUccwnjGM","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/loc/scheme","a":{"eid":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE'
-                       b'-hgg4Stc","scheme":"http","url":"http://localhost:8080/witness/w'
-                       b'ok"}}-VAi-CABBpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc0BLjgDI'
-                       b'JDF1vJc3Nh1pmUGU0kfil2jXICFjfHwo0T7nM0sPfioWhhVf3legivO2q1RSUSCh'
-                       b't83I09EXiKocZKYBg')
+        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EN0OizQsqguCvvhE4mkxn4an'
+                    b'HCEBvEaRRjNvfsffVzLv","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXR'
+                    b'PoYIOErX","scheme":"http","url":"http://localhost:8080/witness/w'
+                    b'ok"}}-VAi-CABBKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX0BA16jD'
+                    b'CM_oWzDGfl8bYOm5ad6Ej-kWejwj7SVkH7QnGrNqeM1_BzUMzgFHgN85DM7Lkoh_'
+                    b'IMWtUPnii6hC_oWcL')
 
         # use Nels's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))
@@ -993,54 +984,56 @@ def test_reply(mockHelpingNowUTC):
         # get all roles in ends
         items = [(keys, ender.allowed) for keys, ender
                  in nelHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'controller',
-                           'EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc'),
-                          True)]
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'controller',
+                            'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX'),
+                           True)]
+
 
         items = [(keys, ender.allowed) for keys, ender
                  in nelHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          True)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                           True)]
 
         items = [(keys, ender.allowed) for keys, ender
                  in tamHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'controller',
-                           'EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0'),
-                          True)]
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                        'controller',
+                        'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
+                         True)]
 
         items = [(keys, ender.allowed) for keys, ender
                  in tamHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          True)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                           True)]
 
         # get all schemes in locs
         # nel locs
         items = [(keys, locer.url) for keys, locer
                  in nelHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0', 'http'),
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
+
 
         items = [(keys, locer.url) for keys, locer
                  in nelHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
@@ -1052,12 +1045,12 @@ def test_reply(mockHelpingNowUTC):
 
         items = [(keys, locer.url) for keys, locer
                  in nelHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
-        assert items == [(('BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc', 'http'),
+        assert items == [(('BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX', 'http'),
                           'http://localhost:8080/witness/wok')]
 
         items = [(keys, locer.url) for keys, locer
                  in nelHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
-        assert items == [(('BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs', 'http'),
+        assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
@@ -1067,7 +1060,7 @@ def test_reply(mockHelpingNowUTC):
         # tam locs
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0', 'http'),
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
 
         items = [(keys, locer.url) for keys, locer
@@ -1088,7 +1081,7 @@ def test_reply(mockHelpingNowUTC):
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
-        assert items == [(('BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs', 'http'),
+        assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
@@ -1103,12 +1096,12 @@ def test_reply(mockHelpingNowUTC):
         assert rurls.getall("witness")[0][wokHab.pre]["http"] == 'http://localhost:8080/witness/wok'
 
         rurls = nelHab.fetchRoleUrls(cid=nelHab.pre)
-        assert rurls == {'watcher': {'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs':
-                                         {'http': 'http://localhost:8080/watcher/wat'}}}
+        assert rurls == {'watcher': {'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr':
+                                        {'http': 'http://localhost:8080/watcher/wat'}}}
 
         rurls = tamHab.fetchRoleUrls(cid=tamHab.pre)
-        assert rurls == Mict([('controller', Mict([('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                                                    Mict([('http', 'http://localhost:8088/controller/tam')]))]))])
+        assert rurls == {'controller': {'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e':
+                                           {'http': 'http://localhost:8088/controller/tam'}}}
 
         rurls = tamHab.fetchRoleUrls(cid=nelHab.pre)
         assert len(rurls.getall("watcher")) == 1
@@ -1167,106 +1160,106 @@ def test_reply(mockHelpingNowUTC):
         # get all roles in ends
         items = [(keys, ender.allowed) for keys, ender
                  in nelHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'controller',
-                           'EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc'),
-                          True)]
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'controller',
+                            'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BByq5Nfi0KgohEaJ8h9JrLqbhX_waySFSXKsgumxEYQp'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX'),
+                           True)]
 
         items = [(keys, ender.allowed) for keys, ender
                  in nelHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'controller',
-                           'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          True)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                        'controller',
+                        'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'),
+                       True),
+                      (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                        'watcher',
+                        'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                       True),
+                      (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                        'watcher',
+                        'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                       True)]
 
         items = [(keys, ender.allowed) for keys, ender
                  in tamHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'controller',
-                           'EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk'),
-                          True),
-                         (('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0',
-                           'witness',
-                           'BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc'),
-                          True)]
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'controller',
+                            'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BByq5Nfi0KgohEaJ8h9JrLqbhX_waySFSXKsgumxEYQp'),
+                           True),
+                          (('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
+                            'witness',
+                            'BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX'),
+                           True)]
 
         items = [(keys, ender.allowed) for keys, ender
                  in tamHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'controller',
-                           'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
-                          True),
-                         (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
-                           'watcher',
-                           'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
-                          True)]
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'controller',
+                            'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
+                           True),
+                          (('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
+                            'watcher',
+                            'BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr'),
+                           True)]
 
         # tam locs
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
-        assert items == [(('EhlsdBaCvxnW0z3m2OXxStaZkG76g0zC_vtPbPPglDK0', 'http'),
+        assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
-        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI', 'http'),
+        assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y', 'http'),
                           'http://localhost:8080/controller/nel')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(wesHab.pre, ""))]
-        assert items == [(('BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY', 'http'),
+        assert items == [(('BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom', 'http'),
                           'http://localhost:8080/witness/wes')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
-        assert [(('BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc', 'http'),
-                 'http://localhost:8080/witness/wok')]
+        assert items == [(('BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX', 'http'),
+                          'http://localhost:8080/witness/wok')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(wamHab.pre, ""))]
-        assert [(('BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk', 'http'),
-                 'http://localhost:8080/witness/wam')]
+        assert items == [(('BByq5Nfi0KgohEaJ8h9JrLqbhX_waySFSXKsgumxEYQp', 'http'),
+                         'http://localhost:8080/witness/wam')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
-        assert items == [(('BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs', 'http'),
+        assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
                  in tamHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
-        assert items == [(('BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI', 'http'),
+        assert items == [(('BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC', 'http'),
                           'http://localhost:8080/watcher/wel')]
 
 
