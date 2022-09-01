@@ -694,6 +694,7 @@ class Credentialer(doing.DoDoer):
                                     schema=schema,
                                     subject=d,
                                     source=source,
+                                    noncify="u" in data,
                                     rules=rules,
                                     status=registry.regk)
         self.validate(creder)
@@ -879,7 +880,7 @@ class Credentialer(doing.DoDoer):
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
 
     def escrowDo(self, tymth, tock=1.0):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+        """ Process escrows of group multisig identifiers waiting to be completed.
 
         Steps involve:
            1. Sending local event with sig to other participants

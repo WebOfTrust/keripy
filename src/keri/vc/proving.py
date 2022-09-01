@@ -21,6 +21,8 @@ logger = help.ogler.getLogger()
 def credential(schema,
                issuer,
                subject,
+               noncify=False,
+               salt=None,
                status=None,
                source=None,
                rules=None,
@@ -35,6 +37,8 @@ def credential(schema,
         issuer (str): qb64 identifier prefix of the issuer
         status (str): qb64 said of the credential registry
         subject (dict): of the values being assigned to the subject of this credential
+        noncify (bool): apply nonce used for privacy preserving ACDC
+        salt (string): salt for nonce
         source (Optional[dict,list]): of source credentials to which this credential is chained
         rules (list): ACDC rules section for credential
         version (Version): version instance
@@ -51,6 +55,14 @@ def credential(schema,
     vc = dict(
         v=vs,
         d="",
+    )
+
+    if noncify:
+        vc |= dict(
+            u=salt if salt is not None else coring.Salter().qb64
+        )
+
+    vc |= dict(
         i=issuer,
     )
 
@@ -101,8 +113,8 @@ class Creder(coring.Sadder):
         .crd (dict): synonym for .ked
         .issuer (str): qb64 identifier prefix of credential issuer
         .schema (str): qb64 SAID of JSONSchema for credential
-        .subject (str): qb64 identfier prefix of credential subject
-        .status (str): qb64 identfier prefix of issuance / revocation registry
+        .subject (str): qb64 identifier prefix of credential subject
+        .status (str): qb64 identifier prefix of issuance / revocation registry
 
     """
 

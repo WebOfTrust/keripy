@@ -226,6 +226,27 @@ def test_credential():
                         b'ebYuMJzzhZl-ckXxa8"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
                         b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
 
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                      noncify=True,
+                      salt=salt,
+                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+
+    assert cred.size == len(cred.raw)
+    assert "u" in cred.ked
+    assert cred.raw == (b'{"v":"ACDC10JSON0002a5_","d":"Ew4NCMvfyDE4pOUQWYvAZ3nJLO4Mq7IgHoEzytpGX47Q",'
+                        b'"u":"0AMDEyMzQ1Njc4OWFiY2RlZg","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
+                        b'"ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",'
+                        b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",'
+                        b'"a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL57dTA",'
+                        b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"John Doe",'
+                        b'"engagementContextRole":"Project Manager",'
+                        b'"credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",'
+                        b'"LEI":"254900OPPU84GM83MG36","i":"Ey8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI"},'
+                        b'"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD'
+                        b'"}]}')
+
 
 
 def test_credential_parsator():
