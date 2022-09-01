@@ -24,6 +24,27 @@ logger = help.ogler.getLogger()
 
 
 def test_pathed_material(mockHelpingNowUTC):
+    """
+    This test needs to be self contained. That means the fwd value needs to be
+    constucted as part of the test setup not just copied in form somewhere.
+    Its too complicated to regenerate fwd if any of the code that it is based on
+    has changed.
+
+    for example
+    with habbing.openHby(name="deb", base="test") as debHby:
+        sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
+        # Create series of events
+        debMsgs = bytearray()
+        debMsgs.extend(debHab.makeOwnInception())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.rotate())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+
+    """
     fwd = (
         b'{"v":"KERI10JSON00044d_","t":"exn","d":"EZwbLsmCpxBf9l2tfzvf1kg5ezQZ9i6FyDmBHHwVFQGk","dt":"2022-02-27T18:02:'
         b'22.044703+00:00","r":"/fwd","q":{"pre":"EoUntUikciNJYKQEFtBaa3qAgn99ffJ316xWi3ejy6BU","topic":"replay"},"a":'

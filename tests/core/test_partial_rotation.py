@@ -7,36 +7,19 @@ import pytest
 
 from keri import kering
 from keri.core import coring, eventing
+from keri.core.coring import Salter
 from keri.db.basing import openDB
 
-secrets = [
-    'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-    'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-    'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-    'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-    'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-    'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-    'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-    'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY',
-    "AAD8sznuHWMw7cl6eZJQLm8PGBKvCjQzDH1Ui9ygH0Uo",
-    "ANqQNn_9UjfayUJNdQobmixrH9qJF1cltKDwDMVkiLg8",
-    "A1t7ix1GuZIP48r6ljsoo8jPsB9dEnnWNfhy2XNl1r-c",
-    "AhzCysVY12fWXfkH1QkAOCY6oYbVwXOaUjf7YPtIfC8U",
-    "A4HrsYq9XfxYK76ffoceNzj9n8tBkXrWNBIXUNdoe5ME",
-    "AhpAiPtDqDcEeU_eXlJ8Bk3kJE0g0jdezyXZdBKfXslU",
-    "AzN9fKZAZEIn9jMN2fZ2B35MNMQJPAZrNrJQRMi_S_8g",
-    "AkNrzLqnqRx9WCpJAwTAOE5oNaDlOgOYiuM9bL4HM9R0",
-    "ALjR-EE3jUF2yXW7Tq7WJSh3OFc6-BNxXJ9jGdfwA6Bs",
-    "AvpsEhige2ssBrMxskK2xXpeKfed4cvcZCIdRh7fhgiI",
-]
 
 
 def test_partial_rotation():
 
+    #  create signers
+    salt = b"ABCDEFGH01234567"
+    signers = Salter(raw=salt).signers(count=18, path='rot', temp=True)
+
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:
-        signers = [coring.Signer(qb64=secret) for secret in secrets]  # faster
-        assert [signer.qb64 for signer in signers] == secrets
 
         nkeys = [coring.Diger(ser=signers[1].verfer.qb64b).qb64]
 
@@ -66,7 +49,7 @@ def test_partial_rotation():
         # create key event verifier state
         kever = eventing.Kever(serder=serder, sigers=[siger], db=db)
 
-        assert kever.prefixer.qb64 == "Eozz_fD_4KNiIZAggGCPcCEbV-mDbvLH_UfVMsC83yLo"
+        assert kever.prefixer.qb64 == 'ELOoOFim_fwYEySZxhcg0r1XTXzFACzasBR3WvglN8Dn'
 
         # partial rotation so only select subset of the keys
         keys = [
@@ -99,11 +82,9 @@ def test_partial_rotation():
         assert kever.sn == 1
         assert kever.ntholder.sith == "4"
         keys = [verfer.qb64 for verfer in kever.verfers]
-        assert keys == [
-            "DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8",
-            "D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU",
-            "D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM",
-        ]
+        assert keys == ['DHW697b8XAGiqr7TsztVMNwPmHX7TWmD7p0Uo4dfIYu3',
+                        'DDXeNb9ODc37-ohxTqdNBSbH7v6Q4WbojSUGKC8MfWzS',
+                        'DMEWpXmIznjrVMpV_Swi_F1Z5l2HrCFeowq3PuGX3LvE']
 
         # partial rotation that will fail because it does not have enough sigs for prior threshold (`nt`)
         keys = [
@@ -137,8 +118,6 @@ def test_partial_rotation():
 
     # partial rotation with weighted thresholds
     with openDB(name="controller") as db:
-        signers = [coring.Signer(qb64=secret) for secret in secrets]  # faster
-        assert [signer.qb64 for signer in signers] == secrets
 
         # 5 keys for the next rotation
         nkeys = [
@@ -159,7 +138,7 @@ def test_partial_rotation():
         # create key event verifier state
         kever = eventing.Kever(serder=serder, sigers=[siger], db=db)
 
-        assert kever.prefixer.qb64 == "EtxZNMpv5OheTzkisPAILhrPpvqTEI52tLldrlhPSKxA"
+        assert kever.prefixer.qb64 == 'EPdegTY8sPauiS2mT2F1r_NzzJpOD6CnqZqz7JF4mr9F'
 
         # partial rotation so only select subset of the keys
         keys = [
@@ -192,9 +171,9 @@ def test_partial_rotation():
         assert kever.sn == 1
         assert kever.ntholder.sith == ["1/2", "1/2", "1/3", "1/3", "1/3"]
         keys = [verfer.qb64 for verfer in kever.verfers]
-        assert keys == ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
-                        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
-                        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM']
+        assert keys == ['DA91Hp4_r8Lxhq-GmFedt4ke5__sZiIQMvbQxsQ1_JgO',
+                        'DDXeNb9ODc37-ohxTqdNBSbH7v6Q4WbojSUGKC8MfWzS',
+                        'DMEWpXmIznjrVMpV_Swi_F1Z5l2HrCFeowq3PuGX3LvE']
 
         # partial rotation that will fail because threshold not met for prior threshold (`nt`)
         keys = [
@@ -217,3 +196,7 @@ def test_partial_rotation():
         # update key event verifier state
         with pytest.raises(kering.MissingSignatureError):
             kever.update(serder=rotser, sigers=[siger0, siger1])
+
+
+if __name__ == "__main__":
+    test_partial_rotation()
