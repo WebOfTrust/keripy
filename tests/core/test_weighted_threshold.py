@@ -58,19 +58,19 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000207_","t":"icp","d":"EOsgPPbBijCbpu3R9N-TMdUR'
-                                b'gcoFqrjUf3rQiIaJ5L7M","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                                b'IaJ5L7M","s":"0","kt":["1/2","1/2","1/2"],"k":["DK4OJI8JOr6oEEUM'
-                                b'eSF_X-SbKysfwpKwW-ho5KARvH5c","D1RZLgYke0GmfZm-CH8AsW4HoTU4m-2mF'
-                                b'gu8kbwp8jQU","DBVwzum-jPfuUXUcHEWdplB4YcoL3BWGXK0TMoF_NeFU"],"nt'
-                                b'":["1/2","1/2","1/2"],"n":["E9tzF91cgL0Xu4UkCqlCbDxXK-HnxmmTIwTi'
-                                b'_ySgjGLc","Ez53UFJ6euROznsDhnPr4auhJGgzeM5ln5i-Tlp8V3L4","EPF1ap'
-                                b'CK5AUL7k4AlFG4pSEgQX0h-kosQ_tfUtPJ_Ti0"],"bt":"0","b":[],"c":[],'
-                                b'"a":[]}-AADAAjCyfd63fzueQfpOHGgSl4YvEXsc3IYpdlvXDKfpbicV8pGj2v-T'
-                                b'WBDyFqkzIdB7hMhG1iR3IeS7vy3a3catGDgABhGYRTHmUMPIj2LV5iJLe6BtaO_o'
-                                b'hLAVyP9mW0U4DdYT0Uiqh293sGFJ6e47uCkOqoLu9B6dF7wl-llurp3o5BAACJz5'
-                                b'biC59pvOpb3aUadlNr_BZb-laG1zgX7FtO5Q0M_HPJObtlhVtUghTBythEb8FpoL'
-                                b'ze8WnEWUayJnpLsYjAA')
+        assert msg == (b'{"v":"KERI10JSON000207_","t":"icp","d":"EIL2dvwm6lYAsyKKtzxIEFm5'
+                    b'1gSfwe3IIZSx8kI8ve7_","i":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8'
+                    b'kI8ve7_","s":"0","kt":["1/2","1/2","1/2"],"k":["DCuDiSPCTq-qBBFD'
+                    b'Hkhf1_kmysrH8KSsFvoaOSgEbx-X","DNUWS4GJHtBpn2Zvgh_ALFuB6E1OJvtph'
+                    b'YLvJG8KfI0F","DAVcM7pvoz37lF1HBxFnaZQeGHKC9wVhlytEzKBfzXhV"],"nt'
+                    b'":["1/2","1/2","1/2"],"n":["EFQZkN8MMEtZzaS-Tq1EEbH886vsf5SzwicS'
+                    b'n_ywbzTy","ENOQnUj8GNr1ICJ1P4qmC3-aHTrpZqKVpZhvHCBVWE1p","EDFH1M'
+                    b'fEJWlI9PpMbgBi_RGP7L4UivrLfozFucuEaWVH"],"bt":"0","b":[],"c":[],'
+                    b'"a":[]}-AADAAC3xWTpnv14_khneBqDlrK7JHPUoHNJhWMIXzXbK80RVyEYV7iMs'
+                    b'WaAXfepkRsyELBLd25atAtE3iLeDn1I-gUMABDr8iCcrun_otXsarVXpe6jgK2VG'
+                    b'20RpgsVvFunUxHsrZRKm6gNjMAoKZkqzDVuY5tKD0XkTmonstex5Wj9dToBACAwN'
+                    b'b8Lj-vxJYMi_vIH-ETGG0dVfqIk4ihrQvV1iL1_07eWfu4BwRYCPCZDo0F0Xbkz0'
+                    b'DP4xXVfChR-lFd2npUG')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
@@ -94,14 +94,14 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"ErcMMcfO4fdplItWB_42GwyY'
-                                b'21u0pJkQEVDvMmrLVgFc","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                                b'IaJ5L7M","s":"1","p":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQiIaJ5L'
-                                b'7M","a":[]}-AADAAye1jlp6iz6h5raVAavZEEahPQ7mUVHxegfjgZCjaWA-UcSQ'
-                                b'i5ic59-PKQ0tlEHlNHaeKIPts0lvONpW71dgOAgABHu-KLKX52wTZCwE4u_MEWrv'
-                                b'PQ8kC_XSgzQ7Mqmrhv4imCCTaoiCCH2JbebIvfOHXlmwVwntz9B89qbf7SLT8BgA'
-                                b'C5W2JKWRhhp6ZS8UQ0k_2-1-W0ZwgQAPDGDumFQ4CBTOH4srb4PVb5GCNx8Ygmpx'
-                                b'OLplnVjVkkiQjKgLrHVvOBg')
+        assert msg == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EODgCVSGS9S8ZaOr89HKDP_Z'
+                    b'll21C8zbUBjbBU1HjGEk","i":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8'
+                    b'kI8ve7_","s":"1","p":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8kI8ve'
+                    b'7_","a":[]}-AADAAAsZ-qmrZIreJgAd34xZEb_mHTc7tjgwMzMbd31sRyt8a1os'
+                    b'duDv_uzeqWiicSauNyiehjfPjeJa1ZJfOGBgbEPABC3seofRQNJPKgqXy6Y2N_Vs'
+                    b'ewM1QkG7Y1hfIOosAKW8EdB9nUvqofUhOdSuH2LUzV3S4uenFe-G8EP_VhQaLAHA'
+                    b'CAwD7519eOtxzS_D8E0hXjVzVvrmUjOIBGk_gZrG-2pvkEKIpLZxffMUt6yQB9iV'
+                    b'0kViHlHI7WkFVS5q8k1SfgI')
 
         # apply msg to wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
@@ -132,17 +132,21 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert bytearray(b'{"v":"KERI10JSON000190_","i":"EX0WJtv6vc0IWzOqa92Pv9v9pgs1f0BfIV'
-                         b'rSch648Zf0","s":"2","t":"rot","p":"EznUtmH2XJF04dyqpUHLzwkNgwk6D'
-                         b'jbDFbjXVI3UJLe0","kt":["1/2","1/2","1/2"],"k":["DeonYM2bKnAwp6VZ'
-                         b'cuCXdX72kNFw56czlZ_Tc7XHHVGI","DQghKIy-2do9OkweSgazh3Ql1vCOt5bnc'
-                         b'5QF8x50tRoU","DNAUn-5dxm6b8Njo01O0jlStMRCjo9FYQA2mfqFW1_JA"],"n"'
-                         b':"EX5fxvjOg5VuDboWbqnTjTPpXa3nNIm99hlsB1EmhTo8","bt":"0","br":[]'
-                         b',"ba":[],"a":[]}-AADAAahiASmZJY2KjXKRvVwdRSESmesNsfxUnOQ6buEk6S-'
-                         b'4rxRdztde_6_CX2Q4MyUSErHMtmLhesrKjenPBairZAQABbnbZ3lOKcKCMmLYtpT'
-                         b'hDEm-tRTsnEh_8loXpA6G3q1oJZNeVJphJjPm2HR0mX2ptC2DEt6p9i4GH1Y56HY'
-                         b'TsAgACqF6e_29QkxgXvqDLEUnAIB_XJ7SUhDNpt3cYk6pF1-ULgrhGdZLS1h-c_V'
-                         b'KpKITRx3ZTvme7sKbvr_NfR-0ECg')
+        assert (b'{"v":"KERI10JSON00023c_","t":"rot","d":"ELKSLVpbV9eH3xk2xBqH3fSg'
+                b'OmWTbUoBuE2JsLl0lu2L","i":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8'
+                b'kI8ve7_","s":"2","p":"EODgCVSGS9S8ZaOr89HKDP_Zll21C8zbUBjbBU1HjG'
+                b'Ek","kt":["1/2","1/2","1/2"],"k":["DHqJ2DNmypwMKelWXLgl3V-9pDRcO'
+                b'enM5Wf03O1xx1Ri","DEIISiMvtnaPTpMHkoGs4d0JdbwjreW53OUBfMedLUaF",'
+                b'"DDQFJ_uXcZum_DY6NNTtI5UrTEQo6PRWEANpn6hVtfyQ"],"nt":["1/2","1/2'
+                b'","1/2"],"n":["EJsp5uWsQOsioYA16kbCZW9HPMr0rEaU4NUvfm6QTYd2","EF'
+                b'xT53mK2-1sAnh8VcLEL1HowQp0t84dfIWRaju5Ef61","EETqITKVCCpOS6aDPiZ'
+                b'FJOSWll2i39xaFQkfAYsG18I_"],"bt":"0","br":[],"ba":[],"a":[]}-AAD'
+                b'AADP60HsnBHLv8YAsR3987MVQ2A_KK0aBSUrek5YTsGKJF9F1DK7a5hqkTkgNvr3'
+                b'68HoffgZpYHTcWO4IdcKuNALABA31PINHyZ0nsebwC23S7t-IJQP13wo6lgI8HJb'
+                b'NuYz26ZgpISlTEbYHaHAkqdP0fzQ6kg4B_sIomdwKbjSIHcHACDbPDzDPIOck6Vr'
+                b'DYC7gbgT8YtkGs_sKtZgyJjl2_FUzCzIqYoJmqq0x-mFCaWbZwt4erYsoJvwfQgc'
+                b'dl5Rhu0K')
+
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
@@ -176,21 +180,21 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON0002a6_","t":"rot","d":"EJu4siBEUInk1EV9vbqPvQns'
-                    b'o1DzcIeGZWfisviDocDc","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                    b'IaJ5L7M","s":"3","p":"EXlVGTrAuFlYjj1o1389Vfr1SecFYKJq4J9HkjlPyV'
-                    b'qY","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAjDceIEs66xPMY4'
-                    b'Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM61BA-s0A5F4",'
-                    b'"DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"nt":[["1/2","1/'
-                    b'2","1/2"],["1","1"]],"n":["Ehru1umWyy696CK10v2ROEOv8csx-S4KtYZHF'
-                    b'4RbV3gc","EdsEn6HJLVLrhle11lqgImN0s7BQV03CfqxYpxs0qcrg","ED2DjOJ'
-                    b'WZyGUxGr_CFKA45dsmV72LvIvJWcB1xpuVGvM","EMwx5v3RMAjQ0GHdg5VR7XG2'
-                    b'-2Cg4Kgslmn2lMCJ-oYs","EHN09tKWiJl83SPiBB_KDN1TKDutErXADGnl3TSx7'
-                    b'ZLk"],"bt":"0","br":[],"ba":[],"a":[]}-AADAAZA24WH0lELqqxgy-itSH'
-                    b'TdpTDEmlFNfFI26g8o0s9Kab4K01vFfBeU-6attg2La5LjrrtR2DSKtFFfqoMqDN'
-                    b'BwAB69hZiy38iU9Amdza0Zo8oHzO-V92gPcR-jf7diZUxoo9O1QjCe7tYrMFOdvY'
-                    b'Bbiw_EIkDdNXSF7FeqtWXiSdBgACfD1FDYJZUzN20WE2wEUKzgKVjPEqifvS--tE'
-                    b'VC0ypT7deJhWUm3AEVXraARFq-YwgsCq3vkaKiBpjhRbmH9lDw')
+        assert msg == (b'{"v":"KERI10JSON0002a6_","t":"rot","d":"EJ4TG5D0URQ0InD_EIDXDoI9'
+                    b'v1y3vIk-0LMJMjeZXryh","i":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8'
+                    b'kI8ve7_","s":"3","p":"ELKSLVpbV9eH3xk2xBqH3fSgOmWTbUoBuE2JsLl0lu'
+                    b'2L","kt":["1/2","1/2","1/2"],"k":["DO1ligy1cGMWDCwIw3HiBLOusTzGO'
+                    b'AH88fkUMNsdJkMy","DJoOgGofKsiig4kMjV04ju9UCcIs42XxjOtQQPrNAORe",'
+                    b'"DEt34Sqbzwgy-VpnzePz5JiTDLEgnUU8RtuDkLn_xJh0"],"nt":[["1/2","1/'
+                    b'2","1/2"],["1","1"]],"n":["ENzeDznmpi75oO8APbVzyW75xnmgLDJRo0rCH'
+                    b'f4gsDPc","ELnNWeDypTMeaIZzbT8GoJJnbmm8ksJ8ic8b2-9KFZQK","ED2lFBw'
+                    b'MbkNQy2vxFWLbbEg2V6OLChhLfTxmvuNGWz91","EHy3gn2wZog-q8V3r6RzduTN'
+                    b'48nLEHgSYHaoNaWHrxrl","EHuCmMw5ksFOQxvDSXL9h-_94RMKERjqLj_KFSusu'
+                    b'HQg"],"bt":"0","br":[],"ba":[],"a":[]}-AADAACxUM40kMP7aGrPIlwO1d'
+                    b'6XAvk6jX22u2EwcB_IgsQSaxJlLbXEz4v2j9cUHQKkY7ek47TfFYir-rG5kyLWJa'
+                    b'0MABCQ6AlObGVXjIslKCFZkZiBNvQSDLgUU_2sR4RQxghGCExNWG9jwsSAOFBGX5'
+                    b'QcEb6Hqu4ZrdbnyV9GxRkR-jkDACC4Ydi6Jlqw9ROIqNvyHoXNoYcIZzI8iD8_YB'
+                    b'1-U9J1xb55jG4z-1Ddyx8mLW6_O53boaFobaitvO13z3u5OswF')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
@@ -223,26 +227,26 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == (b'{"v":"KERI10JSON000310_","t":"rot","d":"E11RNfhRRYbJAx5sbXA8VNNV'
-                    b'I_mz0kdfxSpbRZViRuO0","i":"EOsgPPbBijCbpu3R9N-TMdURgcoFqrjUf3rQi'
-                    b'IaJ5L7M","s":"4","p":"EJu4siBEUInk1EV9vbqPvQnso1DzcIeGZWfisviDoc'
-                    b'Dc","kt":[["1/2","1/2","1/2"],["1","1"]],"k":["DToUWoemnetqJoLFI'
-                    b'qDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMDIW6n-0NGFubbXiZhz'
-                    b'WZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9b6QhPS8IkQ","Dxj5'
-                    b'pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5zr5eH8EUVQXyAaxWfQ'
-                    b'UWkGCId-QDCvvxMT77ibj2Q"],"nt":[["1/2","1/2","1/2"],["1","1"]],"'
-                    b'n":["E3oSx8M1W9oMIqORgzoxTMtq4loSjOLs_IBYT7-IykMk","E1HUbg5n7JAO'
-                    b'r8eSimUkgKNLZGuOoPFzuif3p8uSyxyc","E4uh2oW3SCRE09y8lkOXqT_bNwYyT'
-                    b'xqi8azw2OP-USmc","ElNsZ_J-kqXAEfEqsQ_3nWXTg2v8oLHMzGbNFQyq1bM4",'
-                    b'"EAu4l6xy-_8a_jaDhftZCN8jjus7h17BJVPc8L9naTHE"],"bt":"0","br":[]'
-                    b',"ba":[],"a":[]}-AAFAA8sdMp1v0bt_91hxkh3U-mLzir6Z5Gs9lmTB3ch7dd0'
-                    b'p9Bvku1zAWnmkIaTyJMoKGkKlx9wC7LosYcOUAePRgCgABFSRL7O27FngrElv6zw'
-                    b'veqdYl2JSWeWdrsU_I7yTbsF2939vdDQ5I4a2ZBi7ucBK9WjuMlHQazZwGv0nLaO'
-                    b'CkDgACQ1B_SOjBu6zrUg5MwNQRIthxlcYv11O0R429JZ7GvhRH0AkFDVihHOwNM2'
-                    b'E1A0oWoZSWoScTYAzK0EruE-V9BQADVxK4iC3UewzxMp26WjnNdsOMhD7xsJaMCb'
-                    b'tlcgzxhHRdddq8yfEPHpYB3cfx0uy3NX1HjmXiLv3X7TkfJyEBDgAEfTLiGaq23Y'
-                    b'ke9IJ3V87Sct_opATFoduNqXZRbVCruORL-mOTQP6pVUoIDMvqgSx7q4C-KbLxZL'
-                    b'sgV_Df4OJ7BQ')
+        assert msg == (b'{"v":"KERI10JSON000310_","t":"rot","d":"EDDsDwylK-5wRXvhhFcR9A1w'
+                    b'Wn5MDXhA-dJgTolQpRh3","i":"EIL2dvwm6lYAsyKKtzxIEFm51gSfwe3IIZSx8'
+                    b'kI8ve7_","s":"4","p":"EJ4TG5D0URQ0InD_EIDXDoI9v1y3vIk-0LMJMjeZXr'
+                    b'yh","kt":[["1/2","1/2","1/2"],["1","1"]],"k":["DE6FFqHpp3raiaCxS'
+                    b'KgyO5cSCRHxdFu8RuWZagLHlVEH","DK8_iGY5KOtavrDzAyFup_tDRhbm214mYc'
+                    b'1mazvwWdFn","DIhsC94Y0KolIEJRT3gOpEUdRAV19L0i5vW-kIT0vCJE","DMY-'
+                    b'aXErYGegm0NmJLTWo_CixP4PWADmRegC_X8i3FkM","DBOc6-Xh_BFFUF8gGsVn0'
+                    b'FFpBgiHfkAwr78TE--4m49k"],"nt":[["1/2","1/2","1/2"],["1","1"]],"'
+                    b'n":["EIRcCDc9EN0cqc9itYLTC8AWdI8-W0Vx7Yt1RotQR4l0","EPU-29ZvOovk'
+                    b'1YKYNExW_GYiyKDLEtPa-P8WpH1nO2aG","EDrDuTNHWoP9f8qLeLZT_hAYquRO5'
+                    b'0E5k7L47adqA3z_","EP982h5HWP00GSFGAFOmQC5RtxnscLF2XDoz-duWGblx",'
+                    b'"EMoJxeWkCePGAvhwa20i6kJsacO-54GNfTV5kRiSnnJy"],"bt":"0","br":[]'
+                    b',"ba":[],"a":[]}-AAFAAA-wolFsUPPHR3oSv-h2o-9KcW35aMgbc3HseDbYVUw'
+                    b'81cqQVIgQ1C4Wg6Ivde87nrtEibxUKgd-s63Tg6JkEYKABD-oMkTQSZqJ1uHNAnv'
+                    b'xo5zKYQz9PkaxNjsrAc5EIwXmPvt5JR2wXZcglK_dHGloLR1Y7iM0ACvc5d-Idfn'
+                    b'ikgMACDoWAZ5vKxMLvwZUtSsZOzPJiYGN3_r50B4_EF2q6onniYilDOBc67_Ckr9'
+                    b'XYcjJEvKJLZAd4rGcziIl6PLEL0BADBSGdvXFRehhAjcH-uMyDA1YT_br4eBMyn4'
+                    b'GitIfnl9Z1KyIpeFgOJgEMpXwNgnJiVDUjrZBAW9f_Lmr7_8_uULAEARPzSKqTVS'
+                    b'kHDerR5KmWcto2AlPna4BZ8VOz28cKga-X_E4-JiP1LxAAlf3ysYNFrMlQGnBGr7'
+                    b'l-pVBvUHEIIN')
 
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
