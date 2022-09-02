@@ -13,7 +13,7 @@ from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
 from keri.core.coring import Serials, versify
-from keri.core.coring import Signer
+from keri.core.coring import Signer, Salter
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
@@ -108,7 +108,7 @@ def test_baser():
 
     assert not os.path.exists(baser.path)
 
-    preb = 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+    preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
     vs = versify(kind=Serials.json, size=20)
@@ -119,29 +119,28 @@ def test_baser():
                ilk="rot",
                dig=digb.decode("utf-8"))
     skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                      b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
                      b'}')
 
-    sig0b = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
-    sig1b = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
+    sig0b = 'ABz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
+    sig1b = 'AA_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
 
-    wit0b = 'BmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
-    wit1b = 'BjhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
-    wsig0b = '0B1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
-    wsig1b = '0B5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+    wit0b = 'BBuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
+    wit1b = 'BAhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
+    wsig0b = '0BATimrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+    wsig1b = '0BBIRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
 
-    valb = 'EHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEH'.encode("utf-8")
-    vdigb = 'EQiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-'.encode("utf-8")
+    valb = 'EAzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEH'.encode("utf-8")
+    vdigb = 'EBiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-'.encode("utf-8")
     vsig0b = 'AAKAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe81Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1yQJmiu5AzJ9'.encode("utf-8")
-    vsig1b = 'AB1KAV2zJ91Timrykocna6Z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz'.encode("utf-8")
+    vsig1b = 'ABAKAV2zJ91Timrykocna6Z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz'.encode("utf-8")
 
 
 
     with openDB() as db:
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         #  test .evts sub db methods
         assert db.getEvt(key) == None
@@ -155,9 +154,9 @@ def test_baser():
         assert db.getEvt(key) == None
 
         # test first seen event log .fels sub db
-        preA = b'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        preA = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
-        preC = b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+        preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
         keyA0 = onKey(preA, 0)
 
@@ -169,15 +168,14 @@ def test_baser():
 
         keyC0 = onKey(preC, 0)
 
-        digA = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
-
-        digU = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
-        digV = b'EA4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
-        digW = b'EyAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
+        digA = b'EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digU = b'EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digV = b'EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
+        digW = b'EDAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
         digX = b'EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o'
-        digY = b'Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
+        digY = b'EFrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
 
-        digC = b'E-5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
+        digC = b'EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
         assert db.getFe(keyA0) == None
         assert db.delFe(keyA0) == False
@@ -265,8 +263,7 @@ def test_baser():
 
         # Test .dtss datetime stamps
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .dtss sub db methods
         val1 = b'2020-08-22T17:50:09.988921+00:00'
@@ -285,14 +282,13 @@ def test_baser():
 
         # Test .aess authorizing event source seal couples
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .aess sub db methods
-        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-        sdig1 = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAABA'
-        sdig2 = b'EgYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
+        sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
         val2 = ssnu2 + sdig2
 
@@ -309,8 +305,7 @@ def test_baser():
 
         # test .sigs sub db methods
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         assert db.getSigs(key) == []
         assert db.cntSigs(key) == 0
@@ -341,17 +336,16 @@ def test_baser():
         assert db.putSigs(key, vals=[sig0b]) == True
         assert db.getSigs(key) == [sig0b]
         assert db.putSigs(key, vals=[sig1b]) == True
-        assert db.getSigs(key) == [sig0b, sig1b]
+        assert db.getSigs(key) == [sig1b,  sig0b]  # lex order
         assert db.delSigs(key) == True
         assert db.putSigs(key, vals=[sig1b, sig0b]) == True
-        assert db.getSigs(key) == [sig0b, sig1b]
+        assert db.getSigs(key) == [sig1b, sig0b]  # lex order
         assert db.delSigs(key) == True
         assert db.getSigs(key) == []
 
         # test .wiss sub db methods (witness indexed sigs)
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         assert db.getWigs(key) == []
         assert db.cntWigs(key) == 0
@@ -382,10 +376,9 @@ def test_baser():
         assert db.putWigs(key, vals=[sig0b]) == True
         assert db.getWigs(key) == [sig0b]
         assert db.putWigs(key, vals=[sig1b]) == True
-        assert db.getWigs(key) == [sig0b, sig1b]
-        assert db.delWigs(key) == True
+        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
         assert db.putWigs(key, vals=[sig1b, sig0b]) == True
-        assert db.getWigs(key) == [sig0b, sig1b]
+        assert db.getWigs(key) == [sig1b, sig0b]  # lex order
         assert db.delWigs(key) == True
         assert db.getWigs(key) == []
 
@@ -593,8 +586,7 @@ def test_baser():
         # Validator (transferable) Receipts
         # test .vrcs sub db methods dgkey
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
 
         assert db.getVrcs(key) == []
@@ -985,14 +977,13 @@ def test_baser():
 
         # Test .pdes partial delegated escrow seal source couples
         key = dgKey(preb, digb)
-        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
-                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .pdes sub db methods
-        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-        sdig1 = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAABA'
-        sdig2 = b'EgYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
+        sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
         val2 = ssnu2 + sdig2
 
@@ -1715,7 +1706,7 @@ def test_clean_baser():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'EbjxjMV9atsoyxBVAnoe3B22Gprbu1dvYTpubyxrOfSk'
+        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -1771,7 +1762,7 @@ def test_clean_baser():
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'EbjxjMV9atsoyxBVAnoe3B22Gprbu1dvYTpubyxrOfSk'
+        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
         assert natHab.pre in natHab.prefixes
         assert natHab.pre in natHab.kevers
 
@@ -1916,22 +1907,11 @@ def test_usebaser():
     """
     Test using Baser
     """
-    # Some secrets to use on the events
-    secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=salt)
 
-    #  create signers from the secrets
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [siger.qb64 for siger in signers] == secrets
-
+    #  create coe's signers
+    signers = salter.signers(count=8, path='db', temp=True)
 
 
     with openDB() as db:
@@ -2021,22 +2001,22 @@ def test_dbdict():
             x = dbd['d']
 
         dbd.clear()
-        pre = 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+        pre = 'DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
 
         assert pre not in dbd
-
+        dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
         serder = eventing.interact(pre=pre,
-                                   dig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                                   dig=dig,
                                    sn=4)
 
         eevt = eventing.StateEstEvent(s='3',
-                                      d='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                                      d=dig,
                                       br=[],
                                       ba=[])
 
         state = eventing.state(pre=pre,
                                sn=4,
-                               pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                               pig=dig,
                                dig=serder.said,
                                fn=4,
                                eilk=coring.Ilks.ixn,
@@ -2141,4 +2121,9 @@ def test_baserdoer():
 
 
 if __name__ == "__main__":
+    test_baser()
     test_clean_baser()
+    test_fetchkeldel()
+    test_usebaser()
+    test_dbdict()
+    test_baserdoer()
