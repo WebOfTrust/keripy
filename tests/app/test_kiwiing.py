@@ -498,6 +498,7 @@ def test_identifier_ends():
         assert result.status == falcon.HTTP_200
 
         assert result.json == [{'isith': '1',
+                                'metadata': {},
                                 'name': 'test',
                                 'next_keys': ['EsBMmyevdbrDojd73T6UmBvSktf7f-i-Yu0LjsuRr7y4'],
                                 'nsith': '1',
@@ -531,6 +532,7 @@ def test_identifier_ends():
         assert result.status == falcon.HTTP_200
 
         assert result.json == [{'isith': '1',
+                                'metadata': {},
                                 'name': 'test',
                                 'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
                                 'nsith': '1',
@@ -590,6 +592,7 @@ def test_identifier_ends():
                                   'delegated': True,
                                   'delegator': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
                                   'isith': '1',
+                                  'metadata': {},
                                   'name': 'test3',
                                   'next_keys': ['ERQq0RyQ3nN97chiuWJSjxS3fdtPbDWZ9MmRzdQtLIk4'],
                                   'nsith': '1',
