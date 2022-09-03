@@ -2054,8 +2054,11 @@ class Cigar(Matter):
 class Signer(Matter):
     """
     Signer is Matter subclass with method to create signature of serialization
-    using the .raw as signing (private) key seed, .code as cipher suite for
-    signing and new property .verfer whose property .raw is public key for signing.
+    using:
+        .raw as signing (private) key seed,
+        .code as cipher suite for signing
+        .verfer whose property .raw is public key for signing.
+
     If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
 
@@ -2064,7 +2067,27 @@ class Signer(Matter):
 
     Attributes:
 
+    Properties:  (inherited)
+        code (str): hard part of derivation code to indicate cypher suite
+        both (int): hard and soft parts of full text code
+        size (int): Number of triplets of bytes including lead bytes
+            (quadlets of chars) of variable sized material. Value of soft size,
+            ss, part of full text code.
+            Otherwise None.
+        rize (int): number of bytes of raw material not including
+                    lead bytes
+        raw (bytes): private signing key crypto material only without code
+        qb64 (str): private signing key Base64 fully qualified with
+                    derivation code + crypto mat
+        qb64b (bytes): private signing keyBase64 fully qualified with
+            derivation code + crypto mat
+        qb2  (bytes): private signing key binary with
+            derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+
     Properties:
+
         .verfer is Verfer object instance of public key derived from private key
             seed which is .raw
 
