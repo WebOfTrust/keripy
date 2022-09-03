@@ -1053,9 +1053,9 @@ def test_state(mockHelpingNowUTC):
 
     """
     # use same salter for all but different path
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=salt)
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = Salter(raw=raw)
 
     # State NonDelegated (key state notification)
     # create transferable key pair for controller of KEL
@@ -1583,8 +1583,8 @@ def test_kever(mockHelpingNowUTC):
 
     with openDB() as db:  # Transferable case
         # Setup inception key event dict
-        salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-        salter = Salter(raw=salt)
+        raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+        salter = Salter(raw=raw)
         # create current key
         sith = 1  # one signer
         #  original signing keypair transferable default
@@ -2645,8 +2645,8 @@ def test_receipt():
     Test event receipt message and attached couplets
     """
 
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=salt)
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -2942,8 +2942,8 @@ def test_direct_mode():
     #  Direct Mode initiated by coe is controller, val is validator
     #  but goes both ways once initiated.
 
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=salt)
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -3402,8 +3402,8 @@ def test_direct_mode_cbor_mgpk():
     #  Direct Mode initiated by coe is controller, val is validator
     #  but goes both ways once initiated.
 
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=salt)
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)

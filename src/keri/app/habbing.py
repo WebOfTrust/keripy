@@ -94,7 +94,7 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, 
         name(str): name of habitat to create
         base(str): the name used for shared resources i.e. Baser and Keeper The habitat specific config file will be
         in base/name
-        salt(bytes): passed to habitat to use for inception raw salt
+        salt(bytes): passed to habitat to use for inception raw salt not qb64
         temp(bool): indicates if this uses temporary databases
         cf(Configer): optional configer for loading configuration data
 

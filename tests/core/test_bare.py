@@ -38,9 +38,9 @@ def test_bare():
 
     """
     # use same salter for all but different path
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=salt)
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = Salter(raw=raw)
 
     # create transferable key pair for controller of service endpoint designation
     signerC = salter.signer(path="C", temp=True)

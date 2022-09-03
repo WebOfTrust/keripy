@@ -28,8 +28,8 @@ def test_parser():
     logger.setLevel("ERROR")
 
     #  create signers
-    salt = b"ABCDEFGH01234567"
-    signers = Salter(raw=salt).signers(count=8, path='psr', temp=True)
+    raw = b"ABCDEFGH01234567"
+    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
         event_digs = []  # list of event digs in sequence

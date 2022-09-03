@@ -3337,14 +3337,14 @@ def test_decrypter():
     # also works for Matter
     assert seedqb64b == Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
 
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
-    salter = Salter(raw=salt, code=MtrDex.Salt_128)
+    # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    raw = b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
+    salter = Salter(raw=raw, code=MtrDex.Salt_128)
     assert salter.code == MtrDex.Salt_128
     saltqb64b = salter.qb64b
     assert saltqb64b == b'0AA2CGQNobs5jXCNoMATSody'
     # also works for Matter
-    assert saltqb64b == Matter(raw=salt, code=MtrDex.Salt_128).qb64b  #
+    assert saltqb64b == Matter(raw=raw, code=MtrDex.Salt_128).qb64b  #
 
     # cryptseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
@@ -3442,7 +3442,6 @@ def test_salter():
     assert len(salter.raw) == Matter._rawSize(salter.code) == 16
 
     raw = b'0123456789abcdef'
-
     salter = Salter(raw=raw)
     assert salter.raw == raw
     assert salter.qb64 == '0AAwMTIzNDU2Nzg5YWJjZGVm'  #'0AMDEyMzQ1Njc4OWFiY2RlZg'

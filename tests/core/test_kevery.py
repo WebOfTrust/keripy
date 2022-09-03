@@ -24,8 +24,8 @@ def test_kevery():
     logger.setLevel("ERROR")
 
     #  create signers
-    salt = b"ABCDEFGH01234567"
-    signers = Salter(raw=salt).signers(count=8, path='kev', temp=True)
+    raw = b"ABCDEFGH01234567"
+    signers = Salter(raw=raw).signers(count=8, path='kev', temp=True)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence

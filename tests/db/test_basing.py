@@ -1907,8 +1907,8 @@ def test_usebaser():
     """
     Test using Baser
     """
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = Salter(raw=salt)
+    raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     signers = salter.signers(count=8, path='db', temp=True)

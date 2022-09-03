@@ -29,9 +29,6 @@ def test_broker_nontrans():
     salt = salter.qb64
     assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    #with dbing.openLMDB() as db, \
-            #basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
-
     with dbing.openLMDB() as brokerdb, \
         habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
 

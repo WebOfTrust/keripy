@@ -15,8 +15,8 @@ from keri.db.basing import openDB
 def test_partial_rotation():
 
     #  create signers
-    salt = b"ABCDEFGH01234567"
-    signers = Salter(raw=salt).signers(count=18, path='rot', temp=True)
+    raw = b"ABCDEFGH01234567"
+    signers = Salter(raw=raw).signers(count=18, path='rot', temp=True)
 
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:
