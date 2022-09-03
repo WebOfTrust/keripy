@@ -22,28 +22,9 @@ def test_direct_mode_bob_eve_demo():
     """
     help.ogler.resetLevel(level=logging.DEBUG)
 
-    ## set of secrets  (seeds for private keys)
-    #bobSecrets = [
-                #'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                #'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                #'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                #'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                #'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                #'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                #'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                #'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                #]
-
-    #bobSecrecies = []
-    #for secret in bobSecrets:  # convert secrets to secrecies
-        #bobSecrecies.append([secret])
-
-    ##  create bob signers
-    #bobSigners = [coring.Signer(qb64=secret) for secret in bobSecrets]
-    #assert [signer.qb64 for signer in bobSigners] == bobSecrets
-
+    raw = b"raw salt to test"
     #  create bob signers and secrecies
-    bobSigners = coring.Salter(raw=b"raw salt for bob").signers(count=8, path="bob", temp=True)
+    bobSigners = coring.Salter(raw=raw).signers(count=8, path="bob", temp=True)
     bobSecrecies = [[signer.qb64] for signer in bobSigners]
 
     # bob inception transferable (nxt digest not empty)
@@ -52,27 +33,10 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EL5WSz5d7WvE53oCsIdWnJc50yocmfpvMfS2rf0i3ZGq'  # 'EdwS_D6wppLqfIp5LSgly8GTScg5OWBaa7thzEnBqHvw'
+    assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
 
-    #eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                  #'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                  #'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                  #'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                  #'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                  #'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                  #'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                  #'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
-
-    #eveSecrecies = []
-    #for secret in eveSecrets:  # convert secrets to secrecies
-        #eveSecrecies.append([secret])
-
-    ##  create eve signers
-    #eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
-    #assert [signer.qb64 for signer in eveSigners] == eveSecrets
-
-    #  create bob signers and secrecies
-    eveSigners = coring.Salter(raw=b"raw salt for eve").signers(count=8, path="eve", temp=True)
+    #  create eve signers and secrecies
+    eveSigners = coring.Salter(raw=raw).signers(count=8, path="eve", temp=True)
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
@@ -81,7 +45,7 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'ECqgMm2DLrJlVA4Gyjz6Djct3F4Z86ztyFy6-y8Y_yu_'  # 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
+    assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
     with (habbing.openHby(name="eve", base="test") as eveHby,
           habbing.openHby(name="bob", base="test") as bobHby):
@@ -188,52 +152,23 @@ def test_direct_mode_sam_eve_demo():
     """
     help.ogler.resetLevel(level=logging.DEBUG)
 
-    # set of secrets  (seeds for private keys)
-    samSecrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    raw = b"raw salt to test"
 
-    samSecrecies = []
-    for secret in samSecrets:  # convert secrets to secrecies
-        samSecrecies.append([secret])
+    #  create sam signers and secrecies
+    samSigners = coring.Salter(raw=raw).signers(count=8, path="sam", temp=True)
+    samSecrecies = [[signer.qb64] for signer in samSigners]
 
-    # create Sam signers
-    samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
-    assert [signer.qb64 for signer in samSigners] == samSecrets
-
-    # Sam inception transferable (nxt digest not empty)
+    # eve inception transferable (nxt digest not empty)
     samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
                                 nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
-    assert sam == 'EdwS_D6wppLqfIp5LSgly8GTScg5OWBaa7thzEnBqHvw'
+    assert sam == 'EDkU2U_TPKca14VElEItpj7twohQL60GIaUPvSHAghga'
 
-
-    # set of secrets (seeds for private keys)
-    eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
-
-    eveSecrecies = []
-    for secret in eveSecrets:  # convert secrets to secrecies
-        eveSecrecies.append([secret])
-
-    # create Eve signers
-    eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
-    assert [signer.qb64 for signer in eveSigners] == eveSecrets
+    #  create eve signers and secrecies
+    eveSigners = coring.Salter(raw=raw).signers(count=8, path="eve", temp=True)
+    eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
@@ -241,7 +176,8 @@ def test_direct_mode_sam_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
+    assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
+
 
     with habbing.openHby(name="eve", base="test") as eveHby, \
          habbing.openHby(name="sam", base="test") as samHby:
@@ -693,3 +629,8 @@ def test_indirect_mode_sam_cam_wit_demo():
 
 if __name__ == "__main__":
     test_direct_mode_bob_eve_demo()
+    test_direct_mode_sam_eve_demo()
+    test_run_bob_eve_demo()
+    test_run_sam_eve_demo()
+    test_indirect_mode_sam_cam_wit_demo()
+
