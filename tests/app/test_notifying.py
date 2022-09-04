@@ -116,7 +116,7 @@ def test_noter():
 
     payload = dict(name="John", email="john@example.com", msg="test")
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
-    cig = coring.Cigar(qb64="AA8r1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
+    cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
     note = notifying.notice(payload, dt=dt)
     assert noter.add(note, cig) is True
 
@@ -213,7 +213,7 @@ def test_notifier():
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
-    cig = coring.Cigar(qb64="AA8r1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
+    cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
     note = notifying.notice(payload, dt=dt)
     assert notifier.noter.add(note, cig) is True
 
