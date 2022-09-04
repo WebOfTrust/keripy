@@ -576,10 +576,10 @@ def test_out_of_order_witnessed_events():
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name='wes', isith='1', icount=1, transferable=False)
-        assert wesHab.pre == 'BBhhW0BCr7VqFxs8T-VXjMkUIgGbWGJSMVX1C7B4Xp_l'
+        assert wesHab.pre == 'BCuDiSPCTq-qBBFDHkhf1_kmysrH8KSsFvoaOSgEbx-X'
 
         bobHab = bobHby.makeHab(name='bob', isith='1', icount=1, wits=[wesHab.pre])
-        assert bobHab.pre == 'EBzTFFzoBY_u3NEgcRftnBGyzmSBwHNonTw3iAI6uLkQ'
+        assert bobHab.pre == 'EDroh9lTel0P1YQaiL7shXG63SRSzKSDek7PaceOs6bY'
 
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)

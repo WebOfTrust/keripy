@@ -70,11 +70,9 @@ def test_keystate(mockHelpingNowUTC):
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
-                                 #wits=[wesHab.pre], temp=True)
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
                                 wits=[wesHab.pre],)
-        assert bobHab.pre == 'EDHw1T1h9OOYP-V8P324HC7xw8ns4tEt5Mt7zIrLacJf'
+        assert bobHab.pre == 'EDotK23orLtF8GAU61_fNXRyFBTg49X50W0OUlP14YAK'
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -122,7 +120,7 @@ def test_keystate(mockHelpingNowUTC):
         saider = bamHby.db.knas.get(keys=keys)
         assert saider.qb64 == bobHab.kever.serder.said
 
-    # Bob is the controller
+    # Bob is the controller without a witness
     # Bam is verifying the key state for Bob from Wes
     # Wes is Bam's watcher
 
@@ -135,7 +133,9 @@ def test_keystate(mockHelpingNowUTC):
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
-        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
+        bobpre = 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
+        assert bobHab.pre == bobpre
+
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -204,7 +204,7 @@ def test_keystate(mockHelpingNowUTC):
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
-        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
+        assert bobHab.pre == bobpre
 
         # Create Bob's icp, pass to Wes.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
@@ -241,7 +241,7 @@ def test_keystate(mockHelpingNowUTC):
          habbing.openHby(name="bam", base="test") as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
-        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
+        assert bobHab.pre == bobpre
 
         # Get ksn from Bob and verify
         ksn = bobHab.kever.state()

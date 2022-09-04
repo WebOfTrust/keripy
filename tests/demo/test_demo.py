@@ -437,8 +437,9 @@ def test_indirect_mode_sam_cam_wit_demo():
         witDoers = [witServerDoer, witDirectant]
 
         # setup sam with witness
+        sam = 'EIlGc6ZMlYj_v4Tr0j2LMonB-b6akMjIw6ThJLT2-cJe'
         samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies)
-        sam = samHab.pre
+        assert samHab.pre == sam
 
         # confirm that makeHab works the same as manual setup
         # sam inception transferable (nxt digest not empty)
@@ -447,7 +448,7 @@ def test_indirect_mode_sam_cam_wit_demo():
                                             code=coring.MtrDex.Blake3_256)
 
         assert samHab.iserder.said == serder.said  # same setup
-        assert sam == serder.ked["i"] == 'EBPRePouB1KRBYr4Dnls_5wUQC2wgmXKUGT74vrzEFbr'
+        assert serder.ked["i"] == sam
 
         samClient = clienting.Client(host='127.0.0.1', port=witPort)
         samClientDoer = clienting.ClientDoer(client=samClient)
