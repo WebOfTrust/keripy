@@ -10,11 +10,11 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    with (habbing.openHby(name="bob", base="test") as bobHby,
+          habbing.openHby(name="bam", base="test") as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
-        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
+        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
@@ -24,7 +24,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
         regery.processEscrows()
 
-        assert issuer.regk == "ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94"
+        assert issuer.regk == 'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
         # Gather up Bob's key event log
         msgs = bytearray()
@@ -40,10 +40,10 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = issuer.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94",'
-                           b'"s":"0","d":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94","ii":"E7YbTIkWWyN'
-                           b'wOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0","dt":"2021-01-01T00:00:00.000000+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"ExRV_B5lrqynLn_NnKZ7yIxqM1KRpZoVjBP7K-4Bksl8"},"bt'
+        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT",'
+                           b'"s":"0","d":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT","ii":"EGVXhrXg11x'
+                           b'opD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"ENAmYVz8G7DN3xHwVocNSlVGJiLVmaXig2QTTRxLcH55"},"bt'
                            b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
@@ -59,7 +59,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'EiNlzu3FnbbGAb6JDr52t4pP8JFw9yJiqB2Jn1_UJfxs'
+        assert saider[0].qb64b == b'EEjyMwazY1uIVU4z2pI08btAcift2YGjTD5X_bEPYpgM'
 
         tmsgs = bytearray()
         cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
@@ -74,17 +74,17 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, bobHab.pre))
-        assert saider.qb64b == b'ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94'
+        assert saider.qb64b == b'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
 
 def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    with habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    with (habbing.openHby(name="bob", base="test") as bobHby,
+          habbing.openHby(name="bam", base="test") as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
-        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
+        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
@@ -94,7 +94,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
         regery.processEscrows()
 
-        assert issuer.regk == "ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94"
+        assert issuer.regk == 'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
         # pass key event log to Bam
         bamRtr = routing.Router()
@@ -104,11 +104,11 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = issuer.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94",'
-                           b'"s":"0","d":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94","ii":"E7YbTIkWWyN'
-                           b'wOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0","dt":"2021-01-01T00:00:00.000000+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"ExRV_B5lrqynLn_NnKZ7yIxqM1KRpZoVjBP7K-4Bksl8"},"bt'
-                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT",'
+                        b'"s":"0","d":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT","ii":"EGVXhrXg11x'
+                        b'opD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD","dt":"2021-01-01T00:00:00.000000+00:00","'
+                        b'et":"vcp","a":{"s":1,"d":"ENAmYVz8G7DN3xHwVocNSlVGJiLVmaXig2QTTRxLcH55"},"bt'
+                        b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
@@ -118,7 +118,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'EiNlzu3FnbbGAb6JDr52t4pP8JFw9yJiqB2Jn1_UJfxs'
+        assert saider[0].qb64b == b'EEjyMwazY1uIVU4z2pI08btAcift2YGjTD5X_bEPYpgM'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "query"
@@ -139,7 +139,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'EiNlzu3FnbbGAb6JDr52t4pP8JFw9yJiqB2Jn1_UJfxs'
+        assert saider[0].qb64b == b'EEjyMwazY1uIVU4z2pI08btAcift2YGjTD5X_bEPYpgM'
 
         tmsgs = bytearray()
         cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
@@ -155,7 +155,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, bobHab.pre))
-        assert saider.qb64b == b'ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94'
+        assert saider.qb64b == b'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
 
 def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
@@ -165,18 +165,18 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = coring.Salter(raw=raw)
     salt = salter.qb64
-    assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
+    assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
-    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
-         habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
+          habbing.openHby(name="bob", base="test") as bobHby,
+          habbing.openHby(name="bam", base="test") as bamHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
-        assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
+        assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, wits=[wesHab.pre])
-        assert bobHab.pre == "EGaV8sWx4qxaWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs"
+        assert bobHab.pre == 'EDHw1T1h9OOYP-V8P324HC7xw8ns4tEt5Mt7zIrLacJf'
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
@@ -186,7 +186,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
         regery.processEscrows()
 
-        assert issuer.regk == "EraLnG8X-Ui9RwbsSpq9yiJoaqnvKEx3X2yno5pXD2_M"
+        assert issuer.regk == 'EGSb12dIgYkyRXvhxViwPQ21NCakppPgDWgfVaIVIGhl'
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
@@ -215,11 +215,11 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = wesReger.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EraLnG8X-Ui9RwbsSpq9yiJoaqnvKEx3X2yno5pXD2_M",'
-                           b'"s":"0","d":"EraLnG8X-Ui9RwbsSpq9yiJoaqnvKEx3X2yno5pXD2_M","ii":"EGaV8sWx4qx'
-                           b'aWgad0Teaj0VZLlblc8vFMpMUR1WhfYBs","dt":"2021-01-01T00:00:00.000000+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"EDwvTUgyPVE2TlqpU6Yv4L8jPTdXqAPAuvzXN72RWT58"},"bt'
-                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EGSb12dIgYkyRXvhxViwPQ21NCakppPgDWgfVaIVIGhl",'
+                    b'"s":"0","d":"EGSb12dIgYkyRXvhxViwPQ21NCakppPgDWgfVaIVIGhl","ii":"EDHw1T1h9OO'
+                    b'YP-V8P324HC7xw8ns4tEt5Mt7zIrLacJf","dt":"2021-01-01T00:00:00.000000+00:00","'
+                    b'et":"vcp","a":{"s":1,"d":"EIejOVSqOjsDF5524DZiZabBFmDCK198VLdqY9ZTB8Bs"},"bt'
+                    b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
@@ -232,7 +232,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, wesHab.pre))
-        assert saider[0].qb64b == b'EBfSL2vqrsji01hrzqPeomBK5ob1M6LBprnj_dST5YCc'
+        assert saider[0].qb64b == b'ENWVH4NE9YBuUrIpLGoCdtObz7mmKU_Id40qjzs5hk5K'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "query"
@@ -257,7 +257,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, wesHab.pre))
-        assert saider[0].qb64b == b'EBfSL2vqrsji01hrzqPeomBK5ob1M6LBprnj_dST5YCc'
+        assert saider[0].qb64b == b'ENWVH4NE9YBuUrIpLGoCdtObz7mmKU_Id40qjzs5hk5K'
 
         parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy)
 
@@ -269,7 +269,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bamReger.txnsb.escrowdb.get(keys=(issuer.regk, wesHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(issuer.regk, wesHab.pre))
-        assert saider.qb64b == b'EraLnG8X-Ui9RwbsSpq9yiJoaqnvKEx3X2yno5pXD2_M'
+        assert saider.qb64b == b'EGSb12dIgYkyRXvhxViwPQ21NCakppPgDWgfVaIVIGhl'
 
 
 def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
@@ -279,18 +279,18 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = coring.Salter(raw=raw)
     salt = salter.qb64
-    assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
+    assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
-    with habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
-         habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
+          habbing.openHby(name="bob", base="test") as bobHby,
+          habbing.openHby(name="bam", base="test") as bamHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1,transferable=False,)
-        assert wesHab.pre == "BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"
+        assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1)
-        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
+        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
@@ -300,7 +300,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
         regery.processEscrows()
 
-        assert issuer.regk == "ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94"
+        assert issuer.regk == 'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
@@ -327,11 +327,11 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = wesReger.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94",'
-                           b'"s":"0","d":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94","ii":"E7YbTIkWWyN'
-                           b'wOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0","dt":"2021-01-01T00:00:00.000000+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"ExRV_B5lrqynLn_NnKZ7yIxqM1KRpZoVjBP7K-4Bksl8"},"bt'
-                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT",'
+                        b'"s":"0","d":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT","ii":"EGVXhrXg11x'
+                        b'opD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD","dt":"2021-01-01T00:00:00.000000+00:00","'
+                        b'et":"vcp","a":{"s":1,"d":"ENAmYVz8G7DN3xHwVocNSlVGJiLVmaXig2QTTRxLcH55"},"bt'
+                        b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
 
@@ -364,11 +364,11 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHby(name="bam", base="test") as bamHby:
+    with (habbing.openHby(name="bob", base="test") as bobHby,
+          habbing.openHby(name="bam", base="test") as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1,)
-        assert bobHab.pre == "E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0"
+        assert bobHab.pre == 'EGVXhrXg11xopD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD'
 
         regery = credentialing.Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
@@ -378,7 +378,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
         regery.processEscrows()
 
-        assert issuer.regk == "ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94"
+        assert issuer.regk == 'EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT'
 
         # pass key event log to Bam
         bamRtr = routing.Router()
@@ -392,7 +392,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         )
 
         creder = proving.credential(issuer=bobHab.pre,
-                                    schema="E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
+                                    schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                                     subject=credSubject,
                                     status=issuer.regk)
         iss = issuer.issue(said=creder.said)
@@ -405,18 +405,18 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = issuer.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94",'
-                           b'"s":"0","d":"ElTyK2V1wmZQTXfwEq3OruznxUaPMUN-V2y9Tekxyq94","ii":"E7YbTIkWWyN'
-                           b'wOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0","dt":"2021-01-01T00:00:00.000000+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"ExRV_B5lrqynLn_NnKZ7yIxqM1KRpZoVjBP7K-4Bksl8"},"bt'
+        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT",'
+                           b'"s":"0","d":"EOe54WjNGYljVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT","ii":"EGVXhrXg11x'
+                           b'opD9o_gH3iWZfu4RRUaKWrnKa4gfCIxsD","dt":"2021-01-01T00:00:00.000000+00:00","'
+                           b'et":"vcp","a":{"s":1,"d":"ENAmYVz8G7DN3xHwVocNSlVGJiLVmaXig2QTTRxLcH55"},"bt'
                            b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
         ctsn = tever.vcState(vci=creder.said)
-        assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"EMhV1SmwA3MDsY-z6HyqJApZmAF7eWH7kdg5mZxfc-vE",'
-                            b'"s":"0","d":"EvuNMi8ztDI6Li8dO2R32e4reFxTF6kL7PY_JkEV1sqI","ri":"ElTyK2V1wmZ'
-                            b'QTXfwEq3OruznxUaPMUN-V2y9Tekxyq94","ra":{},"a":{"s":2,"d":"Ept80fRZyubkhZC7Q'
-                            b'M1ZefpkeTRg0CtNr-UYZl16zBx8"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
-                            b'iss"}')
+        assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"EN84pfn6KEyJ4qcz_-IMwe4I0UfDJFg3QyWy5zIzMzfW",'
+                        b'"s":"0","d":"EJ7J8W4gkCaQygwRSWixQfeaU39tLY5YgZVxSy20cZPp","ri":"EOe54WjNGYl'
+                        b'jVS0InRDLdFDxwuQ6lVjjHXv7Kc3hXLyT","ra":{},"a":{"s":2,"d":"ECxtyV-WGeuV2zh5z'
+                        b'kcFR-af1SCLoWOUcQgNyQ5BP1vs"},"dt":"2021-01-01T00:00:00.000000+00:00","et":"'
+                        b'iss"}')
 
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
 
@@ -426,7 +426,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-mre", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'E0rUeNwYfCTc5_TzjeHDLwL9jrgXCXRLdAVnrd9kF4Vw'
+        assert saider[0].qb64b == b'ENvNSW-RGwslJxbwRqPQSkwF_fSl0nNN6vy_aMQwV461'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "telquery"
@@ -455,7 +455,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-ooo", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'E0rUeNwYfCTc5_TzjeHDLwL9jrgXCXRLdAVnrd9kF4Vw'
+        assert saider[0].qb64b == b'ENvNSW-RGwslJxbwRqPQSkwF_fSl0nNN6vy_aMQwV461'
 
         vci = creder.said
         tmsgs = bytearray()
@@ -471,4 +471,4 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bamReger.txnsb.escrowdb.get(keys=(creder.said, bobHab.pre)) == []
         # check to make sure the tsn has been saved
         saider = bamReger.txnsb.saiderdb.get(keys=(creder.said, bobHab.pre))
-        assert saider.qb64b == b'EvuNMi8ztDI6Li8dO2R32e4reFxTF6kL7PY_JkEV1sqI'
+        assert saider.qb64b == b'EJ7J8W4gkCaQygwRSWixQfeaU39tLY5YgZVxSy20cZPp'
