@@ -187,19 +187,13 @@ def test_extractvalues():
     """
     Test function extractValues
     """
-    (b'{"vs":"KERI10JSON0000fb_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
-                                b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                b'A8yMYsLXbmnwXWIsdZ7Uzw3Q7ppynI1xYCf-43hsf7XIgp5NZ-HlZbDC3o0lwWEF'
-                                b'nk4O6glvxx3bJ8Zfgg606DA')
 
     ked = dict(vs="KERI10JSON0000fb_",
-               pre="DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA",
+               pre="DAuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA",
                sn="0",
                ilk="icp",
                sith="1",
-               keys=["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],
+               keys=["DAuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],
                nxt="EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4",
                toad="0",
                wits=[],  # list of qb64 may be empty
@@ -213,7 +207,7 @@ def test_extractvalues():
     assert values == [  'KERI10JSON0000fb_',
                         'icp',
                         '1',
-                        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
+                        'DAuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
                         'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4',
                         '0',
                         'EO'
@@ -222,7 +216,7 @@ def test_extractvalues():
 
     ser = "".join(values)
 
-    assert ser == ('KERI10JSON0000fb_icp1DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtW'
+    assert ser == ('KERI10JSON0000fb_icp1DAuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtW'
                    'TOunRAEGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_40EO')
     """End Test"""
 
