@@ -35,7 +35,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     # Create non-transferable identifier
     with existing.existingHab(name="test", alias="non-trans") as (hby, hab):
-        assert hab.pre == 'BFj2AaElZVFdoHXbfukOcAzyVQGIAJm3SVMdqRQzv2ku'
+        assert hab.pre == 'BI81UmEUu6Vrii26PxQagwdkWJzJm3Q6PERtUw1c_y9K'
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "non-trans"])
     assert args.handler is not None
@@ -53,7 +53,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
 
-    xpre = 'EORLw1VyVyBqNCHMUTYctinMDCba9o6Ut-34YFpiLBFK'
+    xpre = 'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU'  # 'EORLw1VyVyBqNCHMUTYctinMDCba9o6Ut-34YFpiLBFK'
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
 
@@ -126,9 +126,9 @@ def test_standalone_kli_commands(helpers, capsys):
         assert hab.kever.sn == 5
         assert hab.kever.ilk == coring.Ilks.rot
         assert hab.kever.tholder.sith == "2"
-        assert [verfer.qb64 for verfer in hab.kever.verfers] == ['DJlNFprbU5XgQNM4RBzkD6AB2uCKSP1s1l1dDR3xtQhQ',
-                                                                 'DE3XdaUIKsHEklmeUBDazkmr4LXXqz8_yMjkZE4OW-69',
-                                                                 'DBPtKtOy6T9VI8ZS2C57WZ5AzVL7xIjWWrDVAYF_AFnT']
+        assert [verfer.qb64 for verfer in hab.kever.verfers] == ['DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8',
+                                                                 'DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg',
+                                                                 'DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt']
 
     # Skipping sign and verify, they rely on console output.
 
@@ -140,7 +140,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
 
-    epre = 'ENDcdHc4j8YKYmBI_JVNpjzDhQaK0v_somH6RSlu-t65'
+    epre = 'EMZ09JgN6Kr_rZH4Q7SovW-bxYXjiQX2XdSIQYpZnHsJ'
     with existing.existingHab(name="test", alias="est-only") as (hby, hab):
         assert hab.pre == epre
         assert hab.kever.sn == 0
@@ -191,11 +191,11 @@ def test_standalone_kli_commands(helpers, capsys):
 
     capsigs = capsys.readouterr()
     assert capsigs.out == ('1. '
-                        'AAAHmm1a7PMHoIQ1FcO4Sxd3nfeR72JdZagre_vV27g3TUov4_PZRgcemTYtbfWFysDXceaqMDIw9wSiwUfrLJAA\n'
-                        '2. '
-                        'ABCu4Qg7AiRKv3pXs7FWL6wD__oX6uArPZ-xeaepy3_XZ33sPH5XmgKtrHRi-y12GwTXDToMIN4Yr_EaA-XqZFgK\n'
-                        '3. '
-                        'ACByoIW8t4VwCzCNArmWXw-4mwadYMmg2oh20Gm-hRU6_gXEOmY3YXnKbODhxHQ8B60QmiJ-XzEqI9lfN1HZrGUC\n')
+                           'AAAVToiPrZ56VgZDMgYntaGZB2yNjDqWE5vT-sMfiQAsixf2IQV3DhSqLYICJawatox7c01gwttocAnzqEM6wgYI\n'
+                           '2. '
+                           'ABDGrYs0CHCJ7PajxsV7GX-oFaW9COo4qLoqb6Ar8nq1dnPIqztMQHf37ma7u8gaQHfoD0hDaqzC777XX0T1srgG\n'
+                           '3. '
+                           'ACCLl9pVv7OM4Y261GZkpPWQu__1mw8ffzcFY1lJ62CGjiEh3mvESu_N7a01YOCKqicqEe5TOXSf0j_8qBxPKxwO\n')
 
     args = parser.parse_args(["verify", "--name", "test", "--alias", "trans",
                               "--prefix",

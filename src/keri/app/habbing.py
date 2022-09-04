@@ -25,8 +25,7 @@ from ..kering import ValidationError, MissingSignatureError
 
 logger = help.ogler.getLogger()
 
-SALT = '0AMDEyMzQ1Njc4OWFiY2RlZg'  # coring.Salter(raw=b'0123456789abcdef').qb64
-
+SALT = coring.Salter(raw=b'0123456789abcdef').qb64  # '0AAwMTIzNDU2Nzg5YWJjZGVm'
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
