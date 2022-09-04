@@ -25,8 +25,8 @@ def test_watcher_rotate_handler(seeder):
         watKvy = eventing.Kevery(db=wat.db)
         ctrlIcp = ctrl.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(ctrlIcp), kvy=watKvy)
-        assert wat.pre == "BZg042qyBYoNC4rII1qdn7sPJPSh5vp5y0xnVYbJPujw"
-        assert ctrl.pre == "E5JhBGN4iCe842eVKwq0ZLSNcbHUYwdFFPKJ5atgnXTk"
+        assert wat.pre == 'BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8'
+        assert ctrl.pre == 'ECr8Y5fKGP9-HdSuYvZ043gQYHZfFLGL7py1317GjSrl'
 
         habr = ctrl.db.habs.get(ctrl.name)
         habr.watchers = list([wat.pre])
