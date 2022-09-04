@@ -73,7 +73,7 @@ def test_signature_designature():
         assert digest == hab.pre # 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
 
         # example body text
-        text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
+        text = (b'{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
                 b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                 b'8080,"path":"/witness"}')
 
@@ -83,11 +83,7 @@ def test_signature_designature():
         signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])  # put it in a list
-        assert header == {'Signature':
-                          'indexed="?1";0="AADHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";1="ABCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";2="ACDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE"'}
-
-
-
+        assert header == {'Signature': 'indexed="?1";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -108,7 +104,7 @@ def test_signature_designature():
                                  digest=digest,
                                  kind="CESR")
         header = ending.signature([signage])  # put it in a list
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";ordinal="0";digest="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";1="ABCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";2="ACDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE"'}
+        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";ordinal="0";digest="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -128,7 +124,7 @@ def test_signature_designature():
         signage = ending.Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])
-        assert header == {'Signature': 'indexed="?0";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE"'}
+        assert header == {'Signature': 'indexed="?0";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
 
 
         # test designature
@@ -149,7 +145,7 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";1="ABCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";2="ACDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE"'}
+        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -181,7 +177,7 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="AADHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";wit1="ABCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";wit2="ACDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="0BDHcn5lCU19ggFHtWEuS7g-6UwI6es79erBqJsqTXI02qaIma8_m67t-Rbr8xuIzlrlbVMQ7lKkQINwQf0BacoD";wit1="0BCHjEfF-syHPUDq4-o7aw5CBXqmsE4ca8XoitNEvUJ3uGjvq39myyD5mkKsNQn2QjbIabESBDq6EVz7awj6Vs4N";wit2="0BDSjprDviwyBvZhsrbS9GWImL3WEt70xhVXrZxALqCy0Br9aJTAb98zh2PKVA3mN5BhNxI_n-Yw4jInyOgMyyoE"'}
+        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";wit1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";wit2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";wit1="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";wit2="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -456,11 +452,11 @@ def test_oobiery():
     with habbing.openHby(name="oobi") as hby:
         oobiery = ending.Oobiery(hby=hby)
 
-        url = 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
-              '/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
+        url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
+              '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi/E2RzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
@@ -487,4 +483,4 @@ def test_oobiery():
 
 
 if __name__ == '__main__':
-    test_signature_designature()
+    test_oobiery()
