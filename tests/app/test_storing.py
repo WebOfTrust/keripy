@@ -58,12 +58,12 @@ def test_mailboxing():
         assert isinstance(mber, Mailboxer)
 
         msg = (
-            b'{"v":"KERI10JSON0000ac_","t":"exn","i":"E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I",'
+            b'{"v":"KERI10JSON0000ac_","t":"exn","i":"EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I",'
             b'"dt":"2021-07-15T13:01:37.624492+00:00","r":"/credential/issue","q":{"a":"b",'
             b'"b":123}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
             b'-AABAAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA')
 
-        dest = coring.Prefixer(qb64="E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+        dest = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
         saved = mber.storeMsg(topic=dest.qb64b, msg=msg)
         assert saved is True
 
@@ -78,7 +78,7 @@ def test_mailboxing():
 
         for idx in range(10):
             d = dict(a="b", b=idx)
-            dest = coring.Prefixer(qb64="E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+            dest = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
 
             exn = exchanging.exchange("/credential/issue", payload=d,
                                       date="2021-07-15T13:01:37.624492+00:00")
