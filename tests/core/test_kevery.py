@@ -261,8 +261,6 @@ def test_witness_state():
             "BJ6_tnL-DK0s7bYdVFfm_AufLsimGGUMK6V3QXNOKSu0",
         ]
 
-        #hab = habbing.Habitat(name="controller", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
-                              #wits=[wits[0], wits[1]], temp=True)
         hab = hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
                               wits=[wits[0], wits[1]])
 
@@ -270,36 +268,36 @@ def test_witness_state():
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
 
         ixn0 = hab.interact()
-        assert ixn0 == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EHLK5ZprcVvDPBupHDsF3Nuw'
-                    b'UyQCaC2nLhqn0M2jIKQG","i":"EHLgoV5KsGe86PphhpBpBi6fut0ai2UdDAzuL'
-                    b'H7DfGxY","s":"1","p":"EHLgoV5KsGe86PphhpBpBi6fut0ai2UdDAzuLH7DfG'
-                    b'xY","a":[]}-AABAABUIIoQFFY4ylSjjXzALM01xk17lPKFyBwkTX2qRPpkhImx_'
-                    b'Q-THQq4NEcOSTXlGAbWQYSXG1h-hIhE9t8Iv2AD')
+        assert ixn0 == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EMrHSIByF9uIw9rM9rdSWxLQ'
+                b'IQiKloH-S5T8UO2Cq3xh","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
+                b'BXEYLAH","s":"1","p":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUUBXEYL'
+                b'AH","a":[]}-AABAADk6eCpYOReWEfOboS-2cXiTVOdnk4kuKue3-MW507lt3O00'
+                b'mOPxN44hr3v5rUr8AskyPEZmQ9ytnGUcgDED8sH')
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
         rot1 = hab.rotate()
-        assert rot1 == (b'{"v":"KERI10JSON000160_","t":"rot","d":"ECosiai64dCPyIjVixj5QMQq'
-                    b'AHg9qcyFjh3X3Rj-xB4M","i":"EHLgoV5KsGe86PphhpBpBi6fut0ai2UdDAzuL'
-                    b'H7DfGxY","s":"2","p":"EHLK5ZprcVvDPBupHDsF3NuwUyQCaC2nLhqn0M2jIK'
-                    b'QG","kt":"1","k":["DJ_zYo7w0Qb4G3Eg2ToIY9IvabXFfEx23E10IRc9uojU"'
-                    b'],"nt":"1","n":["EIzc05QuoMhuwjQhXczdqukxFJNmwmDdu7hLA4JrpvF_"],'
-                    b'"bt":"2","br":[],"ba":[],"a":[]}-AABAAAFVjk5xje3C9izUTgE07zmtHZw'
-                    b'SrfFXsxlkxA2wi_BeAFkIHX8_0_7nqFli5HfpC_U0XwmGltZ4UjBc6hrCEAP')
+        assert rot1 == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EF3IIBRGoGr5Mq35UBuhmfiA'
+                b'SkBAOc-sM5f8BUQisi6-","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
+                b'BXEYLAH","s":"2","p":"EMrHSIByF9uIw9rM9rdSWxLQIQiKloH-S5T8UO2Cq3'
+                b'xh","kt":"1","k":["DDg3Ps1kW5-Ui7XQM8SxaRg6n-s12iZQF_Oa34iEZ9fj"'
+                b'],"nt":"1","n":["ED23AK25MWXy-ZcUp3zK2k2armZczuiq6NJYvEH1sKK9"],'
+                b'"bt":"2","br":[],"ba":[],"a":[]}-AABAACg2eJgQS5UHx25TpW14zgUlgXR'
+                b'e-dqB7PkDd_4QKtb_CSLYqCyE-lGrEmMInDHRfbTLMzBz0DoOk2XPvhgC3QB')
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
         rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
-        assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"EOSXo8y1aY6KaxgjTZ2FXEOl'
-                    b'a0UmAz7LQ-5PGa1tc9TU","i":"EHLgoV5KsGe86PphhpBpBi6fut0ai2UdDAzuL'
-                    b'H7DfGxY","s":"3","p":"ECosiai64dCPyIjVixj5QMQqAHg9qcyFjh3X3Rj-xB'
-                    b'4M","kt":"1","k":["DIQ_vw2Lgglc88-ei2fAciR-Z9poEvgG2z1dpztT8bc8"'
-                    b'],"nt":"1","n":["EE7PUL-yXJvfWqFO3u0oa05Zu-Xed0LW2oVTE5UwlIiR"],'
-                    b'"bt":"3","br":["BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"'
-                    b'ba":["BHejskZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BIfnWbP3CTk'
-                    b'WapC7rQxSkpioxkb-nbmhs-JoHbiwU5q4","BJ6_tnL-DK0s7bYdVFfm_AufLsim'
-                    b'GGUMK6V3QXNOKSu0"],"a":[]}-AABAABVv5osz941jOx2bCBM4mzPGPXBXHOn7K'
-                    b'GkcXWvohQ8hWb9Cu-zQl70-PQnx-FVEIYWWQ4yQSFvBegW-nJeueUI')
+        assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"EEmrPqJNzOC2DvZx--TCbB5o'
+                b'pQ0Ewp7yXrzqAesXwwQ4","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
+                b'BXEYLAH","s":"3","p":"EF3IIBRGoGr5Mq35UBuhmfiASkBAOc-sM5f8BUQisi'
+                b'6-","kt":"1","k":["DKlnNwCqlR-pLzB-p9Jlm-O9j9QpJfic1sp6kth9Dei0"'
+                b'],"nt":"1","n":["EFW5n90Qcff1hCQ2yHqtWx2yRAah6xaGe0DzU_KDtH5D"],'
+                b'"bt":"3","br":["BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ"],"'
+                b'ba":["BHejskZg8S5rVMvTb_8qB240UxP6NKk_HRVKiCK_FwSc","BIfnWbP3CTk'
+                b'WapC7rQxSkpioxkb-nbmhs-JoHbiwU5q4","BJ6_tnL-DK0s7bYdVFfm_AufLsim'
+                b'GGUMK6V3QXNOKSu0"],"a":[]}-AABAAAh7AIPmoZlq0cj6l07i82vkzj4k9f2MK'
+                b'Ej9GZP1U9l9cCZhmUF6tg5csR1A5BUZ9ARu4tykFpYEBd13idanK8J')
         wit3 = hab.kvy.fetchWitnessState(hab.pre, 3)
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
@@ -346,21 +344,21 @@ def test_stale_event_receipts():
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
-        assert wesHab.pre == 'BBhhW0BCr7VqFxs8T-VXjMkUIgGbWGJSMVX1C7B4Xp_l'
+        assert wesHab.pre == 'BCuDiSPCTq-qBBFDHkhf1_kmysrH8KSsFvoaOSgEbx-X'
 
         # setup Wan's habitat nontrans
         wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False,)
-        assert wanHab.pre == 'BC_wqWTZm7tPllcj-c6COJW9slvROrfA5JbpAaqh_2Q3'
+        assert wanHab.pre == 'BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'
 
         # setup Wil's habitat nontrans
         wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False,)
-        assert wilHab.pre == 'BEBybFUBXF-n1AcMDdcA9GkTtiwiNl8-sWwZSZurfeMv'
+        assert wilHab.pre == 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ'
 
         # setup Bob's transferable habitat with wil, wes and wan as witnesses
         awits = [wesHab, wilHab, wanHab]
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
-        assert bobHab.pre == 'EEHY-MaxsyvV8lpyd5PxNUBWGAz3hg0SU6EDwUbNfL9I'
+        assert bobHab.pre == 'EEM3_Vvu1R__sWolUiPQ8Mk97GQ1xsGbC9kqEfsFL1aO'
 
         bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
 

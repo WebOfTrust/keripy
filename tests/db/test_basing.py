@@ -1706,7 +1706,8 @@ def test_clean_baser():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
+        natsaid = 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
+        assert natHab.kever.serder.said == natsaid
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -1762,7 +1763,7 @@ def test_clean_baser():
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
+        assert natHab.kever.serder.said == natsaid
         assert natHab.pre in natHab.prefixes
         assert natHab.pre in natHab.kevers
 

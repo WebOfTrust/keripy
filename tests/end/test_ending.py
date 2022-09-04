@@ -68,9 +68,9 @@ def test_signature_designature():
 
         # setup habitat
         # hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
-        assert hab.pre == 'EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv'
+        assert hab.pre == 'EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-'
         digest = hab.kever.serder.said
-        assert digest == hab.pre # 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
+        assert digest == hab.pre
 
         # example body text
         text = (b'{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
@@ -83,7 +83,7 @@ def test_signature_designature():
         signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])  # put it in a list
-        assert header == {'Signature': 'indexed="?1";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
+        assert header == {'Signature': 'indexed="?1";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -104,7 +104,7 @@ def test_signature_designature():
                                  digest=digest,
                                  kind="CESR")
         header = ending.signature([signage])  # put it in a list
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";ordinal="0";digest="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";ordinal="0";digest="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -124,7 +124,7 @@ def test_signature_designature():
         signage = ending.Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])
-        assert header == {'Signature': 'indexed="?0";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
+        assert header == {'Signature': 'indexed="?0";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
 
         # test designature
@@ -145,7 +145,7 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";DDuxllQzjsxT4a_ZBfIvvr_0A6Ii-WwtSY8PvPyIVFxB="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";DESJvsNpfFSFvaY0X7IzeXYT0sgcr0hHIm2zfXmUR9FW="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";DKHvmv0ef0rtHc1wh6nJ8XskgU_AbQ8CrGdQW4rQaWxt="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -177,7 +177,7 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == {'Signature': 'indexed="?1";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="AADP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";wit1="ABCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";wit2="ACBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA",indexed="?0";signer="EApyxGIgr2pQfU_9xJDcbXntNehL_AZAhV_ekFlLL-sv";kind="CESR";wit0="0BDP-E2QLFVXb3fx1f06SxfeaYD7PbHyeE2WxWlNtGmqa5c-HiVJvtJM3W0zsOHrLqXpjpR-qxEQnMtrHfbuLOME";wit1="0BCbhPkUTc8HFq91lIkbDYUS4yzadHkKNMKJaPFQxMm8C88DunZTs0_2gGz42ltYwV1KEiyk_A3uOJ_fpXlCnoEN";wit2="0BBlOqsXapKr69g_SWh9SKERQJlIhG32kZgnD9EC0hyRKNyzYmG03j2nDWzkvNafjROKy6hLLx4h1MLVI6AZYyAA"'}
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -309,7 +309,7 @@ def test_seid_api():
         client = testing.TestClient(app=app)
 
         aid0 = hab.pre
-        assert aid0 == 'EFW3cL-Lv4tGnk_WnnruryH4WKaOXw4qeZNU5dG1hUve'
+        assert aid0 == 'EAJAEHYWGxz0nJNBvbOzpFR8RonSWa_YyJxULjAH1XEv'
         wit0 = 'BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
         wit1 = 'BBd2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
         wit2 = 'BCjDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
@@ -338,7 +338,7 @@ def test_seid_api():
         signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])
-        assert header == {'Signature': 'indexed="?1";0="AABwP6xpGj05QmRMiag8WwX6Q3XjS0KVZn9XyzIUfF_Y9Nrh80FjrAXMAsl27r8gj_a-AnjZTwIexraH0OKN4TIC"'}
+        assert header == {'Signature': 'indexed="?1";0="AACuduac6au7JSqANK1IaHWP_GlLG9OhPC7Mg52_uRSoddogaYw8mfuyIM6x4lRhKAlxUVDRv_Fh0plB7wx-LSoE"'}
 
         endpath = "/end/{}/{}".format(aid, role)
         assert endpath == f'/end/{aid0}/witness' # '/end/EFW3cL-Lv4tGnk_WnnruryH4WKaOXw4qeZNU5dG1hUve/witness'
@@ -348,10 +348,10 @@ def test_seid_api():
                                    body=text)  # accepts bytes
         assert rep.status == falcon.HTTP_OK
         assert rep.json == dict(aid=aid, role=role, data=data)
-        assert rep.text == ('{"aid": "EFW3cL-Lv4tGnk_WnnruryH4WKaOXw4qeZNU5dG1hUve", "role": "witness", '
-                            '"data": {"seid": "BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
-                            '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
-                            '"localhost", "port": 8080, "path": "/witness"}}')
+        assert rep.text == ('{"aid": "EAJAEHYWGxz0nJNBvbOzpFR8RonSWa_YyJxULjAH1XEv", "role": "witness", '
+                        '"data": {"seid": "BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
+                        '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
+                        '"localhost", "port": 8080, "path": "/witness"}}')
 
 
     """Done Test"""
