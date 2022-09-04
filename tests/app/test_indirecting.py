@@ -13,7 +13,7 @@ from keri.core import coring
 
 
 def test_mailbox_iter():
-    pre = "E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
+    pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
     mbx = storing.Mailboxer(temp=True)
     mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 1, "/multisig": 0},
                                      retry=1000)
@@ -33,16 +33,16 @@ def test_mailbox_iter():
     msg = dict(i=pre, t="rct")
     mbx.storeMsg(topic=f"{pre}/receipt", msg=json.dumps(msg).encode("utf-8"))
     val = next(mbi)
-    assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: {"i": "E83mbE6upuYnFlx68'
+    assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: {"i": "EA3mbE6upuYnFlx68'
                    b'GmLYCQd7cCcwG_AtHM6dW_GT068", "t": "rct"}\n\n')
 
     # Store messages for the iter, each next returns all available messages
     mbx.storeMsg(topic=f"{pre}/receipt", msg=json.dumps(msg).encode("utf-8"))
     mbx.storeMsg(topic=f"{pre}/multisig", msg=json.dumps(msg).encode("utf-8"))
     val = next(mbi)
-    assert val == (b'id: 1\nevent: /receipt\nretry: 1000\ndata: {"i": "E83mbE6upuYnFlx68'
+    assert val == (b'id: 1\nevent: /receipt\nretry: 1000\ndata: {"i": "EA3mbE6upuYnFlx68'
                    b'GmLYCQd7cCcwG_AtHM6dW_GT068", "t": "rct"}\n\nid: 0\nevent: /multisi'
-                   b'g\nretry: 1000\ndata: {"i": "E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6d'
+                   b'g\nretry: 1000\ndata: {"i": "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6d'
                    b'W_GT068", "t": "rct"}\n\n')
 
     # First stored challenge message will not be found because topics indicates already seen
@@ -53,7 +53,7 @@ def test_mailbox_iter():
     # Second one will be found
     mbx.storeMsg(topic=f"{pre}/challenge", msg=json.dumps(msg).encode("utf-8"))
     val = next(mbi)
-    assert val == (b'id: 1\nevent: /challenge\nretry: 1000\ndata: {"i": "E83mbE6upuYnFlx'
+    assert val == (b'id: 1\nevent: /challenge\nretry: 1000\ndata: {"i": "EA3mbE6upuYnFlx'
                    b'68GmLYCQd7cCcwG_AtHM6dW_GT068", "t": "rct"}\n\n')
 
     # Store a message that does not match any topics
@@ -69,7 +69,7 @@ def test_mailbox_iter():
 
 def test_qrymailbox_iter():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        assert hab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.makeOwnInception()
         icpSrdr = coring.Serder(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
@@ -110,9 +110,15 @@ def test_qrymailbox_iter():
         msg = dict(i=hab.pre, t="rct")
         mbx.storeMsg(topic=f"{hab.pre}/receipt", msg=json.dumps(msg).encode("utf-8"))
         val = next(mbi)
-        assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: {"i": "ECtWlHS2Wbx5M2Rg6'
-                       b'nm69PCtzwb1veiRNvDpBGF9Z1Pc", "t": "rct"}\n\n')
+        assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: '
+                       b'{"i": "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3", '
+                       b'"t": "rct"}\n\n')
 
         mb.iter.TimeoutMBX = 0  # Force the iter to timeout
         with pytest.raises(StopIteration):
             next(mbi)
+
+
+if __name__ == "__main__":
+    test_mailbox_iter()
+    test_qrymailbox_iter()
