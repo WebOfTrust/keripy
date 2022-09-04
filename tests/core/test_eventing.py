@@ -4185,7 +4185,7 @@ def test_reload_kever(mockHelpingNowUTC):
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.said == 'ECAz38cyQUbTwqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm'
+        assert natHab.kever.serder.said == 'EA3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre, ldig))))
@@ -4193,15 +4193,15 @@ def test_reload_kever(mockHelpingNowUTC):
         nstate = natHab.kever.state()
 
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
-        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EOBNRu7nI3s2QFQrD4LetS2UWRJrzKNPcsw2XDx1x6Cm",'
-                            b'"s":"6","p":"EFQpW7GwJIZt9LKyWysUtjDFnK1aOuW-yqUbcP3P18fQ","d":"ECAz38cyQUbT'
-                            b'wqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm","f":"6","dt":"2021-01-01T00:00:00.000000+0'
-                            b'0:00","et":"ixn","kt":"2","k":["DONBcMaTYq7Ev6Y53Byqa0am0rT8pbvjIruZ5W9cTPZV'
-                            b'","DL7hp3C_te3DcKch9y-YZHYIGm6SWa--BSWk2tW9ssd2","DIrb7ekU9osCq8ODJawt3tK-d9'
-                            b'Gt7wfDYzTGIXdgHdmf"],"nt":"2","n":["EJGhEEOoVWmX7xQjx6gZPpwPsWadjsWTUfxMgbfq'
-                            b'Knog","EHD-8SIj3FK-10vbFpp1XiXd8G72tp1R3TvIToYXKDy0","EJjc7LHmjUQMogxaL4Sjbn'
-                            b'zARCnBHAhbSRcx8wBI6WPy"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EE-iBrNVo'
-                            b'x_eGv-OiJz95Gg1mTTCUArO7tcO0ZxL6h2y","br":[],"ba":[]},"di":""}')
+        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe0dgk3kgH_",'
+                            b'"s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"EA3QbTpV15Mv'
+                            b'LSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:00.000000+0'
+                            b'0:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2e2wzYtEAs3s'
+                            b'","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsINEG207T4pSdj'
+                            b'aMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy72ZG7Tey0PS2'
+                            b'CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7IX6yl4F2t-W'
+                            b'oUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EJ7s1vk30'
+                            b'hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
         assert state.ked["f"] == '6'
         assert state.ked == nstate.ked
 
@@ -4214,15 +4214,15 @@ def test_reload_kever(mockHelpingNowUTC):
 
         kstate = kever.state()
         assert kstate.ked == state.ked
-        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EOBNRu7nI3s2QFQrD4LetS2UWRJrzKNPcsw2XDx1x6Cm",'
-                            b'"s":"6","p":"EFQpW7GwJIZt9LKyWysUtjDFnK1aOuW-yqUbcP3P18fQ","d":"ECAz38cyQUbT'
-                            b'wqeDKvdbDK_rhWsCMCQQGPNXwWeOZmZm","f":"6","dt":"2021-01-01T00:00:00.000000+0'
-                            b'0:00","et":"ixn","kt":"2","k":["DONBcMaTYq7Ev6Y53Byqa0am0rT8pbvjIruZ5W9cTPZV'
-                            b'","DL7hp3C_te3DcKch9y-YZHYIGm6SWa--BSWk2tW9ssd2","DIrb7ekU9osCq8ODJawt3tK-d9'
-                            b'Gt7wfDYzTGIXdgHdmf"],"nt":"2","n":["EJGhEEOoVWmX7xQjx6gZPpwPsWadjsWTUfxMgbfq'
-                            b'Knog","EHD-8SIj3FK-10vbFpp1XiXd8G72tp1R3TvIToYXKDy0","EJjc7LHmjUQMogxaL4Sjbn'
-                            b'zARCnBHAhbSRcx8wBI6WPy"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EE-iBrNVo'
-                            b'x_eGv-OiJz95Gg1mTTCUArO7tcO0ZxL6h2y","br":[],"ba":[]},"di":""}')
+        assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe0dgk3kgH_",'
+                        b'"s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"EA3QbTpV15Mv'
+                        b'LSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:00.000000+0'
+                        b'0:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2e2wzYtEAs3s'
+                        b'","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsINEG207T4pSdj'
+                        b'aMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy72ZG7Tey0PS2'
+                        b'CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7IX6yl4F2t-W'
+                        b'oUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EJ7s1vk30'
+                        b'hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
 
 
     assert not os.path.exists(natHby.ks.path)
