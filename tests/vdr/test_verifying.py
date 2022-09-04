@@ -23,20 +23,20 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
 
         verfer = verifying.Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
-                           "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"E2SIcWEY-nxQXJT7yDHMJxVM'
-                       b'v0NmjHx7Hgum38nYfhYI","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"E2c3V7uJMRWNg13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ"}}-V'
-                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAE_clfMOX'
-                       b'ko297fejXgAOa0iBpLHt30pHZPU5hL0LIb5y6tK1gDdBp-f63ZCfyJY6dd9zC4U9'
-                       b'SMkEHmejSpgHAA')
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EHraBkp-XMf1x_bo70O2x3br'
+                    b'BCHlJHa7q_MzsBNeYz2_","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
+                    b'KXqgcX4","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4"}}-V'
+                    b'Aj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABUWETZTw'
+                    b'TVuh0mNvN5KsJ_9V1epoP5wqgW32x8nUnGB20aI8xQBAhQ-aVP61ZEq97BDGSnxO'
+                    b'hU6tGCfDmvtugI')
 
 
 def test_verifier(seeder):
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp):
+    with (habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
+            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
