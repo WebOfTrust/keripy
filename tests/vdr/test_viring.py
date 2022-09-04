@@ -71,12 +71,11 @@ def test_issuer():
 
     assert not os.path.exists(issuer.path)
 
-    regb = "EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
-    rarb = "BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
+    regb = "EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
+    rarb = "BBjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
 
     #  test with registry inception (vcp) event
     regk = regb
-    assert regk == b'EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0'
     sn = 0
     vs = versify(kind=Serials.json, size=20)
 
@@ -85,8 +84,8 @@ def test_issuer():
                t="vcp")
 
     vcpb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert vcpb == (b'{"v":"KERI10JSON000014_","i":"EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0",'
-                    b'"s":"0","b":["BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"],"t":"vcp"}')
+    assert vcpb == (b'{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0",'
+                    b'"s":"0","b":["BBjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"],"t":"vcp"}')
     vdig = Diger(ser=vcpb)
 
     with openLMDB(cls=Reger) as issuer:
@@ -113,6 +112,7 @@ def test_issuer():
         assert issuer.delTel(telKey) is True
         assert issuer.getTel(telKey) is None
 
+        # not sure how these are generated in the first place
         coupl01 = ("BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQkg_"
                    "gMzf-vTfEHDylFdgn2e_u_ppaFajIdvEvONX6dcSYzlfBQ").encode("utf-8")
         coupl02 = ("BW1gbapuOJ4TJKwLfKZs5cXEIs9k8EtBqxR1psVxnD7IABrSkjrgPGXdhBiOy6LUZpiqtsHkKHhfLGj_LhT1n6"
@@ -182,7 +182,7 @@ def test_issuer():
         assert issuer.getAnc(key) is None
 
         #  test with verifiable credential issuance (iss) event
-        vcdig = b'EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
+        vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
         sn = 0
         vs = versify(kind=Serials.json, size=20)
 
@@ -192,7 +192,7 @@ def test_issuer():
 
         issb = json.dumps(vcp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         assert issb == (b'{"v":"KERI10JSON000014_",'
-                        b'"i":"EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc",'
+                        b'"i":"EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc",'
                         b''b'"s":"0","t":"iss"}')
         idig = Diger(ser=issb)
 
@@ -223,7 +223,7 @@ def test_issuer():
                    t="rev")
 
         revb = json.dumps(rev, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        assert revb == b'{"v":"KERI10JSON000014_","i":"EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc","s":"1","t":"rev"}'
+        assert revb == b'{"v":"KERI10JSON000014_","i":"EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc","s":"1","t":"rev"}'
         rdig = Diger(raw=revb)
 
         assert issuer.putTel(snKey(vcdig, sn), val=idig.qb64b) is True
@@ -234,11 +234,11 @@ def test_issuer():
         result = [(sn, dig) for sn, dig in issuer.getTelItemPreIter(vcdig)]
         assert result == [(0, idig.qb64b), (1, rdig.qb64b), (2, idig.qb64b), (3, rdig.qb64b)]
 
-        bak1 = b'Bm1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'
-        bak2 = b'DSEpNJeSJjxo6oAxkNE8eCOJg2HRPstqkeHWBAvN9XNU'
-        bak3 = b'Dvxo-P4W_Z0xXTfoA3_4DMPn7oi0mLCElOWJDpC0nQXw'
-        bak4 = b'BleAn9JkFuEOOwDhfkhnxtGsRQkMh2AH1oGB9QHAvl1U'
-        bak5 = b'Behy5f2BIJbAYdgoy00OcOEZwEyxCGCUDlzbGkbz1RAI'
+        bak1 = b'BA1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'
+        bak2 = b'DAEpNJeSJjxo6oAxkNE8eCOJg2HRPstqkeHWBAvN9XNU'
+        bak3 = b'DBxo-P4W_Z0xXTfoA3_4DMPn7oi0mLCElOWJDpC0nQXw'
+        bak4 = b'BBeAn9JkFuEOOwDhfkhnxtGsRQkMh2AH1oGB9QHAvl1U'
+        bak5 = b'BChy5f2BIJbAYdgoy00OcOEZwEyxCGCUDlzbGkbz1RAI'
         baks = [bak1, bak2, bak3, bak4]
 
         # test .baks insertion order dup methods.  dup vals are insertion order
@@ -261,9 +261,9 @@ def test_issuer():
 
 
 def test_clone():
-    regk = "EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
-    rarb = "BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
-    rarb2 = "BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4".encode("utf-8")
+    regk = "EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0".encode("utf-8")
+    rarb = "BAjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
+    rarb2 = "BBVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4".encode("utf-8")
 
     #  test with registry inception (vcp) event
     sn = 0
@@ -323,16 +323,25 @@ def test_clone():
         for msg in issuer.clonePreIter(regk):
             msgs.extend(msg)
 
-        assert msgs == (
-            b'{"v":"KERI10JSON000014_","i":"EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"0",'
-            b'"b":["BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"],'
-            b'"t":"vcp"}-VA0-BABBPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQk'
-            b'g_gMzf-vTfEHDylFdgn2e_u_ppaFajIdvEvONX6dcSYzlfBQ-GAB0AAAAAAAAAAAAAAAAAAAAABAEzpq06UecHwzy-K9FpNoRxCJp2'
-            b'wIGM9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_","i":"EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"1",'
-            b'"ba":["BPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4"],"t":"rot"}-VA0-BABBW1gbapuOJ4TJKwLfKZs5cXEIs9k8Et'
-            b'BqxR1psVxnD7IABrSkjrgPGXdhBiOy6LUZpiqtsHkKHhfLGj_LhT1n6EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsOsBPzRCw-G'
-            b'AB0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_","i":"EOWd'
-            b'T7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"2","br":["BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA"]'
-            b',"t":"rot"}-VA0-BABBklrMm7GlYzNrPQunLJHFn_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
-            b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAAAAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIG'
-            b'M9u2Edk-PLMZ1H4')
+        assert msgs == (b'{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEU'
+          b'k-ODnif3O0","s":"0","b":["BAjzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL'
+          b'3WADbA"],"t":"vcp"}-VA0-BABBPVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1Rht'
+          b'uiavIy4AAfiKvopJ0O2afOmxb5A6JtdY7Wkl_1uNx1Z8xQkg_gMzf-vTfEHDylFd'
+          b'gn2e_u_ppaFajIdvEvONX6dcSYzlfBQ-GAB0AAAAAAAAAAAAAAAAAAAAABAEzpq0'
+          b'6UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_",'
+          b'"i":"EAWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0","s":"1","ba":'
+          b'["BBVuWC4Hc0izqPKn2LIwhp72SHJSRgfaL1RhtuiavIy4"],"t":"rot"}-VA0-'
+          b'BABBW1gbapuOJ4TJKwLfKZs5cXEIs9k8EtBqxR1psVxnD7IABrSkjrgPGXdhBiOy'
+          b'6LUZpiqtsHkKHhfLGj_LhT1n6EqCIdDjrihzrdM1bm0ZNJDwbDGXoeeZujd7ZYsO'
+          b'sBPzRCw-GAB0AAAAAAAAAAAAAAAAAAAAABBEzpq06UecHwzy-K9FpNoRxCJp2wIG'
+          b'M9u2Edk-PLMZ1H4{"v":"KERI10JSON000014_","i":"EAWdT7a7fZwRz0jiZ0D'
+          b'JxZEM3vsNbLDPEUk-ODnif3O0","s":"2","br":["BAjzaUuRMwh1ivT5BQrqNh'
+          b'bvx82lB-ofrHVHjL3WADbA"],"t":"rot"}-VA0-BABBklrMm7GlYzNrPQunLJHF'
+          b'n_1wWjlUslGkXfs0KyoNOEAAC_6PB5Zre_E_7YLkM9OtRo-uYmwRyFmOH3Xo4JDi'
+          b'PjioY7Ycna6ouhSSH0QcKsEjce10HCXIW_XtmEYr9SrB5BA-GAB0AAAAAAAAAAAA'
+          b'AAAAAAAAABCEzpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4')
+
+
+if __name__ == "__main__":
+    test_issuer()
+    test_clone()
