@@ -719,6 +719,11 @@ def test_manager():
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
     with keeping.openKS() as keeper:
+
+        with pytest.raises(ValueError):
+            #test invalid qb64 of Salt
+            manager = keeping.Manager(ks=keeper, salt='0AzwMTIzNDU2Nzg5YWJjZGVm')
+
         manager = keeping.Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
