@@ -23,6 +23,7 @@ def test_direct_mode_bob_eve_demo():
     help.ogler.resetLevel(level=logging.DEBUG)
 
     raw = b"raw salt to test"
+
     #  create bob signers and secrecies
     bobSigners = coring.Salter(raw=raw).signers(count=8, path="bob", temp=True)
     bobSecrecies = [[signer.qb64] for signer in bobSigners]
@@ -158,7 +159,7 @@ def test_direct_mode_sam_eve_demo():
     samSigners = coring.Salter(raw=raw).signers(count=8, path="sam", temp=True)
     samSecrecies = [[signer.qb64] for signer in samSigners]
 
-    # eve inception transferable (nxt digest not empty)
+    # sam inception transferable (nxt digest not empty)
     samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
                                 nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
@@ -300,24 +301,20 @@ def test_run_bob_eve_demo():
     expire =  2.5
     doist = doing.Doist(limit=expire, tock=tock, real=True)
 
+    raw = b"raw salt to test"
+
     name = "bob"
     remote = 5621
     local = 5620
 
-
-    secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    #  create bob secrecies
+    secrecies = [[signer.qb64] for signer in
+                    coring.Salter(raw=raw).signers(count=8,
+                                                   path="bob",
+                                                   temp=True)]
 
     # bobs is list of Doers
-    bobs = demoing.setupDemoController(secrets=secrets,
+    bobs = demoing.setupDemoController(secrecies=secrecies,
                                        name=name,
                                        remotePort=remote,
                                        localPort=local)
@@ -326,18 +323,13 @@ def test_run_bob_eve_demo():
     remote = 5620
     local = 5621
 
+    #  create eve secrecies
+    secrecies = [[signer.qb64] for signer in
+                       coring.Salter(raw=raw).signers(count=8,
+                                                      path="eve",
+                                                      temp=True)]
 
-    # set of secrets (seeds for private keys)
-    secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
-
-    eves = demoing.setupDemoController(secrets=secrets,
+    eves = demoing.setupDemoController(secrecies=secrecies,
                                        name=name,
                                        remotePort=remote,
                                        localPort=local)
@@ -363,47 +355,41 @@ def test_run_sam_eve_demo():
     expire =  2.0
     doist = doing.Doist(limit=expire, tock=tock, real=True)
 
+    raw = b"raw salt to test"
+
     name = "sam"
     remote = 5621
     local = 5620
 
-
-    secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    #  create sam secrecies
+    secrecies = [[signer.qb64] for signer in
+                    coring.Salter(raw=raw).signers(count=8,
+                                                   path="sam",
+                                                   temp=True)]
 
     # sams is list of Doers
-    sams = demoing.setupDemoController(secrets=secrets,
+    sams = demoing.setupDemoController(secrecies=secrecies,
                                        name=name,
                                        remotePort=remote,
                                        localPort=local)
+
 
     name = "eve"
     remote = 5620
     local = 5621
 
+     #  create eve secrecies
+    secrecies = [[signer.qb64] for signer in
+                       coring.Salter(raw=raw).signers(count=8,
+                                                      path="eve",
+                                                      temp=True)]
 
-    # set of secrets (seeds for private keys)
-    secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
-
-    eves = demoing.setupDemoController(secrets=secrets,
+    # eves is list of Doers
+    eves = demoing.setupDemoController(secrecies=secrecies,
                                        name=name,
                                        remotePort=remote,
                                        localPort=local)
+
 
     samDoer = doing.DoDoer(doers=sams)
     eveDoer = doing.DoDoer(doers=eves)
@@ -420,52 +406,20 @@ def test_indirect_mode_sam_cam_wit_demo():
     """ Test indirect mode, sam and cam with witness """
 
     help.ogler.resetLevel(level=logging.DEBUG)
-    # set of secrets (seeds for private keys)
-    camSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
-    camSecrecies = []
-    for secret in camSecrets:  # convert secrets to secrecies
-        camSecrecies.append([secret])
+    raw = b"raw salt to test"
 
-    #  create cam signers
-    camSigners = [coring.Signer(qb64=secret) for secret in camSecrets]
-    assert [signer.qb64 for signer in camSigners] == camSecrets
+    #  create sam signers and secrecies
+    samSigners = coring.Salter(raw=raw).signers(count=8, path="sam", temp=True)
+    samSecrecies = [[signer.qb64] for signer in samSigners]
 
-    # set of secrets  (seeds for private keys)
-    samSecrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    #  create cam signers and secrecies
+    camSigners = coring.Salter(raw=raw).signers(count=8, path="cam", temp=True)
+    camSecrecies = [[signer.qb64] for signer in camSigners]
 
-    samSecrecies = []
-    for secret in samSecrets:  # convert secrets to secrecies
-        samSecrecies.append([secret])
-
-    #  create sam signers
-    samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
-    assert [signer.qb64 for signer in samSigners] == samSecrets
-
-
-    #with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         #basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
-         #basing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
-
-    with habbing.openHby(name="cam", base="test") as camHby, \
-         habbing.openHby(name="sam", base="test") as samHby,  \
-         habbing.openHby(name="wit", base="test") as witHby:
+    with (habbing.openHby(name="cam", base="test") as camHby,
+          habbing.openHby(name="sam", base="test") as samHby,
+          habbing.openHby(name="wit", base="test") as witHby):
 
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listneing port for server
@@ -475,50 +429,25 @@ def test_indirect_mode_sam_cam_wit_demo():
                                  isith='1',
                                  icount=1,
                                  transferable=False)
-        #witHab = habbing.Habitat(name='Wit',
-                                 #ks=witKS,
-                                 #db=witDB,
-                                 #isith='1',
-                                 #icount=1,
-                                 #temp=True,
-                                 #transferable=False)
+
         wit = witHab.pre
-        #assert witHab.ks == witKS
-        #assert witHab.db == witDB
         witServer = serving.Server(host="", port=witPort)
         witServerDoer = serving.ServerDoer(server=witServer)
         witDirectant = directing.Directant(hab=witHab, server=witServer)
-
         witDoers = [witServerDoer, witDirectant]
 
-        # setup cam
-        # cam inception transferable (nxt digest not empty)
-        camSerder = eventing.incept(keys=[camSigners[0].verfer.qb64],
-                                    nkeys=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
-                                    code=coring.MtrDex.Blake3_256)
-
-        cam = camSerder.ked["i"]
-        assert cam == 'E0VtKUgXnnXq9EtfgKAd_l5lhyhx_Rlf0Uj1XejaNNoo'
-
-        # sam inception transferable (nxt digest not empty)
-        samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
-                                    nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
-                                    code=coring.MtrDex.Blake3_256)
-
-        sam = samSerder.ked["i"]
-        assert sam == 'Ec5GiUblxFy6Xlj77VQ0-ksleIA8FR-WThpcd4c0Y3gw'
-
+        # setup sam with witness
         samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies)
-        #samHab = habbing.Habitat(name='Sam',
-                                 #ks=samKS,
-                                 #db=samDB,
-                                 #wits=[wit],
-                                 #secrecies=samSecrecies,
-                                 #temp=True)
-        #assert samHab.ks == samKS
-        #assert samHab.db == samDB
-        assert samHab.iserder.said == samSerder.said
-        assert samHab.pre == sam
+        sam = samHab.pre
+
+        # confirm that makeHab works the same as manual setup
+        # sam inception transferable (nxt digest not empty)
+        serder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
+                                     nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
+                                            code=coring.MtrDex.Blake3_256)
+
+        assert samHab.iserder.said == serder.said  # same setup
+        assert sam == serder.ked["i"] == 'EBPRePouB1KRBYr4Dnls_5wUQC2wgmXKUGT74vrzEFbr'
 
         samClient = clienting.Client(host='127.0.0.1', port=witPort)
         samClientDoer = clienting.ClientDoer(client=samClient)
@@ -547,18 +476,18 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
-        # setup cam
+        # setup cam no witness
         camHab = camHby.makeHab(name="Cam", secrecies=camSecrecies)
-        #camHab = habbing.Habitat(name='Cam',
-                                 #ks=camKS,
-                                 #db=camDB,
-                                 #secrecies=camSecrecies,
-                                 #temp=True)
+        cam = camHab.pre
 
-        #assert camHab.ks == camKS
-        #assert camHab.db == camDB
-        assert camHab.iserder.said == camSerder.said
-        assert camHab.pre == cam
+        # confirm that makeHab works same as manual setup
+        # cam inception transferable (nxt digest not empty)
+        serder = eventing.incept(keys=[camSigners[0].verfer.qb64],
+                                        nkeys=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
+                                        code=coring.MtrDex.Blake3_256)
+
+        assert camHab.iserder.said == serder.said  # same setup
+        assert cam == serder.ked["i"] == 'EB1f36VmoizOIpBIBv3X4ZiWJQWjtKJ7TMmsZltT0B32'
 
         camClient = clienting.Client(host='127.0.0.1', port=witPort)
         camClientDoer = clienting.ClientDoer(client=camClient)

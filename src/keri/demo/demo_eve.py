@@ -12,6 +12,7 @@ import logging
 from keri import __version__
 from keri.app import directing
 from keri.demo import demoing
+from keri.core import coring
 from keri import help  # logger support
 
 def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
@@ -19,17 +20,15 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
     Setup and run one demo controller for Eve
     """
 
-    # set of secrets (seeds for private keys)
-    secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
-                'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
-                'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
-                'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
-                'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
-                'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
-                'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
-                'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+    raw = b"raw salt to test"
 
-    doers = demoing.setupDemoController(secrets=secrets,
+    #  create secrecies
+    secrecies = [[signer.qb64] for signer in
+                 coring.Salter(raw=raw).signers(count=8,
+                                                path=name,
+                                                temp=True)]
+
+    doers = demoing.setupDemoController(secrecies=secrecies,
                                         name=name,
                                         remotePort=remote,
                                         localPort=local)
