@@ -165,7 +165,7 @@ def test_counselor():
 
 
 @contextmanager
-def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
+def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
     with habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as (hby1, hab1), \
             habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as (hby2, hab2), \
             habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as (hby3, hab3):
@@ -237,7 +237,7 @@ def test_multisig_incept(mockHelpingNowUTC):
 
 
 def test_multisig_rotate(mockHelpingNowUTC):
-    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
 
@@ -261,7 +261,7 @@ def test_multisig_rotate(mockHelpingNowUTC):
 
 
 def test_multisig_interact(mockHelpingNowUTC):
-    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
@@ -340,7 +340,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
-    with openMutlsig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
 
         notifier = notifying.Notifier(hby=hby)
         handler = grouping.MultisigRotateHandler(hby=hby, notifier=notifier)
@@ -369,7 +369,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         assert len(notifier.signaler.signals) == 1
 
 
-    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
@@ -400,7 +400,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
 def test_multisig_interact_handler(mockHelpingNowUTC):
     ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
-    with openMutlsig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
 
         notifier = notifying.Notifier(hby=hby)
         handler = grouping.MultisigInteractHandler(hby=hby, notifier=notifier)
@@ -428,7 +428,7 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
 
         assert len(notifier.signaler.signals) == 1
 
-    with openMutlsig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
         exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
                                                 data=[{"i": 1, "x": 0, "d": 2}])
