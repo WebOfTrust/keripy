@@ -270,6 +270,8 @@ class IdentifierEnd(doing.DoDoer):
         if md is not None:
             del md["id"]
             data["metadata"] = md
+        else:
+            data["metadata"] = {}
 
         return data
 
@@ -1920,6 +1922,9 @@ class MultisigInceptEnd(MultisigEndBase):
                 nsith = nsith.split(",")
 
         inits["nsith"] = nsith
+
+        if "estOnly" in body:
+            inits["estOnly"] = body["estOnly"]
 
         inits["toad"] = body["toad"] if "toad" in body else None
         inits["wits"] = body["wits"] if "wits" in body else []
