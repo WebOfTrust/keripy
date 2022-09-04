@@ -17,15 +17,28 @@ from keri.vdr import verifying, credentialing
 
 
 def test_issuing(seeder, mockCoringRandomNonce):
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
-    assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
+    """ Test Issuing ACDC """
 
-    with habbing.openHby(name="red", base="test") as redHby, \
-            habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
-            habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+
+    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
+    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
+    assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
+
+    with (habbing.openHby(name="red", base="test") as redHby,
+          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby,
+          habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby):
+
+
+        # setup wan's Hab and doers
+        wanDoers = indirecting.setupWitness(alias="wan",
+                                            hby=wanHby,
+                                            tcpPort=5632,
+                                            httpPort=5642)
+
+        wanHab = wanHby.habByName(name="wan")
+        wanPre = wanHab.pre
+        assert wanPre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
 
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)
@@ -36,7 +49,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
         doist = doing.Doist(limit=limit, tock=tock)
 
         sidHab = sidHby.makeHab(name="test",
-                                wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
+                                wits=[wanHab.pre])
         sidPre = sidHab.pre
         assert sidPre == "EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE"
 

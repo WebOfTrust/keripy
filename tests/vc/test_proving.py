@@ -18,8 +18,9 @@ def test_proving():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+
         sidHab = sidHby.makeHab(name="test", )
-        assert sidHab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
@@ -35,7 +36,9 @@ def test_proving():
             )
         ))
 
-        schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
+        schemer = scheming.Schemer(sed=sed,
+                                   typ=scheming.JSONSchema(),
+                                   code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             d="",
             i="EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc",  # this needs to be generated from a KEL
@@ -51,16 +54,16 @@ def test_proving():
                             subject=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EBAjLJSNxLkV3wqvLUrWh10RR5KPb3YNFD'
-                       b'dydSW0HAYk","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","'
-                       b's":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","a":{"d":"E6wI'
-                       b'oXUVrUsFm4pHAFDMbLloniDNvEWizHO8BNPwcyBA","i":"EPmpiN6bEM8EI0Mct'
-                       b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
-                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"e":{}}-VA0-FABECtW'
-                       b'lHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAA'
-                       b'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA60gkEY5DXpVD8h'
-                       b'o-CA5-cpp5xDUgWBQ01IkjG1oLocO43yovd5G-BUOO8UF2U4UIHJnWWc76g9Nei4'
-                       b'4Ns94KAQ')
+        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EB9BVzL6-iIy9EO_l1AgqxhAxn3o5yOOyP'
+                    b'33HKop8Dmj","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+                    b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EOsC'
+                    b'KF1Fa1LBZuKRwBQzGy5aJ4gzbxFosxzvATT8HMgQ","i":"EPmpiN6bEM8EI0Mct'
+                    b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
+                    b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"e":{}}-VA0-FABEIaG'
+                    b'MMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAA'
+                    b'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADMQcCQikV3BBRa'
+                    b'vt_f8txYvZX3TQeepFTnBmobPDOEis_gMVnxSRuDSZrKifw7r6N38sw2PGxurCn8'
+                    b'iNamZdIB')
 
         creder = Creder(raw=msg)
         proof = msg[creder.size:]
@@ -112,8 +115,10 @@ def test_credentialer():
     )
     _, d = coring.Saider.saidify(sad=d)
 
+    said = 'EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi'  # creder.said
+
     creder = Creder(ked=d)
-    assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
+    assert creder.said == said
     assert creder.kind == Serials.json
     assert creder.issuer == "i"
     assert creder.schema == "abc"
@@ -121,9 +126,10 @@ def test_credentialer():
     assert creder.crd == d
     assert creder.size == 168
     assert creder.size == len(creder.raw)
-    assert creder.raw == (b'{"v":"ACDC10JSON0000a8_","d":"EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI",'
+    assert creder.raw == (b'{"v":"ACDC10JSON0000a8_","d":"EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi",'
                           b'"s":"abc","i":"i","a":{"a":123,"b":"abc","issuanceDate":"2021-06-27T21:26:21'
                           b'.233257+00:00"}}')
+
 
     raw1, idt1, knd1, ked1, ver1 = creder._exhale(ked=d)
     assert raw1 == creder.raw
@@ -140,19 +146,19 @@ def test_credentialer():
     d2 = dict(d)
     d2["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
     creder = Creder(ked=d2)
-    assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
+    assert creder.said == said  #shouldnt this be different here?
     assert creder.issuer == "i"
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 139
     assert creder.size == len(creder.raw)
     assert creder.crd == d2
-    assert creder.raw == (b'\xa5avqACDC10CBOR00008b_adx,EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aIasc'
+    assert creder.raw == (b'\xa5avqACDC10CBOR00008b_adx,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWiasc'
                           b'abcaiaiaa\xa3aa\x18{abcabclissuanceDatex 2021-06-27T21:26:21.233257+00:00')
 
     raw2 = bytes(creder.raw)
     creder = Creder(raw=raw2)
-    assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
+    assert creder.said == said
     assert creder.issuer == "i"
     assert creder.schema == "abc"
     assert creder.subject == sub
@@ -164,20 +170,20 @@ def test_credentialer():
     d3["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.mgpk, size=0)
     creder = Creder(ked=d3)
 
-    assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
+    assert creder.said == said  # shouldn't this be different here
     assert creder.issuer == "i"
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 138
     assert creder.size == len(creder.raw)
     assert creder.crd == d3
-    assert creder.raw == (b'\x85\xa1v\xb1ACDC10MGPK00008a_\xa1d\xd9,EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb'
-                          b'1jIsDi5aI\xa1s\xa3abc\xa1i\xa1i\xa1a\x83\xa1a{\xa1b\xa3abc\xacissuanceDate'
+    assert creder.raw == (b'\x85\xa1v\xb1ACDC10MGPK00008a_\xa1d\xd9,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG'
+                          b'9YyLA4uWi\xa1s\xa3abc\xa1i\xa1i\xa1a\x83\xa1a{\xa1b\xa3abc\xacissuanceDate'
                           b'\xd9 2021-06-27T21:26:21.233257+00:00')
 
     raw3 = bytes(creder.raw)
     creder = Creder(raw=raw3)
-    assert creder.said == "EXqZo8z93lk3tTc1EULX7pMzuT8QoPP7wAb1jIsDi5aI"
+    assert creder.said == said
     assert creder.issuer == "i"
     assert creder.schema == "abc"
     assert creder.subject == sub
@@ -192,7 +198,7 @@ def test_credential():
         issuanceDate="2021-06-27T21:26:21.233257+00:00",
         personLegalName="John Doe",
         engagementContextRole="Project Manager",
-        credentialStatus="EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
+        credentialStatus="EAmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
         LEI="254900OPPU84GM83MG36"
     )
 
@@ -202,28 +208,30 @@ def test_credential():
     ]
 
     saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
-    assert saider.qb64 == "Ey8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI"
+    assert saider.qb64 == 'EFyC729bNI11tkKduIgFT7yoq3ebYuMJzzhZl-ckXxa8'
     d["i"] = saider.qb64
 
-    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
-                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+    cred = credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                      issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      subject=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"E6FL99WMVU45ZPfypWnP2rMlRqAm2viv0NegQ51SlDT4",'
-                        b'"i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri":"ETQoH02zJRCTNz-Wl3n'
-                        b'nkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q'
-                        b'","a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL57dTA","issuanceDate":"20'
+    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"EAeSzBILdc9X6G5sBRx7BYQTF8t6ywdMuNZOX0e51KUd",'
+                        b'"i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri":"ECQoH02zJRCTNz-Wl3n'
+                        b'nkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q'
+                        b'","a":{"d":"EGAyHGcfzb3SIAjvF11jaEgYx7NOg9-ixhfLR6RQe6iG","issuanceDate":"20'
                         b'21-06-27T21:26:21.233257+00:00","personLegalName":"John Doe","engagementCont'
-                        b'extRole":"Project Manager","credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPA'
-                        b'I6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"Ey8O65r9KllNVjY8hnmfHxruMv'
-                        b'2VG1s2_wdnj_5-kgkI"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
+                        b'extRole":"Project Manager","credentialStatus":"EAmRy7xMwsxUelUauaXtMxTfPAMPA'
+                        b'I6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"EFyC729bNI11tkKduIgFT7yoq3'
+                        b'ebYuMJzzhZl-ckXxa8"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
                         b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+
 
 
 def test_credential_parsator():
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
-        assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
+
+        assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
 
         regery = credentialing.Regery(hby=hby, name="sid", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True)
@@ -234,7 +242,7 @@ def test_credential_parsator():
         )
 
         creder = credential(issuer=hab.pre,
-                            schema="E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
+                            schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                             subject=credSubject,
                             status=issuer.regk)
 
