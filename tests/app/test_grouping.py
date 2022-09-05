@@ -50,32 +50,32 @@ def test_counselor():
         counselor.start(aids=aids, pid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
-        assert evt["src"] == "ECZu3scaTupuSldutwMqMfZOE8NfDdaSSAbVRBafkD8s"
-        assert evt["dest"] == "EkQCb1nY0ySX7hlIkMtmsK0TKuXl3JIB6giFLfVdcBDM"
-        assert evt["serder"].raw == ((b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7Z'
-                                      b'W5FGLpaY","i":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW5FGLpaY","s":"0","kt":"2'
-                                      b'","k":["DRd2QdFHY2ymPlzOwW8o5r5mcbMwwUbkwtoGV7X1on2M","DvhIXMDz2Wz9q4iohJ_hR'
-                                      b'tJAbE09z3LxnZSs8Nm6kSww","DRHHGMFBQPicaJqKgGWqDyqmRGMksYx7rs491WwcVqtA"],"nt'
-                                      b'":"2","n":["ExKDRQLyYUS3O1xme1pbKenP73WqpbKTMopvUSQFRRSw","E2e7tLvlVlER4kkV3'
-                                      b'bw36SN8Gz3fJ-3QR2xadxKyed10","Ekhos3Fx8IfwKdfQrfZ_FicfrYiXmvZodQcHV3KNOSlU"]'
-                                      b',"bt":"0","b":[],"c":[],"a":[]}'))
+        assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
+        assert evt["dest"] == "EHTApV7zY0866EBv6891tN19uM9TnbwpvV0JzcWu1DVY"
+        assert evt["serder"].raw == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJb'
+                                     b'coNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s","s":"0","kt":"2'
+                                     b'","k":["DEXdkHRR2Nspj5czsFvKOa-ZnGzMMFG5MLaBle19aJ9j","DL4SFzA89ls_auIqISf4U'
+                                     b'bSQGxNPc9y8Z2UrPDZupEsM","DERxxjBQUD4nGiaioBlqg8qpkRjJLGMe67OPdVsHFarQ"],"nt'
+                                     b'":"2","n":["EKMBA8Q1uP3WshghLR_r6MjYwVEids8yKb_03w8FOOFO","EHV8V6dj_VXvXZFUw'
+                                     b'MTT4yUy40kw5uYMXnFxoh_KZmos","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJUn"]'
+                                     b',"bt":"0","b":[],"c":[],"a":[]}')
         (seqner, saider) = hby1.db.gpse.getLast(keys=(ghab.pre,))  # Escrowed the event for sigs
         assert seqner.sn == 0
-        assert saider.qb64 == "EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW5FGLpaY"
+        assert saider.qb64 == "EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s"
 
         # Sith 2 so create second signature to get past the first escrow
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", phab=hab2, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
-        assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EfFRznBFTCjE6L4Muo0mJ3rP'
-                       b'pf-31ytLhe7ZW5FGLpaY","i":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW'
-                       b'5FGLpaY","s":"0","kt":"2","k":["DRd2QdFHY2ymPlzOwW8o5r5mcbMwwUbk'
-                       b'wtoGV7X1on2M","DvhIXMDz2Wz9q4iohJ_hRtJAbE09z3LxnZSs8Nm6kSww","DR'
-                       b'HHGMFBQPicaJqKgGWqDyqmRGMksYx7rs491WwcVqtA"],"nt":"2","n":["ExKD'
-                       b'RQLyYUS3O1xme1pbKenP73WqpbKTMopvUSQFRRSw","E2e7tLvlVlER4kkV3bw36'
-                       b'SN8Gz3fJ-3QR2xadxKyed10","Ekhos3Fx8IfwKdfQrfZ_FicfrYiXmvZodQcHV3'
-                       b'KNOSlU"],"bt":"0","b":[],"c":[],"a":[]}-AABABnsohpWmpZsqYU-3cMaV'
-                       b'NF80vX26VFlwB5hLwVU44MimObNR1jTyupmDFyAt7tLF6P8s_pKk9v4P1B2T_Zd9'
-                       b'yBA')
+        assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0a'
+                       b'fydw9y474RJbcoNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
+                       b'oNBES3s","s":"0","kt":"2","k":["DEXdkHRR2Nspj5czsFvKOa-ZnGzMMFG5'
+                       b'MLaBle19aJ9j","DL4SFzA89ls_auIqISf4UbSQGxNPc9y8Z2UrPDZupEsM","DE'
+                       b'RxxjBQUD4nGiaioBlqg8qpkRjJLGMe67OPdVsHFarQ"],"nt":"2","n":["EKMB'
+                       b'A8Q1uP3WshghLR_r6MjYwVEids8yKb_03w8FOOFO","EHV8V6dj_VXvXZFUwMTT4'
+                       b'yUy40kw5uYMXnFxoh_KZmos","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfOBFPO'
+                       b'1IyJUn"],"bt":"0","b":[],"c":[],"a":[]}-AABABCNm6zWv-4VPHlK_yoBU'
+                       b'CDKPUbJceFPrWZFNl8oKgg2mNPquCimuPxIYDC8WJVmpPaXK9CwjYihzpVNeuHHI'
+                       b'qcN')
 
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 to process all sigs together
@@ -103,11 +103,11 @@ def test_counselor():
         assert evt["src"] == hab1.pre
         assert evt["dest"] == hab2.pre
         assert evt["topic"] == "multisig"
-        assert evt["serder"].raw == ((b'{"v":"KERI10JSON000160_","t":"rot","d":"EPG0VZ17sGRjhT96p5pM1daK5260sHvszP8F'
-                                      b'BXISg6k4","i":"ECZu3scaTupuSldutwMqMfZOE8NfDdaSSAbVRBafkD8s","s":"1","p":"EC'
-                                      b'Zu3scaTupuSldutwMqMfZOE8NfDdaSSAbVRBafkD8s","kt":"1","k":["DRvAX3fiblON1BsLX'
-                                      b'yNKaTYJw87vHMB6bN4_LgsqcD9Q"],"nt":"1","n":["E1Z3cSbGPkx6_vXMW5ZljeMfQQOGuiK'
-                                      b'WCybLiHW4_Qz4"],"bt":"0","br":[],"ba":[],"a":[]}'))
+        assert evt["serder"].raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EEX9vGqk8FJbe-pSusdW-t6dtTyPeOgtR8Cd'
+                                     b'hue6LgY7","i":"EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa","s":"1","p":"EO'
+                                     b'zS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa","kt":"1","k":["DEbwF934m5TjdQbC1'
+                                     b'8jSmk2CcPO7xzAemzePy4LKnA_U"],"nt":"1","n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHP'
+                                     b'EZ08zMICPhPTw"],"bt":"0","br":[],"ba":[],"a":[]}')
         rec = hby1.db.gpae.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.aids == aids
@@ -124,29 +124,30 @@ def test_counselor():
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 1
-        assert saider.qb64b == b'EwEVZQHjYW_jju5RS25q1IMoMT1mci-RIUa0m027h5Oo'
+        assert saider.qb64b == b'ECmJe44VLyThxwh5vCAlt_GVuMMbeQD3A8z9AtEShKTF'
         key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
         evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (
-            b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EwEVZQHjYW_jju5RS25q1IMoMT1mci-RIUa0m027h5Oo","i":"EfFRznBFTCjE6L'
-            b'4Muo0mJ3rPpf-31ytLhe7ZW5FGLpaY","s":"1","p":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW5FGLpaY","kt":"2","k":['
-            b'"DRvAX3fiblON1BsLXyNKaTYJw87vHMB6bN4_LgsqcD9Q","DEv9adSy5j4JsgU2QwTx1gbSUxI21P33chZyaw-hS4QM"],"nt":"2","'
-            b'n":["E1Z3cSbGPkx6_vXMW5ZljeMfQQOGuiKWCybLiHW4_Qz4","Efe53her4qjlM6nHh4wtIVODSbf5fFx7ZztYxeGJAgBQ","Ekhos3'
-            b'Fx8IfwKdfQrfZ_FicfrYiXmvZodQcHV3KNOSlU"],"bt":"0","br":[],"ba":[],"a":[]}')
+        assert bytes(evt) == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"ECmJe44VLyThxwh5vCAlt_GVuMMbeQD3A8z9'
+                              b'AtEShKTF","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s","s":"1","p":"EF'
+                              b'HbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s","kt":"2","k":["DEbwF934m5TjdQbC1'
+                              b'8jSmk2CcPO7xzAemzePy4LKnA_U","DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"]'
+                              b',"nt":"2","n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMICPhPTw","EGyO8jUZpLIlA'
+                              b'CoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJ'
+                              b'Un"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         serder = coring.Serder(raw=bytes(evt))
         sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EwEVZQHjYW_jju5RS25q1IMo'
-                       b'MT1mci-RIUa0m027h5Oo","i":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW'
-                       b'5FGLpaY","s":"1","p":"EfFRznBFTCjE6L4Muo0mJ3rPpf-31ytLhe7ZW5FGLp'
-                       b'aY","kt":"2","k":["DRvAX3fiblON1BsLXyNKaTYJw87vHMB6bN4_LgsqcD9Q"'
-                       b',"DEv9adSy5j4JsgU2QwTx1gbSUxI21P33chZyaw-hS4QM"],"nt":"2","n":["'
-                       b'E1Z3cSbGPkx6_vXMW5ZljeMfQQOGuiKWCybLiHW4_Qz4","Efe53her4qjlM6nHh'
-                       b'4wtIVODSbf5fFx7ZztYxeGJAgBQ","Ekhos3Fx8IfwKdfQrfZ_FicfrYiXmvZodQ'
-                       b'cHV3KNOSlU"],"bt":"0","br":[],"ba":[],"a":[]}-AABAB3b6Crm7YW3yj0'
-                       b'njd6ruR35d8GBxiRqUfjHzyMf3NMNA_SR9jAQ9c5RtRXj6mm_33GToDHRNcJIxW3'
-                       b'8mF9y7eBQ')
+        assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"ECmJe44VLyThxwh5vCAlt_GV'
+                       b'uMMbeQD3A8z9AtEShKTF","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
+                       b'oNBES3s","s":"1","p":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES'
+                       b'3s","kt":"2","k":["DEbwF934m5TjdQbC18jSmk2CcPO7xzAemzePy4LKnA_U"'
+                       b',"DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"],"nt":"2","n":["'
+                       b'EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMICPhPTw","EGyO8jUZpLIlACoeL'
+                       b'mfUzvE3mnxmcU2m_nyKfSDfpxV4","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfO'
+                       b'BFPO1IyJUn"],"bt":"0","br":[],"ba":[],"a":[]}-AABABCdRDo4RsFYSpj'
+                       b'YvFai31ajkT7qpwKFuCSQboCFIJ9T8iP462ltRgL-FbNb-YbybQFamTa23vqn7ve'
+                       b'Es4w9C1UK')
 
         # Create group rotation from second participany
 
@@ -227,10 +228,10 @@ def test_multisig_incept(mockHelpingNowUTC):
         exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'EawKhRpkR4gS9vXHg4SJlMZ9sPhgbHbX6jb9wdkXJsBk'
-        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAASAO0yXsOqB'
-                       b'3b0X1FeTWW0zj8EUnw1ZgEXa1aEKxB_I9p1bOgqPwXD7-rsyHuglEhCNqi2Z6u-D'
-                       b'P9deRXxv5fDg')
+        assert exn.saidb == b'ENzaH42YagJx5HLYXPtZF08jIdMnPvxQYiBE0zhHXnIb'
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACrnW5luu62'
+                       b'evN9gBhFFwH5zd5Y5DmOsdwg-UG9Eg0g2zKrhUtKfjA4RnsNhWmehZFE0nSCnlU3'
+                       b'h6sbQN_rfAMI')
         data = exn.ked["a"]
         assert data["aids"] == aids
         assert data["ked"] == hab.kever.serder.ked
@@ -242,14 +243,11 @@ def test_multisig_rotate(mockHelpingNowUTC):
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'EeDS5AxBqN7s8zxUOK6zAezrxLAw4wObbklPBe3QPS34'  # b'EU3uP2KgAGpMocaQUKtLUT18L93QbTu_aJ-wWQBHU-mw'
-        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAw-IgLaJmLh'
-                       b'ac8aFvdWcmh40H-ccUKNUdXM6qZQlYTt8owRZwEKVW7013mXNQ35Sr3x_BMHYkrg'
-                       b'amjVPBAikdAA')
+        assert exn.saidb == b'ECvGacv6ylbutc64Kz6bRgorjO86gWzTeooI16PGxDH3'
+        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABrc77AmFw0'
+                       b'Rss74Niga6A98XW4gI_vYsvCMLQ7mzB6Fg76fL7dpUr4MnO3bf7OGgYbqDzeDWtv'
+                       b'BoG4ojtp0DcF')
 
-        #(b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAAac_9tzL2U'
-                       #b'67a7gD8x_0mOCMViQ_KMYamSdxIggWCzNpjLb40S9jEX-NjXJpZR4DXs2j8llesd'
-                       #b'PA5xAdWdCgCg')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre
@@ -266,10 +264,10 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'ErNtK4G1SCZM4YVXTiJ7zkUlQRmwLQ8EGnQWyc67HsnQ'
-        assert atc == (b'-HABE07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c-AABAAkYKROLj5QW'
-                       b'i9F6K2N40Ppi1GsT10u9k9N6Xf4BMoOtTwSJj7ZB9OeKHF4a2XHsSNwgxmH2yC0u'
-                       b'aIQzu9UXqPCg')
+        assert exn.saidb == b'EBQ3JnvamTcPNju6skxXJW33LQuI-gCeVcgV0Is3PYME'
+        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAAEZk_SDop8'
+                       b'm5ONAt3Ro8qKzE3dpzPbuJVvbk7oDuSCU4jhhKF08Cpi2vUlRQd5yoPWhLH1YM4c'
+                       b'I1LDFmg0BFgA')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre

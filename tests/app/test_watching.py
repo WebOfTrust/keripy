@@ -54,7 +54,7 @@ def test_watcher_rotate_handler(seeder):
         cue = rotateDoer.cues.popleft()
 
         assert wat.pre != "BZg042qyBYoNC4rII1qdn7sPJPSh5vp5y0xnVYbJPujw"
-        assert cue["old"] == "BZg042qyBYoNC4rII1qdn7sPJPSh5vp5y0xnVYbJPujw"
+        assert cue["old"] == "BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8"
         assert cue["new"] == wat.pre
 
         habr = ctrl.db.habs.get(ctrl.name)

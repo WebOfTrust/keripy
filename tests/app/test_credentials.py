@@ -52,6 +52,8 @@ def loadSchema(db):
     filepath = os.path.join(TEST_DIR, "schema.json")
     with open(filepath) as f:
         sed = json.load(f)
+        _, sad = coring.Saider.saidify(sed, label=coring.Ids.dollar)
+
         schemer = scheming.Schemer(sed=sed)
         assert schemer.said == 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'
         db.schema.pin(keys=(schemer.said,), val=schemer)
@@ -217,7 +219,7 @@ class TestDoer(doing.DoDoer):
         assert self.hab3.kever.ilk == coring.Ilks.rot
 
         issd = dict(credentialData=dict(LEI="5493001KJTIIGC8Y1R17"), recipient=self.recp.pre, registry="vLEI",
-                    schema="EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw", source={})
+                    schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs", source={})
         b = json.dumps(issd).encode("utf-8")
         response = client1.simulate_post(f"/groups/{self.hab1.name}/credentials", body=b)
         assert response.status == falcon.HTTP_200
