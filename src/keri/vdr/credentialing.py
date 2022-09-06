@@ -653,7 +653,7 @@ class Credentialer(doing.DoDoer):
 
         super(Credentialer, self).__init__(doers=doers)
 
-    def create(self, regname, recp, schema, source, rules, data):
+    def create(self, regname, recp, schema, source, rules, data, private=False):
         """  Create and validate a credential returning the fully populated Creder
 
         Parameters:
@@ -663,6 +663,7 @@ class Credentialer(doing.DoDoer):
             source:
             rules:
             data:
+            private: add nonce for privacy preserving
 
         Returns:
             Creder: Creder class for the issued credential
@@ -678,12 +679,14 @@ class Credentialer(doing.DoDoer):
                                             "credentials".format(regname))
         hab = registry.hab
 
-        dt = data["dt"] if "dt" in data else helping.nowIso8601()
-
         d = dict(
             d="",
-            dt=dt,
         )
+
+        if private:
+            d["u"] = ""
+
+        d["dt"] = data["dt"] if "dt" in data else helping.nowIso8601()
 
         if recp is not None:
             d['i'] = recp
@@ -694,7 +697,7 @@ class Credentialer(doing.DoDoer):
                                     schema=schema,
                                     subject=d,
                                     source=source,
-                                    noncify="u" in data,
+                                    private=private,
                                     rules=rules,
                                     status=registry.regk)
         self.validate(creder)

@@ -226,26 +226,44 @@ def test_credential():
                         b'ebYuMJzzhZl-ckXxa8"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
                         b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
 
+
+def test_privacy_preserving_credential():
+    d = dict(
+        d="",
+        u="",
+        issuanceDate="2021-06-27T21:26:21.233257+00:00",
+        personLegalName="John Doe",
+        engagementContextRole="Project Manager",
+        credentialStatus="EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
+        LEI="254900OPPU84GM83MG36"
+    )
+
+    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+    assert saider.qb64 == "EmrOM6iYA8p5aEu9XL9e7MTnrDcwH3_VO7vN_QjKtSJo"
+    d["i"] = saider.qb64
+
+    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      subject=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+
     salt = coring.Salter(raw=b'0123456789abcdef').qb64
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
-                      noncify=True,
+                      private=True,
                       salt=salt,
                       issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      subject=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
     assert "u" in cred.ked
-    assert cred.raw == (b'{"v":"ACDC10JSON0002a5_","d":"Ew4NCMvfyDE4pOUQWYvAZ3nJLO4Mq7IgHoEzytpGX47Q",'
+    assert cred.raw == (b'{"v":"ACDC10JSON00026e_","d":"ECM8MA5SAMRkrAcGYYiXfwOnXnWRJOpAv4bTVSnc2nCg",'
                         b'"u":"0AMDEyMzQ1Njc4OWFiY2RlZg","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
                         b'"ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",'
                         b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",'
-                        b'"a":{"d":"Eq1zs6IjvB5NJZdbDSwFFV_gScx9ICZ5yxTnMcL57dTA",'
+                        b'"a":{"d":"Elovxn5cR5hzcn5lvumGHiAXqzrV8HneaDL0l8PjWhZg","u":"0AMDEyMzQ1Njc4OWFiY2RlZg",'
                         b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"John Doe",'
                         b'"engagementContextRole":"Project Manager",'
                         b'"credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",'
-                        b'"LEI":"254900OPPU84GM83MG36","i":"Ey8O65r9KllNVjY8hnmfHxruMv2VG1s2_wdnj_5-kgkI"},'
-                        b'"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD'
-                        b'"}]}')
+                        b'"LEI":"254900OPPU84GM83MG36","i":"EmrOM6iYA8p5aEu9XL9e7MTnrDcwH3_VO7vN_QjKtSJo"},"e":{}}')
 
 
 
