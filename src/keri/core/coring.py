@@ -861,14 +861,20 @@ class Matter:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
                 del qb64b[:self.fullSize]
+            if qb64b != self.qb64b:  # catch non-round trippable, pad bits
+                raise ValueError(f"Invalid qb64b init value = {qb64b}.")
 
         elif qb64 is not None:
             self._exfil(qb64)
+            if qb64 != self.qb64:  # catch non-round trippable, pad bits
+                raise ValueError(f"Invalid qb64 init value = {qb64}.")
 
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
                 del qb2[:self.fullSize * 3 // 4]
+            if qb2 != self.qb2:  # catch non-round trippable, pad bits
+                raise ValueError(f"Invalid qb2 init value = {qb2}.")
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
