@@ -39,7 +39,7 @@ def test_wallet(seeder, mockCoringRandomNonce):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
-                            subject=credSubject,
+                            data=credSubject,
                             status=issuer.regk)
         assert creder.said == "ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt"
 

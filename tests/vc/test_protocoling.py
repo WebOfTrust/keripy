@@ -85,7 +85,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
-                            subject=d,
+                            data=d,
                             status=issuer.regk)
 
         assert creder.said == "ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4VN2qIa-dvFn"
@@ -211,7 +211,7 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
-                            subject=d,
+                            data=d,
                             status=issuer.regk,
                             )
 

@@ -695,7 +695,7 @@ class Credentialer(doing.DoDoer):
 
         creder = proving.credential(issuer=hab.pre,
                                     schema=schema,
-                                    subject=d,
+                                    data=d,
                                     source=source,
                                     private=private,
                                     rules=rules,

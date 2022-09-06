@@ -20,7 +20,7 @@ logger = help.ogler.getLogger()
 
 def credential(schema,
                issuer,
-               subject,
+               data,
                private=False,
                salt=None,
                status=None,
@@ -36,7 +36,7 @@ def credential(schema,
         schema (SAID): of schema for this credential
         issuer (str): qb64 identifier prefix of the issuer
         status (str): qb64 said of the credential registry
-        subject (dict): of the values being assigned to the subject of this credential
+        data (dict): of the values being assigned to the subject of this credential
         private (bool): apply nonce used for privacy preserving ACDC
         salt (string): salt for nonce
         source (Optional[dict,list]): of source credentials to which this credential is chained
@@ -59,7 +59,7 @@ def credential(schema,
 
     if private:
         vc["u"] = salt if salt is not None else coring.Salter().qb64
-        subject["u"] = salt if salt is not None else coring.Salter().qb64
+        data["u"] = salt if salt is not None else coring.Salter().qb64
 
     vc |= dict(
         i=issuer,
@@ -77,7 +77,7 @@ def credential(schema,
     if rules is not None:
         vc["r"] = rules
 
-    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Ids.d)
+    _, sad = coring.Saider.saidify(sad=data, kind=kind, label=coring.Ids.d)
     vc["a"] = sad
 
     _, vc = coring.Saider.saidify(sad=vc)

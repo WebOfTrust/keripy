@@ -1429,7 +1429,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
 
         creder = proving.credential(issuer=palHab.pre,
                                     schema=schema,
-                                    subject=d,
+                                    data=d,
                                     status=issuer.regk,
                                     )
 
