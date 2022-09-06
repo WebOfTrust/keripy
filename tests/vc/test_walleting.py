@@ -17,9 +17,9 @@ def test_wallet(seeder, mockCoringRandomNonce):
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test")
         seeder.seedSchema(db=sidHby.db)
-        assert sidHab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert sidHab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
-        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
             d="",
             i=sidHab.pre,
@@ -41,7 +41,7 @@ def test_wallet(seeder, mockCoringRandomNonce):
                             schema=schema,
                             subject=credSubject,
                             status=issuer.regk)
-        assert creder.said == "E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ6cGmVjDngo"
+        assert creder.said == "ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -51,26 +51,26 @@ def test_wallet(seeder, mockCoringRandomNonce):
         sidReg.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ'
-                       b'6cGmVjDngo","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","'
-                       b'ri":"E2c3V7uJMRWNg13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ","s":"ExBYRwKd'
-                       b'VGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","a":{"d":"EsxxFocfzQDzMX7F'
-                       b'YU0jIbsacY0r3-7Ueve9reGOVakc","i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1v'
-                       b'eiRNvDpBGF9Z1Pc","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
-                       b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABECtWlHS2Wbx5M2Rg6n'
-                       b'm69PCtzwb1veiRNvDpBGF9Z1Pc0AAAAAAAAAAAAAAAAAAAAAAAECtWlHS2Wbx5M2'
-                       b'Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAuTABhuLXGU8PwKoc5G9yH7yu2Uwa'
-                       b'1OL3ln9e9IeorVS6Nyp7qVjADpZDCOCaFd5LNzgg_8CjsSQztJ7Zzjf1Bg')
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgp'
+                       b'KI_Ysseyxt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+                       b'ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCn'
+                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFKsAdq9CZF_w9yv'
+                       b'ia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIy'
+                       b'ge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
+                       b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABEIaGMMWJFPmtXznY1I'
+                       b'IiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXz'
+                       b'nY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACfes18vVu4oemgX4eXTeRHCqrEfD'
+                       b'GE0Qf35bmSKFdlbeFQhfnsELu7j11YJTIx92JG18MKQ8C6uQujDw-EJJoP')
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"E7z6kZDSxfg5InC9jOjUMtGi21ZM51o9TJ6cGmVjDngo",'
-               b'"i":"ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","ri":"E2c3V7uJMRWNg13Jt1w'
-               b'wbwdutqozJF2m-Y3vd-cvIFfQ","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI'
-               b'","a":{"d":"EsxxFocfzQDzMX7FYU0jIbsacY0r3-7Ueve9reGOVakc","i":"ECtWlHS2Wbx5M'
-               b'2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc","dt":"2021-06-27T21:26:21.233257+00:00","LE'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt",'
+               b'"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITak'
+               b'YpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
+               b'","a":{"d":"EFKsAdq9CZF_w9yvia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtX'
+               b'znY1IIiKDIrg-vIyge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"},"e":{}}')
 
-        sig0 = (b'AAuTABhuLXGU8PwKoc5G9yH7yu2Uwa1OL3ln9e9IeorVS6Nyp7qVjADpZDCOCaFd5LNzgg_8CjsS'
-                b'QztJ7Zzjf1Bg')
+        sig0 = (b'AACfes18vVu4oemgX4eXTeRHCqrEfDGE0Qf35bmSKFdlbeFQhfnsELu7j11YJTIx92JG18MKQ8C6'
+                b'uQujDw-EJJoP')
 
         parsing.Parser().parse(ims=msg, vry=verifier)
 

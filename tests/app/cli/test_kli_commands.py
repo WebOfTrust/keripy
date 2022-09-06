@@ -199,11 +199,11 @@ def test_standalone_kli_commands(helpers, capsys):
 
     args = parser.parse_args(["verify", "--name", "test", "--alias", "trans",
                               "--prefix",
-                              'ENDcdHc4j8YKYmBI_JVNpjzDhQaK0v_somH6RSlu-t65',
+                              'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU',
                               "--text",
                               "this is test data to sign",
                               "--signature",
-                              'AAAHmm1a7PMHoIQ1FcO4Sxd3nfeR72JdZagre_vV27g3TUov4_PZRgcemTYtbfWFysDXceaqMDIw9wSiwUfrLJAA'
+                              'AAAVToiPrZ56VgZDMgYntaGZB2yNjDqWE5vT-sMfiQAsixf2IQV3DhSqLYICJawatox7c01gwttocAnzqEM6wgYI'
                               ])
     assert args.handler is not None
     doers = args.handler(args)
@@ -217,7 +217,7 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capsigs = capsys.readouterr()
-    assert capsigs.out == ('Identifier: EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg\n'
+    assert capsigs.out == ('Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
                            'Seq No:\t5\n'
                            '\n'
                            'Witnesses:\n'
@@ -226,9 +226,9 @@ def test_standalone_kli_commands(helpers, capsys):
                            'Threshold:\t0\n'
                            '\n'
                            'Public Keys:\t\n'
-                           '\t1. DJpmnuJqalZJ-wgDZzJkm9Y7sKZKQi9eaie7uPcTXVjw\n'
-                           '\t2. DT9U0mqDhv_vE_7FU02DQ2a22m0ZWuRPDtI0q1VI0kmA\n'
-                           '\t3. DQzBSXe7yYn5xbFKdF4DStB6wiBnxIWgenRTZbKJmNG0\n'
+                           '\t1. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
+                           '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
+                           '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
                            '\n')
 
     args = parser.parse_args(["escrow", "--name", "test"])
