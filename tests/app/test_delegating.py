@@ -73,7 +73,7 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
 
     palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
 
-    assert palHab.pre == "E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
+    assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
@@ -90,7 +90,7 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     delHab = delHby.makeHab(name="del", icount=1, isith='1', ncount=1, nsith='1',
                             wits=[wesHab.pre],
                             delpre=palHab.pre)
-    assert delHab.pre == "EZfxaw5f7Jfan89IQGgQu8MVsk0ch9hlZ7Ykticq7zeg"
+    assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.msgs.append(dict(pre=delHab.pre))
 
@@ -118,19 +118,19 @@ def test_boatswain_proxy():
     with habbing.openHby(name="deltest", temp=True) as eeHby, \
             habbing.openHby(name="deltest", temp=True) as orHby:
         orHab = orHby.makeHab("delegator", transferable=True)
-        assert orHab.pre == "E3dZohp66V742HBXXX7WxMvYj-2Bb-O5E74GiQv0WmB0"
+        assert orHab.pre == "EKL3to0Q059vtxKi7wWmaNFJ3NKE1nQsOPasRXqPzpjS"
         eeHab = eeHby.makeHab("del", transferable=True, delpre=orHab.pre,
                               wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
                                     "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
                                     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
 
                               )
-        assert eeHab.pre == "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
+        assert eeHab.pre == "ENeyonITBrwHTmpr7uMbjyXczf7ovU1N3kRiN6whaNBh"
 
         boats = delegating.Boatswain(hby=eeHby)
         phab = boats.proxy("deltest", eeHab.kever)
 
-        assert phab.pre == "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
+        assert phab.pre == "EKzK9LWrC68treBm-ezUDqzRfKESkx8xncEkpmwVnB4f"
         assert phab.kever.wits == eeHab.kever.wits
         assert phab.kever.toad == eeHab.kever.toad
         assert phab.kever.tholder.sith == eeHab.kever.tholder.sith
@@ -145,10 +145,10 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EDf6cgBdTjZ8wI7u-sTUfhBquA7YCjqbYSKUqNEmvb3s'
-        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAA7Tk9lvwjgj'
-                       b'KBu7yOD4RbVIOnP_EDR8Bv728fPnOfP3BU8XNr1uAtkefCXgjp0Nl13MvHhdO_If'
-                       b'xqd9yP7qOqDg')
+        assert exn.saidb == b'EOwINvUeBdG2Pj1-oYLZUxi0C6qw6Ykpl3I__uSyDKuP'
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABcS_KLTVYJ'
+                       b'jDiYZw_CP7VK_r-96fUORWLBp48SJRKyvtRs5JLI9g-NVgZFhXWxSDcBgA26R4Ow'
+                       b'HGjoGzJgVbYI')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         assert data["ked"] == serder.ked
@@ -228,9 +228,9 @@ def test_delegation_request_handler(mockHelpingNowUTC):
                                         'b': [],
                                         'bt': '0',
                                         'c': [],
-                                        'd': 'E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI',
-                                        'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                        'i': 'E_gYHJ9ahqUDvoUrdfYDqUHk-ubhg7AsUPLHhxyDUsWI',
+                                        'd': 'EAaXhAxAYiaJidAKLd4r1j_6gN3GTC-pP3UZmECnIEKv',
+                                        'di': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                        'i': 'EAaXhAxAYiaJidAKLd4r1j_6gN3GTC-pP3UZmECnIEKv',
                                         'k': ['DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs'],
                                         'kt': '1',
                                         'n': ['DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k'],

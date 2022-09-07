@@ -23,7 +23,6 @@ from keri.end import ending
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
 
-
 from tests.app import openMultiSig
 
 
@@ -95,7 +94,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 3
 
-        schema = "EAMCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
+        schema = "ENTAoj2oNBFpaniRswwPcca9W1ElEeH2V7ahw68HV4G5"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -228,16 +227,16 @@ def test_multisig_incept():
         assert srdr.ked['r'] == '/multisig/icp'
         payload = json.dumps(srdr.ked["a"]).encode("utf-8")
         assert payload == (b'{"aids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Mds'
-                                    b'yXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs"'
-                                    b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENaz23s9dl8TfUJ6drp'
-                                    b'MO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS'
-                                    b'", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo"'
-                                    b', "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R9SGIgOaC-gpWHlJt'
-                                    b'rwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8'
-                                    b'Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", "EMDsRWscjCxnNsd'
-                                    b'SUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
-                                    b'cC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "BDoq6'
-                                    b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
+                           b'yXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs"'
+                           b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENaz23s9dl8TfUJ6drp'
+                           b'MO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS'
+                           b'", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo"'
+                           b', "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R9SGIgOaC-gpWHlJt'
+                           b'rwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8'
+                           b'Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", "EMDsRWscjCxnNsd'
+                           b'SUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
+                           b'cC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "BDoq6'
+                           b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
 
         evt = icpEnd.postman.evts.popleft()
         assert evt["src"] == hab1.pre
@@ -262,14 +261,14 @@ def test_multisig_incept():
         assert evt["dest"] == hab1.pre
         assert evt["topic"] == "multisig"
         assert evt["serder"].raw == (b'{"v":"KERI10JSON000273_","t":"icp","d":"EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-'
-                                b'Jl7mlaDS","i":"EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS","s":"0","kt":"2'
-                                b'","k":["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo","DFK7TqkMoxs_wpF5ID25R'
-                                b'ZUBb5ow93kP4r3Rkemz41Gl","DP95wOs0R9SGIgOaC-gpWHlJtrwPvgDeP-0-VLKZhamW"],"nt'
-                                b'":"2","n":["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8Qbx1QCryT","EHW59fWA4-YPCZNta'
-                                b'u6dbm5u9v3_egguEucKgjzDu5Kr","EMDsRWscjCxnNsdSUlcDjWklmtgeNGcuI0PG1Uc5vfQP"]'
-                                b',"bt":"2","b":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BCyRFMideczFZ'
-                                b'oapylLIyCjSdhtqVb31wZkRKvPfNqkw","BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh'
-                                b'9c"],"c":[],"a":[]}')
+                                     b'Jl7mlaDS","i":"EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS","s":"0","kt":"2'
+                                     b'","k":["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo","DFK7TqkMoxs_wpF5ID25R'
+                                     b'ZUBb5ow93kP4r3Rkemz41Gl","DP95wOs0R9SGIgOaC-gpWHlJtrwPvgDeP-0-VLKZhamW"],"nt'
+                                     b'":"2","n":["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8Qbx1QCryT","EHW59fWA4-YPCZNta'
+                                     b'u6dbm5u9v3_egguEucKgjzDu5Kr","EMDsRWscjCxnNsdSUlcDjWklmtgeNGcuI0PG1Uc5vfQP"]'
+                                     b',"bt":"2","b":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BCyRFMideczFZ'
+                                     b'oapylLIyCjSdhtqVb31wZkRKvPfNqkw","BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh'
+                                     b'9c"],"c":[],"a":[]}')
         assert evt["attachment"] == (b'-AABABA4LBb_ljS-dgSnh_g0fUbc1y5Q_tdh12eMAkzyRsd_Bbqy1zK05Uua-6GM'
                                      b'pUKP5vIo--fuD3YesuxJ7l6GbFAF')
         evt = icpEnd.counselor.postman.evts.popleft()
@@ -444,10 +443,10 @@ def test_multisig_interaction():
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
         assert payload == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
-                            'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
-                                     'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
-                                     'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'],
-                            'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0}}
+                           'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
+                                    'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
+                                    'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'],
+                           'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0}}
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
@@ -519,19 +518,19 @@ def test_identifier_ends():
         assert result.status == falcon.HTTP_200
 
         assert result.json == {'v': 'KERI10JSON000160_',
-                                't': 'rot',
-                                'd': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
-                                'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                's': '1',
-                                'p': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                'kt': '1',
-                                'k': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
-                                'nt': '1',
-                                'n': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
-                                'bt': '0',
-                                'br': [],
-                                'ba': [],
-                                'a': []}
+                               't': 'rot',
+                               'd': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
+                               'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               's': '1',
+                               'p': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'kt': '1',
+                               'k': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                               'nt': '1',
+                               'n': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
+                               'bt': '0',
+                               'br': [],
+                               'ba': [],
+                               'a': []}
 
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
@@ -552,18 +551,18 @@ def test_identifier_ends():
         result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         assert result.json == {'v': 'KERI10JSON00012b_',
-                            't': 'icp',
-                            'd': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
-                            'i': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
-                            's': '0',
-                            'kt': '1',
-                            'k': ['DOUxFFi_t9quipRvAzIsoC_uoQXhpTIe62Y0fJffpEj1'],
-                            'nt': '1',
-                            'n': ['ENpmBFOoWlPjRBFtN4aq7tZ0cdKWSOPJLoa-w3-90JEk'],
-                            'bt': '0',
-                            'b': [],
-                            'c': [],
-                            'a': []}
+                               't': 'icp',
+                               'd': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
+                               'i': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
+                               's': '0',
+                               'kt': '1',
+                               'k': ['DOUxFFi_t9quipRvAzIsoC_uoQXhpTIe62Y0fJffpEj1'],
+                               'nt': '1',
+                               'n': ['ENpmBFOoWlPjRBFtN4aq7tZ0cdKWSOPJLoa-w3-90JEk'],
+                               'bt': '0',
+                               'b': [],
+                               'c': [],
+                               'a': []}
 
         # Try to reuse the alias
         req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
@@ -576,19 +575,19 @@ def test_identifier_ends():
         result = client.simulate_post(path="/ids/test3", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         assert result.json == {'v': 'KERI10JSON00015f_',
-                            't': 'dip',
-                            'd': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
-                            'i': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
-                            's': '0',
-                            'kt': '1',
-                            'k': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
-                            'nt': '1',
-                            'n': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
-                            'bt': '0',
-                            'b': [],
-                            'c': [],
-                            'a': [],
-                            'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'}
+                               't': 'dip',
+                               'd': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                               'i': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                               's': '0',
+                               'kt': '1',
+                               'k': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
+                               'nt': '1',
+                               'n': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
+                               'bt': '0',
+                               'b': [],
+                               'c': [],
+                               'a': [],
+                               'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'}
 
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
@@ -613,13 +612,12 @@ def test_identifier_ends():
         assert result.status == falcon.HTTP_200
 
         assert result.json == {'v': 'KERI10JSON0000de_',
-                                't': 'ixn',
-                                'd': 'EK6W1L2q1iHn9HcyfmMvXRbMQHK_ZNnT9HGiR09OZkbP',
-                                'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                's': '2',
-                                'p': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
-                                'a': [{'i': 1, 's': 0, 'd': 2}]}
-
+                               't': 'ixn',
+                               'd': 'EK6W1L2q1iHn9HcyfmMvXRbMQHK_ZNnT9HGiR09OZkbP',
+                               'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               's': '2',
+                               'p': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
+                               'a': [{'i': 1, 's': 0, 'd': 2}]}
 
         req = dict(id="ignored", name="Wile", company="ACME", email="wile-coyote@acme.com")
         result = client.simulate_put("/ids/bad/metadata", body=json.dumps(req).encode("utf-8"))
@@ -727,7 +725,7 @@ def test_oobi_ends(seeder):
 
         palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[wesHab.pre])
 
-        assert palHab.pre == "E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A"
+        assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
         notifier = notifying.Notifier(hby=palHby)
         oobiery = ending.Oobiery(hby=palHby)
@@ -764,9 +762,8 @@ def test_oobi_ends(seeder):
         palHab.db.locs.put(keys=(palHab.pre, kering.Schemes.http), val=basing.LocationRecord(url=url))
         result = client.simulate_get(path="/oobi/pal?role=controller")
         assert result.status == falcon.HTTP_200  # Missing OOBI controller endpoints
-        assert result.json == {'oobis': [
-            'http://127.0.0.1:9999/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
-            '/controller'],
+        assert result.json == {
+            'oobis': ['http://127.0.0.1:9999/oobi/EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y/controller'],
             'role': 'controller'}
 
         # Seed with witness endpoints
@@ -774,9 +771,9 @@ def test_oobi_ends(seeder):
 
         result = client.simulate_get(path="/oobi/pal?role=witness")
         assert result.status == falcon.HTTP_200
-        assert result.json == {'oobis': [('http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A'
-                                          '/witness/'
-                                          'B3y3efWXFxXRJYYkggXjp-lJSoDsyqt7kok03edvHeas')],
+        assert result.json == {'oobis': [
+            'http://127.0.0.1:5644/oobi/EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y/witness'
+            '/BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr'],
                                'role': 'witness'}
 
         # Post without a URL or RPY
@@ -835,7 +832,7 @@ def test_challenge_ends(seeder):
     with habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby:
         palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
 
-        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+        assert palHab.pre == "EDtH1M06Na4Yf2_AoF-R8aY2izx3aVWsmmRNoLrWA-Gh"
 
         app = falcon.App()
         notifier = notifying.Notifier(hby=palHby)
@@ -898,7 +895,7 @@ def test_contact_ends(seeder):
 
         palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
         kvy = eventing.Kevery(db=palHab.db, local=False, lax=True)
-        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+        assert palHab.pre == "EDtH1M06Na4Yf2_AoF-R8aY2izx3aVWsmmRNoLrWA-Gh"
 
         msgs = bytearray()
         aids = []
@@ -969,7 +966,7 @@ def test_contact_ends(seeder):
         assert response.status == falcon.HTTP_200
         assert response.json == {'company': 'GLEIF',
                                  'first': 'Ken3',
-                                 'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                 'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                  'last': 'Burns3'}
 
         response = client.simulate_get(f"/contacts")
@@ -992,13 +989,13 @@ def test_contact_ends(seeder):
         assert response.status == falcon.HTTP_200
         assert response.json == {'company': 'ProSapien',
                                  'first': 'Ken2',
-                                 'id': 'EF2EBiBL7RJ84ilErw8PyMEbABX_wJIL2VHNqLOdq5cw',
+                                 'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
                                  'last': 'Burns2'}
         response = client.simulate_put(f"/contacts/{aids[4]}", body=b)
         assert response.status == falcon.HTTP_200
         assert response.json == {'company': 'ProSapien',
                                  'first': 'Ken4',
-                                 'id': 'EWgyARhlWPWWC3DD1kr-hKKR3EK10FUSpY78IGWrmf7M',
+                                 'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
                                  'last': 'Burns4'}
 
         response = client.simulate_get("/contacts", query_string="group=company")
@@ -1033,7 +1030,7 @@ def test_contact_ends(seeder):
         assert response.status == falcon.HTTP_200
         assert response.json == [{'company': 'GLEIF',
                                   'first': 'Ken3',
-                                  'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                  'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3'}]
 
         # Begins with search on last name
@@ -1054,11 +1051,11 @@ def test_contact_ends(seeder):
                                   'last': 'Burns4'},
                                  {'company': 'GLEIF',
                                   'first': 'Ken3',
-                                  'id': 'EbmbYwDptKJwtvhvwp_832eepyfFgqBiUe_PWbPgq0kA',
+                                  'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3'},
                                  {'company': 'GLEIF',
                                   'first': 'Ken1',
-                                  'id': 'Esba3nH2TssmC3ePHxQFZkbFqOxNFxKlCOfrXEnEUl0M',
+                                  'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
                                   'last': 'Burns1'}]
 
         response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
@@ -1252,25 +1249,25 @@ def test_escrow_end(mockHelpingNowUTC):
         bob.kever.escrowPSEvent(serder=icp, sigers=sigs)
         # regenerated down below
         escrowedEvt = {'ked': {'v': 'KERI10JSON00012b_',
-                            't': 'icp',
-                            'd': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
-                            'i': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
-                            's': '0',
-                            'kt': '1',
-                            'k': ['DKiNnDmdOkcBjcAqL2FFhMZnSlPfNyGrJlCjJmX5b1nU'],
-                            'nt': '1',
-                            'n': ['EMP7Lg6BtehOYZt2RwOqXLNfMUiUllejAp8G_5EiANXR'],
-                            'bt': '0',
-                            'b': [],
-                            'c': [],
-                            'a': []},
-                    'stored': True,
-                    'signatures': [{'index': 0,
-                                    'signature': 'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeIGZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
-                    'witness_signatures': [],
-                    'receipts': {},
-                    'timestamp': '2021-01-01T00:00:00.000000+00:00'}
-
+                               't': 'icp',
+                               'd': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                               'i': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                               's': '0',
+                               'kt': '1',
+                               'k': ['DKiNnDmdOkcBjcAqL2FFhMZnSlPfNyGrJlCjJmX5b1nU'],
+                               'nt': '1',
+                               'n': ['EMP7Lg6BtehOYZt2RwOqXLNfMUiUllejAp8G_5EiANXR'],
+                               'bt': '0',
+                               'b': [],
+                               'c': [],
+                               'a': []},
+                       'stored': True,
+                       'signatures': [{'index': 0,
+                                       'signature':
+                                           'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeIGZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
+                       'witness_signatures': [],
+                       'receipts': {},
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00'}
 
         response = client.simulate_get("/escrows?pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
         assert response.status == falcon.HTTP_200
@@ -1371,7 +1368,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         seeder.seedSchema(kenHby.db)
         palHab = palHby.makeHab(name="pal", icount=1, ncount=1, wits=[])
         kvy = eventing.Kevery(db=palHab.db, local=False, lax=True)
-        assert palHab.pre == "Eg-r6DSx1C4aReh2pwQsejJS-uPc6qb8OQ0qm30bKxcU"
+        assert palHab.pre == "EDtH1M06Na4Yf2_AoF-R8aY2izx3aVWsmmRNoLrWA-Gh"
 
         msgs = bytearray()
         aids = []
@@ -1410,7 +1407,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         client = testing.TestClient(app)
 
         # Create a credential that we will present
-        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
             d="",
             i=palHab.pre,
@@ -1434,7 +1431,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
                                     status=issuer.regk,
                                     )
 
-        assert creder.said == "EIcj3D6xSD_B33h9Q2JTlkz2BXZuOYaPkY7qMOFMYb-s"
+        assert creder.said == "EMOTF5DgWMkX6-xy6eLietSLqWCBDB9TQfKFaflpa8MI"
 
         msg = signing.ratify(palHab, serder=creder)
 
@@ -1568,6 +1565,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         assert response.status == falcon.HTTP_400
         assert response.text == "schema is required, none provided"
 
+
 if __name__ == "__main__":
     # non seeder tests
     test_multisig_incept()
@@ -1576,4 +1574,4 @@ if __name__ == "__main__":
     test_identifier_ends()
     test_keystate_end()
     test_schema_ends()
-    #test_escrow_end(mockHelpingNowUTC)
+    # test_escrow_end(mockHelpingNowUTC)
