@@ -17,11 +17,11 @@ kli init --name delegator2 --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config
 kli incept --name delegator2 --alias delegator2 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator-2.json
 
 echo "Sharing OOBIs between delegate's two local identifiers"
-kli oobi resolve --name delegate1 --oobi-alias delegate2 --oobi http://127.0.0.1:5642/oobi/E64X4wS9Oaps6NtcsE_rgNoxxAT5QzdGfGyUKu1ecHgo/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-kli oobi resolve --name delegate2 --oobi-alias delegate1 --oobi http://127.0.0.1:5642/oobi/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate1 --oobi-alias delegate2 --oobi http://127.0.0.1:5642/oobi/E64X4wS9Oaps6NtcsE_rgNoxxAT5QzdGfGyUKu1ecHgo/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --name delegate2 --oobi-alias delegate1 --oobi http://127.0.0.1:5642/oobi/Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 echo "Sharing OOBIs between delegator's two local identifiers"
-kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0.1:5642/oobi/EC1DxuYp8GgIDVQ2c8EYBaY1CwxozvQuqGxwppNVrapY/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/Ef9Bhn_LeAU3rq8Rf3XHi5C1XmNdIM5uxv2DwWQT6qd8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0.1:5642/oobi/EC1DxuYp8GgIDVQ2c8EYBaY1CwxozvQuqGxwppNVrapY/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/Ef9Bhn_LeAU3rq8Rf3XHi5C1XmNdIM5uxv2DwWQT6qd8/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # In 2 delegator terminal windows run the following
 kli multisig incept --name delegator1 --alias delegator1 --group delegator --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json &
@@ -36,8 +36,8 @@ PID_LIST+=" $pid"
 wait $PID_LIST
 
 # Delegator does not need an oobi for delegate.
-kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
-kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo
+kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EZbh5QuW1HI4dmYZrKYIjXE_34E5c2np8HjKggen7bu8/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # Run the delegate commands in parallel so they can collaborate and request delegation
 kli multisig incept --name delegate1 --alias delegate1 --group delegate --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json &

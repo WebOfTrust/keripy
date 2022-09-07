@@ -46,16 +46,16 @@ isSuccess
 kli sign --name test --alias trans --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AA8r1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw
+kli verify --name test --alias trans --prefix EKYEW7HZtLywhFZLtbTeLn1Qk5SRrsLzLZhjaIxWXDFY --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AACopTJG_oGKeLVAFb8YKCcMq-iOOPyjvR-j7hhMH2aRXY1GGfRAjo_-iBbMlPi8JcKhBI5gWZUssbH9tMd7jAUA
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AB-xBrhNnUjxGK6DRElZUBGT42gla6y-MLcpKS7L6kbRcW1cKx2WONAuSvX2hKem0ueGxdtPqmQhV1cLvTkynVCA
+kli verify --name test --alias trans --prefix EKYEW7HZtLywhFZLtbTeLn1Qk5SRrsLzLZhjaIxWXDFY --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ABBIgtKqPXbOxEiD7EyrBdhpxyar6hG1aA1qRm2S3vsJg9v3sUK2Re_Rpk1jS4geh40Zan9q_OIUql17Yv0QGFAM
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACUaMj3_YdoCsc_NIu4Y3xNEKoy1208r9hxlfc1lcKGIA2TKccnHt0agHSAqvFaaK1D3FyHl5_3S_HAEypE0kzAA
+kli verify --name test --alias trans --prefix EKYEW7HZtLywhFZLtbTeLn1Qk5SRrsLzLZhjaIxWXDFY --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACCtB-zkgTG-83L7y1IRywHnK8axgKGYnq-ZSpopC-cOzC0YRRyU__CuT0K5UA7iPQYgJx5bubK02Uo507q4yrAC
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+kli verify --name test --alias trans --prefix EKYEW7HZtLywhFZLtbTeLn1Qk5SRrsLzLZhjaIxWXDFY --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
 ret=$?
 if [ $ret -eq 0 ]; then
    echo "Testing invalid signature should fail $ret"
