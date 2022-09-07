@@ -121,16 +121,16 @@ def test_boatswain_proxy():
         assert orHab.pre == "EKL3to0Q059vtxKi7wWmaNFJ3NKE1nQsOPasRXqPzpjS"
         eeHab = eeHby.makeHab("del", transferable=True, delpre=orHab.pre,
                               wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                                    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                                    "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
+                                    "BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                                    "BBoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
 
                               )
-        assert eeHab.pre == "ENeyonITBrwHTmpr7uMbjyXczf7ovU1N3kRiN6whaNBh"
+        assert eeHab.pre == 'EAszJpIhVoFsTw_fqOXT7N0yQbyPS-S1LV3FGvqUVcye'
 
         boats = delegating.Boatswain(hby=eeHby)
         phab = boats.proxy("deltest", eeHab.kever)
 
-        assert phab.pre == "EKzK9LWrC68treBm-ezUDqzRfKESkx8xncEkpmwVnB4f"
+        assert phab.pre == 'EJXiQ33u2yXCtkH7UImC4D-RverPqvshuTlJyaAybKi4'
         assert phab.kever.wits == eeHab.kever.wits
         assert phab.kever.toad == eeHab.kever.toad
         assert phab.kever.tholder.sith == eeHab.kever.tholder.sith
@@ -139,16 +139,16 @@ def test_boatswain_proxy():
 def test_delegation_request(mockHelpingNowUTC):
     with habbing.openHab(name="test", temp=True) as (hby, hab):
 
-        delpre = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
+        delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EOwINvUeBdG2Pj1-oYLZUxi0C6qw6Ykpl3I__uSyDKuP'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABcS_KLTVYJ'
-                       b'jDiYZw_CP7VK_r-96fUORWLBp48SJRKyvtRs5JLI9g-NVgZFhXWxSDcBgA26R4Ow'
-                       b'HGjoGzJgVbYI')
+        assert exn.saidb == b'ECExH5XhemF79vJOPuhIHzuWG-Zpc8ckIKkB1e3UDfzf'
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADpPd_zfD-Q'
+                       b'60O7de1woc7H6UJUCaiuUIzKs_MgRcrxjfH_5h6HzfI6B-rjt0pgCJRNFKgVRgv4'
+                       b'llWS_u6DS58I')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         assert data["ked"] == serder.ked

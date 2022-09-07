@@ -30,7 +30,7 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import generateSigners, generatePrivates, generatePublics
-from keri.core.coring import (intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64,
+from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
@@ -183,10 +183,10 @@ def test_b64_conversions():
     assert i == 6011
 
     s = "-BAC"
-    b = b64ToB2(s[:])
+    b = codeB64ToB2(s[:])
     assert len(b) == 3
     assert b == b'\xf8\x10\x02'
-    t = b2ToB64(b, 4)
+    t = codeB2ToB64(b, 4)
     assert t == s[:]
     i = int.from_bytes(b, 'big')
     assert i == 0o76010002
@@ -195,10 +195,10 @@ def test_b64_conversions():
     p = nabSextets(b, 4)
     assert p == b'\xf8\x10\x02'
 
-    b = b64ToB2(s[:3])
+    b = codeB64ToB2(s[:3])
     assert len(b) == 3
     assert b == b'\xf8\x10\x00'
-    t = b2ToB64(b, 3)
+    t = codeB2ToB64(b, 3)
     assert t == s[:3]
     i = int.from_bytes(b, 'big')
     assert i == 0o76010000
@@ -207,10 +207,10 @@ def test_b64_conversions():
     p = nabSextets(b, 3)
     assert p == b'\xf8\x10\x00'
 
-    b = b64ToB2(s[:2])
+    b = codeB64ToB2(s[:2])
     assert len(b) == 2
     assert b == b'\xf8\x10'
-    t = b2ToB64(b, 2)
+    t = codeB2ToB64(b, 2)
     assert t == s[:2]
     i = int.from_bytes(b, 'big')
     assert i == 0o174020
@@ -219,10 +219,10 @@ def test_b64_conversions():
     p = nabSextets(b, 2)
     assert p == b'\xf8\x10'
 
-    b = b64ToB2(s[:1])
+    b = codeB64ToB2(s[:1])
     assert len(b) == 1
     assert b == b'\xf8'
-    t = b2ToB64(b, 1)
+    t = codeB2ToB64(b, 1)
     assert t == s[:1]
     i = int.from_bytes(b, 'big')
     assert i == 0o370
@@ -394,7 +394,7 @@ def test_matter():
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
     for skey, sval in Matter.Hards.items():
-        ckey = b64ToB2(skey)
+        ckey = codeB64ToB2(skey)
         assert Matter.Bards[ckey] == sval
 
     assert Matter._rawSize(MtrDex.Ed25519) == 32
@@ -458,6 +458,18 @@ def test_matter():
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
+    # test non-zero pad bits in qb64 init ps == 1
+    badprefix1 = 'B_AAY2RlZmdoaWprbG1ub3BxcnN0dXYwMTIzNDU2Nzg5'
+    with pytest.raises(ValueError) as ex:
+        matter = Matter(qb64=badprefix1)
+    assert str(ex.value) == "Non zeroed prepad bits = 110000 in b'_'."
+
+    # test non-zero pad bits in qb64 init ps == 2
+    badprefix2 = '0A_wMTIzNDU2Nzg5YWJjZGVm'
+    with pytest.raises(ValueError) as ex:
+        matter = Matter(qb64=badprefix2)
+    assert str(ex.value) == "Non zeroed prepad bits = 111100 in b'_'."
+
     # test truncates extra bytes from qb64 parameter
     longprefix = prefix + "ABCD"  # extra bytes in size
     matter = Matter(qb64=longprefix)
@@ -478,10 +490,24 @@ def test_matter():
     matter = Matter(qb2=longprebin)
     assert len(matter.qb64) == Matter.Sizes[matter.code].fs
 
+    # test non-zero pad bits in qb2 init ps ==1
+    badprebin1 = decodeB64(badprefix1)  # b'\x07\xf0\x00cdefghijklmnopqrstuv0123456789'
+    with pytest.raises(ValueError) as ex:
+        matter = Matter(qb2=badprebin1)
+    assert str(ex.value) == 'Non zeroed pad bits = 00000011 in 0x07.'
+
+    # test non-zero pad bits in qb2 init ps ==2
+    badprebin2 = decodeB64(badprefix2)  # b'\xd0\x0f\xf0123456789abcdef'
+    with pytest.raises(ValueError) as ex:
+        matter = Matter(qb2=badprebin2)
+    assert str(ex.value) == 'Non zeroed pad bits = 00001111 in 0x0f.'
+
+
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortprebin = prebin[:-4]  # too few bytes in  size
     with pytest.raises(ShortageError):
         matter = Matter(qb2=shortprebin)
+
 
     matter = Matter(qb64=prefix.encode("utf-8"))  # test bytes not str
     assert matter.code == MtrDex.Ed25519N
@@ -605,8 +631,8 @@ def test_matter():
     assert Matter._rawSize(code) == 2
     assert Matter._leadSize(code) == 1
     raw = b'ab'
-    qb64 = '2AAAAGFi'
-    qb2 = b'\xd8\x00\x00\x00ab'
+    qb64 = '2AAAAGFi'  # '2AAA' + encodeB64(b'\x00ab').decode("utf-8")
+    qb2 = decodeB64(qb64)  # b'\xd8\x00\x00\x00ab'
     matter = Matter(raw=raw, code=code)
     assert matter.raw == raw
     assert matter.code == code
@@ -624,6 +650,8 @@ def test_matter():
     matter._exfil(qb64.encode("utf-8"))
     assert matter.code == code
     assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
 
     matter = Matter(qb64b=qb64.encode("utf-8"))
     assert matter.code == code
@@ -652,6 +680,30 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+
+    matter = Matter(raw=raw, code=code)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.both == code
+    assert matter.size == None
+    assert matter.fullSize == 8
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test with bad pad or lead
+    badqb64 = '2AAA_2Fi'  # '2AAA' + encodeB64(b'\xffab').decode("utf-8")
+    badqb2 = decodeB64(badqb64)  # b'\xd8\x00\x00\xffab'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb64=badqb64)
+    assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb2=badqb2)
+    assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
+
 
     # test fix sized with leader 2
     # TBD2 = '3AAA'  # Testing purposes only of fixed with lead size 2
@@ -707,6 +759,18 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
+    # test with bad pad or lead
+    badqb64 = '3AAA__96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
+    badqb2 = decodeB64(badqb64)  #b'\xdc\x00\x00\xff\xffz'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb64=badqb64)
+    assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb2=badqb2)
+    assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
+
     # test variable sized with leader 1
     code = MtrDex.Bytes_L1
     with pytest.raises(InvalidCodeSizeError):
@@ -733,6 +797,8 @@ def test_matter():
     matter._exfil(qb64.encode("utf-8"))
     assert matter.code == code
     assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
 
     matter = Matter(qb64=qb64)
     assert matter.code == code
@@ -775,6 +841,19 @@ def test_matter():
     matter = Matter(qb2=bytearray(qb2), strip=True)
     assert matter.code == code
     assert matter.raw == raw
+
+    # test with bad lead 1
+    # 5 bytes with lead 1 = two triplets = b'\xffabcde'
+    badqb64 = '5BAC_2FiY2Rl'  # '5BAC' + encodeB64(b'\xffabcde').decode("utf-8")
+    badqb2 = decodeB64(badqb64)  # b'\xe4\x10\x02\xffabcde'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb64=badqb64)
+    assert str(ex.value) ==  'Non zeroed lead byte = 0xff.'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb2=badqb2)
+    assert str(ex.value) == 'Non zeroed lead byte = 0xff.'
 
     # test variable sized with leader 1 with code replacement
     code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 1 raw
@@ -860,6 +939,8 @@ def test_matter():
     matter._exfil(qb64.encode("utf-8"))
     assert matter.code == code
     assert matter.raw == raw
+    assert matter.qb64 == qb64
+    assert matter.qb2 == qb2
 
     matter = Matter(qb64b=qb64.encode("utf-8"))
     assert matter.code == code
@@ -888,6 +969,19 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+
+    # test with bad lead 2
+    # 4 bytes with lead 2 = two triplets = b'\xff\xffabcd'
+    badqb64 = '6BAC__9hYmNk'  # '5BAC' + encodeB64(b'\xff\xffabcd').decode("utf-8")
+    badqb2 = decodeB64(badqb64)  # b'\xe8\x10\x02\xff\xffabcd'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb64=badqb64)
+    assert str(ex.value) ==  'Non zeroed lead bytes = 0xffff.'
+
+    with pytest.raises(ValueError) as  ex:
+        matter = Matter(qb2=badqb2)
+    assert str(ex.value) == 'Non zeroed lead bytes = 0xffff.'
 
     # test variable sized with leader 2 with code replacement
     code0 = MtrDex.Bytes_L0  # use leader 0 code but with lead size 2 raw
@@ -1472,7 +1566,7 @@ def test_indexer():
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
     for skey, sval in Indexer.Hards.items():
-        ckey = b64ToB2(skey)
+        ckey = codeB64ToB2(skey)
         assert Indexer.Bards[ckey] == sval
 
     with pytest.raises(EmptyMaterialError):
@@ -1835,7 +1929,7 @@ def test_counter():
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
     for skey, sval in Counter.Hards.items():
-        ckey = b64ToB2(skey)
+        ckey = codeB64ToB2(skey)
         assert Counter.Bards[ckey] == sval
 
     with pytest.raises(EmptyMaterialError):
@@ -4762,11 +4856,11 @@ def test_serder():
 
     #  Test diger code
     ked = {'v': "KERI10JSON00006a_",
-           'd': 'HPg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA',
+           'd': 'HAg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA',
            'i': 'ABCDEFG', 's': 1,
            't': 'rot'}
     raw = (
-        b'{"v":"KERI10JSON00006a_","d":"HPg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA","i":"ABCDEFG","s":1,"t":"rot"}')
+        b'{"v":"KERI10JSON00006a_","d":"HAg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA","i":"ABCDEFG","s":1,"t":"rot"}')
     srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
@@ -4775,38 +4869,16 @@ def test_serder():
 
     #  Test compare
     ked = {'v': "KERI10JSON00006a_",
-           'd': 'EWDZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE',
+           'd': 'EADZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE',
            'i': 'ABCDEFG', 's': 1,
            't': 'rot'}
     raw = (
-        b'{"v":"KERI10JSON00006a_","d":"EWDZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE","i":"ABCDEFG","s":1,"t":"rot"}')
+        b'{"v":"KERI10JSON00006a_","d":"EADZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE","i":"ABCDEFG","s":1,"t":"rot"}')
     srdr = Serder(raw=raw)
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
     assert srdr.ked == ked
     assert srdr.saider.code == MtrDex.Blake3_256
-
-    # diger0 = Diger(ser=srdr.raw)  # default code
-    # diger1 = Diger(ser=srdr.raw, code=MtrDex.SHA3_256)
-    # diger2 = Diger(ser=srdr.raw, code=MtrDex.Blake2b_256)
-    #
-    # # test Serder.compare
-    # assert srdr.compare(diger=diger0)
-    # assert srdr.compare(diger=diger1)
-    # assert srdr.compare(diger=diger2)
-    #
-    # assert srdr.compare(dig=diger0.qb64)
-    # assert srdr.compare(dig=diger1.qb64b)
-    # assert srdr.compare(dig=diger2.qb64)
-    #
-    # ser1 = b'ABCDEFGHIJKLMNOPQSTUVWXYXZabcdefghijklmnopqrstuvwxyz0123456789'
-    #
-    # assert not srdr.compare(diger=Diger(ser=ser1))  # codes match
-    # assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
-    # assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256))  # codes not match
-    # assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)  # codes not match
-
-
 
     # need tests will fully populated serder for icp rot dip drt
     #aids = generatePublics(salt=None, count=3, transferable=False)
@@ -5175,4 +5247,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_indexer()
+    test_matter()

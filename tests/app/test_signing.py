@@ -298,10 +298,13 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
         regery.processEscrows()
 
+        # where is this schema to be found?
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
                                   issuer=hab.pre, subject=d, source={}, status=issuer.regk)
 
         # sign with single sig transferable identfier with multiple specified paths
+        # Bad magic values here but can't figure out where looks like Sadder Said seeder
+        # is using a bad magic value
         sig1 = signing.ratify(hab=hab, serder=cred, paths=[[], ["a"], ["a", "i"]])
         assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EBEjsD3UnYOfqMwmoevTuNW5Il5OXnDRcZ'
                         b'jgAV7Z48F_","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","'
