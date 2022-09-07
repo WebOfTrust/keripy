@@ -257,7 +257,7 @@ class TestDoer(doing.DoDoer):
 
 def test_multisig_issue_agent():
     salt = coring.Salter(raw=b'wann-the-witness').qb64
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
+    with test_grouping.openMultiSig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
             habbing.openHby(name="wan", salt=salt, temp=True) as wanHby, \
             habbing.openHab(name="recp", transferable=True) as (_, recp):
 

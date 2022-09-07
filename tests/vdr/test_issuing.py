@@ -12,7 +12,7 @@ from keri.db import basing
 from keri.vc import proving
 from keri.vdr import credentialing
 
-from . import buildHab
+from tests.vdr import buildHab
 
 
 def credential(hab, regk):

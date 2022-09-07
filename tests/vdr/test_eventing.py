@@ -15,9 +15,8 @@ from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnc
     MissingWitnessSignatureError, LikelyDuplicitousError
 from keri.vdr import eventing, viring
 from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery
-from . import buildHab
 
-
+from tests.vdr import buildHab
 
 
 def test_incept(mockCoringRandomNonce):

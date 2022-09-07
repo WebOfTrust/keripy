@@ -3,6 +3,8 @@
 tests.app.agent_kiwiserver module
 
 """
+import pytest
+
 import json
 import os
 
@@ -11,7 +13,8 @@ from falcon import testing
 from hio.base import doing
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, booting, notifying, signing, connecting
+from keri.app import (habbing, storing, kiwiing, grouping, booting, notifying,
+                      signing, connecting)
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
@@ -19,7 +22,9 @@ from keri.db import basing, dbing
 from keri.end import ending
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
-from tests.app import test_grouping
+
+
+from tests.app import openMultiSig
 
 
 def test_credential_handlers(mockHelpingNowUTC, seeder):
@@ -90,7 +95,7 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 3
 
-        schema = "E1MCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
+        schema = "EAMCiPag0EWlqeJGzDA9xxr1bUSUR4fZXtqHDrwdXgbk"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -159,9 +164,9 @@ def test_multisig_incept():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
-        assert hab1.pre == "E1plfvtsnS6XwiHOxF6n3fUTs-ylvJsxIUCd2Ji4hNqc"
-        assert hab2.pre == "EmYIWxzWUtSfQNBodo5RT8hNjoFlzcXZXTQXQM500tyE"
-        assert hab3.pre == "EPrbmW_c_3Dp4Q6rddi5X7RHp_Xkjp21RcMG2FEWr_HI"
+        assert hab1.pre == 'EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm'
+        assert hab2.pre == 'EMXpkB-DXmcDP_MdsyXDvZjgU8jtuUqPcfXoYq4TFLAv'
+        assert hab3.pre == 'EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs'
 
         counselor = grouping.Counselor(hby=hby1)
         notifier = notifying.Notifier(hby=hby1)
@@ -198,8 +203,8 @@ def test_multisig_incept():
             transferable=True,
             wits=[
                 "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+                "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
             ],
             toad=2,
             isith='2',
@@ -222,17 +227,17 @@ def test_multisig_incept():
         assert srdr.ked['t'] == coring.Ilks.exn
         assert srdr.ked['r'] == '/multisig/icp'
         payload = json.dumps(srdr.ked["a"]).encode("utf-8")
-        assert payload == (b'{"aids": ["E1plfvtsnS6XwiHOxF6n3fUTs-ylvJsxIUCd2Ji4hNqc", "EmYIWxzWUtSfQNBod'
-                           b'o5RT8hNjoFlzcXZXTQXQM500tyE", "EPrbmW_c_3Dp4Q6rddi5X7RHp_Xkjp21RcMG2FEWr_HI"'
-                           b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EaPj6HOFtnnvbNKlFLwb3'
-                           b'lVTOZBvRxdSGlEpZVLFLU6U", "i": "EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxdSGlEpZVLFLU6U'
-                           b'", "s": "0", "kt": "2", "k": ["DZahe53x0zi5u3BEGPEdnYHePZ1uU1tE317OOSUNRqqg"'
-                           b', "DUrtOqQyjGz_CkXkgPblFlQFvmjD3eQ_ivdGR6bPjUaU", "D_3nA6zRH1IYiA5oL6ClYeUm2'
-                           b'vA--AN4_7T5UspmFqZY"], "nt": "2", "n": ["Em9F-auLKTY-KStSxCI4m4VlnIJlcaruPjP'
-                           b'oQGk_FFT4", "Eo1ouQV2441h2Hg8cPD3D0YJg5eCzRKFFN3Dc-QYwPas", "Epxv4r1j0khdLvL'
-                           b'_y0gTrTsCKd3Kv_iKAiBtF-mDlzLg"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
-                           b'cC_9WYX90k03q-R_Ydo", "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "Bgoq6'
-                           b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
+        assert payload == (b'{"aids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Mds'
+                                    b'yXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs"'
+                                    b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENaz23s9dl8TfUJ6drp'
+                                    b'MO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS'
+                                    b'", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo"'
+                                    b', "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R9SGIgOaC-gpWHlJt'
+                                    b'rwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8'
+                                    b'Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", "EMDsRWscjCxnNsd'
+                                    b'SUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
+                                    b'cC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "BDoq6'
+                                    b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
 
         evt = icpEnd.postman.evts.popleft()
         assert evt["src"] == hab1.pre
@@ -256,17 +261,17 @@ def test_multisig_incept():
         assert evt["src"] == hab2.pre
         assert evt["dest"] == hab1.pre
         assert evt["topic"] == "multisig"
-        assert evt["serder"].raw == (b'{"v":"KERI10JSON000273_","t":"icp","d":"EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxdSGlEp'
-                                     b'ZVLFLU6U","i":"EaPj6HOFtnnvbNKlFLwb3lVTOZBvRxdSGlEpZVLFLU6U","s":"0","kt":"2'
-                                     b'","k":["DZahe53x0zi5u3BEGPEdnYHePZ1uU1tE317OOSUNRqqg","DUrtOqQyjGz_CkXkgPblF'
-                                     b'lQFvmjD3eQ_ivdGR6bPjUaU","D_3nA6zRH1IYiA5oL6ClYeUm2vA--AN4_7T5UspmFqZY"],"nt'
-                                     b'":"2","n":["Em9F-auLKTY-KStSxCI4m4VlnIJlcaruPjPoQGk_FFT4","Eo1ouQV2441h2Hg8c'
-                                     b'PD3D0YJg5eCzRKFFN3Dc-QYwPas","Epxv4r1j0khdLvL_y0gTrTsCKd3Kv_iKAiBtF-mDlzLg"]'
-                                     b',"bt":"2","b":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BuyRFMideczFZ'
-                                     b'oapylLIyCjSdhtqVb31wZkRKvPfNqkw","Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh'
-                                     b'9c"],"c":[],"a":[]}')
-        assert evt["attachment"] == (b'-AABAB_ic5fv_CzcSzvhuM4ngRuzRhjlJRFVuRuZ8xr6dyhcoQJ7EmuBM90aSci3wC-dE1JItuW2HkhM'
-                                     b'k2cBE2oOAVBA')
+        assert evt["serder"].raw == (b'{"v":"KERI10JSON000273_","t":"icp","d":"EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-'
+                                b'Jl7mlaDS","i":"EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS","s":"0","kt":"2'
+                                b'","k":["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo","DFK7TqkMoxs_wpF5ID25R'
+                                b'ZUBb5ow93kP4r3Rkemz41Gl","DP95wOs0R9SGIgOaC-gpWHlJtrwPvgDeP-0-VLKZhamW"],"nt'
+                                b'":"2","n":["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8Qbx1QCryT","EHW59fWA4-YPCZNta'
+                                b'u6dbm5u9v3_egguEucKgjzDu5Kr","EMDsRWscjCxnNsdSUlcDjWklmtgeNGcuI0PG1Uc5vfQP"]'
+                                b',"bt":"2","b":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BCyRFMideczFZ'
+                                b'oapylLIyCjSdhtqVb31wZkRKvPfNqkw","BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh'
+                                b'9c"],"c":[],"a":[]}')
+        assert evt["attachment"] == (b'-AABABA4LBb_ljS-dgSnh_g0fUbc1y5Q_tdh12eMAkzyRsd_Bbqy1zK05Uua-6GM'
+                                     b'pUKP5vIo--fuD3YesuxJ7l6GbFAF')
         evt = icpEnd.counselor.postman.evts.popleft()
         assert evt["src"] == hab2.pre
         assert evt["dest"] == hab3.pre
@@ -277,8 +282,8 @@ def test_multisig_incept():
             transferable=True,
             wits=[
                 "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+                "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
             ],
             toad=2,
             isith="1/3,1/3,1/3",
@@ -296,8 +301,8 @@ def test_multisig_incept():
 
 def test_multisig_rotation():
     prefix = "test"
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
-        assert ghab1.pre == ghab2.pre == ghab3.pre == "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        assert ghab1.pre == ghab2.pre == ghab3.pre == 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
 
         app = falcon.App()
 
@@ -327,8 +332,8 @@ def test_multisig_rotation():
             transferable=True,
             wits=[
                 "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+                "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
             ],
             toad=2,
             isith='2',
@@ -356,13 +361,13 @@ def test_multisig_rotation():
         assert evt["dest"] == ghab3.phab.pre
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
-        assert set(payload['adds']) == {'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo',
-                                        'Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c',
-                                        'BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw'}
+        assert set(payload['adds']) == {'BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw',
+                                        'BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c',
+                                        'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo'}
 
-        assert payload['aids'] == ['E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c',
-                                   'E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068',
-                                   'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI']
+        assert payload['aids'] == ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
+                                   'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
+                                   'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv']
         assert payload['cuts'] == []
         assert payload['sith'] == '2'
         assert payload['toad'] == 2
@@ -387,8 +392,8 @@ def test_multisig_rotation():
 
 def test_multisig_interaction():
     prefix = "test"
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
-        assert ghab1.pre == ghab2.pre == ghab3.pre == "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        assert ghab1.pre == ghab2.pre == ghab3.pre == 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
 
         app = falcon.App()
 
@@ -438,11 +443,11 @@ def test_multisig_interaction():
         assert evt["dest"] == ghab3.phab.pre
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
-        assert payload == {'aids': ['E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c',
-                                    'E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068',
-                                    'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI'],
-                           'data': {'i': 'ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI', 's': 0},
-                           'gid': 'Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU'}
+        assert payload == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
+                            'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
+                                     'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
+                                     'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'],
+                            'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0}}
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
@@ -462,7 +467,7 @@ def test_multisig_interaction():
 
 def test_identifier_ends():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        assert hab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
 
         app = falcon.App()
 
@@ -497,68 +502,68 @@ def test_identifier_ends():
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
 
-        assert result.json == [{'isith': '1',
+        assert result.json == [{'name': 'test',
                                 'metadata': {},
-                                'name': 'test',
-                                'next_keys': ['EsBMmyevdbrDojd73T6UmBvSktf7f-i-Yu0LjsuRr7y4'],
-                                'nsith': '1',
-                                'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                'public_keys': ['DaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg'],
-                                'receipts': 0,
+                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                                 'seq_no': 0,
+                                'isith': '1',
+                                'public_keys': ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I'],
+                                'nsith': '1',
+                                'next_keys': ['EJhRr10e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N'],
                                 'toad': 0,
-                                'witnesses': []}]
+                                'witnesses': [],
+                                'receipts': 0}]
 
         req = dict(isith='1', count=1)
         result = client.simulate_put(path="/ids/test/rot", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
 
-        assert result.json == {'a': [],
-                               'ba': [],
-                               'br': [],
-                               'bt': '0',
-                               'd': 'EawlnQ8c4obp5urfda9tBLdeWQuYN7caxxIZYXjABFRY',
-                               'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                               'k': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
-                               'kt': '1',
-                               'n': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
-                               'nt': '1',
-                               'p': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                               's': '1',
-                               't': 'rot',
-                               'v': 'KERI10JSON000160_'}
+        assert result.json == {'v': 'KERI10JSON000160_',
+                                't': 'rot',
+                                'd': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
+                                'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                's': '1',
+                                'p': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                'kt': '1',
+                                'k': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                                'nt': '1',
+                                'n': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
+                                'bt': '0',
+                                'br': [],
+                                'ba': [],
+                                'a': []}
 
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
 
-        assert result.json == [{'isith': '1',
+        assert result.json == [{'name': 'test',
                                 'metadata': {},
-                                'name': 'test',
-                                'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
-                                'nsith': '1',
-                                'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
-                                'receipts': 0,
+                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                                 'seq_no': 1,
+                                'isith': '1',
+                                'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                                'nsith': '1',
+                                'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
                                 'toad': 0,
-                                'witnesses': []}]
+                                'witnesses': [],
+                                'receipts': 0}]
 
         req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
         result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
-        assert result.json == {'a': [],
-                               'b': [],
-                               'bt': '0',
-                               'c': [],
-                               'd': 'EWJA1LHU3Du10uW9B0pM8e7xIQ_3CP3qp9a-D713MlxM',
-                               'i': 'EWJA1LHU3Du10uW9B0pM8e7xIQ_3CP3qp9a-D713MlxM',
-                               'k': ['D5TEUWL-32q6KlG8DMiygL-6hBeGlMh7rZjR8l9-kSPU'],
-                               'kt': '1',
-                               'n': ['EurslVC_9AbgETqNkP8xXewQyUxeICfbSy5hrFX5Dh3s'],
-                               'nt': '1',
-                               's': '0',
-                               't': 'icp',
-                               'v': 'KERI10JSON00012b_'}
+        assert result.json == {'v': 'KERI10JSON00012b_',
+                            't': 'icp',
+                            'd': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
+                            'i': 'EFreoTWR_zDOyPd3QeNvwDHYrgFYnurZST68-cMCoBMT',
+                            's': '0',
+                            'kt': '1',
+                            'k': ['DOUxFFi_t9quipRvAzIsoC_uoQXhpTIe62Y0fJffpEj1'],
+                            'nt': '1',
+                            'n': ['ENpmBFOoWlPjRBFtN4aq7tZ0cdKWSOPJLoa-w3-90JEk'],
+                            'bt': '0',
+                            'b': [],
+                            'c': [],
+                            'a': []}
 
         # Try to reuse the alias
         req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
@@ -570,50 +575,51 @@ def test_identifier_ends():
                    delpre="ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc")
         result = client.simulate_post(path="/ids/test3", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
-        assert result.json == {'a': [],
-                               'b': [],
-                               'bt': '0',
-                               'c': [],
-                               'd': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
-                               'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                               'i': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
-                               'k': ['DwiTSOvj8HtydZQ24HuVYuUxC80kzq49DanESrU3g4wg'],
-                               'kt': '1',
-                               'n': ['ERQq0RyQ3nN97chiuWJSjxS3fdtPbDWZ9MmRzdQtLIk4'],
-                               'nt': '1',
-                               's': '0',
-                               't': 'dip',
-                               'v': 'KERI10JSON00015f_'}
+        assert result.json == {'v': 'KERI10JSON00015f_',
+                            't': 'dip',
+                            'd': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                            'i': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                            's': '0',
+                            'kt': '1',
+                            'k': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
+                            'nt': '1',
+                            'n': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
+                            'bt': '0',
+                            'b': [],
+                            'c': [],
+                            'a': [],
+                            'di': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'}
 
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 3
-        assert result.json[2] == {'anchored': False,
-                                  'delegated': True,
-                                  'delegator': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+        assert result.json[2] == {'name': 'test3',
+                                  'prefix': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                                  'seq_no': 0,
                                   'isith': '1',
                                   'metadata': {},
-                                  'name': 'test3',
-                                  'next_keys': ['ERQq0RyQ3nN97chiuWJSjxS3fdtPbDWZ9MmRzdQtLIk4'],
+                                  'public_keys': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
                                   'nsith': '1',
-                                  'prefix': 'EuPLuLyLTdXSFnYpIN4shnvWwt6ufh-RHLssRjHcmr7I',
-                                  'public_keys': ['DwiTSOvj8HtydZQ24HuVYuUxC80kzq49DanESrU3g4wg'],
-                                  'receipts': 0,
-                                  'seq_no': 0,
+                                  'next_keys': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
                                   'toad': 0,
-                                  'witnesses': []}
+                                  'witnesses': [],
+                                  'receipts': 0,
+                                  'delegated': True,
+                                  'delegator': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
+                                  'anchored': False}
 
         req = dict(data=[{"i": 1, "s": 0, "d": 2}])
         result = client.simulate_put(path="/ids/test/ixn", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
 
-        assert result.json == {'a': [{'d': 2, 'i': 1, 's': 0}],
-                               'd': 'EMNnpGzsaDEsYMhGsAlGX3VX0DE78rGzuEdj4l_HY49A',
-                               'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                               'p': 'EawlnQ8c4obp5urfda9tBLdeWQuYN7caxxIZYXjABFRY',
-                               's': '2',
-                               't': 'ixn',
-                               'v': 'KERI10JSON0000de_'}
+        assert result.json == {'v': 'KERI10JSON0000de_',
+                                't': 'ixn',
+                                'd': 'EK6W1L2q1iHn9HcyfmMvXRbMQHK_ZNnT9HGiR09OZkbP',
+                                'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                's': '2',
+                                'p': 'EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4VeM',
+                                'a': [{'i': 1, 's': 0, 'd': 2}]}
+
 
         req = dict(id="ignored", name="Wile", company="ACME", email="wile-coyote@acme.com")
         result = client.simulate_put("/ids/bad/metadata", body=json.dumps(req).encode("utf-8"))
@@ -625,42 +631,41 @@ def test_identifier_ends():
         result = client.simulate_put("/ids/test/metadata", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         res = dict(req)
-        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        res["id"] = 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         assert result.json == res
 
         # Test single GET with metadata
         result = client.simulate_get("/ids/test")
         assert result.status == falcon.HTTP_200
-        assert result.json == {'isith': '1',
+        assert result.json == {'name': 'test',
+                               'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'seq_no': 2,
+                               'isith': '1',
+                               'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                               'nsith': '1',
+                               'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
+                               'toad': 0,
+                               'witnesses': [],
+                               'receipts': 0,
                                'metadata': {'company': 'ACME',
                                             'email': 'wile-coyote@acme.com',
-                                            'name': 'Wile'},
-                               'name': 'test',
-                               'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
-                               'nsith': '1',
-                               'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                               'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
-                               'receipts': 0,
-                               'seq_no': 2,
-                               'toad': 0,
-                               'witnesses': []}
+                                            'name': 'Wile'}
+                              }
 
         # Test list GET method with metadata
         result = client.simulate_get("/ids")
         assert result.status == falcon.HTTP_200
-        assert result.json[0] == {'isith': '1',
-                                  'metadata': {'company': 'ACME',
-                                               'email': 'wile-coyote@acme.com',
-                                               'name': 'Wile'},
-                                  'name': 'test',
-                                  'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
-                                  'nsith': '1',
-                                  'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                  'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
-                                  'receipts': 0,
+        assert result.json[0] == {'name': 'test',
+                                  'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
                                   'seq_no': 2,
+                                  'isith': '1',
+                                  'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                                  'nsith': '1',
+                                  'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
                                   'toad': 0,
-                                  'witnesses': []}
+                                  'witnesses': [],
+                                  'receipts': 0,
+                                  'metadata': {'name': 'Wile', 'company': 'ACME'}}
 
         # Change the alias for the identifier
         req = dict(alias="another_test")
@@ -1098,7 +1103,7 @@ def test_contact_ends(seeder):
 
 def test_keystate_end():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        assert hab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
 
         app = falcon.App()
 
@@ -1126,10 +1131,10 @@ def test_keystate_end():
         result = client.simulate_get(path=f"/keystate/{hab.pre}")
         assert result.status == falcon.HTTP_200
         state = result.json["state"]
-        assert state["i"] == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert state["i"] == hab.pre
         assert state["et"] == "icp"
-        assert state["k"] == ['DaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg']
-        assert state["n"] == ['EsBMmyevdbrDojd73T6UmBvSktf7f-i-Yu0LjsuRr7y4']
+        assert state["k"] == ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I']
+        assert state["n"] == ['EJhRr10e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N']
 
         kel = result.json["kel"]
         assert len(kel) == 1
@@ -1178,20 +1183,22 @@ def test_schema_ends():
         response = client.simulate_get("/schema")
         assert response.status == falcon.HTTP_200
         assert len(response.json) == 3
-        assert response.json[0]["$id"] == "E1bRmgA1GEsAdzOjsHCDMGWQMxlYVTZCKUIIhuD3w8ro"
-        assert response.json[1]["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
-        assert response.json[2]["$id"] == "EusII1Sa7u305LldfoxjC7IsdjXcha4mgVU98GSOQYB0"
+        assert response.json[0]["$id"] == 'EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
+        schema0id = 'EHoMjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
+        assert response.json[1]["$id"] == 'ELrCCNUmu7t9OS5XX6MYwuyLHY13IWuJoFVPfBkjkGAd'
+        assert response.json[2]["$id"] == 'ENW0ZoANRhLAHczo7BwgzBlkDMZWFU2QilCCIbg98PK6'
 
-        assert response.json[0]["properties"] == {'b': {'type': 'number'}}
-        assert response.json[1]["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
-        assert response.json[2]["properties"] == {'a': {'type': 'string'}}
+        assert response.json[2]["properties"] == {'b': {'type': 'number'}}
+        assert response.json[0]["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
+        assert response.json[1]["properties"] == {'a': {'type': 'string'}}
 
-        response = client.simulate_get("/schema/EzzRmgA1GEsAdzOjsHCDMGWQMxlYVTZCKUIIhuD3w8ro")
+        badschemaid = 'EH1MjhY-5V5jdSXr0yHEYWxSH8MeFfNEqnmhXbClTepe'
+        response = client.simulate_get(f"/schema/{badschemaid}")
         assert response.status == falcon.HTTP_404
 
-        response = client.simulate_get("/schema/EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4")
+        response = client.simulate_get(f"/schema/{schema0id}")
         assert response.status == falcon.HTTP_200
-        assert response.json["$id"] == "EegyOFj7lXmN1JevTIcRhbFIfwx4V80SqeaFdsKVN6l4"
+        assert response.json["$id"] == schema0id
         assert response.json["properties"] == {'c': {'format': 'date-time', 'type': 'string'}}
 
 
@@ -1243,31 +1250,28 @@ def test_escrow_end(mockHelpingNowUTC):
         for sig in hby.db.getSigsIter(key):
             sigs.append(coring.Siger(qb64b=bytes(sig)))
         bob.kever.escrowPSEvent(serder=icp, sigers=sigs)
-        escrowedEvt = {'ked': {'a': [],
-                               'b': [],
-                               'bt': '0',
-                               'c': [],
-                               'd':
-                                   'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0',
-                               'i':
-                                   'E7YbTIkWWyNwOxZQTTnrs6qn8jFbu2A8zftQ33JYQFQ0',
-                               'k': [
-                                   'DqI2cOZ06RwGNwCovYUWExmdKU983IasmUKMmZflvWdQ'],
-                               'kt': '1',
-                               'n': [
-                                   'EOmBSdblll8qB4324PEmETrFN-DhElyZ0BcBH1q1qukw'],
-                               'nt': '1',
-                               's': '0',
-                               't': 'icp',
-                               'v': 'KERI10JSON00012b_'},
-                       'receipts': {},
-                       'signatures': [{'index': 0,
-                                       'signature':
-                                           'AAotHSmS5LuCg2LXwlandbAs3MFR0yTC5BbE2iSW_35U2qA0hP9gp66G--mHhiFmfHEIbBKrs3'
-                                           'tjcc8ySvYcpiBg'}],
-                       'stored': True,
-                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
-                       'witness_signatures': []}
+        # regenerated down below
+        escrowedEvt = {'ked': {'v': 'KERI10JSON00012b_',
+                            't': 'icp',
+                            'd': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                            'i': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                            's': '0',
+                            'kt': '1',
+                            'k': ['DKiNnDmdOkcBjcAqL2FFhMZnSlPfNyGrJlCjJmX5b1nU'],
+                            'nt': '1',
+                            'n': ['EMP7Lg6BtehOYZt2RwOqXLNfMUiUllejAp8G_5EiANXR'],
+                            'bt': '0',
+                            'b': [],
+                            'c': [],
+                            'a': []},
+                    'stored': True,
+                    'signatures': [{'index': 0,
+                                    'signature': 'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeIGZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
+                    'witness_signatures': [],
+                    'receipts': {},
+                    'timestamp': '2021-01-01T00:00:00.000000+00:00'}
+
+
         response = client.simulate_get("/escrows?pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
         assert response.status == falcon.HTTP_200
         assert response.json == {'likely-duplicitous-events': [],
@@ -1563,3 +1567,13 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         response = client.simulate_post("/credentials/pal/requests", body=raw)
         assert response.status == falcon.HTTP_400
         assert response.text == "schema is required, none provided"
+
+if __name__ == "__main__":
+    # non seeder tests
+    test_multisig_incept()
+    test_multisig_rotation()
+    test_multisig_interaction()
+    test_identifier_ends()
+    test_keystate_end()
+    test_schema_ends()
+    #test_escrow_end(mockHelpingNowUTC)
