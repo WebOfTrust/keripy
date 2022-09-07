@@ -23,14 +23,11 @@ from ..vc import proving, protocoling
 logger = help.ogler.getLogger()
 
 
-def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
+def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
                         indirect=False, remotePre=""):
     """
     Setup and return doers list to run controller
     """
-    secrecies = []
-    for secret in secrets:  # convert secrets to secrecies
-        secrecies.append([secret])
 
     # setup habery with resources
     hby = habbing.Habery(name=name, base="demo", temp=True, free=True)

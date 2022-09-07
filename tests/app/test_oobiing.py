@@ -11,7 +11,7 @@ from hio.base import doing
 from keri.app import habbing, oobiing, notifying
 from keri.peer import exchanging
 
-from tests.app import test_grouping
+from tests.app import openMultiSig
 
 
 def test_oobi_share():
@@ -48,12 +48,11 @@ def test_oobi_share():
         rid = signal.attrs['note']['i']
 
         note, _ = notifier.noter.get(rid)
-        assert note.attrs == {
-            'oobi': 'http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness'
-                    '/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil',
-            'oobialias': 'Phil',
-            'r': '/oobi',
-            'src': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'}
+        assert note.attrs == {'oobi': 'http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness/'
+                                      'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil',
+                              'oobialias': 'Phil',
+                              'r': '/oobi',
+                              'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
 
         msg = dict(
             pre=hab.kever.prefixer,
@@ -72,18 +71,18 @@ def test_oobi_share():
                                           oobi="http://127.0.0.1/oobi")
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
-                           'd': 'EaRwW7MEoo8jwzE_e7lnSfHK4o467UZ9ZpbHZRPuZT8I',
+                           'd': 'EGkcFuzBKKPI8MxP3u5Z0nxyuKOOu1GfWaWx2UT7mU_C',
                            'q': {},
                            'r': '/oobis',
                            't': 'exn',
                            'v': 'KERI10JSON0000c5_'}
-        assert atc == (b'-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAnSMGzq9kCF'
-                       b'TFDSzNs5SNKmWSQ2c4cqu3Vi-SSq9l0GtphEdF08ygP1dOxryzxUWxZc89VpaPxc'
-                       b'c-cF_HFYZ1Dg')
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABjXDLWfNtF'
+                       b'GQAvJwJk-LeyzCXcCXLqxhPhQgiR45jZ-rzFoxjG2C3SaX7AbaGbm0XImx7XtK02'
+                       b'YkjK792iDOIC')
 
 
 def test_oobi_share_endpoint():
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)):
+    with openMultiSig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)):
         app = falcon.App()
         oobiEnd = oobiing.OobiResource(hby=hby1)
         app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")

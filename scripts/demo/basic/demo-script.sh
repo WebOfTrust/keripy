@@ -8,7 +8,7 @@ function isSuccess() {
 }
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name test --nopasscode --salt 0AMDEyMzQ1Njc4OWxtbm9aBc
+kli init --name test --nopasscode --salt 0ACDEyMzQ1Njc4OWxtbm9aBc
 isSuccess
 
 # NON-TRANSFERABLE
@@ -46,16 +46,16 @@ isSuccess
 kli sign --name test --alias trans --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AA8r1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw
+kli verify --name test --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AABuQervAG8QLyvho99362U8TScec_4zYDVF1pUMWfWfKbl5thR6QakpvSvVMdcPcGYxi0McgNtW-Z3EhpC01I4A
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature AB-xBrhNnUjxGK6DRElZUBGT42gla6y-MLcpKS7L6kbRcW1cKx2WONAuSvX2hKem0ueGxdtPqmQhV1cLvTkynVCA
+kli verify --name test --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ABBJcS2ZbcHEdEEnaJE1CFUxdsKqkoU5TS34CImGh3s0cs-k3cNcy2PJxQ8WjIvAot1-cZ71o1E-WkqZ-tCTNZsJ
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACUaMj3_YdoCsc_NIu4Y3xNEKoy1208r9hxlfc1lcKGIA2TKccnHt0agHSAqvFaaK1D3FyHl5_3S_HAEypE0kzAA
+kli verify --name test --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACBieMVQBXvIxeqQuHc4Db_-GUoFE9e37TW8t6DomwXdMcSxBiHJpDp3EJH1Dcz9lHKbFuCRqoNo4wywZGtUpOcB
 isSuccess
 
-kli verify --name test --alias trans --prefix EWlz5c_UEQyZgNMhF-GMjs_53_3MOhTzzqJ7yQz1vwZI --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
+kli verify --name test --alias trans --prefix EIryzWYlZ9bQr7EhMAoBXk4r2h-OgaEqERid7-AHNp6o --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --signature ACSHdal6kHAAjbW_frH83sDDCoBHw_nNKFysW5Dj8PSsnwVPePCNw-kFmF6Z8H87q7D3abw_5u2i4jmzdnWFsRDz
 ret=$?
 if [ $ret -eq 0 ]; then
    echo "Testing invalid signature should fail $ret"

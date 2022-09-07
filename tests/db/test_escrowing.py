@@ -5,9 +5,11 @@ tests.db.escrowing module
 """
 from keri import kering
 from keri.app import habbing
-from keri.core import coring
+from keri.core import coring, eventing
+from keri.core.eventing import SealEvent
 from keri.db import escrowing, dbing, subing
 from keri.help import helping
+from keri.vdr import credentialing
 
 
 def test_broker():
@@ -27,33 +29,31 @@ def test_broker_nontrans():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = coring.Salter(raw=raw)
     salt = salter.qb64
-    assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
-
-    #with dbing.openLMDB() as db, \
-            #basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
+    assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
     with dbing.openLMDB() as brokerdb, \
-        habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
+         habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHab(name="pal") as (hby, hab):
+
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+        stn = issuer.tever.state()
+        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=stn.ked)
 
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False)
-        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith='1', icount=1,
-                                 #salt=salt, transferable=False, temp=True)
-
         bork = escrowing.Broker(db=brokerdb, subkey="test")
 
         dts = helping.nowIso8601()
         typ = "test"
-        ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
-               'dt': dts,
-               'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',
-               'a': {'v': 'KERI10JSON000135_', 'i': 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
-                     'd': 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw',
-                     'ri': 'ECWWojIv_2OqlFL7BSwkyd69_vWKYaTUU5jUhxhXvjmc', 'ra': {},
-                     'a': {'s': 2, 'd': 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'},
-                     'dt': dts, 'et': 'iss'}}
-        pre = "EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs"
-        aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
+
+        ked = rpy.ked
+        pre = ked['a']['i']
+        aid = "EBWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])
         saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Ids.d)
@@ -93,28 +93,28 @@ def test_broker_nontrans():
 
 
 def test_broker_trans():
-    #with dbing.openLMDB() as db, \
-            #basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
-        #bobHab = habbing.Habitat(name="bob", ks=bobKS, db=bobDB, isith='1', icount=1, transferable=True,
-                                 #wits=[], temp=True)
 
     with dbing.openLMDB() as brokerdb, \
-        habbing.openHby(name="bob", base="test") as bobHby:
+         habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHab(name="pal") as (hby, hab):
 
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+        stn = issuer.tever.state()
+        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=stn.ked)
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
 
         bork = escrowing.Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
         typ = "test"
-        ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
-               'dt': dts,
-               'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',
-               'a': {'v': 'KERI10JSON000135_', 'i': 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
-                     'd': 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw',
-                     'ri': 'ECWWojIv_2OqlFL7BSwkyd69_vWKYaTUU5jUhxhXvjmc', 'ra': {},
-                     'a': {'s': 2, 'd': 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'},
-                     'dt': dts, 'et': 'iss'}}
-        pre = "EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs"
+        ked = rpy.ked
+
+        pre = issuer.regk
         aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])
@@ -157,3 +157,9 @@ def test_broker_trans():
         assert bork.escrowdb.get(keys=("test", saider.qb64, aid)) == []
         assert bork.serderdb.get(keys=(saider.qb64,)).raw == tserder.raw
         assert bork.saiderdb.get(keys=(pre, aid)).qb64 == saider.qb64
+
+
+if __name__ == "__main__":
+    test_broker()
+    test_broker_nontrans()
+    test_broker_trans()

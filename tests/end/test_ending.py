@@ -68,12 +68,12 @@ def test_signature_designature():
 
         # setup habitat
         # hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
-        assert hab.pre == 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
+        assert hab.pre == 'EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-'
         digest = hab.kever.serder.said
-        assert digest == 'E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI'
+        assert digest == hab.pre
 
         # example body text
-        text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
+        text = (b'{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
                 b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                 b'8080,"path":"/witness"}')
 
@@ -83,13 +83,7 @@ def test_signature_designature():
         signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])  # put it in a list
-        assert header == ({'Signature':
-                               'indexed="?1";'
-                               '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
-                               '-2jAQ";'
-                               '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                               '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        assert header == {'Signature': 'indexed="?1";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -110,12 +104,7 @@ def test_signature_designature():
                                  digest=digest,
                                  kind="CESR")
         header = ending.signature([signage])  # put it in a list
-        assert header == ({
-            'Signature': 'indexed="?1";signer="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";ordinal="0";digest'
-                         '="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";kind="CESR";0'
-                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
-                         '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
-                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";ordinal="0";digest="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -135,17 +124,8 @@ def test_signature_designature():
         signage = ending.Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])
-        assert header == ({'Signature':
-                               'indexed="?0";'
-                               'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-                               '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku'
-                               '-2jAQ";'
-                               'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-                               '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                               '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                               'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
-                               '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ'
-                               '"'})
+        assert header == {'Signature': 'indexed="?0";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
+
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -165,18 +145,7 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == ({
-            'Signature': 'indexed="?1";signer="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";kind="CESR";0'
-                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";1'
-                         '="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";2'
-                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                         'indexed="?0";signer="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";kind="CESR'
-                         '";DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7'
-                         '-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                         '";D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0'
-                         '="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ'
-                         '";DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM'
-                         '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
         signages = ending.designature(header["Signature"])
@@ -208,17 +177,8 @@ def test_signature_designature():
                                        ordinal=None, digest=None, kind="CESR"))
 
         header = ending.signature(signages)
-        assert header == ({
-            'Signature': 'indexed="?1";signer="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";kind="CESR";wit0'
-                         '="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                         '";wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                         '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
-                         '="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
-                         'indexed="?0";signer="E7OEpshFozj2X9iNWUW6_QZ74z7UemsSAjIe3lnNYlMI";kind="CESR";wit0'
-                         '="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ'
-                         '";wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9'
-                         '-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";wit2'
-                         '="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+        assert header == {'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
+
         # test designature
         signages = ending.designature(header["Signature"])
 
@@ -349,11 +309,11 @@ def test_seid_api():
         client = testing.TestClient(app=app)
 
         aid0 = hab.pre
-        assert aid0 == 'EfP89RN2Kc-8lAKtecc0Fdy6EqXL8db13Xs1buu1jji4'
-        wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
-        wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
-        wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
-        wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
+        assert aid0 == 'EAJAEHYWGxz0nJNBvbOzpFR8RonSWa_YyJxULjAH1XEv'
+        wit0 = 'BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+        wit1 = 'BBd2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+        wit2 = 'BCjDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
+        wit3 = 'BD_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
 
         role = "witness"
         aid = aid0
@@ -369,30 +329,30 @@ def test_seid_api():
 
         data = dict(seid=seid, name=name, dts=dts, scheme=scheme, host=host, port=port, path=path)
         text = coring.dumps(data)  # default is kind=coring.Serials.json
-        assert text == (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
+        assert text == (b'{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
                         b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                         b'8080,"path":"/witness"}')
+
         # sign here  check for non-transferable
         sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
         signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
         header = ending.signature([signage])
-        assert header == ({'Signature':
-                               'indexed="?1";'
-                               '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
+        assert header == {'Signature': 'indexed="?1";0="AACuduac6au7JSqANK1IaHWP_GlLG9OhPC7Mg52_uRSoddogaYw8mfuyIM6x4lRhKAlxUVDRv_Fh0plB7wx-LSoE"'}
 
         endpath = "/end/{}/{}".format(aid, role)
-        assert endpath == '/end/EfP89RN2Kc-8lAKtecc0Fdy6EqXL8db13Xs1buu1jji4/witness'
+        assert endpath == f'/end/{aid0}/witness' # '/end/EFW3cL-Lv4tGnk_WnnruryH4WKaOXw4qeZNU5dG1hUve/witness'
         rep = client.simulate_post(path=endpath,
                                    content_type=falcon.MEDIA_JSON,
                                    headers=header,
                                    body=text)  # accepts bytes
         assert rep.status == falcon.HTTP_OK
         assert rep.json == dict(aid=aid, role=role, data=data)
-        assert rep.text == ('{"aid": "EfP89RN2Kc-8lAKtecc0Fdy6EqXL8db13Xs1buu1jji4", "role": "witness", '
-                            '"data": {"seid": "B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
-                            '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
-                            '"localhost", "port": 8080, "path": "/witness"}}')
+        assert rep.text == ('{"aid": "EAJAEHYWGxz0nJNBvbOzpFR8RonSWa_YyJxULjAH1XEv", "role": "witness", '
+                        '"data": {"seid": "BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68", "name": '
+                        '"wit0", "dts": "2021-01-01T00:00:00.000000+00:00", "scheme": "http", "host": '
+                        '"localhost", "port": 8080, "path": "/witness"}}')
+
 
     """Done Test"""
 
@@ -492,11 +452,11 @@ def test_oobiery():
     with habbing.openHby(name="oobi") as hby:
         oobiery = ending.Oobiery(hby=hby)
 
-        url = 'http://127.0.0.1:5644/oobi/E6Dqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
-              '/BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
+        url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
+              '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi/E2RzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
@@ -523,4 +483,4 @@ def test_oobiery():
 
 
 if __name__ == '__main__':
-    test_signature_designature()
+    test_oobiery()

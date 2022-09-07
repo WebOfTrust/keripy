@@ -35,7 +35,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     # Create non-transferable identifier
     with existing.existingHab(name="test", alias="non-trans") as (hby, hab):
-        assert hab.pre == "BjzVSYRS7pWuKLbo_FBqDB2RYnMmbdDo8RG1TDVz_L0o"
+        assert hab.pre == 'BI81UmEUu6Vrii26PxQagwdkWJzJm3Q6PERtUw1c_y9K'
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "non-trans"])
     assert args.handler is not None
@@ -53,8 +53,9 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
 
+    xpre = 'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU'  # 'EORLw1VyVyBqNCHMUTYctinMDCba9o6Ut-34YFpiLBFK'
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "trans"])
     assert args.handler is not None
@@ -62,7 +63,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
         assert hab.kever.sn == 1
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "trans", "--data",
@@ -72,14 +73,14 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
         assert hab.kever.sn == 2
         assert hab.kever.ilk == coring.Ilks.rot
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
-            {'i': 'EoXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
+            {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
              's': 0,
-             'd': 'EyR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
+             'd': 'EAR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
              }
         ]
 
@@ -90,14 +91,14 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
         assert hab.kever.sn == 3
         assert hab.kever.ilk == coring.Ilks.ixn
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
-            {'i': 'EoXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
+            {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
              's': 0,
-             'd': 'EyR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
+             'd': 'EAR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
              }
         ]
 
@@ -109,7 +110,7 @@ def test_standalone_kli_commands(helpers, capsys):
     directing.runController(doers=doers)
 
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
         assert hab.kever.sn == 4
         assert hab.kever.ilk == coring.Ilks.rot
         assert hab.kever.tholder.sith == "1"
@@ -121,13 +122,13 @@ def test_standalone_kli_commands(helpers, capsys):
     directing.runController(doers=doers)
 
     with existing.existingHab(name="test", alias="trans") as (hby, hab):
-        assert hab.pre == "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg"
+        assert hab.pre == xpre
         assert hab.kever.sn == 5
         assert hab.kever.ilk == coring.Ilks.rot
         assert hab.kever.tholder.sith == "2"
-        assert [verfer.qb64 for verfer in hab.kever.verfers] == ['DJpmnuJqalZJ-wgDZzJkm9Y7sKZKQi9eaie7uPcTXVjw',
-                                                                 'DT9U0mqDhv_vE_7FU02DQ2a22m0ZWuRPDtI0q1VI0kmA',
-                                                                 'DQzBSXe7yYn5xbFKdF4DStB6wiBnxIWgenRTZbKJmNG0']
+        assert [verfer.qb64 for verfer in hab.kever.verfers] == ['DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8',
+                                                                 'DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg',
+                                                                 'DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt']
 
     # Skipping sign and verify, they rely on console output.
 
@@ -139,8 +140,9 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
 
+    epre = 'EMZ09JgN6Kr_rZH4Q7SovW-bxYXjiQX2XdSIQYpZnHsJ'
     with existing.existingHab(name="test", alias="est-only") as (hby, hab):
-        assert hab.pre == "ErzV_sZ8iC-mKOFN7dknxnXSISU3hvlUZr7TMcJs7JsY"
+        assert hab.pre == epre
         assert hab.kever.sn == 0
 
     args = parser.parse_args(["interact", "--name", "test", "--alias", "est-only", "--data",
@@ -157,7 +159,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     directing.runController(doers=doers)
     with existing.existingHab(name="test", alias="est-only") as (hby, hab):
-        assert hab.pre == "ErzV_sZ8iC-mKOFN7dknxnXSISU3hvlUZr7TMcJs7JsY"
+        assert hab.pre == epre
         assert hab.kever.sn == 1
         assert hab.kever.ilk == coring.Ilks.rot
 
@@ -167,14 +169,14 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     with existing.existingHab(name="test", alias="est-only") as (hby, hab):
-        assert hab.pre == "ErzV_sZ8iC-mKOFN7dknxnXSISU3hvlUZr7TMcJs7JsY"
+        assert hab.pre == epre
         assert hab.kever.sn == 2
         assert hab.kever.ilk == coring.Ilks.rot
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
-            {'i': 'EoXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
+            {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
              's': 0,
-             'd': 'EyR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
+             'd': 'EAR75fE1ZmuCSfDwKPfbLowUWLqqi0ZX4502DLIo857Q'
              }
         ]
 
@@ -185,18 +187,23 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
 
+    #"ErzV_sZ8iC-mKOFN7dknxnXSISU3hvlUZr7TMcJs7JsY"
+
     capsigs = capsys.readouterr()
     assert capsigs.out == ('1. '
-                           'AAFU6Ij62eelYGQzIGJ7WhmQdsjYw6lhOb0_rDH4kALIsX9iEFdw4Uqi2CAiWsGraMe3NNYMLbaHAJ86hDOsIGCA\n'
+                           'AAAVToiPrZ56VgZDMgYntaGZB2yNjDqWE5vT-sMfiQAsixf2IQV3DhSqLYICJawatox7c01gwttocAnzqEM6wgYI\n'
                            '2. '
-                           'ABxq2LNAhwiez2o8bFexl_qBWlvQjqOKi6Km-gK_J6tXZzyKs7TEB39-5mu7vIGkB36A9IQ2qswu--119E9bK4Bg\n'
+                           'ABDGrYs0CHCJ7PajxsV7GX-oFaW9COo4qLoqb6Ar8nq1dnPIqztMQHf37ma7u8gaQHfoD0hDaqzC777XX0T1srgG\n'
                            '3. '
-                           'ACi5faVb-zjOGNutRmZKT1kLv_9ZsPH383BWNZSetgho4hId5rxErvze2tNWDgiqonKhHuUzl0n9I__KgcTyscDg\n')
+                           'ACCLl9pVv7OM4Y261GZkpPWQu__1mw8ffzcFY1lJ62CGjiEh3mvESu_N7a01YOCKqicqEe5TOXSf0j_8qBxPKxwO\n')
 
-    args = parser.parse_args(["verify", "--name", "test", "--alias", "trans", "--prefix",
-                              "EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg", "--text", "this is test data to sign",
+    args = parser.parse_args(["verify", "--name", "test", "--alias", "trans",
+                              "--prefix",
+                              'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU',
+                              "--text",
+                              "this is test data to sign",
                               "--signature",
-                              "AAFU6Ij62eelYGQzIGJ7WhmQdsjYw6lhOb0_rDH4kALIsX9iEFdw4Uqi2CAiWsGraMe3NNYMLbaHAJ86hDOsIGCA"
+                              'AAAVToiPrZ56VgZDMgYntaGZB2yNjDqWE5vT-sMfiQAsixf2IQV3DhSqLYICJawatox7c01gwttocAnzqEM6wgYI'
                               ])
     assert args.handler is not None
     doers = args.handler(args)
@@ -210,7 +217,7 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capsigs = capsys.readouterr()
-    assert capsigs.out == ('Identifier: EdSWKic0jXrzhG2mfCsdwWBOxIhnufSJjMT53YmCq8Pg\n'
+    assert capsigs.out == ('Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
                            'Seq No:\t5\n'
                            '\n'
                            'Witnesses:\n'
@@ -219,9 +226,9 @@ def test_standalone_kli_commands(helpers, capsys):
                            'Threshold:\t0\n'
                            '\n'
                            'Public Keys:\t\n'
-                           '\t1. DJpmnuJqalZJ-wgDZzJkm9Y7sKZKQi9eaie7uPcTXVjw\n'
-                           '\t2. DT9U0mqDhv_vE_7FU02DQ2a22m0ZWuRPDtI0q1VI0kmA\n'
-                           '\t3. DQzBSXe7yYn5xbFKdF4DStB6wiBnxIWgenRTZbKJmNG0\n'
+                           '\t1. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
+                           '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
+                           '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
                            '\n')
 
     args = parser.parse_args(["escrow", "--name", "test"])

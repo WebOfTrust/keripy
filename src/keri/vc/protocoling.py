@@ -24,7 +24,7 @@ class ApplyHandler(doing.Doer):
            "dt": "2020-08-22T17:50:12.988921+00:00"
            "r": "/credential/apply"
            "a" {
-               "s": "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw",
+               "s": "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
                "a": {
                   "LEI": "254900OPPU84GM83MG36"
                }

@@ -21,6 +21,53 @@ from tests.app import test_grouping
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def loadApp(hby, rgy, verifier, notifier):
+    app = falcon.App()
+
+    repd = storing.Respondant(hby=hby)
+    counselor = grouping.Counselor(hby=hby)
+    registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
+    credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
+    mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"],
+                                      verifier=verifier)
+    servery = booting.Servery(port=1234)
+    doers = kiwiing.loadEnds(hby=hby,
+                             rep=repd,
+                             rgy=rgy,
+                             notifier=notifier,
+                             signaler=notifier.signaler,
+                             verifier=verifier,
+                             app=app, path="/",
+                             registrar=registrar,
+                             credentialer=credentialer,
+                             servery=servery,
+                             bootConfig=dict(),
+                             counselor=counselor)
+    doers.extend([repd, counselor, registrar, credentialer, mbx])
+    return app, doers
+
+
+def loadSchema(db):
+    filepath = os.path.join(TEST_DIR, "schema.json")
+    with open(filepath) as f:
+        sed = json.load(f)
+        _, sad = coring.Saider.saidify(sed, label=coring.Ids.dollar)
+
+        schemer = scheming.Schemer(sed=sed)
+        assert schemer.said == 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'
+        db.schema.pin(keys=(schemer.said,), val=schemer)
+
+
+def createMbxEndRole(hab, cid, eid, url):
+    keys = (cid, kering.Roles.mailbox, eid)
+
+    ender = basing.EndpointRecord(allowed=True)  # create new record
+    hab.db.ends.pin(keys=keys, val=ender)
+    httplocer = basing.LocationRecord(url=url)  # create new record
+    lockeys = (eid, kering.Schemes.http)
+    hab.db.locs.pin(keys=lockeys, val=httplocer)  # overwrite
+
+
 class TestDoer(doing.DoDoer):
 
     def __init__(self, wanHby, hby1, hab1, hby2, hab2, hby3, hab3, recp):
@@ -32,11 +79,11 @@ class TestDoer(doing.DoDoer):
         wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
         wanHab = wanHby.habByName("wan")
         # Verify the group identifier was incepted properly and matches the identifiers
-        assert wanHab.pre == "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
-        assert hab1.phab.pre == "E07_pVCaF6sp9qv-_ufgnqfzySdauT1izcndWMwZzy6c"
-        assert hab2.phab.pre == "E83mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
-        assert hab3.phab.pre == "ELftDsGmYwRsd2lXjUqbky0vxABS4-VXeHV7OAIQzCQI"
-        gid = "Ehysj8OgpMlUgoMVaMDY8Gn8nDhnc00vH82RrY1s2vrU"
+        assert wanHab.pre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
+        assert hab1.phab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
+        assert hab2.phab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
+        assert hab3.phab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
+        gid = 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
         assert hab1.pre == hab2.pre == hab3.pre == gid
         assert hab1.name == "test_group1"
         assert hab2.name == "test_group2"
@@ -171,7 +218,7 @@ class TestDoer(doing.DoDoer):
         assert self.hab3.kever.ilk == coring.Ilks.rot
 
         issd = dict(credentialData=dict(LEI="5493001KJTIIGC8Y1R17"), recipient=self.recp.pre, registry="vLEI",
-                    schema="EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw", source={})
+                    schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs", source={})
         b = json.dumps(issd).encode("utf-8")
         response = client1.simulate_post(f"/groups/{self.hab1.name}/credentials", body=b)
         assert response.status == falcon.HTTP_200
@@ -212,7 +259,7 @@ class TestDoer(doing.DoDoer):
 
 def test_multisig_issue_agent():
     salt = coring.Salter(raw=b'wann-the-witness').qb64
-    with test_grouping.openMutlsig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
+    with test_grouping.openMultiSig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)), \
             habbing.openHby(name="wan", salt=salt, temp=True) as wanHby, \
             habbing.openHab(name="recp", transferable=True) as (_, recp):
 
@@ -224,46 +271,3 @@ def test_multisig_issue_agent():
         assert testDoer.done is True
 
 
-def loadApp(hby, rgy, verifier, notifier):
-    app = falcon.App()
-
-    repd = storing.Respondant(hby=hby)
-    counselor = grouping.Counselor(hby=hby)
-    registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
-    credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
-    mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"],
-                                      verifier=verifier)
-    servery = booting.Servery(port=1234)
-    doers = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
-                             rgy=rgy,
-                             notifier=notifier,
-                             signaler=notifier.signaler,
-                             verifier=verifier,
-                             app=app, path="/",
-                             registrar=registrar,
-                             credentialer=credentialer,
-                             servery=servery,
-                             bootConfig=dict(),
-                             counselor=counselor)
-    doers.extend([repd, counselor, registrar, credentialer, mbx])
-    return app, doers
-
-
-def loadSchema(db):
-    filepath = os.path.join(TEST_DIR, "schema.json")
-    with open(filepath) as f:
-        sed = json.load(f)
-        schemer = scheming.Schemer(sed=sed)
-        assert schemer.said == "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
-        db.schema.pin(keys=(schemer.said,), val=schemer)
-
-
-def createMbxEndRole(hab, cid, eid, url):
-    keys = (cid, kering.Roles.mailbox, eid)
-
-    ender = basing.EndpointRecord(allowed=True)  # create new record
-    hab.db.ends.pin(keys=keys, val=ender)
-    httplocer = basing.LocationRecord(url=url)  # create new record
-    lockeys = (eid, kering.Schemes.http)
-    hab.db.locs.pin(keys=lockeys, val=httplocer)  # overwrite

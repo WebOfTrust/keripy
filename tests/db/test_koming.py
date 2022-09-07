@@ -448,13 +448,13 @@ def test_dup_komer():
             return iter(asdict(self))
 
 
-    cid0 = "EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"
-    cid1 = "EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"
+    cid0 = "EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"  # "EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"
+    cid1 = "EBLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"  # "EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"
     dts = '2021-01-01T00:00:00.000000+00:00'
     role = "witness"
     scheme = "https"
 
-    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+    wit0 = 'BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'  # 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
     wit0end = Endpoint(eid=wit0, name='wit0', dts=dts)
     wit0loc = Location(host="localhost",
                     port="8080",
@@ -463,7 +463,7 @@ def test_dup_komer():
                     role=role,
                     dts=dts)
 
-    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    wit1 = 'BBd2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'  # 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
     wit1end = Endpoint(eid=wit1, name='wit1', dts=dts)
     wit1loc = Location(host="localhost",
                 port="8080",
@@ -472,16 +472,16 @@ def test_dup_komer():
                 role=role,
                 dts=dts)
 
-    wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
+    wit2 = 'BCjDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'  # BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
     wit2end = Endpoint(eid=wit2, name='wit2', dts=dts)
     wit2loc = Location(host="localhost",
                 port="8080",
                 path="/witnesses/wit2",
-                cid="EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY",
+                cid=cid0,
                 role=role,
                 dts=dts)
 
-    wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
+    wit3 = 'BD_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'  # 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
     wit3end = Endpoint(eid=wit3, name='wit3', dts=dts)
     wit3loc = Location(host="localhost",
                 port="8080",
@@ -519,7 +519,7 @@ def test_dup_komer():
 
         keys0 = (cid0, role)
         key = endDB._tokey(keys0)
-        assert key == b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness'
+        assert key == f"{cid0}.witness".encode("utf-8")  # b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness'
         assert endDB._tokeys(key) == keys0
         keys1 = (cid1, role)
 
@@ -577,7 +577,7 @@ def test_dup_komer():
             assert end == ends[i]
             i += 1
 
-        alllocs = [wit3loc] + locs
+        alllocs =  locs +  [wit3loc]
         i = 0
         for keys, loc in locDB.getItemIter():
             assert loc == alllocs[i]
@@ -631,13 +631,13 @@ def test_ioset_komer():
             return iter(asdict(self))
 
 
-    cid0 = "EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"
-    cid1 = "EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"
+    cid0 = "EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"
+    cid1 = "EBLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"
     dts = '2021-01-01T00:00:00.000000+00:00'
     role = "witness"
     scheme = "https"
 
-    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+    wit0 = 'BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
     wit0end = Endpoint(eid=wit0, name='wit0', dts=dts)
     wit0loc = Location(host="localhost",
                     port="8080",
@@ -646,7 +646,7 @@ def test_ioset_komer():
                     role=role,
                     dts=dts)
 
-    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    wit1 = 'BBd2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
     wit1end = Endpoint(eid=wit1, name='wit1', dts=dts)
     wit1loc = Location(host="localhost",
                 port="8080",
@@ -655,7 +655,7 @@ def test_ioset_komer():
                 role=role,
                 dts=dts)
 
-    wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
+    wit2 = 'BCjDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
     wit2end = Endpoint(eid=wit2, name='wit2', dts=dts)
     wit2loc = Location(host="localhost",
                 port="8080",
@@ -664,7 +664,7 @@ def test_ioset_komer():
                 role=role,
                 dts=dts)
 
-    wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
+    wit3 = 'BD_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
     wit3end = Endpoint(eid=wit3, name='wit3', dts=dts)
     wit3loc = Location(host="localhost",
                 port="8080",
@@ -703,7 +703,7 @@ def test_ioset_komer():
 
         keys0 = (cid0, role)
         key = endDB._tokey(keys0)
-        assert key == b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness'
+        assert key == f"{cid0}.witness".encode("utf-8")  #  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness'
         assert endDB._tokeys(key) == keys0
 
         keys1 = (cid1, role)
@@ -752,19 +752,20 @@ def test_ioset_komer():
             assert loc == wit3loc
 
         # test IoItem methods
-        iokeys0 = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000000',
-                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000001',
-                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000002']
+        iokeys0 = [f'{cid0}.witness.00000000000000000000000000000000'.encode("utf-8"),
+                  f'{cid0}.witness.00000000000000000000000000000001'.encode("utf-8"),
+                  f'{cid0}.witness.00000000000000000000000000000002'.encode("utf-8")]
         iokeys0 = [endDB._tokeys(iokey) for iokey in iokeys0]
-        assert iokeys0 == [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                            'witness',
-                            '00000000000000000000000000000000'),
-                           ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                            'witness',
-                            '00000000000000000000000000000001'),
-                           ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                            'witness',
-                            '00000000000000000000000000000002')]
+        assert iokeys0 == [('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                    'witness',
+                    '00000000000000000000000000000000'),
+                   ('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                    'witness',
+                    '00000000000000000000000000000001'),
+                   ('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                    'witness',
+                    '00000000000000000000000000000002')]
+
 
         i = 0
         for iokeys, end in endDB.getIoSetItem(keys=keys0):
@@ -791,7 +792,7 @@ def test_ioset_komer():
             assert end == ends[i]
             i += 1
 
-        alllocs = [wit3loc] + locs
+        alllocs = locs + [wit3loc]
         i = 0
         for keys, loc in locDB.getItemIter():
             assert loc == alllocs[i]
@@ -804,21 +805,21 @@ def test_ioset_komer():
 
 
         # test getAllIoItem
-        iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.00000000000000000000000000000000']
+        iokeys1 = [f'{cid1}.witness.00000000000000000000000000000000'.encode("utf-8")]
         iokeys1 = [endDB._tokeys(iokey) for iokey in iokeys1]
         iokeysall = iokeys0 + iokeys1
-        assert iokeysall ==  [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                                'witness',
-                                '00000000000000000000000000000000'),
-                               ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                                'witness',
-                                '00000000000000000000000000000001'),
-                               ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
-                                'witness',
-                                '00000000000000000000000000000002'),
-                               ('EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E',
-                                'witness',
-                                '00000000000000000000000000000000')]
+        assert iokeysall ==  [('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            '00000000000000000000000000000000'),
+                           ('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            '00000000000000000000000000000001'),
+                           ('EAB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            '00000000000000000000000000000002'),
+                           ('EBLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E',
+                            'witness',
+                            '00000000000000000000000000000000')]
 
         i = 0
         for iokeys, end in endDB.getIoItemIter(keys=(cid0, "")):
@@ -842,4 +843,6 @@ def test_ioset_komer():
 
 
 if __name__ == "__main__":
+    test_dup_komer()
     test_kom_get_item_iter()
+    test_ioset_komer()

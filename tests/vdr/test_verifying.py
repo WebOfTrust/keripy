@@ -23,23 +23,23 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
 
         verfer = verifying.Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
-                           "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
-        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"E2SIcWEY-nxQXJT7yDHMJxVM'
-                       b'v0NmjHx7Hgum38nYfhYI","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                       b'KXqgcX4","ri":"E2c3V7uJMRWNg13Jt1wwbwdutqozJF2m-Y3vd-cvIFfQ"}}-V'
-                       b'Aj-HABECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc-AABAAE_clfMOX'
-                       b'ko297fejXgAOa0iBpLHt30pHZPU5hL0LIb5y6tK1gDdBp-f63ZCfyJY6dd9zC4U9'
-                       b'SMkEHmejSpgHAA')
+        assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EHraBkp-XMf1x_bo70O2x3br'
+                    b'BCHlJHa7q_MzsBNeYz2_","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
+                    b'KXqgcX4","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4"}}-V'
+                    b'Aj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABUWETZTw'
+                    b'TVuh0mNvN5KsJ_9V1epoP5wqgW32x8nUnGB20aI8xQBAhQ-aVP61ZEq97BDGSnxO'
+                    b'hU6tGCfDmvtugI')
 
 
 def test_verifier(seeder):
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp):
+    with (habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
+            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
-        assert hab.pre == "ErO8qhYftaJsAbCb6HUrN4tUyrV9dMd2VEt7SdG0wh50"
+        assert hab.pre == "EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o"
 
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
@@ -60,7 +60,7 @@ def test_verifier(seeder):
         _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         creder = proving.credential(issuer=hab.pre,
-                                    schema="ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI",
+                                    schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
                                     subject=d,
                                     status=issuer.regk)
 
@@ -101,7 +101,7 @@ def test_verifier(seeder):
         assert saider[0].qb64 == creder.said
         saider = regery.reger.subjs.get(recp.pre)
         assert saider[0].qb64 == creder.said
-        saider = regery.reger.schms.get("ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI")
+        saider = regery.reger.schms.get("EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC")
         assert saider[0].qb64 == creder.said
 
     """End Test"""
@@ -293,8 +293,8 @@ def test_verifier(seeder):
 
 
 def test_verifier_chained_credential(seeder):
-    qviSchema = "EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw"
-    vLeiSchema = "EPz3ZvjQ_8ZwRKzfA5xzbMW8v8ZWLZhvOn2Kw1Nkqo_Q"
+    qviSchema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
+    vLeiSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
@@ -305,10 +305,10 @@ def test_verifier_chained_credential(seeder):
         seeder.seedSchema(db=hanHby.db)
         seeder.seedSchema(db=vicHby.db)
 
-        assert ron.pre == "EkaWvr-o2ktpq6nIYL-KlCd_hfVkhIxVRfBOOjETday8"
-        assert ian.pre == "EHcaV00uLjd7zXDt_FnH-gCNYG-HC2D2R1GsHDt6-eoc"
-        assert han.pre == "ErqUTGqxVQzG3oYuyKVi2zKQvtUqHHMz3t_BaMt9nbPo"
-        assert vic.pre == "EI4-27_xnAB2I7LXgIjKUl8APR4iZV_LY64Am5TyBilE"
+        assert ron.pre == "EOp2vZP2BrlH3DX9H3w-ghvr3c9kkDv0gS5ELFyutxwk"
+        assert ian.pre == "EN6Ta5X_B7DrYR1HVGw25YgFVep4zGb5TMIoyCBaKb7R"
+        assert han.pre == "EBwEKSIMG_3tp7kVCLWJ9c-tPdwtDXIeLlfdm5-IMTZv"
+        assert vic.pre == "EGPhh6seaUvJy-nXFkiEdsfwekEhSm3lCVrP-tcoeL0H"
 
         ronreg = credentialing.Regery(hby=ronHby, name="ron", temp=True)
         ianreg = credentialing.Regery(hby=ianHby, name="ian", temp=True)

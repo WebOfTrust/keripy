@@ -417,19 +417,19 @@ def test_cesr_ioset_suber():
 
         seqner0 = coring.Seqner(sn=20)
         seq0 = seqner0.qb64
-        assert seq0 == '0AAAAAAAAAAAAAAAAAAAAAFA'
+        assert seq0 == '0AAAAAAAAAAAAAAAAAAAAAAU'
 
         seqner1 = coring.Seqner(sn=10)
         seq1 = seqner1.qb64
-        assert seq1 == '0AAAAAAAAAAAAAAAAAAAAACg'
+        assert seq1 == '0AAAAAAAAAAAAAAAAAAAAAAK'
 
         diger0 = coring.Diger(ser=b"Hello Me Maties.")
         dig0 = diger0.qb64
-        assert dig0 == 'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+        assert dig0 == 'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
         diger1 = coring.Diger(ser=b"Bye Y'all.")
         dig1 = diger1.qb64
-        assert dig1 == 'Er75lZ8yM9nxH3R4MG7DL26ajUKfGkX3kfnnQ4a_rmvI'
+        assert dig1 == 'EK--ZWfMjPZ8R90eDBuwy9umo1CnxpF95H550OGv65ry'
 
         keys0 = (seq0, dig0)
         keys1 = (seq1, dig1)
@@ -448,10 +448,10 @@ def test_cesr_ioset_suber():
                    )
         saider0, sad0 = coring.Saider.saidify(sad=sad)
         said0 = saider0.qb64
-        assert said0 == 'ErBUaxRTWxSVhGr-DZnf_cY4hERi2VDeQ9I2OmDzDiPQ'
+        assert said0 == 'EKwVGsUU1sUlYRq_g2Z3_3GOIREYtlQ3kPSNjpg8w4j0'
         assert sad0 == {'v': 'KERI10JSON0000b8_',
                         't': 'rpy',
-                        'd': 'ErBUaxRTWxSVhGr-DZnf_cY4hERi2VDeQ9I2OmDzDiPQ',
+                        'd': 'EKwVGsUU1sUlYRq_g2Z3_3GOIREYtlQ3kPSNjpg8w4j0',
                         'dt': '2020-08-22T17:50:12.988921+00:00',
                         'r': '/help/me',
                         'a': {'name': 'John Jones', 'role': 'Founder'}}
@@ -469,7 +469,7 @@ def test_cesr_ioset_suber():
                    )
         saider1, sad1 = coring.Saider.saidify(sad=sad)
         said1 = saider1.qb64
-        assert said1 == 'E-XV0wCzZEOxnXYrfLEDR9Mc_p1EnMORK1_rlVV4XGd4'
+        assert said1 == 'EPl1dMAs2RDsZ12K3yxA0fTHP6dRJzDkStf65VVeFxne'
 
 
         sad = dict(
@@ -485,7 +485,7 @@ def test_cesr_ioset_suber():
                    )
         saider2, sad2 = coring.Saider.saidify(sad=sad)
         said2 = saider2.qb64
-        assert said2 == 'EnE5oSwFI5utyauyeV8c51UCjAaFQEqgTYJ7dNngyGC4'
+        assert said2 == 'EJxOaEsBSObrcmrsnlfHOdVAowGhUBKoE2Ce3TZ4Mhgu'
 
         assert sdb.put(keys=keys0, vals=[saider1, saider0])
         assert sdb.cnt(keys0) == 2
@@ -612,7 +612,7 @@ def test_serder_suber():
         assert isinstance(sdb, subing.SerderSuber)
         assert not sdb.sdb.flags()["dupsort"]
 
-        pre = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         srdr0 = eventing.incept(keys=[pre])
 
         keys = (pre, srdr0.said)
@@ -698,7 +698,7 @@ def test_cesr_suber():
         assert issubclass(sdb.klas, coring.Matter)
         assert not sdb.sdb.flags()["dupsort"]
 
-        pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        pre0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         val0 = coring.Matter(qb64=pre0)
 
         keys = ("alpha", "dog")
@@ -759,7 +759,7 @@ def test_cesr_suber():
         assert isinstance(sdb, subing.CesrSuber)
         assert issubclass(sdb.klas, coring.Diger)
 
-        dig0 = "EQPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
+        dig0 = "EAPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
         val0 = coring.Diger(qb64=dig0)
 
         keys = ("alpha", "dog")
@@ -843,7 +843,7 @@ def test_cat_suber():
         assert issubclass(sdb.klas[0], coring.Matter)
         assert not sdb.sdb.flags()["dupsort"]
 
-        matb0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        matb0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         matter0 = coring.Matter(qb64=matb0)
         vals0 = [matter0]
 
@@ -931,11 +931,11 @@ def test_cat_suber():
 
         seqner = coring.Seqner(sn=20)
         seqb = seqner.qb64b
-        assert seqb == b'0AAAAAAAAAAAAAAAAAAAAAFA'
+        assert seqb == b'0AAAAAAAAAAAAAAAAAAAAAAU'
 
         diger = coring.Diger(ser=b"Hello Me Maties.")
         digb = diger.qb64b
-        assert digb == b'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+        assert digb == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
         vals = (dater, seqner, diger)
         valb = sdb._ser(val=vals)
@@ -989,10 +989,10 @@ def test_cat__cesr_ioset_suber():
 
         # test .toval and tovals  needs .klas to work
         sqr0 = coring.Seqner(sn=20)
-        sqr0.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAFA'
+        assert sqr0.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAU'
 
         dgr0 = coring.Diger(ser=b"Hello Me Maties.")
-        assert dgr0.qb64b == b'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+        assert dgr0.qb64b == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
         vals0 = (sqr0, dgr0)
 
@@ -1007,15 +1007,15 @@ def test_cat__cesr_ioset_suber():
         sqr1.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAIA'
 
         dgr1 = coring.Diger(ser=b"Hi Guy.")
-        assert dgr1.qb64b == b'EB1-ycv6SjyV3Ehn0kv4oFMPh4wKoACQTDgeYoWxPjkI'
+        assert dgr1.qb64b == b'EAdfsnL-ko8ldxIZ9JL-KBTD4eMCqAAkEw4HmKFsT45C'
 
         vals1 = (sqr1, dgr1)
 
         sqr2 = coring.Seqner(sn=1534)
-        sqr2.qb64b == b'0AAAAAAAAAAAAAAAAAAAAF_g'
+        assert sqr2.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAX-'
 
         dgr2 = coring.Diger(ser=b"Bye Bye Birdie.")
-        assert dgr2.qb64b == b'EA7hRVxJ-9-gadLMnJwyKKHKQnJg6yGzK9T-XxTlOs7Y'
+        assert dgr2.qb64b == b'EAO4UVcSfvfoGnSzJycMiihykJyYOshsyvU_l8U5TrO2'
 
         vals2 = (sqr2, dgr2)
 
@@ -1184,19 +1184,19 @@ def test_cesr_dup_suber():
         assert issubclass(sdb.klas, coring.Matter)
         assert sdb.sdb.flags()["dupsort"]
 
-        pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        pre0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
         val0 = coring.Matter(qb64=pre0)
         assert val0.qb64 == pre0
 
-        pre1 = "BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA"
+        pre1 = "BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA"
         val1 = coring.Matter(qb64=pre1)
         assert val1.qb64 == pre1
 
-        pre2 = "BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y"
+        pre2 = "BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y"
         val2 = coring.Matter(qb64=pre2)
         assert val2.qb64 == pre2
 
-        pre3 = "B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w"
+        pre3 = "BEK0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w"
         val3 = coring.Matter(qb64=pre3)
         assert val3.qb64 == pre3
 
@@ -1249,18 +1249,18 @@ def test_cesr_dup_suber():
 
 
         items = [(keys, val.qb64) for keys, val in sdb.getItemIter()]
-        assert items == [(('alpha', 'dog'), 'B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w'),
-                         (('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
-                         (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
-                         (('beta', 'cat'), 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'),
-                         (('betagamma', 'squirrel'), 'B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w')]
+        assert items == [(('alpha', 'dog'), 'BEK0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w'),
+                         (('beta', 'cat'), 'BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
+                         (('beta', 'cat'), 'BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
+                         (('beta', 'cat'), 'BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'),
+                         (('betagamma', 'squirrel'), 'BEK0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w')]
 
 
         topkeys = ("beta", "")  # append empty str to force trailing .sep
         items = [(keys, val.qb64) for keys, val in sdb.getItemIter(keys=topkeys)]
-        assert items == [(('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
-                         (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
-                         (('beta', 'cat'), 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
+        assert items == [(('beta', 'cat'), 'BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
+                         (('beta', 'cat'), 'BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
+                         (('beta', 'cat'), 'BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
 
         # test with keys as string not tuple
         keys2 = "keystr"
@@ -1328,8 +1328,8 @@ def test_signer_suber():
         signer0 = coring.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
         assert signer0.verfer.code == coring.MtrDex.Ed25519
         assert signer0.verfer.transferable  # default
-        assert signer0.qb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
-        assert signer0.verfer.qb64b == b'DhixhZjC1Wj2bLR1QdADT79kS2zwHld29ekca0elxHiE'
+        assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
+        assert signer0.verfer.qb64b == b'DIYsYWYwtVo9my0dUHQA0-_ZEts8B5XdvXpHGtHpcR4h'
 
         # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
         seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
@@ -1338,8 +1338,8 @@ def test_signer_suber():
         signer1 = coring.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
         assert signer1.verfer.code == coring.MtrDex.Ed25519
         assert signer1.verfer.transferable  # default
-        assert signer1.qb64b == b'AYAWTuZs2HuDXmF6UyEV08sTNlBjGrrm2bRLEgAMH_Pc'
-        assert signer1.verfer.qb64b == b'Dgekf6SB_agwx96mVSZI6PTC09j4Sp8qUbgKglN8uLjY'
+        assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
+        assert signer1.verfer.qb64b == b'DIHpH-kgf2oMMfeplUmSOj0wtPY-EqfKlG4CoJTfLi42'
 
         keys = (signer0.verfer.qb64, )  # must be verfer as key to get transferable
         sdb.put(keys=keys, val=signer0)
@@ -1387,7 +1387,7 @@ def test_signer_suber():
         assert not  sdb.get(keys=keys)
 
         # test missing entry at keys
-        badkey = b'D1QdADT79kS2zwHld29hixhZjC1Wj2bLRekca0elxHiE'
+        badkey = b'DAQdADT79kS2zwHld29hixhZjC1Wj2bLRekca0elxHiE'
         assert not  sdb.get(badkey)
 
         # test iteritems
@@ -1425,8 +1425,8 @@ def test_crypt_signer_suber():
     signer0 = coring.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
     assert signer0.verfer.code == coring.MtrDex.Ed25519
     assert signer0.verfer.transferable  # default
-    assert signer0.qb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
-    assert signer0.verfer.qb64b == b'DhixhZjC1Wj2bLR1QdADT79kS2zwHld29ekca0elxHiE'
+    assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
+    assert signer0.verfer.qb64b == b'DIYsYWYwtVo9my0dUHQA0-_ZEts8B5XdvXpHGtHpcR4h'
 
     # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
@@ -1435,15 +1435,15 @@ def test_crypt_signer_suber():
     signer1 = coring.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
     assert signer1.verfer.code == coring.MtrDex.Ed25519
     assert signer1.verfer.transferable  # default
-    assert signer1.qb64b == b'AYAWTuZs2HuDXmF6UyEV08sTNlBjGrrm2bRLEgAMH_Pc'
-    assert signer1.verfer.qb64b == b'Dgekf6SB_agwx96mVSZI6PTC09j4Sp8qUbgKglN8uLjY'
+    assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
+    assert signer1.verfer.qb64b == b'DIHpH-kgf2oMMfeplUmSOj0wtPY-EqfKlG4CoJTfLi42'
 
 
     # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'0123456789abcdef'
     salter = coring.Salter(raw=rawsalt)
     salt = salter.qb64
-    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
 
     # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -1452,7 +1452,7 @@ def test_crypt_signer_suber():
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
-    assert aeid0 == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
+    assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
 
     decrypter = coring.Decrypter(seed=seed0)
     encrypter = coring.Encrypter(verkey=aeid0)
@@ -1607,8 +1607,9 @@ def test_crypt_signer_suber():
         manager = keeping.Manager(ks=ks, seed=seed0, salt=salt, aeid=aeid0, )
         assert manager.ks.opened
         assert manager.inited
-        assert manager._inits == {'aeid': 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE',
-                                  'salt': '0AMDEyMzQ1Njc4OWFiY2RlZg'}
+        assert manager._inits == {'salt': '0AAwMTIzNDU2Nzg5YWJjZGVm',
+                                  'aeid': 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'}
+
         assert manager.encrypter.qb64 == encrypter.qb64  #  aeid provided
         assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
         assert manager.seed == seed0  # in memory only
@@ -1622,7 +1623,7 @@ def test_crypt_signer_suber():
 
 
         manager.updateAeid(aeid=cryptsigner1.verfer.qb64, seed=cryptsigner1.qb64)
-        assert manager.aeid == cryptsigner1.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+        assert manager.aeid == cryptsigner1.verfer.qb64 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
         assert manager.salt == salt
         saltCipher1 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
@@ -1632,4 +1633,11 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_suber()
+    test_cesr_ioset_suber()
+    test_serder_suber()
+    test_cesr_suber()
+    test_cat_suber()
+    test_cat__cesr_ioset_suber()
+    test_cesr_dup_suber()
+    test_signer_suber()
+    test_crypt_signer_suber()

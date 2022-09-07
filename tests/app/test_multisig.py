@@ -10,7 +10,8 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, agenting, booting, notifying
+from keri.app import (habbing, storing, kiwiing, grouping, indirecting,
+                      directing, agenting, booting, notifying)
 from keri.core import coring, eventing, parsing
 from keri.vdr import credentialing
 
@@ -30,9 +31,9 @@ class TestDoer(doing.DoDoer):
         seeder.seedWitEnds(self.hby1.db, witHabs=[wanHab], protocols=[kering.Schemes.http])
         seeder.seedWitEnds(self.hby2.db, witHabs=[wanHab], protocols=[kering.Schemes.http])
         # Verify the group identifier was incepted properly and matches the identifiers
-        assert wanHab.pre == "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
-        assert hab1.pre == "EJTo9FQNKETP4Ux5bwE43go-uN04TMnI3auceEv9Ms2A"
-        assert hab2.pre == "EgWTotjwstu_4r-LYrZ59j8qhHwX-P0_9En880ADP_i8"
+        assert wanHab.pre == "BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"
+        assert hab1.pre == "EEJGgqemdGdA1w6rcY5rfCdbdlqVMwUU2wQUMOVNnM8Q"
+        assert hab2.pre == "EDFrdg8Se2rTQrNiA04zP5sIywZiriJQDGBv8UjIOdCw"
 
         self.notifier1 = notifying.Notifier(hby=hby1)
         self.notifier2 = notifying.Notifier(hby=hby2)
@@ -96,32 +97,32 @@ class TestDoer(doing.DoDoer):
         response = client1.simulate_post("/groups/group1/icp", body=b)
         assert response.status == falcon.HTTP_200
         serder = coring.Serder(ked=response.json)
-        assert serder.pre == serder.said == "EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4"
+        assert serder.pre == serder.said == "EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA"
         b = json.dumps(icpd).encode("utf-8")
         response = client2.simulate_put("/groups/group2/icp", body=b)
         assert response.status == falcon.HTTP_200
         serder = coring.Serder(ked=response.json)
-        assert serder.pre == serder.said == "EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4"
+        assert serder.pre == serder.said == "EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA"
 
         while not (ghab1 := self.hby1.habByName("group1")):
             yield self.tock
 
-        assert ghab1.pre == "EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4"
+        assert ghab1.pre == "EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA"
 
         while not (ghab2 := self.hby2.habByName("group2")):
             yield self.tock
 
-        assert ghab2.pre == "EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4"
+        assert ghab2.pre == "EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA"
 
         while len(self.notifier1.getNotes()) != 1 or len(self.notifier2.getNotes()) != 1:
             yield self.tock
 
         note = self.notifier1.getNotes()[0]
         assert note.pad['a']['r'] == "/multisig/icp/complete"
-        assert note.pad['a']['a'] == {'i': 'EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4', 's': 0}
+        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
         note = self.notifier2.getNotes()[0]
         assert note.pad['a']['r'] == "/multisig/icp/complete"
-        assert note.pad['a']['a'] == {'i': 'EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4', 's': 0}
+        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
 
         rotd = dict(aids=[self.hab1.pre, self.hab2.pre],
                     toad=0,
@@ -141,13 +142,13 @@ class TestDoer(doing.DoDoer):
             yield self.tock
 
         assert ghab1.kever.serder.ked["t"] == coring.Ilks.rot
-        assert ghab1.kever.serder.said == "E0Knx0wNcw9gwkU9HPEK9KtMzSzlJcbT4SVMZ47YUOhU"
+        assert ghab1.kever.serder.said == "EBz-CqguoY0_yfiygx0Due-5z2xp027eoRdVNKxRvs_O"
 
         while not ghab2.kever.sn == 1:
             yield self.tock
 
         assert ghab2.kever.serder.ked["t"] == coring.Ilks.rot
-        assert ghab2.kever.serder.said == "E0Knx0wNcw9gwkU9HPEK9KtMzSzlJcbT4SVMZ47YUOhU"
+        assert ghab2.kever.serder.said == "EBz-CqguoY0_yfiygx0Due-5z2xp027eoRdVNKxRvs_O"
 
         while len(self.notifier1.getNotes()) != 2 or len(self.notifier2.getNotes()) != 2:
             yield self.tock
@@ -155,30 +156,17 @@ class TestDoer(doing.DoDoer):
         notes = self.notifier1.getNotes()
         note = notes[1]
         assert note.pad['a']['r'] == "/multisig/rot/complete"
-        assert note.pad['a']['a'] == {'i': 'EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4', 's': 0}
+        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
         notes = self.notifier2.getNotes()
         note = notes[1]
         assert note.pad['a']['r'] == "/multisig/rot/complete"
-        assert note.pad['a']['a'] == {'i': 'EtWwBSsPnLKLv53RNR9xHpaXL0mO7X1LMiDG9shzY6f4', 's': 0}
+        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
 
         self.remove(self.toRemove)
         return True
 
 
-wanPre = "B6KBd3GmnWvjcmE775zNRPCsJfOhasjBbyLjUpYOWvyw"
-
-
-def test_multisig_identifier_ends(seeder):
-    salt = coring.Salter(raw=b'wann-the-witness').qb64
-    with habbing.openHab(name="multisig1", temp=True, wits=[wanPre]) as (hby1, hab1), \
-            habbing.openHab(name="multisig2", temp=True, wits=[wanPre]) as (hby2, hab2), \
-            habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
-        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
-
-        # Run all participants
-        directing.runController(doers=[testDoer], expire=30.0)
-
-        assert testDoer.done is True
+wanPre = "BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"
 
 
 def loadApp(hby, notifier):
@@ -203,3 +191,21 @@ def loadApp(hby, notifier):
                              counselor=counselor)
     doers.extend([repd, counselor, mbx])
     return app, doers
+
+
+def test_multisig_identifier_ends(seeder):
+    salt = coring.Salter(raw=b'wann-the-witness').qb64
+    with habbing.openHab(name="multisig1", temp=True, wits=[wanPre]) as (hby1, hab1), \
+            habbing.openHab(name="multisig2", temp=True, wits=[wanPre]) as (hby2, hab2), \
+            habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
+        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
+
+        # Run all participants
+        directing.runController(doers=[testDoer], expire=30.0)
+
+        assert testDoer.done is True
+
+
+if __name__ == "__main__":
+    pass
+    #test_multisig_identifier_ends(seeder)

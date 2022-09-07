@@ -625,8 +625,9 @@ class Manager:
         pidx (int): initial pidx prefix index. Use initial attribute because keeper
             may not be open on init.
 
-        salt (str): initial salt. Use inital attribute because keeper may not be
-             open on init.
+        salt (str): qb64 of root salt. Makes random root salt if not provided
+            initial salt. Use inital attribute because keeper may not be
+            open on init.
 
         tier (str): initial security tier as value of Tierage. Use initial attribute
             because keeper may not be open on init
@@ -718,6 +719,10 @@ class Manager:
             algo = Algos.salty
         if salt is None:
             salt = coring.Salter().qb64
+        else:
+            if coring.Salter(qb64=salt).qb64 != salt:
+                raise ValueError(f"Invalid qb64 for salt={salt}.")
+
         if tier is None:
             tier = coring.Tiers.low
 
@@ -730,8 +735,6 @@ class Manager:
 
         if self.salt is None:  # never before initialized
             self.salt = salt
-        # else force salt to be qb64
-        # salt =coring.Salter(qb64=salt).qb64
 
         if self.tier is None:  # never before initialized
             self.tier = tier  # init to default

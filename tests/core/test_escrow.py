@@ -820,6 +820,7 @@ def test_unverified_receipt_escrow():
         wit1pre = wit1Verfer.qb64
 
         assert wit1pre != wit0pre
+        assert wit1pre <  wit0pre  # means wit1 escrow will get serviced first
 
         # create inception event with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
@@ -981,7 +982,6 @@ def test_unverified_receipt_escrow():
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
-        # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.db.getUres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 2
@@ -1053,25 +1053,25 @@ def test_unverified_receipt_escrow():
         assert len(kvy.db.getUres(dbing.snKey(pre, 1))) == 0
         assert len(kvy.db.getUres(dbing.snKey(pre, 2))) == 0
 
-        # verify receipts
+        # verify receipts from db which changes order if wit1 < wit2
         receipts = kvy.db.getRcts(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 2
         rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
+        assert rctPrefixer.qb64 == wit0pre
         receipts = kvy.db.getRcts(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 2
         rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
+        assert rctPrefixer.qb64 == wit0pre
         receipts = kvy.db.getRcts(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 2
         rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
+        assert rctPrefixer.qb64 == wit0pre
 
 
     assert not os.path.exists(ks.path)
@@ -1419,5 +1419,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_out_of_order_escrow()
+    test_unverified_receipt_escrow()
 

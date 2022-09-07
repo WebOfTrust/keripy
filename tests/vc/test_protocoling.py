@@ -17,15 +17,28 @@ from keri.vdr import verifying, credentialing
 
 
 def test_issuing(seeder, mockCoringRandomNonce):
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    assert sidSalt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
-    assert wanSalt == '0Ad2Fubi10aGUtd2l0bmVzcw'
+    """ Test Issuing ACDC """
 
-    with habbing.openHby(name="red", base="test") as redHby, \
-            habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
-            habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby:
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+
+    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
+    wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
+    assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
+
+    with (habbing.openHby(name="red", base="test") as redHby,
+          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby,
+          habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby):
+
+
+        # setup wan's Hab and doers
+        wanDoers = indirecting.setupWitness(alias="wan",
+                                            hby=wanHby,
+                                            tcpPort=5632,
+                                            httpPort=5642)
+
+        wanHab = wanHby.habByName(name="wan")
+        wanPre = wanHab.pre
+        assert wanPre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
 
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)
@@ -36,9 +49,9 @@ def test_issuing(seeder, mockCoringRandomNonce):
         doist = doing.Doist(limit=limit, tock=tock)
 
         sidHab = sidHby.makeHab(name="test",
-                                wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
+                                wits=[wanHab.pre])
         sidPre = sidHab.pre
-        assert sidPre == "EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE"
+        assert sidPre == "EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ"
 
         redKvy = eventing.Kevery(db=redHby.db)
         redRgy = credentialing.Regery(hby=redHby, name="red", temp=True)
@@ -59,7 +72,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
         redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, notifier=notifier)
         redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
-        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
         # Build the credential subject and then the Creder for the full credential
         credSubject = dict(
@@ -75,7 +88,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
                             subject=d,
                             status=issuer.regk)
 
-        assert creder.said == "EZ-DOf3BUffrKo6-rEupwYMj69L5NvD-hCdpcpvcckf8"
+        assert creder.said == "ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4VN2qIa-dvFn"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -85,16 +98,16 @@ def test_issuing(seeder, mockCoringRandomNonce):
         sidRgy.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EZ-DOf3BUffrKo6-rEupwYMj69L5NvD-hC'
-                       b'dpcpvcckf8","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","'
-                       b'ri":"E8LSkU2s_BsAOf5tc63y1xnCf8qUP7ZBKgWJqiCvklK8","s":"ExBYRwKd'
-                       b'VGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI","a":{"d":"E24If3y9Voz-1sXg'
-                       b'kBCeNG6pbCqMTa56kCvj47NgOgLg","i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ'
-                       b'-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
-                       b'254900OPPU84GM83MG36"},"e":{}}-VA3-JAB6AABAAA--FABEWVYH1T4J09x5R'
-                       b'ePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE0AAAAAAAAAAAAAAAAAAAAAAAEWVYH1T4J0'
-                       b'9x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE-AABAA9u30np6P7c53SSGtyOSUq521'
-                       b'__bbU0gNuSkB8MLBMC_YcmkewPixKBhTp4uYp7koqJRsHn_LGShuqm_3tzPVAQ')
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4V'
+                       b'N2qIa-dvFn","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
+                       b'ri":"EPzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCn'
+                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EL59_dE6fRq-BcOK'
+                       b'Qxdc5aPVHm6ZqmZfF3M1ImQLcpRn","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj8'
+                       b'6nNxpb-77KcM3DZ","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
+                       b'254900OPPU84GM83MG36"},"e":{}}-VA3-JAB6AABAAA--FABEELPMtVeoAMwq-'
+                       b'cEvyqQkPlVlHHj86nNxpb-77KcM3DZ0AAAAAAAAAAAAAAAAAAAAAAAEELPMtVeoA'
+                       b'Mwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ-AABAABZtOxvRXQfJZFWwsdPHRFddJ'
+                       b'_nNIOYUjROdyi-sCehEWiCWSYE8BS7RHK1jQHL-smrPx2BHZaicEIXOnrPpMAL')
 
         # Create the `exn` message for issue credential
         sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
@@ -111,14 +124,14 @@ def test_issuing(seeder, mockCoringRandomNonce):
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"EZ-DOf3BUffrKo6-rEupwYMj69L5NvD-hCdpcpvcckf8",'
-               b'"i":"EWVYH1T4J09x5RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","ri":"E8LSkU2s_BsAOf5tc63'
-               b'y1xnCf8qUP7ZBKgWJqiCvklK8","s":"ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI'
-               b'","a":{"d":"E24If3y9Voz-1sXgkBCeNG6pbCqMTa56kCvj47NgOgLg","i":"EWVYH1T4J09x5'
-               b'RePLfVyTfno3aHzJ-YqnL9Bm0Kyx6UE","dt":"2021-06-27T21:26:21.233257+00:00","LE'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4VN2qIa-dvFn",'
+               b'"i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","ri":"EPzhcSAxNzgx-TgD_IJ'
+               b'59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
+               b'","a":{"d":"EL59_dE6fRq-BcOKQxdc5aPVHm6ZqmZfF3M1ImQLcpRn","i":"EELPMtVeoAMwq'
+               b'-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"},"e":{}}')
-        sig0 = (b'AA9u30np6P7c53SSGtyOSUq521__bbU0gNuSkB8MLBMC_YcmkewPixKBhTp4uYp7koqJRsHn_LGS'
-                b'huqm_3tzPVAQ')
+        sig0 = (b'AABZtOxvRXQfJZFWwsdPHRFddJ_nNIOYUjROdyi-sCehEWiCWSYE8BS7RHK1jQHL-smrPx2BHZai'
+                b'cEIXOnrPpMAL')
 
         # verify we can load serialized VC by SAID
         creder, sadsigers, sadcigars = sidRgy.reger.cloneCred(said=creder.said)
@@ -153,7 +166,7 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         # sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
         sidHab = sidHby.makeHab(name="test")
-        assert sidHab.pre == "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        assert sidHab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
         sidIcpMsg = sidHab.makeOwnInception()
 
         hanKvy = eventing.Kevery(db=hanHby.db)
@@ -162,7 +175,7 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         # hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
         hanHab = hanHby.makeHab(name="test")
-        assert hanHab.pre == "EJcjV4DalEqAtaOdlEcjNvo75HCs0lN5K3BbQwJ5kN6o"
+        assert hanHab.pre == "EKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6"
         hanIcpMsg = hanHab.makeOwnInception()
 
         vicKvy = eventing.Kevery(db=vicHby.db)
@@ -171,13 +184,13 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         # vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
         vicHab = vicHby.makeHab(name="test")
-        assert vicHab.pre == "ET9X4cK2jPatbfYzEprxjdYLKazxZ7Rufj_jY10NC-t8"
+        assert vicHab.pre == "EFWujxD_N6DKo4Heaq-vSmv9a5RV09gbJUt68wBFIdAo"
         vicIcpMsg = vicHab.makeOwnInception()
 
         parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
         assert hanKvy.kevers[vicHab.pre].sn == 0  # accepted event
 
-        schema = "ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI"
+        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
             d="",
             i=hanHab.pre,
@@ -202,7 +215,7 @@ def test_proving(seeder, mockCoringRandomNonce):
                             status=issuer.regk,
                             )
 
-        assert creder.said == "EHfB6aCydzucwhKwN6Yr4zUxNSm4Ahefp17jIuquYIwc"
+        assert creder.said == "ENbXYc19thNb_18znfumPP3WqMNS7wh7G3K82LTV14EF"
 
         msg = signing.ratify(sidHab, serder=creder)
 
@@ -252,9 +265,9 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
         assert exn.ked['r'] == "/presentation"
-        assert atc == (b'-HABEJcjV4DalEqAtaOdlEcjNvo75HCs0lN5K3BbQwJ5kN6o-AABAA9O7ltaU6-h'
-                       b'bObeoagHuOPzduOjIp7QssrtblFnY9NvaUGYJaQHIldzsW-geWkXTVJ160QM8LQ5'
-                       b'5bZa0W68e3BA')
+        assert atc == (b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAAA0RlDsUkc9'
+                       b'BGJ6ohKP0UrFUrz4NdG-db1Uix9p_smz2j40zagSdVqN1Hb8AzZ-fcm_xtCO6v2o'
+                       b'2e8oI-ByxtoE')
 
         msg = bytearray(exn.raw)
         msg.extend(atc)
@@ -266,9 +279,7 @@ def test_proving(seeder, mockCoringRandomNonce):
         assert resp is not None
         note = resp.attrs["note"]
         a = note["a"]
-        assert a == {
-            'r': "/presentation",
-            'issuer': {'i': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc'},
-            'schema': {'n': 'ExBYRwKdVGTWFq1M3IrewjKRhKusW9p9fdsdD0aSTWQI'},
-            'credential': {'n': 'EHfB6aCydzucwhKwN6Yr4zUxNSm4Ahefp17jIuquYIwc'}
-        }
+        assert a == {'credential': {'n': 'ENbXYc19thNb_18znfumPP3WqMNS7wh7G3K82LTV14EF'},
+                     'issuer': {'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'},
+                     'r': '/presentation',
+                     'schema': {'n': 'EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'}}
