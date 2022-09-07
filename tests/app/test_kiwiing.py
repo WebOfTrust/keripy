@@ -653,17 +653,19 @@ def test_identifier_ends():
         # Test list GET method with metadata
         result = client.simulate_get("/ids")
         assert result.status == falcon.HTTP_200
-        assert result.json[0] == {'name': 'test',
-                                  'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                  'seq_no': 2,
-                                  'isith': '1',
-                                  'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
-                                  'nsith': '1',
+        assert result.json[0] == {'isith': '1',
+                                  'metadata': {'company': 'ACME',
+                                               'email': 'wile-coyote@acme.com',
+                                               'name': 'Wile'},
+                                  'name': 'test',
                                   'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
-                                  'toad': 0,
-                                  'witnesses': [],
+                                  'nsith': '1',
+                                  'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                  'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
                                   'receipts': 0,
-                                  'metadata': {'name': 'Wile', 'company': 'ACME'}}
+                                  'seq_no': 2,
+                                  'toad': 0,
+                                  'witnesses': []}
 
         # Change the alias for the identifier
         req = dict(alias="another_test")
@@ -678,10 +680,10 @@ def test_identifier_ends():
                                                'email': 'wile-coyote@acme.com',
                                                'name': 'Wile'},
                                   'name': 'another_test',
-                                  'next_keys': ['ETkpPicDPIy1afc-RaNta91Rq7SkYQ7YhHS2AVY342Yk'],
+                                  'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
                                   'nsith': '1',
-                                  'prefix': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                  'public_keys': ['DaA39fhkm-AAxCkPcKojluJ0qSCQItz_KT4-TVy6Wdc8'],
+                                  'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                  'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
                                   'receipts': 0,
                                   'seq_no': 2,
                                   'toad': 0,
@@ -698,7 +700,7 @@ def test_identifier_ends():
         result = client.simulate_post("/ids/another_test/metadata", body=json.dumps(req).encode("utf-8"))
         assert result.status == falcon.HTTP_200
         res = dict(req)
-        res["id"] = "ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc"
+        res["id"] = "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
         assert result.json == res
 
         # Alias can be changed with POST too
@@ -1037,26 +1039,26 @@ def test_contact_ends(seeder):
         response = client.simulate_get("/contacts",
                                        query_string="filter_field=last&filter_value=Burns")
         assert response.status == falcon.HTTP_200
-        assert response.json == [{'company': 'ProSapien',
-                                  'first': 'Ken2',
-                                  'id': 'EF2EBiBL7RJ84ilErw8PyMEbABX_wJIL2VHNqLOdq5cw',
-                                  'last': 'Burns2'},
-                                 {'company': 'GLEIF',
-                                  'first': 'Ken0',
-                                  'id': 'ESiaJt8ax_Vts0RafqPUTWCstVsKIDQB5BcE4Q6AyKRQ',
-                                  'last': 'Burns0'},
-                                 {'company': 'ProSapien',
-                                  'first': 'Ken4',
-                                  'id': 'EWgyARhlWPWWC3DD1kr-hKKR3EK10FUSpY78IGWrmf7M',
-                                  'last': 'Burns4'},
-                                 {'company': 'GLEIF',
+        assert response.json == [{'company': 'GLEIF',
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
                                   'last': 'Burns3'},
                                  {'company': 'GLEIF',
                                   'first': 'Ken1',
                                   'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
-                                  'last': 'Burns1'}]
+                                  'last': 'Burns1'},
+                                 {'company': 'ProSapien',
+                                  'first': 'Ken4',
+                                  'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
+                                  'last': 'Burns4'},
+                                 {'company': 'ProSapien',
+                                  'first': 'Ken2',
+                                  'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
+                                  'last': 'Burns2'},
+                                 {'company': 'GLEIF',
+                                  'first': 'Ken0',
+                                  'id': 'EPo8Wy1xpTa6ri25M4IlmWBBzs5y8v4Qn3Z8xP4kEjcK',
+                                  'last': 'Burns0'}]
 
         response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
