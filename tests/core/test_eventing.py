@@ -206,10 +206,8 @@ def test_dereceiptcouple():
     """
     test deReceiptCouple function
     """
-    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    cig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
-    preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    cigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    pre = 'DCuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    cig = '0BAszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
     # str
     couple = pre + cig
@@ -220,27 +218,27 @@ def test_dereceiptcouple():
     assert len(couple) == 132  # not strip delete
 
     # bytes
-    couple = preb + cigb
+    couple = couple.encode("utf-8")
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # memoryview
     couple = memoryview(couple)
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # bytearray
     couple = bytearray(couple)
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(couple) == 132  # not strip delete
 
     # test strip delete
@@ -252,7 +250,7 @@ def test_dereceiptcouple():
     assert len(couple) == 132  # immutable so no delete
 
     # bytes
-    couple = preb + cigb
+    couple = couple.encode("utf-8")
     with pytest.raises(TypeError):  # immutable bytes so no delete
         prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
@@ -266,8 +264,8 @@ def test_dereceiptcouple():
     # bytearray
     couple = bytearray(couple)
     prefixer, cigar = deReceiptCouple(couple, strip=True)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
@@ -277,10 +275,8 @@ def test_desourcecouple():
     """
     test deSourceCouple function
     """
-    snu = '0AAAAAAAAAAAAAAAAAAAAABQ'
-    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    snub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    snu = '0AAAAAAAAAAAAAAAAAAAAAAC'
+    dig = 'EMLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
 
     # str
     couple = snu + dig
@@ -291,27 +287,27 @@ def test_desourcecouple():
     assert len(couple) == 68  # not strip delete
 
     # bytes
-    couple = snub + digb
+    couple = couple.encode("utf-8")
     assert len(couple) == 68
     seqner, diger = deSourceCouple(couple)
-    assert seqner.qb64b == snub
-    assert diger.qb64b == digb
+    assert seqner.qb64b == snu.encode("utf-8")
+    assert diger.qb64b == dig.encode("utf-8")
     assert len(couple) == 68  # not strip delete
 
     # memoryview
     couple = memoryview(couple)
     assert len(couple) == 68
     seqner, diger = deSourceCouple(couple)
-    assert seqner.qb64b == snub
-    assert diger.qb64b == digb
+    assert seqner.qb64b == snu.encode("utf-8")
+    assert diger.qb64b == dig.encode("utf-8")
     assert len(couple) == 68  # not strip delete
 
     # bytearray
     couple = bytearray(couple)
     assert len(couple) == 68
     seqner, diger = deSourceCouple(couple)
-    assert seqner.qb64b == snub
-    assert diger.qb64b == digb
+    assert seqner.qb64b == snu.encode("utf-8")
+    assert diger.qb64b == dig.encode("utf-8")
     assert len(couple) == 68  # not strip delete
 
     # test strip delete
@@ -323,7 +319,7 @@ def test_desourcecouple():
     assert len(couple) == 68  # immutable so no delete
 
     # bytes
-    couple = snub + digb
+    couple = couple.encode("utf-8")
     with pytest.raises(TypeError):  # immutable bytes so no delete
         seqner, diger = deSourceCouple(couple, strip=True)
     assert len(couple) == 68  # immutable so no delete
@@ -337,8 +333,8 @@ def test_desourcecouple():
     # bytearray
     couple = bytearray(couple)
     seqner, diger = deSourceCouple(couple, strip=True)
-    assert seqner.qb64b == snub
-    assert diger.qb64b == digb
+    assert seqner.qb64b == snu.encode("utf-8")
+    assert diger.qb64b == dig.encode("utf-8")
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
@@ -348,13 +344,9 @@ def test_dereceipttriple():
     """
     test deReceiptTriple function
     """
-    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    cig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
-
-    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    cigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    dig = 'EMLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    pre = 'DCuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    cig = '0BAszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
     # str
     triple = dig + pre + cig
@@ -365,27 +357,27 @@ def test_dereceipttriple():
     assert len(triple) == 176
 
     # bytes
-    triple = digb + preb + cigb
+    triple = triple.encode("utf-8")
     diger, prefixer, cigar = deReceiptTriple(triple)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(triple) == 176
 
     # memoryview
     triple = memoryview(triple)
     diger, prefixer, cigar = deReceiptTriple(triple)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(triple) == 176
 
     # bytearray
     triple = bytearray(triple)
     diger, prefixer, cigar = deReceiptTriple(triple)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(triple) == 176
 
     # test strip delete
@@ -397,7 +389,7 @@ def test_dereceipttriple():
     assert len(triple) == 176  # immutable so no strip delete
 
     # bytes
-    triple = digb + preb + cigb
+    triple = triple.encode("utf-8")
     assert len(triple) == 176
     with pytest.raises(TypeError):
         diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
@@ -414,9 +406,9 @@ def test_dereceipttriple():
     triple = bytearray(triple)
     assert len(triple) == 176
     diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == cigb
+    assert diger.qb64b == dig.encode("utf-8")
+    assert prefixer.qb64b == pre.encode("utf-8")
+    assert cigar.qb64b == cig.encode("utf-8")
     assert len(triple) == 0  # mutable so strip delete
 
     """end test"""
@@ -1067,33 +1059,33 @@ def test_state(mockHelpingNowUTC):
     assert signerC.code == MtrDex.Ed25519_Seed
     assert signerC.verfer.code == MtrDex.Ed25519  # transferable
     preC = signerC.verfer.qb64  # use public key verfer.qb64 trans pre
-    assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    assert preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     sith = '1'
     keys = [signerC.verfer.qb64]
     nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
     nxt = nexter.digs
-    assert nxt == ['EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM']
+    assert nxt == ['EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg']
 
     # create key pairs for witnesses of KEL
     signerW0 = salter.signer(path="W0", transferable=False, temp=True)
     assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+    assert preW0 == 'BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt'
 
     signerW1 = salter.signer(path="W1", transferable=False, temp=True)
     assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+    assert preW1 == 'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F'
 
     signerW2 = salter.signer(path="W2", transferable=False, temp=True)
     assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+    assert preW2 == 'BO7x6ctSA7FllJx39hlObnetizGFjuZT1jq0geno0NRK'
 
     signerW3 = salter.signer(path="W3", transferable=False, temp=True)
     assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+    assert preW3 == 'BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W'
 
     wits = [preW1, preW2, preW3]
     toad = 2
@@ -1106,8 +1098,8 @@ def test_state(mockHelpingNowUTC):
 
     serderK = state(pre=preC,
                     sn=4,
-                    pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
-                    dig='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                    pig='EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                    dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                     fn=4,
                     eilk=Ilks.ixn,
                     keys=keys,
@@ -1118,19 +1110,19 @@ def test_state(mockHelpingNowUTC):
                     wits=wits,
                     )
 
-    assert serderK.raw == (b'{"v":"KERI10JSON0002ca_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
-                           b'"s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EgNkcl_Qewzr'
-                           b'RSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+0'
-                           b'0:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
-                           b'"],"nt":"1","n":["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b'
-                           b'":["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62L'
-                           b'MYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],'
-                           b'"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTk'
-                           b'stUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6K'
-                           b'c1CQnigIUBKrBFz_1Y"]},"di":""}')
+    assert serderK.raw == (b'{"v":"KERI10JSON0002ca_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN",'
+                        b'"s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EANkcl_Qewzr'
+                        b'RSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+0'
+                        b'0:00","et":"ixn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
+                        b'"],"nt":"1","n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b'
+                        b'":["BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39hlObneti'
+                        b'zGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"],"c":[],'
+                        b'"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BDU5'
+                        b'LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSei'
+                        b'nNQkJ4oCFASqwRc_9W"]},"di":""}')
 
-    assert serderK.said == 'EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
-    assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    assert serderK.said == 'EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
+    assert serderK.pre == preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     assert serderK.sn == 4
 
     # create endorsed ksn with nontrans endorser
@@ -1138,57 +1130,58 @@ def test_state(mockHelpingNowUTC):
     signerE = salter.signer(path="E", transferable=False, temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
     preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    assert preE == 'BMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y'
 
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
     msg = messagize(serderK, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0002ca_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                   b'WVK9ZBNZk0","s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
-                   b'32Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
-                   b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
-                   b'":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"nt":"1","n":'
-                   b'["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b":["'
-                   b'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2'
-                   b'GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigI'
-                   b'UBKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
-                   b'rRSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7K'
-                   b'S2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]'
-                   b'},"di":""}-CABByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0B1d61'
-                   b'-SOrSSKSyfguotWdJIQ7-AGWBO9rsNU2liCAHm-tavH9x3RFaym1LZM1uRIkDMD8'
-                   b'NXsrw_XPG73I9yNfBA')
+    assert msg == (b'{"v":"KERI10JSON0002ca_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6'
+                b'llSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
+                b'32Z30","d":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
+                b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
+                b'":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","n":'
+                b'["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["'
+                b'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39'
+                b'hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oC'
+                b'FASqwRc_9W"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
+                b'rRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOy'
+                b'ktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"]'
+                b'},"di":""}-CABBMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0BB6cL'
+                b'0DtDVDW26lgjbQu0_D_Pd_6ovBZj6fU-Qjmm7epVs51jEOOwXKbmG4yUvCSN-DQS'
+                b'YSc7HXZRp8CfAw9DQL')
 
     # create endorsed ksn with trans endorser
     # create trans key pair for endorder of KSN
     signerE = salter.signer(path="E", temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519  # transferable
     preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    assert preE == 'DMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y'
 
     # create SealEvent for endorsers est evt whose keys use to sign
     seal = SealEvent(i=preE,
                      s='0',
-                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                     d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
     # create endorsed ksn
     sigerE = signerE.sign(ser=serderK.raw, index=0)
     assert signerE.verfer.verify(sig=sigerE.raw, ser=serderK.raw)
     msg = messagize(serderK, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0002ca_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                   b'WVK9ZBNZk0","s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
-                   b'32Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
-                   b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
-                   b'":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"nt":"1","n":'
-                   b'["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b":["'
-                   b'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2'
-                   b'GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigI'
-                   b'UBKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
-                   b'rRSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7K'
-                   b'S2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]'
-                   b'},"di":""}-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAA'
-                   b'AAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-A'
-                   b'ABAA1d61-SOrSSKSyfguotWdJIQ7-AGWBO9rsNU2liCAHm-tavH9x3RFaym1LZM1'
-                   b'uRIkDMD8NXsrw_XPG73I9yNfBA')
+    assert msg == (b'{"v":"KERI10JSON0002ca_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6'
+                b'llSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
+                b'32Z30","d":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
+                b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
+                b'":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","n":'
+                b'["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["'
+                b'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39'
+                b'hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oC'
+                b'FASqwRc_9W"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
+                b'rRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOy'
+                b'ktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"]'
+                b'},"di":""}-FABDMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAA'
+                b'AAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-A'
+                b'ABAAB6cL0DtDVDW26lgjbQu0_D_Pd_6ovBZj6fU-Qjmm7epVs51jEOOwXKbmG4yU'
+                b'vCSN-DQSYSc7HXZRp8CfAw9DQL')
+
 
     # State Delegated (key state notification)
     # create transferable key pair for controller of KEL
@@ -1196,40 +1189,40 @@ def test_state(mockHelpingNowUTC):
     assert signerC.code == MtrDex.Ed25519_Seed
     assert signerC.verfer.code == MtrDex.Ed25519  # transferable
     preC = signerC.verfer.qb64  # use public key verfer.qb64 as trans pre
-    assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    assert preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     sith = '1'
     keys = [signerC.verfer.qb64]
     nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
     nxt = nexter.digs
-    assert nxt == ['EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM']
+    assert nxt == ['EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg']
 
     # create key pairs for witnesses of KEL
     signerW0 = salter.signer(path="W0", transferable=False, temp=True)
     assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+    assert preW0 == 'BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt'
 
     signerW1 = salter.signer(path="W1", transferable=False, temp=True)
     assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+    assert preW1 == 'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F'
 
     signerW2 = salter.signer(path="W2", transferable=False, temp=True)
     assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+    assert preW2 == 'BO7x6ctSA7FllJx39hlObnetizGFjuZT1jq0geno0NRK'
 
     signerW3 = salter.signer(path="W3", transferable=False, temp=True)
     assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
     preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+    assert preW3 == 'BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W'
 
     wits = [preW1, preW2, preW3]
     toad = 2
 
     # create namedtuple of latest est event
     eevt = StateEstEvent(s='3',
-                         d='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                         d='EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
                          br=[preW0],
                          ba=[preW3])
 
@@ -1238,12 +1231,12 @@ def test_state(mockHelpingNowUTC):
     assert signerD.code == MtrDex.Ed25519_Seed
     assert signerD.verfer.code == MtrDex.Ed25519  # transferable
     preD = signerD.verfer.qb64  # use public key verfer.qb64 as trans pre
-    assert preD == 'DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U'
+    assert preD == 'DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-993_s5Ie1'
 
     serderK = state(pre=preC,
                     sn=4,
-                    pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
-                    dig='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                    pig='EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                    dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                     fn=4,
                     eilk=Ilks.ixn,
                     keys=keys,
@@ -1255,19 +1248,19 @@ def test_state(mockHelpingNowUTC):
                     dpre=preD
                     )
 
-    assert serderK.raw == (b'{"v":"KERI10JSON0002f6_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
-                           b'"s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EgNkcl_Qewzr'
-                           b'RSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+0'
-                           b'0:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
-                           b'"],"nt":"1","n":["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b'
-                           b'":["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62L'
-                           b'MYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],'
-                           b'"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTk'
-                           b'stUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6K'
-                           b'c1CQnigIUBKrBFz_1Y"]},"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}')
+    assert serderK.raw == (b'{"v":"KERI10JSON0002f6_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN",'
+                        b'"s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EANkcl_Qewzr'
+                        b'RSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+0'
+                        b'0:00","et":"ixn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
+                        b'"],"nt":"1","n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b'
+                        b'":["BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39hlObneti'
+                        b'zGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"],"c":[],'
+                        b'"ee":{"s":"3","d":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BDU5'
+                        b'LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSei'
+                        b'nNQkJ4oCFASqwRc_9W"]},"di":"DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-993_s5Ie1"}')
 
-    assert serderK.said == 'EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
-    assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    assert serderK.said == 'EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
+    assert serderK.pre == preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     assert serderK.sn == 4
 
     # create endorsed ksn with nontrans endorser
@@ -1275,59 +1268,59 @@ def test_state(mockHelpingNowUTC):
     signerE = salter.signer(path="E", transferable=False, temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
     preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    assert preE == 'BMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y'
 
     # create endorsed ksn
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
     msg = messagize(serderK, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0002f6_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                   b'WVK9ZBNZk0","s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
-                   b'32Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
-                   b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
-                   b'":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"nt":"1","n":'
-                   b'["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b":["'
-                   b'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2'
-                   b'GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigI'
-                   b'UBKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
-                   b'rRSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7K'
-                   b'S2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]'
-                   b'},"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}-CABByvCLR'
-                   b'r5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BIV9LO2uGArLX9IQCA0RCwuOh'
-                   b'5Wop0t4u7PoL9XQ7_Xr-Co424PFJs_x7PeHaY5Mos016AKa4JC0SI5nR8rzUBA')
+    assert msg == (b'{"v":"KERI10JSON0002f6_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6'
+                    b'llSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
+                    b'32Z30","d":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
+                    b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
+                    b'":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","n":'
+                    b'["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["'
+                    b'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39'
+                    b'hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oC'
+                    b'FASqwRc_9W"],"c":[],"ee":{"s":"3","d":"EAskHI462CuIMS_gNkcl_Qewz'
+                    b'rRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOy'
+                    b'ktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"]'
+                    b'},"di":"DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-993_s5Ie1"}-CABBMrwi0'
+                    b'a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0BDxwyDfiEThnNS8d928EUfIDm'
+                    b'YDfoWUp0wdwIPaeanzIYOjAFtwxJcS7wiH9ICW7LJy7drrlOd4-uXqkV-YsIwK')
 
     # create endorsed ksn with trans endorser
     # create trans key pair for endorder of KSN
     signerE = salter.signer(path="E", temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519  # transferable
     preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    assert preE == 'DMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y'
 
     # create SealEvent for endorsers est evt whose keys use to sign
     seal = SealEvent(i=preE,
                      s='0',
-                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                     d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
     # create endorsed ksn
     sigerE = signerE.sign(ser=serderK.raw, index=0)
     assert signerE.verfer.verify(sig=sigerE.raw, ser=serderK.raw)
     msg = messagize(serderK, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0002f6_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                   b'WVK9ZBNZk0","s":"4","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
-                   b'32Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
-                   b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
-                   b'":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"nt":"1","n":'
-                   b'["EIlyVEHnE9F6QYkl82ERnHSj5iv9punbGhS2dwMAKpiM"],"bt":"2","b":["'
-                   b'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2'
-                   b'GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigI'
-                   b'UBKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewz'
-                   b'rRSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7K'
-                   b'S2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]'
-                   b'},"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}-FABDyvCLR'
-                   b'r5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAAAEM'
-                   b'uNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAIV9LO2uGArLX9IQC'
-                   b'A0RCwuOh5Wop0t4u7PoL9XQ7_Xr-Co424PFJs_x7PeHaY5Mos016AKa4JC0SI5nR'
-                   b'8rzUBA')
+    assert msg == (b'{"v":"KERI10JSON0002f6_","i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6'
+                b'llSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO1'
+                b'32Z30","d":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4'
+                b'","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","kt":"1","k'
+                b'":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","n":'
+                b'["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["'
+                b'BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39'
+                b'hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oC'
+                b'FASqwRc_9W"],"c":[],"ee":{"s":"3","d":"EAskHI462CuIMS_gNkcl_Qewz'
+                b'rRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOy'
+                b'ktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"]'
+                b'},"di":"DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-993_s5Ie1"}-FABDMrwi0'
+                b'a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAAAEA'
+                b'uNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAADxwyDfiEThnNS8d9'
+                b'28EUfIDmYDfoWUp0wdwIPaeanzIYOjAFtwxJcS7wiH9ICW7LJy7drrlOd4-uXqkV'
+                b'-YsIwK')
 
     """Done Test"""
 
@@ -1348,136 +1341,141 @@ def test_messagize():
         sigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
         assert isinstance(sigers[0], Siger)
         msg = messagize(serder, sigers=sigers)
-        assert bytearray(b'{"v":"KERI10JSON0000c1_","i":"ECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
-                         b'GOM-ijM93o","s":"0","t":"icp","kt":"1","k":["D6J_jzCECalv_iTKSwx'
-                         b'zPnuycxEi5fRuo3UUN7T0CVGM"],"n":"","bt":"0","b":[],"c":[],"a":[]'
-                         b'}-AABAA0X9eyML4ioPIk9AuBQFN5hGnGeRgywzNorzFydvyFTm-sjjLrFantYynS'
-                         b'BLWXjxYc5c_sW0052it_g6rX30kDA')
+        assert isinstance(msg, bytearray)
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-AA'
+                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
+                    b'QQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with pipelined
         msg = messagize(serder, sigers=sigers, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'X-AABAAVVUmAlrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzT'
-                                b'Ar5P2A73ntpflGMqklHr8IxJziQDw')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                    b'X-AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5'
+                    b'lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with seal
         # create SealEvent for endorsers est evt whose keys use to sign
-        seal = SealEvent(i='DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+        seal = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
         msg = messagize(serder, sigers=sigers, seal=seal)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-FA'
-                                b'BDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAA'
-                                b'AAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAVVUmAlrVp'
-                                b'7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzTAr5P2A73ntpflGMq'
-                                b'klHr8IxJziQDw')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-FA'
+                    b'BDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAA'
+                    b'AAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ'
+                    b'6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_X'
+                    b'jyZLHyClVTLoD')
 
         # Test with pipelined
         msg = messagize(serder, sigers=sigers, seal=seal, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'0-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
-                                b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAVVUmA'
-                                b'lrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzTAr5P2A73ntpf'
-                                b'lGMqklHr8IxJziQDw')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                b'0-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
+                b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuE'
+                b'fnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI8'
+                b'62_XjyZLHyClVTLoD')
 
         # Test with wigers
         verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
         wigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
         assert isinstance(wigers[0], Siger)
         msg = messagize(serder, wigers=wigers)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                                b'BAAN2RwmlUX7gr971K9XLvfoIJkilGtMdZK2v66L_6FhG25p6sjvu2Y-iOJOEVNg'
-                                b'sOxjVnsBi7lxU_EbAJ6lZKACQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
+                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
+                    b'20VJYa4947ZMVrOxKhzI6EqUH')
 
         # Test with wigers and pipelined
         msg = messagize(serder, wigers=wigers, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'X-BABAAN2RwmlUX7gr971K9XLvfoIJkilGtMdZK2v66L_6FhG25p6sjvu2Y-iOJO'
-                                b'EVNgsOxjVnsBi7lxU_EbAJ6lZKACQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                    b'X-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eo'
+                    b'NhEj20VJYa4947ZMVrOxKhzI6EqUH')
 
         # Test with cigars
         verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
         assert isinstance(cigars[0], Cigar)
         msg = messagize(serder, cigars=cigars)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CA'
-                                b'BBmMfUwIOywRkyc5GyQXfgDA4UOAMvjvnXcaK9G939ArM0BXnaQZ5HNLapcED6GY'
-                                b'GXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9'
-                                b'SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CA'
+                    b'BBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFi'
+                    b'DF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVw'
+                    b'g_TwF')
 
         # Test with cigars and pipelined
         msg = messagize(serder, cigars=cigars, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'i-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjvnXcaK9G939ArM0BXnaQZ5HNLapcE'
-                                b'D6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZq'
-                                b'DgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                    b'i-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgG'
+                    b'FtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko'
+                    b'5EVwg_TwF')
+
 
         # Test with wigers and cigars
         msg = messagize(serder, wigers=wigers, cigars=cigars)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                                b'BAAN2RwmlUX7gr971K9XLvfoIJkilGtMdZK2v66L_6FhG25p6sjvu2Y-iOJOEVNg'
-                                b'sOxjVnsBi7lxU_EbAJ6lZKACQ-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjvnXca'
-                                b'K9G939ArM0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackIt'
-                                b'qcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
+                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
+                    b'20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
+                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
+                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
+
 
         # Test with wigers and cigars and pipelined
         msg = messagize(serder, cigars=cigars, wigers=wigers, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'5-BABAAN2RwmlUX7gr971K9XLvfoIJkilGtMdZK2v66L_6FhG25p6sjvu2Y-iOJO'
-                                b'EVNgsOxjVnsBi7lxU_EbAJ6lZKACQ-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjv'
-                                b'nXcaK9G939ArM0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5Za'
-                                b'ckItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                    b'5-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eo'
+                    b'NhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47'
+                    b'513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa'
+                    b'0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
+
 
         # Test with sigers and wigers and cigars
         msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers)
-        assert bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                         b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                         b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                         b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                         b'Q-AABAAVVUmAlrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzT'
-                         b'Ar5P2A73ntpflGMqklHr8IxJziQDw-BABAAN2RwmlUX7gr971K9XLvfoIJkilGtM'
-                         b'dZK2v66L_6FhG25p6sjvu2Y-iOJOEVNgsOxjVnsBi7lxU_EbAJ6lZKACQ-CABBmM'
-                         b'fUwIOywRkyc5GyQXfgDA4UOAMvjvnXcaK9G939ArM0BXnaQZ5HNLapcED6GYGXOV'
-                         b'38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-AA'
+                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
+                    b'QQkQkxI862_XjyZLHyClVTLoD-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_J'
+                    b'uO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MC'
+                    b'DssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas'
+                    b'-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with sigers and wigers and cigars and pipelines
         msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                                b'Q-AABAAVVUmAlrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzT'
-                                b'Ar5P2A73ntpflGMqklHr8IxJziQDw-BABAAN2RwmlUX7gr971K9XLvfoIJkilGtM'
-                                b'dZK2v66L_6FhG25p6sjvu2Y-iOJOEVNgsOxjVnsBi7lxU_EbAJ6lZKACQ-CABBmM'
-                                b'fUwIOywRkyc5GyQXfgDA4UOAMvjvnXcaK9G939ArM0BXnaQZ5HNLapcED6GYGXOV'
-                                b'38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
+                    b'Q-AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5'
+                    b'lPfPQQkQkxI862_XjyZLHyClVTLoD-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyx'
+                    b's7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJj'
+                    b'H1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Q'
+                    b'oVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with receipt message
         ked = serder.ked
@@ -1489,83 +1487,83 @@ def test_messagize():
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
         assert isinstance(wigers[0], Siger)
         msg = messagize(serder, wigers=wigers)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                                b'BAAXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6W'
-                                b'BaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
+                    b'BAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
+                    b'US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with cigars
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)  # sign event not receipt
         msg = messagize(reserder, cigars=cigars)
-        assert msg == bytearray(b'{"v":"KERI10JSON000091_","t":"rct","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0"}-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjvnXcaK9G939Ar'
-                                b'M0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6W'
-                                b'BaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0"}-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QK'
+                    b'z0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
+                    b'US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with wigers and cigars
         msg = messagize(serder, wigers=wigers, cigars=cigars, )
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                                b'BAAXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgEGN6W'
-                                b'BaEcPJ6aTvjLLDZqDgM9SMECQ-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjvnXca'
-                                b'K9G939ArM0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackIt'
-                                b'qcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
+                    b'BAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
+                    b'US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
+                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
+                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with wigers and cigars and pipelined
         msg = messagize(serder, wigers=wigers, cigars=cigars, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                                b'5-BABAAXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5ZackItqcgE'
-                                b'GN6WBaEcPJ6aTvjLLDZqDgM9SMECQ-CABBmMfUwIOywRkyc5GyQXfgDA4UOAMvjv'
-                                b'nXcaK9G939ArM0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7XXY-A5Za'
-                                b'ckItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
+                    b'5-BABAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xs'
+                    b'yyH1US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnORskF34AwOFDgDL47'
+                    b'513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa'
+                    b'0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with sigers and seal and wigers and cigars and pipelined
         msg = messagize(serder, sigers=sigers, seal=seal, wigers=wigers,
                         cigars=cigars, pipelined=True)
-        assert msg == bytearray(b'{"v":"KERI10JSON0000fd_","t":"icp","d":"ExYUckri7vGPH0L-9DmE3Znm'
-                                b'6dc47brGolln481gZ38Q","i":"ExYUckri7vGPH0L-9DmE3Znm6dc47brGolln4'
-                                b'81gZ38Q","s":"0","kt":"1","k":["D6J_jzCECalv_iTKSwxzPnuycxEi5fRu'
-                                b'o3UUN7T0CVGM"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                                b't-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
-                                b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAVVUmA'
-                                b'lrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzTAr5P2A73ntpf'
-                                b'lGMqklHr8IxJziQDw-BABAAXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1Me8w88y7'
-                                b'XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ-CABBmMfUwIOywRkyc5'
-                                b'GyQXfgDA4UOAMvjvnXcaK9G939ArM0BXnaQZ5HNLapcED6GYGXOV38RRWSrotdH1'
-                                b'Me8w88y7XXY-A5ZackItqcgEGN6WBaEcPJ6aTvjLLDZqDgM9SMECQ')
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
+                    b't-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
+                    b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuE'
+                    b'fnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI8'
+                    b'62_XjyZLHyClVTLoD-BABAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31'
+                    b'jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnO'
+                    b'RskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0x'
+                    b'tOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
         # Test with query message
         ked = serder.ked
         qserder = query(route="log",
-                        query=dict(i='DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                        query=dict(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                         stamp=help.helping.DTS_BASE_0)
 
         # create SealEvent for endorsers est evt whose keys use to sign
         seal = SealLast(i=ked["i"])
         msg = messagize(qserder, sigers=sigers, seal=seal)
-        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"E-WvgxrllmjGFhpn0oOiBkAV'
-                       b'z3-dEm3bbiV_5qwj81xo","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"log","rr":"","q":{"i":"DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                       b'1QvrjI"}}-HABExYUckri7vGPH0L-9DmE3Znm6dc47brGolln481gZ38Q-AABAAV'
-                       b'VUmAlrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzTAr5P2A73'
-                       b'ntpflGMqklHr8IxJziQDw')
+        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                    b'1QvrjI"}}-HABEFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxjJyHxl4F-AABAAB'
+                    b'1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQ'
+                    b'kxI862_XjyZLHyClVTLoD')
 
         # create SealEvent for endorsers est evt whose keys use to sign
         msg = messagize(qserder, sigers=sigers, seal=seal, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"E-WvgxrllmjGFhpn0oOiBkAV'
-                       b'z3-dEm3bbiV_5qwj81xo","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"log","rr":"","q":{"i":"DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                       b'1QvrjI"}}-VAj-HABExYUckri7vGPH0L-9DmE3Znm6dc47brGolln481gZ38Q-AA'
-                       b'BAAVVUmAlrVp7CJnjpa4urI9FnsWEnuMfxR-DE6XVCKzmBaHJqc4DRo5bBzTAr5P'
-                       b'2A73ntpflGMqklHr8IxJziQDw')
+        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                    b'1QvrjI"}}-VAj-HABEFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxjJyHxl4F-AA'
+                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
+                    b'QQkQkxI862_XjyZLHyClVTLoD')
 
         """ Done Test """
 
@@ -4323,4 +4321,4 @@ def test_reload_kever(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_dequintuple()
+    test_messagize()
