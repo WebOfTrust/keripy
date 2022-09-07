@@ -41,10 +41,18 @@ def test_broker_nontrans():
 
         dts = helping.nowIso8601()
         typ = "test"
+
+        # bad magic values in here
+        # have test generate ked with valid said instead of using magic ked
+        # 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw' is not the said
+        # 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo'
+        # '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI'
+        # 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs'
+        # 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'
         ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
                'dt': dts,
                'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',
-               'a': {'v': 'KERI10JSON000135_', 'i': 'EAc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
+               'a': {'v': 'KERI10JSON000135_', 'i': 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
                      'd': 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw',
                      'ri': 'ECWWojIv_2OqlFL7BSwkyd69_vWKYaTUU5jUhxhXvjmc', 'ra': {},
                      'a': {'s': 2, 'd': 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'},
@@ -100,6 +108,13 @@ def test_broker_trans():
         bork = escrowing.Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
         typ = "test"
+        # bad magic values in here
+        # have test generate ked with valid said instead of using magic ked
+        # 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw' is not the said
+        # 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo'
+        # 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs'
+        # '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI'
+        # 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'
         ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
                'dt': dts,
                'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',

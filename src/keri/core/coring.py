@@ -250,7 +250,7 @@ def b64ToInt(s):
     return i
 
 
-def b64ToB2(s):
+def codeB64ToB2(s):
     """
     Returns conversion (decode) of Base64 chars to Base2 bytes.
     Where the number of total bytes returned is equal to the minimun number of
@@ -261,12 +261,12 @@ def b64ToB2(s):
     a Base64 encoded string of characters.
     """
     i = b64ToInt(s)
-    i <<= 2 * (len(s) % 4)  # add 2 bits right padding for each sextet
+    i <<= 2 * (len(s) % 4)  # add 2 bits right zero padding for each sextet
     n = sceil(len(s) * 3 / 4)  # compute min number of ocetets to hold all sextets
     return (i.to_bytes(n, 'big'))
 
 
-def b2ToB64(b, l):
+def codeB2ToB64(b, l):
     """
     Returns conversion (encode) of l Base2 sextets from front of b to Base64 chars.
     One char for each of l sextets from front (left) of b.
@@ -280,8 +280,10 @@ def b2ToB64(b, l):
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
     i = int.from_bytes(b[:n], 'big')  # convert only first n bytes to int
-    i >>= 2 * (l % 4)  # shift out padding bits make right aligned
-    return (intToB64(i, l))
+    # check if prepad bits are zero
+    tbs = 2 * (l % 4)  # trailing bit size in bits
+    i >>= tbs  # right shift out trailing bits to make right aligned
+    return (intToB64(i, l))  # return as B64
 
 
 def nabSextets(b, l):
@@ -768,7 +770,7 @@ class Matter:
 
     # Bards table maps first code char. converted to binary sextext of hard size,
     # hs. Used for ._bexfil.
-    Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, rize=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
@@ -861,20 +863,20 @@ class Matter:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
                 del qb64b[:self.fullSize]
-            if qb64b != self.qb64b:  # catch non-round trippable, pad bits
-                raise ValueError(f"Invalid qb64b init value = {qb64b}.")
+            #if qb64b != self.qb64b:  # catch non-round trippable, pad bits
+                #raise ValueError(f"Invalid qb64b init value = {qb64b}.")
 
         elif qb64 is not None:
             self._exfil(qb64)
-            if qb64 != self.qb64:  # catch non-round trippable, pad bits
-                raise ValueError(f"Invalid qb64 init value = {qb64}.")
+            #if qb64 != self.qb64:  # catch non-round trippable, pad bits
+                #raise ValueError(f"Invalid qb64 init value = {qb64}.")
 
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
                 del qb2[:self.fullSize * 3 // 4]
-            if qb2 != self.qb2:  # catch non-round trippable, pad bits
-                raise ValueError(f"Invalid qb2 init value = {qb2}.")
+            #if qb2 != self.qb2:  # catch non-round trippable, pad bits
+                #raise ValueError(f"Invalid qb2 init value = {qb2}.")
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
@@ -1101,13 +1103,30 @@ class Matter:
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
-        if fs:  # not variable length with maybe lead
-            ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
-            base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
-            raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
-        else:  # variable length with maybe lead assumes cs % 4 == 0
-            base = qb64b[cs:]  # strip off prepend code leaving lead
-            raw = decodeB64(base)[ls:]  # decode and strip off ls lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
+            paw = decodeB64(base)  # decode base to leave prepadded raw
+            pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed prepad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
+            raw = paw[ps:]  # strip off ps prepad bytes
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            base = qb64b[cs:]  # strip off code leaving lead chars if any and value
+            # decode lead chars + val leaving lead bytes + raw bytes
+            # then strip off ls lead bytes leaving raw
+            paw = decodeB64(base) # decode base to leave prepadded raw
+            li = int.from_bytes(paw[:ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
+
+            raw = paw[ls:]
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
@@ -1183,7 +1202,7 @@ class Matter:
         if len(qb2) < bhs:  # need more bytes
             raise ShortageError(f"Need {bhs - len(qb2)} more bytes.")
 
-        hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
+        hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1199,7 +1218,7 @@ class Matter:
             if len(qb2) < bcs:  # need more bytes
                 raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
-            both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
+            both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
             size = b64ToInt(both[hs:hs + ss])  # get size
             fs = (size * 4) + cs
 
@@ -1212,6 +1231,23 @@ class Matter:
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
         qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
+        # check for non-zeroed prepad bits or lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            # convert last byte of code bytes in which are pad bits to int
+            pi = (int.from_bytes(qb2[bcs-1:bcs], "big"))
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed pad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):>08b} in 0x{pi:02x}.")
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:02x}.")
+
         raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
@@ -3558,7 +3594,7 @@ class Indexer:
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
-    Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None, strip=False):
@@ -3863,7 +3899,7 @@ class Indexer:
         if len(qb2) < bhs:  # need more bytes
             raise ShortageError(f"Need {bhs - len(qb2)} more bytes.")
 
-        hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
+        hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -3877,7 +3913,7 @@ class Indexer:
         if len(qb2) < bcs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
-        both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
+        both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs + ss])  # get index
         if not fs:
             fs = (index * 4) + cs
@@ -4059,7 +4095,7 @@ class Counter:
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
-    Bards = ({b64ToB2(c): hs for c, hs in Hards.items()})
+    Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
     def __init__(self, code=None, count=1, qb64b=None, qb64=None,
                  qb2=None, strip=False):
@@ -4253,7 +4289,7 @@ class Counter:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                        .format(cs, len(both)))
 
-        return (b64ToB2(both))  # convert to b2 left shift if any
+        return (codeB64ToB2(both))  # convert to b2 left shift if any
 
     def _bexfil(self, qb2):
         """
@@ -4275,7 +4311,7 @@ class Counter:
         if len(qb2) < bhs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
-        hard = b2ToB64(qb2, hs)  # extract and convert hard part of code
+        hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self.Sizes:
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
@@ -4289,7 +4325,7 @@ class Counter:
         if len(qb2) < bcs:  # need more bytes
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
-        both = b2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
+        both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         count = b64ToInt(both[hs:hs + ss])  # get count
 
         self._code = hard

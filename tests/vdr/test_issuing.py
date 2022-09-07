@@ -133,7 +133,7 @@ def test_issuer(mockHelpingNowUTC):
         # issuer, allowed backers, initial set of backers
         regery = credentialing.Regery(hby=hby, name="bob", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="bob", noBackers=False,
-                                     baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
+                                     baks=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)

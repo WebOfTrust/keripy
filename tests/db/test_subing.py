@@ -759,7 +759,7 @@ def test_cesr_suber():
         assert isinstance(sdb, subing.CesrSuber)
         assert issubclass(sdb.klas, coring.Diger)
 
-        dig0 = "EQPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
+        dig0 = "EAPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
         val0 = coring.Diger(qb64=dig0)
 
         keys = ("alpha", "dog")
@@ -1387,7 +1387,7 @@ def test_signer_suber():
         assert not  sdb.get(keys=keys)
 
         # test missing entry at keys
-        badkey = b'D1QdADT79kS2zwHld29hixhZjC1Wj2bLRekca0elxHiE'
+        badkey = b'DAQdADT79kS2zwHld29hixhZjC1Wj2bLRekca0elxHiE'
         assert not  sdb.get(badkey)
 
         # test iteritems
