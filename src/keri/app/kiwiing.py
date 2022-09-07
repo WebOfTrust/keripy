@@ -1930,7 +1930,13 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["wits"] = body["wits"] if "wits" in body else []
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
-        ghab = self.hby.makeGroupHab(group=alias, phab=hab, **inits)
+        try:
+            ghab = self.hby.makeGroupHab(group=alias, phab=hab, **inits)
+        except ValueError as ex:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")
+            return None, None
+
         return hab, ghab
 
     def icp(self, hab, ghab, aids):
@@ -1997,6 +2003,10 @@ class MultisigInceptEnd(MultisigEndBase):
                    nsith:
                      type: string
                      description: Next signing threshold for the new group identifier
+                   estOnly:
+                     type: boolean
+                     required: False
+                     description: True means this identifier will not allow interaction events.
 
         responses:
            200:
@@ -2085,6 +2095,10 @@ class MultisigInceptEnd(MultisigEndBase):
                    nsith:
                      type: string
                      description: Next signing threshold for the new group identifier
+                   estOnly:
+                     type: boolean
+                     required: False
+                     description: True means this identifier will not allow interaction events.
 
         responses:
            200:
@@ -3389,6 +3403,114 @@ class EscrowEnd:
         rep.data = json.dumps(event, indent=2).encode("utf-8")
 
 
+class AeidEnd:
+
+    def __init__(self, hby):
+        """ Initialize endpoint for updating the passcode for this Habery
+
+        Parameters:
+            hby (Habery): identifier environment database
+        """
+
+        self.hby = hby
+
+    @staticmethod
+    def on_get(req, rep):
+        """ GET endpoint for passcode resource
+
+        Args:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        ---
+        summary: Generate random 22 digit passcode for use in securing and encrypting keystore
+        description: Generate random 22 digit passcode for use in securing and encrypting keystore
+        tags:
+           - Passcode
+        responses:
+           200:
+              description: Randomly generated 22 character passcode formatted as xxxx-xxxxx-xxxx-xxxxx-xxxx
+
+        """
+        return booting.PasscodeEnd.on_get(req, rep)
+
+    def on_post(self, req, rep):
+        """ AEID POST endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+       ---
+        summary:  Create new contact information for an identifier
+        description:  Creates new information for an identifier, overwriting all existing
+                      information for that identifier
+        tags:
+           - Passcode
+        parameters:
+          - in: path
+            name: prefix
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix to add contact metadata to
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Contact information
+                    type: object
+
+        responses:
+           202:
+              description: AEID successfully updated
+           400:
+              description: Invalid new passcode
+           401:
+              description: Original passcode incorrect
+        """
+        body = req.get_media()
+        if "current" in body:
+            cbran = body["current"]
+            cbran = cbran.replace("-", "")
+        else:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps(dict(msg="Current passcode missing from body")).encode("utf-8")
+            return
+
+        cbran = coring.MtrDex.Salt_128 + cbran[:22]  # qb64 salt for seed
+        csigner = coring.Salter(qb64=cbran).signer(transferable=False,
+                                                   temp=self.hby.temp, tier=None)
+        if not self.hby.mgr.encrypter.verifySeed(csigner.qb64):
+            rep.status = falcon.HTTP_401
+            rep.data = json.dumps(dict(msg="Incorrect current passcode")).encode("utf-8")
+            return
+
+        if "passcode" in body:
+            bran = body["passcode"]
+            bran = bran.replace("-", "")
+        else:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps(dict(msg="Passcode missing from body")).encode("utf-8")
+            return
+
+        if len(bran) < 22:
+            rep.status = falcon.HTTP_400
+            rep.data = json.dumps(dict(msg="Invalid passcode, too short")).encode("utf-8")
+            return
+
+        bran = coring.MtrDex.Salt_128 + bran[:22]  # qb64 salt for seed
+        signer = coring.Salter(qb64=bran).signer(transferable=False,
+                                                 temp=self.hby.temp)
+        seed = signer.qb64
+        aeid = signer.verfer.qb64
+
+        self.hby.mgr.updateAeid(aeid, seed)
+
+        rep.status = falcon.HTTP_202
+
+
 def loadEnds(app, *,
              path,
              hby,
@@ -3491,9 +3613,12 @@ def loadEnds(app, *,
     app.add_route("/escrows", escrowEnd)
     app.add_route("/escrows/{pre}/{dig}", escrowEnd, suffix="partial")
 
+    aeidEnd = AeidEnd(hby=hby)
+    app.add_route("/codes", aeidEnd)
+
     signalEnd = signaling.loadEnds(app, signals=signaler.signals)
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd, signalEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd, lockEnd]
+                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd, lockEnd, aeidEnd]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))

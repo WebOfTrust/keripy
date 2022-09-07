@@ -129,7 +129,7 @@ class PasscodeEnd:
 
         code = "".join(code)
         body = dict(
-            passcode=f"{code[0:4]}-{code[4:9]}-{code[9:13]}-{code[13:18]}-{code[18:]}"
+            passcode=f"{code}"
         )
 
         rep.status = falcon.HTTP_200

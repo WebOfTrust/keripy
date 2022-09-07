@@ -1568,12 +1568,52 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         assert response.text == "schema is required, none provided"
 
 
-if __name__ == "__main__":
-    # non seeder tests
-    test_multisig_incept()
-    test_multisig_rotation()
-    test_multisig_interaction()
-    test_identifier_ends()
-    test_keystate_end()
-    test_schema_ends()
-    # test_escrow_end(mockHelpingNowUTC)
+def test_aied_ends():
+    bran = "1zFo56YdTekm7T6dw4BeSg"
+    with habbing.openHby(name="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64, bran=bran) as hby:
+        app = falcon.App()
+        notifier = notifying.Notifier(hby=hby)
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        _ = kiwiing.loadEnds(hby=hby,
+                             rep=None,
+                             rgy=regery,
+                             verifier=None,
+                             notifier=notifier,
+                             signaler=notifier.signaler,
+                             app=app, path="/",
+                             registrar=None,
+                             credentialer=None,
+                             servery=booting.Servery(port=1234),
+                             bootConfig=dict(),
+                             counselor=None)
+        client = testing.TestClient(app)
+
+        response = client.simulate_get("/codes")
+        assert response.status == falcon.HTTP_200
+        assert "passcode" in response.json
+        aeid = response.json["passcode"]
+        assert len(aeid) == booting.DEFAULT_PASSCODE_SIZE
+
+        #  Change passcode
+        nbran = "ggkafMNqNBg2uEkkLAwgMf"
+        body = dict(current=bran, passcode=nbran)
+        response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
+        assert response.status == falcon.HTTP_202
+
+        # Try to use the old passcode again
+        body = dict(current=bran, passcode=nbran)
+        response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
+        assert response.status == falcon.HTTP_401
+
+        # Change back to the original passcode
+        body = dict(current=nbran, passcode=bran)
+        response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
+        assert response.status == falcon.HTTP_202
+
+        # Try to use an invalid passcode
+        body = dict(current=bran, passcode="ABCDEF")
+        response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
+        assert response.status == falcon.HTTP_400
+
+
+
