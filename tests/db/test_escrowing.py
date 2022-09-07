@@ -5,9 +5,11 @@ tests.db.escrowing module
 """
 from keri import kering
 from keri.app import habbing
-from keri.core import coring
+from keri.core import coring, eventing
+from keri.core.eventing import SealEvent
 from keri.db import escrowing, dbing, subing
 from keri.help import helping
+from keri.vdr import credentialing
 
 
 def test_broker():
@@ -30,34 +32,27 @@ def test_broker_nontrans():
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
     with dbing.openLMDB() as brokerdb, \
-        habbing.openHby(name="wes", base="test", salt=salt) as wesHby:
+         habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
+         habbing.openHab(name="pal") as (hby, hab):
+
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+        stn = issuer.tever.state()
+        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=stn.ked)
 
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False)
-        #wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
-                                 #isith='1', icount=1,
-                                 #salt=salt, transferable=False, temp=True)
-
         bork = escrowing.Broker(db=brokerdb, subkey="test")
 
         dts = helping.nowIso8601()
         typ = "test"
 
-        # bad magic values in here
-        # have test generate ked with valid said instead of using magic ked
-        # 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw' is not the said
-        # 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo'
-        # '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI'
-        # 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs'
-        # 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'
-        ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
-               'dt': dts,
-               'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',
-               'a': {'v': 'KERI10JSON000135_', 'i': 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
-                     'd': 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw',
-                     'ri': 'ECWWojIv_2OqlFL7BSwkyd69_vWKYaTUU5jUhxhXvjmc', 'ra': {},
-                     'a': {'s': 2, 'd': 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'},
-                     'dt': dts, 'et': 'iss'}}
-        pre = ked['a']['i'] # "EAc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs"
+        ked = rpy.ked
+        pre = ked['a']['i']
         aid = "EBWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])
@@ -99,31 +94,27 @@ def test_broker_nontrans():
 
 def test_broker_trans():
 
-
     with dbing.openLMDB() as brokerdb, \
-        habbing.openHby(name="bob", base="test") as bobHby:
+         habbing.openHby(name="bob", base="test") as bobHby, \
+         habbing.openHab(name="pal") as (hby, hab):
 
+        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        regery.processEscrows()
+        stn = issuer.tever.state()
+        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=stn.ked)
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
 
         bork = escrowing.Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
         typ = "test"
-        # bad magic values in here
-        # have test generate ked with valid said instead of using magic ked
-        # 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw' is not the said
-        # 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo'
-        # 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs'
-        # '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI'
-        # 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'
-        ked = {'v': 'KERI10JSON0001fb_', 't': 'rpy', 'd': 'E--rpyw2A5OATjluDezNIcgeMvLTSYALvMqVKnop-lJo',
-               'dt': dts,
-               'r': '/tsn/credential/Eta8KLf1zrE5n-HZpgRAnDmxLASZdXEiU9u6aahqR8TI',
-               'a': {'v': 'KERI10JSON000135_', 'i': 'EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs', 's': '0',
-                     'd': 'EG6VAER9fTbirNC313PrMVdlJeaFjia4xBxYvhfmTQIw',
-                     'ri': 'ECWWojIv_2OqlFL7BSwkyd69_vWKYaTUU5jUhxhXvjmc', 'ra': {},
-                     'a': {'s': 2, 'd': 'ElcdRh_66cR79tYDs7Q2OjjOjiAf_SZp6lWERgG1aSs8'},
-                     'dt': dts, 'et': 'iss'}}
-        pre = "EZc4FuRsgMJ3nagRMmz7kSCsh2VCHj9yI0fpaUOZf3Zs"
+        ked = rpy.ked
+
+        pre = issuer.regk
         aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])

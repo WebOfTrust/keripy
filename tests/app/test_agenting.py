@@ -151,7 +151,8 @@ class PublishDoer(doing.DoDoer):
         self.tock = tock
         yield self.tock
 
-        serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
+        regser = eventing.incept(pre=self.palHab.pre, baks=[], code=coring.MtrDex.Blake3_256)
+        serder = eventing.issue(vcdig=regser.pre,
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         msg = bytearray(serder.raw)
         msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
