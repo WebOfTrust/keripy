@@ -3538,7 +3538,7 @@ def test_salter():
     raw = b'0123456789abcdef'
     salter = Salter(raw=raw)
     assert salter.raw == raw
-    assert salter.qb64 == '0AAwMTIzNDU2Nzg5YWJjZGVm'  #'0AMDEyMzQ1Njc4OWFiY2RlZg'
+    assert salter.qb64 == '0AAwMTIzNDU2Nzg5YWJjZGVm'  #'0ACDEyMzQ1Njc4OWFiY2RlZg'
 
     signer = salter.signer(path="01", temp=True)  # defaults to Ed25519
     assert signer.code == MtrDex.Ed25519_Seed

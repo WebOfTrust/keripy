@@ -11,7 +11,7 @@ echo "KERI_DEMO_SCRIPT_DIR=" +${KERI_DEMO_SCRIPT_DIR}
 
 echo "create/open external wallet; issue icp event"
 # EWN6BzdXo6IByOsuh_fYanK300iEOrQKf6msmbIeC4Y0 - external
-curl -s -X POST "http://localhost:5623/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"external\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0AMDEyMzQ1Njc4OWxtbm9GhI\"}" | jq
+curl -s -X POST "http://localhost:5623/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"external\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9GhI\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5623/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"external\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
 sleep 5
@@ -19,7 +19,7 @@ curl -s -X POST "http://localhost:5623/ids/external" -H "accept: */*" -H "Conten
 
 echo "create/open qvi wallet; issue icp event"
 ## EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM - qvi
-curl -s -X POST "http://localhost:5626/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"qvi\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0AMDEyMzQ1Njc4OWxtbm9wcQ\"}" | jq
+curl -s -X POST "http://localhost:5626/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"qvi\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9aBc\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5626/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"qvi\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
 sleep 5
@@ -27,7 +27,7 @@ curl -s -X POST "http://localhost:5626/ids/qvi" -H "accept: */*" -H "Content-Typ
 
 echo "create/open LE wallet; issue icp event"
 ## EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws
-curl -s -X POST "http://localhost:5628/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0AMDEyMzQ1Njc4OWxtbm9AbC\"}" | jq
+curl -s -X POST "http://localhost:5628/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9AbC\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5628/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
 sleep 5
@@ -36,7 +36,7 @@ curl -s -X POST "http://localhost:5628/ids/legal-entity" -H "accept: */*" -H "Co
 echo "create/open person wallet; issue icp event"
 ## Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE
 ## Passcode: DoB2-6Fj4x-9Lbo-AFWJr-a17O
-curl -s -X POST "http://localhost:5630/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"person\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0AMDEyMzQ1Njc4OWxtbm9dEf\"}" | jq
+curl -s -X POST "http://localhost:5630/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"person\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9dEf\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5630/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"person\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
 sleep 5

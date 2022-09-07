@@ -1,7 +1,7 @@
 # Create local Root GAR keystores
 # DoB26Fj4x9LboAFWJra17O
-curl -s -X POST "http://localhost:5620/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootgar1\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\", \"salt\":\"0AMDEyMzQ1Njc4OWdoaWpd00\"}" | jq
-curl -s -X POST "http://localhost:5621/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootgar2\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\", \"salt\":\"0AMDEyMzQ1Njc4OWdoaWpd01\"}" | jq
+curl -s -X POST "http://localhost:5620/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootgar1\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\", \"salt\":\"0ACDEyMzQ1Njc4OWdoaWpd00\"}" | jq
+curl -s -X POST "http://localhost:5621/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootgar2\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\", \"salt\":\"0ACDEyMzQ1Njc4OWdoaWpd01\"}" | jq
 sleep 2
 
 # Unlock local Root GAR agents

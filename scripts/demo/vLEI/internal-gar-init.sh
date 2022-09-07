@@ -1,9 +1,9 @@
 #!/bin/bash
 
-kli init --name intgar1 --salt 0AMDEyMzQ1Njc4OWxtbm9AbC --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
+kli init --name intgar1 --salt 0ACDEyMzQ1Njc4OWxtbm9AbC --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
 kli incept --name intgar1 --alias intgar1 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
 
-kli init --name intgar2 --salt 0AMDEyMzQ1Njc4OWdoaWpEfG --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
+kli init --name intgar2 --salt 0ACDEyMzQ1Njc4OWdoaWpEfG --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
 kli incept --name intgar2 --alias intgar2 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
 
 kli oobi resolve --name intgar1 --oobi-alias "GLEIF Root" --oobi http://127.0.0.1:7723/.well-known/keri/oobi/gleif-root
