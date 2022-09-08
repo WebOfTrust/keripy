@@ -753,7 +753,6 @@ class Manager:
 
         self.inited = True
 
-
     def updateAeid(self, aeid, seed):
         """
         Given seed belongs to aeid and encrypter, update aeid and re-encrypt all

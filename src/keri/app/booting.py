@@ -17,7 +17,7 @@ from hio.help import decking
 from keri.app import specing, configing, habbing, kiwiing, httping, keeping, oobiing
 from keri.vdr import credentialing
 
-DEFAULT_PASSCODE_SIZE = 22
+DEFAULT_PASSCODE_SIZE = 21
 PASSCODE_CHARS = string.ascii_lowercase + string.ascii_uppercase + '123456789'
 
 
@@ -129,7 +129,7 @@ class PasscodeEnd:
 
         code = "".join(code)
         body = dict(
-            passcode=f"{code[0:4]}-{code[4:9]}-{code[9:13]}-{code[13:18]}-{code[18:]}"
+            passcode=f"{code}"
         )
 
         rep.status = falcon.HTTP_200
