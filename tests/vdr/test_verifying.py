@@ -61,7 +61,7 @@ def test_verifier(seeder):
 
         creder = proving.credential(issuer=hab.pre,
                                     schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                    subject=d,
+                                    data=d,
                                     status=issuer.regk)
 
         sadsigers, sadcigars = signing.signPaths(hab=hab, serder=creder, paths=[[]])
@@ -332,7 +332,7 @@ def test_verifier_chained_credential(seeder):
 
         creder = proving.credential(issuer=ron.pre,
                                     schema=qviSchema,
-                                    subject=d,
+                                    data=d,
                                     status=roniss.regk)
 
         sadsigers, sadcigars = signing.signPaths(hab=ron, serder=creder, paths=[[]])
@@ -411,7 +411,7 @@ def test_verifier_chained_credential(seeder):
 
         vLeiCreder = proving.credential(issuer=ian.pre,
                                         schema=vLeiSchema,
-                                        subject=d,
+                                        data=d,
                                         status=ianiss.regk,
                                         source=chain,
                                         rules=[dict(

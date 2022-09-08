@@ -32,7 +32,7 @@ def credential(hab, regk):
 
     creder = proving.credential(issuer=hab.pre,
                                 schema="E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
-                                subject=credSubject,
+                                data=credSubject,
                                 status=regk)
 
     return creder

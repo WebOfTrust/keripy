@@ -51,7 +51,7 @@ def test_proving():
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
-                            subject=credSubject)
+                            data=credSubject)
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (b'{"v":"ACDC10JSON000174_","d":"EB9BVzL6-iIy9EO_l1AgqxhAxn3o5yOOyP'
@@ -213,7 +213,7 @@ def test_credential():
 
     cred = credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      data=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
     assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"EAeSzBILdc9X6G5sBRx7BYQTF8t6ywdMuNZOX0e51KUd",'
@@ -239,31 +239,28 @@ def test_privacy_preserving_credential():
     )
 
     saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
-    assert saider.qb64 == "EmrOM6iYA8p5aEu9XL9e7MTnrDcwH3_VO7vN_QjKtSJo"
+    assert saider.qb64 == "EJqzjOomAPKeWhLvVy_XuzE56w3MB9_1Tu7zf0IyrUia"
     d["i"] = saider.qb64
-
-    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
-                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     salt = coring.Salter(raw=b'0123456789abcdef').qb64
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       private=True,
                       salt=salt,
                       issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
     assert "u" in cred.ked
-    assert cred.raw == (b'{"v":"ACDC10JSON00026e_","d":"ECM8MA5SAMRkrAcGYYiXfwOnXnWRJOpAv4bTVSnc2nCg",'
-                        b'"u":"0AMDEyMzQ1Njc4OWFiY2RlZg","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
+    print(cred.raw)
+    assert cred.raw == (b'{"v":"ACDC10JSON00026e_","d":"EHqTmAXCgZWP3JLVX7Cnyn4nY7OgQfnR1bX1o3A5Grw0",'
+                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
                         b'"ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",'
                         b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",'
-                        b'"a":{"d":"Elovxn5cR5hzcn5lvumGHiAXqzrV8HneaDL0l8PjWhZg","u":"0AMDEyMzQ1Njc4OWFiY2RlZg",'
+                        b'"a":{"d":"EIM4e6dDCEwZ2IejFZ4zyumiemx3P0lKItEyXMpZpbZB","u":"0AAwMTIzNDU2Nzg5YWJjZGVm",'
                         b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","personLegalName":"John Doe",'
                         b'"engagementContextRole":"Project Manager",'
                         b'"credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",'
-                        b'"LEI":"254900OPPU84GM83MG36","i":"EmrOM6iYA8p5aEu9XL9e7MTnrDcwH3_VO7vN_QjKtSJo"},"e":{}}')
+                        b'"LEI":"254900OPPU84GM83MG36","i":"EJqzjOomAPKeWhLvVy_XuzE56w3MB9_1Tu7zf0IyrUia"},"e":{}}')
 
 
 
@@ -282,7 +279,7 @@ def test_credential_parsator():
 
         creder = credential(issuer=hab.pre,
                             schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
-                            subject=credSubject,
+                            data=credSubject,
                             status=issuer.regk)
 
         msg = hab.endorse(serder=creder)

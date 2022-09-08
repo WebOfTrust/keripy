@@ -43,7 +43,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
 
         cred = proving.credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                                   issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                                  subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                                  data=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
         paths = [[], ["a"], ["a", "personal"]]
 
         # Sign with non-transferable identifier, default to entire SAD
@@ -152,7 +152,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
         regery.processEscrows()
 
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=md, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=md, source={}, status=issuer.regk)
 
         # Sign with multisig transferable identifier defaults to single signature on entire SAD
         sig1 = signing.ratify(hab=hab, serder=cred)
@@ -216,7 +216,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         regery.processEscrows()
 
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
         # Sign with non-transferable identifier, defaults to single signature on entire SAD
         sig0 = signing.ratify(hab=hab, serder=cred)
@@ -311,7 +311,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
 
         # where is this schema to be found?
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
         # sign with single sig transferable identfier with multiple specified paths
         # Bad magic values here but can't figure out where looks like Sadder Said seeder
@@ -389,7 +389,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
     with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):
         seeder.seedSchema(db=hby.db)
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={},
+                                  issuer=hab.pre, data=d, source={},
                                   status="Eg1H4eN7P5ndJAWtcymq3ZrYZwQsBRYd3-VuZ6wMAwxE")
 
         # Sign with non-transferable identifier

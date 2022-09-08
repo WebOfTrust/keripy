@@ -397,7 +397,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce):
 
         creder = proving.credential(issuer=bobHab.pre,
                                     schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
-                                    subject=credSubject,
+                                    data=credSubject,
                                     status=issuer.regk)
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
