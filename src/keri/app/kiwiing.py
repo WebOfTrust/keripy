@@ -474,6 +474,7 @@ class IdentifierEnd(doing.DoDoer):
         icount = int(body.get("count")) if "count" in body else 1
         ncount = int(body.get("ncount")) if "ncount" in body else 1
         estOnly = int(body.get("estOnly")) if "estOnly" in body else False
+        DnD = int(body.get("DnD")) if "DnD" in body else False
 
         kwa = dict(
             transferable=transferable,
@@ -483,7 +484,8 @@ class IdentifierEnd(doing.DoDoer):
             icount=icount,
             nsith=nsith,
             ncount=ncount,
-            estOnly=estOnly
+            estOnly=estOnly,
+            DnD=DnD,
         )
         if "delpre" in body:
             kwa["delpre"] = body["delpre"]
@@ -1925,6 +1927,8 @@ class MultisigInceptEnd(MultisigEndBase):
 
         if "estOnly" in body:
             inits["estOnly"] = body["estOnly"]
+        if "DnD" in body:
+            inits["DnD"] = body["DnD"]
 
         inits["toad"] = body["toad"] if "toad" in body else None
         inits["wits"] = body["wits"] if "wits" in body else []
