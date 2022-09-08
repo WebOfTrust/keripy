@@ -3479,7 +3479,7 @@ class AeidEnd:
             rep.data = json.dumps(dict(msg="Current passcode missing from body")).encode("utf-8")
             return
 
-        cbran = coring.MtrDex.Salt_128 + cbran[:22]  # qb64 salt for seed
+        cbran = coring.MtrDex.Salt_128 + 'A' + cbran[:21]  # qb64 salt for seed
         csigner = coring.Salter(qb64=cbran).signer(transferable=False,
                                                    temp=self.hby.temp, tier=None)
         if not self.hby.mgr.encrypter.verifySeed(csigner.qb64):
@@ -3495,12 +3495,12 @@ class AeidEnd:
             rep.data = json.dumps(dict(msg="Passcode missing from body")).encode("utf-8")
             return
 
-        if len(bran) < 22:
+        if len(bran) < 21:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg="Invalid passcode, too short")).encode("utf-8")
             return
 
-        bran = coring.MtrDex.Salt_128 + bran[:22]  # qb64 salt for seed
+        bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
         signer = coring.Salter(qb64=bran).signer(transferable=False,
                                                  temp=self.hby.temp)
         seed = signer.qb64

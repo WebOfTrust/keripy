@@ -1569,7 +1569,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
 
 
 def test_aied_ends():
-    bran = "1zFo56YdTekm7T6dw4BeSg"
+    bran = "1B88Kq7afAZHlxsNIBE5y"
     with habbing.openHby(name="test", salt=coring.Salter(raw=b'0123456789abcdef').qb64, bran=bran) as hby:
         app = falcon.App()
         notifier = notifying.Notifier(hby=hby)
@@ -1595,7 +1595,7 @@ def test_aied_ends():
         assert len(aeid) == booting.DEFAULT_PASSCODE_SIZE
 
         #  Change passcode
-        nbran = "ggkafMNqNBg2uEkkLAwgMf"
+        nbran = "pouh228IgK9RhloUnkydZ"
         body = dict(current=bran, passcode=nbran)
         response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
         assert response.status == falcon.HTTP_202

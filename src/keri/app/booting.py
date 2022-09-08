@@ -17,7 +17,7 @@ from hio.help import decking
 from keri.app import specing, configing, habbing, kiwiing, httping, keeping, oobiing
 from keri.vdr import credentialing
 
-DEFAULT_PASSCODE_SIZE = 22
+DEFAULT_PASSCODE_SIZE = 21
 PASSCODE_CHARS = string.ascii_lowercase + string.ascii_uppercase + '123456789'
 
 
