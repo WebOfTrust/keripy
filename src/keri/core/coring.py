@@ -3518,9 +3518,9 @@ class IndexerCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0A'  # Ed448 signature.
-    Label: str = '0B'  # Var len label L=N*4 <= 4095 char quadlets includes code
+    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0B'  # Ed448 signature.
+    TBD: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -3537,8 +3537,8 @@ class IndexedSigCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0A'  # Ed448 signature.
+    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0B'  # Ed448 signature.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -3588,9 +3588,9 @@ class Indexer:
     # soft size, ss, should always be  > 0 for Indexer
     Sizes = {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=None, ls=0),
+        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
+        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.

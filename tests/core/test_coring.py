@@ -25,7 +25,7 @@ from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter,
-                              IdrDex, Indexer, CtrDex, Counter, sniff)
+                              IdrDex, IdxSigDex, Indexer, CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
@@ -1517,17 +1517,28 @@ def test_indexer():
     """
     Test Indexer class
     """
+    assert Indexer.Codex == IdrDex
     assert dataclasses.asdict(IdrDex) == {
         'Ed25519_Sig': 'A',
-        'ECDSA_256k1_Sig': 'B',
-        'Ed448_Sig': '0A',
-        'Label': '0B'
+        'ECDSA_256k1_Sig': 'D',
+        'Ed448_Sig': '0B',
+        'TBD': '0Z'
     }
 
     assert IdrDex.Ed25519_Sig == 'A'  # Ed25519 signature.
-    assert IdrDex.ECDSA_256k1_Sig == 'B'  # ECDSA secp256k1 signature.
+    assert IdrDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature.
+    assert IdrDex.Ed448_Sig == '0B'  # ECDSA secp256k1 signature.
 
-    assert Indexer.Codex == IdrDex
+
+    assert dataclasses.asdict(IdxSigDex) == {
+        'Ed25519_Sig': 'A',
+        'ECDSA_256k1_Sig': 'D',
+        'Ed448_Sig': '0B',
+    }
+
+    assert IdxSigDex.Ed25519_Sig == 'A'  # Ed25519 signature.
+    assert IdxSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature.
+    assert IdxSigDex.Ed448_Sig == '0B'  # ECDSA secp256k1 signature.
 
     # first character of code with hard size of code
     assert Indexer.Hards == {
@@ -1543,9 +1554,9 @@ def test_indexer():
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Sizes == {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=None, ls=0)
+        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
+        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0)
     }
 
     assert Indexer.Sizes['A'].hs == 1  # hard size
@@ -1723,40 +1734,6 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
 
-    #  Label Code (variable length)
-    label = b'Hello_World_Peep'
-    index = len(label) // 4
-    assert not len(label) % 4
-    assert index == 4
-    lraw = decodeB64(label)
-    assert len(lraw) == len(label) * 3 // 4
-    assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
-    ltext = encodeB64(lraw)
-    assert ltext == b'Hello_World_Peep' == label
-    qsc = IdrDex.Label + intToB64(index, l=2)
-    assert qsc == '0BAE'
-    qscb = qsc.encode("utf-8")
-    lq64b = qscb + label
-    assert lq64b == b"0BAEHello_World_Peep"
-    lq64 = lq64b.decode("utf-8")
-
-    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=index)
-    assert indexer.raw == lraw
-    assert indexer.code == IdrDex.Label
-    assert indexer.index == index
-    assert indexer.qb64b == lq64b
-    assert indexer.qb64 == lq64
-    assert indexer.qb2 == b'\xd0\x10\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
-
-    # index zero for empty label
-    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=0)
-    assert indexer.raw == b''
-    assert indexer.code == IdrDex.Label
-    assert indexer.index == 0
-    assert indexer.qb64b == b'0BAA'
-    assert indexer.qb64 == '0BAA'
-    assert indexer.qb2 == b'\xd0\x10\x00'
-
     # Test ._bexfil
     indexer = Indexer(qb64=qsig64)  #
     raw = indexer.raw
@@ -1827,6 +1804,41 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     assert ims == extra
+
+    # Test of TBD Label Code (variable length)
+    label = b'Hello_World_Peep'
+    index = len(label) // 4
+    assert not len(label) % 4
+    assert index == 4
+    lraw = decodeB64(label)
+    assert len(lraw) == len(label) * 3 // 4
+    assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+    ltext = encodeB64(lraw)
+    assert ltext == b'Hello_World_Peep' == label
+    qsc = IdrDex.TBD + intToB64(index, l=2)
+    assert qsc == '0ZAE'
+    qscb = qsc.encode("utf-8")
+    lq64b = qscb + label
+    assert lq64b == b"0ZAEHello_World_Peep"
+    lq64 = lq64b.decode("utf-8")
+
+    # label from raw
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=index)
+    assert indexer.raw == lraw
+    assert indexer.code == IdrDex.TBD
+    assert indexer.index == index
+    assert indexer.qb64b == lq64b
+    assert indexer.qb64 == lq64
+    assert indexer.qb2 == b'\xd1\x90\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+
+    # index zero for empty label
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=0)
+    assert indexer.raw == b''
+    assert indexer.code == IdrDex.TBD
+    assert indexer.index == 0
+    assert indexer.qb64b == b'0ZAA'
+    assert indexer.qb64 == '0ZAA'
+    assert indexer.qb2 == b'\xd1\x90\x00'
     """ Done Test """
 
 
