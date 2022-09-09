@@ -846,8 +846,8 @@ class Hab:
         self.delpre = None
 
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, icount=1,
-             nsith=None, ncount=None, toad=None, wits=None, delpre=None, estOnly=False, mskeys=None, msdigers=None,
-             hidden=False):
+             nsith=None, ncount=None, toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
+             mskeys=None, msdigers=None, hidden=False):
         """
         Finish setting up or making Hab from parameters.
         Assumes injected dependencies were already setup.
@@ -865,8 +865,9 @@ class Hab:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitCodex.EstOnly means only establishment
+            estOnly (bool): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
+            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
             mskeys (list): Verfers of public keys collected from inception of participants in group identifier
             msdigers (list): Digers of next public keys collected from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
@@ -912,6 +913,8 @@ class Hab:
         cnfg = []
         if estOnly:
             cnfg.append(eventing.TraitCodex.EstOnly)
+        if DnD:
+            cnfg.append(eventing.TraitCodex.DND)
 
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
