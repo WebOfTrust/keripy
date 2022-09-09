@@ -2215,7 +2215,7 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
-                         code=IdrDex.Ed25519_Sig,
+                         code=IdrDex.Ed25519_Bth_Sig,
                          index=index,
                          verfer=verfer)
 
@@ -3516,9 +3516,24 @@ class IndexerCodex:
     IndexerCodex is codex hard (stable) part of all indexer derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Codes also indicate which set of keys index applies too:
+        Bth_Sig: Index in code for both current signing and prior next rotation
+                key lists if event is establishement or current signing otherwise
+        Crt_Sig: Incex in code for current signing key list only
+        Nxt_Sig: Index in code for prior next key list only
+        Otr_Idx: Index in code for other key list from the key list specified in
+                 following indexed signature. This allows one signature to have
+                 a different index in each list. If Crt_Sig is preceded by Oth_Idx
+                 then Oth_Idx is for prior next key list. If Nxt_Sig is preceded by
+                 Oth_Idx then Oth_Idx is for current key list.
     """
-    Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 signature.
+
+    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
+    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
+    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
+    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
     Ed448_Sig: str = '0B'  # Ed448 signature.
     TBD: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
 
@@ -3536,8 +3551,11 @@ class IndexedSigCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 signature.
+    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
+    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
+    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
+    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
     Ed448_Sig: str = '0B'  # Ed448 signature.
 
     def __iter__(self):
@@ -3588,7 +3606,10 @@ class Indexer:
     # soft size, ss, should always be  > 0 for Indexer
     Sizes = {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'C': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'D': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
         '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
         '0Z': Sizage(hs=2, ss=2, fs=None, ls=0),
     }
@@ -3596,7 +3617,7 @@ class Indexer:
     # converted from first code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Bth_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified

@@ -1519,25 +1519,37 @@ def test_indexer():
     """
     assert Indexer.Codex == IdrDex
     assert dataclasses.asdict(IdrDex) == {
-        'Ed25519_Sig': 'A',
-        'ECDSA_256k1_Sig': 'D',
+        'Ed25519_Bth_Sig': 'A',
+        'Ed25519_Crt_Sig': 'B',
+        'Ed25519_Nxt_Sig': 'C',
+        'Follow_Otr_Idx': 'D',
+        'ECDSA_256k1_Sig': 'E',
         'Ed448_Sig': '0B',
         'TBD': '0Z'
     }
 
-    assert IdrDex.Ed25519_Sig == 'A'  # Ed25519 signature.
-    assert IdrDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature.
+    assert IdrDex.Ed25519_Bth_Sig == 'A'  # Ed25519 signature.
+    assert IdrDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature idx current only.
+    assert IdrDex.Ed25519_Nxt_Sig == 'C'  # Ed25519 signature idx prior next only.
+    assert IdrDex.Follow_Otr_Idx == 'D'  # Ed25519 signature different idx current and prior next.
+    assert IdrDex.ECDSA_256k1_Sig == 'E'  # ECDSA secp256k1 signature.
     assert IdrDex.Ed448_Sig == '0B'  # ECDSA secp256k1 signature.
 
 
     assert dataclasses.asdict(IdxSigDex) == {
-        'Ed25519_Sig': 'A',
-        'ECDSA_256k1_Sig': 'D',
+        'Ed25519_Bth_Sig': 'A',
+        'Ed25519_Crt_Sig': 'B',
+        'Ed25519_Nxt_Sig': 'C',
+        'Follow_Otr_Idx': 'D',
+        'ECDSA_256k1_Sig': 'E',
         'Ed448_Sig': '0B',
     }
 
-    assert IdxSigDex.Ed25519_Sig == 'A'  # Ed25519 signature.
-    assert IdxSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature.
+    assert IdxSigDex.Ed25519_Bth_Sig == 'A'  # Ed25519 Idx both signature.
+    assert IdxSigDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature idx current only.
+    assert IdxSigDex.Ed25519_Nxt_Sig == 'C'  # Ed25519 signature idx prior next only.
+    assert IdxSigDex.Follow_Otr_Idx == 'D'  # Ed25519 signature different idx current and prior next.
+    assert IdxSigDex.ECDSA_256k1_Sig == 'E'  # ECDSA secp256k1 signature.
     assert IdxSigDex.Ed448_Sig == '0B'  # ECDSA secp256k1 signature.
 
     # first character of code with hard size of code
@@ -1554,7 +1566,10 @@ def test_indexer():
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Sizes == {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'C': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'D': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
         '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
         '0Z': Sizage(hs=2, ss=2, fs=None, ls=0)
     }
@@ -1598,7 +1613,7 @@ def test_indexer():
                      'ezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ')
 
     # replace prepad  with code "A" plus index 0 == "A"
-    qsc = IdrDex.Ed25519_Sig + intToB64(0, l=1)
+    qsc = IdrDex.Ed25519_Bth_Sig + intToB64(0, l=1)
     assert qsc == 'AA'
     qscb = qsc.encode("utf-8")
     qsig64 = qsc + sig64[ps:]  # replace prepad chars with clause
@@ -1615,15 +1630,15 @@ def test_indexer():
 
     indexer = Indexer(raw=sig)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 0
     assert indexer.qb64 == qsig64
     indexer._exfil(qsig64b)
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.raw == sig
     assert indexer.qb2 == qsig2b
     indexer._bexfil(qsig2b)
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.raw == sig
 
     # test wrong size of raw
@@ -1636,7 +1651,7 @@ def test_indexer():
 
     indexer = Indexer(qb64b=qsig64b)  # test with bytes not str
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1644,7 +1659,7 @@ def test_indexer():
 
     indexer = Indexer(qb64=qsig64)  # test with str not bytes
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1662,7 +1677,7 @@ def test_indexer():
 
     indexer = Indexer(qb2=qsig2b)  # test with qb2
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1681,7 +1696,7 @@ def test_indexer():
 
     # test with non-zero index=5
     # replace pad "==" with code "AF"
-    qsc = IdrDex.Ed25519_Sig + intToB64(5, l=1)
+    qsc = IdrDex.Ed25519_Bth_Sig + intToB64(5, l=1)
     assert qsc == 'AF'
     qscb = qsc.encode("utf-8")
     qsig64 = qsc + sig64[ps:]  # replace prepad chars with code
@@ -1696,31 +1711,31 @@ def test_indexer():
               b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
               b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
 
-    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5)
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Bth_Sig, index=5)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     indexer._exfil(qsig64b)
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.raw == sig
     assert indexer.qb2 == qsig2b
     indexer._bexfil(qsig2b)
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.raw == sig
 
     indexer = Indexer(raw=sig)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 0  #default index is zero
     assert indexer.qb64 != qsig64
     assert indexer.qb2 != qsig2b
 
     indexer = Indexer(qb2=qsig2b)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1728,7 +1743,7 @@ def test_indexer():
 
     indexer = Indexer(qb64=qsig64)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1755,7 +1770,7 @@ def test_indexer():
     # strip ignored if qb64
     indexer = Indexer(qb64=qsig64)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1764,7 +1779,7 @@ def test_indexer():
     ims = bytearray(qsig64b)
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1774,7 +1789,7 @@ def test_indexer():
     ims = bytearray(qsig2b)
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1786,7 +1801,7 @@ def test_indexer():
     ims = bytearray(qsig64b) + extra
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -1798,7 +1813,7 @@ def test_indexer():
     ims = bytearray(qsig2b) + extra
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
-    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.code == IdrDex.Ed25519_Bth_Sig
     assert indexer.index == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
@@ -3227,7 +3242,7 @@ def test_signer():
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert sigmat.code == IdrDex.Ed25519_Bth_Sig
     assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
@@ -3253,7 +3268,7 @@ def test_signer():
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert sigmat.code == IdrDex.Ed25519_Bth_Sig
     assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
@@ -3276,7 +3291,7 @@ def test_signer():
     assert result == True
 
     sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert sigmat.code == IdrDex.Ed25519_Bth_Sig
     assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 1
     result = signer.verfer.verify(sigmat.raw, ser)
@@ -4093,19 +4108,19 @@ def test_siger():
                        b'cKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ')
 
     siger = Siger(qb64b=qsig64b)
-    assert siger.code == IdrDex.Ed25519_Sig
+    assert siger.code == IdrDex.Ed25519_Bth_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
     siger = Siger(qb64=qsig64)
-    assert siger.code == IdrDex.Ed25519_Sig
+    assert siger.code == IdrDex.Ed25519_Bth_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
     siger = Siger(qb64=qsig64b)  # also bytes
-    assert siger.code == IdrDex.Ed25519_Sig
+    assert siger.code == IdrDex.Ed25519_Bth_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
@@ -5259,4 +5274,6 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    #test_matter()
+    ##test_counter()
+    test_indexer()

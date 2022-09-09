@@ -105,15 +105,10 @@ def test_direct_mode_with_manager():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from validator's .kevers
-        # create trans receipt
+        # create trans receipt by attaching siger to recipt msg
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.saider.qb64)
-        #reserder = chit(pre=coeK.prefixer.qb64,
-                        #sn=coeK.sn,
-                        #dig=coeK.serder.diger.qb64,
-                        #seal=seal)
-        # Validate receipt
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
@@ -125,15 +120,17 @@ def test_direct_mode_with_manager():
         #assert counter.qb64 == '-AAB'
         sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
 
-        # process own validator receipt in validator's Kevery so have copy in own log
+        # attach signatures
         rmsg = messagize(reserder, sigers=sigers, seal=seal)
         assert len(rmsg) == 353
 
+        # process own validator receipt in validator's Kevery so have copy in own log
+        # also server to validate receipt
         parsing.Parser().parseOne(ims=bytearray(rmsg), kvy=valKevery)
-        # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach receipt message to existing message with validators inception message
-        # simulate streaming. validator first sends it's inception event, then sends a receipt to controller
+        # simulate streaming. validator first sends it's inception event, then
+        # sends a receipt to controller
         vmsg.extend(rmsg)
 
         # Simulate sending validator's inception event and receipt of
