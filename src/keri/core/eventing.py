@@ -953,8 +953,10 @@ def receipt(pre,
             kind=Serials.json
             ):
     """
-    Returns serder of event receipt message for non-transferable receipter prefix.
-    Utility function to automate creation of interaction events.
+    Returns serder of event receipt message. Used for both non-trans and trans
+    signers as determined by signature attachment type (cigar or siger)
+
+    Utility function to automate creation of receipts.
 
      Parameters:
         pre is qb64 str of prefix of event being receipted

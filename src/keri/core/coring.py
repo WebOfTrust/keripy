@@ -1103,9 +1103,9 @@ class Matter:
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
+        # check for non-zeroed pad bits or lead bytes
         ps = cs % 4  # code pad size ps = cs mod 4
         pbs = 2 * (ps if ps else ls)  # pad bit size in bits
-
         if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
             base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
             paw = decodeB64(base)  # decode base to leave prepadded raw
@@ -2215,7 +2215,7 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
-                         code=IdrDex.Ed25519_Sig,
+                         code=IdrDex.Ed25519_Bth_Sig,
                          index=index,
                          verfer=verfer)
 
@@ -3516,11 +3516,26 @@ class IndexerCodex:
     IndexerCodex is codex hard (stable) part of all indexer derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Codes also indicate which set of keys index applies too:
+        Bth_Sig: Index in code for both current signing and prior next rotation
+                key lists if event is establishement or current signing otherwise
+        Crt_Sig: Incex in code for current signing key list only
+        Nxt_Sig: Index in code for prior next key list only
+        Otr_Idx: Index in code for other key list from the key list specified in
+                 following indexed signature. This allows one signature to have
+                 a different index in each list. If Crt_Sig is preceded by Oth_Idx
+                 then Oth_Idx is for prior next key list. If Nxt_Sig is preceded by
+                 Oth_Idx then Oth_Idx is for current key list.
     """
-    Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0A'  # Ed448 signature.
-    Label: str = '0B'  # Var len label L=N*4 <= 4095 char quadlets includes code
+
+    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
+    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
+    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
+    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0B'  # Ed448 signature.
+    TBD: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -3536,9 +3551,12 @@ class IndexedSigCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig: str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig: str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0A'  # Ed448 signature.
+    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
+    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
+    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
+    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
+    Ed448_Sig: str = '0B'  # Ed448 signature.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -3589,14 +3607,17 @@ class Indexer:
     Sizes = {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
         'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=None, ls=0),
+        'C': Sizage(hs=1, ss=1, fs=88, ls=0),
+        'D': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
+        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Bth_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
@@ -3823,9 +3844,35 @@ class Indexer:
             qb64b = qb64b.encode("utf-8")
 
         # strip off prepended code and append pad characters
-        ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
-        base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
-        raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
+        #ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
+        #base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
+        #raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
+
+        # check for non-zeroed pad bits or lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
+            paw = decodeB64(base)  # decode base to leave prepadded raw
+            pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed prepad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
+            raw = paw[ps:]  # strip off ps prepad bytes
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            base = qb64b[cs:]  # strip off code leaving lead chars if any and value
+            # decode lead chars + val leaving lead bytes + raw bytes
+            # then strip off ls lead bytes leaving raw
+            paw = decodeB64(base) # decode base to leave prepadded raw
+            li = int.from_bytes(paw[:ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
+
+            raw = paw[ls:]
+
 
         if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
@@ -3915,7 +3962,7 @@ class Indexer:
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs + ss])  # get index
-        if not fs:
+        if not fs:  # compute fs from size chars in ss part of code
             fs = (index * 4) + cs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
@@ -3923,6 +3970,25 @@ class Indexer:
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
         qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
+
+        # check for non-zeroed prepad bits or lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            # convert last byte of code bytes in which are pad bits to int
+            pi = (int.from_bytes(qb2[bcs-1:bcs], "big"))
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed pad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):>08b} in 0x{pi:02x}.")
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:02x}.")
+
+
         raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths
