@@ -812,7 +812,7 @@ def test_cesr_suber():
         sdb = subing.CesrSuber(db=db, subkey='pigs.', klas=coring.Siger)
         assert isinstance(sdb, subing.CesrSuber)
         assert issubclass(sdb.klas, coring.Siger)
-        sig0 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+        sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
         val0 = coring.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=val0)
@@ -950,7 +950,7 @@ def test_cat_suber():
         sdb = subing.CatCesrSuber(db=db, subkey='pigs.', klas=(coring.Siger, ))
         assert isinstance(sdb, subing.CatCesrSuber)
         assert issubclass(sdb.klas[0], coring.Siger)
-        sig0 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+        sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
         val0 = coring.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=[val0])
@@ -1157,7 +1157,7 @@ def test_cat__cesr_ioset_suber():
         sdb = subing.CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(coring.Siger, ))
         assert isinstance(sdb, subing.CatCesrIoSetSuber)
         assert issubclass(sdb.klas[0], coring.Siger)
-        sig0 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+        sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
         val0 = coring.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[[val0]])
@@ -1294,7 +1294,7 @@ def test_cesr_dup_suber():
         sdb = subing.CesrDupSuber(db=db, subkey='pigs.', klas=coring.Siger)
         assert isinstance(sdb, subing.CesrDupSuber)
         assert issubclass(sdb.klas, coring.Siger)
-        sig0 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+        sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
         val0 = coring.Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[val0])

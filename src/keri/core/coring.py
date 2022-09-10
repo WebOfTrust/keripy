@@ -1103,9 +1103,9 @@ class Matter:
         if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
             qb64b = qb64b.encode("utf-8")
 
+        # check for non-zeroed pad bits or lead bytes
         ps = cs % 4  # code pad size ps = cs mod 4
         pbs = 2 * (ps if ps else ls)  # pad bit size in bits
-
         if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
             base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
             paw = decodeB64(base)  # decode base to leave prepadded raw
@@ -3844,9 +3844,35 @@ class Indexer:
             qb64b = qb64b.encode("utf-8")
 
         # strip off prepended code and append pad characters
-        ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
-        base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
-        raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
+        #ps = cs % 4  # pad size ps = cs mod 4, same pad chars and lead bytes
+        #base = ps * b'A' + qb64b[cs:]  # replace prepend code with prepad zeros
+        #raw = decodeB64(base)[ps+ls:]  # decode and strip off ps+ls prepad bytes
+
+        # check for non-zeroed pad bits or lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
+            paw = decodeB64(base)  # decode base to leave prepadded raw
+            pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed prepad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
+            raw = paw[ps:]  # strip off ps prepad bytes
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            base = qb64b[cs:]  # strip off code leaving lead chars if any and value
+            # decode lead chars + val leaving lead bytes + raw bytes
+            # then strip off ls lead bytes leaving raw
+            paw = decodeB64(base) # decode base to leave prepadded raw
+            li = int.from_bytes(paw[:ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
+
+            raw = paw[ls:]
+
 
         if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
@@ -3936,7 +3962,7 @@ class Indexer:
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs + ss])  # get index
-        if not fs:
+        if not fs:  # compute fs from size chars in ss part of code
             fs = (index * 4) + cs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
@@ -3944,6 +3970,25 @@ class Indexer:
             raise ShortageError("Need {} more bytes.".format(bfs - len(qb2)))
 
         qb2 = qb2[:bfs]  # extract qb2 fully qualified primitive code plus material
+
+        # check for non-zeroed prepad bits or lead bytes
+        ps = cs % 4  # code pad size ps = cs mod 4
+        pbs = 2 * (ps if ps else ls)  # pad bit size in bits
+        if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
+            # convert last byte of code bytes in which are pad bits to int
+            pi = (int.from_bytes(qb2[bcs-1:bcs], "big"))
+            if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
+                raise ValueError(f"Non zeroed pad bits = "
+                                 f"{pi & (2 ** pbs - 1 ):>08b} in 0x{pi:02x}.")
+        else:  # not ps. IF not ps THEN may or may not be ls (lead)
+            li = int.from_bytes(qb2[bcs:bcs+ls], "big")  # lead as int
+            if li:  # pre pad lead bytes must be zero
+                if ls == 1:
+                    raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
+                else:
+                    raise ValueError(f"Non zeroed lead bytes = 0x{li:02x}.")
+
+
         raw = qb2[(bcs + ls):]  # strip code and leader bytes from qb2 to get raw
 
         if len(raw) != (len(qb2) - bcs - ls):  # exact lengths

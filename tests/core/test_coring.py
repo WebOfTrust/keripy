@@ -34,7 +34,7 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError)
+                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError)
 from keri.kering import Version, Versionage
 
 
@@ -1665,6 +1665,13 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
 
+    # test non-zero pad bits in qb64 init ps == 2
+    badq64sig2= ('AA_Z0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFw'
+                      'qezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ')
+    with pytest.raises(ValueError) as ex:
+        indexer = Indexer(qb64=badq64sig2)
+    assert str(ex.value) == "Non zeroed prepad bits = 111100 in b'_'."
+
     # test truncates extra bytes from qb64 parameter
     longqsig64 = qsig64 + "ABCD"
     indexer = Indexer(qb64=longqsig64)
@@ -1682,6 +1689,12 @@ def test_indexer():
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
+
+    # test non-zero pad bits in qb2 init ps ==2
+    badq2sig2= decodeB64(badq64sig2)
+    with pytest.raises(ValueError) as ex:
+        indexer = Indexer(qb2=badq2sig2)
+    assert str(ex.value) == 'Non zeroed pad bits = 00001111 in 0x0f.'
 
     # test truncates extra bytes from qb2 parameter
     longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
@@ -1819,6 +1832,57 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     assert ims == extra
+
+    # test index too big
+    index = 65
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Bth_Sig, index=index)
+
+    # test other codes
+    index =  3
+    code = IdrDex.Ed25519_Crt_Sig
+    qb64 = 'BDCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qb2 = (b"\x040\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm"
+           b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
+           b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+    indexer = Indexer(raw=sig, code=code, index=index)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    index =  4
+    code = IdrDex.Ed25519_Nxt_Sig
+    qb64 = 'CECZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qb2 = (b"\x08@\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm"
+           b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
+           b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+    indexer = Indexer(raw=sig, code=code, index=index)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    index =  64 ** 3 - 1  # three hextets for max index
+    assert index == 262143
+    code = IdrDex.Follow_Otr_Idx
+    qb64 = 'D___'
+    qb2 = b'\x0f\xff\xff'
+    indexer = Indexer(raw=sig, code=code, index=index)
+    assert indexer.raw == b''
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    index =  64 ** 3   # one greater than max index
+    assert index == 262144
+    code = IdrDex.Follow_Otr_Idx
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=code, index=index)
+
 
     # Test of TBD Label Code (variable length)
     label = b'Hello_World_Peep'
