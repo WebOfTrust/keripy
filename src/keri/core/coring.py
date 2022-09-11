@@ -3719,7 +3719,8 @@ class Indexer:
 
             hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
-            if index < 0 or index > (64 ** ss - 1):
+
+            if not isinstance(index, int) or index < 0 or index > (64 ** ss - 1):
                 raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
             if not fs:  # compute fs from index
@@ -4078,26 +4079,31 @@ class Siger(Indexer):
     Attributes:
 
     Properties:
-        .verfer is Verfer object instance
+        verfer (Verfer): instance if any provides public verification key
+        pindex (int): prior next key list index if any
 
     Methods:
+
+    Hidden:
+        _verfer (Verfer): value for .verfer property
+        _pindex (int): value for .pindex property
 
 
     """
 
-    def __init__(self, verfer=None, **kwa):
-        """
-        Assign verfer to ._verfer
+    def __init__(self, verfer=None, pindex=None, **kwa):
+        """Initialze instance
 
         Parameters:  See Matter for inherted parameters
-            verfer if Verfer instance if any
-
+            verfer (Verfer): instance if any provides public verification key
+            pindex (int): prior next key list index if any
         """
         super(Siger, self).__init__(**kwa)
         if self.code not in IdxSigDex:
             raise ValidationError("Invalid code = {} for Siger."
                                   "".format(self.code))
-        self._verfer = verfer
+        self.verfer = verfer
+        self.pindex = pindex
 
     @property
     def verfer(self):
@@ -4112,6 +4118,25 @@ class Siger(Indexer):
     def verfer(self, verfer):
         """ verfer property setter """
         self._verfer = verfer
+
+    @property
+    def pindex(self):
+        """
+        Property pindex:
+        Returns prior next key list index as int
+        Assumes ._pindex is correctly assigned
+        """
+        return self._pindex
+
+    @pindex.setter
+    def pindex(self, pindex):
+        """ pindex property setter """
+        if pindex is not None:
+            if not isinstance(pindex, int):
+                raise ValueError(f"Non integer pindex={pindex}.")
+            if pindex < 0:
+                raise ValueError(f"Negative pindex={pindex}.")
+        self._pindex = pindex
 
 
 @dataclass(frozen=True)

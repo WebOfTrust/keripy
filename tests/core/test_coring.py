@@ -1866,6 +1866,16 @@ def test_indexer():
     with pytest.raises(InvalidVarIndexError):
         indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=index)
 
+    # test negative index
+    index = -1
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=index)
+
+    # test non integer index
+    index = 3.5
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=index)
+
     # test other codes
     index =  3
     code = IdrDex.Ed25519_Crt_Sig
@@ -4191,18 +4201,21 @@ def test_siger():
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
+    assert siger.pindex == None
 
     siger = Siger(qb64=qsig64)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
+    assert siger.pindex == None
 
     siger = Siger(qb64=qsig64b)  # also bytes
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
+    assert siger.pindex == None
 
     verkey, sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
@@ -4210,8 +4223,22 @@ def test_siger():
     siger.verfer = verfer
     assert siger.verfer == verfer
 
-    siger = Siger(qb64=qsig64, verfer=verfer)
+    pindex = 1
+    siger.pindex = pindex
+    assert siger.pindex == pindex
+
+    siger = Siger(qb64=qsig64, verfer=verfer, pindex=pindex)
     assert siger.verfer == verfer
+    assert siger.pindex == pindex
+
+    with pytest.raises(ValueError):
+        siger.pindex =  2.5
+
+    with pytest.raises(ValueError):
+        siger.pindex =  -1
+
+
+
     """ Done Test """
 
 
@@ -5356,3 +5383,4 @@ if __name__ == "__main__":
     #test_matter()
     ##test_counter()
     test_indexer()
+    test_siger()
