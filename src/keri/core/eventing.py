@@ -1352,7 +1352,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     Returns: bytearray KERI event message
     """
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    atc = bytearray()
+    atc = bytearray()  # attachment
 
     if not (sigers or cigars or wigers):
         raise ValueError("Missing attached signatures on message = {}."

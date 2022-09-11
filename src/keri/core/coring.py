@@ -2215,7 +2215,7 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
-                         code=IdrDex.Ed25519_Bth_Sig,
+                         code=IdrDex.Ed25519_Sig,
                          index=index,
                          verfer=verfer)
 
@@ -3512,29 +3512,19 @@ class Saider(Matter):
 
 @dataclass(frozen=True)
 class IndexerCodex:
-    """
-    IndexerCodex is codex hard (stable) part of all indexer derivation codes.
+    """ IndexerCodex is codex hard (stable) part of all indexer derivation codes.
+
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    Codes also indicate which set of keys index applies too:
-        Bth_Sig: Index in code for both current signing and prior next rotation
-                key lists if event is establishement or current signing otherwise
-        Crt_Sig: Incex in code for current signing key list only
-        Nxt_Sig: Index in code for prior next key list only
-        Otr_Idx: Index in code for other key list from the key list specified in
-                 following indexed signature. This allows one signature to have
-                 a different index in each list. If Crt_Sig is preceded by Oth_Idx
-                 then Oth_Idx is for prior next key list. If Nxt_Sig is preceded by
-                 Oth_Idx then Oth_Idx is for current key list.
     """
 
-    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
-    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
-    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
-    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
-    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0B'  # Ed448 signature.
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
+    Prior_Next_Idx: str = 'C'  # Prior Next Index of following sig.
+    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
+    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
     TBD: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
 
     def __iter__(self):
@@ -3546,23 +3536,100 @@ IdrDex = IndexerCodex()
 
 @dataclass(frozen=True)
 class IndexedSigCodex:
-    """
-    IndexedSigCodex is codex all indexed signature derivation codes
+    """IndexedSigCodex is codex all indexed signature derivation codes.
+
+    Codes indicate which list of keys, current and/or prior next, index is for:
+
+        _Sig:           Index in code appears same in both current signing and
+                        prior next key lists if event has prior next or current
+                        signing otherwise.
+                        When preceeded by Prior_Next_Idx then uses provided index
+                        for prior next list.
+
+        _Crt_Sig:       Index in code for current signing key list only.
+                        When preceeded by Prior_Next_Idx then appears also in prior
+                        next list at provided index
+
+        Prior_Next_Idx: Provides index for prior next list. Allows index to be
+                        different in each list when appearing in both lists.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Bth_Sig: str = 'A'  # Ed25519 signature same idx current and prior next if any.
-    Ed25519_Crt_Sig: str = 'B'  # Ed25519 signature idx current only.
-    Ed25519_Nxt_Sig: str = 'C'  # Ed25519 signature idx prior next only.
-    Follow_Otr_Idx: str = 'D'  # Following sig also has this index in other key list
-    ECDSA_256k1_Sig: str = 'E'  # ECDSA secp256k1 signature.
-    Ed448_Sig: str = '0B'  # Ed448 signature.
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
+    Prior_Next_Idx: str = 'C'  # Prior Next Index of following sig.
+    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
+    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
 
     def __iter__(self):
         return iter(astuple(self))
 
 
 IdxSigDex = IndexedSigCodex()  # Make instance
+
+@dataclass(frozen=True)
+class IndexedBothSigCodex:
+    """IndexedBothSigCodex is codex indexed signature codes for both lists.
+
+    Codes indicate which list of keys, current and/or prior next, index is for:
+
+        _Sig:           Index in code appears same in both current signing and
+                        prior next key lists if event has prior next or current
+                        signing otherwise.
+                        When preceeded by Prior_Next_Idx then uses provided index
+                        for prior next list.
+
+        _Crt_Sig:       Index in code for current signing key list only.
+                        When preceeded by Prior_Next_Idx then appears also in prior
+                        next list at provided index
+
+        Prior_Next_Idx: Provides index for prior next list. Allows index to be
+                        different in each list when appearing in both lists.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
+    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+IdxBthSigDex = IndexedBothSigCodex()  # Make instance
+
+@dataclass(frozen=True)
+class IndexedCurrentSigCodex:
+    """IndexedCurrentSigCodex is codex indexed signature codes for current list.
+
+    Codes indicate which list of keys, current and/or prior next, index is for:
+
+        _Sig:           Index in code appears same in both current signing and
+                        prior next key lists if event has prior next or current
+                        signing otherwise.
+                        When preceeded by Prior_Next_Idx then uses provided index
+                        for prior next list.
+
+        _Crt_Sig:       Index in code for current signing key list only.
+                        When preceeded by Prior_Next_Idx then appears also in prior
+                        next list at provided index
+
+        Prior_Next_Idx: Provides index for prior next list. Allows index to be
+                        different in each list when appearing in both lists.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
+    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+IdxCrtSigDex = IndexedCurrentSigCodex()  # Make instance
 
 
 class Indexer:
@@ -3607,9 +3674,10 @@ class Indexer:
     Sizes = {
         'A': Sizage(hs=1, ss=1, fs=88, ls=0),
         'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'C': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'D': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'C': Sizage(hs=1, ss=3, fs=4, ls=0),
+        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
         'E': Sizage(hs=1, ss=1, fs=88, ls=0),
+        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
         '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
         '0Z': Sizage(hs=2, ss=2, fs=None, ls=0),
     }
@@ -3617,7 +3685,7 @@ class Indexer:
     # converted from first code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    def __init__(self, raw=None, code=IdrDex.Ed25519_Bth_Sig, index=0,
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified

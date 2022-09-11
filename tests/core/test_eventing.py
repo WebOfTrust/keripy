@@ -4123,7 +4123,7 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = Siger(raw=sig0raw, code=IdrDex.Ed25519_Bth_Sig, index=index)
+    txsigmat = Siger(raw=sig0raw, code=IdrDex.Ed25519_Sig, index=index)
     assert txsigmat.qb64 == ('AAClimpgQX2jFTbYlTebmxIVRpE1SzPCcHdyNm-EsBJAOUVXH'
                              'bdRBd6wbpePWsuEcWIK-k9kbX-PagPVG6lsKhcP')
     assert len(txsigmat.qb64) == 88
