@@ -9,8 +9,9 @@ import logging
 from collections import namedtuple
 from dataclasses import dataclass, astuple
 
-from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, Dater, Verfer,
-                     Prefixer, Serder, Saider, Pather, Idents, Sadder)
+from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, IdxSigDex,
+                     Dater, Verfer, Prefixer, Serder, Saider, Pather, Idents,
+                     Sadder, )
 from .. import help
 from .. import kering
 from ..vc.proving import Creder
@@ -239,6 +240,14 @@ class Parser:
                                                     klas=Siger,
                                                     cold=cold,
                                                     abort=pipelined)
+                if isiger.code == IdxSigDex.Prior_Next_Idx:
+                    pindex = isiger.index
+                    isiger = yield from self._extractor(ims=ims,
+                                                       klas=Siger,
+                                                       cold=cold,
+                                                       abort=pipelined)
+                    isiger.pindex = pindex
+                    pindex = None
                 isigers.append(isiger)
             yield sctr.code, (subpath, isigers)
         elif sctr.code == CtrDex.NonTransReceiptCouples:
@@ -285,11 +294,11 @@ class Parser:
                                                 klas=Saider,
                                                 cold=cold,
                                                 abort=pipelined)
-            ictr = ctr = yield from self._extractor(ims=ims,
+            ictr = yield from self._extractor(ims=ims,
                                                     klas=Counter,
                                                     cold=cold,
                                                     abort=pipelined)
-            if ctr.code != CtrDex.ControllerIdxSigs:
+            if ictr.code != CtrDex.ControllerIdxSigs:
                 raise kering.UnexpectedCountCodeError("Wrong "
                                                       "count code={}.Expected code={}."
                                                       "".format(ictr.code, CtrDex.ControllerIdxSigs))
@@ -299,9 +308,18 @@ class Parser:
                                                     klas=Siger,
                                                     cold=cold,
                                                     abort=pipelined)
+                if isiger.code == IdxSigDex.Prior_Next_Idx:
+                    pindex = isiger.index
+                    isiger = yield from self._extractor(ims=ims,
+                                                       klas=Siger,
+                                                       cold=cold,
+                                                       abort=pipelined)
+                    isiger.pindex = pindex
+                    pindex = None
                 isigers.append(isiger)
 
             yield prefixer, seqner, saider, isigers
+
 
     def _nonTransReceiptCouples(self, ctr, ims, cold=Colds.txt, pipelined=False):
         """
@@ -770,11 +788,20 @@ class Parser:
                 # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
                     if ctr.code == CtrDex.ControllerIdxSigs:
+                        pindex = None  # prior next index
                         for i in range(ctr.count):  # extract each attached signature
                             siger = yield from self._extractor(ims=ims,
                                                                klas=Siger,
                                                                cold=cold,
                                                                abort=pipelined)
+                            if siger.code == IdxSigDex.Prior_Next_Idx:
+                                pindex = siger.index
+                                siger = yield from self._extractor(ims=ims,
+                                                                   klas=Siger,
+                                                                   cold=cold,
+                                                                abort=pipelined)
+                                siger.pindex = pindex
+                                pindex = None
                             sigers.append(siger)
 
                     elif ctr.code == CtrDex.WitnessIdxSigs:
@@ -783,13 +810,24 @@ class Parser:
                                                                klas=Siger,
                                                                cold=cold,
                                                                abort=pipelined)
+                            if wiger.code == IdxSigDex.Prior_Next_Idx:
+                                pindex = wiger.index
+                                wiger = yield from self._extractor(ims=ims,
+                                                                   klas=Siger,
+                                                                   cold=cold,
+                                                                abort=pipelined)
+                                wiger.pindex = pindex
+                                pindex = None
                             wigers.append(wiger)
 
                     elif ctr.code == CtrDex.NonTransReceiptCouples:
                         # extract attached rct couplets into list of sigvers
                         # verfer property of cigar is the identifier prefix
                         # cigar itself has the attached signature
-                        for cigar in self._nonTransReceiptCouples(ctr=ctr, ims=ims, cold=cold, pipelined=pipelined):
+                        for cigar in self._nonTransReceiptCouples(ctr=ctr,
+                                                                  ims=ims,
+                                                                  cold=cold,
+                                                        pipelined=pipelined):
                             cigars.append(cigar)
 
                     elif ctr.code == CtrDex.TransReceiptQuadruples:
@@ -799,6 +837,7 @@ class Parser:
                         # ssnu is sn of signer's est evt when signed
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
+
                         for i in range(ctr.count):  # extract each attached quadruple
                             prefixer = yield from self._extractor(ims,
                                                                   klas=Prefixer,
@@ -816,6 +855,14 @@ class Parser:
                                                                klas=Siger,
                                                                cold=cold,
                                                                abort=pipelined)
+                            if siger.code == IdxSigDex.Prior_Next_Idx:
+                                pindex = siger.index
+                                siger = yield from self._extractor(ims=ims,
+                                                                   klas=Siger,
+                                                                   cold=cold,
+                                                                abort=pipelined)
+                                siger.pindex = pindex
+                                pindex = None
                             trqs.append((prefixer, seqner, saider, siger))
 
                     elif ctr.code == CtrDex.TransIdxSigGroups:
@@ -826,8 +873,9 @@ class Parser:
                         # dig is dig of signer's est event when signed
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
-                        for (prefixer, seqner, saider, isigers) in self._transIdxSigGroups(ctr, ims, cold=cold,
-                                                                                           pipelined=pipelined):
+                        for (prefixer, seqner, saider, isigers) in \
+                                self._transIdxSigGroups(ctr, ims, cold=cold,
+                                                        pipelined=pipelined):
                             tsgs.append((prefixer, seqner, saider, isigers))
 
                     elif ctr.code == CtrDex.TransLastIdxSigGroups:
@@ -855,6 +903,14 @@ class Parser:
                                                                     klas=Siger,
                                                                     cold=cold,
                                                                     abort=pipelined)
+                                if isiger.code == IdxSigDex.Prior_Next_Idx:
+                                    pindex = isiger.index
+                                    isiger = yield from self._extractor(ims=ims,
+                                                                       klas=Siger,
+                                                                       cold=cold,
+                                                                    abort=pipelined)
+                                    isiger.pindex = pindex
+                                    pindex = None
                                 isigers.append(isiger)
                             ssgs.append((prefixer, isigers))
 
