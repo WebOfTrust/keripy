@@ -889,11 +889,11 @@ class Parser:
                                                                   klas=Prefixer,
                                                                   cold=cold,
                                                                   abort=pipelined)
-                            ictr = ctr = yield from self._extractor(ims=ims,
+                            ictr = yield from self._extractor(ims=ims,
                                                                     klas=Counter,
                                                                     cold=cold,
                                                                     abort=pipelined)
-                            if ctr.code != CtrDex.ControllerIdxSigs:
+                            if ictr.code != CtrDex.ControllerIdxSigs:
                                 raise kering.UnexpectedCountCodeError("Wrong "
                                                                       "count code={}.Expected code={}."
                                                                       "".format(ictr.code, CtrDex.ControllerIdxSigs))
