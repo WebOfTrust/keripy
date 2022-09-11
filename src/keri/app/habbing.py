@@ -455,7 +455,8 @@ class Habery:
         return hab
 
     def makeGroupHab(self, group, phab, **kwa):
-        """Make new Group Hab with name using pre from hab as local identifier, pre is generated from **kwa
+        """Make new Group Hab with name using pre from hab as local identifier,
+        pre is generated from **kwa
 
         Parameters: (Passthrough to hab.make)
             group (str): human readable alias for group identifier
@@ -782,6 +783,8 @@ class Hab:
         rvy (routing.Revery): factory that processes reply 'rpy' messages
         kvy (eventing.Kevery): factory for local processing of local event msgs
         psr (parsing.Parser):  parses local messages for .kvy .rvy
+        phab Hab): Group participant hab if this is a group multisig identifier
+        aids (list): AID prefixes of group participants
 
      Attributes:
         name (str): alias of controller
@@ -815,10 +818,12 @@ class Hab:
             kvy (eventing.Kevery): factory for local processing of local event msgs
             psr (parsing.Parser):  parses local messages for .kvy .rvy
 
+
         Parameters:
             name (str): alias name for local controller of habitat
             pre (str): qb64 identifier prefix of own local controller else None
             phab (Hab): Group participant hab if this is a group multisig identifier
+            aids (list): AID prefixes of group participants
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
