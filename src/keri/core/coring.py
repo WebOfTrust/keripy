@@ -2178,7 +2178,7 @@ class Signer(Matter):
         """
         return self._verfer
 
-    def sign(self, ser, index=None):
+    def sign(self, ser, index=None, pindex=None):
         """
         Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
@@ -2189,16 +2189,18 @@ class Signer(Matter):
             return Siger instance
 
         Parameters:
-            ser is bytes serialization
-            index is int index of associated verifier key in event keys
+            ser (bytes): serialization to be signed
+            index (int):  index of associated verifier key in event keys
+            pindex (int | None): prior next index if any
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
                            verfer=self.verfer,
-                           index=index))
+                           index=index,
+                           pindex=pindex))
 
     @staticmethod
-    def _ed25519(ser, seed, verfer, index):
+    def _ed25519(ser, seed, verfer, index, pindex=None):
         """
         Returns signature
 
@@ -2217,7 +2219,8 @@ class Signer(Matter):
             return Siger(raw=sig,
                          code=IdrDex.Ed25519_Sig,
                          index=index,
-                         verfer=verfer)
+                         verfer=verfer,
+                         pindex=pindex)
 
 
 class Salter(Matter):
@@ -3740,6 +3743,34 @@ class Indexer:
             self._code = code
             self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
+
+        elif code in (IdrDex.Prior_Next_Idx, ):  # raw not needed
+            if code not in self.Sizes:
+                raise UnexpectedCodeError("Unsupported code={}.".format(code))
+
+            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
+            cs = hs + ss  # both hard + soft code size
+
+            if not isinstance(index, int) or index < 0 or index > (64 ** ss - 1):
+                raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
+
+            if not fs:  # compute fs from index
+                if cs % 4:
+                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                               "variable length material. cs={}.".format(cs))
+                fs = (index * 4) + cs
+
+            rawsize = (fs - cs) * 3 // 4
+
+            if rawsize != 0:  # raw not needed must be empty
+                raise RawMaterialError(f"Nonzero raw size for code={code}"
+                                       f"and index={index} ,expected 0 got"
+                                       f"{rawsize}.")
+
+            self._code = code
+            self._index = index
+            self._raw = b""  # crypto ops require bytes not bytearray
+
 
         elif qb64b is not None:
             self._exfil(qb64b)

@@ -1239,7 +1239,8 @@ class Manager:
 
         return (verfers, digers, cst, nst)
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None):
+
+    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, pindices=None):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars with
         .verfer assigned.
@@ -1250,7 +1251,7 @@ class Manager:
             verfers is list of Verfers for public keys
             indexed is Boolean, True means use offset into pubs/verfers/signers
                 for index and return Siger instances. False means return Cigar instances
-            indices is list of int indexes (offsets) to use for indexed signatures
+            indices is optional list of int indices (offsets) to use for indexed signatures
                 that may differ from the order of appearance in the pubs or verfers
                 lists. This allows witness indexed sigs or controller multi-sig
                 where the parties do not share the same manager or ordering so
@@ -1258,6 +1259,18 @@ class Manager:
                 If provided the length of indices must match pubs/verfers/signers
                 else raises ValueError. If not provided and indexed is True then use
                 default index that is offset into pubs/verfers/signers
+            pindices is  optional list of indices (offsets) to use for indexed signatures with a prior
+                prior next index that differs from its current signing index.
+                This may also differ from the order of appearance in the pubs or verfers
+                lists. This allows partial rotation with reserve or custodial key
+                management so that the index (hash of index) of the public key
+                for the signature appears at a different index in the
+                current key list from where the hash appears in the prior next
+                list. This sets the value of the .pindex property of the returned
+                Siger. When provided the length of pindices must match pubs/verfers/signers
+                else raises ValueError. When no pindex is applicable to a given
+                signature then the value of the entry in pindices MUST be None.
+                When pindices is not provided then all sigers .pindex is None.
 
 
         if neither pubs or verfers provided then returns empty list of signatures
@@ -1301,10 +1314,16 @@ class Manager:
 
         if indexed or indices:
             sigers = []
-            for i, signer in enumerate(signers):
+            for j, signer in enumerate(signers):
                 if indices:
-                    i = indices[i]  # get index from indices
-                sigers.append(signer.sign(ser, index=i))  # assigns .verfer to siger
+                    i = indices[j]  # get index from indices
+                else:
+                    i = j
+                if pindices:
+                    pi = pindices[j]  # get pindex from pindices
+                else:
+                    pi = None
+                sigers.append(signer.sign(ser, index=i, pindex=pi))  # assigns .verfer to siger
             return sigers
         else:
             cigars = []

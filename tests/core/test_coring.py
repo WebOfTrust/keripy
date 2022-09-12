@@ -1890,6 +1890,8 @@ def test_indexer():
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
 
+    # Test Prior Next Unary modifier code
+    # test prior next with non-empty raw
     index =  64 ** 3 - 1  # three hextets for max index
     assert index == 262143
     code = IdrDex.Prior_Next_Idx
@@ -1902,6 +1904,20 @@ def test_indexer():
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
 
+    # test prior next with empty raw
+    index =  1  # three hextets for max index
+    assert index == 1
+    code = IdrDex.Prior_Next_Idx
+    qb64 = 'CAAB'
+    qb2 = b'\x08\x00\x01'
+    indexer = Indexer(raw=None, code=code, index=index)
+    assert indexer.raw == b''
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    # test prior next with too big index
     index =  64 ** 3   # one greater than max index
     assert index == 262144
     code = IdrDex.Prior_Next_Idx

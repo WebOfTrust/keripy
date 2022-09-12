@@ -15,7 +15,7 @@ from hio.help import decking
 
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
-                     Number, Seqner, Siger, Cigar, Dater,
+                     Number, Seqner, Siger, Cigar, Dater, Indexer, IdrDex,
                      Verfer, Diger, Prefixer, Nexter, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
@@ -366,6 +366,11 @@ def deTransReceiptQuadruple(data, strip=False):
     if not strip:
         data = data[len(saider.qb64b):]
     siger = Siger(qb64b=data, strip=strip)
+    if siger.code == IdrDex.Prior_Next_Idx:  # extract prior index modifier
+        if not strip:
+            data = data[len(siger.qb64b):]
+        siger = Siger(qb64b=data, strip=strip, pindex=siger.index)
+
     return (prefixer, seqner, saider, siger)
 
 
@@ -401,6 +406,10 @@ def deTransReceiptQuintuple(data, strip=False):
     if not strip:
         data = data[len(ssaider.qb64b):]
     siger = Siger(qb64b=data, strip=strip)  # indexed siger of event
+    if siger.code == IdrDex.Prior_Next_Idx:  # extract prior index modifier
+        if not strip:
+            data = data[len(siger.qb64b):]
+        siger = Siger(qb64b=data, strip=strip, pindex=siger.index)
     return esaider, sprefixer, sseqner, ssaider, siger
 
 
@@ -1371,6 +1380,9 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
         for siger in sigers:
+            if siger.pindex is not None:  # prepend prior next code modifier
+                atc.extend(Indexer(code=IdrDex.Prior_Next_Idx,
+                                   index=siger.pindex).qb64)
             atc.extend(siger.qb64b)
 
     if wigers:
