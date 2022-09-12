@@ -3522,13 +3522,13 @@ class IndexerCodex:
     """
 
     Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
-    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     Prior_Next_Idx: str = 'C'  # Prior Next Index of following sig.
     ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
     ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
-    TBD: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
+    TBD0: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
