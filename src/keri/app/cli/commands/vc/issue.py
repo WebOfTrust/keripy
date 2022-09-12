@@ -105,17 +105,18 @@ class CredentialIssuer(doing.DoDoer):
     """
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
-                 rules=None, credential=None):
+                 rules=None, credential=None, private=False):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
              name:
              registryName:
              schema:
-             source:
+             edges:
              recipient:
              data: (dict) credential data dict
-             credential (dict) full credential to issue when joining a multisig issuance
+             credential: (dict) full credential to issue when joining a multisig issuance
+             private: (bool) privacy preserving
 
         """
         self.name = name
@@ -150,7 +151,8 @@ class CredentialIssuer(doing.DoDoer):
                                                        schema=schema,
                                                        source=edges,
                                                        rules=rules,
-                                                       data=data)
+                                                       data=data,
+                                                       private=private)
                 print(f"Writing credential {self.creder.said} to credential.json")
                 f = open("./credential.json", mode="w")
                 json.dump(self.creder.crd, f)

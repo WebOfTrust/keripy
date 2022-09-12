@@ -16,7 +16,6 @@ from ..core.coring import Seqner, MtrDex, Serder
 from ..core.eventing import SealEvent, TraitDex
 from ..db import dbing
 from ..db.dbing import snKey, dgKey
-from ..help import helping
 from ..vc import proving, protocoling
 from ..vdr import eventing
 from ..vdr.viring import Reger
@@ -653,16 +652,17 @@ class Credentialer(doing.DoDoer):
 
         super(Credentialer, self).__init__(doers=doers)
 
-    def create(self, regname, recp, schema, source, rules, data):
+    def create(self, regname, recp: str, schema, source, rules, data, private=False):
         """  Create and validate a credential returning the fully populated Creder
 
         Parameters:
             regname:
-            recp:
+            recp (str):
             schema:
             source:
             rules:
             data:
+            private: add nonce for privacy preserving
 
         Returns:
             Creder: Creder class for the issued credential
@@ -676,24 +676,13 @@ class Credentialer(doing.DoDoer):
         if registry is None:
             raise kering.ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
                                             "credentials".format(regname))
-        hab = registry.hab
 
-        dt = data["dt"] if "dt" in data else helping.nowIso8601()
-
-        d = dict(
-            d="",
-            dt=dt,
-        )
-
-        if recp is not None:
-            d['i'] = recp
-
-        d |= data
-
-        creder = proving.credential(issuer=hab.pre,
+        creder = proving.credential(issuer=registry.hab.pre,
                                     schema=schema,
-                                    subject=d,
+                                    recipient=recp,
+                                    data=data,
                                     source=source,
+                                    private=private,
                                     rules=rules,
                                     status=registry.regk)
         self.validate(creder)
@@ -879,7 +868,7 @@ class Credentialer(doing.DoDoer):
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
 
     def escrowDo(self, tymth, tock=1.0):
-        """ Process escrows of group multisig identifiers waiting to be compeleted.
+        """ Process escrows of group multisig identifiers waiting to be completed.
 
         Steps involve:
            1. Sending local event with sig to other participants

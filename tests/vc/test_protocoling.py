@@ -16,7 +16,7 @@ from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
 
 
-def test_issuing(seeder, mockCoringRandomNonce):
+def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     """ Test Issuing ACDC """
 
 
@@ -85,10 +85,10 @@ def test_issuing(seeder, mockCoringRandomNonce):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
-                            subject=d,
+                            data=d,
                             status=issuer.regk)
 
-        assert creder.said == "ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4VN2qIa-dvFn"
+        assert creder.said == "EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw69EHwxlbvle"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -98,16 +98,16 @@ def test_issuing(seeder, mockCoringRandomNonce):
         sidRgy.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4V'
-                       b'N2qIa-dvFn","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
+        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw6'
+                       b'9EHwxlbvle","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
                        b'ri":"EPzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCn'
-                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EL59_dE6fRq-BcOK'
-                       b'Qxdc5aPVHm6ZqmZfF3M1ImQLcpRn","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj8'
-                       b'6nNxpb-77KcM3DZ","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
+                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EOM45RCy4W3Kt6-U'
+                       b'_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T21:26:21.233257+0'
+                       b'0:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LEI":"'
                        b'254900OPPU84GM83MG36"},"e":{}}-VA3-JAB6AABAAA--FABEELPMtVeoAMwq-'
                        b'cEvyqQkPlVlHHj86nNxpb-77KcM3DZ0AAAAAAAAAAAAAAAAAAAAAAAEELPMtVeoA'
-                       b'Mwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ-AABAABZtOxvRXQfJZFWwsdPHRFddJ'
-                       b'_nNIOYUjROdyi-sCehEWiCWSYE8BS7RHK1jQHL-smrPx2BHZaicEIXOnrPpMAL')
+                       b'Mwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ-AABAAAV71VTZIU41HB4Coqg_CJGB7'
+                       b'K6DyfmJZYGjLZqrD3zqJ9rURsiRjZg_R0dW1Dg41KhYy5sNNk8mbMackzR_gIF')
 
         # Create the `exn` message for issue credential
         sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
@@ -124,14 +124,14 @@ def test_issuing(seeder, mockCoringRandomNonce):
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"ELwAZEyPUU1-FhWqcdW0RB-CSFLIfBUx4VN2qIa-dvFn",'
+        ser = (b'{"v":"ACDC10JSON00019e_","d":"EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw69EHwxlbvle",'
                b'"i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","ri":"EPzhcSAxNzgx-TgD_IJ'
                b'59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
-               b'","a":{"d":"EL59_dE6fRq-BcOKQxdc5aPVHm6ZqmZfF3M1ImQLcpRn","i":"EELPMtVeoAMwq'
-               b'-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","dt":"2021-06-27T21:26:21.233257+00:00","LE'
+               b'","a":{"d":"EOM45RCy4W3Kt6-U_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T2'
+               b'1:26:21.233257+00:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LE'
                b'I":"254900OPPU84GM83MG36"},"e":{}}')
-        sig0 = (b'AABZtOxvRXQfJZFWwsdPHRFddJ_nNIOYUjROdyi-sCehEWiCWSYE8BS7RHK1jQHL-smrPx2BHZai'
-                b'cEIXOnrPpMAL')
+        sig0 = (b'AAAV71VTZIU41HB4Coqg_CJGB7K6DyfmJZYGjLZqrD3zqJ9rURsiRjZg_R0dW1Dg41KhYy5sNNk8'
+                b'mbMackzR_gIF')
 
         # verify we can load serialized VC by SAID
         creder, sadsigers, sadcigars = sidRgy.reger.cloneCred(said=creder.said)
@@ -149,7 +149,7 @@ def test_issuing(seeder, mockCoringRandomNonce):
         assert schema[0].qb64 == creder.said
 
 
-def test_proving(seeder, mockCoringRandomNonce):
+def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
@@ -191,13 +191,6 @@ def test_proving(seeder, mockCoringRandomNonce):
         assert hanKvy.kevers[vicHab.pre].sn == 0  # accepted event
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
-        credSubject = dict(
-            d="",
-            i=hanHab.pre,
-            dt="2021-06-27T21:26:21.233257+00:00",
-            LEI="254900OPPU84GM83MG36",
-        )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         hanReg = credentialing.Regery(hby=hanHby, name="han", temp=True)
         issuer = hanReg.makeRegistry(prefix=hanHab.pre, name="han")
@@ -211,10 +204,12 @@ def test_proving(seeder, mockCoringRandomNonce):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
-                            subject=d,
+                            recipient=hanHab.pre,
+                            data=dict(
+                                LEI="254900OPPU84GM83MG36",
+                            ),
                             status=issuer.regk,
                             )
-
         assert creder.said == "ENbXYc19thNb_18znfumPP3WqMNS7wh7G3K82LTV14EF"
 
         msg = signing.ratify(sidHab, serder=creder)

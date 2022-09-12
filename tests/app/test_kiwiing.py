@@ -1363,7 +1363,7 @@ def test_escrow_end(mockHelpingNowUTC):
         assert len(response.json['likely-duplicitous-events']) == 0
 
 
-def test_presentation_ends(seeder, mockCoringRandomNonce):
+def test_presentation_ends(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     with habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="ken", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as kenHby:
         seeder.seedSchema(palHby.db)
@@ -1411,12 +1411,8 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
         # Create a credential that we will present
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
-            d="",
-            i=palHab.pre,
-            dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         issuer = palReg.makeRegistry(prefix=palHab.pre, name="han")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
@@ -1429,10 +1425,10 @@ def test_presentation_ends(seeder, mockCoringRandomNonce):
 
         creder = proving.credential(issuer=palHab.pre,
                                     schema=schema,
-                                    subject=d,
+                                    recipient=palHab.pre,
+                                    data=credSubject,
                                     status=issuer.regk,
                                     )
-
         assert creder.said == "EMOTF5DgWMkX6-xy6eLietSLqWCBDB9TQfKFaflpa8MI"
 
         msg = signing.ratify(palHab, serder=creder)

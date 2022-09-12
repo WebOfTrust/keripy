@@ -14,10 +14,9 @@ from keri.vc import proving
 from keri.vdr import verifying, credentialing
 
 
-def test_sad_signature(seeder, mockCoringRandomNonce):
+def test_sad_signature(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     with (habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (sigHby, sidHab),
           habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (wanHby, wanHab)):
-
         personal = dict(
             d="",
             n="Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY",
@@ -28,9 +27,6 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
         _, sad = coring.Saider.saidify(sad=personal, label=coring.Ids.d)
 
         d = dict(
-            d="",
-            i="EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0",
-            dt="2021-06-09T17:35:54.169967+00:00",
             ri="EBmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
             LEI="254900OPPU84GM83MG36",
             personal=sad,
@@ -43,91 +39,91 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
 
         cred = proving.credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                                   issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                                  subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                                  recipient="EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0",
+                                  data=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
         paths = [[], ["a"], ["a", "personal"]]
 
         # Sign with non-transferable identifier, default to entire SAD
         sig0 = signing.ratify(wanHab, cred)
-        assert sig0 == (b'{"v":"ACDC10JSON0002e2_","d":"EDpPbpTHDuKjCrU3sicPh4ROouX002CEym'
-                    b'CynU6JzAcP","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","'
-                    b'ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1'
-                    b'rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EJguR7eLTEotOzb7'
-                    b'G5lH9MX2qSPNtwk3N9KexelSa46O","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0J'
-                    b'p6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00:00","ri":"E'
-                    b'BmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84G'
-                    b'M83MG36","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4Gswc'
-                    b'U6ov8-","n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","perso'
-                    b'nLegalName":"Anna Jones","engagementContextRole":"Project Manage'
-                    b'r"}},"e":[{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_o'
-                    b'zM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}-JAB6AABAAA--CABBAbSj3jfaeJbpu'
-                    b'qg0WtvHw31UoRZOnN_RZQYBwbAqteP0BCr7FQW6XYhF8qApskG0wiGwYUdQModn6'
-                    b'Esgz42IXJkR-qFwbDhtdMvvetMbgjIHeq0X1z3vCdmsQ94JUMJVnYD')
+        assert sig0 == (b'{"v":"ACDC10JSON0002e2_","d":"EIEbtplUZZrV3-jVAnOUcH-xcxOCuiJqtSKl'
+                        b'DJSxUJLW","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri":'
+                        b'"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLBSMZ'
+                        b'_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EHpYRwyyu23jcGQzDXg39j1b'
+                        b'7U4_VB8sW5_YsqD6YNpY","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFRD9dTb'
+                        b'4-5c0","dt":"2021-06-27T21:26:21.233257+00:00","ri":"EBmRy7xMwsxUe'
+                        b'lUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","pers'
+                        b'onal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4GswcU6ov8-","n":"Q8r'
+                        b'NaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","personLegalName":"Anna '
+                        b'Jones","engagementContextRole":"Project Manager"}},"e":[{"qualifie'
+                        b'dvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU'
+                        b'5sHYTGFD"}]}-JAB6AABAAA--CABBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBw'
+                        b'bAqteP0BApbos85syKE_VgfuNTtVRYkAlw5fwb_4ZWN-V-FFO_MrSGt71luX0rt-9e'
+                        b'hNZFPHV1EuPc1YDQvZJ1XqPumewN')
 
         # sign with non-trans identifer with a specific set of paths
         sig1 = signing.ratify(wanHab, cred, paths=paths)
-        assert sig1 == (b'{"v":"ACDC10JSON0002e2_","d":"EDpPbpTHDuKjCrU3sicPh4ROouX002CEym'
-                    b'CynU6JzAcP","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","'
-                    b'ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1'
-                    b'rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EJguR7eLTEotOzb7'
-                    b'G5lH9MX2qSPNtwk3N9KexelSa46O","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0J'
-                    b'p6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00:00","ri":"E'
-                    b'BmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84G'
-                    b'M83MG36","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4Gswc'
-                    b'U6ov8-","n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","perso'
-                    b'nLegalName":"Anna Jones","engagementContextRole":"Project Manage'
-                    b'r"}},"e":[{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_o'
-                    b'zM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}-KAD6AABAAA--JAB6AABAAA--CADBA'
-                    b'bSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP0BCr7FQW6XYhF8qApskG0w'
-                    b'iGwYUdQModn6Esgz42IXJkR-qFwbDhtdMvvetMbgjIHeq0X1z3vCdmsQ94JUMJVn'
-                    b'YD-JAB5AABAA-a-CADBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP0B'
-                    b'C5u61NVldB8t-w6YMdjPpCDMhyRNE8H2mw6W-U106atufGpy7bvHSZn6yWbRmsc5'
-                    b'bEt1n9__4Abb0aIKtmYhsN-JAB4AADA-a-personal-CADBAbSj3jfaeJbpuqg0W'
-                    b'tvHw31UoRZOnN_RZQYBwbAqteP0BAPZ92lw8F2_Ap81vFpyQsuTU9l7tOLI2Zmqa'
-                    b'nKOMVd2ar-m16JjA38PPH_mBFasyadIQgyun410RpxCUvsIBAH')
+        assert sig1 == (b'{"v":"ACDC10JSON0002e2_","d":"EIEbtplUZZrV3-jVAnOUcH-xcxOCuiJqtSK'
+                        b'lDJSxUJLW","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri'
+                        b'":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLB'
+                        b'SMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EHpYRwyyu23jcGQzDXg3'
+                        b'9j1b7U4_VB8sW5_YsqD6YNpY","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFR'
+                        b'D9dTb4-5c0","dt":"2021-06-27T21:26:21.233257+00:00","ri":"EBmRy7x'
+                        b'MwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36'
+                        b'","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4GswcU6ov8-",'
+                        b'"n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","personLegalNam'
+                        b'e":"Anna Jones","engagementContextRole":"Project Manager"}},"e":['
+                        b'{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_ozM1uAnFvSfC'
+                        b'0N1jaQ42aKU5sHYTGFD"}]}-KAD6AABAAA--JAB6AABAAA--CADBAbSj3jfaeJbpu'
+                        b'qg0WtvHw31UoRZOnN_RZQYBwbAqteP0BApbos85syKE_VgfuNTtVRYkAlw5fwb_4Z'
+                        b'WN-V-FFO_MrSGt71luX0rt-9ehNZFPHV1EuPc1YDQvZJ1XqPumewN-JAB5AABAA-a'
+                        b'-CADBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP0BC1HB3w11jDft8De'
+                        b'EhpuRVWZknabe5omZZA0s4QqX2o1O3gSM-PrjYr6lXlvnQ4TU_PaeF70kSo--LA22'
+                        b'kL2csA-JAB4AADA-a-personal-CADBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQ'
+                        b'YBwbAqteP0BAPZ92lw8F2_Ap81vFpyQsuTU9l7tOLI2ZmqanKOMVd2ar-m16JjA38'
+                        b'PPH_mBFasyadIQgyun410RpxCUvsIBAH')
 
         # Sign with transferable identifier defaults to single signature on entire SAD
         sig2 = signing.ratify(sidHab, cred)
-        assert sig2 == (b'{"v":"ACDC10JSON0002e2_","d":"EDpPbpTHDuKjCrU3sicPh4ROouX002CEym'
-                    b'CynU6JzAcP","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","'
-                    b'ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1'
-                    b'rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EJguR7eLTEotOzb7'
-                    b'G5lH9MX2qSPNtwk3N9KexelSa46O","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0J'
-                    b'p6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00:00","ri":"E'
-                    b'BmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84G'
-                    b'M83MG36","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4Gswc'
-                    b'U6ov8-","n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","perso'
-                    b'nLegalName":"Anna Jones","engagementContextRole":"Project Manage'
-                    b'r"}},"e":[{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_o'
-                    b'zM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}-JAB6AABAAA--FABEKC8085pwSwzLw'
-                    b'UGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwS'
-                    b'wzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAAlVqBLoin0EyBZolKtqAAgts'
-                    b'793dPyuMVgWLsLUo0bUxkUsDMUYjWxPJ8LmxGKIByT_MDYeZO2iQxq3Y9vRswP')
+        assert sig2 == (b'{"v":"ACDC10JSON0002e2_","d":"EIEbtplUZZrV3-jVAnOUcH-xcxOCuiJqtSK'
+                        b'lDJSxUJLW","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri'
+                        b'":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLB'
+                        b'SMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EHpYRwyyu23jcGQzDXg3'
+                        b'9j1b7U4_VB8sW5_YsqD6YNpY","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFR'
+                        b'D9dTb4-5c0","dt":"2021-06-27T21:26:21.233257+00:00","ri":"EBmRy7x'
+                        b'MwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36'
+                        b'","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4GswcU6ov8-",'
+                        b'"n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","personLegalNam'
+                        b'e":"Anna Jones","engagementContextRole":"Project Manager"}},"e":['
+                        b'{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_ozM1uAnFvSfC'
+                        b'0N1jaQ42aKU5sHYTGFD"}]}-JAB6AABAAA--FABEKC8085pwSwzLwUGzh-HrEoFDw'
+                        b'ZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEo'
+                        b'FDwZnCJq27bVp5atdMT9o-AABAABf42ZzPJkYp6fm6yMhqYqSOg9IAf8dmxpBRq22'
+                        b'GNZTQaalCJIuAxCVT2GRiqs7z7Z5kIPy5yhR3DYVx2Y_Rj8N')
 
         # Sign with transferable identifier with specific set of paths
         sig3 = signing.ratify(sidHab, cred, paths=paths)
-        assert sig3 == (b'{"v":"ACDC10JSON0002e2_","d":"EDpPbpTHDuKjCrU3sicPh4ROouX002CEym'
-                    b'CynU6JzAcP","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","'
-                    b'ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1'
-                    b'rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EJguR7eLTEotOzb7'
-                    b'G5lH9MX2qSPNtwk3N9KexelSa46O","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0J'
-                    b'p6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00:00","ri":"E'
-                    b'BmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84G'
-                    b'M83MG36","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4Gswc'
-                    b'U6ov8-","n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","perso'
-                    b'nLegalName":"Anna Jones","engagementContextRole":"Project Manage'
-                    b'r"}},"e":[{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_o'
-                    b'zM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}-KAD6AABAAA--JAB6AABAAA--FABEK'
-                    b'C8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAA'
-                    b'AAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAAlVqBLoin0Ey'
-                    b'BZolKtqAAgts793dPyuMVgWLsLUo0bUxkUsDMUYjWxPJ8LmxGKIByT_MDYeZO2iQ'
-                    b'xq3Y9vRswP-JAB5AABAA-a-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5a'
-                    b'tdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27b'
-                    b'Vp5atdMT9o-AABAACrTwe8c_gE1UPvmHYiOkV0c6jCLRirreLx5zdBtR34wfDbCI'
-                    b'0v8hDGOU4aeoFz3wmXlrXkZQcPFd7eFY1iH20E-JAB4AADA-a-personal-FABEK'
-                    b'C8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAA'
-                    b'AAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAACUs3V7O3fRGm'
-                    b'i_-X8xo8UFw7rGEQ0CYyfK7U1URYBwtW546a1pVJZ_c1wzcTXWLDj7OPPNrAQx2e'
-                    b'm5sNrOMPcH')
+        assert sig3 == (b'{"v":"ACDC10JSON0002e2_","d":"EIEbtplUZZrV3-jVAnOUcH-xcxOCuiJqtSK'
+                        b'lDJSxUJLW","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri'
+                        b'":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLB'
+                        b'SMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EHpYRwyyu23jcGQzDXg3'
+                        b'9j1b7U4_VB8sW5_YsqD6YNpY","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0Jp6ZFR'
+                        b'D9dTb4-5c0","dt":"2021-06-27T21:26:21.233257+00:00","ri":"EBmRy7x'
+                        b'MwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36'
+                        b'","personal":{"d":"EMUsc87LxpYTultDtf_pOQKYvDYA_HQxy4GswcU6ov8-",'
+                        b'"n":"Q8rNaKITBLLA96Euh5M5v4o3fRl1Bc54xdM-bOIHUjY","personLegalNam'
+                        b'e":"Anna Jones","engagementContextRole":"Project Manager"}},"e":['
+                        b'{"qualifiedvLEIIssuervLEICredential":"EAtyThM1rLBSMZ_ozM1uAnFvSfC'
+                        b'0N1jaQ42aKU5sHYTGFD"}]}-KAD6AABAAA--JAB6AABAAA--FABEKC8085pwSwzLw'
+                        b'UGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSw'
+                        b'zLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAABf42ZzPJkYp6fm6yMhqYqSOg9I'
+                        b'Af8dmxpBRq22GNZTQaalCJIuAxCVT2GRiqs7z7Z5kIPy5yhR3DYVx2Y_Rj8N-JAB5'
+                        b'AABAA-a-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAA'
+                        b'AAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAB'
+                        b'B5IVZOhEfcH4TBQgOCyMgyQrJujtBBjT8K_zTPk0-FLMtTZuBgXV7jnLw6fDe6FWt'
+                        b'zshh2HGCL_H_j4i1b9kF-JAB4AADA-a-personal-FABEKC8085pwSwzLwUGzh-Hr'
+                        b'EoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh'
+                        b'-HrEoFDwZnCJq27bVp5atdMT9o-AABAACUs3V7O3fRGmi_-X8xo8UFw7rGEQ0CYyf'
+                        b'K7U1URYBwtW546a1pVJZ_c1wzcTXWLDj7OPPNrAQx2em5sNrOMPcH')
 
     # Test multisig identifier
     with configing.openCF(name="mel", base="mel", temp=True) as cf, \
@@ -152,23 +148,22 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
         regery.processEscrows()
 
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=md, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=md, source={}, status=issuer.regk)
 
         # Sign with multisig transferable identifier defaults to single signature on entire SAD
         sig1 = signing.ratify(hab=hab, serder=cred)
-        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EJMGaIVWoVNSPDUFUjXy5dDMPCPSawGW42'
-                        b'KtDCmBlWXF","i":"EKMHlh4epBApuYP-3-A_ZldeImCa6WxLe8Nmzhy-SvWB","'
-                        b'ri":"ELIc0Va2OSemOpuiD2Fxfzd2yXg6CWibjOCJY3vNFLb9","s":"EMQWEcCn'
-                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EEpkgFjaZEvmXRri'
-                        b'kXjKZ9MjYumQEoornorJjFOm40z_","i":"EAwC_-ISX9helBDUSKU5j_VEU3G0J'
-                        b'p6ZFRD9dTb4-5c0","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"'
-                        b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABEKMHlh4epBApuYP-3-'
-                        b'A_ZldeImCa6WxLe8Nmzhy-SvWB0AAAAAAAAAAAAAAAAAAAAAAAEKMHlh4epBApuY'
-                        b'P-3-A_ZldeImCa6WxLe8Nmzhy-SvWB-AADAADl71ALjV2CRm8d8SKIXnxV67y1wS'
-                        b'BTxkItOMqH73DCTsKLHx9G7ZoQUIoB-cCEgNwOsEVFU2PARWyyKBEUFqgCABAc75'
-                        b'4TEeNOb5wkRNvNe1IVtdwJUztl6tEZIGnXGVUrjt82VXY7b9hH7RCYka5KnNd7BL'
-                        b'J2G4usjRGn9PcoiYcCACB-icSPzASxUr1bFLZUnppz-n-WWI1saED11_rjzviyFk'
-                        b'0-Yw6sJH05JiFMpYY6_OES3_zd2a7iyBHLNBQqzDcG')
+        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EFnCQiKLTr37bhuFrvbE88GhWyQ-LUryYNiDjO4'
+                        b'cW1Nt","i":"EKMHlh4epBApuYP-3-A_ZldeImCa6WxLe8Nmzhy-SvWB","ri":"ELIc0'
+                        b'Va2OSemOpuiD2Fxfzd2yXg6CWibjOCJY3vNFLb9","s":"EMQWEcCnVRk1hatTNyK3sIy'
+                        b'kYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EEBT5231zltSwAzucatIlavzJyE43F3op2l6'
+                        b'aB6or1FP","dt":"2021-06-09T17:35:54.169967+00:00","i":"EAwC_-ISX9helB'
+                        b'DUSKU5j_VEU3G0Jp6ZFRD9dTb4-5c0","LEI":"254900OPPU84GM83MG36"},"e":{}}'
+                        b'-JAB6AABAAA--FABEKMHlh4epBApuYP-3-A_ZldeImCa6WxLe8Nmzhy-SvWB0AAAAAAAA'
+                        b'AAAAAAAAAAAAAAAEKMHlh4epBApuYP-3-A_ZldeImCa6WxLe8Nmzhy-SvWB-AADAADV_a'
+                        b'TlO9rV3bxKCiSr4zqqu0Jg1Q3u6Fk2pWxrctkXepRRlDCfKeKmlMQHnNJ8r6vRQp8Eslv'
+                        b'h33uSBdS_MlIPABC--losKLa_YfcwGBIabsq8g5VABrsmnXkZMT7eB-jqK6bdB4Zs_863'
+                        b'la0mm_DeMwS1KXomLb_j1zCmgZ3RJPAPACA539yer3U8JQlcgXrdbPlR-1kADcFA4bsN_'
+                        b'klRSu7p61y-Z2CS5d7Aitrc7yq00YIG_u-v7OToChDC3TsVCR4D')
 
         iss = issuer.issue(said=cred.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -185,7 +180,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce):
     """End Test"""
 
 
-def test_signature_transposition(seeder, mockCoringRandomNonce):
+def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
             b'\xc9\xbd\x04\x9d\x85)~\x93')
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
@@ -216,20 +211,20 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         regery.processEscrows()
 
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
         # Sign with non-transferable identifier, defaults to single signature on entire SAD
         sig0 = signing.ratify(hab=hab, serder=cred)
-        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EAGWXIs8am8TjOw2LtajsIeiBNWNkemgHG'
-                        b'rT1bAtjGIL","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","'
-                        b'ri":"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCn'
-                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EBUyM6Zyf527JGWC'
-                        b'v7_jazBOUh_sdrISxOjFCL591Qgi","i":"EIflL4H4134zYoRM6ls6Q086RLC_B'
-                        b'hfNFh5uk-WxvhsL","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"'
-                        b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABEKC8085pwSwzLwUGzh'
-                        b'-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLw'
-                        b'UGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAA0MPkLc3b_gBXN2-yorcJke5roeU'
-                        b'egdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkWmttdYhtidV0G')
+        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU3y'
+                        b'cpjdtCUD","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":'
+                        b'"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1ha'
+                        b'tTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcuvv8j5F4F'
+                        b'WRHD8xlZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+00:00","i":'
+                        b'"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"254900OPPU84'
+                        b'GM83MG36"},"e":{}}-JAB6AABAAA--FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq2'
+                        b'7bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJ'
+                        b'q27bVp5atdMT9o-AABAACIRDrYzCyMB5jBHY9jwfT4KEb7kx_vYgHJ7LDsiQRD-Roj'
+                        b'5bGfJXj6PAo5TS36t4kWmiBhpvqLgb2l9vUhpiUK')
 
         iss = issuer.issue(said=cred.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -254,8 +249,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d
         assert len(sigers) == 1
-        assert sigers[0].qb64b == (b'AAA0MPkLc3b_gBXN2-yorcJke5roeUegdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkW'
-                                   b'mttdYhtidV0G')
+        assert sigers[0].qb64b == (b'AACIRDrYzCyMB5jBHY9jwfT4KEb7kx_vYgHJ7LDsiQRD-Roj5bGfJXj6'
+                                   b'PAo5TS36t4kWmiBhpvqLgb2l9vUhpiUK')
 
         # Transpose the signature to a new root
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a", "b", "c"]))
@@ -269,30 +264,29 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         assert seqner.sn == 0
         assert saider.qb64 == hab.kever.lastEst.d
         assert len(sigers) == 1
-        assert sigers[0].qb64b == (b'AAA0MPkLc3b_gBXN2-yorcJke5roeUegdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkW'
-                                   b'mttdYhtidV0G')
+        assert sigers[0].qb64b == (b'AACIRDrYzCyMB5jBHY9jwfT4KEb7kx_vYgHJ7LDsiQRD-Roj5bGfJXj6PAo5TS36t4kWmiBhpvqL'
+                                   b'gb2l9vUhpiUK')
 
         # embed the credential in an exn and transpose the signature
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a"]))
         exn = exchanging.exchange(route="/credential/issue", payload=scre.crd, date="2022-01-04T11:58:55.154502+00:00")
         msg = hab.endorse(serder=exn)
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
-
-        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"EKkLPzExl_Apk_M_yjJL4UH2'
-                       b'TUBo17n1WEOZzbtnfURm","r":"/credential/issue","a":{"v":"ACDC10JS'
-                       b'ON00019e_","d":"EAGWXIs8am8TjOw2LtajsIeiBNWNkemgHGrT1bAtjGIL","i'
+        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"EH80d0jZPr9W2DqLPlEVgsLB'
+                       b'0tDVRrMVFLN8zvf5U2xc","r":"/credential/issue","a":{"v":"ACDC10JS'
+                       b'ON00019e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU3ycpjdtCUD","i'
                        b'":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":"ENzh5cyGj'
                        b'FhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1hatTNyK3sI'
-                       b'ykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EBUyM6Zyf527JGWCv7_jazBOUh_sdr'
-                       b'ISxOjFCL591Qgi","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-Wxvhs'
-                       b'L","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM'
+                       b'ykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcuvv8j5F4FWRHD8x'
+                       b'lZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+00:00","i":"EIf'
+                       b'lL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"254900OPPU84GM'
                        b'83MG36"},"e":{}}}-VA0-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5at'
                        b'dMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bV'
-                       b'p5atdMT9o-AABAADbTcTwX-1HnlDvnKXH4Zr3v2f3fn0FtcfzKvod90uaJZ54QFO'
-                       b'1um10RXsMmncG6HRoU1oUeXg2Ks52UYV1HhEF-JAB5AABAA-a-FABEKC8085pwSw'
+                       b'p5atdMT9o-AABAAA85nuhADZVow-MHvwtyFArzlLbqIFzjJOVGN5TN9oKlex0B0t'
+                       b'UWd3N1e62mal5aymfMKH64UCMUTpOT7lpnKUE-JAB5AABAA-a-FABEKC8085pwSw'
                        b'zLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085'
-                       b'pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAA0MPkLc3b_gBXN2-yorcJ'
-                       b'ke5roeUegdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkWmttdYhtidV0G')
+                       b'pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAACIRDrYzCyMB5jBHY9jwfT'
+                       b'4KEb7kx_vYgHJ7LDsiQRD-Roj5bGfJXj6PAo5TS36t4kWmiBhpvqLgb2l9vUhpiUK')
 
         saider = verifier.reger.saved.get(keys=cred.said)
         assert saider is not None
@@ -311,29 +305,29 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
 
         # where is this schema to be found?
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={}, status=issuer.regk)
+                                  issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
         # sign with single sig transferable identfier with multiple specified paths
         # Bad magic values here but can't figure out where looks like Sadder Said seeder
         # is using a bad magic value
         sig1 = signing.ratify(hab=hab, serder=cred, paths=[[], ["a"], ["a", "i"]])
-        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EAGWXIs8am8TjOw2LtajsIeiBNWNkemgHG'
-                        b'rT1bAtjGIL","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","'
-                        b'ri":"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCn'
-                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EBUyM6Zyf527JGWC'
-                        b'v7_jazBOUh_sdrISxOjFCL591Qgi","i":"EIflL4H4134zYoRM6ls6Q086RLC_B'
-                        b'hfNFh5uk-WxvhsL","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"'
-                        b'254900OPPU84GM83MG36"},"e":{}}-KAD6AABAAA--JAB6AABAAA--FABEKC808'
-                        b'5pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEK'
-                        b'C8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAA0MPkLc3b_gBXN2-'
-                        b'yorcJke5roeUegdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkWmttdYh'
-                        b'tidV0G-JAB5AABAA-a-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT'
-                        b'9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5a'
-                        b'tdMT9o-AABAADXgBP8JMoPXqCWZAXh0-OSp8Y06QAWJDIog47naTnn7Oi-Dk-fiw'
-                        b'jD4KCXeQwXL-87mmCTTLUfhOyqL3vifEwD-JAB4AAB-a-i-FABEKC8085pwSwzLw'
-                        b'UGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwS'
-                        b'wzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAABsIw-EgCMnex1m7Qm8RkU4jM'
-                        b'GAV3wNGyD_CxfetmMp-iGBLhZ5wArAw6_Qdg75K_NMTKVV4hv7bWw3OvJnNY8A')
+        assert sig1 == (b'{"v":"ACDC10JSON00019e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU3y'
+                        b'cpjdtCUD","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":'
+                        b'"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1ha'
+                        b'tTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcuvv8j5F4F'
+                        b'WRHD8xlZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+00:00","i":'
+                        b'"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"254900OPPU84'
+                        b'GM83MG36"},"e":{}}-KAD6AABAAA--JAB6AABAAA--FABEKC8085pwSwzLwUGzh-H'
+                        b'rEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh'
+                        b'-HrEoFDwZnCJq27bVp5atdMT9o-AABAACIRDrYzCyMB5jBHY9jwfT4KEb7kx_vYgHJ'
+                        b'7LDsiQRD-Roj5bGfJXj6PAo5TS36t4kWmiBhpvqLgb2l9vUhpiUK-JAB5AABAA-a-F'
+                        b'ABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAA'
+                        b'AAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAB80PrmAUGj_i'
+                        b'ATyLY-kzdpI6omm5X05EsdkRZGymwVn62-1nijoSh0dlUo6rGOoywUQWu-eZ0i5PuH'
+                        b'skgV9nwP-JAB4AAB-a-i-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT'
+                        b'9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atd'
+                        b'MT9o-AABAABsIw-EgCMnex1m7Qm8RkU4jMGAV3wNGyD_CxfetmMp-iGBLhZ5wArAw6'
+                        b'_Qdg75K_NMTKVV4hv7bWw3OvJnNY8A')
 
         # Issue the credential and parse into credential store
         iss = issuer.issue(said=cred.said)
@@ -361,49 +355,48 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
 
         # attach the transposed signatures for the embedded credential
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
-        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"EKkLPzExl_Apk_M_yjJL4UH2'
-                       b'TUBo17n1WEOZzbtnfURm","r":"/credential/issue","a":{"v":"ACDC10JS'
-                       b'ON00019e_","d":"EAGWXIs8am8TjOw2LtajsIeiBNWNkemgHGrT1bAtjGIL","i'
-                       b'":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":"ENzh5cyGj'
-                       b'FhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1hatTNyK3sI'
-                       b'ykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EBUyM6Zyf527JGWCv7_jazBOUh_sdr'
-                       b'ISxOjFCL591Qgi","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-Wxvhs'
-                       b'L","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"254900OPPU84GM'
-                       b'83MG36"},"e":{}}}-VA0-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5at'
-                       b'dMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bV'
-                       b'p5atdMT9o-AABAADbTcTwX-1HnlDvnKXH4Zr3v2f3fn0FtcfzKvod90uaJZ54QFO'
-                       b'1um10RXsMmncG6HRoU1oUeXg2Ks52UYV1HhEF-KAD6AABAAA--JAB5AACAA-a-a-'
-                       b'i-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAA'
-                       b'AAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAABsIw-'
-                       b'EgCMnex1m7Qm8RkU4jMGAV3wNGyD_CxfetmMp-iGBLhZ5wArAw6_Qdg75K_NMTKV'
-                       b'V4hv7bWw3OvJnNY8A-JAB4AAB-a-a-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq'
-                       b'27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZ'
-                       b'nCJq27bVp5atdMT9o-AABAADXgBP8JMoPXqCWZAXh0-OSp8Y06QAWJDIog47naTn'
-                       b'n7Oi-Dk-fiwjD4KCXeQwXL-87mmCTTLUfhOyqL3vifEwD-JAB5AABAA-a-FABEKC'
-                       b'8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAA'
-                       b'AEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAA0MPkLc3b_gBX'
-                       b'N2-yorcJke5roeUegdnEGN4JD8cMwpU8p5Xh0EreddW2ZUoIgYoVEimqV-qkWmtt'
-                       b'dYhtidV0G')
+        assert msg == (b'{"v":"KERI10JSON000211_","t":"exn","d":"EH80d0jZPr9W2DqLPlEVgsLB0tD'
+                       b'VRrMVFLN8zvf5U2xc","r":"/credential/issue","a":{"v":"ACDC10JSON0001'
+                       b'9e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU3ycpjdtCUD","i":"EKC808'
+                       b'5pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":"ENzh5cyGjFhQYuIXuheXV'
+                       b'2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ'
+                       b'9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcuvv8j5F4FWRHD8xlZ_E4rWPdlVASI","d'
+                       b't":"2021-06-09T17:35:54.169967+00:00","i":"EIflL4H4134zYoRM6ls6Q086'
+                       b'RLC_BhfNFh5uk-WxvhsL","LEI":"254900OPPU84GM83MG36"},"e":{}}}-VA0-FA'
+                       b'BEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAA'
+                       b'AAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAA85nuhADZVow-MH'
+                       b'vwtyFArzlLbqIFzjJOVGN5TN9oKlex0B0tUWd3N1e62mal5aymfMKH64UCMUTpOT7lp'
+                       b'nKUE-KAD6AABAAA--JAB5AACAA-a-a-i-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq'
+                       b'27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJ'
+                       b'q27bVp5atdMT9o-AABAABsIw-EgCMnex1m7Qm8RkU4jMGAV3wNGyD_CxfetmMp-iGBL'
+                       b'hZ5wArAw6_Qdg75K_NMTKVV4hv7bWw3OvJnNY8A-JAB4AAB-a-a-FABEKC8085pwSwz'
+                       b'LwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSw'
+                       b'zLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAAB80PrmAUGj_iATyLY-kzdpI6omm5'
+                       b'X05EsdkRZGymwVn62-1nijoSh0dlUo6rGOoywUQWu-eZ0i5PuHskgV9nwP-JAB5AABA'
+                       b'A-a-FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o-AABAACIRDrYzCy'
+                       b'MB5jBHY9jwfT4KEb7kx_vYgHJ7LDsiQRD-Roj5bGfJXj6PAo5TS36t4kWmiBhpvqLgb'
+                       b'2l9vUhpiUK')
 
     # signing SAD with non-transferable identifier
     with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):
         seeder.seedSchema(db=hby.db)
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                  issuer=hab.pre, subject=d, source={},
+                                  issuer=hab.pre, data=d, source={},
                                   status="Eg1H4eN7P5ndJAWtcymq3ZrYZwQsBRYd3-VuZ6wMAwxE")
 
         # Sign with non-transferable identifier
         sig0 = signing.ratify(hab=hab, serder=cred)
 
-        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EIle5T-7BnFVw2JzJ5t4fn_eA9vGOCXKGc'
-                        b'f7hTYDhFfK","i":"BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP","'
+        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EBFPlqNJ4FovUoaGiDg3TWAlabvbUv2OnV'
+                        b'wF8zPuaey7","i":"BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP","'
                         b'ri":"Eg1H4eN7P5ndJAWtcymq3ZrYZwQsBRYd3-VuZ6wMAwxE","s":"EMQWEcCn'
-                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EBUyM6Zyf527JGWC'
-                        b'v7_jazBOUh_sdrISxOjFCL591Qgi","i":"EIflL4H4134zYoRM6ls6Q086RLC_B'
-                        b'hfNFh5uk-WxvhsL","dt":"2021-06-09T17:35:54.169967+00:00","LEI":"'
+                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcu'
+                        b'vv8j5F4FWRHD8xlZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+0'
+                        b'0:00","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"'
                         b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--CABBAbSj3jfaeJbpuqg0W'
-                        b'tvHw31UoRZOnN_RZQYBwbAqteP0BBERy8Y4v0BMzo7SbMQbALcQ4d3vnZGQr8Xc_'
-                        b'J4gBlEO7chQnzlBJcU2-G9J9hKTkcpeY9T0AqvBhoVABbAGfkM')
+                        b'tvHw31UoRZOnN_RZQYBwbAqteP0BD1mbdIQtZtdLvSdR7in7XOt-d2ALjyOTvVbQ'
+                        b'6AMLcyd5H7m-rPM8RshHoREehbr5S82w7b844-ykD5yJHyqhIG')
 
         pather = coring.Pather(path=["a", "b", "c"])
         cigars = hab.sign(ser=cred.raw,
@@ -412,9 +405,9 @@ def test_signature_transposition(seeder, mockCoringRandomNonce):
         sadcigars = [(pather, cigars)]
 
         tp = eventing.proofize(sadcigars=sadcigars, pipelined=True)
-        assert tp == (b'-VAm-JAB5AACAA-a-b-c-CABBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbA'
-                      b'qteP0BBERy8Y4v0BMzo7SbMQbALcQ4d3vnZGQr8Xc_J4gBlEO7chQnzlBJcU2-G9'
-                      b'J9hKTkcpeY9T0AqvBhoVABbAGfkM')
+        assert tp == (b'-VAm-JAB5AACAA-a-b-c-CABBAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'
+                      b'0BD1mbdIQtZtdLvSdR7in7XOt-d2ALjyOTvVbQ6AMLcyd5H7m-rPM8RshHoREehbr5S'
+                      b'82w7b844-ykD5yJHyqhIG')
     """End Test"""
 
 
@@ -428,7 +421,7 @@ def test_signatory():
 
         assert signer.pre == 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
         assert signer._hab.kever.verfers[0].qb64b == b'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
-        spre = signer.db.hbys .get(habbing.SIGNER)
+        spre = signer.db.hbys.get(habbing.SIGNER)
         assert spre == signer.pre
 
         raw = b'this is the raw data'
@@ -464,4 +457,3 @@ def test_signatory():
                               b'dk81yqgr_kvD7aaKmi4Dw7wgmmLXx'
                               b'i0nhP08Jpo0B')
         assert signer.verify(ser=raw2, cigar=cig3) is True
-

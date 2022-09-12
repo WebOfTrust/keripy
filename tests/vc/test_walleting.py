@@ -11,7 +11,7 @@ from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
 
 
-def test_wallet(seeder, mockCoringRandomNonce):
+def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
@@ -21,12 +21,8 @@ def test_wallet(seeder, mockCoringRandomNonce):
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
         credSubject = dict(
-            d="",
-            i=sidHab.pre,
-            dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
 
         sidReg = credentialing.Regery(hby=sidHby, name="bob", temp=True)
         verifier = verifying.Verifier(hby=sidHby, reger=sidReg.reger)
@@ -38,8 +34,9 @@ def test_wallet(seeder, mockCoringRandomNonce):
         sidReg.processEscrows()
 
         creder = credential(issuer=sidHab.pre,
+                            recipient=sidHab.pre,
                             schema=schema,
-                            subject=credSubject,
+                            data=credSubject,
                             status=issuer.regk)
         assert creder.said == "ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt"
 

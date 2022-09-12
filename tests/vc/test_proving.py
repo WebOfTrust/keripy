@@ -14,7 +14,7 @@ from keri.vc.proving import Creder, credential
 from keri.vdr import verifying, credentialing
 
 
-def test_proving():
+def test_proving(mockHelpingNowIso8601):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
@@ -51,19 +51,19 @@ def test_proving():
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
-                            subject=credSubject)
+                            data=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON000174_","d":"EB9BVzL6-iIy9EO_l1AgqxhAxn3o5yOOyP'
-                    b'33HKop8Dmj","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
-                    b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EOsC'
-                    b'KF1Fa1LBZuKRwBQzGy5aJ4gzbxFosxzvATT8HMgQ","i":"EPmpiN6bEM8EI0Mct'
-                    b'ny-6AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
-                    b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"e":{}}-VA0-FABEIaG'
-                    b'MMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAA'
-                    b'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADMQcCQikV3BBRa'
-                    b'vt_f8txYvZX3TQeepFTnBmobPDOEis_gMVnxSRuDSZrKifw7r6N38sw2PGxurCn8'
-                    b'iNamZdIB')
+        assert msg == (b'{"v":"ACDC10JSON00019c_","d":"EJv492nqYVIaiws_KFzq7VivRDQpXOAUQr'
+                       b'gtSgkXfTIY","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+                       b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
+                       b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
+                       b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
+                       b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
+                       b'26:21.233257+00:00"},"e":{}}-VA0-FABEIaGMMWJFPmtXznY1IIiKDIrg-vI'
+                       b'yge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIr'
+                       b'g-vIyge6mBl2QV8dDjI3-AABAADJh1iaEpxPkqHvMlz5RrDQGYdMLxHlkXvNJr4O'
+                       b'HDCYWIGLVeiR5TM7mo2A6r1HfVVjYDbmI6Oqq0h-i7wyGD0O')
 
         creder = Creder(raw=msg)
         proof = msg[creder.size:]
@@ -192,14 +192,12 @@ def test_credentialer():
     assert creder.crd == d3
 
 
-def test_credential():
+def test_credential(mockHelpingNowIso8601):
     d = dict(
         d="",
-        issuanceDate="2021-06-27T21:26:21.233257+00:00",
+        LEI="254900OPPU84GM83MG36",
         personLegalName="John Doe",
         engagementContextRole="Project Manager",
-        credentialStatus="EAmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
-        LEI="254900OPPU84GM83MG36"
     )
 
     # test source chaining with labeled edge
@@ -208,23 +206,50 @@ def test_credential():
     ]
 
     saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
-    assert saider.qb64 == 'EFyC729bNI11tkKduIgFT7yoq3ebYuMJzzhZl-ckXxa8'
+    assert saider.qb64 == 'EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB'
     d["i"] = saider.qb64
 
     cred = credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      data=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON000286_","d":"EAeSzBILdc9X6G5sBRx7BYQTF8t6ywdMuNZOX0e51KUd",'
+    assert cred.raw == (b'{"v":"ACDC10JSON00023b_","d":"EFyT2QGVlx0zL4ft1WNDzEeBh9lHN-vfcjL18V8h-zn1",'
                         b'"i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri":"ECQoH02zJRCTNz-Wl3n'
                         b'nkUD_RVSzSwcoNvmfa18AWt3M","s":"EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q'
-                        b'","a":{"d":"EGAyHGcfzb3SIAjvF11jaEgYx7NOg9-ixhfLR6RQe6iG","issuanceDate":"20'
-                        b'21-06-27T21:26:21.233257+00:00","personLegalName":"John Doe","engagementCont'
-                        b'extRole":"Project Manager","credentialStatus":"EAmRy7xMwsxUelUauaXtMxTfPAMPA'
-                        b'I6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36","i":"EFyC729bNI11tkKduIgFT7yoq3'
-                        b'ebYuMJzzhZl-ckXxa8"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBS'
-                        b'MZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+                        b'","a":{"d":"EE3G84sadzx_QCOLYBjdjgLa9E8tT5iWWwN2hzkmk3wZ","dt":"2021-06-27T2'
+                        b'1:26:21.233257+00:00","LEI":"254900OPPU84GM83MG36","personLegalName":"John D'
+                        b'oe","engagementContextRole":"Project Manager","i":"EM_S2MdMaKgP6P2Yyno6-flV6'
+                        b'GqrwPencTIw8tCMR7iB"},"e":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLB'
+                        b'SMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+
+
+def test_privacy_preserving_credential(mockHelpingNowIso8601):
+    d = dict(
+        LEI="254900OPPU84GM83MG36",
+        personLegalName="John Doe",
+        engagementContextRole="Project Manager",
+    )
+
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                      recipient="EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB",
+                      private=True,
+                      salt=salt,
+                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+
+    assert cred.size == len(cred.raw)
+    assert "u" in cred.ked
+    print(cred.raw)
+    assert cred.raw == (b'{"v":"ACDC10JSON000223_","d":"EFDXxT0s91iKLWKZbHyy8eECFD1VxHw5NG3oa6j13CS9",'
+                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPP'
+                        b'NBnM","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
+                        b'Z_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EFwWs1d_fe_VeLZ0vQQKO-gkRvGrpfWAR'
+                        b'bI4e9tzcqlV","u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EM_S2MdMaKgP6P2Yyno6-flV6Gq'
+                        b'rwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"254900OPPU'
+                        b'84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project Ma'
+                        b'nager"},"e":{}}')
 
 
 
@@ -243,7 +268,7 @@ def test_credential_parsator():
 
         creder = credential(issuer=hab.pre,
                             schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
-                            subject=credSubject,
+                            data=credSubject,
                             status=issuer.regk)
 
         msg = hab.endorse(serder=creder)
