@@ -16,7 +16,6 @@ from ..core.coring import Seqner, MtrDex, Serder
 from ..core.eventing import SealEvent, TraitDex
 from ..db import dbing
 from ..db.dbing import snKey, dgKey
-from ..help import helping
 from ..vc import proving, protocoling
 from ..vdr import eventing
 from ..vdr.viring import Reger
@@ -653,12 +652,12 @@ class Credentialer(doing.DoDoer):
 
         super(Credentialer, self).__init__(doers=doers)
 
-    def create(self, regname, recp, schema, source, rules, data, private=False):
+    def create(self, regname, recp: str, schema, source, rules, data, private=False):
         """  Create and validate a credential returning the fully populated Creder
 
         Parameters:
             regname:
-            recp:
+            recp (str):
             schema:
             source:
             rules:
@@ -677,25 +676,11 @@ class Credentialer(doing.DoDoer):
         if registry is None:
             raise kering.ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
                                             "credentials".format(regname))
-        hab = registry.hab
 
-        d = dict(
-            d="",
-        )
-
-        if private:
-            d["u"] = ""
-
-        d["dt"] = data["dt"] if "dt" in data else helping.nowIso8601()
-
-        if recp is not None:
-            d['i'] = recp
-
-        d |= data
-
-        creder = proving.credential(issuer=hab.pre,
+        creder = proving.credential(issuer=registry.hab.pre,
                                     schema=schema,
-                                    data=d,
+                                    recipient=recp,
+                                    data=data,
                                     source=source,
                                     private=private,
                                     rules=rules,
