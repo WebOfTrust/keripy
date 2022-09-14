@@ -475,7 +475,8 @@ class Habery:
             delpre (str): qb64 of delegator identifier prefix
             estOnly (str): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
-        """
+            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
+       """
         aids = list(kwa['aids'])
         del kwa['aids']
         if phab.pre not in aids:
