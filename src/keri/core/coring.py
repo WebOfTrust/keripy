@@ -656,7 +656,7 @@ class BextCodex:
 BexDex = BextCodex()  # Make instance
 
 
-# namedtuple for size entries in matter derivation code tables
+# namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
 # fs is the full size int number of chars in code plus appended material if any
@@ -3517,22 +3517,43 @@ class Saider(Matter):
 class IndexerCodex:
     """ IndexerCodex is codex hard (stable) part of all indexer derivation codes.
 
+    Codes indicate which list of keys, current and/or prior next, index is for:
+
+        _Sig:           Indices in code may appear in both current signing and
+                        prior next key lists when event has both current and prior
+                        next key lists. Two character code table has only one index
+                        so must be the same for both lists. Other index if for
+                        prior next.
+                        The indices may be different in those code tables which
+                        have two sets of indices.
+
+        _Crt_Sig:       Index in code for current signing key list only.
+
+        _Big_:          Big index values
+
+
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
 
-    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
-    Prior_Next_Idx: str = 'C'  # Prior Next Index of following sig.
-    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
-    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
-    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
-    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
-    TBD0: str = '0Z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
+    ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
+    ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
+    Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
+    Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
+    ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
+    ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
+    Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
+    TBD0: str = '0z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
+    TBD1: str = '1z'  # Test of index sig lead 1
+    TBD4: str = '4z'  # Test of index sig lead 1 big
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
-
 
 IdrDex = IndexerCodex()
 
@@ -3541,99 +3562,76 @@ IdrDex = IndexerCodex()
 class IndexedSigCodex:
     """IndexedSigCodex is codex all indexed signature derivation codes.
 
-    Codes indicate which list of keys, current and/or prior next, index is for:
-
-        _Sig:           Index in code appears same in both current signing and
-                        prior next key lists if event has prior next or current
-                        signing otherwise.
-                        When preceeded by Prior_Next_Idx then uses provided index
-                        for prior next list.
-
-        _Crt_Sig:       Index in code for current signing key list only.
-                        When preceeded by Prior_Next_Idx then appears also in prior
-                        next list at provided index
-
-        Prior_Next_Idx: Provides index for prior next list. Allows index to be
-                        different in each list when appearing in both lists.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
-    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
-    Prior_Next_Idx: str = 'C'  # Prior Next Index of following sig.
-    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
-    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
-    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
-    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
+    ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
+    ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
+    Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
+    Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
+    ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
+    ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
+    Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
     def __iter__(self):
         return iter(astuple(self))
-
 
 IdxSigDex = IndexedSigCodex()  # Make instance
 
-@dataclass(frozen=True)
-class IndexedBothSigCodex:
-    """IndexedBothSigCodex is codex indexed signature codes for both lists.
-
-    Codes indicate which list of keys, current and/or prior next, index is for:
-
-        _Sig:           Index in code appears same in both current signing and
-                        prior next key lists if event has prior next or current
-                        signing otherwise.
-                        When preceeded by Prior_Next_Idx then uses provided index
-                        for prior next list.
-
-        _Crt_Sig:       Index in code for current signing key list only.
-                        When preceeded by Prior_Next_Idx then appears also in prior
-                        next list at provided index
-
-        Prior_Next_Idx: Provides index for prior next list. Allows index to be
-                        different in each list when appearing in both lists.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Ed25519_Sig: str = 'A'  # Ed25519 sig appears in both lists if any.
-    ECDSA_256k1_Sig: str = 'D'  # ECDSA secp256k1 sig appears in both lists if any.
-    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists if any.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-IdxBthSigDex = IndexedBothSigCodex()  # Make instance
 
 @dataclass(frozen=True)
 class IndexedCurrentSigCodex:
     """IndexedCurrentSigCodex is codex indexed signature codes for current list.
 
-    Codes indicate which list of keys, current and/or prior next, index is for:
-
-        _Sig:           Index in code appears same in both current signing and
-                        prior next key lists if event has prior next or current
-                        signing otherwise.
-                        When preceeded by Prior_Next_Idx then uses provided index
-                        for prior next list.
-
-        _Crt_Sig:       Index in code for current signing key list only.
-                        When preceeded by Prior_Next_Idx then appears also in prior
-                        next list at provided index
-
-        Prior_Next_Idx: Provides index for prior next list. Allows index to be
-                        different in each list when appearing in both lists.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list.
-    ECDSA_256k1_Crt_Sig: str = 'E'  # ECDSA secp256k1 sig appears in current list.
-    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list.
+    Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
+    ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list only.
+    Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
+    Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
+    ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
     def __iter__(self):
         return iter(astuple(self))
 
-
 IdxCrtSigDex = IndexedCurrentSigCodex()  # Make instance
 
+
+
+@dataclass(frozen=True)
+class IndexedBothSigCodex:
+    """IndexedBothSigCodex is codex indexed signature codes for both lists.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
+    ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
+    Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
+    Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both listsy.
+    ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
+    Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+IdxBthSigDex = IndexedBothSigCodex()  # Make instance
+
+# namedtuple for size entries in Incexer derivation code tables
+# hs is the hard size int number of chars in hard (stable) part of code
+# ss is the soft size int number of chars in soft (unstable) part of code
+# os is the other size int number of chars in other index part of soft
+#     ms = ss - os main index size computed
+# fs is the full size int number of chars in code plus appended material if any
+# ls is the lead size int number of bytes to pre-pad pre-converted raw binary
+Xizage = namedtuple("Xizage", "hs ss os fs ls")
 
 class Indexer:
     """
@@ -3651,7 +3649,8 @@ class Indexer:
         .code is  str derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
         .pad  is int number of pad chars given raw
-        .index is int count of attached crypto material by context (receipts)
+        .index is int main index of attached crypto material
+        .ondex is int other index of attached crypto material
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
@@ -3661,6 +3660,7 @@ class Indexer:
         ._raw is bytes value for .raw property
         ._pad is method to compute  .pad property
         ._index is int value for .index property
+        ._ondex is int value for .ondex property
         ._infil is method to compute fully qualified Base64 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
@@ -3670,32 +3670,42 @@ class Indexer:
     # (stable) of code. The soft size, ss, (unstable) is always > 0 for Indexer.
     Hards = ({chr(c): 1 for c in range(65, 65 + 26)})
     Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
-    Hards.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
-    # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
-    # where hs is hard size, ss is soft size, and fs is full size
+    Hards.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 2)])
+    # Sizes table maps hs chars of code to Xizage namedtuple of (hs, ss, os, fs, ls)
+    # where hs is hard size, ss is soft size, os is other index size,
+    # and fs is full size, ls is lead size.
+    # where ss includes os, so main index size ms = ss - os
     # soft size, ss, should always be  > 0 for Indexer
     Sizes = {
-        'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'C': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0),
+        'A': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'C': Xizage(hs=1, ss=3, os=0, fs=88, ls=0),
+        'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '2A': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2B': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2C': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2D': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
+        '1z': Xizage(hs=2, ss=2, os=1, fs=76, ls=1),
+        '4z': Xizage(hs=2, ss=6, os=3, fs=80, ls=1),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
                  qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
+            raw (bytes): unqualified crypto material usable for crypto operations
             code is str of stable (hard) part of derivation code
-            index is int of offset index into key or id list or length of material
+            index (int): offset main index into list or length of material
+            ondex (int | None): offset other index into list or length of material
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
@@ -3720,8 +3730,9 @@ class Indexer:
             if code not in self.Sizes:
                 raise UnexpectedCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
+            hs, ss, os, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
+            ms = ss - os
 
             if not isinstance(index, int) or index < 0 or index > (64 ** ss - 1):
                 raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
@@ -3742,35 +3753,8 @@ class Indexer:
 
             self._code = code
             self._index = index
+            self._ondex = ondex
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
-
-        elif code in (IdrDex.Prior_Next_Idx, ):  # raw not needed
-            if code not in self.Sizes:
-                raise UnexpectedCodeError("Unsupported code={}.".format(code))
-
-            hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
-            cs = hs + ss  # both hard + soft code size
-
-            if not isinstance(index, int) or index < 0 or index > (64 ** ss - 1):
-                raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
-
-            if not fs:  # compute fs from index
-                if cs % 4:
-                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                               "variable length material. cs={}.".format(cs))
-                fs = (index * 4) + cs
-
-            rawsize = (fs - cs) * 3 // 4
-
-            if rawsize != 0:  # raw not needed must be empty
-                raise RawMaterialError(f"Nonzero raw size for code={code}"
-                                       f"and index={index} ,expected 0 got"
-                                       f"{rawsize}.")
-
-            self._code = code
-            self._index = index
-            self._raw = b""  # crypto ops require bytes not bytearray
-
 
         elif qb64b is not None:
             self._exfil(qb64b)
@@ -3795,7 +3779,7 @@ class Indexer:
         """
         Returns raw size in bytes for a given code
         """
-        hs, ss, fs, ls = cls.Sizes[code]  # get sizes
+        hs, ss, os, fs, ls = cls.Sizes[code]  # get sizes
         return ((fs - (hs + ss)) * 3 // 4)
 
     @property
@@ -3854,7 +3838,8 @@ class Indexer:
         self.raw, self.code and self.index.
 
         cs = hs + ss
-        fs = (size * 4) + cs
+        os = ss - ms (main index size)
+        when fs None then size computed & fs = size * 4 + cs
 
         """
         code = self.code  # codex value chars hard code
@@ -3862,7 +3847,8 @@ class Indexer:
         raw = self.raw  # bytes or bytearray
 
         ps = (3 - (len(raw) % 3)) % 3  # same pad size chars & lead size bytes
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, os, fs, ls = self.Sizes[code]
+        ms = ss - os
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
@@ -3886,7 +3872,8 @@ class Indexer:
         Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
 
         cs = hs + ss
-        fs = (size * 4) + cs
+        os = ss - ms (main index size)
+        when fs None then size computed & fs = size * 4 + cs
         """
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material.")
@@ -3914,8 +3901,9 @@ class Indexer:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]  # assumes hs in both tables consistent
+        hs, ss, os, fs, ls = self.Sizes[hard]  # assumes hs in both tables consistent
         cs = hs + ss  # both hard + soft code size
+        ms = ss - os
         # assumes that unit tests on Indexer and IndexerCodex ensure that
         # .Codes and .Sizes are well formed.
         # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
@@ -3992,16 +3980,18 @@ class Indexer:
         index = self.index  # index value int used for soft
         raw = self.raw  # bytes or bytearray
 
-        hs, ss, fs, ls = self.Sizes[code]
+        hs, ss, os, fs, ls = self.Sizes[code]
         cs = hs + ss
+        ms = ss - os
+
+        if index < 0 or index > (64 ** ss - 1):
+            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
+
         if not fs:  # compute fs from index
             if cs % 4:
                 raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                            "variable length material. cs={}.".format(cs))
             fs = (index * 4) + cs
-
-        if index < 0 or index > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
         both = f"{code}{intToB64(index, l=ss)}"
@@ -4015,7 +4005,7 @@ class Indexer:
         # then convert to bytes
         bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
         full = bcode + bytes([0] * ls) + raw
-        bfs = len(full)
+        bfs = len(full)  # binary full size
 
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
@@ -4050,8 +4040,9 @@ class Indexer:
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
-        hs, ss, fs, ls = self.Sizes[hard]
+        hs, ss, os, fs, ls = self.Sizes[hard]
         cs = hs + ss  # both hs and ss
+        ms = ss - os
         # assumes that unit tests on Indexer and IndexerCodex ensure that
         # .Codes and .Sizes are well formed.
         # hs consistent and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)

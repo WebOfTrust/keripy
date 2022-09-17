@@ -24,8 +24,8 @@ from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
 from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
-from keri.core.coring import (Sizage, MtrDex, Matter,
-                              IdrDex, IdxSigDex, IdxBthSigDex, IdxCrtSigDex, Indexer,
+from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
+                              IdxCrtSigDex, IdxBthSigDex, Indexer,
                               CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
@@ -1523,60 +1523,102 @@ def test_indexer():
     assert dataclasses.asdict(IdrDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
-        'Prior_Next_Idx': 'C',
-        'ECDSA_256k1_Sig': 'D',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
-        'TBD': '0Z'
+        'Ed25519_Big_Sig': '2A',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Sig': '3A',
+        'Ed448_Big_Crt_Sig': '3B',
+        'TBD0': '0z',
+        'TBD1': '1z',
+        'TBD4': '4z',
     }
 
-    assert IdrDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdrDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdrDex.Prior_Next_Idx == 'C'  # prior next index of following sig.
-    assert IdrDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdrDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdrDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
-    assert IdrDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
+    assert IdrDex.Ed25519_Sig == 'A'
+    assert IdrDex.Ed25519_Crt_Sig == 'B'
+    assert IdrDex.ECDSA_256k1_Sig == 'C'
+    assert IdrDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdrDex.Ed448_Sig == '0A'
+    assert IdrDex.Ed448_Crt_Sig == '0B'
+    assert IdrDex.Ed25519_Big_Sig == '2A'
+    assert IdrDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdrDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdrDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdrDex.Ed448_Big_Sig == '3A'
+    assert IdrDex.Ed448_Big_Crt_Sig == '3B'
+    assert IdrDex.TBD0 == '0z'
+    assert IdrDex.TBD1 == '1z'
+    assert IdrDex.TBD4 == '4z'
+
+
 
 
     assert dataclasses.asdict(IdxSigDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
-        'Prior_Next_Idx': 'C',
-        'ECDSA_256k1_Sig': 'D',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
+        'Ed25519_Big_Sig': '2A',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Sig': '3A',
+        'Ed448_Big_Crt_Sig': '3B',
     }
 
-    assert IdxSigDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdxSigDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdxSigDex.Prior_Next_Idx == 'C'  # prior next index of following sig.
-    assert IdxSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdxSigDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
-    assert IdxSigDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
+    assert IdxSigDex.Ed25519_Sig == 'A'
+    assert IdxSigDex.Ed25519_Crt_Sig == 'B'
+    assert IdxSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxSigDex.Ed448_Sig == '0A'
+    assert IdxSigDex.Ed448_Crt_Sig == '0B'
+    assert IdxSigDex.Ed25519_Big_Sig == '2A'
+    assert IdxSigDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdxSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxSigDex.Ed448_Big_Sig == '3A'
+    assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
-    assert dataclasses.asdict(IdxBthSigDex) == {
-        'Ed25519_Sig': 'A',
-        'ECDSA_256k1_Sig': 'D',
-        'Ed448_Sig': '0A',
-    }
 
-    assert IdxBthSigDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdxBthSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdxBthSigDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
 
     assert dataclasses.asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Crt_Sig': '0B',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Crt_Sig': '3B',
     }
 
-    assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
+    assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'
+    assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'
+    assert IdxCrtSigDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdxCrtSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
+
+
+    assert dataclasses.asdict(IdxBthSigDex) == {
+        'Ed25519_Sig': 'A',
+        'ECDSA_256k1_Sig': 'C',
+        'Ed448_Sig': '0A',
+        'Ed25519_Big_Sig': '2A',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'Ed448_Big_Sig': '3A',
+    }
+
+    assert IdxBthSigDex.Ed25519_Sig == 'A'
+    assert IdxBthSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxBthSigDex.Ed448_Sig == '0A'
+    assert IdxBthSigDex.Ed25519_Big_Sig == '2A'
+    assert IdxBthSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxBthSigDex.Ed448_Big_Sig == '3A'
 
 
     # first character of code with hard size of code
@@ -1587,23 +1629,31 @@ def test_indexer():
         'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
         'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
         's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
-        '0': 2, '1': 2, '2': 2, '3': 2, '4': 3, '5': 4
+        '0': 2, '1': 2, '2': 2, '3': 2, '4': 2,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Sizes == {
-        'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'C': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0)
+        'A': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'C': Xizage(hs=1, ss=3, os=0, fs=88, ls=0),
+        'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '2A': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2B': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2C': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2D': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
+        '1z': Xizage(hs=2, ss=2, os=1, fs=76, ls=1),
+        '4z': Xizage(hs=2, ss=6, os=3, fs=80, ls=1),
     }
 
     assert Indexer.Sizes['A'].hs == 1  # hard size
     assert Indexer.Sizes['A'].ss == 1  # soft size
+    assert Indexer.Sizes['A'].os == 0  # other size
     assert Indexer.Sizes['A'].fs == 88  # full size
     assert Indexer.Sizes['A'].ls == 0  # lead size
 
@@ -1612,8 +1662,12 @@ def test_indexer():
         assert Indexer.Hards[ckey[0]] == Indexer.Sizes[ckey].hs
 
     # verify all Codes have hs > 0 and ss > 0 and fs >= hs + ss if fs is not None
+    # verify os is part of ss
     for val in Indexer.Sizes.values():
         assert val.hs > 0 and val.ss > 0
+        assert val.os < val.ss
+        if val.os:
+            assert val.os == val.ss // 2
         if val.fs is not None:
             assert val.fs >= val.hs + val.ss
 
@@ -1890,41 +1944,6 @@ def test_indexer():
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
 
-    # Test Prior Next Unary modifier code
-    # test prior next with non-empty raw
-    index =  64 ** 3 - 1  # three hextets for max index
-    assert index == 262143
-    code = IdrDex.Prior_Next_Idx
-    qb64 = 'C___'
-    qb2 = b'\x0b\xff\xff'
-    indexer = Indexer(raw=sig, code=code, index=index)
-    assert indexer.raw == b''
-    assert indexer.code == code
-    assert indexer.index == index
-    assert indexer.qb64 == qb64
-    assert indexer.qb2 == qb2
-
-    # test prior next with empty raw
-    index =  1  # three hextets for max index
-    assert index == 1
-    code = IdrDex.Prior_Next_Idx
-    qb64 = 'CAAB'
-    qb2 = b'\x08\x00\x01'
-    indexer = Indexer(raw=None, code=code, index=index)
-    assert indexer.raw == b''
-    assert indexer.code == code
-    assert indexer.index == index
-    assert indexer.qb64 == qb64
-    assert indexer.qb2 == qb2
-
-    # test prior next with too big index
-    index =  64 ** 3   # one greater than max index
-    assert index == 262144
-    code = IdrDex.Prior_Next_Idx
-    with pytest.raises(InvalidVarIndexError):
-        indexer = Indexer(raw=sig, code=code, index=index)
-
-
     # Test of TBD Label Code (variable length)
     label = b'Hello_World_Peep'
     index = len(label) // 4
@@ -1935,30 +1954,30 @@ def test_indexer():
     assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
     ltext = encodeB64(lraw)
     assert ltext == b'Hello_World_Peep' == label
-    qsc = IdrDex.TBD + intToB64(index, l=2)
-    assert qsc == '0ZAE'
+    qsc = IdrDex.TBD0 + intToB64(index, l=2)
+    assert qsc == '0zAE'
     qscb = qsc.encode("utf-8")
     lq64b = qscb + label
-    assert lq64b == b"0ZAEHello_World_Peep"
+    assert lq64b == b'0zAEHello_World_Peep'
     lq64 = lq64b.decode("utf-8")
 
     # label from raw
-    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=index)
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD0, index=index)
     assert indexer.raw == lraw
-    assert indexer.code == IdrDex.TBD
+    assert indexer.code == IdrDex.TBD0
     assert indexer.index == index
     assert indexer.qb64b == lq64b
     assert indexer.qb64 == lq64
-    assert indexer.qb2 == b'\xd1\x90\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+    assert indexer.qb2 == b'\xd30\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
 
     # index zero for empty label
-    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=0)
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD0, index=0)
     assert indexer.raw == b''
-    assert indexer.code == IdrDex.TBD
+    assert indexer.code == IdrDex.TBD0
     assert indexer.index == 0
-    assert indexer.qb64b == b'0ZAA'
-    assert indexer.qb64 == '0ZAA'
-    assert indexer.qb2 == b'\xd1\x90\x00'
+    assert indexer.qb64b == b'0zAA'
+    assert indexer.qb64 == '0zAA'
+    assert indexer.qb2 == b'\xd30\x00'
     """ Done Test """
 
 
