@@ -3936,7 +3936,7 @@ class Indexer:
         Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
 
         cs = hs + ss
-        os = ss - ms (main index size)
+        ms = ss - os (main index size)
         when fs None then size computed & fs = size * 4 + cs
         """
         if not qb64b:  # empty need more bytes
@@ -4025,7 +4025,6 @@ class Indexer:
 
             raw = paw[ls:]
 
-
         if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
@@ -4038,6 +4037,10 @@ class Indexer:
     def _bexfil(self, qb2):
         """
         Extracts self.code, self.index, and self.raw from qualified base2 bytes qb2
+
+        cs = hs + ss
+        ms = ss - os (main index size)
+        when fs None then size computed & fs = size * 4 + cs
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")
@@ -4076,6 +4079,9 @@ class Indexer:
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs + ss])  # get index
         if not fs:  # compute fs from size chars in ss part of code
+            if cs % 4:
+                raise ValidationError(f"Whole code size not multiple of 4 for "
+                                      f"variable length material. cs={cs}.")
             fs = (index * 4) + cs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
