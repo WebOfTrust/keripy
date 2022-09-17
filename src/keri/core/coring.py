@@ -1045,6 +1045,49 @@ class Matter:
             return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
 
 
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 + self.raw left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex value
+        size = self.size  # optional size if variable length
+        raw = self.raw  # bytes or bytearray
+
+        hs, ss, fs, ls = self.Sizes[code]
+        cs = hs + ss
+
+        if not fs:  # compute both and fs from size
+            if cs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                           "variable length material. cs={}.".format(cs))
+
+            if size < 0 or size > (64 ** ss - 1):
+                raise InvalidVarSizeError("Invalid size={} for code={}."
+                                          "".format(size, code))
+            # both is hard code + converted index
+            both = f"{code}{intToB64(size, l=ss)}"
+            fs = hs + ss + (size * 4)
+        else:
+            both = code
+
+        if len(both) != cs:
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+                                       .format(cs, len(code)))
+
+        n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
+        # convert code both to right align b2 int then left shift in pad bits
+        # then convert to bytes
+        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
+        full = bcode + bytes([0] * ls) + raw
+        bfs = len(full)
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
+
+        return full
+
+
     def _exfil(self, qb64b):
         """
         Extracts self.code and self.raw from qualified base64 bytes qb64b
@@ -1134,49 +1177,6 @@ class Matter:
         self._code = hard  # hard only
         self._size = size
         self._raw = raw
-
-
-    def _binfil(self):
-        """
-        Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code converted to Base2 + self.raw left shifted with pad bits
-        equivalent of Base64 decode of .qb64 into .qb2
-        """
-        code = self.code  # codex value
-        size = self.size  # optional size if variable length
-        raw = self.raw  # bytes or bytearray
-
-        hs, ss, fs, ls = self.Sizes[code]
-        cs = hs + ss
-
-        if not fs:  # compute both and fs from size
-            if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                           "variable length material. cs={}.".format(cs))
-
-            if size < 0 or size > (64 ** ss - 1):
-                raise InvalidVarSizeError("Invalid size={} for code={}."
-                                          "".format(size, code))
-            # both is hard code + converted index
-            both = f"{code}{intToB64(size, l=ss)}"
-            fs = hs + ss + (size * 4)
-        else:
-            both = code
-
-        if len(both) != cs:
-            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                       .format(cs, len(code)))
-
-        n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code
-        # convert code both to right align b2 int then left shift in pad bits
-        # then convert to bytes
-        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
-        full = bcode + bytes([0] * ls) + raw
-        bfs = len(full)
-        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
-            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
-
-        return full
 
 
     def _bexfil(self, qb2):
@@ -3656,13 +3656,14 @@ class Indexer:
         .qb2  is bytes in binary with derivation code + crypto material
 
     Hidden:
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._pad is method to compute  .pad property
-        ._index is int value for .index property
-        ._ondex is int value for .ondex property
+        ._code (str): value for .code property
+        ._raw (bytes): value for .raw property
+        ._index (int): value for .index property
+        ._ondex (int): value for .ondex property
         ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._binfil is method to compute fully qualified Base2 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
+        ._bexfil is method to extract .code and .raw from fully qualified Base2
 
     """
     Codex = IdrDex
@@ -3704,8 +3705,8 @@ class Indexer:
         Parameters:
             raw (bytes): unqualified crypto material usable for crypto operations
             code is str of stable (hard) part of derivation code
-            index (int): offset main index into list or length of material
-            ondex (int | None): offset other index into list or length of material
+            index (int): main index offset into list or length of material
+            ondex (int | None): other index offset into list or length of material
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
@@ -3846,9 +3847,16 @@ class Indexer:
         index = self.index  # index value int used for soft
         raw = self.raw  # bytes or bytearray
 
-        ps = (3 - (len(raw) % 3)) % 3  # same pad size chars & lead size bytes
+        ps = (3 - (len(raw) % 3)) % 3  # if lead then same pad size chars & lead size bytes
         hs, ss, os, fs, ls = self.Sizes[code]
+        cs = hs + ss
         ms = ss - os
+
+        if not fs:  # compute fs from index
+            if cs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                           "variable length material. cs={}.".format(cs))
+            fs = (index * 4) + cs
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
@@ -3857,14 +3865,70 @@ class Indexer:
         both = "{}{}".format(code, intToB64(index, l=ss))
 
         # check valid pad size for whole code size, assumes ls is zero
-        cs = len(both)
+        if len(both) != cs:
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+                                       .format(cs, len(both)))
+
         if (cs % 4) != ps - ls:  # adjusted pad given lead bytes
             raise InvalidCodeSizeError(f"Invalid code={both} for converted"
                                        f" raw pad size={ps}.")
 
         # prepend pad bytes, convert, then replace pad chars with full derivation
         # code including index,
-        return (both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[cs % 4:])
+        full = both.encode("utf-8") + encodeB64(bytes([0] * ps) + raw)[ps - ls:]
+
+        if len(full) != fs:  # invalid size
+            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
+
+        return full
+
+
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code and self.index  converted to Base2 + self.raw left shifted
+        with pad bits equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex chars hard code
+        index = self.index  # index value int used for soft
+        raw = self.raw  # bytes or bytearray
+
+        ps = (3 - (len(raw) % 3)) % 3  # same pad size chars & lead size bytes
+        hs, ss, os, fs, ls = self.Sizes[code]
+        cs = hs + ss
+        ms = ss - os
+
+        if index < 0 or index > (64 ** ss - 1):
+            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
+
+        if not fs:  # compute fs from index
+            if cs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                           "variable length material. cs={}.".format(cs))
+            fs = (index * 4) + cs
+
+        # both is hard code + converted index
+        both = f"{code}{intToB64(index, l=ss)}"
+
+        if len(both) != cs:
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+                                       .format(cs, len(both)))
+
+        if (cs % 4) != ps - ls:  # adjusted pad given lead bytes
+                    raise InvalidCodeSizeError(f"Invalid code={both} for converted"
+                                               f" raw pad size={ps}.")
+
+        n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code + index
+        # convert code both to right align b2 int then left shift in pad bits
+        # then convert to bytes
+        bcode = (b64ToInt(both) << (2 * (ps - ls))).to_bytes(n, 'big')
+        full = bcode + bytes([0] * ls) + raw
+
+        bfs = len(full)  # binary full size
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
+
+        return full
 
 
     def _exfil(self, qb64b):
@@ -3969,48 +4033,6 @@ class Indexer:
         self._index = index
         self._raw = raw
 
-
-    def _binfil(self):
-        """
-        Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code and self.index  converted to Base2 + self.raw left shifted
-        with pad bits equivalent of Base64 decode of .qb64 into .qb2
-        """
-        code = self.code  # codex chars hard code
-        index = self.index  # index value int used for soft
-        raw = self.raw  # bytes or bytearray
-
-        hs, ss, os, fs, ls = self.Sizes[code]
-        cs = hs + ss
-        ms = ss - os
-
-        if index < 0 or index > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
-
-        if not fs:  # compute fs from index
-            if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                           "variable length material. cs={}.".format(cs))
-            fs = (index * 4) + cs
-
-        # both is hard code + converted index
-        both = f"{code}{intToB64(index, l=ss)}"
-
-        if len(both) != cs:
-            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                       .format(cs, len(both)))
-
-        n = sceil(cs * 3 / 4)  # number of b2 bytes to hold b64 code + index
-        # convert code both to right align b2 int then left shift in pad bits
-        # then convert to bytes
-        bcode = (b64ToInt(both) << (2 * (cs % 4))).to_bytes(n, 'big')
-        full = bcode + bytes([0] * ls) + raw
-        bfs = len(full)  # binary full size
-
-        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
-            raise InvalidCodeSizeError(f"Invalid code={both} for raw size={len(raw)}.")
-
-        return full
 
 
     def _bexfil(self, qb2):
@@ -4401,6 +4423,34 @@ class Counter:
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8"))
 
+
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex chars hard code
+        count = self.count  # index value int used for soft
+
+        hs, ss, fs, ls = self.Sizes[code]
+        cs = hs + ss
+        if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
+            raise InvalidCodeSizeError("Whole code size not full size or not "
+                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
+
+        if count < 0 or count > (64 ** ss - 1):
+            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
+
+        # both is hard code + converted count
+        both = "{}{}".format(code, intToB64(count, l=ss))
+        if len(both) != cs:
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+                                       .format(cs, len(both)))
+
+        return (codeB64ToB2(both))  # convert to b2 left shift if any
+
+
     def _exfil(self, qb64b):
         """
         Extracts self.code and self.count from qualified base64 bytes qb64b
@@ -4446,31 +4496,6 @@ class Counter:
         self._code = hard
         self._count = count
 
-    def _binfil(self):
-        """
-        Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code converted to Base2 left shifted with pad bits
-        equivalent of Base64 decode of .qb64 into .qb2
-        """
-        code = self.code  # codex chars hard code
-        count = self.count  # index value int used for soft
-
-        hs, ss, fs, ls = self.Sizes[code]
-        cs = hs + ss
-        if fs != cs or cs % 4:  # fs must be cs and multiple of 4 for count codes
-            raise InvalidCodeSizeError("Whole code size not full size or not "
-                                       "multiple of 4. cs={} fs={}.".format(cs, fs))
-
-        if count < 0 or count > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
-
-        # both is hard code + converted count
-        both = "{}{}".format(code, intToB64(count, l=ss))
-        if len(both) != cs:
-            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
-                                       .format(cs, len(both)))
-
-        return (codeB64ToB2(both))  # convert to b2 left shift if any
 
     def _bexfil(self, qb2):
         """
