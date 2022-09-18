@@ -2178,7 +2178,7 @@ class Signer(Matter):
         """
         return self._verfer
 
-    def sign(self, ser, index=None, ondex=None):
+    def sign(self, ser, index=None, **kwa):
         """
         Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
@@ -2191,33 +2191,63 @@ class Signer(Matter):
         Parameters:
             ser (bytes): serialization to be signed
             index (int):  main index of associated verifier key in event keys
-            ondex (int | None): other index if any such as prior next
+
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
                            verfer=self.verfer,
                            index=index,
-                           ondex=ondex))
+                           **kwa))
 
     @staticmethod
-    def _ed25519(ser, seed, verfer, index, ondex=None):
+    def _ed25519(ser, seed, verfer, index, conly=False, ondex=None, **kwa):
         """
-        Returns signature
+        Returns signature as either Cigar or Siger instance as appropriate for
+        Ed25519 digital signatures given index and ondex values
 
+        The seed's code determins the crypto key-pair algorithm and signing suite
+        The signature type, Cigar or Siger, and when indexed the Siger code
+        may be completely determined by the seed and index values (index, ondex)
+        by assuming that the index values are intentional.
+        Without the seed code its more difficult for Siger to
+        determine when for the Indexer code value should be changed from the
+        than the provided value with respect to provided but incompatible index
+        values versus error conditions.
 
         Parameters:
-            ser is bytes serialization
-            seed is bytes seed (private key)
-            verfer is Verfer instance. verfer.raw is public key
-            index is index of offset into signers list or None
-
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            conly (bool): True means current only list, ondex ignored
+                          False means both lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
         """
+        # compute raw signature sig using seed on serialization ser
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
-        if index is None:
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
-        else:
+        else:  # Must be Siger i.e. indexed signature
+            # should add Indexer class method to get ms main index size for given code
+            if conly:  # current only
+                if index <= 63: # (64 ** ms - 1) where ms is main index size
+                    code = IdrDex.Ed25519_Crt_Sig  # use small current only
+                else:
+                    code = IdrDex.Ed25519_Big_Crt_Sig  # use big current only
+            else:  # both
+                if ondex == None:
+                    ondex = index  # enable default to be same
+                if ondex == index and index <= 63:  # both same and small
+                    code = IdrDex.Ed25519_Sig  # use  small both same
+                else:  # otherwise big or both not same so use big both
+                    code = IdrDex.Ed25519_Big_Sig  # use use big both
+
             return Siger(raw=sig,
-                         code=IdrDex.Ed25519_Sig,
+                         code=code,
                          index=index,
                          ondex=ondex,
                          verfer=verfer,)
@@ -3737,11 +3767,21 @@ class Indexer:
             if not isinstance(index, int) or index < 0 or index > (64 ** ms - 1):
                 raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
 
-            if isinstance(ondex, int) and not (ondex >= 0 and ondex <= (64 ** os - 1)):
+            if isinstance(ondex, int) and os and not (ondex >= 0 and ondex <= (64 ** os - 1)):
                 raise InvalidVarIndexError(f"Invalid ondex={ondex} for code={code}.")
 
-            if ondex is not None and code in IdxCrtSigDex:
+            if code in IdxCrtSigDex and ondex is not None:
                 raise InvalidVarIndexError(f"Non None ondex={ondex} for code={code}.")
+
+            if code in IdxBthSigDex:
+                if ondex is None:  # set default
+                    ondex = index  # when not provided make ondex match index
+                else:
+                    if ondex != index and os == 0:  # must match if os == 0
+                        raise InvalidVarIndexError(f"Non matching ondex={ondex}"
+                                                   f" and index={index} for "
+                                                   f"code={code}.")
+
 
             if not fs:  # compute fs from index
                 if cs % 4:
@@ -3882,8 +3922,10 @@ class Indexer:
         if index < 0 or index > (64 ** ms - 1):
             raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
 
-        if isinstance(ondex, int) and not (ondex >= 0 and ondex <= (64 ** os - 1)):
-            raise InvalidVarIndexError(f"Invalid ondex={ondex} for code={code}.")
+        if (isinstance(ondex, int) and os and
+                not (ondex >= 0 and ondex <= (64 ** os - 1))):
+            raise InvalidVarIndexError(f"Invalid ondex={ondex} for os={os} and "
+                                       f"code={code}.")
 
         # both is hard code + converted index + converted ondex
         both = (f"{code}{intToB64(index, l=ms)}"
@@ -3925,7 +3967,12 @@ class Indexer:
         ms = ss - os
 
         if index < 0 or index > (64 ** ss - 1):
-            raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
+            raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
+
+        if (isinstance(ondex, int) and os and
+                not (ondex >= 0 and ondex <= (64 ** os - 1))):
+            raise InvalidVarIndexError(f"Invalid ondex={ondex} for os={os} and "
+                                       f"code={code}.")
 
         if not fs:  # compute fs from index
             if cs % 4:
@@ -4014,10 +4061,15 @@ class Indexer:
         ondex = qb64b[hs+ms:hs+ms+os]  # extract ondex chars
         if hasattr(ondex, "decode"):
             ondex = ondex.decode("utf-8")
-        ondex = b64ToInt(ondex) if os else None  # compute ondex
 
-        if ondex and hard in IdxCrtSigDex:
-            raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+        if hard in IdxCrtSigDex:  # if current sig then ondex from code must be 0
+            ondex = b64ToInt(ondex) if os else None  # compute ondex from code
+            if ondex:  # not zero or None so error
+                raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+            else:
+                ondex = None  # zero so set to None when current only
+        else:
+            ondex = b64ToInt(ondex) if os else index
 
         # index is index for some codes and variable length for others
         if not fs:  # compute fs from index which means variable length
@@ -4120,10 +4172,21 @@ class Indexer:
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs+ms])  # compute index
-        ondex = b64ToInt(both[hs+ms:hs+ms+os]) if os else None  # compute ondex
 
-        if ondex and hard in IdxCrtSigDex:
-            raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+        if hard in IdxCrtSigDex:  # if current sig then ondex from code must be 0
+            ondex = b64ToInt(both[hs+ms:hs+ms+os]) if os else None  # compute ondex from code
+            if ondex:  # not zero or None so error
+                raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+            else:
+                ondex = None  # zero so set to None when current only
+        else:
+            ondex = b64ToInt(both[hs+ms:hs+ms+os]) if os else index
+
+        if hard in IdxCrtSigDex:  # if current sig then ondex from code must be 0
+            if ondex:  # not zero so error
+                raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+            else:  # zero so set to None
+                ondex = None
 
         if not fs:  # compute fs from size chars in ss part of code
             if cs % 4:

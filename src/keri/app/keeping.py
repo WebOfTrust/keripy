@@ -1249,7 +1249,9 @@ class Manager:
             ser is bytes serialization to sign
             pubs is list of qb64 public keys to lookup private keys
             verfers is list of Verfers for public keys
-            indexed is Boolean, True means use offset into pubs/verfers/signers
+            indexed is Boolean, True means use use indexed signatures with index
+                is an offset into pubs/verfers/signers.
+                False means do not use indexed signatures.
                 for index and return Siger instances. False means return Cigar instances
             indices is optional list of int indices (offsets) to use for indexed signatures
                 that may differ from the order of appearance in the pubs or verfers
@@ -1313,18 +1315,18 @@ class Manager:
             raise ValueError("Mismatch length indices={} and resultant signers "
                              "list={}".format(len(indices), len(signers)))
 
-        if indexed or indices:
+        if indexed:  # or indices:
             sigers = []
             for j, signer in enumerate(signers):
-                if indices:
-                    i = indices[j]  # get index from indices
-                else:
-                    i = j
-                if ondices:
-                    oi = ondices[j]  # get ondex from ondices
-                else:
-                    oi = None
-                sigers.append(signer.sign(ser, index=i, ondex=oi))  # assigns .verfer to siger
+                if indices:  # not the default get index from indices
+                    i = indices[j]  # must be int
+                else:  # the default
+                    i = j  # same index as database
+                if ondices:  # not the default get ondex from ondices
+                    o = ondices[j]  # int means both, None means current only
+                else:  # default
+                    o = i  # must both be same value int
+                sigers.append(signer.sign(ser, index=i, ondex=o))  # assigns .verfer to siger
             return sigers
         else:
             cigars = []

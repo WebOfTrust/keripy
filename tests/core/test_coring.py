@@ -1710,18 +1710,32 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
+
     indexer._exfil(qsig64b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
+    assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
+
     indexer._bexfil(qsig2b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
     # test wrong size of raw
     longsig = sig + bytes([10, 11, 12])
     indexer = Indexer(raw=longsig)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
 
     shortsig = sig[:-3]
     with pytest.raises(RawMaterialError):
@@ -1731,6 +1745,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1739,6 +1754,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1764,6 +1780,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1806,21 +1823,41 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     indexer._exfil(qsig64b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     indexer._bexfil(qsig2b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=5)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.ondex == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=0)
+
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=64)
 
     indexer = Indexer(raw=sig)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0  #default index is zero
+    assert indexer.ondex == 0
     assert indexer.qb64 != qsig64
     assert indexer.qb2 != qsig2b
 
@@ -1828,6 +1865,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1836,6 +1874,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1845,11 +1884,13 @@ def test_indexer():
     raw = indexer.raw
     code = indexer.code
     index = indexer.index
+
     qb2 = indexer.qb2
     indexer._bexfil(qb2)
     assert indexer.raw == raw
     assert indexer.code == code
     assert indexer.index == index
+    assert indexer.ondex == index
     assert indexer.qb64 == qsig64
     assert indexer.qb2 == qb2
 
@@ -1857,12 +1898,18 @@ def test_indexer():
     test = indexer._binfil()
     assert test == qb2
 
+    # test ondex not None and not match index for not os
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=0)
+
+
     # test strip ims
     # strip ignored if qb64
     indexer = Indexer(qb64=qsig64)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1872,6 +1919,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1882,6 +1930,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1894,6 +1943,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1906,10 +1956,12 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     assert ims == extra
+
 
     # test index too big
     index = 65
@@ -1926,7 +1978,7 @@ def test_indexer():
     with pytest.raises(InvalidVarIndexError):
         indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=index)
 
-    # test other codes
+    # test Crt only code
     index =  3
     code = IdrDex.Ed25519_Crt_Sig
     qb64 = 'BDCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
@@ -1937,8 +1989,36 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == code
     assert indexer.index == index
+    assert indexer.ondex == None
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb64=qb64)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb2=qb2)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    # test ondex error conditions
+    with pytest.raises(InvalidVarIndexError):  # non None ondex
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=0)
+
+    # test big code both different and same
+
+
+    # test big code current only
+
+
 
     # Test of TBD Label Code (variable length)
     label = b'Hello_World_Peep'
@@ -4230,23 +4310,26 @@ def test_siger():
     siger = Siger(qb64b=qsig64b)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.ondex == None
+
 
     siger = Siger(qb64=qsig64)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.ondex == None
+
 
     siger = Siger(qb64=qsig64b)  # also bytes
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.ondex == None
+
 
     verkey, sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
@@ -5399,6 +5482,7 @@ def test_tholder():
 
 if __name__ == "__main__":
     #test_matter()
-    ##test_counter()
+    #test_counter()
     test_indexer()
     test_siger()
+    test_signer()
