@@ -3740,10 +3740,16 @@ class Indexer:
             if isinstance(ondex, int) and not (ondex >= 0 and ondex <= (64 ** os - 1)):
                 raise InvalidVarIndexError(f"Invalid ondex={ondex} for code={code}.")
 
+            if ondex is not None and code in IdxCrtSigDex:
+                raise InvalidVarIndexError(f"Non None ondex={ondex} for code={code}.")
+
             if not fs:  # compute fs from index
                 if cs % 4:
                     raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
                                                f"variable length material. cs={cs}.")
+                if os != 0:
+                    raise InvalidCodeSizeError(f"Non-zero other index size for "
+                                               f"variable length material. os={os}.")
                 fs = (index * 4) + cs
 
             rawsize = (fs - cs) * 3 // 4
@@ -4010,6 +4016,9 @@ class Indexer:
             ondex = ondex.decode("utf-8")
         ondex = b64ToInt(ondex) if os else None  # compute ondex
 
+        if ondex and hard in IdxCrtSigDex:
+            raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
+
         # index is index for some codes and variable length for others
         if not fs:  # compute fs from index which means variable length
             if cs % 4:
@@ -4112,6 +4121,9 @@ class Indexer:
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs+ms])  # compute index
         ondex = b64ToInt(both[hs+ms:hs+ms+os]) if os else None  # compute ondex
+
+        if ondex and hard in IdxCrtSigDex:
+            raise ValueError(f"Invalid ondex={ondex} for code={hard}.")
 
         if not fs:  # compute fs from size chars in ss part of code
             if cs % 4:
