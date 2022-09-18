@@ -4232,21 +4232,21 @@ def test_siger():
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+    assert siger.ondex == None
 
     siger = Siger(qb64=qsig64)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+    assert siger.ondex == None
 
     siger = Siger(qb64=qsig64b)  # also bytes
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+    assert siger.ondex == None
 
     verkey, sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
@@ -4254,21 +4254,8 @@ def test_siger():
     siger.verfer = verfer
     assert siger.verfer == verfer
 
-    pindex = 1
-    siger.pindex = pindex
-    assert siger.pindex == pindex
-
-    siger = Siger(qb64=qsig64, verfer=verfer, pindex=pindex)
+    siger = Siger(qb64=qsig64, verfer=verfer)
     assert siger.verfer == verfer
-    assert siger.pindex == pindex
-
-    with pytest.raises(ValueError):
-        siger.pindex =  2.5
-
-    with pytest.raises(ValueError):
-        siger.pindex =  -1
-
-
 
     """ Done Test """
 

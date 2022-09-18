@@ -772,7 +772,6 @@ class Parser:
                 # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
                     if ctr.code == CtrDex.ControllerIdxSigs:
-                        pindex = None  # prior next index
                         for i in range(ctr.count):  # extract each attached signature
                             siger = yield from self._extractor(ims=ims,
                                                                klas=Siger,

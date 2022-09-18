@@ -2178,7 +2178,7 @@ class Signer(Matter):
         """
         return self._verfer
 
-    def sign(self, ser, index=None, pindex=None):
+    def sign(self, ser, index=None, ondex=None):
         """
         Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
@@ -2190,17 +2190,17 @@ class Signer(Matter):
 
         Parameters:
             ser (bytes): serialization to be signed
-            index (int):  index of associated verifier key in event keys
-            pindex (int | None): prior next index if any
+            index (int):  main index of associated verifier key in event keys
+            ondex (int | None): other index if any such as prior next
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
                            verfer=self.verfer,
                            index=index,
-                           pindex=pindex))
+                           ondex=ondex))
 
     @staticmethod
-    def _ed25519(ser, seed, verfer, index, pindex=None):
+    def _ed25519(ser, seed, verfer, index, ondex=None):
         """
         Returns signature
 
@@ -2219,8 +2219,8 @@ class Signer(Matter):
             return Siger(raw=sig,
                          code=IdrDex.Ed25519_Sig,
                          index=index,
-                         verfer=verfer,
-                         pindex=pindex)
+                         ondex=ondex,
+                         verfer=verfer,)
 
 
 class Salter(Matter):
@@ -4172,6 +4172,7 @@ class Indexer:
 class Siger(Indexer):
     """
     Siger is subclass of Indexer, indexed signature material,
+
     Adds .verfer property which is instance of Verfer that provides
           associated signature verifier.
 
@@ -4181,30 +4182,27 @@ class Siger(Indexer):
 
     Properties:
         verfer (Verfer): instance if any provides public verification key
-        pindex (int): prior next key list index if any
 
     Methods:
 
     Hidden:
         _verfer (Verfer): value for .verfer property
-        _pindex (int): value for .pindex property
 
 
     """
 
-    def __init__(self, verfer=None, pindex=None, **kwa):
+    def __init__(self, verfer=None, **kwa):
         """Initialze instance
 
         Parameters:  See Matter for inherted parameters
             verfer (Verfer): instance if any provides public verification key
-            pindex (int): prior next key list index if any
+
         """
         super(Siger, self).__init__(**kwa)
         if self.code not in IdxSigDex:
             raise ValidationError("Invalid code = {} for Siger."
                                   "".format(self.code))
         self.verfer = verfer
-        self.pindex = pindex
 
     @property
     def verfer(self):
@@ -4220,24 +4218,7 @@ class Siger(Indexer):
         """ verfer property setter """
         self._verfer = verfer
 
-    @property
-    def pindex(self):
-        """
-        Property pindex:
-        Returns prior next key list index as int
-        Assumes ._pindex is correctly assigned
-        """
-        return self._pindex
 
-    @pindex.setter
-    def pindex(self, pindex):
-        """ pindex property setter """
-        if pindex is not None:
-            if not isinstance(pindex, int):
-                raise ValueError(f"Non integer pindex={pindex}.")
-            if pindex < 0:
-                raise ValueError(f"Negative pindex={pindex}.")
-        self._pindex = pindex
 
 
 @dataclass(frozen=True)

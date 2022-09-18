@@ -1240,7 +1240,7 @@ class Manager:
         return (verfers, digers, cst, nst)
 
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, pindices=None):
+    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars with
         .verfer assigned.
@@ -1259,18 +1259,19 @@ class Manager:
                 If provided the length of indices must match pubs/verfers/signers
                 else raises ValueError. If not provided and indexed is True then use
                 default index that is offset into pubs/verfers/signers
-            pindices is  optional list of indices (offsets) to use for indexed signatures with a prior
-                prior next index that differs from its current signing index.
+            ondices is  optional list of other indices (offsets) to use for
+                indexed signatures with a prior next index that differs from
+                its current signing index.
                 This may also differ from the order of appearance in the pubs or verfers
                 lists. This allows partial rotation with reserve or custodial key
                 management so that the index (hash of index) of the public key
                 for the signature appears at a different index in the
                 current key list from where the hash appears in the prior next
-                list. This sets the value of the .pindex property of the returned
-                Siger. When provided the length of pindices must match pubs/verfers/signers
-                else raises ValueError. When no pindex is applicable to a given
-                signature then the value of the entry in pindices MUST be None.
-                When pindices is not provided then all sigers .pindex is None.
+                list. This sets the value of the ondex property of the returned
+                Siger. When provided the length of ondices must match pubs/verfers/signers
+                else raises ValueError. When no ondex is applicable to a given
+                signature then the value of the entry in ondices MUST be None.
+                When  ondices is not provided then all sigers .ondex is None.
 
 
         if neither pubs or verfers provided then returns empty list of signatures
@@ -1319,11 +1320,11 @@ class Manager:
                     i = indices[j]  # get index from indices
                 else:
                     i = j
-                if pindices:
-                    pi = pindices[j]  # get pindex from pindices
+                if ondices:
+                    oi = ondices[j]  # get ondex from ondices
                 else:
-                    pi = None
-                sigers.append(signer.sign(ser, index=i, pindex=pi))  # assigns .verfer to siger
+                    oi = None
+                sigers.append(signer.sign(ser, index=i, ondex=oi))  # assigns .verfer to siger
             return sigers
         else:
             cigars = []
