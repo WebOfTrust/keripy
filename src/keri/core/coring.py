@@ -3646,14 +3646,13 @@ class Indexer:
     Attributes:
 
     Properties:
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .pad  is int number of pad chars given raw
-        .index is int main index of attached crypto material
-        .ondex is int other index of attached crypto material
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
+        code is str of stable (hard) part of derivation code
+        raw (bytes): unqualified crypto material usable for crypto operations
+        index (int): main index offset into list or length of material
+        ondex (int | None): other index offset into list or length of material
+        qb64b (bytes): fully qualified Base64 crypto material
+        qb64 (str | bytes):  fully qualified Base64 crypto material
+        qb2 (bytes): fully qualified binary crypto material
 
     Hidden:
         ._code (str): value for .code property
@@ -3707,18 +3706,18 @@ class Indexer:
             code is str of stable (hard) part of derivation code
             index (int): main index offset into list or length of material
             ondex (int | None): other index offset into list or length of material
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            strip is Boolean True means strip counter contents from input stream
+            qb64b (bytes): fully qualified Base64 crypto material
+            qb64 (str | bytes):  fully qualified Base64 crypto material
+            qb2 (bytes): fully qualified binary crypto material
+            strip (bool): True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
         Needs either (raw and code and index) or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and index provided then validate that code is correct
+        When raw and code provided then validate that code is correct
         for length of raw  and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign
-        .raw and .code and .index
+        .raw, .code, .index, .ondex.
 
         """
         if raw is not None:  # raw provided
@@ -3726,31 +3725,34 @@ class Indexer:
                 raise EmptyMaterialError("Improper initialization need either "
                                          "(raw and code) or qb64b or qb64 or qb2.")
             if not isinstance(raw, (bytes, bytearray)):
-                raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
+                raise TypeError(f"Not a bytes or bytearray, raw={raw}.")
 
             if code not in self.Sizes:
-                raise UnexpectedCodeError("Unsupported code={}.".format(code))
+                raise UnexpectedCodeError(f"Unsupported code={code}.")
 
             hs, ss, os, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
             ms = ss - os
 
-            if not isinstance(index, int) or index < 0 or index > (64 ** ss - 1):
-                raise InvalidVarIndexError("Invalid index={} for code={}.".format(index, code))
+            if not isinstance(index, int) or index < 0 or index > (64 ** ms - 1):
+                raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
+
+            if isinstance(ondex, int) and not (ondex >= 0 and ondex <= (64 ** os - 1)):
+                raise InvalidVarIndexError(f"Invalid ondex={ondex} for code={code}.")
 
             if not fs:  # compute fs from index
                 if cs % 4:
-                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                               "variable length material. cs={}.".format(cs))
+                    raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
+                                               f"variable length material. cs={cs}.")
                 fs = (index * 4) + cs
 
             rawsize = (fs - cs) * 3 // 4
 
-            raw = raw[:rawsize]  # copy only exact size from raw stream
+            raw = raw[:rawsize]  # copy rawsize from stream, may be less
             if len(raw) != rawsize:  # forbids shorter
-                raise RawMaterialError("Not enougth raw bytes for code={}"
-                                       "and index={} ,expected {} got {}."
-                                       "".format(code, index, rawsize, len(raw)))
+                raise RawMaterialError(f"Not enougth raw bytes for code={code}"
+                                       f"and index={index} ,expected {rawsize} "
+                                       f"got {len(raw)}.")
 
             self._code = code
             self._index = index
@@ -3778,7 +3780,8 @@ class Indexer:
     @classmethod
     def _rawSize(cls, code):
         """
-        Returns raw size in bytes for a given code
+        Returns expected raw size in bytes for a given code. Not applicable to
+        codes with fs = None
         """
         hs, ss, os, fs, ls = cls.Sizes[code]  # get sizes
         return ((fs - (hs + ss)) * 3 // 4)
@@ -3806,6 +3809,14 @@ class Indexer:
         Makes .index read only
         """
         return self._index
+
+    @property
+    def ondex(self):
+        """
+        Returns ._ondex
+        Makes .ondex read only
+        """
+        return self._ondex
 
     @property
     def qb64b(self):
@@ -3844,7 +3855,8 @@ class Indexer:
 
         """
         code = self.code  # codex value chars hard code
-        index = self.index  # index value int used for soft
+        index = self.index  # main index value
+        ondex = self.ondex  # other index value
         raw = self.raw  # bytes or bytearray
 
         ps = (3 - (len(raw) % 3)) % 3  # if lead then same pad size chars & lead size bytes
@@ -3854,15 +3866,22 @@ class Indexer:
 
         if not fs:  # compute fs from index
             if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                           "variable length material. cs={}.".format(cs))
+                raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
+                                           f"variable length material. cs={cs}.")
+            if os != 0:
+                raise InvalidCodeSizeError(f"Non-zero other index size for "
+                                           f"variable length material. os={os}.")
             fs = (index * 4) + cs
 
-        if index < 0 or index > (64 ** ss - 1):
+        if index < 0 or index > (64 ** ms - 1):
             raise InvalidVarIndexError(f"Invalid index={index} for code={code}.")
 
-        # both is hard code + converted index
-        both = "{}{}".format(code, intToB64(index, l=ss))
+        if isinstance(ondex, int) and not (ondex >= 0 and ondex <= (64 ** os - 1)):
+            raise InvalidVarIndexError(f"Invalid ondex={ondex} for code={code}.")
+
+        # both is hard code + converted index + converted ondex
+        both = (f"{code}{intToB64(index, l=ms)}"
+                f"{intToB64(ondex if ondex is not None else 0, l=os)}")
 
         # check valid pad size for whole code size, assumes ls is zero
         if len(both) != cs:
@@ -3890,7 +3909,8 @@ class Indexer:
         with pad bits equivalent of Base64 decode of .qb64 into .qb2
         """
         code = self.code  # codex chars hard code
-        index = self.index  # index value int used for soft
+        index = self.index  # main index value
+        ondex = self.ondex  # other index value
         raw = self.raw  # bytes or bytearray
 
         ps = (3 - (len(raw) % 3)) % 3  # same pad size chars & lead size bytes
@@ -3903,12 +3923,16 @@ class Indexer:
 
         if not fs:  # compute fs from index
             if cs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                           "variable length material. cs={}.".format(cs))
+                raise InvalidCodeSizeError(f"Whole code size not multiple of 4 for "
+                                           f"variable length material. cs={cs}.")
+            if os != 0:
+                raise InvalidCodeSizeError(f"Non-zero other index size for "
+                                           f"variable length material. os={os}.")
             fs = (index * 4) + cs
 
         # both is hard code + converted index
-        both = f"{code}{intToB64(index, l=ss)}"
+        both = (f"{code}{intToB64(index, l=ms)}"
+                f"{intToB64(ondex if ondex is not None else 0, l=os)}")
 
         if len(both) != cs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
@@ -3976,16 +4000,24 @@ class Indexer:
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError(f"Need {cs - len(qb64b)} more characters.")
 
-        index = qb64b[hs:hs + ss]  # extract index/size chars
+        index = qb64b[hs:hs+ms]  # extract index/size chars
         if hasattr(index, "decode"):
             index = index.decode("utf-8")
         index = b64ToInt(index)  # compute int index
+
+        ondex = qb64b[hs+ms:hs+ms+os]  # extract ondex chars
+        if hasattr(ondex, "decode"):
+            ondex = ondex.decode("utf-8")
+        ondex = b64ToInt(ondex) if os else None  # compute ondex
 
         # index is index for some codes and variable length for others
         if not fs:  # compute fs from index which means variable length
             if cs % 4:
                 raise ValidationError(f"Whole code size not multiple of 4 for "
                                       f"variable length material. cs={cs}.")
+            if os != 0:
+                raise ValidationError(f"Non-zero other index size for "
+                                      f"variable length material. os={os}.")
             fs = (index * 4) + cs
 
         if len(qb64b) < fs:  # need more bytes
@@ -4030,6 +4062,7 @@ class Indexer:
 
         self._code = hard
         self._index = index
+        self._ondex = ondex
         self._raw = raw
 
 
@@ -4077,11 +4110,16 @@ class Indexer:
             raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = codeB2ToB64(qb2, cs)  # extract and convert both hard and soft part of code
-        index = b64ToInt(both[hs:hs + ss])  # get index
+        index = b64ToInt(both[hs:hs+ms])  # compute index
+        ondex = b64ToInt(both[hs+ms:hs+ms+os]) if os else None  # compute ondex
+
         if not fs:  # compute fs from size chars in ss part of code
             if cs % 4:
                 raise ValidationError(f"Whole code size not multiple of 4 for "
                                       f"variable length material. cs={cs}.")
+            if os != 0:
+                raise ValidationError(f"Non-zero other index size for "
+                                      f"variable length material. os={os}.")
             fs = (index * 4) + cs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
@@ -4115,6 +4153,7 @@ class Indexer:
 
         self._code = hard
         self._index = index
+        self._ondex = ondex
         self._raw = raw
 
 

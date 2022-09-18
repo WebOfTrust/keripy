@@ -1554,9 +1554,6 @@ def test_indexer():
     assert IdrDex.TBD1 == '1z'
     assert IdrDex.TBD4 == '4z'
 
-
-
-
     assert dataclasses.asdict(IdxSigDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
@@ -1584,7 +1581,6 @@ def test_indexer():
     assert IdxSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
     assert IdxSigDex.Ed448_Big_Sig == '3A'
     assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
-
 
 
     assert dataclasses.asdict(IdxCrtSigDex) == {
@@ -1665,7 +1661,7 @@ def test_indexer():
     # verify os is part of ss
     for val in Indexer.Sizes.values():
         assert val.hs > 0 and val.ss > 0
-        assert val.os < val.ss
+        assert val.os >= 0 and val.os < val.ss
         if val.os:
             assert val.os == val.ss // 2
         if val.fs is not None:
