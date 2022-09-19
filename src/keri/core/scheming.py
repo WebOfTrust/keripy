@@ -60,7 +60,7 @@ class CacheResolver:
         """
         try:
             idx = uri.rindex(":")
-            key = uri[idx+1:]
+            key = uri[idx + 1:]
         except ValueError:
             key = uri
 
@@ -321,6 +321,24 @@ class Schemer:
             kind (Schema) tuple of schema type
 
         """
+
+        # look for known sub schema
+        if 'properties' in sed:
+            props = sed['properties']
+
+            # check for top level ids
+            for v in ["a", "e", "r"]:
+                if v in props and self.typ.id_ in props[v]:
+                    vals = props[v]
+                    vals[self.typ.id_] = Saider(sad=vals, code=self._code, label=self.typ.id_).qb64
+                elif v in props and 'oneOf' in props[v]:
+                    if isinstance(props[v]['oneOf'], list):
+                        # check each 'oneOf' for an id
+                        ones = props[v]['oneOf']
+                        for o in ones:
+                            if isinstance(o, dict) and self.typ.id_ in o:
+                                o[self.typ.id_] = Saider(sad=o, code=self._code, label=self.typ.id_).qb64
+
         saider = Saider(sad=sed, code=self._code, label=self.typ.id_)
         sed[self.typ.id_] = saider.qb64
         raw = self.typ.dump(sed)
