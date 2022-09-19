@@ -2178,7 +2178,7 @@ class Signer(Matter):
         """
         return self._verfer
 
-    def sign(self, ser, index=None, **kwa):
+    def sign(self, ser, index=None, only=False, ondex=None, **kwa):
         """
         Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
@@ -2191,16 +2191,21 @@ class Signer(Matter):
         Parameters:
             ser (bytes): serialization to be signed
             index (int):  main index of associated verifier key in event keys
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
 
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
                            verfer=self.verfer,
                            index=index,
+                           only=only,
+                           ondex=ondex,
                            **kwa))
 
     @staticmethod
-    def _ed25519(ser, seed, verfer, index, conly=False, ondex=None, **kwa):
+    def _ed25519(ser, seed, verfer, index, only=False, ondex=None, **kwa):
         """
         Returns signature as either Cigar or Siger instance as appropriate for
         Ed25519 digital signatures given index and ondex values
@@ -2222,8 +2227,8 @@ class Signer(Matter):
                 None means return non-indexed Cigar
                 Not None means return indexed Siger with Indexer code derived
                     from index, conly, and ondex values
-            conly (bool): True means current only list, ondex ignored
-                          False means both lists (default), ondex used
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
             ondex (int | None): other index offset into list such as prior next
         """
         # compute raw signature sig using seed on serialization ser
@@ -2233,7 +2238,8 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:  # Must be Siger i.e. indexed signature
             # should add Indexer class method to get ms main index size for given code
-            if conly:  # current only
+            if only:  # only main index ondex not used
+                ondex = None
                 if index <= 63: # (64 ** ms - 1) where ms is main index size
                     code = IdrDex.Ed25519_Crt_Sig  # use small current only
                 else:
@@ -3709,14 +3715,14 @@ class Indexer:
     Sizes = {
         'A': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
-        'C': Xizage(hs=1, ss=3, os=0, fs=88, ls=0),
+        'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
-        '2A': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
-        '2B': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
-        '2C': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
-        '2D': Xizage(hs=2, ss=4, os=2, fs=90, ls=0),
+        '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
