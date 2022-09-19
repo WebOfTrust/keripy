@@ -1239,7 +1239,8 @@ class Manager:
 
         return (verfers, digers, cst, nst)
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None):
+
+    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars with
         .verfer assigned.
@@ -1248,9 +1249,11 @@ class Manager:
             ser is bytes serialization to sign
             pubs is list of qb64 public keys to lookup private keys
             verfers is list of Verfers for public keys
-            indexed is Boolean, True means use offset into pubs/verfers/signers
+            indexed is Boolean, True means use use indexed signatures with index
+                is an offset into pubs/verfers/signers.
+                False means do not use indexed signatures.
                 for index and return Siger instances. False means return Cigar instances
-            indices is list of int indexes (offsets) to use for indexed signatures
+            indices is optional list of int indices (offsets) to use for indexed signatures
                 that may differ from the order of appearance in the pubs or verfers
                 lists. This allows witness indexed sigs or controller multi-sig
                 where the parties do not share the same manager or ordering so
@@ -1258,6 +1261,19 @@ class Manager:
                 If provided the length of indices must match pubs/verfers/signers
                 else raises ValueError. If not provided and indexed is True then use
                 default index that is offset into pubs/verfers/signers
+            ondices is  optional list of other indices (offsets) to use for
+                indexed signatures with a prior next index that differs from
+                its current signing index.
+                This may also differ from the order of appearance in the pubs or verfers
+                lists. This allows partial rotation with reserve or custodial key
+                management so that the index (hash of index) of the public key
+                for the signature appears at a different index in the
+                current key list from where the hash appears in the prior next
+                list. This sets the value of the ondex property of the returned
+                Siger. When provided the length of ondices must match pubs/verfers/signers
+                else raises ValueError. When no ondex is applicable to a given
+                signature then the value of the entry in ondices MUST be None.
+                When  ondices is not provided then all sigers .ondex is None.
 
 
         if neither pubs or verfers provided then returns empty list of signatures
@@ -1299,12 +1315,18 @@ class Manager:
             raise ValueError("Mismatch length indices={} and resultant signers "
                              "list={}".format(len(indices), len(signers)))
 
-        if indexed or indices:
+        if indexed:  # or indices:
             sigers = []
-            for i, signer in enumerate(signers):
-                if indices:
-                    i = indices[i]  # get index from indices
-                sigers.append(signer.sign(ser, index=i))  # assigns .verfer to siger
+            for j, signer in enumerate(signers):
+                if indices:  # not the default get index from indices
+                    i = indices[j]  # must be int
+                else:  # the default
+                    i = j  # same index as database
+                if ondices:  # not the default get ondex from ondices
+                    o = ondices[j]  # int means both, None means current only
+                else:  # default
+                    o = i  # must both be same value int
+                sigers.append(signer.sign(ser, index=i, ondex=o))  # assigns .verfer to siger
             return sigers
         else:
             cigars = []

@@ -15,7 +15,7 @@ from hio.help import decking
 
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
-                     Number, Seqner, Siger, Cigar, Dater,
+                     Number, Seqner, Siger, Cigar, Dater, Indexer, IdrDex,
                      Verfer, Diger, Prefixer, Nexter, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
@@ -366,6 +366,7 @@ def deTransReceiptQuadruple(data, strip=False):
     if not strip:
         data = data[len(saider.qb64b):]
     siger = Siger(qb64b=data, strip=strip)
+
     return (prefixer, seqner, saider, siger)
 
 
@@ -401,6 +402,7 @@ def deTransReceiptQuintuple(data, strip=False):
     if not strip:
         data = data[len(ssaider.qb64b):]
     siger = Siger(qb64b=data, strip=strip)  # indexed siger of event
+
     return esaider, sprefixer, sseqner, ssaider, siger
 
 

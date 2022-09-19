@@ -1572,6 +1572,16 @@ def test_messagize():
         """ Done Test """
 
 
+def test_messagize_with_prior_next():
+    """
+    Test messagize utility function with prior next modifier on indexed signatures
+    """
+    pass
+
+    """ Done Test """
+
+
+
 def test_kever(mockHelpingNowUTC):
     """
     Test the support functionality for Kever class

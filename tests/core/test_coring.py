@@ -24,8 +24,8 @@ from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
 from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
-from keri.core.coring import (Sizage, MtrDex, Matter,
-                              IdrDex, IdxSigDex, IdxBthSigDex, IdxCrtSigDex, Indexer,
+from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
+                              IdxCrtSigDex, IdxBthSigDex, Indexer,
                               CtrDex, Counter, sniff)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
@@ -1523,60 +1523,98 @@ def test_indexer():
     assert dataclasses.asdict(IdrDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
-        'Prior_Next_Idx': 'C',
-        'ECDSA_256k1_Sig': 'D',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
-        'TBD': '0Z'
+        'Ed25519_Big_Sig': '2A',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Sig': '3A',
+        'Ed448_Big_Crt_Sig': '3B',
+        'TBD0': '0z',
+        'TBD1': '1z',
+        'TBD4': '4z',
     }
 
-    assert IdrDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdrDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdrDex.Prior_Next_Idx == 'C'  # prior next index of following sig.
-    assert IdrDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdrDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdrDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
-    assert IdrDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
-
+    assert IdrDex.Ed25519_Sig == 'A'
+    assert IdrDex.Ed25519_Crt_Sig == 'B'
+    assert IdrDex.ECDSA_256k1_Sig == 'C'
+    assert IdrDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdrDex.Ed448_Sig == '0A'
+    assert IdrDex.Ed448_Crt_Sig == '0B'
+    assert IdrDex.Ed25519_Big_Sig == '2A'
+    assert IdrDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdrDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdrDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdrDex.Ed448_Big_Sig == '3A'
+    assert IdrDex.Ed448_Big_Crt_Sig == '3B'
+    assert IdrDex.TBD0 == '0z'
+    assert IdrDex.TBD1 == '1z'
+    assert IdrDex.TBD4 == '4z'
 
     assert dataclasses.asdict(IdxSigDex) == {
         'Ed25519_Sig': 'A',
         'Ed25519_Crt_Sig': 'B',
-        'Prior_Next_Idx': 'C',
-        'ECDSA_256k1_Sig': 'D',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
+        'Ed25519_Big_Sig': '2A',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Sig': '3A',
+        'Ed448_Big_Crt_Sig': '3B',
     }
 
-    assert IdxSigDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdxSigDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdxSigDex.Prior_Next_Idx == 'C'  # prior next index of following sig.
-    assert IdxSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdxSigDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
-    assert IdxSigDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
+    assert IdxSigDex.Ed25519_Sig == 'A'
+    assert IdxSigDex.Ed25519_Crt_Sig == 'B'
+    assert IdxSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxSigDex.Ed448_Sig == '0A'
+    assert IdxSigDex.Ed448_Crt_Sig == '0B'
+    assert IdxSigDex.Ed25519_Big_Sig == '2A'
+    assert IdxSigDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdxSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxSigDex.Ed448_Big_Sig == '3A'
+    assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
-    assert dataclasses.asdict(IdxBthSigDex) == {
-        'Ed25519_Sig': 'A',
-        'ECDSA_256k1_Sig': 'D',
-        'Ed448_Sig': '0A',
-    }
-
-    assert IdxBthSigDex.Ed25519_Sig == 'A'  # Ed25519 signature both lists.
-    assert IdxBthSigDex.ECDSA_256k1_Sig == 'D'  # ECDSA secp256k1 signature both lists..
-    assert IdxBthSigDex.Ed448_Sig == '0A'  # ECDSA secp256k1 signature.
 
     assert dataclasses.asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
-        'ECDSA_256k1_Crt_Sig': 'E',
+        'ECDSA_256k1_Crt_Sig': 'D',
         'Ed448_Crt_Sig': '0B',
+        'Ed25519_Big_Crt_Sig': '2B',
+        'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'Ed448_Big_Crt_Sig': '3B',
     }
 
-    assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'  # Ed25519 signature current only.
-    assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'E'  # ECDSA secp256k1 signature
-    assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'  # ECDSA secp256k1 signature.
+    assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'
+    assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'
+    assert IdxCrtSigDex.Ed25519_Big_Crt_Sig == '2B'
+    assert IdxCrtSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
+
+
+    assert dataclasses.asdict(IdxBthSigDex) == {
+        'Ed25519_Sig': 'A',
+        'ECDSA_256k1_Sig': 'C',
+        'Ed448_Sig': '0A',
+        'Ed25519_Big_Sig': '2A',
+        'ECDSA_256k1_Big_Sig': '2C',
+        'Ed448_Big_Sig': '3A',
+    }
+
+    assert IdxBthSigDex.Ed25519_Sig == 'A'
+    assert IdxBthSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxBthSigDex.Ed448_Sig == '0A'
+    assert IdxBthSigDex.Ed25519_Big_Sig == '2A'
+    assert IdxBthSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxBthSigDex.Ed448_Big_Sig == '3A'
 
 
     # first character of code with hard size of code
@@ -1587,23 +1625,31 @@ def test_indexer():
         'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
         'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
         's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
-        '0': 2, '1': 2, '2': 2, '3': 2, '4': 3, '5': 4
+        '0': 2, '1': 2, '2': 2, '3': 2, '4': 2,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Indexer.Sizes == {
-        'A': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'B': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'C': Sizage(hs=1, ss=3, fs=4, ls=0),
-        'D': Sizage(hs=1, ss=1, fs=88, ls=0),
-        'E': Sizage(hs=1, ss=1, fs=88, ls=0),
-        '0A': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0B': Sizage(hs=2, ss=2, fs=156, ls=0),
-        '0Z': Sizage(hs=2, ss=2, fs=None, ls=0)
+        'A': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
+        '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
+        '1z': Xizage(hs=2, ss=2, os=1, fs=76, ls=1),
+        '4z': Xizage(hs=2, ss=6, os=3, fs=80, ls=1),
     }
 
     assert Indexer.Sizes['A'].hs == 1  # hard size
     assert Indexer.Sizes['A'].ss == 1  # soft size
+    assert Indexer.Sizes['A'].os == 0  # other size
     assert Indexer.Sizes['A'].fs == 88  # full size
     assert Indexer.Sizes['A'].ls == 0  # lead size
 
@@ -1612,10 +1658,15 @@ def test_indexer():
         assert Indexer.Hards[ckey[0]] == Indexer.Sizes[ckey].hs
 
     # verify all Codes have hs > 0 and ss > 0 and fs >= hs + ss if fs is not None
+    # verify os is part of ss
     for val in Indexer.Sizes.values():
         assert val.hs > 0 and val.ss > 0
+        assert val.os >= 0 and val.os < val.ss
+        if val.os:
+            assert val.os == val.ss // 2
         if val.fs is not None:
             assert val.fs >= val.hs + val.ss
+            assert val.fs % 4 == 0
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -1660,18 +1711,32 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
+
     indexer._exfil(qsig64b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
+    assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
+
     indexer._bexfil(qsig2b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
     # test wrong size of raw
     longsig = sig + bytes([10, 11, 12])
     indexer = Indexer(raw=longsig)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.ondex == 0
 
     shortsig = sig[:-3]
     with pytest.raises(RawMaterialError):
@@ -1681,6 +1746,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1689,6 +1755,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1714,6 +1781,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0
+    assert indexer.ondex == 0
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1756,21 +1824,41 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     indexer._exfil(qsig64b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     indexer._bexfil(qsig2b)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.raw == sig
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=5)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.ondex == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=0)
+
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5, ondex=64)
 
     indexer = Indexer(raw=sig)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 0  #default index is zero
+    assert indexer.ondex == 0
     assert indexer.qb64 != qsig64
     assert indexer.qb2 != qsig2b
 
@@ -1778,6 +1866,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1786,6 +1875,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1795,11 +1885,13 @@ def test_indexer():
     raw = indexer.raw
     code = indexer.code
     index = indexer.index
+
     qb2 = indexer.qb2
     indexer._bexfil(qb2)
     assert indexer.raw == raw
     assert indexer.code == code
     assert indexer.index == index
+    assert indexer.ondex == index
     assert indexer.qb64 == qsig64
     assert indexer.qb2 == qb2
 
@@ -1807,12 +1899,18 @@ def test_indexer():
     test = indexer._binfil()
     assert test == qb2
 
+    # test ondex not None and not match index for not os
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=0)
+
+
     # test strip ims
     # strip ignored if qb64
     indexer = Indexer(qb64=qsig64)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1822,6 +1920,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1832,6 +1931,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1844,6 +1944,7 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
@@ -1856,10 +1957,12 @@ def test_indexer():
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
+    assert indexer.ondex == 5
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
     assert ims == extra
+
 
     # test index too big
     index = 65
@@ -1876,37 +1979,156 @@ def test_indexer():
     with pytest.raises(InvalidVarIndexError):
         indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=index)
 
-    # test other codes
+    # test big code both different and same
+    index = 67
+
+    qb64 = '2ABDBDCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qb2 = (b'\xd8\x00C\x040\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp'
+           b"\x0e'm\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde"
+           b'\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Big_Sig, index=index)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Big_Sig, index=index, ondex=index)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb64=qb64)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb2=qb2)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == index
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    index = 90
+    ondex = 65
+    qb64 = '2ABaBBCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qb2 = (b'\xd8\x00Z\x04\x10\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp'
+           b"\x0e'm\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde"
+           b'\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Big_Sig, index=index, ondex=ondex)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == ondex
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb64=qb64)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == ondex
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb2=qb2)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Big_Sig
+    assert indexer.index == index
+    assert indexer.ondex == ondex
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    # test Crt only code
     index =  3
     code = IdrDex.Ed25519_Crt_Sig
     qb64 = 'BDCZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
     qb2 = (b"\x040\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm"
            b'\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)'
            b'\xde\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
     indexer = Indexer(raw=sig, code=code, index=index)
     assert indexer.raw == sig
     assert indexer.code == code
     assert indexer.index == index
+    assert indexer.ondex == None
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
 
-    index =  64 ** 3 - 1  # three hextets for max index
-    assert index == 262143
-    code = IdrDex.Prior_Next_Idx
-    qb64 = 'C___'
-    qb2 = b'\x0b\xff\xff'
-    indexer = Indexer(raw=sig, code=code, index=index)
-    assert indexer.raw == b''
+    indexer = Indexer(qb64=qb64)
+    assert indexer.raw == sig
     assert indexer.code == code
     assert indexer.index == index
+    assert indexer.ondex == None
     assert indexer.qb64 == qb64
     assert indexer.qb2 == qb2
 
-    index =  64 ** 3   # one greater than max index
-    assert index == 262144
-    code = IdrDex.Prior_Next_Idx
+    indexer = Indexer(qb2=qb2)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+
+    # test ondex error conditions
     with pytest.raises(InvalidVarIndexError):
-        indexer = Indexer(raw=sig, code=code, index=index)
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=index)
+
+    with pytest.raises(InvalidVarIndexError):  # non None ondex
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=index+2)
+
+
+    # test big code current only
+    index =  68
+    code = IdrDex.Ed25519_Big_Crt_Sig
+    qb64 = '2BBEAACZ0jw5JCQwn2v7GKCMQHISMi5rsscfcA4nbY9AqqWMyG6FyCH2cZFwqezPkq8p3sr8f37Xb3wXgh3UPG8igSYJ'
+    qb2 = (b'\xd8\x10D\x00\x00\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp'
+           b"\x0e'm\x8f@\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde"
+           b'\xca\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    indexer = Indexer(raw=sig, code=code, index=index)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb64=qb64)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    indexer = Indexer(qb2=qb2)
+    assert indexer.raw == sig
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.ondex == None
+    assert indexer.qb64 == qb64
+    assert indexer.qb2 == qb2
+
+    # test ondex error conditions
+    with pytest.raises(InvalidVarIndexError):
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=index)
+
+    with pytest.raises(InvalidVarIndexError):  # non None ondex
+        indexer = Indexer(raw=sig, code=code, index=index, ondex=index+2)
 
 
     # Test of TBD Label Code (variable length)
@@ -1919,30 +2141,30 @@ def test_indexer():
     assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
     ltext = encodeB64(lraw)
     assert ltext == b'Hello_World_Peep' == label
-    qsc = IdrDex.TBD + intToB64(index, l=2)
-    assert qsc == '0ZAE'
+    qsc = IdrDex.TBD0 + intToB64(index, l=2)
+    assert qsc == '0zAE'
     qscb = qsc.encode("utf-8")
     lq64b = qscb + label
-    assert lq64b == b"0ZAEHello_World_Peep"
+    assert lq64b == b'0zAEHello_World_Peep'
     lq64 = lq64b.decode("utf-8")
 
     # label from raw
-    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=index)
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD0, index=index)
     assert indexer.raw == lraw
-    assert indexer.code == IdrDex.TBD
+    assert indexer.code == IdrDex.TBD0
     assert indexer.index == index
     assert indexer.qb64b == lq64b
     assert indexer.qb64 == lq64
-    assert indexer.qb2 == b'\xd1\x90\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+    assert indexer.qb2 == b'\xd30\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
 
     # index zero for empty label
-    indexer = Indexer(raw=lraw, code=IdrDex.TBD, index=0)
+    indexer = Indexer(raw=lraw, code=IdrDex.TBD0, index=0)
     assert indexer.raw == b''
-    assert indexer.code == IdrDex.TBD
+    assert indexer.code == IdrDex.TBD0
     assert indexer.index == 0
-    assert indexer.qb64b == b'0ZAA'
-    assert indexer.qb64 == '0ZAA'
-    assert indexer.qb2 == b'\xd1\x90\x00'
+    assert indexer.qb64b == b'0zAA'
+    assert indexer.qb64 == '0zAA'
+    assert indexer.qb2 == b'\xd30\x00'
     """ Done Test """
 
 
@@ -3324,47 +3546,53 @@ def test_signer():
     # create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
-    crymat = signer.sign(ser)
-    assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == Matter._rawSize(crymat.code)
-    result = signer.verfer.verify(crymat.raw, ser)
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.Ed25519_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
     assert result == True
 
-    sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == IdrDex.Ed25519_Sig
-    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
-    assert sigmat.index == 0
-    result = signer.verfer.verify(sigmat.raw, ser)
+    index = 0
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.Ed25519_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
     assert result == True
-    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
     assert result == False
 
-    assert crymat.raw == sigmat.raw
+    assert cigar.raw == siger.raw
 
+    with pytest.raises(ValueError):  # use invalid code not SEED type code
+        signer = Signer(code=MtrDex.Ed25519N)
+
+    # Non transferable defaults
     signer = Signer(transferable=False)  # Ed25519N verifier
     assert signer.code == MtrDex.Ed25519_Seed
     assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519N
     assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
-    # create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    crymat = signer.sign(ser)
-    assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == Matter._rawSize(crymat.code)
-    result = signer.verfer.verify(crymat.raw, ser)
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.Ed25519_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
     assert result == True
 
-    sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == IdrDex.Ed25519_Sig
-    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
-    assert sigmat.index == 0
-    result = signer.verfer.verify(sigmat.raw, ser)
+    siger = signer.sign(ser, index=0)
+    assert siger.code == IdrDex.Ed25519_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
     assert result == True
-    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
     assert result == False
 
+
+    # non default seed
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     signer = Signer(raw=seed, code=MtrDex.Ed25519_Seed)
     assert signer.code == MtrDex.Ed25519_Seed
@@ -3373,26 +3601,99 @@ def test_signer():
     assert signer.verfer.code == MtrDex.Ed25519
     assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
-    crymat = signer.sign(ser)
-    assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == Matter._rawSize(crymat.code)
-    result = signer.verfer.verify(crymat.raw, ser)
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.Ed25519_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
     assert result == True
 
-    sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == IdrDex.Ed25519_Sig
-    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
-    assert sigmat.index == 1
-    result = signer.verfer.verify(sigmat.raw, ser)
+    index = 1
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.Ed25519_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
     assert result == True
 
-    assert crymat.raw == sigmat.raw
+    assert cigar.raw == siger.raw
 
-    with pytest.raises(ValueError):  # use invalid code not SEED
+    # different both so Big
+    ondex = 3
+    siger = signer.sign(ser, index=index, ondex=ondex)
+    assert siger.code == IdrDex.Ed25519_Big_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == ondex
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # same but Big
+    index = 67
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.Ed25519_Big_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # different both so Big
+    ondex = 67
+    siger = signer.sign(ser, index=index, ondex=ondex)
+    assert siger.code == IdrDex.Ed25519_Big_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == ondex
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # current only
+    index = 4
+    siger = signer.sign(ser, index=index, only=True)
+    assert siger.code == IdrDex.Ed25519_Crt_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == None
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # ignores ondex if only
+    siger = signer.sign(ser, index=index, only=True, ondex=index+2)
+    assert siger.code == IdrDex.Ed25519_Crt_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == None
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # big current only
+    index = 65
+    siger = signer.sign(ser, index=index, only=True)
+    assert siger.code == IdrDex.Ed25519_Big_Crt_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == None
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # ignores ondex if only
+    siger = signer.sign(ser, index=index, only=True, ondex=index+2)
+    assert siger.code == IdrDex.Ed25519_Big_Crt_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == None
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    with pytest.raises(ValueError):  # use invalid code not SEED type code
         signer = Signer(raw=seed, code=MtrDex.Ed25519N)
 
-    with pytest.raises(ValueError):  # use invalid code not SEED
-        signer = Signer(code=MtrDex.Ed25519N)
+
+
+    # test with only and ondex parameters
+
+
     """ Done Test """
 
 
@@ -4199,23 +4500,26 @@ def test_siger():
     siger = Siger(qb64b=qsig64b)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+
 
     siger = Siger(qb64=qsig64)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+
 
     siger = Siger(qb64=qsig64b)  # also bytes
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
+    assert siger.ondex == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
-    assert siger.pindex == None
+
 
     verkey, sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
@@ -4223,20 +4527,8 @@ def test_siger():
     siger.verfer = verfer
     assert siger.verfer == verfer
 
-    pindex = 1
-    siger.pindex = pindex
-    assert siger.pindex == pindex
-
-    siger = Siger(qb64=qsig64, verfer=verfer, pindex=pindex)
+    siger = Siger(qb64=qsig64, verfer=verfer)
     assert siger.verfer == verfer
-    assert siger.pindex == pindex
-
-    with pytest.raises(ValueError):
-        siger.pindex =  2.5
-
-    with pytest.raises(ValueError):
-        siger.pindex =  -1
-
 
 
     """ Done Test """
@@ -5381,6 +5673,7 @@ def test_tholder():
 
 if __name__ == "__main__":
     #test_matter()
-    ##test_counter()
+    #test_counter()
     test_indexer()
     test_siger()
+    test_signer()
