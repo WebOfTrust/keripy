@@ -1326,7 +1326,11 @@ class Manager:
                     o = ondices[j]  # int means both, None means current only
                 else:  # default
                     o = i  # must both be same value int
-                sigers.append(signer.sign(ser, index=i, ondex=o))  # assigns .verfer to siger
+                # .sign assigns .verfer of siger and sets code of siger
+                # appropriately for single or dual indexed signatures
+                sigers.append(signer.sign(ser, index=i,
+                                          only=True if o is None else False,
+                                          ondex=o))
             return sigers
         else:
             cigars = []

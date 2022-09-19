@@ -1088,7 +1088,8 @@ class Hab:
         if self.phab:
             keys = [verfer.qb64 for verfer in self.kever.verfers]
             idx = keys.index(self.phab.kever.verfers[0].qb64)
-            return self.phab.mgr.sign(ser, pubs=pubs, verfers=self.phab.kever.verfers, indexed=indexed, indices=[idx])
+            return self.phab.mgr.sign(ser, pubs=pubs, verfers=self.phab.kever.verfers,
+                                      indexed=indexed, indices=[idx])
         else:
             if verfers is None:
                 verfers = self.kever.verfers
@@ -1165,7 +1166,8 @@ class Hab:
 
         if self.phab:
             idx = keys.index(self.phab.kever.verfers[0].qb64)
-            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers, indices=[idx])
+            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers,
+                                        indices=[idx])
         else:
             sigers = self.sign(ser=serder.raw, verfers=verfers)
 
