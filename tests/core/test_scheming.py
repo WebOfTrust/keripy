@@ -94,14 +94,22 @@ def test_json_sub_schema():
             'properties': {
                 'a': {
                     '$id': ''
+                },
+                'e': {
+                    '$id': ''
+                },
+                'r': {
+                    '$id': ''
                 }
             }
         }
 
     s = Schemer(sed=d)
-    assert s.raw == (b'{"$id":"EN_E5OUf-fZadcYIA2wcBmYce5oWBjBKMV8zlZ0OlVwv","$schema":"http://json'
+    assert s.raw == (b'{"$id":"EOphNmZK3ipd22q3tX2AG4Y-Sse_sqpLfD1EzQ17z1dd","$schema":"http://json'
                      b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"$id":"EF7q'
-                     b'egP_b7sFihRSFDdcDLFeJ4pu1st5_-a8UI5P8EZc"}}}')
+                     b'egP_b7sFihRSFDdcDLFeJ4pu1st5_-a8UI5P8EZc"},"e":{"$id":"EF7qegP_b7sFihRSFDdcD'
+                     b'LFeJ4pu1st5_-a8UI5P8EZc"},"r":{"$id":"EF7qegP_b7sFihRSFDdcDLFeJ4pu1st5_-a8UI'
+                     b'5P8EZc"}}}')
 
 
 def test_json_sub_schema_oneof():
@@ -124,14 +132,42 @@ def test_json_sub_schema_oneof():
                                 "description": "Attributes block",
                             },
                         ]
+                    },
+                    "e": {
+                        "oneOf": [
+                            {
+                                "description": "Edges block SAID",
+                                "type": "string"
+                            },
+                            {
+                                "$id": "",
+                                "description": "Edges block",
+                            },
+                        ]
+                    },
+                    "r": {
+                        "oneOf": [
+                            {
+                                "description": "Rules block SAID",
+                                "type": "string"
+                            },
+                            {
+                                "$id": "",
+                                "description": "Rules block",
+                            },
+                        ]
                     }
                 }
         }
     s = Schemer(sed=d)
-    assert s.raw == (b'{"$id":"EIzznPV9OPJnToG4X-e33SX4kShMJaIZSkjyxW9R0Z7l","$schema":"http://json'
+    assert s.raw == (b'{"$id":"EGMcqtFTjdf4Jb-xHuv1mvKqpNvuH_BwrlrvQQbD40dy","$schema":"http://json'
                      b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"oneOf":[{"'
                      b'description":"Attributes block SAID","type":"string"},{"$id":"ECDP2TBvNIkBxX'
-                     b'ViU6_7m4iJdRv-xT5z5R1otJNtfh9O","description":"Attributes block"}]}}}')
+                     b'ViU6_7m4iJdRv-xT5z5R1otJNtfh9O","description":"Attributes block"}]},"e":{"on'
+                     b'eOf":[{"description":"Edges block SAID","type":"string"},{"$id":"EFNYcwsAkah'
+                     b'ebjDklBPNRf9dtPbwknx3FxVMxxHRus2g","description":"Edges block"}]},"r":{"oneO'
+                     b'f":[{"description":"Rules block SAID","type":"string"},{"$id":"EJgcgA00l25IL'
+                     b'jwRH6yXYSpAWuomebYMXbNlqNP1HJja","description":"Rules block"}]}}}')
 
 
 def test_json_schema_dict():
