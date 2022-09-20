@@ -44,9 +44,8 @@ def test_json_schema():
     assert saider.qb64 == 'EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw'
     sser = dumps(ssad)
     assert sser == (b'{"$id":"EMRvS7lGxc1eDleXBkvSHkFs8vUrslRcla6UXOJdcczw","$schema":"http://json'
-        b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
-        b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
-
+                    b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
+                    b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
 
     payload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00"}'
     mismatch = b'{"a": "test", "b": "123", "c": "2018-11-13T20:20:39+00:00"}'
@@ -83,6 +82,56 @@ def test_json_schema():
 
     with pytest.raises(ValidationError):
         Schemer(raw=invalid)
+
+
+def test_json_sub_schema():
+    """ Tests to validate JSON schema with sub schema"""
+    d = \
+        {
+            '$id': '',
+            '$schema': 'http://json-schema.org/draft-07/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    '$id': ''
+                }
+            }
+        }
+
+    s = Schemer(sed=d)
+    assert s.raw == (b'{"$id":"EN_E5OUf-fZadcYIA2wcBmYce5oWBjBKMV8zlZ0OlVwv","$schema":"http://json'
+                     b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"$id":"EF7q'
+                     b'egP_b7sFihRSFDdcDLFeJ4pu1st5_-a8UI5P8EZc"}}}')
+
+
+def test_json_sub_schema_oneof():
+    """ Tests to validate JSON schema with sub schema"""
+    d = \
+        {
+            "$id": "",
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties":
+                {
+                    "a": {
+                        "oneOf": [
+                            {
+                                "description": "Attributes block SAID",
+                                "type": "string"
+                            },
+                            {
+                                "$id": "",
+                                "description": "Attributes block",
+                            },
+                        ]
+                    }
+                }
+        }
+    s = Schemer(sed=d)
+    assert s.raw == (b'{"$id":"EIzznPV9OPJnToG4X-e33SX4kShMJaIZSkjyxW9R0Z7l","$schema":"http://json'
+                     b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"oneOf":[{"'
+                     b'description":"Attributes block SAID","type":"string"},{"$id":"ECDP2TBvNIkBxX'
+                     b'ViU6_7m4iJdRv-xT5z5R1otJNtfh9O","description":"Attributes block"}]}}}')
 
 
 def test_json_schema_dict():
@@ -122,7 +171,7 @@ def test_json_schema_dict():
     raw = json.dumps(sce.sed).encode("utf-8")
 
     sce = Schemer(raw=raw)
-    assert sce.said ==said
+    assert sce.said == said
 
     # Invalid JSON Schema
     sed = dict()
@@ -250,11 +299,10 @@ def test_resolution():
     said = saider.qb64
     assert said == 'EKcRFuOiLUMEgTljL8FWPOpDosH2Cz38HhgdmRKpUHTe'
     sser = dumps(ssad)
-    assert sser ==  (b'{"$id":"EKcRFuOiLUMEgTljL8FWPOpDosH2Cz38HhgdmRKpUHTe","$schema":"http://json'
+    assert sser == (b'{"$id":"EKcRFuOiLUMEgTljL8FWPOpDosH2Cz38HhgdmRKpUHTe","$schema":"http://json'
                     b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
                     b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"},"xy":'
                     b'{"$ref":"did:keri:EL3Luusa97P8dZOCI8KEN2ShG35HVS8S6-z1vuu52F-C"}}}')
-
 
     scer = (
         b'{'
