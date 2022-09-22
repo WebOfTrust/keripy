@@ -10,7 +10,7 @@ from hio.base import doing, tyming
 
 from keri.app import habbing, grouping, storing, notifying
 from keri.core import coring, eventing, parsing
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.peer import exchanging
 
 
@@ -243,15 +243,15 @@ def test_multisig_rotate(mockHelpingNowUTC):
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'ECvGacv6ylbutc64Kz6bRgorjO86gWzTeooI16PGxDH3'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABrc77AmFw0'
-                       b'Rss74Niga6A98XW4gI_vYsvCMLQ7mzB6Fg76fL7dpUr4MnO3bf7OGgYbqDzeDWtv'
-                       b'BoG4ojtp0DcF')
+        assert exn.saidb == b'ECTRP6zZR7hnzVBmqwQBF2-uxnAQX9cdd8Q3KO-PVmL3'
+        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAAKcqFRGDAa'
+                       b'fwd-JNcnmW5vWtKVJ8qQ5DdV8foekSH7ErFgwQKDZVitGxkRBWkdcIR2vm8LjRj7'
+                       b'ib3oNIB3geUB')
 
         data = exn.ked["a"]
         assert data["aids"] == ghab1.aids
         assert data["gid"] == ghab1.pre
-        assert data["sith"] == '2'
+        assert data["isith"] == '2'
         assert data["toad"] == 0
         assert data["cuts"] == []
         assert data["adds"] == []
@@ -366,7 +366,6 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
         assert len(notifier.signaler.signals) == 1
 
-
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
@@ -397,7 +396,6 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
 
 def test_multisig_interact_handler(mockHelpingNowUTC):
-    ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
     with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
 
         notifier = notifying.Notifier(hby=hby)
@@ -454,3 +452,56 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         doist.exit()
 
         assert len(notifier.signaler.signals) == 1
+
+
+def test_pending_events():
+    with habbing.openHab(name="test0", temp=True) as (hby, hab):
+        counselor = grouping.Counselor(hby=hby)
+
+        rec = basing.RotateRecord(
+            aids=[hab.pre],
+            sn=0,
+            sith=["1/2, 1/2, 1/2"],
+            toad=3,
+            cuts=[],
+            adds=[],
+            data=[dict(a=1)],
+            date="2021-06-09T17:35:54.169967+00:00"
+        )
+        hby.db.gpae.put(keys=(hab.pre,), val=rec)
+
+        evts = counselor.pendingEvents(hab.pre)
+        assert len(evts) == 1
+        assert evts[0] == {'adds': [],
+                           'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
+                           'cuts': [],
+                           'data': [{'a': 1}],
+                           'sith': ['1/2, 1/2, 1/2'],
+                           'sn': 0,
+                           'timestamp': '2021-06-09T17:35:54.169967+00:00',
+                           'toad': 3}
+
+        rec = basing.RotateRecord(
+            aids=[hab.pre],
+            sn=3,
+            sith="1",
+            toad=1,
+            cuts=[],
+            adds=[],
+            data=[],
+            date="2021-06-09T17:35:54.169967+00:00"
+        )
+        hby.db.glwe.put(keys=(hab.pre,), val=rec)
+        evts = counselor.pendingEvents(hab.pre)
+        assert len(evts) == 2
+        assert evts[1] == {'adds': [],
+                           'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
+                           'cuts': [],
+                           'data': [],
+                           'sith': '1',
+                           'sn': 3,
+                           'timestamp': '2021-06-09T17:35:54.169967+00:00',
+                           'toad': 1}
+
+        evts = counselor.pendingEvents("ABC")
+        assert len(evts) == 0

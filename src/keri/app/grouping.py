@@ -16,6 +16,7 @@ from keri.app import forwarding, delegating, agenting
 from keri.core import coring
 from keri.db import dbing, basing
 from keri.db.dbing import snKey
+from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import proving
 
@@ -91,7 +92,8 @@ class Counselor(doing.DoDoer):
         pkever = ghab.phab.kever
         pnkey = pkever.nexter.digs[0]
 
-        rec = basing.RotateRecord(aids=aids, sith=sith, toad=toad, cuts=cuts, adds=adds, data=data)
+        rec = basing.RotateRecord(aids=aids, sn=kever.sn+1, sith=sith, toad=toad, cuts=cuts, adds=adds, data=data,
+                                  date=helping.nowIso8601())
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.phab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
@@ -99,7 +101,7 @@ class Counselor(doing.DoDoer):
             return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
         else:
-            rot = ghab.phab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
+            rot = ghab.phab.makeOwnEvent(pkever.lastEst.s)  # grab latest est evt
 
             others = list(aids)
             others.remove(pid)
@@ -204,7 +206,7 @@ class Counselor(doing.DoDoer):
 
         """
         # ignore saider because it is not relevant yet
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially signed escrow
+        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially aid escrow
             ghab = self.hby.habs[pre]
             gkever = ghab.kever
 
@@ -332,6 +334,45 @@ class Counselor(doing.DoDoer):
 
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+
+    def pendingEvents(self, pre):
+        """ Return information about any pending events for a given AID
+
+        Parameters:
+            pre (str): qb64 identifier of distributed multisig AID
+
+        Returns:
+            Prefixer, Saider: prefixer of identifier and saider of the event (if available)
+
+        """
+        key = (pre,)
+        evts = []
+        if (rec := self.hby.db.gpae.get(keys=key)) is not None:  # RotateRecord
+            data = dict(
+                aids=rec.aids,
+                sn=rec.sn,
+                sith=rec.sith,
+                timestamp=rec.date,
+                toad=rec.toad,
+                cuts=rec.cuts,
+                adds=rec.adds,
+                data=rec.data
+            )
+            evts.append(data)
+        if (rec := self.hby.db.glwe.get(keys=key)) is not None:  # RotateRecord
+            data = dict(
+                aids=rec.aids,
+                sn=rec.sn,
+                sith=rec.sith,
+                timestamp=rec.date,
+                toad=rec.toad,
+                cuts=rec.cuts,
+                adds=rec.adds,
+                data=rec.data
+            )
+            evts.append(data)
+
+        return evts
 
 
 def loadHandlers(hby, exc, notifier):
@@ -530,6 +571,7 @@ class MultisigRotateHandler(doing.DoDoer):
                     src=src,
                     aids=aids,
                 )
+                data["i"] = ghab.pre
                 data["toad"] = pay["toad"] if "toad" in pay else None
                 data["wits"] = pay["wits"] if "wits" in pay else []
                 data["adds"] = pay["adds"] if "adds" in pay else []
@@ -549,7 +591,7 @@ def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
     exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
                                            aids=aids,
-                                           sith=isith,
+                                           isith=isith,
                                            toad=toad,
                                            cuts=list(cuts),
                                            adds=list(adds),
