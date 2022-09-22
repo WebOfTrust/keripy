@@ -10,7 +10,7 @@ import json
 from hio import help
 from hio.base import doing
 
-from keri.app import kiwiing
+from keri.core import eventing
 from keri.app.cli.common import existing
 from keri.db import dbing
 from keri.kering import ConfigurationError
@@ -60,7 +60,7 @@ def escrows(tymth, tock=0.0, **opts):
                         pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
 
                         try:
-                            oots.append(kiwiing.loadEvent(hby.db, pre, edig))
+                            oots.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
@@ -78,7 +78,7 @@ def escrows(tymth, tock=0.0, **opts):
                         pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
 
                         try:
-                            pwes.append(kiwiing.loadEvent(hby.db, pre, edig))
+                            pwes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
@@ -96,7 +96,7 @@ def escrows(tymth, tock=0.0, **opts):
                         pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
 
                         try:
-                            pses.append(kiwiing.loadEvent(hby.db, pre, edig))
+                            pses.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
@@ -114,7 +114,7 @@ def escrows(tymth, tock=0.0, **opts):
                         pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
 
                         try:
-                            ldes.append(kiwiing.loadEvent(hby.db, pre, edig))
+                            ldes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
                             raise e
 
