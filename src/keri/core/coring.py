@@ -2912,7 +2912,7 @@ class Nexter:
                 digs = self._digest(keys=keys)
             else:
                 raise EmptyListError(f"Need digs or keys.")
-        self.digs = digs
+        self._digs = digs
 
     def includes(self, digs=None, keys=None):
         """
@@ -2950,6 +2950,7 @@ class Nexter:
         else:
             return False
 
+
     def indices(self, sigers):
         """Returns list of indices for list of sigers by matching digest of
         each siger.verfer qb64 public key to element of .digs
@@ -2978,7 +2979,15 @@ class Nexter:
         return digs
 
     @property
+    def digs(self):
+        """Returns ._digs, digs property getter.
+        Makes .digs read only
+        """
+        return self._digs
+
+    @property
     def digers(self):
+        """Returns list of Digers made from .digs"""
         return [Diger(qb64=dig) for dig in self.digs]
 
 
