@@ -271,7 +271,12 @@ class UnverifiedReplyError(ValidationError):
         raise UnverifiedReplyError("error message")
     """
 
-
+class EmptyListError(ValidationError):
+    """
+    Error Required non empty list is empty
+    Usage:
+        raise EmptyListError("error message")
+    """
 
 class MissingAnchorError(ValidationError):
     """

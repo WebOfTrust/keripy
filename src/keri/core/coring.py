@@ -25,6 +25,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError,
                       ValidationError, VersionError, DerivationError,
+                      EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
@@ -2908,9 +2909,9 @@ class Nexter:
         """
         if digs is None:
             if keys:
-                digs = self._derive(keys=keys)
+                digs = self._digest(keys=keys)
             else:
-                raise ValueError(f"Missing digs and keys.")
+                raise EmptyListError(f"Need digs or keys.")
         self.digs = digs
 
     def includes(self, digs=None, keys=None):
@@ -2926,7 +2927,7 @@ class Nexter:
             keys (list): public keys qb64
         """
         if not digs:
-            digs = self._derive(keys=keys)
+            digs = self._digest(keys=keys)
 
         if len(digs) == len(self.digs):
             return self.digs == digs
@@ -2964,14 +2965,15 @@ class Nexter:
         return idxs
 
     @staticmethod
-    def _derive(keys):
+    def _digest(keys):
         """
         Returns digs of keys
 
         Parameters:
-            keys (list): public keys qb64
+            keys (list): public keys qb64 or qb64b
         """
-        digs = [Diger(ser=key.encode("utf-8")).qb64 for key in keys]
+        digs = [Diger(ser=key.encode("utf-8")
+                      if hasattr(key, 'encode') else key).qb64 for key in keys]
 
         return digs
 
