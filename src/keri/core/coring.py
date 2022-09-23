@@ -53,10 +53,10 @@ brv = backed vc revoke, registry-backed transaction event log credential revocat
 """
 
 Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
-                               'prd bre vcp vrt iss rev bis brv '))
+                               'pro bar vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', qry='qry', rpy='rpy', exn='exn', prd='prd', bre='bre',
+              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
@@ -2381,14 +2381,16 @@ class Salter(Matter):
         return (Signer(raw=seed, code=code, transferable=transferable))
 
 
-    def signers(self, count=1, path="", **kwa):
+    def signers(self, count=1, start=0, path="",  **kwa):
         """
-        Returns list of count number of Signer instances.
+        Returns list of count number of Signer instances with unique derivation
+        path made from path prefix and suffix of start plus offset for each count
+        value from 0 to count - 1.
 
         See .signer for parameters used to create each signer.
 
         """
-        return [self.signer(path=f"{path}{i:x}", **kwa) for i in range(count)]
+        return [self.signer(path=f"{path}{i + start:x}", **kwa) for i in range(count)]
 
 
 class Cipher(Matter):
@@ -2870,49 +2872,28 @@ class Diger(Matter):
 
 class Nexter:
     """
-    Nexter is Matter subclass with support to derive itself from
-    next sith and next keys given code.
+    Nexter class manages list of next digests of keys for key events
 
-    See Diger for inherited attributes and properties:
 
     Attributes:
-
-    Inherited Properties:
-        .code  str derivation code to indicate cypher suite
-        .raw   bytes crypto material only without code
-        .pad  int number of pad chars given raw
-        .qb64 str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  bytes in binary with derivation code + crypto material
-        .transferable True when transferable derivation code False otherwise
 
     Properties:
 
     Methods:
 
     Hidden:
-        ._digest is digest method
         ._derive is derivation method
 
 
     """
 
-    def __init__(self, digs=None, keys=None, ked=None):
+    def __init__(self, digs=None, keys=None):
         """
-        Assign digest verification function to ._verify
-
-        Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+        Assign .digs
 
         Parameters:
-           digs is list of qb64 digests of public keys
-           keys is list of keys each is qb64 public key str
-           ked is key event dict
+           digs (list | None): of qb64 digests of public keys
+           keys (list | None): of qb64 public keys from which digests are generated
 
            Raises error if not any of raw, digs,keys, ked
 
@@ -2924,33 +2905,28 @@ class Nexter:
                      get keys from ked
                   compute digs from keys
 
-           If sith not provided
-               get sith from ked
-               but if not ked then compute sith as simple majority of keys
-
         """
-        self.digs = self._derive(digs=digs, keys=keys, ked=ked)  # derive nxt raw
+        if digs is None:
+            if keys:
+                digs = self._derive(keys=keys)
+            else:
+                raise ValueError(f"Missing digs and keys.")
+        self.digs = digs
 
-    def verify(self, digs=None, keys=None, ked=None):
+    def includes(self, digs=None, keys=None):
         """
-        Returns True if digest of bytes nxt raw matches .raw
-        Uses .raw as reference nxt raw for ._verify algorithm determined by .code
-
-        If raw not provided then extract raw from either (sith, keys) or ked
+        Returns True if digs or digs from keys are included
+        as a ordered (potentially non-contiguous) subset  of .digs.
+        Each element in the provided list digs must appear in .digs in the same
+        order that it appears in digs but not all elements in .digs must appear
+        in digs.
 
         Parameters:
-            raw is bytes serialization
-            imen is string extracted from sith expression using Tholder
-            sith is signing threshold as
-                str lowercase hex or
-                int or
-                list of strs or list of list of strs
-            digs is list of digests qb64
-            keys is list of keys qb64
-            ked is key event dict
+            digs (list): digests qb64
+            keys (list): public keys qb64
         """
         if not digs:
-            digs = self._derive(digs=digs, keys=keys, ked=ked)
+            digs = self._derive(keys=keys)
 
         if len(digs) == len(self.digs):
             return self.digs == digs
@@ -2974,33 +2950,28 @@ class Nexter:
             return False
 
     def indices(self, sigers):
-        ion = []
+        """Returns list of indices for list of sigers by matching digest of
+        each siger.verfer qb64 public key to element of .digs
+        """
+        idxs = []
         for sig in sigers:
             idig = Diger(ser=sig.verfer.qb64b).qb64
             try:
-                ion.append(self.digs.index(idig))
+                idxs.append(self.digs.index(idig))
             except ValueError:
                 raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
 
-        return ion
+        return idxs
 
     @staticmethod
-    def _derive(digs=None, keys=None, ked=None):
+    def _derive(keys):
         """
-        Returns ser where ser is serialization derived from code, sith, keys, or ked
+        Returns digs of keys
+
+        Parameters:
+            keys (list): public keys qb64
         """
-        if digs is None:
-            if not keys:
-                try:
-                    keys = ked["k"]
-                except KeyError as ex:
-                    raise DerivationError("Error extracting keys from"
-                                          " ked = {}".format(ex))
-
-            if not keys:  # empty keys
-                raise DerivationError("Empty keys.")
-
-            digs = [Diger(ser=key.encode("utf-8")).qb64 for key in keys]
+        digs = [Diger(ser=key.encode("utf-8")).qb64 for key in keys]
 
         return digs
 
@@ -4978,14 +4949,14 @@ class Serder(Sadder):
         """
         Returns list of Diger instances as converted from .ked['n'].
         One for each key.
-        nkeys property getter
+        nexter property getter
         """
         if "n" in self.ked:  # establishment event
-            keys = self.ked["n"]
+            digs = self.ked["n"]
         else:  # non-establishment event
-            keys = []
+            digs = []
 
-        return Nexter(digs=keys)
+        return Nexter(digs=digs)
 
     @property
     def werfers(self):

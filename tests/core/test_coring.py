@@ -45,7 +45,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', qry='qry', rpy='rpy',
-                          exn='exn', prd='prd', bre='bre',
+                          exn='exn', pro='pro', bar='bar',
                           vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
@@ -76,10 +76,10 @@ def test_ilks():
     assert Ilks.exn == 'exn'
 
 
-    assert 'prd' in Ilks
-    assert Ilks.prd == 'prd'
-    assert 'bre' in Ilks
-    assert Ilks.bre == 'bre'
+    assert 'pro' in Ilks
+    assert Ilks.pro == 'pro'
+    assert 'bar' in Ilks
+    assert Ilks.bar == 'bar'
 
 
     assert 'vcp' in Ilks
@@ -4145,79 +4145,59 @@ def test_nexter():
     """
     Test the support functionality for Nexter subclass of Diger
     """
-    # create something to digest and verify
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    #keys = generatePublics(salt=salt, count=3, transferable=False)
-    keys = ['BDjXHlcskwOzNj8rYbV8IQ6ox2TW_KkbA1K3-n0EU0un',
-            'BCtkdESN5eexElVLcJl8Ub0Q0GqNjK2xOvvW3HbZc8zi',
-            'BHugAkJxy4Pc_Sdm2UeT4Z8ofzrbvztfvnjlTRrLiffn']
+    raw = b"raw salt to test"
 
-    keydigs = [blake3.blake3(key.encode("utf-8")).digest() for key in keys]
-    digers = [Diger(raw=keydig, code=MtrDex.Blake3_256) for keydig in keydigs]
+    #  create signers with verfers for keys
+    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    keys = [signer.verfer.qb64 for signer in signers]
+    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
+                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
+                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
+
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
     digs = [diger.qb64 for diger in digers]
+    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
+                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
+                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
 
-    assert digs == ['EP9XvFnpQP4vnaTNDNAMU2T7nxDPe1EZLUaiABcLRfS4',
-                    'EHvq9OoHtwITL51Q4hsMPy6bA0kTd6AGANkSZ1Ud7otV',
-                    'EN3_XOnc8mia3RHZOzpZhc1J-ckILqTS0KGZNTROvGtW']
+    nexter = Nexter(digs=digs)
+    assert nexter.includes(digs=digs)
 
-    #  defaults provide Blake3_256 digester
-    nexter = Nexter(digs=digs)  # compute limen/sith from digs
-    assert nexter.verify(digs=digs)
-
-    nexter = Nexter(keys=keys)  # compute limen/sith from keys
+    nexter = Nexter(keys=keys)  # compute digs from keys default is Blake3_256
     assert len(nexter.digs) == len(keys)
-    assert nexter.verify(keys=keys)
-    assert nexter.verify(keys=keys + ['ABCDEF']) is False
+    assert nexter.includes(keys=keys)
+    assert nexter.includes(keys=keys + ['ABCDEF']) is False
 
-    ked = dict(kt=1, k=keys)  # subsequent event
-    nexter = Nexter(ked=ked)
-    assert len(nexter.digs) == len(keys)
-    assert nexter.verify(ked=ked)
+    ked = dict(k=keys)  # subsequent event
+    nexter = Nexter(keys=ked['k'])
+    assert len(nexter.digs) == len(ked['k'])
+    assert nexter.includes(keys=ked['k'])
 
     #  Test support for partial rotation
-    #keys = generatePublics(salt=salt, count=10, transferable=False)
-
-    keys =['BErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
-            'BFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
-            'BE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
-            'BCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
-            'BNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
-            'BOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
-            'BFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
-            'BE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY',
-            'BFEiwXM50PUNUlKW1MgbN3f1cjnTcvL7wVc8sfKiZR93',
-            'BBMMFVAVQGfJlklgkEvG9Z7qBX3JOYbZTAVKJKiHTXIu']
-
-    digers = [Diger(raw=blake3.blake3(key.encode("utf-8")).digest(), code=MtrDex.Blake3_256) for key in keys]
+    signers = coring.Salter(raw=raw).signers(count=10, start=3, path="next", temp=True)
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
 
     # grab first 5 for our nexter
-    cur = [diger.qb64 for diger in digers[0:5]]
+    nexter = Nexter(digs=[diger.qb64 for diger in digers[0:5]])
 
-    nexter = Nexter(digs=cur)
+    # verify inclusion against full set
+    assert nexter.includes(digs=nexter.digs)
 
-    # compare against full set
-    digs = cur
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a proper subset
+    assert nexter.includes(digs=[diger.qb64 for diger in digers[2:5]])
 
-    # compare against a proper subset
-    digs = [diger.qb64 for diger in digers[2:5]]
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a single existing dig from set
+    assert nexter.includes(digs=[digers[4].qb64])
 
-    # compare against a single existing dig
-    digs = [digers[4].qb64]
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a single existing dig not from set
+    assert not nexter.includes(digs=[digers[7].qb64])
 
-    # compare against a single existing dig
-    digs = [digers[7].qb64]
-    assert not nexter.verify(digs=digs)
+    # verify inclusion against non-contiguous subset
+    assert nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[4].qb64])
 
-    # compare against non-contiguous subset
-    digs = [digers[1].qb64, digers[3].qb64, digers[4].qb64]
-    assert nexter.verify(digs=digs)
-
-    # compare against non-contiguous subset
-    digs = [digers[1].qb64, digers[3].qb64, digers[6].qb64]
-    assert not nexter.verify(digs=digs)
+    # verify inclusion against non subset
+    assert not nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[6].qb64])
 
     """ Done Test """
 
@@ -5674,6 +5654,7 @@ def test_tholder():
 if __name__ == "__main__":
     #test_matter()
     #test_counter()
-    test_indexer()
-    test_siger()
-    test_signer()
+    #test_indexer()
+    #test_siger()
+    #test_signer()
+    test_nexter()

@@ -1265,7 +1265,7 @@ def prod(route="",
          version=Version,
          kind=Serials.json          ):
     """
-    Returns serder of prod, 'prd', msg to request disclosure via bare, 'bre' msg
+    Returns serder of prod, 'pro', msg to request disclosure via bare, 'bar' msg
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
     by all SAIDs given in digs list.
     TBD
@@ -1279,11 +1279,11 @@ def bare(route="",
            version=Version,
            kind=Serials.json):
     """
-    Returns serder of bare 'bre' message.
+    Returns serder of bare 'bar' message.
     Utility function to automate creation of unhiding (bareing) messages for
     disclosure of sealed data associated with anchored seals in a KEL.
     Reference to anchoring seal is provided as an attachment to bare message.
-    Bare 'bre' message is a SAD item with an associated derived SAID in its
+    Bare 'bar' message is a SAD item with an associated derived SAID in its
     'd' field.
 
      Parameters:
@@ -1295,7 +1295,7 @@ def bare(route="",
 
     {
       "v" : "KERI10JSON00011c_",
-      "t" : "bre",
+      "t" : "bar",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "sealed/processor",
       "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
@@ -1315,7 +1315,7 @@ def bare(route="",
     vs = versify(version=version, kind=kind, size=0)
 
     sad = dict(v=vs,  # version string
-               t=Ilks.bre,
+               t=Ilks.bar,
                d="",
                r=route if route is not None else "",  # route
                a=data if data else {},  # dict of SADs
@@ -2018,7 +2018,7 @@ class Kever:
                                       "".format(dig, self.serder.saider.qb64, ked))
 
         # also check derivation code of pre for non-transferable
-        if not self.nexter:  # empty so rotations not allowed
+        if not self.nexter:  # prior next is empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
@@ -2030,11 +2030,12 @@ class Kever:
                                             [verfer.qb64 for verfer in serder.verfers],
                                             ked))
 
-        # verify next keys from prior
+        # verify next keys from prior next
         ntholder = serder.ntholder
-        keys = ked["k"]
-        if not self.nexter.verify(keys=keys):
-            raise ValidationError("Mismatch nxt digest = {} with rotation"
+        keys = ked["k"]  # current keys
+        if not self.nexter.includes(keys=keys):  # current keys match prior next digs
+            raise ValidationError("Mismatch prior nxt digs = {} with rotation"
+                                  "current keys"
                                   " sith = {}, keys = {} for evt = {}."
                                   "".format(self.nexter.digs, tholder.thold, keys, ked))
 

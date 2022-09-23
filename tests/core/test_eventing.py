@@ -4038,7 +4038,7 @@ def test_process_transferable():
 
     # verify nxt digest from event is still valid
     rnxt1 = Nexter(digs=rser0.ked["n"])
-    assert rnxt1.verify(keys=nxtkeys)
+    assert rnxt1.includes(keys=nxtkeys)
     """ Done Test """
 
 
