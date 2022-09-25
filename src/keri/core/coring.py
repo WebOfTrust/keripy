@@ -23,7 +23,7 @@ import hashlib
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
-                      ConversionError,
+                      ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
                       EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
@@ -803,6 +803,7 @@ class Matter:
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
                                          f"(raw and code) or qb64b or qb64 or qb2.")
+
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError(f"Not a bytes or bytearray, raw={raw}.")
 
@@ -1353,8 +1354,9 @@ class Seqner(Matter):
 
 class Number(Matter):
     """
-    Number is subclass of Matter, cryptographic material, for ordinal numbers
-    such as sequence numbers or first seen ordering numbers.
+    Number is subclass of Matter, cryptographic material, for ordinal counting
+    whole numbers  (non-negative integers).
+    Examples uses are sequence numbers or first seen ordering numbers or thresholds.
     Seqner provides fully qualified format for ordinals (sequence numbers etc)
     when provided as attached cryptographic material elements.
 
@@ -1383,6 +1385,8 @@ class Number(Matter):
     Properties:
         num  (int): int representation of number
         humh (str): hex string representation of number with no leading zeros
+        positive (bool): True if .num  > 0, False otherwise. Because .num must be
+            non-negative, .positive == False means .num == 0
 
     Hidden:
         _code (str): value for .code property
@@ -1414,22 +1418,27 @@ class Number(Matter):
             bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            num (int | str):  int number or hex str of int number
-            numh (str):  string equivalent of int number
+            num (int | str | None): non-negative int number or hex str of int
+                number or 0 if None
+            numh (str):  string equivalent of non-negative int number
 
         """
-
-
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-
             if num is None:
-                if numh is None:
+                if numh is None or numh == '':
                     num = 0
                 else:
                     num = int(numh, 16)
-            else:
-                if isinstance(num, str):  # handle case where num is hex str
-                    num = int(num, 16)
+
+            else:  # handle case where num is hex str'
+                if isinstance(num, str):
+                    if num == '':
+                        num = 0
+                    else:
+                        num = int(num, 16)
+
+            if num < 0:
+                raise InvalidValueError(f"Negative number={num}.")
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
@@ -1446,7 +1455,9 @@ class Number(Matter):
             else:
                 raise ValueError(f"Invalid num = {num}, too large to encode.")
 
-            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian
+            # default to_bytes parameter signed is False. If negative raises
+            # OverflowError: can't convert negative int to unsigned
+            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian unsigned
 
         super(Number, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
@@ -1470,6 +1481,15 @@ class Number(Matter):
         Returns .num int converted to hex str
         """
         return f"{self.num:x}"
+
+    @property
+    def positive(self):
+        """
+        Returns True if .num is positive False otherwise.
+        Because valid number .num must be non-negative, positive False means
+        that .num is zero.
+        """
+        return True if self.num > 0 else False
 
 
 class Dater(Matter):

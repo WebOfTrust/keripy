@@ -30,12 +30,13 @@ from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import generateSigners, generatePrivates, generatePublics
+from keri.core.coring import generateSigners, generatePrivates
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError)
+                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
+                         InvalidValueError)
 from keri.kering import Version, Versionage
 
 
@@ -2668,16 +2669,7 @@ def test_number():
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
 
-    with pytest.raises(ValueError):
-        number = Number(num='')
-
-    with pytest.raises(ValueError):
-        number = Number(numh='')
-
-    with pytest.raises(OverflowError):
-        number = Number(num=-5)
-
-    number = Number()  # defaults to zero
+    number = Number()  # test None defaults to zero
     assert number.code == NumDex.Short
     assert number.raw == b'\x00\x00'
     assert number.qb64 == 'MAAA'
@@ -2685,7 +2677,20 @@ def test_number():
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
     assert number.numh == '0'
+    assert not number.positive
     assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
+
+    # test num as empty string defaults to 0
+    number = Number(num='')
+    assert number.num == 0
+
+    # test numh as empty string defaults to 0
+    number = Number(numh='')
+    assert number.num == 0
+
+    # test negative raisze erro
+    with pytest.raises(InvalidValueError):
+        number = Number(num=-5)
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -2703,10 +2708,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(num=numh)  # num can be hext str too
     assert number.code == code
@@ -2714,10 +2721,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2725,10 +2734,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2736,10 +2746,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2747,10 +2758,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2758,10 +2770,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 4 - 1)
     assert num == 4294967295
@@ -2778,10 +2791,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2789,10 +2803,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2800,10 +2815,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2813,6 +2829,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2820,10 +2837,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 8 - 1)
     assert num == 18446744073709551615
@@ -2840,10 +2858,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2851,10 +2870,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2862,10 +2882,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2873,10 +2894,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2884,10 +2906,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 16 - 1)
     assert num == 340282366920938463463374607431768211455
@@ -2905,10 +2928,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2916,10 +2940,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2927,10 +2952,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2938,10 +2964,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2949,10 +2977,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -2975,10 +3004,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3009,10 +3039,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3044,10 +3075,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3068,7 +3100,6 @@ def test_number():
     nqb2 = b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     #b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
 
-
     # raw to large for code, then truncates
     raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     assert raw != raw2bad
@@ -3080,10 +3111,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3108,10 +3140,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     """ Done Test """
 
@@ -5655,6 +5689,7 @@ if __name__ == "__main__":
     #test_matter()
     #test_counter()
     #test_indexer()
+    test_number()
     #test_siger()
     #test_signer()
-    test_nexter()
+    #test_nexter()

@@ -1786,6 +1786,7 @@ class Kever:
         if TraitDex.DoNotDelegate in cnfg:
             self.doNotDelegate = True
 
+
     def update(self, serder, sigers, wigers=None, seqner=None, saider=None,
                firner=None, dater=None, check=False):
         """
@@ -1794,18 +1795,21 @@ class Kever:
 
         Parameters:
             serder (Serder): instance of  event
-            sigers (list): of SigMat instances of signatures of event
-            wigers (list): of Siger instances of indexed witness signatures of
-                event. Index is offset into wits list of latest est event
-            seqner (Seqner): instance of delegating event sequence number.
+            sigers (list): of SigMat instances of indexed signatures of controller
+                signatures of event. Index is offset into keys list from latest
+                est event and when provided ondex is offset into key digest list
+                from prior next est event to latest est event.
+            wigers (list | None): of Siger instances of indexed witness signatures of
+                event. Index is offset into wits list from latest est event
+            seqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider (Saider): instance of of delegating event said.
+            saider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then diger is ignored
-            firner (optional): Seqner instance of cloned first seen ordinal
+            firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater (optional): Dater instance of cloned replay datetime
+            dater (Dater | None): Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             check (bool): True means do not update the database in any
@@ -1951,20 +1955,22 @@ class Kever:
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
+
     def rotate(self, serder, sn):
         """
         Generic Rotate Operation Processing
-        Same logic for both rot and drt (plain and delegated rotation)
-        Returns triple (tholder, toad, wits, cuts, adds)
+        Same logic for both 'rot' and 'drt' (plain and delegated rotation)
+
+        Returns: tuple (tholder, toad, wits, cuts, adds)
 
         Parameters:
-            serder is event Serder instance
-            sn is int sequence number
+            serder (Serder): instance of rotation ('rot' or 'drt') event.
+            sn (int): sequence number
 
         """
         ked = serder.ked
-        pre = ked["i"]
-        dig = ked["p"]
+        pre = ked["i"]  # controller AID prefix
+        dig = ked["p"]  # prior event said
 
         if sn > self.sn + 1:  # out of order event
             raise ValidationError("Out of order event sn = {} expecting"

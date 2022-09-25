@@ -135,6 +135,20 @@ class UnknownCodeError(MaterialError):
         raise UnknownCodeError("error message")
     """
 
+class InvalidTypeError(MaterialError):
+    """
+    Invalid material value type encountered during crypto material init
+    Usage:
+        raise InvalidTypeError("error message")
+    """
+
+class InvalidValueError(MaterialError):
+    """
+    Invalid material value encountered during crypto material init
+    Usage:
+        raise InvalidValueError("error message")
+    """
+
 class InvalidSizeError(MaterialError):
     """
     Invalid size encountered during crypto material init
@@ -173,6 +187,7 @@ class InvalidVarRawSizeError(InvalidSizeError):
     Usage:
         raise InvalidRawSizeError("error message")
     """
+
 
 
 
