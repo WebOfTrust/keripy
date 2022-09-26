@@ -2708,6 +2708,13 @@ def test_number():
     with pytest.raises(InvalidValueError):
         number = Number(num=" :")
 
+    # test hex number string too long > 32 characters
+    with pytest.raises(InvalidValueError):
+        number = Number(numh="0"*33)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num="0"*33)
+
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -5400,17 +5407,17 @@ def test_serder():
     # test validation in Serder.sn property
     ked["s"] = "-1"
     srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
     ked["s"] = "0" * 33
     srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
     ked["s"] = "15.34"
     srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
     """Done Test """

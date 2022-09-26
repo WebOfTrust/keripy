@@ -1430,6 +1430,8 @@ class Number(Matter):
                     if numh is None or numh == '':
                         num = 0
                     else:
+                        if len(numh) > 32:
+                            raise InvalidValueError(f"Hex numh={numh} str too long.")
                         num = int(numh, 16)
 
                 else:  # handle case where num is hex str'
@@ -1437,6 +1439,8 @@ class Number(Matter):
                         if num == '':
                             num = 0
                         else:
+                            if len(num) > 32:
+                                raise InvalidValueError(f"Hex num={num} str too long.")
                             num = int(num, 16)
             except ValueError as ex:
                 raise InvalidValueError(f"Invalid whole number={num} .") from ex
@@ -4653,39 +4657,31 @@ class Counter:
 
 class Sadder:
     """
-    Sadder is KERI key event serializer-deserializer class
-    Only supports current version VERSION
+    Sadder is self addressed data (SAD) serializer-deserializer class
 
     Has the following public properties:
 
     Properties:
-        .raw is bytes of serialized event only
-        .ked is key event dict
-        .kind is serialization kind string value (see namedtuple coring.Serials)
-        .version is Versionage instance of event version
-        .size is int of number of bytes in serialed event only
-        .diger is Diger instance of digest of .raw
-        .dig  is qb64 digest from .diger
-        .digb is qb64b digest from .diger
-        .verfers is list of Verfers converted from .ked["k"]
-        .werfers is list of Verfers converted from .ked["b"]
-        .tholder is Tholder instance from .ked["kt'] else None
-        .ntholder is Tholder instance from .ked["nt'] else None
-        .sn is int sequence number converted from .ked["s"]
-        .pre is qb64 str of identifier prefix from .ked["i"]
-        .preb is qb64b bytes of identifier prefix from .ked["i"]
-        .said is qb64 of .ked['d'] if present
-        .saidb is qb64b of .ked['d'] of present
+        raw (bytes): of serialized event only
+        ked (dict): self addressed data dict
+        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+        size (int): number of bytes in serialization
+        version (Versionage): protocol version (Major, Minor)
+        ident (Identage): protocol identifier such as KERI, ACDC
+        saider (Saider): of SAID of this SAD .ked['d'] if present
+        said (str): SAID of .saider qb64
+        saidb (bytes): SAID of .saider  qb64b
+        pretty (str): Pretty JSON of this SAD
 
     Hidden Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
+        ._raw is bytes of serialized event only
+        ._ked is key event dict
+        ._kind is serialization kind string value (see namedtuple coring.Serials)
+          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+        ._size is int of number of bytes in serialed event only
+        ._version is Versionage instance of event version
+        ._ident (Identage):  protocol type identifier
+        ._saider (Saider): instance for this Sadder's SAID
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -4715,9 +4711,20 @@ class Sadder:
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         elif sad:
-            self._clone(sad=sad)
+            self._clone(sad=sad)  # create saider of sad
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
+
+    def _clone(self, sad):
+        """ copy hidden attributes from sad """
+        self._raw = sad.raw
+        self._ked = sad.ked
+        self._kind = sad.kind
+        self._size = sad.size
+        self._version = sad.version
+        self._ident = sad.ident
+        self._saider = sad.saider
+
 
     def _inhale(self, raw):
         """
@@ -4780,14 +4787,6 @@ class Sadder:
         else:
             raise ValueError("Both said and saider may not be None.")
 
-    def _clone(self, sad):
-        self._raw = sad.raw
-        self._ked = sad.ked
-        self._ident = sad.ident
-        self._kind = sad.kind
-        self._size = sad.size
-        self._version = sad.version
-        self._saider = sad.saider
 
     @property
     def raw(self):
@@ -4831,7 +4830,7 @@ class Sadder:
 
     @kind.setter
     def kind(self, kind):
-        """ kind property setter Assumes ._ked """
+        """ kind property setter Assumes ._ked. Serialization kind. """
         raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
@@ -4844,13 +4843,10 @@ class Sadder:
 
 
     @property
-    def ident(self):
-        """ ident property getter
+    def size(self):
+        """ size property getter"""
+        return self._size
 
-        Returns:
-            (Identage)
-        """
-        return self._ident
 
     @property
     def version(self):
@@ -4858,14 +4854,21 @@ class Sadder:
         version property getter
 
         Returns:
-            (Versionage)
+            (Versionage):
         """
         return self._version
 
+
     @property
-    def size(self):
-        """ size property getter"""
-        return self._size
+    def ident(self):
+        """ ident property getter
+        protocol identifer type instance of Identage such as KERI ACDC
+
+        Returns:
+            (Identage):
+        """
+        return self._ident
+
 
     @property
     def saider(self):
@@ -5030,16 +5033,17 @@ class Serder(Sadder):
         Returns:
             sn (int): converts hex str .ked["s"] to non neg int
         """
-        sn = self.ked["s"]
+        sner = Number(numh=self.ked["s"])
+        #sn = self.ked["s"]
 
-        if len(sn) > 32:
-            raise ValueError("Invalid sn = {} too large.".format(sn))
+        #if len(sn) > 32:
+            #raise ValueError("Invalid sn = {} too large.".format(sn))
 
-        sn = int(sn, 16)
-        if sn < 0:
-            raise ValueError("Negative sn={}.".format(sn))
+        #sn = int(sn, 16)
+        #if sn < 0:
+            #raise ValueError("Negative sn={}.".format(sn))
 
-        return (sn)
+        return (sner.num)
 
     @property
     def pre(self):

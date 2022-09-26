@@ -1663,12 +1663,14 @@ class Kever:
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
+
     @property
     def kevers(self):
         """
         Returns .baser.kevers
         """
         return self.db.kevers
+
 
     @property
     def transferable(self):
@@ -1679,6 +1681,7 @@ class Kever:
                 False otherwise
         """
         return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
+
 
     def reload(self, state):
         """
@@ -1722,6 +1725,7 @@ class Kever:
                                     "".format(state.pretty()))
         self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
+
 
     def incept(self, serder, estOnly=None):
         """
@@ -2437,6 +2441,7 @@ class Kever:
         logger.info("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
+
 
     def state(self, kind=Serials.json):
         """
