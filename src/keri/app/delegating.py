@@ -161,7 +161,7 @@ class Boatswain(doing.DoDoer):
             isith='1',
             ncount=0,
             nsith='0',
-            toad=kever.toad,
+            toad=kever.toader.num,
         )
 
         hab = self.hby.makeHab(palias, **kwargs)

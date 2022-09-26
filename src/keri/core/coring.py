@@ -5037,7 +5037,7 @@ class Serder(Sadder):
         Returns:
             (Number): of .ked["s"] hex number str converted
         """
-        return Number(numh=self.ked["s"])
+        return Number(num=self.ked["s"])  # auto converts hex num str to int
 
 
     @property

@@ -67,7 +67,7 @@ class KiwiServer(doing.DoDoer):
                                  sith=cst,
                                  nsith=nst,
                                  nkeys=[diger.qb64 for diger in digers],
-                                 toad=cur.toad,
+                                 toad=cur.toader.num,
                                  wits=cur.wits,
                                  code=code)
 

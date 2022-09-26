@@ -1643,7 +1643,7 @@ class Kever:
                                                         verfers=serder.verfers,
                                                         tholder=self.tholder,
                                                         wigers=wigers,
-                                                        toad=self.toad,
+                                                        toader=self.toader,
                                                         wits=self.wits,
                                                         seqner=seqner,
                                                         saider=saider)
@@ -1713,7 +1713,8 @@ class Kever:
         self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
         self.nexter = coring.Nexter(digs=state.ked["n"])
-        self.toad = int(state.ked["bt"], 16)
+        #self.toad = int(state.ked["bt"], 16)
+        self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
         self.adds = state.ked["ee"]["ba"]
@@ -1786,16 +1787,27 @@ class Kever:
                                   "".format(wits, ked))
         self.wits = wits
 
-        toad = int(ked["bt"], 16)
+        toader = Number(num=ked["bt"])  # auto converts hex num to int
         if wits:
-            if toad < 1 or toad > len(wits):  # out of bounds toad
-                raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
-                                      "".format(toad, wits, ked))
+            if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
+                raise ValueError(f"Invalid toad = {toader.num} for backers "
+                                 f"(wits)={wits} for event={ked}.")
         else:
-            if toad != 0:  # invalid toad
-                raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
-                                      "".format(toad, wits, ked))
-        self.toad = toad
+            if toader.num != 0:  # invalid toad
+                raise ValueError(f"Invalid toad = {toader.num} for backers "
+                                 "(wits)={wits} for event={ked}.")
+        self.toader = toader
+
+        #toad = int(ked["bt"], 16)
+        #if wits:
+            #if toad < 1 or toad > len(wits):  # out of bounds toad
+                #raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
+                                      #"".format(toad, wits, ked))
+        #else:
+            #if toad != 0:  # invalid toad
+                #raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
+                                      #"".format(toad, wits, ked))
+        #self.toad = toad
 
         data = ked["a"]
         if not self.prefixer.transferable and data:  # data must be empty for nontrans prefix
@@ -1805,7 +1817,8 @@ class Kever:
 
 
         # need this to recognize recovery events and transferable receipts
-        self.lastEst = LastEstLoc(s=self.sn, d=self.serder.saider.qb64)  # last establishment event location
+        # last establishment event location
+        self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
         """
@@ -1883,7 +1896,7 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event for "
                                           "evt = {}.".format(k, ilk, ked))
 
-            tholder, toad, wits, cuts, adds = self.rotate(serder, sn)
+            tholder, toader, wits, cuts, adds = self.rotate(serder, sn)
 
             # Validates signers, delegation if any, and witnessing when applicable
             # If does not validate then escrows as needed and raises ValidationError
@@ -1892,7 +1905,7 @@ class Kever:
                                                             verfers=serder.verfers,
                                                             tholder=tholder,
                                                             wigers=wigers,
-                                                            toad=toad,
+                                                            toader=toader,
                                                             wits=wits,
                                                             seqner=seqner,
                                                             saider=saider)
@@ -1932,7 +1945,8 @@ class Kever:
             self.nexter = serder.nexter
             self.ntholder = serder.ntholder
 
-            self.toad = toad
+            #self.toad = toad
+            self.toader = toader
             self.wits = wits
             self.cuts = cuts
             self.adds = adds
@@ -1974,7 +1988,7 @@ class Kever:
                                                             verfers=self.verfers,
                                                             tholder=self.tholder,
                                                             wigers=wigers,
-                                                            toad=self.toad,
+                                                            toader=self.toader,
                                                             wits=self.wits)
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
@@ -2122,20 +2136,31 @@ class Kever:
                                                                        adds,
                                                                        ked))
 
-        toad = int(ked["bt"], 16)
+        toader = Number(num=ked["bt"])  # auto converts hex num to int
         if wits:
-            if toad < 1 or toad > len(wits):  # out of bounds toad
-                raise ValidationError("Invalid toad = {} for wits = {} for evt "
-                                      "= {}.".format(toad, wits, ked))
+            if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
+                raise ValueError(f"Invalid toad = {toader.num} for backers "
+                                 f"(wits)={wits} for event={ked}.")
         else:
-            if toad != 0:  # invalid toad
-                raise ValidationError("Invalid toad = {} for wits = {} for evt "
-                                      "= {}.".format(toad, wits, ked))
+            if toader.num != 0:  # invalid toad
+                raise ValueError(f"Invalid toad = {toader.num} for backers "
+                                 "(wits)={wits} for event={ked}.")
 
-        return tholder, toad, wits, cuts, adds
+
+        #toad = int(ked["bt"], 16)
+        #if wits:
+            #if toad < 1 or toad > len(wits):  # out of bounds toad
+                #raise ValidationError("Invalid toad = {} for wits = {} for evt "
+                                      #"= {}.".format(toad, wits, ked))
+        #else:
+            #if toad != 0:  # invalid toad
+                #raise ValidationError("Invalid toad = {} for wits = {} for evt "
+                                      #"= {}.".format(toad, wits, ked))
+
+        return tholder, toader, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
-                       wigers, toad, wits, seqner=None, saider=None):
+                       wigers, toader, wits, seqner=None, saider=None):
         """
         Returns triple (sigers, delegator, wigers) where:
         sigers is unique validated signature verified members of inputed sigers
@@ -2157,7 +2182,7 @@ class Kever:
             wigers is list of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
-            toad is int or  str hex of witness threshold
+            toader (Number): instance of backer witness threshold
             wits is list of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
             seqner is Seqner instance of delegating event sequence number.
@@ -2206,20 +2231,27 @@ class Kever:
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
                      not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
                 # validate that event is fully witnessed
-                if isinstance(toad, str):
-                    toad = int(toad, 16)
-                if toad < 0 or len(wits) < toad:
-                    raise ValidationError("Invalid toad = {} for wits = {} for evt"
-                                          " = {}.".format(toad, wits, serder.ked))
 
-                if len(windices) < toad:  # not fully witnessed yet
+                if wits:
+                    if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
+                        raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
+                else:
+                    if toader.num != 0:  # invalid toad
+                        raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
+
+                #if isinstance(toad, str):
+                    #toad = int(toad, 16)
+                #if toad < 0 or len(wits) < toad:
+                    #raise ValidationError("Invalid toad = {} for wits = {} for evt"
+                                          #" = {}.".format(toad, wits, serder.ked))
+
+                if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
                         self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
-                    raise MissingWitnessSignatureError("Failure satisfying toad = {} "
-                                                       "on witness sigs for {} for evt = {}.".format(toad,
-                                                                                                     [siger.qb64 for siger
-                                                                                                      in wigers],
-                                                                                                     serder.ked))
+                    raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
+                                                       f"on witness sigs="
+                                                       f"{[siger.qb64 for siger in wigers]} "
+                                                       f"for event={serder.ked}.")
         return sigers, delegator, wigers
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
@@ -2485,7 +2517,7 @@ class Kever:
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
                       nkeys=self.nexter.digs if self.nexter else [],
-                      toad=self.toad,
+                      toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,
                       dpre=self.delegator,

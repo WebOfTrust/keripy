@@ -51,7 +51,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("\nWitnesses:")
         print("Count:\t\t{}".format(len(kever.wits)))
         print("Receipts:\t{}".format(len(wigs)))
-        print("Threshold:\t{}".format(kever.toad))
+        print("Threshold:\t{}".format(kever.toader.num))
         print("\nPublic Keys:\t")
         for idx, verfer in enumerate(kever.verfers):
             print(f'\t{idx+1}. {verfer.qb64}')
@@ -102,7 +102,7 @@ def printExternal(hby, pre, label="Identifier"):
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))
     print("Receipts:\t{}".format(len(wigs)))
-    print("Threshold:\t{}".format(kever.toad))
+    print("Threshold:\t{}".format(kever.toader.num))
     print("\nPublic Keys:\t")
     for idx, verfer in enumerate(kever.verfers):
         print(f'\t{idx+1}. {verfer.qb64}')

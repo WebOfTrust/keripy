@@ -254,7 +254,7 @@ class IdentifierEnd(doing.DoDoer):
                 public_keys=[verfer.qb64 for verfer in kever.verfers],
                 nsith=kever.ntholder.sith,
                 next_keys=kever.nexter.digs,
-                toad=kever.toad,
+                toad=kever.toader.num,
                 witnesses=kever.wits,
                 receipts=len(wigs)
             )

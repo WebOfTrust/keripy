@@ -73,7 +73,7 @@ def test_indexed_witness_replay():
         for werfer in camHab.iserder.werfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
-        assert camHab.kever.toad == 2
+        assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 0
 
         # create non-local kevery for Cam to process onlocal msgs
@@ -202,7 +202,7 @@ def test_indexed_witness_replay():
         # Cam rotation with witness rotation
         camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
-        assert camHab.kever.toad == 2
+        assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
 
         # update lists of witness kvys and habs
@@ -337,7 +337,7 @@ def test_nonindexed_witness_receipts():
         for werfer in camHab.iserder.werfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
-        assert camHab.kever.toad == 2
+        assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 0
 
         # create non-local kevery for Cam to process non-local msgs
@@ -485,7 +485,7 @@ def test_nonindexed_witness_receipts():
         # Cam rotation with witness rotation
         camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
-        assert camHab.kever.toad == 2
+        assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
 
         # update wits

@@ -114,7 +114,7 @@ def test_reply(mockHelpingNowUTC):
         for werfer in tamHab.iserder.werfers:
             assert werfer.qb64 in wits
         assert tamHab.kever.wits == wits
-        assert tamHab.kever.toad == 2
+        assert tamHab.kever.toader.num == 2
         assert tamHab.kever.sn == 0
         assert tamHab.kever.tholder.thold == 2 == int(tsith, 16)
         # create non-local kevery for Tam to process non-local msgs
