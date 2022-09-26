@@ -1355,7 +1355,8 @@ class Seqner(Matter):
 class Number(Matter):
     """
     Number is subclass of Matter, cryptographic material, for ordinal counting
-    whole numbers  (non-negative integers).
+    whole numbers  (non-negative integers) up to a maximum size of 16 bytes,
+    256 ** 16 - 1.
     Examples uses are sequence numbers or first seen ordering numbers or thresholds.
     Seqner provides fully qualified format for ordinals (sequence numbers etc)
     when provided as attached cryptographic material elements.
@@ -1424,21 +1425,24 @@ class Number(Matter):
 
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if num is None:
-                if numh is None or numh == '':
-                    num = 0
-                else:
-                    num = int(numh, 16)
-
-            else:  # handle case where num is hex str'
-                if isinstance(num, str):
-                    if num == '':
+            try:
+                if num is None:
+                    if numh is None or numh == '':
                         num = 0
                     else:
-                        num = int(num, 16)
+                        num = int(numh, 16)
 
-            if num < 0:
-                raise InvalidValueError(f"Negative number={num}.")
+                else:  # handle case where num is hex str'
+                    if isinstance(num, str):
+                        if num == '':
+                            num = 0
+                        else:
+                            num = int(num, 16)
+            except ValueError as ex:
+                raise InvalidValueError(f"Invalid whole number={num} .") from ex
+
+            if not isinstance(num, int) or num < 0:
+                raise InvalidValueError(f"Invalid whole number={num}.")
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
@@ -1453,7 +1457,7 @@ class Number(Matter):
                 code = code = NumDex.Huge
 
             else:
-                raise ValueError(f"Invalid num = {num}, too large to encode.")
+                raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
 
             # default to_bytes parameter signed is False. If negative raises
             # OverflowError: can't convert negative int to unsigned
@@ -1463,8 +1467,8 @@ class Number(Matter):
                                      code=code, **kwa)
 
         if self.code not in NumDex:
-            raise ValidationError("Invalid code = {} for Number."
-                                  "".format(self.code))
+            raise ValidationError(f"Invalid code = {self.code} for Number.")
+
 
     @property
     def num(self):

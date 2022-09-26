@@ -2688,9 +2688,26 @@ def test_number():
     number = Number(numh='')
     assert number.num == 0
 
-    # test negative raisze erro
+    # test negative  error
     with pytest.raises(InvalidValueError):
         number = Number(num=-5)
+
+    # test not integer
+    with pytest.raises(InvalidValueError):
+        number = Number(num=0.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=1.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=1.5)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=-2.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=" :")
+
 
     num = (256 ** 2 - 1)
     assert num == 65535

@@ -75,22 +75,22 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 #  when using in events
 
 # Digest Seal: uniple (d,)
-# d = dig is qb64 digest of data
+# d = digest qb64 of data  (usually SAID)
 SealDigest = namedtuple("SealDigest", 'd')
 
 # Root Seal: uniple (rd,)
-# rd = root dig id qb64 digest that is root of data digest Merkle tree
+# rd = Merkle tree root digest qb64 digest of anchored (sealed) data in Merkle tree
 SealRoot = namedtuple("SealRoot", 'rd')
 
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
-# d = dig is qb64 digest of backer metadata attached to event with anchored seal
+# d = digest qb64 of backer metadata anchored to event usually SAID of data
 SealBacker = namedtuple("SealBacker", 'bi d')
 
 # Event Seal: triple (i, s, d)
 # i = pre is qb64 of identifier prefix of KEL for event,
 # s = sn of event as lowercase hex string  no leading zeros,
-# d = dig is qb64 digest of event
+# d = SAID digest qb64 of event
 SealEvent = namedtuple("SealEvent", 'i s d')
 
 # Last Estalishment Event Seal: uniple (i,)
@@ -101,12 +101,12 @@ SealLast = namedtuple("SealLast", 'i')
 # State (latest current) Event: triple (s, t, d)
 # s = sn of latest event as lowercase hex string  no leading zeros,
 # t = message type of latest event (ilk)
-# d = digest of latest event
+# d = SAID digest qb64 of latest event
 StateEvent = namedtuple("StateEvent", 's t d')
 
 # State (latest current) Establishment Event: quadruple (s, d, br, ba)
 # s = sn of latest est event as lowercase hex string  no leading zeros,
-# d = digest of latest establishment event
+# d = SAID digest qb64  of latest establishment event
 # br = backer (witness) remove list (cuts) from latest est event
 # ba = backer (witness) add list (adds) from latest est event
 StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
@@ -668,7 +668,7 @@ def incept(keys,
                kt=(tholder.num if intive and tholder.num is not None and
                     tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=(ntholder.num if intive and tholder.num is not None and
+               nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,  # hash qual Base64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
@@ -756,27 +756,28 @@ def rotate(pre,
     Parameters:
         pre (str): identifier prefix qb64
         keys  (list): current signing keys qb64
-        dig (str): said of previous event qb64
+        dig (str): SAID of previous event qb64
         ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
         sn (int | str): sequence number int or hex str
-        sith (int | str | list): current signing threshold input to Tholder
-        nkeys (list): current signing key digests qb64
-        nsith int | str | list): next signing threshold input to Tholder
-        toad (int | str ): witness threshold number if str then hex str
-        wits (list): prior witness identifier prefixes qb64
-        cuts (list): witness prefixes to cut qb64
-        adds (list): witness prefixes to add qb64
-        data (list): seal dicts
+        sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): prior witness identifier prefixes qb64
+        cuts (list | None): witness prefixes to cut qb64
+        adds (list | None): witness prefixes to add qb64
+        data (list | None): seal dicts
         version (Version): KERI protocol version string
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-            not hex str when numeric threshold
-
+                       instead of hex str when numeric threshold
     """
     vs = versify(version=version, kind=kind, size=0)
+
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
         raise  ValueError(f"Invalid ilk ={ilk} for rot or drt.")
+
     sner = Number(num=sn)
     if sner.num < 1:  # sn for rotate must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for rot or drt.")
@@ -810,27 +811,27 @@ def rotate(pre,
     cuts = cuts if cuts is not None else []
     cutset = oset(cuts)
     if len(cutset) != len(cuts):
-        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+        raise ValueError(f"Invalid cuts = {cuts}, has duplicates.")
 
     if (witset & cutset) != cutset:  # some cuts not in wits
-        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+        raise ValueError(f"Invalid cuts = {cuts}, not all members in wits.")
 
     adds = adds if adds is not None else []
     addset = oset(adds)
     if len(addset) != len(adds):
-        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
-
-    if cutset & addset:  # non empty intersection
-        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+        raise ValueError(f"Invalid adds = {adds}, has duplicates.")
 
     if witset & addset:  # non empty intersection
-        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
+        raise ValueError(f"Intersecting wits = {wits} and  adds = {adds}.")
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError(f"Intersecting cuts = {cuts} and  adds = {adds}.")
 
     newitset = (witset - cutset) | addset
 
     if len(newitset) != (len(wits) - len(cuts) + len(adds)):  # redundant?
-        raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
-                         "and adds = {}.".format(wits, cuts, adds))
+        raise ValueError(f"Invalid member combination among wits = {wits}, "
+                         f"cuts ={cuts}, and adds = {adds}.")
 
     if toad is None:
         if not newitset:
@@ -846,25 +847,22 @@ def rotate(pre,
         if toader.num != 0:  # invalid toad
             raise ValueError(f"Invalid toad = {toader.num} for wits = {newitset}")
 
-
-    data = data if data is not None else []
-
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",  # qb64 SAID
                i=pre,  # qb64 prefix
                s=sner.numh,  # hex string no leading zeros lowercase
-               p=dig,  # qb64 digest of prior event
+               p=dig,  # SAID qb64 digest of prior event
                kt=(tholder.num if intive and tholder.num is not None and
                     tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=(ntholder.num if intive and tholder.num is not None and
+               nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,  # hash qual Base64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
-               a=data,  # list of seals
+               a= data if data is not None else [],  # list of seals
                )
     _, ked = coring.Saider.saidify(sad=ked)
 
@@ -1002,6 +1000,7 @@ def state(pre,
           dpre=None,
           version=Version,
           kind=Serials.json,
+          intive = False,
           ):
     """
     Returns serder of key state notification message.
@@ -1009,29 +1008,33 @@ def state(pre,
 
     Parameters:
         pre (str): identifier prefix qb64
-        sn (int); sequence number of latest event
-        pig (str): qb64 said of prior event
-        dig (str): qb64 said of latest (current) event
+        sn (int): sequence number of latest event
+        pig (str): SAID qb64 of prior event
+        dig (str): SAID qb64 of latest (current) event
+        fn (int):  first seen ordinal number of latest event
         eilk (str): event (message) type (ilk) of latest (current) event
-        keys is list of qb64 signing keys
-        eevt is namedtuple of fields from latest establishment event s,d,wr,wa
-            s = sn
-            d = digest
+        keys (list): qb64 signing keys
+        eevt (StateEstEvent): namedtuple (s,d,wr,wa) for latest est event
+            s = sn of est event
+            d = SAID of est event
             wr = witness remove list (cuts)
             wa = witness add list (adds)
-        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+        stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data
-        sith is string or list format for signing threshold
-        nkeys is list of qb64 next key digests
-        nsith  is is int, string, or list format for next signing threshold
-        toad is int of witness threshold
-        wits is list of witness prefixes qb64
-        cnfg is list of strings TraitDex of configuration traits
-        dpre is qb64 of delegator's identifier prefix if any
-        version is Version instance
-        kind is serialization kind
+        sith sith (int | str | list | None): current signing threshold input to Tholder
+        nkeys (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): prior witness identifier prefixes qb64
+        cnfg (list | None):  strings from TraitDex configuration trait strings
+        dpre (str | None): identifier prefix qb64 delegator if any
+                           If None then dpre in state is empty ""
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+                       instead of hex str when numeric threshold
 
-    Key State Dict
+    KeyStateDict:
     {
         "v": "KERI10JSON00011c_",
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
@@ -1062,11 +1065,12 @@ def state(pre,
     """
     vs = versify(version=version, kind=kind, size=0)
 
-    if sn < 0:
-        raise ValueError("Negative sn = {} in key state.".format(sn))
+    sner = Number(num=sn)  # raises InvalidValueError if sn < 0
+
+    fner = Number(num=fn)  # raises InvalidValueError if fn < 0
 
     if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
-        raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
+        raise ValueError(f"Invalid event type et={eilk} in key state.")
 
     if stamp is None:
         stamp = helping.nowIso8601()
@@ -1075,24 +1079,27 @@ def state(pre,
         sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
     tholder = Tholder(sith=sith)
+    if tholder.num is not None and tholder.num < 1:
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
-        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-
-    if nsith is None:
-        nsith = '0' if not nkeys else "{:x}".format(max(1, ceil(len(nkeys) / 2)))
+        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
     if nkeys is None:
         nkeys = []
 
-    ntholder = Tholder(sith=nsith)
-    if ntholder.size > len(nkeys):
-        raise ValueError("Invalid nsith = {} for keys = {}".format(nsith, nkeys))
+    if nsith is None:
+        nsith = max(0, ceil(len(nkeys) / 2))
 
+    ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
+    if ntholder.size > len(nkeys):
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
 
     wits = wits if wits is not None else []
     witset = oset(wits)
     if len(witset) != len(wits):
-        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
 
     if toad is None:
         if not witset:
@@ -1100,46 +1107,62 @@ def state(pre,
         else:
             toad = max(1, ceil(len(witset) / 2))
 
-    if witset:
-        if toad < 1 or toad > len(witset):  # out of bounds toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(witset)))
-    else:
-        if toad != 0:  # invalid toad
-            raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(witset)))
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:  # compute default f and m for len(wits)
+            toad = ample(len(witset))
+    toader = Number(num=toad)
 
-    cnfg = cnfg if cnfg is not None else []
+    if witset:
+        if toader.num < 1 or toader.num > len(witset):  # out of bounds toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
+    else:
+        if toader.num != 0:  # invalid toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
 
     if not eevt or not isinstance(eevt, StateEstEvent):
-        raise ValueError("Missing or invalid latest est event = {} for key "
-                         "state.".format(eevt))
+        raise ValueError(f"Missing or invalid latest est event = {eevt} for key "
+                         f"state.")
+    eesner = Number(numh=eevt.s)  # if not whole number raises InvalidValueError
 
-    validateSN(eevt.s)  # both incept and rotate
+    # cuts is relative to prior wits not current wits provided here
+    cuts = eevt.br if eevt.br is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):  # duplicates in cuts
+        raise ValueError(f"Invalid cuts = {cuts}, has "
+                         f"duplicates, in latest est event, .")
 
-    if len(oset(eevt.br)) != len(eevt.br):  # duplicates in cuts
-        raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
-                         ".".format(eevt.br))
+    # adds is relative to prior wits not current wits provided here
+    adds = eevt.ba if eevt.ba is not None else []
+    addset = oset(adds)
 
-    if len(oset(eevt.ba)) != len(eevt.ba):  # duplicates in adds
-        raise ValueError("Invalid adds = {} in latest est event, has duplicates"
-                         ".".format(eevt.ba))
+    if len(addset) != len(adds):  # duplicates in adds
+        raise ValueError(f"Invalid adds = {adds}, has duplicates,"
+                         f" in latest est event,.")
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
+                         f"latest est event.")
+
 
     ksd = dict(v=vs,  # version string
                i=pre,  # qb64 prefix
-               s="{:x}".format(sn),  # lowercase hex string no leading zeros
+               s=sner.numh,  # lowercase hex string no leading zeros
                p=pig,
                d=dig,
-               f="{:x}".format(fn),  # lowercase hex string no leading zeros
+               f=fner.numh,  # lowercase hex string no leading zeros
                dt=stamp,
                et=eilk,
-               kt=sith,  # hex string no leading zeros lowercase
+               kt=(tholder.num if intive and tholder.num is not None and
+                    tholder.num <= MaxIntThold else tholder.sith),
                k=keys,  # list of qb64
-               nt=ntholder.sith,
+               nt=(ntholder.num if intive and ntholder.num is not None and
+                    ntholder.num <= MaxIntThold else ntholder.sith),
                n=nkeys,
-               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config ordered mappings may be empty
+               c=cnfg if cnfg is not None else [],
                ee=eevt._asdict(),  # latest est event dict
                di=dpre if dpre is not None else "",
                )
