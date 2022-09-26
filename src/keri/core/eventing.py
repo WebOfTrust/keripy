@@ -1530,7 +1530,9 @@ class Kever:
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
+        .sner (Number): instance of sequence number
         .fn is first seen ordinal number int
+        .fner (Number): instance of first seen ordinal number
         .dater is first seen Dater instance (datetime)
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
@@ -1655,11 +1657,13 @@ class Kever:
         wits = serder.ked["b"]
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
+        # returns fn == None if already logged fn log is non idempotent
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
                                 first=True if not check else False, seqner=seqner, saider=saider,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
+            self.fner = Number(num=self.fn)
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -1700,7 +1704,9 @@ class Kever:
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
         self.sn = state.sn
+        self.sner = state.sner
         self.fn = int(state.ked["f"], 16)
+        self.fner = Number(num=self.fn)
         self.dater = Dater(dts=state.ked["dt"])
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
@@ -1738,6 +1744,12 @@ class Kever:
         """
         ked = serder.ked
 
+        self.sn = validateSN(sn=ked["s"], inceptive=True)
+
+        self.sner = serder.sner
+        if self.sner.positive:
+            raise ValidationError(f"Nonzero sn={self.sner.num} in inception event.")
+
         self.verfers = serder.verfers  # converts keys to verifiers
         self.tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         if len(self.verfers) < self.tholder.size:
@@ -1751,7 +1763,7 @@ class Kever:
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        self.sn = validateSN(sn=ked["s"], inceptive=True)
+
         self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["n"]
@@ -2339,7 +2351,7 @@ class Kever:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
         """
-        fn = None
+        fn = None  # None means not a first seen log event so does not return an fn
         dgkey = dgKey(serder.preb, serder.saidb)
         dtsb = helping.nowIso8601().encode("utf-8")
         self.db.putDts(dgkey, dtsb)  # idempotent do not change dts if already
