@@ -1423,6 +1423,8 @@ class Number(Matter):
                 number or 0 if None
             numh (str):  string equivalent of non-negative int number
 
+        Note: int("0xab", 16) is also valid since int recognizes 0x hex prefix
+
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             try:
@@ -1430,8 +1432,8 @@ class Number(Matter):
                     if numh is None or numh == '':
                         num = 0
                     else:
-                        if len(numh) > 32:
-                            raise InvalidValueError(f"Hex numh={numh} str too long.")
+                        #if len(numh) > 32:
+                            #raise InvalidValueError(f"Hex numh={numh} str too long.")
                         num = int(numh, 16)
 
                 else:  # handle case where num is hex str'
@@ -1439,8 +1441,8 @@ class Number(Matter):
                         if num == '':
                             num = 0
                         else:
-                            if len(num) > 32:
-                                raise InvalidValueError(f"Hex num={num} str too long.")
+                            #if len(num) > 32:
+                                #raise InvalidValueError(f"Hex num={num} str too long.")
                             num = int(num, 16)
             except ValueError as ex:
                 raise InvalidValueError(f"Invalid whole number={num} .") from ex
@@ -4906,7 +4908,8 @@ class Sadder:
 
 class Serder(Sadder):
     """
-    Serder is KERI key event serializer-deserializer class
+    Serder is versioned protocol key event message serializer-deserializer class
+
     Only supports current version VERSION
 
     Has the following public properties:
@@ -4924,7 +4927,8 @@ class Serder(Sadder):
         .werfers is list of Verfers converted from .ked["b"]
         .tholder is Tholder instance from .ked["kt'] else None
         .ntholder is Tholder instance from .ked["nt'] else None
-        .sn is int sequence number converted from .ked["s"]
+        sner (Number): instance converted from sequence number .ked["s"] hex str
+        sn (int): sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
         .said is qb64 of .ked['d'] if present
@@ -5027,23 +5031,23 @@ class Serder(Sadder):
         return Tholder(sith=self.ked["nt"]) if "nt" in self.ked else None
 
     @property
+    def sner(self):
+        """
+        sner (Number of sequence number) property getter
+        Returns:
+            (Number): of .ked["s"] hex number str converted
+        """
+        return Number(numh=self.ked["s"])
+
+
+    @property
     def sn(self):
         """
         sn (sequence number) property getter
         Returns:
-            sn (int): converts hex str .ked["s"] to non neg int
+            sn (int): of .sner.num from .ked["s"]
         """
-        sner = Number(numh=self.ked["s"])
-        #sn = self.ked["s"]
-
-        #if len(sn) > 32:
-            #raise ValueError("Invalid sn = {} too large.".format(sn))
-
-        #sn = int(sn, 16)
-        #if sn < 0:
-            #raise ValueError("Negative sn={}.".format(sn))
-
-        return (sner.num)
+        return (self.sner.num)
 
     @property
     def pre(self):
