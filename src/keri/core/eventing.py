@@ -1539,7 +1539,7 @@ class Kever:
         .tholder is Tholder instance for event sith
         .verfers is list of Verfer instances for current event state set of signing keys
         .nexter is qualified qb64 of next sith and next signing keys
-        .toad is int threshold of accountable duplicity
+        toader (Number): instance of TOAD (threshold of accountable duplicity)
         .wits is list of qualified qb64 aids for witnesses
         .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
         .adds is list of qualified qb64 aids for witnesses added to prev wits list
@@ -1551,6 +1551,7 @@ class Kever:
 
 
     Properties:
+        .sn (int): sequence number property that returns .sner.num
         .kevers (dict): reference to self.db.kevers
         .transferable (bool): True if nexter is not none and pre is transferable
 
@@ -1669,6 +1670,15 @@ class Kever:
 
 
     @property
+    def sn(self):
+        """
+        Returns:
+            (int): .sner.num
+        """
+        return self.sner.num
+
+
+    @property
     def kevers(self):
         """
         Returns .baser.kevers
@@ -1703,7 +1713,7 @@ class Kever:
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
-        self.sn = state.sn
+        #self.sn = state.sn
         self.sner = state.sner
         self.fn = int(state.ked["f"], 16)
         self.fner = Number(num=self.fn)
@@ -1713,7 +1723,6 @@ class Kever:
         self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
         self.nexter = coring.Nexter(digs=state.ked["n"])
-        #self.toad = int(state.ked["bt"], 16)
         self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1745,7 +1754,7 @@ class Kever:
         """
         ked = serder.ked
 
-        self.sn = validateSN(sn=ked["s"], inceptive=True)
+        #self.sn = validateSN(sn=ked["s"], inceptive=True)
 
         self.sner = serder.sner
         if self.sner.positive:
@@ -1797,17 +1806,6 @@ class Kever:
                 raise ValueError(f"Invalid toad = {toader.num} for backers "
                                  "(wits)={wits} for event={ked}.")
         self.toader = toader
-
-        #toad = int(ked["bt"], 16)
-        #if wits:
-            #if toad < 1 or toad > len(wits):  # out of bounds toad
-                #raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
-                                      #"".format(toad, wits, ked))
-        #else:
-            #if toad != 0:  # invalid toad
-                #raise ValidationError("Invalid toad = {} for backers = {} for evt = {}."
-                                      #"".format(toad, wits, ked))
-        #self.toad = toad
 
         data = ked["a"]
         if not self.prefixer.transferable and data:  # data must be empty for nontrans prefix
@@ -1880,7 +1878,9 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
-        sn = validateSN(sn=ked["s"], inceptive=False)
+        #sn = validateSN(sn=ked["s"], inceptive=False)
+        sner = serder.sner
+
         ilk = ked["t"]
 
         if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
@@ -1896,7 +1896,7 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event for "
                                           "evt = {}.".format(k, ilk, ked))
 
-            tholder, toader, wits, cuts, adds = self.rotate(serder, sn)
+            tholder, toader, wits, cuts, adds = self.rotate(serder, sner)
 
             # Validates signers, delegation if any, and witnessing when applicable
             # If does not validate then escrows as needed and raises ValidationError
@@ -1936,7 +1936,8 @@ class Kever:
                                     firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
-            self.sn = sn
+            #self.sn = sn
+            self.sner = sner
             self.serder = serder  # need whole serder for digest agility compare
             self.ilk = ilk
             self.tholder = tholder
@@ -1945,14 +1946,13 @@ class Kever:
             self.nexter = serder.nexter
             self.ntholder = serder.ntholder
 
-            #self.toad = toad
             self.toader = toader
             self.wits = wits
             self.cuts = cuts
             self.adds = adds
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = LastEstLoc(s=self.sn, d=self.serder.saider.qb64)
+            self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
@@ -1969,9 +1969,9 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event."
                                           " evt = {}.".format(k, Ilks.ixn, ked))
 
-            if not sn == (self.sn + 1):  # sn not in order
+            if not sner.num == (self.sner.num + 1):  # sn not in order
                 raise ValidationError("Invalid sn = {} expecting = {} for evt "
-                                      "= {}.".format(sn, self.sn + 1, ked))
+                                      "= {}.".format(sner.num, self.sner.num + 1, ked))
 
             if not self.serder.compare(said=ked["p"]):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with state dig"
@@ -1997,7 +1997,8 @@ class Kever:
                                     first=True if not check else False)  # First seen accepted
 
             # update state
-            self.sn = sn
+            #self.sn = sn
+            self.sner = sner
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
@@ -2009,36 +2010,38 @@ class Kever:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
 
-    def rotate(self, serder, sn):
+    def rotate(self, serder, sner):
         """
-        Generic Rotate Operation Processing
+        Generic Rotate Operation Validation Processing
+        Validates provisional rotation
         Same logic for both 'rot' and 'drt' (plain and delegated rotation)
 
-        Returns: tuple (tholder, toad, wits, cuts, adds)
+        Returns: tuple (tholder, toader, wits, cuts, adds) of provisional  results
+        of rotation subject to additional validation
 
         Parameters:
             serder (Serder): instance of rotation ('rot' or 'drt') event.
-            sn (int): sequence number
+            sner (Number): sequence number instance
 
         """
         ked = serder.ked
         pre = ked["i"]  # controller AID prefix
         dig = ked["p"]  # prior event said
 
-        if sn > self.sn + 1:  # out of order event
+        if sner.num > self.sner.num + 1:  # out of order event
             raise ValidationError("Out of order event sn = {} expecting"
-                                  " = {} for evt = {}.".format(sn,
-                                                               self.sn + 1,
+                                  " = {} for evt = {}.".format(sner.num,
+                                                               self.sner.num + 1,
                                                                ked))
 
-        elif sn <= self.sn:  # stale or recovery
+        elif sner.num <= self.sner.num:  # stale or recovery
             #  stale events could be duplicitous
             #  duplicity detection should have happend before .update called
             #  so raise exception if stale
-            if sn <= self.lastEst.s:  # stale  event
+            if sner.num <= self.lastEst.s:  # stale  event
                 raise ValidationError("Stale event sn = {} expecting"
-                                      " = {} for evt = {}.".format(sn,
-                                                                   self.sn + 1,
+                                      " = {} for evt = {}.".format(sner.num,
+                                                                   self.sner.num + 1,
                                                                    ked))
 
             else:  # sn > self.lastEst.sn  #  recovery event
@@ -2049,7 +2052,7 @@ class Kever:
                                                           Ilks.ixn,
                                                           ked))
 
-                psn = sn - 1  # sn of prior event
+                psn = sner.num - 1  # use sn of prior event to fetch prior event
                 # fetch raw serialization of last inserted  event at psn
                 pdig = self.db.getKeLast(key=snKey(pre=pre, sn=psn))
                 if pdig is None:
@@ -2146,17 +2149,6 @@ class Kever:
                 raise ValueError(f"Invalid toad = {toader.num} for backers "
                                  "(wits)={wits} for event={ked}.")
 
-
-        #toad = int(ked["bt"], 16)
-        #if wits:
-            #if toad < 1 or toad > len(wits):  # out of bounds toad
-                #raise ValidationError("Invalid toad = {} for wits = {} for evt "
-                                      #"= {}.".format(toad, wits, ked))
-        #else:
-            #if toad != 0:  # invalid toad
-                #raise ValidationError("Invalid toad = {} for wits = {} for evt "
-                                      #"= {}.".format(toad, wits, ked))
-
         return tholder, toader, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
@@ -2238,12 +2230,6 @@ class Kever:
                 else:
                     if toader.num != 0:  # invalid toad
                         raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
-
-                #if isinstance(toad, str):
-                    #toad = int(toad, 16)
-                #if toad < 0 or len(wits) < toad:
-                    #raise ValidationError("Invalid toad = {} for wits = {} for evt"
-                                          #" = {}.".format(toad, wits, serder.ked))
 
                 if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
@@ -2506,7 +2492,7 @@ class Kever:
             cnfg.append(TraitDex.DoNotDelegate)
 
         return (state(pre=self.prefixer.qb64,
-                      sn=self.sn,
+                      sn=self.sner.num,
                       pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.said,
                       fn=self.fn,
@@ -2778,7 +2764,7 @@ class Kevery:
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
                 kever.cues = self.cues
-                sno = kever.sn + 1  # proper sn of new inorder event
+                sno = kever.sner.num + 1  # proper sn of new inorder event
 
                 if not serder.saider.verify(sad=serder.ked):
                     raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
@@ -3541,7 +3527,7 @@ class Kevery:
 
         if kserder.pre in self.kevers:
             kever = self.kevers[kserder.pre]
-            if kserder.sn < kever.sn:
+            if kserder.sn < kever.sner.num:
                 raise ValidationError("Skipped stale key state at sn {} for {}."
                                       "".format(kserder.sn, kserder.pre))
 
@@ -3783,7 +3769,7 @@ class Kevery:
                     raise QueryNotFoundError("Query not found error={}.".format(ked))
 
             elif sn is not None:
-                if kever.sn < sn or not self.db.fullyWitnessed(kever.serder):
+                if kever.sner.num < sn or not self.db.fullyWitnessed(kever.serder):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                     raise QueryNotFoundError("Query not found error={}.".format(ked))
 

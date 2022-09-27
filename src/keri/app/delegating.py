@@ -81,7 +81,7 @@ class Boatswain(doing.DoDoer):
                 delpre = hab.kever.delegator  # get the delegator identifier
                 dkever = hab.kevers[delpre]  # and the delegator's kever
 
-                sn = msg["sn"] if "sn" in msg else hab.kever.sn
+                sn = msg["sn"] if "sn" in msg else hab.kever.sner.num
 
                 # load the event and signatures
                 evt = hab.makeOwnEvent(sn=sn)

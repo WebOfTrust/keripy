@@ -1141,7 +1141,7 @@ class Hab:
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=[verfer.qb64 for verfer in verfers],
                                       dig=kever.serder.saider.qb64,
-                                      sn=kever.sn + 1,
+                                      sn=kever.sner.num + 1,
                                       sith=cst,
                                       nsith=nst,
                                       nkeys=[diger.qb64 for diger in digers],
@@ -1154,7 +1154,7 @@ class Hab:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=[verfer.qb64 for verfer in verfers],
                                      dig=kever.serder.saider.qb64,
-                                     sn=kever.sn + 1,
+                                     sn=kever.sner.num + 1,
                                      sith=cst,
                                      nsith=nst,
                                      nkeys=[diger.qb64 for diger in digers],
@@ -1192,7 +1192,7 @@ class Hab:
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.saider.qb64,
-                                   sn=kever.sn + 1,
+                                   sn=kever.sner.num + 1,
                                    data=data)
 
         sigers = self.sign(ser=serder.raw)

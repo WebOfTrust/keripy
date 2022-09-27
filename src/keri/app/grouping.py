@@ -95,7 +95,7 @@ class Counselor(doing.DoDoer):
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.phab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
-            self.witDoer.msgs.append(dict(pre=ghab.phab.pre, sn=ghab.phab.kever.sn))
+            self.witDoer.msgs.append(dict(pre=ghab.phab.pre, sn=ghab.phab.kever.sner.num))
             return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
         else:

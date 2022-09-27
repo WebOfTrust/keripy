@@ -77,7 +77,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 hab = self.hby.habs[pre]
 
-                sn = evt["sn"] if "sn" in evt else hab.kever.sn
+                sn = evt["sn"] if "sn" in evt else hab.kever.sner.num
                 wits = hab.kever.wits
 
                 if len(wits) == 0:

@@ -30,7 +30,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         anchor = hab.db.getAes(dgkey)
 
         print("{}: {}".format(label, pre))
-        print("Seq No:\t{}".format(kever.sn))
+        print("Seq No:\t{}".format(kever.sner.num))
         if kever.delegated:
             print("Delegated Identifier")
             sys.stdout.write(f"    Delegator:  {kever.delegator} ")
@@ -88,7 +88,7 @@ def printExternal(hby, pre, label="Identifier"):
     anchor = hby.db.getAes(dgkey)
 
     print("{}: {}".format(label, pre))
-    print("Seq No:\t{}".format(kever.sn))
+    print("Seq No:\t{}".format(kever.sner.num))
     if kever.delegated:
         print("Delegated Identifier")
         sys.stdout.write(f"    Delegator:  {kever.delegator} ")

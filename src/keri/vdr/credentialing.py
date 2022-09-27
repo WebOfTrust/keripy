@@ -396,7 +396,7 @@ class Registrar(doing.DoDoer):
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
 
@@ -442,7 +442,7 @@ class Registrar(doing.DoDoer):
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
@@ -491,7 +491,7 @@ class Registrar(doing.DoDoer):
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 

@@ -113,7 +113,7 @@ class ConfirmDoer(doing.DoDoer):
                         approve = yn in ('', 'y', 'Y')
 
                     if approve:
-                        cur = hab.kever.sn
+                        cur = hab.kever.sner.num
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
                         if self.interact:
@@ -131,7 +131,7 @@ class ConfirmDoer(doing.DoDoer):
                                 _ = yield self.tock
 
                         print(f'Delegagtor Prefix  {hab.pre}')
-                        print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sn}')
+                        print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
                         wits = [werfer.qb64 for werfer in eserder.werfers]
