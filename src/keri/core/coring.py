@@ -2990,22 +2990,19 @@ class Nexter:
             idig = Diger(ser=sig.verfer.qb64b).qb64
             try:
                 idxs.append(self.digs.index(idig))
-            except ValueError:
-                raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
+            except ValueError as ex:
+                raise ValidationError(f'indices into verfer unable to locate "'
+                                      f'"{idig} in {self.digs}') from ex
 
         return idxs
 
-    def oldindices(self, sigers):
+    def indices(self, sigers):
         """Returns list of indices for list of sigers by matching digest of
         each siger.verfer qb64 public key to element of .digs
         """
         idxs = []
         for sig in sigers:
-            idig = Diger(ser=sig.verfer.qb64b).qb64
-            try:
-                idxs.append(self.digs.index(idig))
-            except ValueError:
-                raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
+            pass
 
         return idxs
 
