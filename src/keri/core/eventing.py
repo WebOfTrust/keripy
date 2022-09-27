@@ -1529,8 +1529,7 @@ class Kever:
             False means only process msgs for not own events if .prefixes is not empty
         .version is version of current event state
         .prefixer is prefixer instance for current event state
-        .sn is sequence number int
-        .sner (Number): instance of sequence number
+        sner (Number): instance of sequence number
         .fn is first seen ordinal number int
         .fner (Number): instance of first seen ordinal number
         .dater is first seen Dater instance (datetime)
@@ -1551,9 +1550,9 @@ class Kever:
 
 
     Properties:
-        .sn (int): sequence number property that returns .sner.num
-        .kevers (dict): reference to self.db.kevers
-        .transferable (bool): True if nexter is not none and pre is transferable
+        sn (int): sequence number property that returns .sner.num
+        kevers (dict): reference to self.db.kevers
+        transferable (bool): True if nexter is not none and pre is transferable
 
     """
     EstOnly = False
@@ -1713,8 +1712,7 @@ class Kever:
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
-        #self.sn = state.sn
-        self.sner = state.sner
+        self.sner = state.sner  # sequence number Number instance
         self.fn = int(state.ked["f"], 16)
         self.fner = Number(num=self.fn)
         self.dater = Dater(dts=state.ked["dt"])
@@ -1753,8 +1751,6 @@ class Kever:
             estOnly is boolean  to indicate establish only events allowed
         """
         ked = serder.ked
-
-        #self.sn = validateSN(sn=ked["s"], inceptive=True)
 
         self.sner = serder.sner
         if self.sner.positive:
@@ -1878,8 +1874,7 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
-        #sn = validateSN(sn=ked["s"], inceptive=False)
-        sner = serder.sner
+        sner = serder.sner  # Number instance ensures whole number for sequence number
 
         ilk = ked["t"]
 
@@ -1936,8 +1931,7 @@ class Kever:
                                     firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
-            #self.sn = sn
-            self.sner = sner
+            self.sner = sner  # sequence number Number instance
             self.serder = serder  # need whole serder for digest agility compare
             self.ilk = ilk
             self.tholder = tholder
@@ -1996,9 +1990,8 @@ class Kever:
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     first=True if not check else False)  # First seen accepted
 
-            # update state
-            #self.sn = sn
-            self.sner = sner
+            # validates so update state
+            self.sner = sner  # sequence number Number instance
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
@@ -2099,7 +2092,7 @@ class Kever:
             raise ValidationError("Mismatch prior nxt digs = {} with rotation"
                                   "current keys"
                                   " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.digs, tholder.thold, keys, ked))
+                                  "".format(self.nexter.digs, ntholder.thold, keys, ked))
 
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
