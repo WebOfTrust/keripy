@@ -1178,9 +1178,9 @@ class Hab:
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except MissingSignatureError:
             pass
-        except Exception as e:
+        except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={}.".format(self.pre))
+                                         "pre={self.pre}.") from ex
 
         return msg
 
