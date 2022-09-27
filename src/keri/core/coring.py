@@ -2981,7 +2981,21 @@ class Nexter:
             return False
 
 
-    def indices(self, sigers):
+    def matches(self, sigers):
+        """Returns list of indices for list of sigers by matching digest of
+        each siger.verfer qb64 public key to element of .digs
+        """
+        idxs = []
+        for sig in sigers:
+            idig = Diger(ser=sig.verfer.qb64b).qb64
+            try:
+                idxs.append(self.digs.index(idig))
+            except ValueError:
+                raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
+
+        return idxs
+
+    def oldindices(self, sigers):
         """Returns list of indices for list of sigers by matching digest of
         each siger.verfer qb64 public key to element of .digs
         """

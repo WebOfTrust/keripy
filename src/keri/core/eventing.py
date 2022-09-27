@@ -1894,6 +1894,7 @@ class Kever:
             tholder, toader, wits, cuts, adds = self.rotate(serder, sner)
 
             # Validates signers, delegation if any, and witnessing when applicable
+            # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
             sigers, delegator, wigers = self.valSigsDelWigs(serder=serder,
                                                             sigers=sigers,
@@ -1905,7 +1906,7 @@ class Kever:
                                                             seqner=seqner,
                                                             saider=saider)
 
-            if not self.ntholder.satisfy(indices=self.nexter.indices(sigers=sigers)):
+            if not self.ntholder.satisfy(indices=self.nexter.matches(sigers=sigers)):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
                 if seqner and saider:
                     self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
