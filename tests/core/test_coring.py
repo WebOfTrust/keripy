@@ -4087,10 +4087,10 @@ def test_diger():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     dig = blake3.blake3(ser).digest()
-    with pytest.raises(ValueError):
+    with pytest.raises(coring.InvalidValueError):
         diger = Diger(raw=dig, code=MtrDex.Ed25519)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(coring.InvalidValueError):
         diger = Diger(ser=ser, code=MtrDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester

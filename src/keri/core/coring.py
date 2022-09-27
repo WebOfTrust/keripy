@@ -2704,32 +2704,16 @@ class Decrypter(Matter):
 class Diger(Matter):
     """
     Diger is Matter subclass with method to verify digest of serialization
-    using  .raw as digest and .code for digest algorithm.
+
 
     See Matter for inherited attributes and properties:
 
-    Inherited Properties:
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Methods:
         verify: verifies digest given ser
         compare: compares provide digest given ser to this digest of ser.
                 enables digest agility of different digest algos to compare.
 
-    Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
 
@@ -2751,6 +2735,7 @@ class Diger(Matter):
            ser is bytes serialization from which raw is computed if not raw
 
         """
+        # Should implement all digests in DigCodex instance DigDex
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -2767,7 +2752,7 @@ class Diger(Matter):
             elif code == MtrDex.SHA2_256:
                 dig = hashlib.sha256(ser).digest()
             else:
-                raise ValueError("Unsupported code = {} for digester.".format(code))
+                raise InvalidValueError("Unsupported code={code} for diger.")
 
             super(Diger, self).__init__(raw=dig, code=code, **kwa)
 
@@ -2782,16 +2767,16 @@ class Diger(Matter):
         elif self.code == MtrDex.SHA2_256:
             self._verify = self._sha2_256
         else:
-            raise ValueError("Unsupported code = {} for digester.".format(self.code))
+            raise InvalidValueError("Unsupported code={self.code} for diger.")
 
     def verify(self, ser):
         """
-        Returns True if digest of bytes serialization ser matches .raw
+        Returns True if raw digest of ser bytes (serialization) matches .raw
         using .raw as reference digest for ._verify digest algorithm determined
         by .code
 
         Parameters:
-            ser is bytes serialization
+            ser (bytes): serialization to be digested and compared to .ser
         """
         return (self._verify(ser=ser, raw=self.raw))
 
