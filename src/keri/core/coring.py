@@ -2904,22 +2904,12 @@ class Nexter:
     """
 
     def __init__(self, digs=None, keys=None):
-        """
-        Assign .digs
+        """ Initialize next digests for next key commitment
 
         Parameters:
            digs (list | None): of qb64 digests of public keys
            keys (list | None): of qb64 public keys from which digests are generated
 
-           Raises error if not any of raw, digs,keys, ked
-
-           if not raw
-               use digs
-               If digs not provided
-                  use keys
-                  if keys not provided
-                     get keys from ked
-                  compute digs from keys
 
         """
         if digs is None:
@@ -2927,7 +2917,42 @@ class Nexter:
                 digs = self._digest(keys=keys)
             else:
                 raise EmptyListError(f"Need digs or keys.")
-        self._digs = digs
+        #self._digs = digs
+
+        self._digers = [Diger(qb64=dig) for dig in digs]
+
+
+    @property
+    def digs(self):
+        """Returns ._digs, digs property getter.
+        Makes .digs read only
+        """
+        #return self._digs
+        return [diger.qb64 for diger in self.digers]
+
+
+    @property
+    def digers(self):
+        """digers propert getter
+        Returns:
+            (list): Diger instances
+        """
+        return self._digers
+
+
+    @staticmethod
+    def _digest(keys):
+        """
+        Returns digs of keys
+
+        Parameters:
+            keys (list): public keys qb64 or qb64b
+        """
+        digs = [Diger(ser=key.encode("utf-8")
+                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+
+        return digs
+
 
     def includes(self, digs=None, keys=None):
         """
@@ -2991,30 +3016,7 @@ class Nexter:
 
         return idxs
 
-    @staticmethod
-    def _digest(keys):
-        """
-        Returns digs of keys
 
-        Parameters:
-            keys (list): public keys qb64 or qb64b
-        """
-        digs = [Diger(ser=key.encode("utf-8")
-                      if hasattr(key, 'encode') else key).qb64 for key in keys]
-
-        return digs
-
-    @property
-    def digs(self):
-        """Returns ._digs, digs property getter.
-        Makes .digs read only
-        """
-        return self._digs
-
-    @property
-    def digers(self):
-        """Returns list of Digers made from .digs"""
-        return [Diger(qb64=dig) for dig in self.digs]
 
 
 class Prefixer(Matter):
