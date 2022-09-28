@@ -828,7 +828,7 @@ class Hab:
         Parameters:
             name (str): alias name for local controller of habitat
             pre (str | None): qb64 identifier prefix of own local controller else None
-            phab (Hab | None): Group participant hab if this is a group Hab (multisig)
+            phab (Hab | None): local participant hab if this is a group Hab (multisig)
             aids (list): of group participants if this is group Hab else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
