@@ -333,7 +333,7 @@ class Reger(dbing.LMDBer):
             creder, sadsigers, sadcigars = self.cloneCred(said=key)
 
             chainSaids = []
-            for k, p in creder.crd["e"].items():
+            for k, p in creder.chains.items():
                 if k == "d":
                     continue
 
@@ -494,7 +494,7 @@ class Reger(dbing.LMDBer):
             list: credential sources as resolved from `e` in creder.crd
 
         """
-        chains = creder.crd["e"]
+        chains = creder.chains
         saids = []
         for key, source in chains.items():
             if key == 'd':

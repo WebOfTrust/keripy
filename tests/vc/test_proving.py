@@ -18,7 +18,6 @@ def test_proving(mockHelpingNowIso8601):
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
-
         sidHab = sidHby.makeHab(name="test", )
         assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
@@ -54,16 +53,16 @@ def test_proving(mockHelpingNowIso8601):
                             data=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON00019c_","d":"EJv492nqYVIaiws_KFzq7VivRDQpXOAUQr'
-                       b'gtSgkXfTIY","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+        assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
+                       b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                        b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
                        b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
                        b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
                        b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
-                       b'26:21.233257+00:00"},"e":{}}-VA0-FABEIaGMMWJFPmtXznY1IIiKDIrg-vI'
-                       b'yge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIr'
-                       b'g-vIyge6mBl2QV8dDjI3-AABAADJh1iaEpxPkqHvMlz5RrDQGYdMLxHlkXvNJr4O'
-                       b'HDCYWIGLVeiR5TM7mo2A6r1HfVVjYDbmI6Oqq0h-i7wyGD0O')
+                       b'26:21.233257+00:00"}}-VA0-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl'
+                       b'2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge'
+                       b'6mBl2QV8dDjI3-AABAAAmfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3'
+                       b'oxH45Y3kIvZg67u2DyxtUqVixVzRhOOTnMAB_SowI')
 
         creder = Creder(raw=msg)
         proof = msg[creder.size:]
@@ -130,7 +129,6 @@ def test_credentialer():
                           b'"s":"abc","i":"i","a":{"a":123,"b":"abc","issuanceDate":"2021-06-27T21:26:21'
                           b'.233257+00:00"}}')
 
-
     raw1, idt1, knd1, ked1, ver1 = creder._exhale(ked=d)
     assert raw1 == creder.raw
     assert knd1 == Serials.json
@@ -146,7 +144,7 @@ def test_credentialer():
     d2 = dict(d)
     d2["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
     creder = Creder(ked=d2)
-    assert creder.said == said  #shouldnt this be different here?
+    assert creder.said == said  # shouldnt this be different here?
     assert creder.issuer == "i"
     assert creder.schema == "abc"
     assert creder.subject == sub
@@ -242,20 +240,18 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
     assert cred.size == len(cred.raw)
     assert "u" in cred.ked
     print(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON000223_","d":"EFDXxT0s91iKLWKZbHyy8eECFD1VxHw5NG3oa6j13CS9",'
+    assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"EKwDvF8_PWMlw7X1Lb1fiilLIMiK4yTXUdmBasZWb0sF",'
                         b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPP'
                         b'NBnM","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
                         b'Z_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EFwWs1d_fe_VeLZ0vQQKO-gkRvGrpfWAR'
                         b'bI4e9tzcqlV","u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EM_S2MdMaKgP6P2Yyno6-flV6Gq'
                         b'rwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"254900OPPU'
                         b'84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project Ma'
-                        b'nager"},"e":{}}')
-
+                        b'nager"}}')
 
 
 def test_credential_parsator():
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
-
         assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
 
         regery = credentialing.Regery(hby=hby, name="sid", temp=True)

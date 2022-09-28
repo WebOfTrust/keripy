@@ -1147,7 +1147,7 @@ class CredentialEnd(doing.DoDoer):
     def outputCred(self, hab, said):
         out = bytearray()
         creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
-        chains = creder.crd["e"]
+        chains = creder.chains
         saids = []
         for key, source in chains.items():
             if key == 'd':

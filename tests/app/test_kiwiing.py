@@ -1462,7 +1462,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce, mockHelpingNowIso8601)
                                     data=credSubject,
                                     status=issuer.regk,
                                     )
-        assert creder.said == "EMOTF5DgWMkX6-xy6eLietSLqWCBDB9TQfKFaflpa8MI"
+        assert creder.said == "ENF8t9hfbZtM86yxqQLuipzJTTWmUl4tm2jSTDu9-egd"
 
         msg = signing.ratify(palHab, serder=creder)
 
