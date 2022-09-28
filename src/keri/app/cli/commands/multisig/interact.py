@@ -98,7 +98,7 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        aids = self.aids if self.aids is not None else ghab.aids
+        aids = self.aids if self.aids is not None else ghab.gaids
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)

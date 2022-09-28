@@ -239,7 +239,7 @@ class IdentifierEnd(doing.DoDoer):
         if hab.phab:
             data["group"] = dict(
                 pid=hab.phab.pre,
-                aids=hab.aids,
+                aids=hab.gaids,
                 accepted=hab.accepted
             )
 
@@ -1299,7 +1299,7 @@ class CredentialEnd(doing.DoDoer):
             return
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
-        others = list(hab.aids)
+        others = list(hab.gaids)
         others.remove(hab.phab.pre)
 
         for recpt in others:
@@ -2031,16 +2031,16 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.aids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.gaids, ked=serder.ked)
 
-        others = list(ghab.aids)
+        others = list(ghab.gaids)
         others.remove(hab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
             self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         #  signal to the group counselor to start the inception
-        self.icp(hab=hab, ghab=ghab, aids=ghab.aids)
+        self.icp(hab=hab, ghab=ghab, aids=ghab.gaids)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
@@ -2249,7 +2249,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(isith, str) and "," in isith:
                 isith = isith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2274,7 +2274,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(ghab.aids)
+        others = list(ghab.gaids)
         others.remove(ghab.phab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2366,7 +2366,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(isith, str) and "," in isith:
                 isith = isith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2442,11 +2442,11 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         data = body["data"] if "data" in body else None
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
-        others = list(ghab.aids)
+        others = list(ghab.gaids)
         others.remove(ghab.phab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2507,7 +2507,7 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         data = body["data"] if "data" in body else None
 
         serder = self.ixn(ghab=ghab, data=data, aids=aids)

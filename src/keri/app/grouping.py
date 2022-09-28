@@ -42,8 +42,8 @@ class Counselor(doing.DoDoer):
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
-            aids (list): qb64 identifier prefixes of participants
-            pid (str): qb64 identifier prefix of local participant
+            aids (list): qb64 identifier prefixes of group participants
+            pid (str): qb64 identifier prefix of local participant (laid)
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
             saider (Saider): saider of inception event of group identifier
@@ -79,7 +79,7 @@ class Counselor(doing.DoDoer):
             data (list) of dicts of committed data such as seals
 
         """
-        aids = aids if aids is not None else ghab.aids
+        aids = aids if aids is not None else ghab.gaids
         pid = ghab.phab.pre
 
         if pid not in aids:
@@ -212,7 +212,7 @@ class Counselor(doing.DoDoer):
             ndigs = list(gkever.nexter.digers)
             for aid in rec.aids:
                 pkever = self.hby.kevers[aid]
-                idx = ghab.aids.index(aid)
+                idx = ghab.gaids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
                     keys.append(pkever.verfers[0])
                     ndigs[idx] = pkever.nexter.digers[0]
@@ -521,7 +521,7 @@ class MultisigRotateHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.aids or src not in ghab.kevers:
+                if src not in ghab.gaids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 
@@ -624,7 +624,7 @@ class MultisigInteractHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.aids or src not in ghab.kevers:
+                if src not in ghab.gaids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 

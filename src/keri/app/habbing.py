@@ -405,7 +405,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, aids=habord.aids)
+                      name=name, pre=pre, temp=self.temp, gaids=habord.aids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -492,7 +492,7 @@ class Habery:
 
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, phab=phab, aids=aids, temp=self.temp)
+                  name=group, phab=phab, gaids=aids, temp=self.temp)
 
         hab.make(**kwa)
         self.habs[hab.pre] = hab
@@ -788,13 +788,16 @@ class Hab:
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        phab (Hab): Group participant hab if this is a group multisig identifier
-        aids (list): AID prefixes of group participants
+        phab (Hab | None): Group participant hab if this is a group Hab (multisig)
+                           else None
+        aids (list | None): aid prefixes of group participants if this is group Hab
+                            else None
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
                      for incept and rotate of keys for this hab.pre
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
+        delpre (str | None): delegator prefix if any else None
 
     Properties:
         kever (Kever): instance of key state of local controller
@@ -807,7 +810,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, phab=None, aids=None, temp=False):
+                 name='test', pre=None, phab=None, gaids=None, temp=False):
         """
         Initialize instance.
 
@@ -824,9 +827,9 @@ class Hab:
 
         Parameters:
             name (str): alias name for local controller of habitat
-            pre (str): qb64 identifier prefix of own local controller else None
-            phab (Hab): Group participant hab if this is a group multisig identifier
-            aids (list): AID prefixes of group participants
+            pre (str | None): qb64 identifier prefix of own local controller else None
+            phab (Hab | None): Group participant hab if this is a group Hab (multisig)
+            aids (list): of group participants if this is group Hab else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
@@ -840,16 +843,16 @@ class Hab:
         self.rvy = rvy  # injected
         self.kvy = kvy  # injected
         self.psr = psr  # injected
-        self.phab = phab  # injected local participant Hab of this group hab
-        self.aids = aids  # injected group participant aids for this group hab
+
 
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
+        self.phab = phab  # local participant Hab of this group hab
+        self.gaids = gaids  # group aids of participant in this group hab
         self.temp = True if temp else False
 
         self.inited = False
-
-        self.delpre = None
+        self.delpre = None  # assigned laster if delegated
 
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, icount=1,
              nsith=None, ncount=None, toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
@@ -948,7 +951,7 @@ class Hab:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.aids)
+        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
         if self.phab:
             habord.pid = self.phab.pre
 
@@ -1083,7 +1086,7 @@ class Hab:
         return self.db.prefixes
 
     def group(self):
-        return self.aids
+        return self.gaids
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
         if self.phab:
