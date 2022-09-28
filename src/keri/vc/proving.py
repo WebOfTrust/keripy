@@ -73,8 +73,6 @@ def credential(schema,
 
     subject |= data
 
-    source = source if source is not None else {}
-
     vc |= dict(
         i=issuer,
     )
@@ -85,8 +83,10 @@ def credential(schema,
     vc |= dict(
         s=schema,
         a={},
-        e=source,
     )
+
+    if source is not None:
+        vc["e"] = source
 
     if rules is not None:
         vc["r"] = rules
@@ -176,6 +176,10 @@ class Creder(coring.Sadder):
             return self._ked["ri"]
         else:
             return None
+
+    @property
+    def chains(self):
+        return self._ked["e"] if "e" in self._ked else {}
 
 
 class CrederSuber(subing.Suber):

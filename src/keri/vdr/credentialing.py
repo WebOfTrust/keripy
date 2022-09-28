@@ -389,7 +389,8 @@ class Registrar(doing.DoDoer):
         registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
 
         rseq = coring.Seqner(sn=0)
-        rseal = SealEvent(registry.regk, "0", registry.regd)._asdict()
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         if hab.phab is None:
             if estOnly:
                 hab.rotate(data=[rseal])
@@ -434,7 +435,8 @@ class Registrar(doing.DoDoer):
 
         vcid = iserder.ked["i"]
         rseq = coring.Seqner(snh=iserder.ked["s"])
-        rseal = SealEvent(vcid, rseq.snh, iserder.said)._asdict()
+        rseal = SealEvent(vcid, rseq.snh, iserder.said)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if hab.phab is None:
             if registry.estOnly:
@@ -483,7 +485,8 @@ class Registrar(doing.DoDoer):
 
         vcid = rserder.ked["i"]
         rseq = coring.Seqner(snh=rserder.ked["s"])
-        rseal = SealEvent(vcid, rseq.snh, rserder.said)._asdict()
+        rseal = SealEvent(vcid, rseq.snh, rserder.said)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if hab.phab is None:
             if registry.estOnly:
@@ -771,6 +774,10 @@ class Credentialer(doing.DoDoer):
             rseq = coring.Seqner(qb64=snq)
 
             if not self.registrar.complete(pre=said, sn=rseq.sn):
+                continue
+
+            saider = self.rgy.reger.saved.get(keys=said)
+            if saider is None:
                 continue
 
             issr = creder.issuer
