@@ -783,13 +783,16 @@ class Hab:
         rvy (routing.Revery): factory that processes reply 'rpy' messages
         kvy (eventing.Kevery): factory for local processing of local event msgs
         psr (parsing.Parser):  parses local messages for .kvy .rvy
-        phab Hab): Group participant hab if this is a group multisig identifier
-        aids (list): AID prefixes of group participants
+
 
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        temp (bool):
+        phab (Hab): Group participant hab if this is a group multisig identifier
+        aids (list): AID prefixes of group participants
+        temp (bool): True means testing:
+                     use weak level when salty algo for stretching in key creation
+                     for incept and rotate of keys for this hab.pre
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
@@ -828,8 +831,6 @@ class Hab:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
 
-
-
         """
         self.db = db  # injected
         self.ks = ks  # injected
@@ -839,8 +840,8 @@ class Hab:
         self.rvy = rvy  # injected
         self.kvy = kvy  # injected
         self.psr = psr  # injected
-        self.phab = phab  # injected group participant Hab
-        self.aids = aids  # injected group participant aids
+        self.phab = phab  # injected local participant Hab of this group hab
+        self.aids = aids  # injected group participant aids for this group hab
 
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened

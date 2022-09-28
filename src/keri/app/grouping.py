@@ -209,13 +209,13 @@ class Counselor(doing.DoDoer):
             gkever = ghab.kever
 
             keys = []
-            nkeys = gkever.nexter.digers
+            ndigs = list(gkever.nexter.digers)
             for aid in rec.aids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.aids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
                     keys.append(pkever.verfers[0])
-                    nkeys[idx] = pkever.nexter.digers[0]
+                    ndigs[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
@@ -223,7 +223,7 @@ class Counselor(doing.DoDoer):
                 continue
 
             rot = ghab.rotate(sith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              mskeys=keys, msdigers=nkeys)
+                              mskeys=keys, msdigers=ndigs)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
