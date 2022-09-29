@@ -422,7 +422,7 @@ class Habery:
 
         # Populate the participant hab after loading all habs
         for habord in groups:
-            self.habs[habord.prefix].phab = self.habs[habord.pid]
+            self.habs[habord.prefix].lhab = self.habs[habord.pid]
 
         self.reconfigure()  # post hab load reconfiguration
 
@@ -454,9 +454,10 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, phab, **kwa):
-        """Make new Group Hab with name using pre from hab as local identifier,
-        pre is generated from **kwa
+    def makeGroupHab(self, group, lhab, **kwa):
+        """Make new Group Hab using group has group hab name, with lhab as local
+        participant.
+
 
         Parameters: (Passthrough to hab.make)
             group (str): human readable alias for group identifier
@@ -478,7 +479,7 @@ class Habery:
         """
         aids = list(kwa['aids'])
         del kwa['aids']
-        if phab.pre not in aids:
+        if lhab.pre not in aids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
                                             .format(aids))
 
@@ -492,7 +493,7 @@ class Habery:
 
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, phab=phab, gaids=aids, temp=self.temp)
+                  name=group, lhab=lhab, gaids=aids, temp=self.temp)
 
         hab.make(**kwa)
         self.habs[hab.pre] = hab
@@ -788,10 +789,10 @@ class Hab:
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        phab (Hab | None): Group participant hab if this is a group Hab (multisig)
+        lhab (Hab | None): local (participant) hab when this Hab is multisig group
                            else None
-        aids (list | None): aid prefixes of group participants if this is group Hab
-                            else None
+        gaids (list | None): group (participant) aids (prefixes) when this Hab is
+                           multisig group else None
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
                      for incept and rotate of keys for this hab.pre
@@ -810,7 +811,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, phab=None, gaids=None, temp=False):
+                 name='test', pre=None, lhab=None, gaids=None, temp=False):
         """
         Initialize instance.
 
@@ -828,8 +829,10 @@ class Hab:
         Parameters:
             name (str): alias name for local controller of habitat
             pre (str | None): qb64 identifier prefix of own local controller else None
-            phab (Hab | None): local participant hab if this is a group Hab (multisig)
-            aids (list): of group participants if this is group Hab else None
+            lhab (Hab | None): local (participant) hab when this Hab is multisig group
+                           else None
+            gaids (list | None): group (participant) aids (prefixes) when this Hab is
+                           multisig group else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
@@ -847,7 +850,7 @@ class Hab:
 
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
-        self.phab = phab  # local participant Hab of this group hab
+        self.lhab = lhab  # local participant Hab of this group hab
         self.gaids = gaids  # group aids of participant in this group hab
         self.temp = True if temp else False
 
@@ -952,8 +955,8 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
-        if self.phab:
-            habord.pid = self.phab.pre
+        if self.lhab:
+            habord.pid = self.lhab.pre
 
         if not hidden:
             self.db.habs.put(keys=self.name,
@@ -961,9 +964,9 @@ class Hab:
             self.prefixes.add(self.pre)
 
         # create inception event
-        if self.phab:
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers, indices=[idx])
+        if self.lhab:
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            sigers = self.lhab.mgr.sign(ser=serder.raw, verfers=self.lhab.kever.verfers, indices=[idx])
         else:
             sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
 
@@ -978,7 +981,7 @@ class Hab:
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
-        if not self.phab:
+        if not self.lhab:
             self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
@@ -1089,10 +1092,10 @@ class Hab:
         return self.gaids
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
-        if self.phab:
+        if self.lhab:
             keys = [verfer.qb64 for verfer in self.kever.verfers]
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            return self.phab.mgr.sign(ser, pubs=pubs, verfers=self.phab.kever.verfers,
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            return self.lhab.mgr.sign(ser, pubs=pubs, verfers=self.lhab.kever.verfers,
                                       indexed=indexed, indices=[idx])
         else:
             if verfers is None:
@@ -1168,9 +1171,9 @@ class Hab:
                                      adds=adds,
                                      data=data)
 
-        if self.phab:
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers,
+        if self.lhab:
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            sigers = self.lhab.mgr.sign(ser=serder.raw, verfers=self.lhab.kever.verfers,
                                         indices=[idx])
         else:
             sigers = self.sign(ser=serder.raw, verfers=verfers)

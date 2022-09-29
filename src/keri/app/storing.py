@@ -194,8 +194,8 @@ class Respondant(doing.DoDoer):
                 recpkev = self.hby.kevers[recipient]
 
                 senderHab = self.hby.habs[sender]
-                if senderHab.phab:
-                    forwardHab = senderHab.phab
+                if senderHab.lhab:
+                    forwardHab = senderHab.lhab
                 else:
                     forwardHab = senderHab
 

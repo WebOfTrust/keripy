@@ -118,7 +118,7 @@ class GroupMultisigIncept(doing.DoDoer):
         if ghab is None:
             aids = self.inits["aids"]
 
-            ghab = self.hby.makeGroupHab(group=self.group, phab=hab, **self.inits)
+            ghab = self.hby.makeGroupHab(group=self.group, lhab=hab, **self.inits)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)

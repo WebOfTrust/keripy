@@ -327,7 +327,7 @@ def test_multisig_rotation():
         assert result.text == "Invalid multisig group rotation request alias {alias} not found"
 
         body = dict(
-            aids=[ghab1.phab.pre, ghab2.phab.pre, ghab3.phab.pre],
+            aids=[ghab1.lhab.pre, ghab2.lhab.pre, ghab3.lhab.pre],
             transferable=True,
             wits=[
                 "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
@@ -352,12 +352,12 @@ def test_multisig_rotation():
         # sends local rotation event to other participants to start the rotation
         assert len(rotEnd.postman.evts) == 2
         evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.phab.pre
-        assert evt["dest"] == ghab2.phab.pre
+        assert evt["src"] == ghab1.lhab.pre
+        assert evt["dest"] == ghab2.lhab.pre
         assert evt["topic"] == "multisig"
         evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.phab.pre
-        assert evt["dest"] == ghab3.phab.pre
+        assert evt["src"] == ghab1.lhab.pre
+        assert evt["dest"] == ghab3.lhab.pre
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
         assert set(payload['adds']) == {'BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw',
@@ -418,8 +418,8 @@ def test_multisig_interaction():
         assert result.text == "Invalid multisig group rotation request alias {alias} not found"
 
         body = dict(
-            aids=[ghab1.phab.pre, ghab2.phab.pre, ghab3.phab.pre],
-            data=dict(i=ghab3.phab.pre, s=0)
+            aids=[ghab1.lhab.pre, ghab2.lhab.pre, ghab3.lhab.pre],
+            data=dict(i=ghab3.lhab.pre, s=0)
         )
         b = json.dumps(body).encode("utf-8")
 
@@ -434,12 +434,12 @@ def test_multisig_interaction():
         # sends local rotation event to other participants to start the rotation
         assert len(evtEnd.postman.evts) == 2
         evt = evtEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.phab.pre
-        assert evt["dest"] == ghab2.phab.pre
+        assert evt["src"] == ghab1.lhab.pre
+        assert evt["dest"] == ghab2.lhab.pre
         assert evt["topic"] == "multisig"
         evt = evtEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.phab.pre
-        assert evt["dest"] == ghab3.phab.pre
+        assert evt["src"] == ghab1.lhab.pre
+        assert evt["dest"] == ghab3.lhab.pre
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
         assert payload == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',

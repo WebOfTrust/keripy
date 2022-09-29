@@ -88,8 +88,8 @@ class Boatswain(doing.DoDoer):
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if hab.phab:
-                    phab = hab.phab
+                if hab.lhab:
+                    phab = hab.lhab
                 elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:

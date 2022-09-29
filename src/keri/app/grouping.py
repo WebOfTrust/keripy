@@ -80,7 +80,7 @@ class Counselor(doing.DoDoer):
 
         """
         aids = aids if aids is not None else ghab.gaids
-        pid = ghab.phab.pre
+        pid = ghab.lhab.pre
 
         if pid not in aids:
             raise kering.ConfigurationError(f"local identifier {pid} not elected to participate in rotation: {aids}")
@@ -88,18 +88,18 @@ class Counselor(doing.DoDoer):
         kever = ghab.kever
 
         # Get local next key and see if we are in current group next keys
-        pkever = ghab.phab.kever
+        pkever = ghab.lhab.kever
         pnkey = pkever.nexter.digs[0]
 
         rec = basing.RotateRecord(aids=aids, sith=sith, toad=toad, cuts=cuts, adds=adds, data=data)
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
-            ghab.phab.rotate()
+            ghab.lhab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
-            self.witDoer.msgs.append(dict(pre=ghab.phab.pre, sn=ghab.phab.kever.sner.num))
+            self.witDoer.msgs.append(dict(pre=ghab.lhab.pre, sn=ghab.lhab.kever.sner.num))
             return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
         else:
-            rot = ghab.phab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
+            rot = ghab.lhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
 
             others = list(aids)
             others.remove(pid)
@@ -174,8 +174,8 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), rec in self.hby.db.glwe.getItemIter():  # group partial witness escrow
             ghab = self.hby.habs[pre]
-            pid = ghab.phab.pre
-            pkever = ghab.phab.kever
+            pid = ghab.lhab.pre
+            pkever = ghab.lhab.kever
             dgkey = dbing.dgKey(pid, pkever.serder.saidb)
 
             # Load all the witness receipts we have so far
@@ -228,10 +228,10 @@ class Counselor(doing.DoDoer):
             del rot[:serder.size]
 
             others = list(rec.aids)
-            others.remove(ghab.phab.pre)
+            others.remove(ghab.lhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
-                self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=serder, attachment=rot)
+                self.postman.send(src=ghab.lhab.pre, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             print("Waiting for other signatures...")
             self.hby.db.gpae.rem((pre,))
@@ -254,7 +254,7 @@ class Counselor(doing.DoDoer):
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
                 keys = [verfer.qb64 for verfer in kever.verfers]
-                witer = ghab.phab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
+                witer = ghab.lhab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
 
                 if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
@@ -263,7 +263,7 @@ class Counselor(doing.DoDoer):
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
-                        self.witq.query(src=ghab.phab.pre, pre=kever.delegator, anchor=anchor)
+                        self.witq.query(src=ghab.lhab.pre, pre=kever.delegator, anchor=anchor)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -288,7 +288,7 @@ class Counselor(doing.DoDoer):
             kever = ghab.kevers[pre]
 
             keys = [verfer.qb64 for verfer in kever.verfers]
-            witer = ghab.phab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
+            witer = ghab.lhab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
 
             if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
                 aseq = coring.Seqner(sn=serder.sn)
@@ -321,7 +321,7 @@ class Counselor(doing.DoDoer):
             if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
                 ghab = self.hby.habs[pre]
                 keys = [verfer.qb64 for verfer in kever.verfers]
-                witer = ghab.phab.kever.verfers[0].qb64 == keys[0]
+                witer = ghab.lhab.kever.verfers[0].qb64 == keys[0]
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -555,7 +555,7 @@ def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
                                            adds=list(adds),
                                            data=data)
                               )
-    ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+    ims = ghab.lhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(ims[exn.size:])
 
     return exn, atc
@@ -658,7 +658,7 @@ def multisigInteractExn(ghab, aids, data):
                                            aids=aids,
                                            data=data)
                               )
-    ims = ghab.phab.endorse(serder=exn, last=True, pipelined=False)
+    ims = ghab.lhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(ims[exn.size:])
 
     return exn, atc
@@ -735,7 +735,7 @@ def multisigIssueExn(hab, creder):
 
     """
     exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked)
-    evt = hab.phab.endorse(serder=exn, last=True, pipelined=False)
+    evt = hab.lhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(evt[exn.size:])
 
     return exn, atc

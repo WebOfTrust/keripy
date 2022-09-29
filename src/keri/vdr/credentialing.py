@@ -390,7 +390,7 @@ class Registrar(doing.DoDoer):
 
         rseq = coring.Seqner(sn=0)
         rseal = SealEvent(registry.regk, "0", registry.regd)._asdict()
-        if hab.phab is None:
+        if hab.lhab is None:
             if estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -408,7 +408,7 @@ class Registrar(doing.DoDoer):
         else:
             aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
@@ -436,7 +436,7 @@ class Registrar(doing.DoDoer):
         rseq = coring.Seqner(snh=iserder.ked["s"])
         rseal = SealEvent(vcid, rseq.snh, iserder.said)._asdict()
 
-        if hab.phab is None:
+        if hab.lhab is None:
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -454,7 +454,7 @@ class Registrar(doing.DoDoer):
         else:
             aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
@@ -485,7 +485,7 @@ class Registrar(doing.DoDoer):
         rseq = coring.Seqner(snh=rserder.ked["s"])
         rseal = SealEvent(vcid, rseq.snh, rserder.said)._asdict()
 
-        if hab.phab is None:
+        if hab.lhab is None:
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -503,7 +503,7 @@ class Registrar(doing.DoDoer):
         else:
             aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
@@ -729,15 +729,15 @@ class Credentialer(doing.DoDoer):
         vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, aids=aids)
 
         rseq = coring.Seqner(sn=seq)
-        if hab.phab:
+        if hab.lhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(aids)
-            others.remove(hab.phab.pre)
+            others.remove(hab.lhab.pre)
 
             print(f"Sending signed credential to {len(aids) - 1} other participants")
             for recpt in others:
-                self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
+                self.postman.send(src=hab.lhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 
             # escrow waiting for other signatures
             self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
@@ -781,8 +781,8 @@ class Credentialer(doing.DoDoer):
                 recp = creder.subject["i"]
 
                 hab = self.hby.habs[issr]
-                if hab.phab:
-                    sender = hab.phab.pre
+                if hab.lhab:
+                    sender = hab.lhab.pre
                 else:
                     sender = issr
 
@@ -907,8 +907,8 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     issr = creder.issuer
     regk = creder.status
 
-    if hab.phab:
-        sender = hab.phab.pre
+    if hab.lhab:
+        sender = hab.lhab.pre
     else:
         sender = hab.pre
 
