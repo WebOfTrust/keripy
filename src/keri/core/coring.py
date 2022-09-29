@@ -2924,6 +2924,10 @@ class Nexter:
                     verfers = [Verfer(qb64=key) for key in keys]
                 digers = [Diger(ser=verfer.qb64b) for verfer in verfers]
 
+        for diger in digers:
+            if not isinstance(diger, Diger):
+                raise InvalidTypeError("Not a Diger: {diger}.")
+
         self._digers = digers
 
 
@@ -2942,6 +2946,40 @@ class Nexter:
         Makes .digs read only
         """
         return [diger.qb64 for diger in self.digers]
+
+
+    def indices(self, sigers):
+        """Returns list of indices for list of sigers by verifying the public key
+        for each siger.verfer.qb64b when digested by the digest algoritm of the
+        associated indexed diger in .digers is a match.
+        """
+        idxs = []
+        for sig in sigers:
+            pass
+
+        return idxs
+
+    def satisfies(self, tholder, digers=None,  digs=None):
+        """Given .digers the provided tholder and digers or digs constitute a
+        satisfycing subset.
+
+        Returns:
+            (bool): True if satisfycing, False otherwise
+
+        Parameters:
+            tholder (Tholder): instance of prior next threshold
+            digers (list | None): of instances of Diger of prior next key digests
+            digs (list | None): of digests qb64 of prior next keys
+
+        """
+        if digers is None:
+            if digs is None:
+                raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+            digers = [Diger(qb64=dig) for dig in digs]
+
+
+
+        return False
 
 
     @staticmethod
@@ -3009,17 +3047,6 @@ class Nexter:
                                       f'"{idig} in {self.digs}') from ex
 
         return idxs
-
-    def indices(self, sigers):
-        """Returns list of indices for list of sigers by matching digest of
-        each siger.verfer qb64 public key to element of .digs
-        """
-        idxs = []
-        for sig in sigers:
-            pass
-
-        return idxs
-
 
 
 
