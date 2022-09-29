@@ -116,7 +116,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:
-            gaids = self.inits["aids"]
+            gaids = self.inits["aids"]  # not a pass through in makeGroupHab
             del self.inits["aids"]
 
             ghab = self.hby.makeGroupHab(group=self.group, lhab=hab, gaids=gaids, **self.inits)
