@@ -38,10 +38,10 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         aids = [hab1.pre, hab2.pre, hab3.pre]
-        inits = dict(aids=aids, isith='2', nsith='2', toad=0, wits=[])
+        inits = dict(isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
-        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, **inits)
+        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, gaids=aids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
@@ -64,7 +64,7 @@ def test_counselor():
         assert saider.qb64 == "EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s"
 
         # Sith 2 so create second signature to get past the first escrow
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, gaids=aids, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
         assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0a'
                        b'fydw9y474RJbcoNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
@@ -188,16 +188,15 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         aids = [hab1.pre, hab2.pre, hab3.pre]
 
         inits = dict(
-            aids=aids,
             toad=0,
             wits=[],
             isith='3',
             nsith='3'
         )
 
-        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, **inits)
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, **inits)
-        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", lhab=hab3, **inits)
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, gaids=aids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, gaids=aids, **inits)
+        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", lhab=hab3, gaids=aids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eraw = hab1.db.getEvt(dgkey)

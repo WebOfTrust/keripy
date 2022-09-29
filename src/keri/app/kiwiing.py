@@ -1905,9 +1905,7 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = f"Identifier alias {alias} is already in use"
             return None, None
 
-        inits = dict(
-            aids=aids
-        )
+        inits = dict()
 
         isith = None
         if "isith" in body:
@@ -1935,7 +1933,7 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         try:
-            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, **inits)
+            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")

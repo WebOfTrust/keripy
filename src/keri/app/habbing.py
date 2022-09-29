@@ -454,14 +454,17 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, lhab, **kwa):
+    def makeGroupHab(self, group, lhab, gaids, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
-
-        Parameters: (Passthrough to hab.make)
+        Parameters: (non-pass-through):
             group (str): human readable alias for group identifier
-            hab (Hab): Habitat of local identifier to use as participant in group
+            lhab (Hab): local (participant) hab of group hab.
+            gaids (list): of qb64 prefixes aids of participants in group
+
+
+        Parameters: (**kwa pass-through to hab.make)
             secrecies (list): of list of secrets to preload key pairs if any
             iridx (int): initial rotation index after ingestion of secrecies
             code (str): prefix derivation code
@@ -477,25 +480,27 @@ class Habery:
             estOnly (str): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
         """
-        aids = list(kwa['aids'])
-        del kwa['aids']
-        if lhab.pre not in aids:
+        #gaids = list(kwa['aids'])
+        #del kwa['aids']
+
+        if lhab.pre not in gaids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
-                                            .format(aids))
+                                            .format(gaids))
 
-        for aid in aids:
+        for aid in gaids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={aids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={gaids}")
 
-        mskeys, msdigers = self.extractKeysDigs(aids)
+        mskeys, msdigers = self.extractKeysDigs(gaids)
         kwa["mskeys"] = mskeys
         kwa["msdigers"] = msdigers
 
+        # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, lhab=lhab, gaids=aids, temp=self.temp)
+                  name=group, lhab=lhab, gaids=gaids, temp=self.temp)
 
-        hab.make(**kwa)
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
 
         return hab
