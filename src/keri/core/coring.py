@@ -2898,37 +2898,33 @@ class Nexter:
     Methods:
 
     Hidden:
-        ._derive is derivation method
+        ._digest is derive digests from keys
 
 
     """
 
-    def __init__(self, digs=None, keys=None):
+    def __init__(self, digers=None, digs=None, verfers=None, keys=None):
         """ Initialize next digests for next key commitment
 
         Parameters:
+           digers (list | None): of Diger instances of digests of public keys
            digs (list | None): of qb64 digests of public keys
+           verfers (list | None): of Verfer instances of public keys
            keys (list | None): of qb64 public keys from which digests are generated
 
 
         """
-        if digs is None:
-            if keys:
-                digs = self._digest(keys=keys)
+        if digers is None:
+            if digs is not None:
+                digers = [Diger(qb64=dig) for dig in digs]
             else:
-                raise EmptyListError(f"Need digs or keys.")
-        #self._digs = digs
+                if verfers is None:
+                    if not keys:
+                        raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+                    verfers = [Verfer(qb64=key) for key in keys]
+                digers = [Diger(ser=verfer.qb64b) for verfer in verfers]
 
-        self._digers = [Diger(qb64=dig) for dig in digs]
-
-
-    @property
-    def digs(self):
-        """Returns ._digs, digs property getter.
-        Makes .digs read only
-        """
-        #return self._digs
-        return [diger.qb64 for diger in self.digers]
+        self._digers = digers
 
 
     @property
@@ -2938,6 +2934,14 @@ class Nexter:
             (list): Diger instances
         """
         return self._digers
+
+
+    @property
+    def digs(self):
+        """Returns ._digs, digs property getter.
+        Makes .digs read only
+        """
+        return [diger.qb64 for diger in self.digers]
 
 
     @staticmethod
