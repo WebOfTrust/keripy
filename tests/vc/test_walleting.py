@@ -5,7 +5,7 @@ tests.vc.walleting module
 """
 
 from keri.app import habbing, signing
-from keri.core import coring, scheming, parsing
+from keri.core import coring, parsing
 from keri.core.eventing import SealEvent
 from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
@@ -38,7 +38,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             schema=schema,
                             data=credSubject,
                             status=issuer.regk)
-        assert creder.said == "ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt"
+        assert creder.said == "EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMhar4R5a3OfB"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -48,26 +48,26 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         sidReg.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgp'
-                       b'KI_Ysseyxt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMh'
+                       b'ar4R5a3OfB","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                        b'ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCn'
                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFKsAdq9CZF_w9yv'
                        b'ia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIy'
                        b'ge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"'
-                       b'254900OPPU84GM83MG36"},"e":{}}-JAB6AABAAA--FABEIaGMMWJFPmtXznY1I'
-                       b'IiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXz'
-                       b'nY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACfes18vVu4oemgX4eXTeRHCqrEfD'
-                       b'GE0Qf35bmSKFdlbeFQhfnsELu7j11YJTIx92JG18MKQ8C6uQujDw-EJJoP')
+                       b'254900OPPU84GM83MG36"}}-JAB6AABAAA--FABEIaGMMWJFPmtXznY1IIiKDIrg'
+                       b'-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiK'
+                       b'DIrg-vIyge6mBl2QV8dDjI3-AABAABrPJSGOU5oUGZjYHvgTo6dblTHX0yNq-SAC'
+                       b'Uc3mgg68RspLkw2rCmXGpZuxnKN0spAzU3Wj0UN2C98Yrab1uYA')
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"ECUEO0hbzqj97j2BFfp4_se0SiK8K8UMgpKI_Ysseyxt",'
+        ser = (b'{"v":"ACDC10JSON000197_","d":"EOavcpdGvk4sTXjOQiNxHeNf3HYMjMINMhar4R5a3OfB",'
                b'"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITak'
                b'YpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
                b'","a":{"d":"EFKsAdq9CZF_w9yvia8RiRdDeXLMjR6q7Lp7FKKIgJx-","i":"EIaGMMWJFPmtX'
                b'znY1IIiKDIrg-vIyge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LE'
-               b'I":"254900OPPU84GM83MG36"},"e":{}}')
+               b'I":"254900OPPU84GM83MG36"}}')
 
-        sig0 = (b'AACfes18vVu4oemgX4eXTeRHCqrEfDGE0Qf35bmSKFdlbeFQhfnsELu7j11YJTIx92JG18MKQ8C6'
-                b'uQujDw-EJJoP')
+        sig0 = (b'AABrPJSGOU5oUGZjYHvgTo6dblTHX0yNq-SACUc3mgg68RspLkw2rCmXGpZuxnKN0spAzU3Wj0UN'
+                b'2C98Yrab1uYA')
 
         parsing.Parser().parse(ims=msg, vry=verifier)
 

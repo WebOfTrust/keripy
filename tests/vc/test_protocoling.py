@@ -88,7 +88,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             data=d,
                             status=issuer.regk)
 
-        assert creder.said == "EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw69EHwxlbvle"
+        assert creder.said == "EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -98,16 +98,16 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         sidRgy.processEscrows()
 
         msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON00019e_","d":"EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw6'
-                       b'9EHwxlbvle","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
+        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-sm'
+                       b'fTu0bOvN-a","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
                        b'ri":"EPzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCn'
                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EOM45RCy4W3Kt6-U'
                        b'_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T21:26:21.233257+0'
                        b'0:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LEI":"'
-                       b'254900OPPU84GM83MG36"},"e":{}}-VA3-JAB6AABAAA--FABEELPMtVeoAMwq-'
-                       b'cEvyqQkPlVlHHj86nNxpb-77KcM3DZ0AAAAAAAAAAAAAAAAAAAAAAAEELPMtVeoA'
-                       b'Mwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ-AABAAAV71VTZIU41HB4Coqg_CJGB7'
-                       b'K6DyfmJZYGjLZqrD3zqJ9rURsiRjZg_R0dW1Dg41KhYy5sNNk8mbMackzR_gIF')
+                       b'254900OPPU84GM83MG36"}}-VA3-JAB6AABAAA--FABEELPMtVeoAMwq-cEvyqQk'
+                       b'PlVlHHj86nNxpb-77KcM3DZ0AAAAAAAAAAAAAAAAAAAAAAAEELPMtVeoAMwq-cEv'
+                       b'yqQkPlVlHHj86nNxpb-77KcM3DZ-AABAADx-hk7PsYCG3M5qyg2SZPV30BOpV2Wy'
+                       b'7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7LkGGG8sBNm1Q8B')
 
         # Create the `exn` message for issue credential
         sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
@@ -124,14 +124,14 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (b'{"v":"ACDC10JSON00019e_","d":"EA_XEmQ5ogD6Ui5xjUPeG6wHYLCb1hTIw69EHwxlbvle",'
+        ser = (b'{"v":"ACDC10JSON000197_","d":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a",'
                b'"i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","ri":"EPzhcSAxNzgx-TgD_IJ'
                b'59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
                b'","a":{"d":"EOM45RCy4W3Kt6-U_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T2'
                b'1:26:21.233257+00:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LE'
-               b'I":"254900OPPU84GM83MG36"},"e":{}}')
-        sig0 = (b'AAAV71VTZIU41HB4Coqg_CJGB7K6DyfmJZYGjLZqrD3zqJ9rURsiRjZg_R0dW1Dg41KhYy5sNNk8'
-                b'mbMackzR_gIF')
+               b'I":"254900OPPU84GM83MG36"}}')
+        sig0 = (b'AADx-hk7PsYCG3M5qyg2SZPV30BOpV2Wy7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7Lk'
+                b'GGG8sBNm1Q8B')
 
         # verify we can load serialized VC by SAID
         creder, sadsigers, sadcigars = sidRgy.reger.cloneCred(said=creder.said)
@@ -210,7 +210,7 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             ),
                             status=issuer.regk,
                             )
-        assert creder.said == "ENbXYc19thNb_18znfumPP3WqMNS7wh7G3K82LTV14EF"
+        assert creder.said == "EEO1aft5aKWawxAIuN4_x0b2oeajvAikyR_w0sADoiXv"
 
         msg = signing.ratify(sidHab, serder=creder)
 
@@ -260,9 +260,9 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
         assert exn.ked['r'] == "/presentation"
-        assert atc == (b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAAA0RlDsUkc9'
-                       b'BGJ6ohKP0UrFUrz4NdG-db1Uix9p_smz2j40zagSdVqN1Hb8AzZ-fcm_xtCO6v2o'
-                       b'2e8oI-ByxtoE')
+        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADvA_qhbOB-'
+                                b'mJ_PnRAek20MnRHYKQia4MmA03nElwqCeaoD-CCx2I4K56e9srLku7d4OpnopFXV'
+                                b'TM3L9liOW-8N')
 
         msg = bytearray(exn.raw)
         msg.extend(atc)
@@ -274,7 +274,7 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         assert resp is not None
         note = resp.attrs["note"]
         a = note["a"]
-        assert a == {'credential': {'n': 'ENbXYc19thNb_18znfumPP3WqMNS7wh7G3K82LTV14EF'},
+        assert a == {'credential': {'n': 'EEO1aft5aKWawxAIuN4_x0b2oeajvAikyR_w0sADoiXv'},
                      'issuer': {'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'},
                      'r': '/presentation',
                      'schema': {'n': 'EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'}}

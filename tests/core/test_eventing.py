@@ -4242,6 +4242,151 @@ def test_reload_kever(mockHelpingNowUTC):
     """End Test"""
 
 
+def test_load_event(mockHelpingNowUTC):
+    with habbing.openHby(name="tor", base="test") as torHby, \
+         habbing.openHby(name="wil", base="test") as wilHby, \
+         habbing.openHby(name="wan", base="test") as wanHby, \
+         habbing.openHby(name="tee", base="test") as teeHby:
+
+        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
+        torKvy = Kevery(db=torHby.db, lax=False, local=False)
+
+        # Create Wan the witness
+        wanHab = wanHby.makeHab(name="wan", transferable=False)
+        assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
+        msg = wanHab.makeOwnEvent(sn=0)
+        parsing.Parser().parse(ims=msg, kvy=torKvy)
+
+        # Create Wil the witness, we'll use him later
+        wilHab = wilHby.makeHab(name="wil", transferable=False)
+
+        # Create Tor the delegaTOR and pass to witness Wan
+        torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
+        assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
+        torIcp = torHab.makeOwnEvent(sn=0)
+
+        # Try to load event before Wan has seen it
+        with pytest.raises(ValueError):
+            _ = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
+
+        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanKvy)
+
+        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
+        assert evt == {'ked': {'a': [],
+                               'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
+                               'bt': '1',
+                               'c': [],
+                               'd': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               'i': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               'k': ['DDgZRj4y6XmkeCsjxLQ-WeAU_U0D3ttTBHW-yicX9hjT'],
+                               'kt': '1',
+                               'n': ['ED9aiBH7JDgWIgPU1bEXDx8XDFPCWKQilDNyw9W1sCl_'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'icp',
+                               'v': 'KERI10JSON000159_'},
+                       'receipts': {},
+                       'signatures': [{'index': 0,
+                                       'signature': 'AAAa36fZASpQeSPn6cEcDMuXRCpDqjXbQ0Q6PqOXB_uktcuANR8rsRdpgB3A87XWeU'
+                                                    'QMB0MrWxUE-2bcjq5JJtMP'}],
+                       'stored': True,
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
+                       'witness_signatures': [{'index': 0,
+                                               'signature': 'AAAU3Kk_Sgd_r4NX4MyE33-eAxM5fUS0WxIyId8YJ-wphNxMT5wI1Mz540'
+                                                            'EjYZRkrnty3VfkYhMv-XkGJuY-JWQI'}],
+                       'witnesses': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP']}
+
+        # Create Tee the delegaTEE and pass to witness Wan
+        teeHab = teeHby.makeHab(name="tee", delpre=torHab.pre, icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1)
+        assert teeHab.pre == "EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo"
+        teeIcp = teeHab.makeOwnEvent(sn=0)
+
+        # Anchor Tee's inception event in Tor's KEL
+        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
+        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanKvy)
+        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+
+        evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
+        assert evt == {'ked': {'a': [{'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                                      'i': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                                      's': '0'}],
+                               'd': 'EF7pHYN6XABC9znRdzprt5frW-MMry9rfrCI-_t5Y8VD',
+                               'i': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               'p': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               's': '1',
+                               't': 'ixn',
+                               'v': 'KERI10JSON00013a_'},
+                       'receipts': {},
+                       'signatures': [{'index': 0,
+                                       'signature': 'AABw4jnfadT8aCwyGX2rDtOV8ojW4w4kVehFoJu_p6TzRpsayZ-cibTM_2iZfHVjWx'
+                                                    'zcIUbP2ibq6cVbVcOcNHsF'}],
+                       'stored': True,
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
+                       'witness_signatures': [{'index': 0,
+                                               'signature': 'AABBQIanzXTUfATO36Q_ZzXSE4x2OlxC0MnOuyaUBE4bJhdHhV0f7qPIu5'
+                                                            'xClEH2C5AgWgLRPlQ-qo98qJHhIr0B'}],
+                       'witnesses': []}
+
+        # Add seal source couple to Tee's inception before sending to Wan
+        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                 count=1)
+        teeIcp.extend(counter.qb64b)
+        seqner = coring.Seqner(sn=torHab.kever.sn)
+        teeIcp.extend(seqner.qb64b)
+        teeIcp.extend(torHab.kever.serder.saider.qb64b)
+
+        # Endorse Tee's inception event with Tor's Hab just so we have trans receipts
+        rct = torHab.receipt(serder=teeHab.kever.serder)
+        nrct = wilHab.receipt(serder=teeHab.kever.serder)
+
+        # Now Wan should be ready for Tee's inception
+        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy)
+        parsing.Parser().parse(ims=bytearray(rct), kvy=wanKvy)
+        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanKvy)
+        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+
+        # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts
+
+        evt = eventing.loadEvent(wanHab.db, teeHab.pre, teeHab.pre)
+        assert evt == {'ked': {'a': [],
+                               'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
+                               'bt': '1',
+                               'c': [],
+                               'd': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                               'di': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                               'i': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
+                               'k': ['DLDlVl1H2Q138A5tftVRpyy834ejsY33BB71kXLRNP2h'],
+                               'kt': '1',
+                               'n': ['EBTtZqMkJOO4nf3cCt6SdezwkoCKtx2fGUKHeFApj_Yx'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'dip',
+                               'v': 'KERI10JSON00018d_'},
+                       'receipts': {'nontransferable': [{'prefix': 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ',
+                                                         'signature': '0BCQOeNT3mwAHxh6mYU9K_B2VmbtjJh7_8115k4JrBPR3c4'
+                                                                      '3jUSO197H2J73vWMi61qzOovNkSWQbnRx3NFnrk8I'}],
+                                    'transferable': [{'prefix': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                                                      'said': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
+                                                      'sequence': '0AAAAAAAAAAAAAAAAAAAAAAA',
+                                                      'signature': 'AADGbcmUNw_SX7OVNX-PQYl41UZx_pgJXHOoMWrcfmCDGgkc1-'
+                                                                   'MqXJjMD9S9moJ-lpPL9-AiXgITemMZL_QYGzIA'}]},
+                       'signatures': [{'index': 0,
+                                       'signature': 'AAC1-NTntZ0xkgHwooNcKxe9G4XC-rgkSryVz0B_QrZR2kkv4IKi7DMkfMBd4Eck-'
+                                                    '2NAi0DMuZeXnlvch6ZP0coO'}],
+                       'source_seal': {'said': 'EF7pHYN6XABC9znRdzprt5frW-MMry9rfrCI-_t5Y8VD',
+                                       'sequence': 1},
+                       'stored': True,
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
+                       'witness_signatures': [{'index': 0,
+                                               'signature': 'AABPMW3J1iZyMC-elPOkdIhddhZB_BJYHTdYv5SxcrOfJL_5igDVB6zKD'
+                                                            'AQiTj_cNa7oP-l6xSRRxwlHDwqgSwcB'}],
+                       'witnesses': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP']}
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
     test_process_manual()

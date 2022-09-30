@@ -368,7 +368,7 @@ def test_multisig_rotation():
                                    'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
                                    'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv']
         assert payload['cuts'] == []
-        assert payload['sith'] == '2'
+        assert payload['isith'] == '2'
         assert payload['toad'] == 2
         assert payload['data'] is None
 
@@ -501,17 +501,19 @@ def test_identifier_ends():
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
 
-        assert result.json == [{'name': 'test',
-                                'metadata': {},
-                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                'seq_no': 0,
+        assert result.json == [{'DnD': False,
+                                'estOnly': False,
                                 'isith': '1',
-                                'public_keys': ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I'],
-                                'nsith': '1',
+                                'metadata': {},
+                                'name': 'test',
                                 'next_keys': ['EJhRr10e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N'],
+                                'nsith': '1',
+                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                'public_keys': ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I'],
+                                'receipts': 0,
+                                'seq_no': 0,
                                 'toad': 0,
-                                'witnesses': [],
-                                'receipts': 0}]
+                                'witnesses': []}]
 
         req = dict(isith='1', count=1)
         result = client.simulate_put(path="/ids/test/rot", body=json.dumps(req).encode("utf-8"))
@@ -535,17 +537,19 @@ def test_identifier_ends():
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
 
-        assert result.json == [{'name': 'test',
-                                'metadata': {},
-                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                                'seq_no': 1,
+        assert result.json == [{'DnD': False,
+                                'estOnly': False,
                                 'isith': '1',
-                                'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
-                                'nsith': '1',
+                                'metadata': {},
+                                'name': 'test',
                                 'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
+                                'nsith': '1',
+                                'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                                'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                                'receipts': 0,
+                                'seq_no': 1,
                                 'toad': 0,
-                                'witnesses': [],
-                                'receipts': 0}]
+                                'witnesses': []}]
 
         req = dict(transferable=True, wits=[], toad=0, isith='1', count=1, nsith='1', ncount=1, estOnly=False)
         result = client.simulate_post(path="/ids/test2", body=json.dumps(req).encode("utf-8"))
@@ -592,20 +596,22 @@ def test_identifier_ends():
         result = client.simulate_get(path="/ids")
         assert result.status == falcon.HTTP_200
         assert len(result.json) == 3
-        assert result.json[2] == {'name': 'test3',
-                                  'prefix': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
-                                  'seq_no': 0,
-                                  'isith': '1',
-                                  'metadata': {},
-                                  'public_keys': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
-                                  'nsith': '1',
-                                  'next_keys': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
-                                  'toad': 0,
-                                  'witnesses': [],
-                                  'receipts': 0,
+        assert result.json[2] == {'DnD': False,
+                                  'anchored': False,
                                   'delegated': True,
                                   'delegator': 'ECtWlHS2Wbx5M2Rg6nm69PCtzwb1veiRNvDpBGF9Z1Pc',
-                                  'anchored': False}
+                                  'estOnly': False,
+                                  'isith': '1',
+                                  'metadata': {},
+                                  'name': 'test3',
+                                  'next_keys': ['EDtSbRLbBc-NEn-sCqTNBCUJXZq6HT6zQPTtmL0DkENV'],
+                                  'nsith': '1',
+                                  'prefix': 'EOhHlK7KtTcSH16YPwTq34Y4FaV7fyHmbybdc8aMgA98',
+                                  'public_keys': ['DMIk0jr4_B7cnWUNuB7lWLlMQvNJM6uPQ2pxEq1N4OMI'],
+                                  'receipts': 0,
+                                  'seq_no': 0,
+                                  'toad': 0,
+                                  'witnesses': []}
 
         req = dict(data=[{"i": 1, "s": 0, "d": 2}])
         result = client.simulate_put(path="/ids/test/ixn", body=json.dumps(req).encode("utf-8"))
@@ -635,25 +641,28 @@ def test_identifier_ends():
         # Test single GET with metadata
         result = client.simulate_get("/ids/test")
         assert result.status == falcon.HTTP_200
-        assert result.json == {'name': 'test',
-                               'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
-                               'seq_no': 2,
+        assert result.json == {'DnD': False,
+                               'estOnly': False,
                                'isith': '1',
-                               'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
-                               'nsith': '1',
-                               'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
-                               'toad': 0,
-                               'witnesses': [],
-                               'receipts': 0,
                                'metadata': {'company': 'ACME',
                                             'email': 'wile-coyote@acme.com',
-                                            'name': 'Wile'}
-                              }
+                                            'name': 'Wile'},
+                               'name': 'test',
+                               'next_keys': ['EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax'],
+                               'nsith': '1',
+                               'prefix': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'public_keys': ['DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP'],
+                               'receipts': 0,
+                               'seq_no': 2,
+                               'toad': 0,
+                               'witnesses': []}
 
         # Test list GET method with metadata
         result = client.simulate_get("/ids")
         assert result.status == falcon.HTTP_200
-        assert result.json[0] == {'isith': '1',
+        assert result.json[0] == {'DnD': False,
+                                  'estOnly': False,
+                                  'isith': '1',
                                   'metadata': {'company': 'ACME',
                                                'email': 'wile-coyote@acme.com',
                                                'name': 'Wile'},
@@ -675,7 +684,9 @@ def test_identifier_ends():
 
         result = client.simulate_get("/ids")
         assert result.status == falcon.HTTP_200
-        assert result.json[0] == {'isith': '1',
+        assert result.json[0] == {'DnD': False,
+                                  'estOnly': False,
+                                  'isith': '1',
                                   'metadata': {'company': 'ACME',
                                                'email': 'wile-coyote@acme.com',
                                                'name': 'Wile'},
@@ -776,7 +787,7 @@ def test_oobi_ends(seeder):
         assert result.json == {'oobis': [
             'http://127.0.0.1:5644/oobi/EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y/witness'
             '/BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr'],
-                               'role': 'witness'}
+            'role': 'witness'}
 
         # Post without a URL or RPY
         data = dict()
@@ -1124,7 +1135,7 @@ def test_keystate_end():
                              counselor=counselor)
         client = testing.TestClient(app)
 
-        result = client.simulate_get(path=f"/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
+        result = client.simulate_get(path="/keystate/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert result.status == falcon.HTTP_404
 
         result = client.simulate_get(path=f"/keystate/{hab.pre}")
@@ -1137,6 +1148,27 @@ def test_keystate_end():
 
         kel = result.json["kel"]
         assert len(kel) == 1
+
+        # Ask for event with a bad public key
+        result = client.simulate_get(path=f"/keystate/pubkey/{state['n'][0]}")
+        assert result.status == falcon.HTTP_404
+
+        # Ask for event with a known public key
+        result = client.simulate_get(path=f"/keystate/pubkey/{state['k'][0]}")
+        assert result.status == falcon.HTTP_200
+        assert result.json == {'a': [],
+                               'b': [],
+                               'bt': '0',
+                               'c': [],
+                               'd': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+                               'k': ['DGmIfLmgErg4zFHfPwaDckLNxsLqc5iS_P0QbLjbWR0I'],
+                               'kt': '1',
+                               'n': ['EJhRr10e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N'],
+                               'nt': '1',
+                               's': '0',
+                               't': 'icp',
+                               'v': 'KERI10JSON00012b_'}
 
 
 def test_schema_ends():
@@ -1250,26 +1282,27 @@ def test_escrow_end(mockHelpingNowUTC):
             sigs.append(coring.Siger(qb64b=bytes(sig)))
         bob.kever.escrowPSEvent(serder=icp, sigers=sigs)
         # regenerated down below
-        escrowedEvt = {'ked': {'v': 'KERI10JSON00012b_',
-                               't': 'icp',
+        escrowedEvt = {'ked': {'a': [],
+                               'b': [],
+                               'bt': '0',
+                               'c': [],
                                'd': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
                                'i': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
-                               's': '0',
-                               'kt': '1',
                                'k': ['DKiNnDmdOkcBjcAqL2FFhMZnSlPfNyGrJlCjJmX5b1nU'],
-                               'nt': '1',
+                               'kt': '1',
                                'n': ['EMP7Lg6BtehOYZt2RwOqXLNfMUiUllejAp8G_5EiANXR'],
-                               'bt': '0',
-                               'b': [],
-                               'c': [],
-                               'a': []},
-                       'stored': True,
+                               'nt': '1',
+                               's': '0',
+                               't': 'icp',
+                               'v': 'KERI10JSON00012b_'},
+                       'receipts': {},
                        'signatures': [{'index': 0,
                                        'signature':
                                            'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeIGZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
+                       'stored': True,
+                       'timestamp': '2021-01-01T00:00:00.000000+00:00',
                        'witness_signatures': [],
-                       'receipts': {},
-                       'timestamp': '2021-01-01T00:00:00.000000+00:00'}
+                       'witnesses': []}
 
         response = client.simulate_get("/escrows?pre=ECgrcJTdVr1TNnmmDrT8Pol9w_0BhsTxlQkWtjyrT060")
         assert response.status == falcon.HTTP_200
@@ -1429,7 +1462,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce, mockHelpingNowIso8601)
                                     data=credSubject,
                                     status=issuer.regk,
                                     )
-        assert creder.said == "EMOTF5DgWMkX6-xy6eLietSLqWCBDB9TQfKFaflpa8MI"
+        assert creder.said == "ENF8t9hfbZtM86yxqQLuipzJTTWmUl4tm2jSTDu9-egd"
 
         msg = signing.ratify(palHab, serder=creder)
 
@@ -1610,6 +1643,3 @@ def test_aied_ends():
         body = dict(current=bran, passcode="ABCDEF")
         response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
         assert response.status == falcon.HTTP_400
-
-
-

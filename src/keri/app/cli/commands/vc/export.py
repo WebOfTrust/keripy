@@ -113,7 +113,7 @@ class ExportDoer(doing.DoDoer):
                 self.outputTEL(creder.said)
 
         if self.chains:
-            chains = creder.crd["e"]
+            chains = creder.chains
             saids = []
             for key, source in chains.items():
                 if key == 'd':
@@ -126,7 +126,6 @@ class ExportDoer(doing.DoDoer):
 
             for said in saids:
                 self.outputCred(said)
-
 
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')

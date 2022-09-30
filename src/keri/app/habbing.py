@@ -479,13 +479,13 @@ class Habery:
             delpre (str): qb64 of delegator identifier prefix
             estOnly (str): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
+            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
 
         ToDo:
         change gaids to list of tuples (laid, index, ondex) for local participant
         in group aid multisig.
 
         """
-
 
         if lhab.pre not in gaids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
@@ -1338,10 +1338,6 @@ class Hab:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign
             kever = self.kever
-            # if not self.phab:
-            #     kever = self.kever
-            # else:  # group so use gid kever
-            #     kever = self.phab.kever
 
             if last:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)

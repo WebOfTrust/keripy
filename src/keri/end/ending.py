@@ -682,7 +682,7 @@ class Oobiery(doing.DoDoer):
                             obr.cid = response["headers"]["Keri-Aid"]
 
                         if obr.oobialias is not None and obr.cid:
-                            self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias))
+                            self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
 
                         self.hby.db.coobi.rem(keys=(url,))
                         self.cues.append(dict(kin="resolved", oobi=url))

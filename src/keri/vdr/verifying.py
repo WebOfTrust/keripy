@@ -104,7 +104,7 @@ class Verifier:
         regk = creder.status
         vcid = creder.said
         schema = creder.schema
-        prov = creder.crd["e"]
+        prov = creder.chains
 
         sadcigars = sadcigars if sadcigars is not None else []
         sadsigers = sadsigers if sadsigers is not None else []

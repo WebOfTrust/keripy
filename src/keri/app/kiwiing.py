@@ -256,6 +256,8 @@ class IdentifierEnd(doing.DoDoer):
                 next_keys=kever.nexter.digs,
                 toad=kever.toader.num,
                 witnesses=kever.wits,
+                estOnly=kever.estOnly,
+                DnD=kever.doNotDelegate,
                 receipts=len(wigs)
             )
 
@@ -721,8 +723,9 @@ class IdentifierEnd(doing.DoDoer):
 
 class KeyStateEnd:
 
-    def __init__(self, hby):
+    def __init__(self, hby, counselor):
         self.hby = hby
+        self.counselor = counselor
 
     def on_get(self, _, rep, prefix):
         """
@@ -770,7 +773,7 @@ class KeyStateEnd:
         kel = []
         for fn, dig in self.hby.db.getFelItemPreIter(preb, fn=0):
             try:
-                event = loadEvent(self.hby.db, preb, dig)
+                event = eventing.loadEvent(self.hby.db, preb, dig)
             except ValueError as e:
                 rep.status = falcon.HTTP_400
                 rep.text = e.args[0]
@@ -778,11 +781,83 @@ class KeyStateEnd:
 
             kel.append(event)
 
+        key = dbing.snKey(pre=pre, sn=0)
+        # load any partially witnesses events for this prefix
+        for ekey, edig in self.hby.db.getPweItemsNextIter(key=key):
+            pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+            try:
+                kel.append(eventing.loadEvent(self.hby.db, pre, edig))
+            except ValueError as e:
+                rep.status = falcon.HTTP_400
+                rep.text = e.args[0]
+                return
+
+        # load any partially signed events from this prefix
+        for ekey, edig in self.hby.db.getPseItemsNextIter(key=key):
+            pre, sn = dbing.splitKeySN(ekey)  # get pre and sn from escrow item
+            try:
+                kel.append(eventing.loadEvent(self.hby.db, pre, edig))
+            except ValueError as e:
+                rep.status = falcon.HTTP_400
+                rep.text = e.args[0]
+                return
+
         res["kel"] = kel
+
+        # Check to see if we have any pending distributed multisig events
+        evts = []
+        if pre in self.hby.habs:
+            hab = self.hby.habs[pre]
+            if hab.lhab:
+                evts = self.counselor.pendingEvents(pre)
+        res["pending"] = evts
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
+
+    def on_get_pubkey(self, _, rep, pubkey):
+        """
+
+        Parameters:
+            _ (Request): falcon.Request HTTP request
+            rep (Response): falcon.Response HTTP response
+            pubkey (str): qb64 public key for which to search
+
+        ---
+        summary:  Display key event log (KEL) for given identifier prefix
+        description:  If provided qb64 identifier prefix is in Kevers, return the current state of the
+                      identifier along with the KEL and all associated signatures and receipts
+        tags:
+           - Ket Event Log
+        parameters:
+          - in: path
+            name: pubkey
+            schema:
+              type: string
+            required: true
+            description: qb64 identifier prefix of KEL to load
+        responses:
+           200:
+              description: Key event log and key state of identifier
+           404:
+              description: Identifier not found in Key event database
+
+
+        """
+        found = None
+        for pre, digb, raw in self.hby.db.getAllItemIter(db=self.hby.db.evts):
+            serder = coring.Serder(raw=bytes(raw))
+            if len(serder.ked['k']) == 1 and pubkey in serder.ked['k']:
+                found = serder
+
+        if found is None:
+            rep.status = falcon.HTTP_404
+            rep.data = json.dumps(dict(msg="Public key not found")).encode("utf-8")
+            return
+
+        rep.status = falcon.HTTP_200
+        rep.data = json.dumps(found.ked).encode("utf-8")
 
 
 class RegistryEnd(doing.DoDoer):
@@ -1072,7 +1147,7 @@ class CredentialEnd(doing.DoDoer):
     def outputCred(self, hab, said):
         out = bytearray()
         creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
-        chains = creder.crd["e"]
+        chains = creder.chains
         saids = []
         for key, source in chains.items():
             if key == 'd':
@@ -2747,7 +2822,7 @@ class NotificationEnd:
         mared = self.notifier.mar(said)
         if not mared:
             rep.status = falcon.HTTP_404
-            rep.text = f"no notification to mark as read for {said}"
+            rep.data = json.dumps(dict(msg=f"no notification to mark as read for {said}")).encode("utf-8")
             return
 
         rep.status = falcon.HTTP_202
@@ -3285,7 +3360,7 @@ class EscrowEnd:
                         continue
 
                     try:
-                        oots.append(loadEvent(self.db, pre, edig))
+                        oots.append(eventing.loadEvent(self.db, pre, edig))
                     except ValueError as e:
                         rep.status = falcon.HTTP_400
                         rep.text = e.args[0]
@@ -3307,7 +3382,7 @@ class EscrowEnd:
                         continue
 
                     try:
-                        pwes.append(loadEvent(self.db, pre, edig))
+                        pwes.append(eventing.loadEvent(self.db, pre, edig))
                     except ValueError as e:
                         rep.status = falcon.HTTP_400
                         rep.text = e.args[0]
@@ -3329,7 +3404,7 @@ class EscrowEnd:
                         continue
 
                     try:
-                        pses.append(loadEvent(self.db, pre, edig))
+                        pses.append(eventing.loadEvent(self.db, pre, edig))
                     except ValueError as e:
                         rep.status = falcon.HTTP_400
                         rep.text = e.args[0]
@@ -3351,7 +3426,7 @@ class EscrowEnd:
                         continue
 
                     try:
-                        ldes.append(loadEvent(self.db, pre, edig))
+                        ldes.append(eventing.loadEvent(self.db, pre, edig))
                     except ValueError as e:
                         rep.status = falcon.HTTP_400
                         rep.text = e.args[0]
@@ -3403,7 +3478,7 @@ class EscrowEnd:
 
         """
         try:
-            event = loadEvent(self.db, pre, dig)
+            event = eventing.loadEvent(self.db, pre, dig)
         except ValueError:
             rep.status = falcon.HTTP_404
             rep.text = "Event not found"
@@ -3573,8 +3648,9 @@ def loadEnds(app, *,
     app.add_route("/ids/{alias}/rot", identifierEnd, suffix="rot")
     app.add_route("/ids/{alias}/ixn", identifierEnd, suffix="ixn")
 
-    keyEnd = KeyStateEnd(hby=hby)
+    keyEnd = KeyStateEnd(hby=hby, counselor=counselor)
     app.add_route("/keystate/{prefix}", keyEnd)
+    app.add_route("/keystate/pubkey/{pubkey}", keyEnd, suffix="pubkey")
 
     registryEnd = RegistryEnd(hby=hby, rgy=rgy, registrar=registrar)
     app.add_route("/registries", registryEnd)
@@ -3738,75 +3814,3 @@ def oobiCueDo(tymth, tock=0.0, **opts):
 
             yield 0.25
         yield tock
-
-
-def loadEvent(db, preb, dig):
-    event = dict()
-    dgkey = dbing.dgKey(preb, dig)  # get message
-    if not (raw := db.getEvt(key=dgkey)):
-        raise ValueError("Missing event for dig={}.".format(dig))
-
-    srdr = coring.Serder(raw=bytes(raw))
-    event["ked"] = srdr.ked
-
-    sn = srdr.sn
-    sdig = db.getKeLast(key=dbing.snKey(pre=preb,
-                                        sn=sn))
-    if sdig is not None:
-        event["stored"] = True
-
-    # add indexed signatures to attachments
-    sigs = db.getSigs(key=dgkey)
-    dsigs = []
-    for s in sigs:
-        sig = coring.Siger(qb64b=bytes(s))
-        dsigs.append(dict(index=sig.index, signature=sig.qb64))
-    event["signatures"] = dsigs
-
-    # add indexed witness signatures to attachments
-    dwigs = []
-    if wigs := db.getWigs(key=dgkey):
-        for w in wigs:
-            sig = coring.Siger(qb64b=bytes(w))
-            dwigs.append(dict(index=sig.index, signature=sig.qb64))
-    event["witness_signatures"] = dwigs
-
-    # add authorizer (delegator/issuer) source seal event couple to attachments
-    couple = db.getAes(dgkey)
-    if couple is not None:
-        raw = bytearray(couple)
-        seqner = coring.Seqner(qb64b=raw, strip=True)
-        saider = coring.Saider(qb64b=raw)
-        event["source_seal"] = dict(sequence=seqner.sn, said=saider.qb64)
-
-    receipts = dict()
-    # add trans receipts quadruples
-    if quads := db.getVrcs(key=dgkey):
-        trans = []
-        for quad in quads:
-            raw = bytearray(quad)
-            trans.append(dict(
-                prefix=coring.Prefixer(qb64b=raw, strip=True).qb64,
-                sequence=coring.Seqner(qb64b=raw, strip=True).qb64,
-                said=coring.Saider(qb64b=raw, strip=True).qb64,
-                signature=coring.Siger(qb64b=raw, strip=True).qb64,
-            ))
-
-        receipts["transferable"] = trans
-
-    # add nontrans receipts couples
-    if coups := db.getRcts(key=dgkey):
-        nontrans = []
-        for coup in coups:
-            raw = bytearray(coup)
-            (prefixer, cigar) = eventing.deReceiptCouple(raw, strip=True)
-            nontrans.append(dict(prefix=prefixer.qb64, signature=cigar.qb64))
-        receipts["nontransferable"] = nontrans
-
-    event["receipts"] = receipts
-    # add first seen replay couple to attachments
-    if not (dts := db.getDts(key=dgkey)):
-        raise ValueError("Missing datetime for dig={}.".format(dig))
-
-    event["timestamp"] = coring.Dater(dts=bytes(dts)).dts
-    return event
