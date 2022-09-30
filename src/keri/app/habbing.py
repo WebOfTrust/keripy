@@ -479,9 +479,13 @@ class Habery:
             delpre (str): qb64 of delegator identifier prefix
             estOnly (str): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
+
+        ToDo:
+        change gaids to list of tuples (laid, index, ondex) for local participant
+        in group aid multisig.
+
         """
-        #gaids = list(kwa['aids'])
-        #del kwa['aids']
+
 
         if lhab.pre not in gaids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
@@ -813,6 +817,10 @@ class Hab:
         accepted (bool): True means accepted into local KEL.
                           False otherwise
 
+    Todo:
+    Change gaids to list of tuples (laid, index, ondex) to provide local participants
+    in this event
+
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
@@ -888,6 +896,9 @@ class Hab:
             mskeys (list): Verfers of public keys collected from inception of participants in group identifier
             msdigers (list): Digers of next public keys collected from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
+
+        ToDo:
+        HabitatRecord needs to also store indices for each gaid (index, ondex)
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):

@@ -491,6 +491,7 @@ def test_matter():
     longprebin = prebin + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     matter = Matter(qb2=longprebin)
     assert len(matter.qb64) == Matter.Sizes[matter.code].fs
+    assert isinstance(matter.raw, bytes)
 
     # test non-zero pad bits in qb2 init ps ==1
     badprebin1 = decodeB64(badprefix1)  # b'\x07\xf0\x00cdefghijklmnopqrstuv0123456789'
@@ -572,6 +573,7 @@ def test_matter():
     matter = Matter(qb64=prefix, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -582,6 +584,7 @@ def test_matter():
     matter = Matter(qb64b=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -593,6 +596,7 @@ def test_matter():
     matter = Matter(qb2=ims, strip=True)  # strip from ims qb2
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -606,6 +610,7 @@ def test_matter():
     matter = Matter(qb64b=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -619,6 +624,7 @@ def test_matter():
     matter = Matter(qb2=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -1796,6 +1802,7 @@ def test_indexer():
     # test truncates extra bytes from qb2 parameter
     longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     indexer = Indexer(qb2=longqsig2b)
+    assert isinstance(indexer.raw, bytes)
     assert indexer.qb2 == qsig2b
     assert len(indexer.qb64) == Indexer.Sizes[indexer.code].fs
 
@@ -1919,6 +1926,7 @@ def test_indexer():
     ims = bytearray(qsig64b)
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1930,6 +1938,7 @@ def test_indexer():
     ims = bytearray(qsig2b)
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1943,6 +1952,7 @@ def test_indexer():
     ims = bytearray(qsig64b) + extra
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1956,6 +1966,7 @@ def test_indexer():
     ims = bytearray(qsig2b) + extra
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5

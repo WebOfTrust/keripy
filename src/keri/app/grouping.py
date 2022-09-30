@@ -64,6 +64,7 @@ class Counselor(doing.DoDoer):
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
+
     def rotate(self, ghab, aids, sith, toad, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
@@ -78,12 +79,18 @@ class Counselor(doing.DoDoer):
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
 
+        ToDo
+        changes aids to gaids and make it a list of tuples (laid, index, ondex)
+        Then store these with rotationRecord to be used by .processPartialAidEscrow()
+
+
         """
         aids = aids if aids is not None else ghab.gaids
         pid = ghab.lhab.pre
 
         if pid not in aids:
-            raise kering.ConfigurationError(f"local identifier {pid} not elected to participate in rotation: {aids}")
+            raise kering.ConfigurationError(f"local identifier {pid} not elected"
+                                            f" to participate in rotation: {aids}")
 
         kever = ghab.kever
 
@@ -201,6 +208,21 @@ class Counselor(doing.DoDoer):
         Process escrow of group multisig rotate requests missing rotations from other participants.  Message
         processing will send this local controllers rotation event to all other participants
         then this escrow waits for rotations from all other participants
+
+        ToDo
+        rec includes the dual indices for current and next for new rotation
+        add database for each group hab to store for each local hab the reference
+        to the event used in by local hab to provided current and/or next keys
+        to latest est event. This reference is new seal that includes not just
+        reference (sn, said, of event but also the crt and nxt index used by the
+        group hab est event for the local habe est event keys (in either both current
+        next of group habe est event.)
+
+        Logic to determin if current local hab kever is ok to use is based on
+        if latest prior est event in database exposed a its current for the local hab
+        if so then the local hab must rotate and the sn must be at least one greater
+        if current key was not exposed then the lhab does not need to be rotated and the
+        unexposed next key can be reused in the new rotation event.
 
         """
         # ignore saider because it is not relevant yet

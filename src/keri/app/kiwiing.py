@@ -1883,6 +1883,15 @@ class MultisigInceptEnd(MultisigEndBase):
         super(MultisigInceptEnd, self).__init__(notifier=notifier, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
+        """Incept group multisig
+
+        ToDo
+        changes aids to gaids and make it a list of tuples (laid, index, ondex)
+        Then pass these into self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
+
+
+        """
+
         if "aids" not in body:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group inception request, 'aids' is required'"

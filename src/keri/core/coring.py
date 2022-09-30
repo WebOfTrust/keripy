@@ -865,20 +865,14 @@ class Matter:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
                 del qb64b[:self.fullSize]
-            #if qb64b != self.qb64b:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb64b init value = {qb64b}.")
 
         elif qb64 is not None:
             self._exfil(qb64)
-            #if qb64 != self.qb64:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb64 init value = {qb64}.")
 
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
                 del qb2[:self.fullSize * 3 // 4]
-            #if qb2 != self.qb2:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb2 init value = {qb2}.")
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
@@ -1119,7 +1113,7 @@ class Matter:
 
         hard = qb64b[:hs]  # extract hard code
         if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
+            hard = hard.decode("utf-8")  # converts bytes/bytearray to str
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1158,32 +1152,35 @@ class Matter:
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
                                  f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad bytes
+            raw = paw[ps:]  # strip off ps prepad paw bytes
+
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
             # decode lead chars + val leaving lead bytes + raw bytes
             # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded raw
+            paw = decodeB64(base) # decode base to leave prepadded paw bytes
             li = int.from_bytes(paw[:ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:
                     raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
                 else:
                     raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
-
-            raw = paw[ls:]
+            raw = paw[ls:]  # paw is bytes so raw is bytes
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
         self._code = hard  # hard only
         self._size = size
-        self._raw = raw
+        self._raw = raw  # ensure bytes so immutable and for crypto ops
 
 
     def _bexfil(self, qb2):
         """
-        Extracts self.code and self.raw from qualified base2 bytes qb2
+        Extracts self.code and self.raw from qualified base2 qb2
+
+        Parameters:
+            qb2 (bytes | bytearray): fully qualified base2 from stream
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")
@@ -1257,7 +1254,7 @@ class Matter:
 
         self._code = hard
         self._size = size
-        self._raw = raw
+        self._raw = bytes(raw)  # ensure bytes so immutable and crypto operations
 
 
 class Seqner(Matter):
@@ -4154,12 +4151,12 @@ class Indexer:
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
                                  f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad bytes
+            raw = paw[ps:]  # strip off ps prepad paw bytes
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
             # decode lead chars + val leaving lead bytes + raw bytes
             # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded raw
+            paw = decodeB64(base) # decode base to leave prepadded paw bytes
             li = int.from_bytes(paw[:ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:
@@ -4175,7 +4172,7 @@ class Indexer:
         self._code = hard
         self._index = index
         self._ondex = ondex
-        self._raw = raw
+        self._raw = raw  # must be bytes for crpto opts and immutable not bytearray
 
 
 
@@ -4280,7 +4277,7 @@ class Indexer:
         self._code = hard
         self._index = index
         self._ondex = ondex
-        self._raw = raw
+        self._raw = bytes(raw)  # must be bytes for crypto ops and not bytearray mutable
 
 
 class Siger(Indexer):
@@ -4626,8 +4623,8 @@ class Counter:
 
         hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
-        if hard not in self.Sizes:
+            hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
+        if hard not in self.Sizes:  # Sizes needs str not bytes
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs, ls = self.Sizes[hard]  # assumes hs consistent in both tables
