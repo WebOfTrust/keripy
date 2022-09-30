@@ -24,7 +24,7 @@ def test_bare():
 
     {
       "v" : "KERI10JSON00011c_",
-      "t" : "bre",
+      "t" : "bar",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "logs/processor",
       "a" :
@@ -91,12 +91,12 @@ def test_bare():
                              data=data,
                             )
 
-    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"ECKvitz-nWQS1rwqzathapQ81LOtGhJFY2FB'
-                        b'sbpfpBXr","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                        b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
-                        b'5CM","name":"besty"}}')
+    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKqOoS5FnJEPwdp'
+                           b'IMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
+                           b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
+                           b'5CM","name":"besty"}}')
 
-    assert serderE.ked["d"] == 'ECKvitz-nWQS1rwqzathapQ81LOtGhJFY2FBsbpfpBXr'
+    assert serderE.ked["d"] == 'EOBOm9NDlTey2VyDGhMZ-wKqOoS5FnJEPwdpIMVH7Oll'
 
     # create SealEvent for endorsers est evt whose keys use to sign
 
@@ -110,16 +110,16 @@ def test_bare():
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"ECKvitz-nWQS1rwqzathapQ8'
-                b'1LOtGhJFY2FBsbpfpBXr","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-                b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6'
-                b'WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAA'
-                b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAD-GC8EKv22Nqd'
-                b'0_L_lXPR7s5plq_otnBSiamlaMqrW5yj4QU344g-u76tq_DymYREU3F9CuBpXS7S'
-                b'zS6Fzf8IA')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
+                   b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
+                   b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
+                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6'
+                   b'WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAACKOcmfrZtRsW_'
+                   b'PKmt_gDXFiAsepoKl85WFTr_XaVGh2qkh_JQ7eN-nEFFgyPv-8a51jrOGRX_tY2M'
+                   b'6DPQqQHUJ')
 
-    # create endorsed bre with trans endorser
+    # create endorsed bar with trans endorser
     # create trans key pair for endorser
     signerE = salter.signer(path="E", temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519  # transferable
@@ -134,17 +134,17 @@ def test_bare():
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"ECKvitz-nWQS1rwqzathapQ8'
-                b'1LOtGhJFY2FBsbpfpBXr","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-                b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMr'
-                b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAA'
-                b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAABNUYZJQqmi9rA'
-                b'ZMSpN9yEOz5kIHn_E0HjMMqZfLmUzkiJio3G3GsON20qFLIgNaHPziPT3NNkhzo0'
-                b'kQCWQfmsB')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
+                   b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
+                   b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
+                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMr'
+                   b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAABABWeacQ_nHgu'
+                   b'Ugw6scJCUIbs5_vczaXxtKTYaryN15e_9Y7GT-korkJc4sHGpkmekr7w2XFhr1Da'
+                   b'OTfVsyNUI')
 
 
-    # create endorsed bre with nontrans endorser
+    # create endorsed bar with nontrans endorser
     # create nontrans key pair for endorder
     signerE = salter.signer(path="E", transferable=False, temp=True)
     assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
@@ -154,12 +154,12 @@ def test_bare():
     cigarE = signerE.sign(ser=serderE.raw)  # no index so Cigar
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderE.raw)
     msg = messagize(serderE, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bre","d":"ECKvitz-nWQS1rwqzathapQ8'
-                b'1LOtGhJFY2FBsbpfpBXr","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-                b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABBMr'
-                b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0BBNUYZJQqmi9rAZMSpN9yE'
-                b'Oz5kIHn_E0HjMMqZfLmUzkiJio3G3GsON20qFLIgNaHPziPT3NNkhzo0kQCWQfmsB')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
+          b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
+          b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
+          b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABBMr'
+          b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0BBABWeacQ_nHguUgw6scJC'
+          b'UIbs5_vczaXxtKTYaryN15e_9Y7GT-korkJc4sHGpkmekr7w2XFhr1DaOTfVsyNUI')
 
 
     """Done Test"""

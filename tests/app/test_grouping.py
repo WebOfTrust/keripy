@@ -38,10 +38,10 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         aids = [hab1.pre, hab2.pre, hab3.pre]
-        inits = dict(aids=aids, isith='2', nsith='2', toad=0, wits=[])
+        inits = dict(isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
-        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", phab=hab1, **inits)
+        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, gaids=aids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
@@ -64,7 +64,7 @@ def test_counselor():
         assert saider.qb64 == "EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s"
 
         # Sith 2 so create second signature to get past the first escrow
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", phab=hab2, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, gaids=aids, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
         assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0a'
                        b'fydw9y474RJbcoNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
@@ -188,16 +188,15 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         aids = [hab1.pre, hab2.pre, hab3.pre]
 
         inits = dict(
-            aids=aids,
             toad=0,
             wits=[],
             isith='3',
             nsith='3'
         )
 
-        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", phab=hab1, **inits)
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", phab=hab2, **inits)
-        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", phab=hab3, **inits)
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, gaids=aids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, gaids=aids, **inits)
+        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", lhab=hab3, gaids=aids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eraw = hab1.db.getEvt(dgkey)
@@ -239,7 +238,7 @@ def test_multisig_incept(mockHelpingNowUTC):
 
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.gaids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
@@ -249,7 +248,7 @@ def test_multisig_rotate(mockHelpingNowUTC):
                        b'ib3oNIB3geUB')
 
         data = exn.ked["a"]
-        assert data["aids"] == ghab1.aids
+        assert data["aids"] == ghab1.gaids
         assert data["gid"] == ghab1.pre
         assert data["isith"] == '2'
         assert data["toad"] == 0
@@ -260,7 +259,7 @@ def test_multisig_rotate(mockHelpingNowUTC):
 
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
+        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.gaids,
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         assert exn.ked["r"] == '/multisig/ixn'
@@ -269,7 +268,7 @@ def test_multisig_interact(mockHelpingNowUTC):
                        b'm5ONAt3Ro8qKzE3dpzPbuJVvbk7oDuSCU4jhhKF08Cpi2vUlRQd5yoPWhLH1YM4c'
                        b'I1LDFmg0BFgA')
         data = exn.ked["a"]
-        assert data["aids"] == ghab1.aids
+        assert data["aids"] == ghab1.gaids
         assert data["gid"] == ghab1.pre
         assert data["data"] == [{"i": 1, "x": 0, "d": 2}]
 
@@ -346,9 +345,9 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         # Pass message missing keys:
         handler.msgs.append(dict(name="value"))
         handler.msgs.append(dict(pre=ghab.kever.prefixer))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids)))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
-        handler.msgs.append(dict(pre=ghab.phab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.gaids)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.gaids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.lhab.kever.prefixer, payload=dict(aids=ghab.gaids, gid=ghab.pre)))
 
         limit = 1.0
         tock = 0.03125
@@ -368,7 +367,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.aids, isith='2', toad=0, cuts=[],
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.gaids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
         notifier = notifying.Notifier(hby=hby1)
         exc = exchanging.Exchanger(hby=hby1, handlers=[])
@@ -404,9 +403,9 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         # Pass message missing keys:
         handler.msgs.append(dict(name="value"))
         handler.msgs.append(dict(pre=ghab.kever.prefixer))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids)))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
-        handler.msgs.append(dict(pre=ghab.phab.kever.prefixer, payload=dict(aids=ghab.aids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.gaids)))
+        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.gaids, gid=ghab.pre)))
+        handler.msgs.append(dict(pre=ghab.lhab.kever.prefixer, payload=dict(aids=ghab.gaids, gid=ghab.pre)))
 
         limit = 1.0
         tock = 0.03125
@@ -426,7 +425,7 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
 
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
-        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.aids,
+        exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.gaids,
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         notifier = notifying.Notifier(hby=hby1)

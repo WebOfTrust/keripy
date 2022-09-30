@@ -405,7 +405,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, aids=habord.aids)
+                      name=name, pre=pre, temp=self.temp, gaids=habord.aids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -422,7 +422,7 @@ class Habery:
 
         # Populate the participant hab after loading all habs
         for habord in groups:
-            self.habs[habord.prefix].phab = self.habs[habord.pid]
+            self.habs[habord.prefix].lhab = self.habs[habord.pid]
 
         self.reconfigure()  # post hab load reconfiguration
 
@@ -454,13 +454,17 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, phab, **kwa):
-        """Make new Group Hab with name using pre from hab as local identifier,
-        pre is generated from **kwa
+    def makeGroupHab(self, group, lhab, gaids, **kwa):
+        """Make new Group Hab using group has group hab name, with lhab as local
+        participant.
 
-        Parameters: (Passthrough to hab.make)
+        Parameters: (non-pass-through):
             group (str): human readable alias for group identifier
-            hab (Hab): Habitat of local identifier to use as participant in group
+            lhab (Hab): local (participant) hab of group hab.
+            gaids (list): of qb64 prefixes aids of participants in group
+
+
+        Parameters: (**kwa pass-through to hab.make)
             secrecies (list): of list of secrets to preload key pairs if any
             iridx (int): initial rotation index after ingestion of secrecies
             code (str): prefix derivation code
@@ -476,26 +480,31 @@ class Habery:
             estOnly (str): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
             DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
-       """
-        aids = list(kwa['aids'])
-        del kwa['aids']
-        if phab.pre not in aids:
+
+        ToDo:
+        change gaids to list of tuples (laid, index, ondex) for local participant
+        in group aid multisig.
+
+        """
+
+        if lhab.pre not in gaids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
-                                            .format(aids))
+                                            .format(gaids))
 
-        for aid in aids:
+        for aid in gaids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={aids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={gaids}")
 
-        mskeys, msdigers = self.extractKeysDigs(aids)
+        mskeys, msdigers = self.extractKeysDigs(gaids)
         kwa["mskeys"] = mskeys
         kwa["msdigers"] = msdigers
 
+        # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, phab=phab, aids=aids, temp=self.temp)
+                  name=group, lhab=lhab, gaids=gaids, temp=self.temp)
 
-        hab.make(**kwa)
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
 
         return hab
@@ -784,15 +793,21 @@ class Hab:
         rvy (routing.Revery): factory that processes reply 'rpy' messages
         kvy (eventing.Kevery): factory for local processing of local event msgs
         psr (parsing.Parser):  parses local messages for .kvy .rvy
-        phab Hab): Group participant hab if this is a group multisig identifier
-        aids (list): AID prefixes of group participants
+
 
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        temp (bool):
+        lhab (Hab | None): local (participant) hab when this Hab is multisig group
+                           else None
+        gaids (list | None): group (participant) aids (prefixes) when this Hab is
+                           multisig group else None
+        temp (bool): True means testing:
+                     use weak level when salty algo for stretching in key creation
+                     for incept and rotate of keys for this hab.pre
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
+        delpre (str | None): delegator prefix if any else None
 
     Properties:
         kever (Kever): instance of key state of local controller
@@ -802,10 +817,14 @@ class Hab:
         accepted (bool): True means accepted into local KEL.
                           False otherwise
 
+    Todo:
+    Change gaids to list of tuples (laid, index, ondex) to provide local participants
+    in this event
+
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, phab=None, aids=None, temp=False):
+                 name='test', pre=None, lhab=None, gaids=None, temp=False):
         """
         Initialize instance.
 
@@ -822,14 +841,14 @@ class Hab:
 
         Parameters:
             name (str): alias name for local controller of habitat
-            pre (str): qb64 identifier prefix of own local controller else None
-            phab (Hab): Group participant hab if this is a group multisig identifier
-            aids (list): AID prefixes of group participants
+            pre (str | None): qb64 identifier prefix of own local controller else None
+            lhab (Hab | None): local (participant) hab when this Hab is multisig group
+                           else None
+            gaids (list | None): group (participant) aids (prefixes) when this Hab is
+                           multisig group else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
-
-
 
         """
         self.db = db  # injected
@@ -840,16 +859,16 @@ class Hab:
         self.rvy = rvy  # injected
         self.kvy = kvy  # injected
         self.psr = psr  # injected
-        self.phab = phab  # injected group participant Hab
-        self.aids = aids  # injected group participant aids
+
 
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
+        self.lhab = lhab  # local participant Hab of this group hab
+        self.gaids = gaids  # group aids of participant in this group hab
         self.temp = True if temp else False
 
         self.inited = False
-
-        self.delpre = None
+        self.delpre = None  # assigned laster if delegated
 
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, icount=1,
              nsith=None, ncount=None, toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
@@ -877,6 +896,9 @@ class Hab:
             mskeys (list): Verfers of public keys collected from inception of participants in group identifier
             msdigers (list): Digers of next public keys collected from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
+
+        ToDo:
+        HabitatRecord needs to also store indices for each gaid (index, ondex)
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
@@ -948,9 +970,9 @@ class Hab:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.aids)
-        if self.phab:
-            habord.pid = self.phab.pre
+        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
+        if self.lhab:
+            habord.pid = self.lhab.pre
 
         if not hidden:
             self.db.habs.put(keys=self.name,
@@ -958,9 +980,9 @@ class Hab:
             self.prefixes.add(self.pre)
 
         # create inception event
-        if self.phab:
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers, indices=[idx])
+        if self.lhab:
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            sigers = self.lhab.mgr.sign(ser=serder.raw, verfers=self.lhab.kever.verfers, indices=[idx])
         else:
             sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
 
@@ -975,7 +997,7 @@ class Hab:
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
-        if not self.phab:
+        if not self.lhab:
             self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
@@ -1083,13 +1105,13 @@ class Hab:
         return self.db.prefixes
 
     def group(self):
-        return self.aids
+        return self.gaids
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
-        if self.phab:
+        if self.lhab:
             keys = [verfer.qb64 for verfer in self.kever.verfers]
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            return self.phab.mgr.sign(ser, pubs=pubs, verfers=self.phab.kever.verfers,
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            return self.lhab.mgr.sign(ser, pubs=pubs, verfers=self.lhab.kever.verfers,
                                       indexed=indexed, indices=[idx])
         else:
             if verfers is None:
@@ -1142,7 +1164,7 @@ class Hab:
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=[verfer.qb64 for verfer in verfers],
                                       dig=kever.serder.saider.qb64,
-                                      sn=kever.sn + 1,
+                                      sn=kever.sner.num + 1,
                                       sith=cst,
                                       nsith=nst,
                                       nkeys=[diger.qb64 for diger in digers],
@@ -1155,7 +1177,7 @@ class Hab:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=[verfer.qb64 for verfer in verfers],
                                      dig=kever.serder.saider.qb64,
-                                     sn=kever.sn + 1,
+                                     sn=kever.sner.num + 1,
                                      sith=cst,
                                      nsith=nst,
                                      nkeys=[diger.qb64 for diger in digers],
@@ -1165,9 +1187,9 @@ class Hab:
                                      adds=adds,
                                      data=data)
 
-        if self.phab:
-            idx = keys.index(self.phab.kever.verfers[0].qb64)
-            sigers = self.phab.mgr.sign(ser=serder.raw, verfers=self.phab.kever.verfers,
+        if self.lhab:
+            idx = keys.index(self.lhab.kever.verfers[0].qb64)
+            sigers = self.lhab.mgr.sign(ser=serder.raw, verfers=self.lhab.kever.verfers,
                                         indices=[idx])
         else:
             sigers = self.sign(ser=serder.raw, verfers=verfers)
@@ -1179,9 +1201,9 @@ class Hab:
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except MissingSignatureError:
             pass
-        except Exception as e:
+        except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={}.".format(self.pre))
+                                         "pre={self.pre}.") from ex
 
         return msg
 
@@ -1193,7 +1215,7 @@ class Hab:
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.saider.qb64,
-                                   sn=kever.sn + 1,
+                                   sn=kever.sner.num + 1,
                                    data=data)
 
         sigers = self.sign(ser=serder.raw)

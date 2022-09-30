@@ -80,9 +80,9 @@ class TestDoer(doing.DoDoer):
         wanHab = wanHby.habByName("wan")
         # Verify the group identifier was incepted properly and matches the identifiers
         assert wanHab.pre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
-        assert hab1.phab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
-        assert hab2.phab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
-        assert hab3.phab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
+        assert hab1.lhab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
+        assert hab2.lhab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
+        assert hab3.lhab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
         gid = 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
         assert hab1.pre == hab2.pre == hab3.pre == gid
         assert hab1.name == "test_group1"
@@ -100,9 +100,9 @@ class TestDoer(doing.DoDoer):
 
         # Set up mailbox end role for each participant using wan
         for hab in [hab1, hab2, hab3]:
-            createMbxEndRole(hab1, hab.phab.pre, wanHab.pre, "http://127.0.0.1:5642/")
-            createMbxEndRole(hab2, hab.phab.pre, wanHab.pre, "http://127.0.0.1:5642/")
-            createMbxEndRole(hab3, hab.phab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab1, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab2, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab3, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
 
         createMbxEndRole(hab1, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
         createMbxEndRole(hab2, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
@@ -194,7 +194,7 @@ class TestDoer(doing.DoDoer):
             yield tock
 
         # Let rotate our keys for good hygiene
-        rotd = dict(aids=[self.hab1.phab.pre, self.hab2.phab.pre, self.hab3.phab.pre])
+        rotd = dict(aids=[self.hab1.lhab.pre, self.hab2.lhab.pre, self.hab3.lhab.pre])
         b = json.dumps(rotd).encode("utf-8")
         response = client1.simulate_post(f"/groups/{self.hab1.name}/rot", body=b)
         assert response.status == falcon.HTTP_202

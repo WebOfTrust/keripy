@@ -391,13 +391,13 @@ class Registrar(doing.DoDoer):
         rseq = coring.Seqner(sn=0)
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
-        if hab.phab is None:
+        if hab.lhab is None:
             if estOnly:
                 hab.rotate(data=[rseal])
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
 
@@ -407,9 +407,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            aids = aids if aids is not None else hab.aids
+            aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
@@ -438,13 +438,13 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if hab.phab is None:
+        if hab.lhab is None:
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
@@ -454,9 +454,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            aids = aids if aids is not None else hab.aids
+            aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
@@ -488,13 +488,13 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, rserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if hab.phab is None:
+        if hab.lhab is None:
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
                 hab.interact(data=[rseal])
 
-            seqner = coring.Seqner(sn=hab.kever.sn)
+            seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
@@ -504,9 +504,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            aids = aids if aids is not None else hab.aids
+            aids = aids if aids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.phab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
@@ -726,21 +726,21 @@ class Credentialer(doing.DoDoer):
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
-        aids = aids if aids is not None else hab.aids
+        aids = aids if aids is not None else hab.gaids
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
         vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, aids=aids)
 
         rseq = coring.Seqner(sn=seq)
-        if hab.phab:
+        if hab.lhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(aids)
-            others.remove(hab.phab.pre)
+            others.remove(hab.lhab.pre)
 
             print(f"Sending signed credential to {len(aids) - 1} other participants")
             for recpt in others:
-                self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
+                self.postman.send(src=hab.lhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 
             # escrow waiting for other signatures
             self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
@@ -788,8 +788,8 @@ class Credentialer(doing.DoDoer):
                 recp = creder.subject["i"]
 
                 hab = self.hby.habs[issr]
-                if hab.phab:
-                    sender = hab.phab.pre
+                if hab.lhab:
+                    sender = hab.lhab.pre
                 else:
                     sender = issr
 
@@ -914,8 +914,8 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     issr = creder.issuer
     regk = creder.status
 
-    if hab.phab:
-        sender = hab.phab.pre
+    if hab.lhab:
+        sender = hab.lhab.pre
     else:
         sender = hab.pre
 

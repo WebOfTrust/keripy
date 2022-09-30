@@ -1093,7 +1093,7 @@ class Baser(dbing.LMDBer):
         # get unique verified wigers and windices lists from wigers list
         wigs = self.getWigs(key=dgkey)
         kever = self.kevers[serder.pre]
-        toad = kever.toad
+        toad = kever.toader.num
 
         return not len(wigs) < toad
 

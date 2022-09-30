@@ -1655,11 +1655,12 @@ def test_kever(mockHelpingNowUTC):
         assert kever.db == db
         assert kever.cues == None
         assert kever.prefixer.qb64 == aid0.qb64
-        assert kever.sn == 0
+        assert kever.sner.num == 0
+        assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.nexter.digs == [nexter.qb64]
         state = kever.db.states.get(keys=kever.prefixer.qb64)
-        assert state.sn == kever.sn == 0
+        assert state.sn == kever.sner.num == 0
         feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
         assert feqner.sn == kever.sn
 
@@ -4038,7 +4039,7 @@ def test_process_transferable():
 
     # verify nxt digest from event is still valid
     rnxt1 = Nexter(digs=rser0.ked["n"])
-    assert rnxt1.verify(keys=nxtkeys)
+    assert rnxt1.includes(keys=nxtkeys)
     """ Done Test """
 
 

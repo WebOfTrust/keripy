@@ -23,8 +23,9 @@ import hashlib
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
-                      ConversionError,
+                      ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
+                      EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
@@ -53,10 +54,10 @@ brv = backed vc revoke, registry-backed transaction event log credential revocat
 """
 
 Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
-                               'prd bre vcp vrt iss rev bis brv '))
+                               'pro bar vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', qry='qry', rpy='rpy', exn='exn', prd='prd', bre='bre',
+              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
@@ -802,6 +803,7 @@ class Matter:
             if not code:
                 raise EmptyMaterialError(f"Improper initialization need either "
                                          f"(raw and code) or qb64b or qb64 or qb2.")
+
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError(f"Not a bytes or bytearray, raw={raw}.")
 
@@ -863,20 +865,14 @@ class Matter:
             self._exfil(qb64b)
             if strip:  # assumes bytearray
                 del qb64b[:self.fullSize]
-            #if qb64b != self.qb64b:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb64b init value = {qb64b}.")
 
         elif qb64 is not None:
             self._exfil(qb64)
-            #if qb64 != self.qb64:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb64 init value = {qb64}.")
 
         elif qb2 is not None:
             self._bexfil(qb2)
             if strip:  # assumes bytearray
                 del qb2[:self.fullSize * 3 // 4]
-            #if qb2 != self.qb2:  # catch non-round trippable, pad bits
-                #raise ValueError(f"Invalid qb2 init value = {qb2}.")
 
         else:
             raise EmptyMaterialError(f"Improper initialization need either "
@@ -1117,7 +1113,7 @@ class Matter:
 
         hard = qb64b[:hs]  # extract hard code
         if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
+            hard = hard.decode("utf-8")  # converts bytes/bytearray to str
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1156,32 +1152,35 @@ class Matter:
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
                                  f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad bytes
+            raw = paw[ps:]  # strip off ps prepad paw bytes
+
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
             # decode lead chars + val leaving lead bytes + raw bytes
             # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded raw
+            paw = decodeB64(base) # decode base to leave prepadded paw bytes
             li = int.from_bytes(paw[:ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:
                     raise ValueError(f"Non zeroed lead byte = 0x{li:02x}.")
                 else:
                     raise ValueError(f"Non zeroed lead bytes = 0x{li:04x}.")
-
-            raw = paw[ls:]
+            raw = paw[ls:]  # paw is bytes so raw is bytes
 
         if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
         self._code = hard  # hard only
         self._size = size
-        self._raw = raw
+        self._raw = raw  # ensure bytes so immutable and for crypto ops
 
 
     def _bexfil(self, qb2):
         """
-        Extracts self.code and self.raw from qualified base2 bytes qb2
+        Extracts self.code and self.raw from qualified base2 qb2
+
+        Parameters:
+            qb2 (bytes | bytearray): fully qualified base2 from stream
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")
@@ -1255,7 +1254,7 @@ class Matter:
 
         self._code = hard
         self._size = size
-        self._raw = raw
+        self._raw = bytes(raw)  # ensure bytes so immutable and crypto operations
 
 
 class Seqner(Matter):
@@ -1352,8 +1351,10 @@ class Seqner(Matter):
 
 class Number(Matter):
     """
-    Number is subclass of Matter, cryptographic material, for ordinal numbers
-    such as sequence numbers or first seen ordering numbers.
+    Number is subclass of Matter, cryptographic material, for ordinal counting
+    whole numbers  (non-negative integers) up to a maximum size of 16 bytes,
+    256 ** 16 - 1.
+    Examples uses are sequence numbers or first seen ordering numbers or thresholds.
     Seqner provides fully qualified format for ordinals (sequence numbers etc)
     when provided as attached cryptographic material elements.
 
@@ -1382,6 +1383,8 @@ class Number(Matter):
     Properties:
         num  (int): int representation of number
         humh (str): hex string representation of number with no leading zeros
+        positive (bool): True if .num  > 0, False otherwise. Because .num must be
+            non-negative, .positive == False means .num == 0
 
     Hidden:
         _code (str): value for .code property
@@ -1413,22 +1416,36 @@ class Number(Matter):
             bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            num (int | str):  int number or hex str of int number
-            numh (str):  string equivalent of int number
+            num (int | str | None): non-negative int number or hex str of int
+                number or 0 if None
+            numh (str):  string equivalent of non-negative int number
+
+        Note: int("0xab", 16) is also valid since int recognizes 0x hex prefix
 
         """
-
-
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            try:
+                if num is None:
+                    if numh is None or numh == '':
+                        num = 0
+                    else:
+                        #if len(numh) > 32:
+                            #raise InvalidValueError(f"Hex numh={numh} str too long.")
+                        num = int(numh, 16)
 
-            if num is None:
-                if numh is None:
-                    num = 0
-                else:
-                    num = int(numh, 16)
-            else:
-                if isinstance(num, str):  # handle case where num is hex str
-                    num = int(num, 16)
+                else:  # handle case where num is hex str'
+                    if isinstance(num, str):
+                        if num == '':
+                            num = 0
+                        else:
+                            #if len(num) > 32:
+                                #raise InvalidValueError(f"Hex num={num} str too long.")
+                            num = int(num, 16)
+            except ValueError as ex:
+                raise InvalidValueError(f"Invalid whole number={num} .") from ex
+
+            if not isinstance(num, int) or num < 0:
+                raise InvalidValueError(f"Invalid whole number={num}.")
 
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
@@ -1443,16 +1460,18 @@ class Number(Matter):
                 code = code = NumDex.Huge
 
             else:
-                raise ValueError(f"Invalid num = {num}, too large to encode.")
+                raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
 
-            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian
+            # default to_bytes parameter signed is False. If negative raises
+            # OverflowError: can't convert negative int to unsigned
+            raw = num.to_bytes(Matter._rawSize(code), 'big')  # big endian unsigned
 
         super(Number, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
 
         if self.code not in NumDex:
-            raise ValidationError("Invalid code = {} for Number."
-                                  "".format(self.code))
+            raise ValidationError(f"Invalid code = {self.code} for Number.")
+
 
     @property
     def num(self):
@@ -1469,6 +1488,15 @@ class Number(Matter):
         Returns .num int converted to hex str
         """
         return f"{self.num:x}"
+
+    @property
+    def positive(self):
+        """
+        Returns True if .num is positive False otherwise.
+        Because valid number .num must be non-negative, positive False means
+        that .num is zero.
+        """
+        return True if self.num > 0 else False
 
 
 class Dater(Matter):
@@ -2381,14 +2409,16 @@ class Salter(Matter):
         return (Signer(raw=seed, code=code, transferable=transferable))
 
 
-    def signers(self, count=1, path="", **kwa):
+    def signers(self, count=1, start=0, path="",  **kwa):
         """
-        Returns list of count number of Signer instances.
+        Returns list of count number of Signer instances with unique derivation
+        path made from path prefix and suffix of start plus offset for each count
+        value from 0 to count - 1.
 
         See .signer for parameters used to create each signer.
 
         """
-        return [self.signer(path=f"{path}{i:x}", **kwa) for i in range(count)]
+        return [self.signer(path=f"{path}{i + start:x}", **kwa) for i in range(count)]
 
 
 class Cipher(Matter):
@@ -2671,32 +2701,16 @@ class Decrypter(Matter):
 class Diger(Matter):
     """
     Diger is Matter subclass with method to verify digest of serialization
-    using  .raw as digest and .code for digest algorithm.
+
 
     See Matter for inherited attributes and properties:
 
-    Inherited Properties:
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Methods:
         verify: verifies digest given ser
         compare: compares provide digest given ser to this digest of ser.
                 enables digest agility of different digest algos to compare.
 
-    Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
 
@@ -2718,6 +2732,7 @@ class Diger(Matter):
            ser is bytes serialization from which raw is computed if not raw
 
         """
+        # Should implement all digests in DigCodex instance DigDex
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -2734,7 +2749,7 @@ class Diger(Matter):
             elif code == MtrDex.SHA2_256:
                 dig = hashlib.sha256(ser).digest()
             else:
-                raise ValueError("Unsupported code = {} for digester.".format(code))
+                raise InvalidValueError("Unsupported code={code} for diger.")
 
             super(Diger, self).__init__(raw=dig, code=code, **kwa)
 
@@ -2749,16 +2764,16 @@ class Diger(Matter):
         elif self.code == MtrDex.SHA2_256:
             self._verify = self._sha2_256
         else:
-            raise ValueError("Unsupported code = {} for digester.".format(self.code))
+            raise InvalidValueError("Unsupported code={self.code} for diger.")
 
     def verify(self, ser):
         """
-        Returns True if digest of bytes serialization ser matches .raw
+        Returns True if raw digest of ser bytes (serialization) matches .raw
         using .raw as reference digest for ._verify digest algorithm determined
         by .code
 
         Parameters:
-            ser is bytes serialization
+            ser (bytes): serialization to be digested and compared to .ser
         """
         return (self._verify(ser=ser, raw=self.raw))
 
@@ -2870,87 +2885,132 @@ class Diger(Matter):
 
 class Nexter:
     """
-    Nexter is Matter subclass with support to derive itself from
-    next sith and next keys given code.
+    Nexter class manages list of next digests of keys for key events
 
-    See Diger for inherited attributes and properties:
 
     Attributes:
-
-    Inherited Properties:
-        .code  str derivation code to indicate cypher suite
-        .raw   bytes crypto material only without code
-        .pad  int number of pad chars given raw
-        .qb64 str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  bytes in binary with derivation code + crypto material
-        .transferable True when transferable derivation code False otherwise
 
     Properties:
 
     Methods:
 
     Hidden:
-        ._digest is digest method
-        ._derive is derivation method
+        ._digest is derive digests from keys
 
 
     """
 
-    def __init__(self, digs=None, keys=None, ked=None):
-        """
-        Assign digest verification function to ._verify
-
-        Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
+    def __init__(self, digers=None, digs=None, verfers=None, keys=None):
+        """ Initialize next digests for next key commitment
 
         Parameters:
-           digs is list of qb64 digests of public keys
-           keys is list of keys each is qb64 public key str
-           ked is key event dict
+           digers (list | None): of Diger instances of digests of public keys
+           digs (list | None): of qb64 digests of public keys
+           verfers (list | None): of Verfer instances of public keys
+           keys (list | None): of qb64 public keys from which digests are generated
 
-           Raises error if not any of raw, digs,keys, ked
-
-           if not raw
-               use digs
-               If digs not provided
-                  use keys
-                  if keys not provided
-                     get keys from ked
-                  compute digs from keys
-
-           If sith not provided
-               get sith from ked
-               but if not ked then compute sith as simple majority of keys
 
         """
-        self.digs = self._derive(digs=digs, keys=keys, ked=ked)  # derive nxt raw
+        if digers is None:
+            if digs is not None:
+                digers = [Diger(qb64=dig) for dig in digs]
+            else:
+                if verfers is None:
+                    if not keys:
+                        raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+                    verfers = [Verfer(qb64=key) for key in keys]
+                digers = [Diger(ser=verfer.qb64b) for verfer in verfers]
 
-    def verify(self, digs=None, keys=None, ked=None):
+        for diger in digers:
+            if not isinstance(diger, Diger):
+                raise InvalidTypeError("Not a Diger: {diger}.")
+
+        self._digers = digers
+
+
+    @property
+    def digers(self):
+        """digers propert getter
+        Returns:
+            (list): Diger instances
         """
-        Returns True if digest of bytes nxt raw matches .raw
-        Uses .raw as reference nxt raw for ._verify algorithm determined by .code
+        return self._digers
 
-        If raw not provided then extract raw from either (sith, keys) or ked
+
+    @property
+    def digs(self):
+        """Returns ._digs, digs property getter.
+        Makes .digs read only
+        """
+        return [diger.qb64 for diger in self.digers]
+
+
+    def indices(self, sigers):
+        """Returns list of indices for list of sigers by verifying the public key
+        for each siger.verfer.qb64b when digested by the digest algoritm of the
+        associated indexed diger in .digers is a match.
+        """
+        idxs = []
+        for sig in sigers:
+            pass
+
+        return idxs
+
+
+    def satisfies(self, tholder, indices, digers=None,  digs=None):
+        """Given prior next digest list in .digers the provided tholder,
+        and ondices with either provided digers or digs together constitute a
+        satisfycing subset of the prior next threshold. Each ondice indicates
+        which index offset into .digers is the corresponding diger or dig.
+
+        Returns:
+            (bool): True if satisfycing, False otherwise
 
         Parameters:
-            raw is bytes serialization
-            imen is string extracted from sith expression using Tholder
-            sith is signing threshold as
-                str lowercase hex or
-                int or
-                list of strs or list of list of strs
-            digs is list of digests qb64
-            keys is list of keys qb64
-            ked is key event dict
+            tholder (Tholder): instance of prior next threshold
+            indices (list): of int offsets into .digers
+            digers (list | None): of instances of Diger of prior next key digests
+            digs (list | None): of digests qb64 of prior next keys
+
+        """
+        if digers is None:
+            if digs is None:
+                raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+            digers = [Diger(qb64=dig) for dig in digs]
+
+
+
+        return False
+
+
+    @staticmethod
+    def _digest(keys):
+        """
+        Returns digs of keys
+
+        Parameters:
+            keys (list): public keys qb64 or qb64b
+        """
+        digs = [Diger(ser=key.encode("utf-8")
+                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+
+        return digs
+
+
+    def includes(self, digs=None, keys=None):
+        """
+        Returns True if digs or digs from keys are included
+        as a ordered (potentially non-contiguous) subset  of .digs.
+        Each element in the provided list digs must appear in .digs in the same
+        order that it appears in digs but not all elements in .digs must appear
+        in digs.
+
+        Parameters:
+            digs (list): digests qb64
+            keys (list): public keys qb64
         """
         if not digs:
-            digs = self._derive(digs=digs, keys=keys, ked=ked)
+            digs = self._digest(keys=keys)
 
         if len(digs) == len(self.digs):
             return self.digs == digs
@@ -2973,40 +3033,22 @@ class Nexter:
         else:
             return False
 
-    def indices(self, sigers):
-        ion = []
+
+    def matches(self, sigers):
+        """Returns list of indices for list of sigers by matching digest of
+        each siger.verfer qb64 public key to element of .digs
+        """
+        idxs = []
         for sig in sigers:
             idig = Diger(ser=sig.verfer.qb64b).qb64
             try:
-                ion.append(self.digs.index(idig))
-            except ValueError:
-                raise ValueError(f'indices into verfer unable to locate {idig} in {self.digs}')
+                idxs.append(self.digs.index(idig))
+            except ValueError as ex:
+                raise ValidationError(f'indices into verfer unable to locate "'
+                                      f'"{idig} in {self.digs}') from ex
 
-        return ion
+        return idxs
 
-    @staticmethod
-    def _derive(digs=None, keys=None, ked=None):
-        """
-        Returns ser where ser is serialization derived from code, sith, keys, or ked
-        """
-        if digs is None:
-            if not keys:
-                try:
-                    keys = ked["k"]
-                except KeyError as ex:
-                    raise DerivationError("Error extracting keys from"
-                                          " ked = {}".format(ex))
-
-            if not keys:  # empty keys
-                raise DerivationError("Empty keys.")
-
-            digs = [Diger(ser=key.encode("utf-8")).qb64 for key in keys]
-
-        return digs
-
-    @property
-    def digers(self):
-        return [Diger(qb64=dig) for dig in self.digs]
 
 
 class Prefixer(Matter):
@@ -4109,12 +4151,12 @@ class Indexer:
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
                                  f"{pi & (2 ** pbs - 1 ):<06b} in {qb64b[cs:cs+1]}.")
-            raw = paw[ps:]  # strip off ps prepad bytes
+            raw = paw[ps:]  # strip off ps prepad paw bytes
         else:  # not ps. IF not ps THEN may or may not be ls (lead)
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
             # decode lead chars + val leaving lead bytes + raw bytes
             # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded raw
+            paw = decodeB64(base) # decode base to leave prepadded paw bytes
             li = int.from_bytes(paw[:ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:
@@ -4130,7 +4172,7 @@ class Indexer:
         self._code = hard
         self._index = index
         self._ondex = ondex
-        self._raw = raw
+        self._raw = raw  # must be bytes for crpto opts and immutable not bytearray
 
 
 
@@ -4235,7 +4277,7 @@ class Indexer:
         self._code = hard
         self._index = index
         self._ondex = ondex
-        self._raw = raw
+        self._raw = bytes(raw)  # must be bytes for crypto ops and not bytearray mutable
 
 
 class Siger(Indexer):
@@ -4581,8 +4623,8 @@ class Counter:
 
         hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
-        if hard not in self.Sizes:
+            hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
+        if hard not in self.Sizes:  # Sizes needs str not bytes
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs, ls = self.Sizes[hard]  # assumes hs consistent in both tables
@@ -4647,39 +4689,31 @@ class Counter:
 
 class Sadder:
     """
-    Sadder is KERI key event serializer-deserializer class
-    Only supports current version VERSION
+    Sadder is self addressed data (SAD) serializer-deserializer class
 
     Has the following public properties:
 
     Properties:
-        .raw is bytes of serialized event only
-        .ked is key event dict
-        .kind is serialization kind string value (see namedtuple coring.Serials)
-        .version is Versionage instance of event version
-        .size is int of number of bytes in serialed event only
-        .diger is Diger instance of digest of .raw
-        .dig  is qb64 digest from .diger
-        .digb is qb64b digest from .diger
-        .verfers is list of Verfers converted from .ked["k"]
-        .werfers is list of Verfers converted from .ked["b"]
-        .tholder is Tholder instance from .ked["kt'] else None
-        .ntholder is Tholder instance from .ked["nt'] else None
-        .sn is int sequence number converted from .ked["s"]
-        .pre is qb64 str of identifier prefix from .ked["i"]
-        .preb is qb64b bytes of identifier prefix from .ked["i"]
-        .said is qb64 of .ked['d'] if present
-        .saidb is qb64b of .ked['d'] of present
+        raw (bytes): of serialized event only
+        ked (dict): self addressed data dict
+        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+        size (int): number of bytes in serialization
+        version (Versionage): protocol version (Major, Minor)
+        ident (Identage): protocol identifier such as KERI, ACDC
+        saider (Saider): of SAID of this SAD .ked['d'] if present
+        said (str): SAID of .saider qb64
+        saidb (bytes): SAID of .saider  qb64b
+        pretty (str): Pretty JSON of this SAD
 
     Hidden Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
+        ._raw is bytes of serialized event only
+        ._ked is key event dict
+        ._kind is serialization kind string value (see namedtuple coring.Serials)
+          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+        ._size is int of number of bytes in serialed event only
+        ._version is Versionage instance of event version
+        ._ident (Identage):  protocol type identifier
+        ._saider (Saider): instance for this Sadder's SAID
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -4709,9 +4743,20 @@ class Sadder:
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         elif sad:
-            self._clone(sad=sad)
+            self._clone(sad=sad)  # create saider of sad
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
+
+    def _clone(self, sad):
+        """ copy hidden attributes from sad """
+        self._raw = sad.raw
+        self._ked = sad.ked
+        self._kind = sad.kind
+        self._size = sad.size
+        self._version = sad.version
+        self._ident = sad.ident
+        self._saider = sad.saider
+
 
     def _inhale(self, raw):
         """
@@ -4774,14 +4819,6 @@ class Sadder:
         else:
             raise ValueError("Both said and saider may not be None.")
 
-    def _clone(self, sad):
-        self._raw = sad.raw
-        self._ked = sad.ked
-        self._ident = sad.ident
-        self._kind = sad.kind
-        self._size = sad.size
-        self._version = sad.version
-        self._saider = sad.saider
 
     @property
     def raw(self):
@@ -4825,7 +4862,7 @@ class Sadder:
 
     @kind.setter
     def kind(self, kind):
-        """ kind property setter Assumes ._ked """
+        """ kind property setter Assumes ._ked. Serialization kind. """
         raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
@@ -4838,13 +4875,10 @@ class Sadder:
 
 
     @property
-    def ident(self):
-        """ ident property getter
+    def size(self):
+        """ size property getter"""
+        return self._size
 
-        Returns:
-            (Identage)
-        """
-        return self._ident
 
     @property
     def version(self):
@@ -4852,14 +4886,21 @@ class Sadder:
         version property getter
 
         Returns:
-            (Versionage)
+            (Versionage):
         """
         return self._version
 
+
     @property
-    def size(self):
-        """ size property getter"""
-        return self._size
+    def ident(self):
+        """ ident property getter
+        protocol identifer type instance of Identage such as KERI ACDC
+
+        Returns:
+            (Identage):
+        """
+        return self._ident
+
 
     @property
     def saider(self):
@@ -4897,7 +4938,8 @@ class Sadder:
 
 class Serder(Sadder):
     """
-    Serder is KERI key event serializer-deserializer class
+    Serder is versioned protocol key event message serializer-deserializer class
+
     Only supports current version VERSION
 
     Has the following public properties:
@@ -4915,7 +4957,8 @@ class Serder(Sadder):
         .werfers is list of Verfers converted from .ked["b"]
         .tholder is Tholder instance from .ked["kt'] else None
         .ntholder is Tholder instance from .ked["nt'] else None
-        .sn is int sequence number converted from .ked["s"]
+        sner (Number): instance converted from sequence number .ked["s"] hex str
+        sn (int): sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
         .said is qb64 of .ked['d'] if present
@@ -4978,14 +5021,14 @@ class Serder(Sadder):
         """
         Returns list of Diger instances as converted from .ked['n'].
         One for each key.
-        nkeys property getter
+        nexter property getter
         """
         if "n" in self.ked:  # establishment event
-            keys = self.ked["n"]
+            digs = self.ked["n"]
         else:  # non-establishment event
-            keys = []
+            digs = []
 
-        return Nexter(digs=keys)
+        return Nexter(digs=digs)
 
     @property
     def werfers(self):
@@ -5018,22 +5061,23 @@ class Serder(Sadder):
         return Tholder(sith=self.ked["nt"]) if "nt" in self.ked else None
 
     @property
+    def sner(self):
+        """
+        sner (Number of sequence number) property getter
+        Returns:
+            (Number): of .ked["s"] hex number str converted
+        """
+        return Number(num=self.ked["s"])  # auto converts hex num str to int
+
+
+    @property
     def sn(self):
         """
         sn (sequence number) property getter
         Returns:
-            sn (int): converts hex str .ked["s"] to non neg int
+            sn (int): of .sner.num from .ked["s"]
         """
-        sn = self.ked["s"]
-
-        if len(sn) > 32:
-            raise ValueError("Invalid sn = {} too large.".format(sn))
-
-        sn = int(sn, 16)
-        if sn < 0:
-            raise ValueError("Negative sn={}.".format(sn))
-
-        return (sn)
+        return (self.sner.num)
 
     @property
     def pre(self):

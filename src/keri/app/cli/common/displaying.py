@@ -30,7 +30,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         anchor = hab.db.getAes(dgkey)
 
         print("{}: {}".format(label, pre))
-        print("Seq No:\t{}".format(kever.sn))
+        print("Seq No:\t{}".format(kever.sner.num))
         if kever.delegated:
             print("Delegated Identifier")
             sys.stdout.write(f"    Delegator:  {kever.delegator} ")
@@ -40,9 +40,9 @@ def printIdentifier(hby, pre, label="Identifier"):
                 print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
             print()
 
-        if hab.phab:
+        if hab.lhab:
             print("Group Identifier")
-            sys.stdout.write(f"    Local Indentifier:  {hab.phab.pre} ")
+            sys.stdout.write(f"    Local Indentifier:  {hab.lhab.pre} ")
             if hab.accepted:
                 print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Fully Signed{terming.Colors.ENDC}")
             else:
@@ -51,7 +51,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("\nWitnesses:")
         print("Count:\t\t{}".format(len(kever.wits)))
         print("Receipts:\t{}".format(len(wigs)))
-        print("Threshold:\t{}".format(kever.toad))
+        print("Threshold:\t{}".format(kever.toader.num))
         print("\nPublic Keys:\t")
         for idx, verfer in enumerate(kever.verfers):
             print(f'\t{idx+1}. {verfer.qb64}')
@@ -60,9 +60,9 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("{}: {}".format(label, hab.pre))
         print("Seq No:\t{}".format(0))
 
-        if hab.phab:
+        if hab.lhab:
             print("Group Identifier")
-            sys.stdout.write(f"    Local Indentifier:  {hab.phab.pre} ")
+            sys.stdout.write(f"    Local Indentifier:  {hab.lhab.pre} ")
             if hab.accepted:
                 print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
             else:
@@ -88,7 +88,7 @@ def printExternal(hby, pre, label="Identifier"):
     anchor = hby.db.getAes(dgkey)
 
     print("{}: {}".format(label, pre))
-    print("Seq No:\t{}".format(kever.sn))
+    print("Seq No:\t{}".format(kever.sner.num))
     if kever.delegated:
         print("Delegated Identifier")
         sys.stdout.write(f"    Delegator:  {kever.delegator} ")
@@ -102,7 +102,7 @@ def printExternal(hby, pre, label="Identifier"):
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))
     print("Receipts:\t{}".format(len(wigs)))
-    print("Threshold:\t{}".format(kever.toad))
+    print("Threshold:\t{}".format(kever.toader.num))
     print("\nPublic Keys:\t")
     for idx, verfer in enumerate(kever.verfers):
         print(f'\t{idx+1}. {verfer.qb64}')

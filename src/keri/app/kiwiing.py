@@ -236,10 +236,10 @@ class IdentifierEnd(doing.DoDoer):
             prefix=hab.pre,
         )
 
-        if hab.phab:
+        if hab.lhab:
             data["group"] = dict(
-                pid=hab.phab.pre,
-                aids=hab.aids,
+                pid=hab.lhab.pre,
+                aids=hab.gaids,
                 accepted=hab.accepted
             )
 
@@ -254,7 +254,7 @@ class IdentifierEnd(doing.DoDoer):
                 public_keys=[verfer.qb64 for verfer in kever.verfers],
                 nsith=kever.ntholder.sith,
                 next_keys=kever.nexter.digs,
-                toad=kever.toad,
+                toad=kever.toader.num,
                 witnesses=kever.wits,
                 estOnly=kever.estOnly,
                 DnD=kever.doNotDelegate,
@@ -689,7 +689,7 @@ class IdentifierEnd(doing.DoDoer):
             pre = cue["pre"]
             hab = self.hby.habs[pre]
 
-            if hab.phab:  # Skip if group, they are handled elsewhere
+            if hab.lhab:  # Skip if group, they are handled elsewhere
                 yield self.tock
                 continue
 
@@ -808,7 +808,7 @@ class KeyStateEnd:
         evts = []
         if pre in self.hby.habs:
             hab = self.hby.habs[pre]
-            if hab.phab:
+            if hab.lhab:
                 evts = self.counselor.pendingEvents(pre)
         res["pending"] = evts
 
@@ -1347,7 +1347,7 @@ class CredentialEnd(doing.DoDoer):
         """
         body = req.get_media()
         hab = self.hby.habByName(alias)
-        if hab is None or hab.phab is None:
+        if hab is None or hab.lhab is None:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid alias {} for group credentials" \
                        "".format(alias)
@@ -1374,11 +1374,11 @@ class CredentialEnd(doing.DoDoer):
             return
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
-        others = list(hab.aids)
-        others.remove(hab.phab.pre)
+        others = list(hab.gaids)
+        others.remove(hab.lhab.pre)
 
         for recpt in others:
-            self.postman.send(src=hab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+            self.postman.send(src=hab.lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(topic="/multisig", r="/iss/complete", d=creder.said))
@@ -1429,7 +1429,7 @@ class CredentialEnd(doing.DoDoer):
         """
         body = req.get_media()
         hab = self.hby.habByName(alias)
-        if hab is None or hab.phab is None:
+        if hab is None or hab.lhab is None:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid alias {} for group credentials" \
                        "".format(alias)
@@ -1577,7 +1577,7 @@ class CredentialEnd(doing.DoDoer):
 
         """
         hab = self.hby.habByName(alias)
-        if hab is None or hab.phab is None:
+        if hab is None or hab.lhab is None:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid alias {} for group credentials" \
                        "".format(alias)
@@ -1633,7 +1633,7 @@ class CredentialEnd(doing.DoDoer):
 
         """
         hab = self.hby.habByName(alias)
-        if hab is None or hab.phab is None:
+        if hab is None or hab.lhab is None:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid alias {} for group credentials" \
                        "".format(alias)
@@ -1958,6 +1958,15 @@ class MultisigInceptEnd(MultisigEndBase):
         super(MultisigInceptEnd, self).__init__(notifier=notifier, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
+        """Incept group multisig
+
+        ToDo
+        changes aids to gaids and make it a list of tuples (laid, index, ondex)
+        Then pass these into self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
+
+
+        """
+
         if "aids" not in body:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group inception request, 'aids' is required'"
@@ -1980,9 +1989,7 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = f"Identifier alias {alias} is already in use"
             return None, None
 
-        inits = dict(
-            aids=aids
-        )
+        inits = dict()
 
         isith = None
         if "isith" in body:
@@ -2010,7 +2017,7 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         try:
-            ghab = self.hby.makeGroupHab(group=alias, phab=hab, **inits)
+            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")
@@ -2106,16 +2113,16 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.aids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.gaids, ked=serder.ked)
 
-        others = list(ghab.aids)
+        others = list(ghab.gaids)
         others.remove(hab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
             self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         #  signal to the group counselor to start the inception
-        self.icp(hab=hab, ghab=ghab, aids=ghab.aids)
+        self.icp(hab=hab, ghab=ghab, aids=ghab.gaids)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
@@ -2236,7 +2243,7 @@ class MultisigEventEnd(MultisigEndBase):
             return None
 
         aids = body["aids"]
-        if ghab.phab.pre not in aids:
+        if ghab.lhab.pre not in aids:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group rotation request, aid list must contain a local identifier"
             return None
@@ -2324,7 +2331,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(isith, str) and "," in isith:
                 isith = isith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2349,11 +2356,11 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(ghab.aids)
-        others.remove(ghab.phab.pre)
+        others = list(ghab.gaids)
+        others.remove(ghab.lhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+            self.postman.send(src=ghab.lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
@@ -2441,7 +2448,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(isith, str) and "," in isith:
                 isith = isith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2517,15 +2524,15 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         data = body["data"] if "data" in body else None
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
-        others = list(ghab.aids)
-        others.remove(ghab.phab.pre)
+        others = list(ghab.gaids)
+        others.remove(ghab.lhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.phab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+            self.postman.send(src=ghab.lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         serder = self.ixn(ghab=ghab, data=data, aids=aids)
         # cue up an event to send notification when complete
@@ -2582,7 +2589,7 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.aids
+        aids = body["aids"] if "aids" in body else ghab.gaids
         data = body["data"] if "data" in body else None
 
         serder = self.ixn(ghab=ghab, data=data, aids=aids)
@@ -2599,7 +2606,7 @@ class MultisigEventEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(aids=aids, pid=ghab.phab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(aids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         return serder
 
 

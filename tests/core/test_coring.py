@@ -30,12 +30,13 @@ from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import generateSigners, generatePrivates, generatePublics
+from keri.core.coring import generateSigners, generatePrivates
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
                               B64_CHARS, Reb64, nabSextets)
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError)
+                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
+                         InvalidValueError)
 from keri.kering import Version, Versionage
 
 
@@ -45,7 +46,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', qry='qry', rpy='rpy',
-                          exn='exn', prd='prd', bre='bre',
+                          exn='exn', pro='pro', bar='bar',
                           vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
@@ -76,10 +77,10 @@ def test_ilks():
     assert Ilks.exn == 'exn'
 
 
-    assert 'prd' in Ilks
-    assert Ilks.prd == 'prd'
-    assert 'bre' in Ilks
-    assert Ilks.bre == 'bre'
+    assert 'pro' in Ilks
+    assert Ilks.pro == 'pro'
+    assert 'bar' in Ilks
+    assert Ilks.bar == 'bar'
 
 
     assert 'vcp' in Ilks
@@ -490,6 +491,7 @@ def test_matter():
     longprebin = prebin + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     matter = Matter(qb2=longprebin)
     assert len(matter.qb64) == Matter.Sizes[matter.code].fs
+    assert isinstance(matter.raw, bytes)
 
     # test non-zero pad bits in qb2 init ps ==1
     badprebin1 = decodeB64(badprefix1)  # b'\x07\xf0\x00cdefghijklmnopqrstuv0123456789'
@@ -571,6 +573,7 @@ def test_matter():
     matter = Matter(qb64=prefix, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -581,6 +584,7 @@ def test_matter():
     matter = Matter(qb64b=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -592,6 +596,7 @@ def test_matter():
     matter = Matter(qb2=ims, strip=True)  # strip from ims qb2
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -605,6 +610,7 @@ def test_matter():
     matter = Matter(qb64b=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -618,6 +624,7 @@ def test_matter():
     matter = Matter(qb2=ims, strip=True)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+    assert isinstance(matter.raw, bytes)
     assert matter.qb64b == prefixb
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -1795,6 +1802,7 @@ def test_indexer():
     # test truncates extra bytes from qb2 parameter
     longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
     indexer = Indexer(qb2=longqsig2b)
+    assert isinstance(indexer.raw, bytes)
     assert indexer.qb2 == qsig2b
     assert len(indexer.qb64) == Indexer.Sizes[indexer.code].fs
 
@@ -1918,6 +1926,7 @@ def test_indexer():
     ims = bytearray(qsig64b)
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1929,6 +1938,7 @@ def test_indexer():
     ims = bytearray(qsig2b)
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1942,6 +1952,7 @@ def test_indexer():
     ims = bytearray(qsig64b) + extra
     indexer = Indexer(qb64b=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -1955,6 +1966,7 @@ def test_indexer():
     ims = bytearray(qsig2b) + extra
     indexer = Indexer(qb2=ims, strip=True)
     assert indexer.raw == sig
+    assert isinstance(indexer.raw, bytes)
     assert indexer.code == IdrDex.Ed25519_Sig
     assert indexer.index == 5
     assert indexer.ondex == 5
@@ -2668,16 +2680,7 @@ def test_number():
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
 
-    with pytest.raises(ValueError):
-        number = Number(num='')
-
-    with pytest.raises(ValueError):
-        number = Number(numh='')
-
-    with pytest.raises(OverflowError):
-        number = Number(num=-5)
-
-    number = Number()  # defaults to zero
+    number = Number()  # test None defaults to zero
     assert number.code == NumDex.Short
     assert number.raw == b'\x00\x00'
     assert number.qb64 == 'MAAA'
@@ -2685,7 +2688,44 @@ def test_number():
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
     assert number.numh == '0'
+    assert not number.positive
     assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
+
+    # test num as empty string defaults to 0
+    number = Number(num='')
+    assert number.num == 0
+
+    # test numh as empty string defaults to 0
+    number = Number(numh='')
+    assert number.num == 0
+
+    # test negative  error
+    with pytest.raises(InvalidValueError):
+        number = Number(num=-5)
+
+    # test not integer
+    with pytest.raises(InvalidValueError):
+        number = Number(num=0.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=1.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=1.5)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=-2.0)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(num=" :")
+
+    # test hex number string too long > 32 characters
+    #with pytest.raises(InvalidValueError):
+        #number = Number(numh="0"*33)
+
+    #with pytest.raises(InvalidValueError):
+        #number = Number(num="0"*33)
+
 
     num = (256 ** 2 - 1)
     assert num == 65535
@@ -2703,10 +2743,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(num=numh)  # num can be hext str too
     assert number.code == code
@@ -2714,10 +2756,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2725,10 +2769,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2736,10 +2781,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2747,10 +2793,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2758,10 +2805,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 4 - 1)
     assert num == 4294967295
@@ -2778,10 +2826,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2789,10 +2838,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2800,10 +2850,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2813,6 +2864,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2820,10 +2872,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 8 - 1)
     assert num == 18446744073709551615
@@ -2840,10 +2893,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2851,10 +2905,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2862,10 +2917,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2873,10 +2929,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2884,10 +2941,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     num = (256 ** 16 - 1)
     assert num == 340282366920938463463374607431768211455
@@ -2905,10 +2963,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(numh=numh)
     assert number.code == code
@@ -2916,10 +2975,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb64=nqb64)
     assert number.code == code
@@ -2927,10 +2987,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     number = Number(qb2=nqb2)
     assert number.code == code
@@ -2938,10 +2999,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     number = Number(raw=raw, code=code)
     assert number.code == code
@@ -2949,10 +3012,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -2975,10 +3039,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3009,10 +3074,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3044,10 +3110,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3068,7 +3135,6 @@ def test_number():
     nqb2 = b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     #b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
 
-
     # raw to large for code, then truncates
     raw2bad = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     assert raw != raw2bad
@@ -3080,10 +3146,11 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
 
     # raw to small for code raises error
     raw2bad = b'\xff'
@@ -3108,10 +3175,12 @@ def test_number():
     assert number.qb64 == nqb64
     assert number.qb64b == nqb64.encode("utf-8")
     assert number.qb2 == nqb2
-    bs = ceil((len(number.code) * 3) / 4)
-    assert number.qb2[bs:] == number.raw
     assert number.num == num
     assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     """ Done Test """
 
@@ -4029,10 +4098,10 @@ def test_diger():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     dig = blake3.blake3(ser).digest()
-    with pytest.raises(ValueError):
+    with pytest.raises(coring.InvalidValueError):
         diger = Diger(raw=dig, code=MtrDex.Ed25519)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(coring.InvalidValueError):
         diger = Diger(ser=ser, code=MtrDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
@@ -4145,79 +4214,59 @@ def test_nexter():
     """
     Test the support functionality for Nexter subclass of Diger
     """
-    # create something to digest and verify
-    salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    #keys = generatePublics(salt=salt, count=3, transferable=False)
-    keys = ['BDjXHlcskwOzNj8rYbV8IQ6ox2TW_KkbA1K3-n0EU0un',
-            'BCtkdESN5eexElVLcJl8Ub0Q0GqNjK2xOvvW3HbZc8zi',
-            'BHugAkJxy4Pc_Sdm2UeT4Z8ofzrbvztfvnjlTRrLiffn']
+    raw = b"raw salt to test"
 
-    keydigs = [blake3.blake3(key.encode("utf-8")).digest() for key in keys]
-    digers = [Diger(raw=keydig, code=MtrDex.Blake3_256) for keydig in keydigs]
+    #  create signers with verfers for keys
+    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    keys = [signer.verfer.qb64 for signer in signers]
+    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
+                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
+                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
+
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
     digs = [diger.qb64 for diger in digers]
+    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
+                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
+                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
 
-    assert digs == ['EP9XvFnpQP4vnaTNDNAMU2T7nxDPe1EZLUaiABcLRfS4',
-                    'EHvq9OoHtwITL51Q4hsMPy6bA0kTd6AGANkSZ1Ud7otV',
-                    'EN3_XOnc8mia3RHZOzpZhc1J-ckILqTS0KGZNTROvGtW']
+    nexter = Nexter(digs=digs)
+    assert nexter.includes(digs=digs)
 
-    #  defaults provide Blake3_256 digester
-    nexter = Nexter(digs=digs)  # compute limen/sith from digs
-    assert nexter.verify(digs=digs)
-
-    nexter = Nexter(keys=keys)  # compute limen/sith from keys
+    nexter = Nexter(keys=keys)  # compute digs from keys default is Blake3_256
     assert len(nexter.digs) == len(keys)
-    assert nexter.verify(keys=keys)
-    assert nexter.verify(keys=keys + ['ABCDEF']) is False
+    assert nexter.includes(keys=keys)
+    assert nexter.includes(keys=keys + ['ABCDEF']) is False
 
-    ked = dict(kt=1, k=keys)  # subsequent event
-    nexter = Nexter(ked=ked)
-    assert len(nexter.digs) == len(keys)
-    assert nexter.verify(ked=ked)
+    ked = dict(k=keys)  # subsequent event
+    nexter = Nexter(keys=ked['k'])
+    assert len(nexter.digs) == len(ked['k'])
+    assert nexter.includes(keys=ked['k'])
 
     #  Test support for partial rotation
-    #keys = generatePublics(salt=salt, count=10, transferable=False)
-
-    keys =['BErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
-            'BFXLiTjiRdSBPLL6hLa0rskIxk3dh4XwJLfctkJFLRSS',
-            'BE9YgIQVgpLwocTVrG8tidKScsQSMWwLWywNC48fhq4f',
-            'BCjxOXniUc5EUzDqERlXdptfKPHy6jNo_ZGsS4Vd8fAE',
-            'BNZHARO4dCJlluv0qezEMRmErIWWc-lzOzolBOQ15tHV',
-            'BOCQ4KN1jUlKbfjRteDYt9fxgpq1NK9_MqO5IA7shpED',
-            'BFY1nGjV9oApBzo5Oq5JqjwQsZEQqsCCftzo3WJjMMX-',
-            'BE9ZxA3qXegkgDAhOzWP45S3Ruv5ilJSkv5lvthyWNYY',
-            'BFEiwXM50PUNUlKW1MgbN3f1cjnTcvL7wVc8sfKiZR93',
-            'BBMMFVAVQGfJlklgkEvG9Z7qBX3JOYbZTAVKJKiHTXIu']
-
-    digers = [Diger(raw=blake3.blake3(key.encode("utf-8")).digest(), code=MtrDex.Blake3_256) for key in keys]
+    signers = coring.Salter(raw=raw).signers(count=10, start=3, path="next", temp=True)
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
 
     # grab first 5 for our nexter
-    cur = [diger.qb64 for diger in digers[0:5]]
+    nexter = Nexter(digs=[diger.qb64 for diger in digers[0:5]])
 
-    nexter = Nexter(digs=cur)
+    # verify inclusion against full set
+    assert nexter.includes(digs=nexter.digs)
 
-    # compare against full set
-    digs = cur
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a proper subset
+    assert nexter.includes(digs=[diger.qb64 for diger in digers[2:5]])
 
-    # compare against a proper subset
-    digs = [diger.qb64 for diger in digers[2:5]]
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a single existing dig from set
+    assert nexter.includes(digs=[digers[4].qb64])
 
-    # compare against a single existing dig
-    digs = [digers[4].qb64]
-    assert nexter.verify(digs=digs)
+    # verify inclusion against a single existing dig not from set
+    assert not nexter.includes(digs=[digers[7].qb64])
 
-    # compare against a single existing dig
-    digs = [digers[7].qb64]
-    assert not nexter.verify(digs=digs)
+    # verify inclusion against non-contiguous subset
+    assert nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[4].qb64])
 
-    # compare against non-contiguous subset
-    digs = [digers[1].qb64, digers[3].qb64, digers[4].qb64]
-    assert nexter.verify(digs=digs)
-
-    # compare against non-contiguous subset
-    digs = [digers[1].qb64, digers[3].qb64, digers[6].qb64]
-    assert not nexter.verify(digs=digs)
+    # verify inclusion against non subset
+    assert not nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[6].qb64])
 
     """ Done Test """
 
@@ -5365,21 +5414,23 @@ def test_serder():
     srdr = Serder(ked=ked)
     assert srdr.tholder.sith == "1"
     assert srdr.tholder.thold == 1
+    assert srdr.sn == 0
+    assert srdr.sner.num == srdr.sn
 
     # test validation in Serder.sn property
     ked["s"] = "-1"
     srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
-    ked["s"] = "0" * 33
-    srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
-        sn = srdr.sn
+    #ked["s"] = "0" * 33
+    #srdr = Serder(ked=ked)
+    #with pytest.raises(InvalidValueError):
+        #sn = srdr.sn
 
     ked["s"] = "15.34"
     srdr = Serder(ked=ked)
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
     """Done Test """
@@ -5674,6 +5725,8 @@ def test_tholder():
 if __name__ == "__main__":
     #test_matter()
     #test_counter()
-    test_indexer()
-    test_siger()
-    test_signer()
+    #test_indexer()
+    test_number()
+    #test_siger()
+    #test_signer()
+    #test_nexter()

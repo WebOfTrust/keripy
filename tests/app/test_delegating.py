@@ -132,7 +132,7 @@ def test_boatswain_proxy():
 
         assert phab.pre == 'EJXiQ33u2yXCtkH7UImC4D-RverPqvshuTlJyaAybKi4'
         assert phab.kever.wits == eeHab.kever.wits
-        assert phab.kever.toad == eeHab.kever.toad
+        assert phab.kever.toader.num == eeHab.kever.toader.num
         assert phab.kever.tholder.sith == eeHab.kever.tholder.sith
 
 

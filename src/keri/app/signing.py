@@ -106,10 +106,10 @@ def transSeal(hab):
     """
     # create SealEvent or SealLast for endorser's est evt whose keys are
     # used to sign
-    if not hab.phab:  # not a group use own kever
+    if not hab.lhab:  # not a group use own kever
         indices = None  # use default order
     else:  # group so use gid kever
-        indices = [hab.aids.index(hab.phab.pre)]  # use group order*
+        indices = [hab.gaids.index(hab.lhab.pre)]  # use group order*
 
     kever = hab.kever
     prefixer = kever.prefixer

@@ -81,15 +81,15 @@ class Boatswain(doing.DoDoer):
                 delpre = hab.kever.delegator  # get the delegator identifier
                 dkever = hab.kevers[delpre]  # and the delegator's kever
 
-                sn = msg["sn"] if "sn" in msg else hab.kever.sn
+                sn = msg["sn"] if "sn" in msg else hab.kever.sner.num
 
                 # load the event and signatures
                 evt = hab.makeOwnEvent(sn=sn)
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if hab.phab:
-                    phab = hab.phab
+                if hab.lhab:
+                    phab = hab.lhab
                 elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:
@@ -112,7 +112,7 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.aids)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.gaids)
                 # exn of /oobis of all multisig participants to rootgar
                 # self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="oobis", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
@@ -161,7 +161,7 @@ class Boatswain(doing.DoDoer):
             isith='1',
             ncount=0,
             nsith='0',
-            toad=kever.toad,
+            toad=kever.toader.num,
         )
 
         hab = self.hby.makeHab(palias, **kwargs)
