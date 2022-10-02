@@ -911,18 +911,69 @@ class Credentialer(doing.DoDoer):
 
 
 def sendCredential(hby, hab, reger, postman, creder, recp):
-    issr = creder.issuer
-    regk = creder.status
+    """ Stream credential and all cryptographic artifacts to recipient using postman
 
+    Parameters:
+        hby:
+        hab:
+        reger:
+        postman:
+        creder:
+        recp:
+
+    Returns:
+
+    """
     if hab.lhab:
         sender = hab.lhab.pre
     else:
         sender = hab.pre
 
+    sendArtifacts(hby, reger, postman, creder, sender, recp)
+
+    sources = reger.sources(hby.db, creder)
+    for source, atc in sources:
+        sendArtifacts(hby, reger, postman, source, sender, recp)
+
+        serder, sadsigs, sadcigs = reger.cloneCred(source.said)
+        atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
+        del atc[:serder.size]
+        postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+
+    serder, sadsigs, sadcigs = reger.cloneCred(creder.said)
+    atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
+    del atc[:serder.size]
+    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
+
+
+def sendArtifacts(hby, reger, postman, creder, sender, recp):
+    """ Stream credential artifacts to recipient using postman
+
+    Parameters:
+        hby:
+        reger:
+        postman:
+        creder:
+        sender:
+        recp:
+
+    Returns:
+
+    """
+    issr = creder.issuer
+    isse = creder.subject["i"] if "i" in creder.subject else None
+    regk = creder.status
+
     for msg in hby.db.clonePreIter(pre=issr):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+    if isse != recp:
+        for msg in hby.db.clonePreIter(pre=isse):
+            serder = coring.Serder(raw=msg)
+            atc = msg[serder.size:]
+            postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
 
     if regk is not None:
         for msg in reger.clonePreIter(pre=regk):
@@ -934,36 +985,3 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-    sources = reger.sources(hby.db, creder)
-    for source, atc in sources:
-        regk = source.status
-        vci = source.said
-
-        issr = source.crd["i"]
-        for msg in hby.db.clonePreIter(pre=issr):
-            serder = coring.Serder(raw=msg)
-            atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                         attachment=atc)
-
-        for msg in reger.clonePreIter(pre=regk):
-            serder = coring.Serder(raw=msg)
-            atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-        for msg in reger.clonePreIter(pre=vci):
-            serder = coring.Serder(raw=msg)
-            atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                         attachment=atc)
-
-        serder, sadsigs, sadcigs = reger.cloneCred(source.said)
-        atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
-        del atc[:serder.size]
-        postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
-
-    serder, sadsigs, sadcigs = reger.cloneCred(creder.said)
-    atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
-    del atc[:serder.size]
-    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)

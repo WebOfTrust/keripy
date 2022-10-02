@@ -32,6 +32,8 @@ parser.add_argument('--credential', help='Full credential, \'@\' allowed', defau
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument("--private", help="flag to indicate if this credential needs privacy preserving features",
+                    action="store_true")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -92,7 +94,8 @@ def issueCredential(args):
                                  data=data,
                                  edges=edges,
                                  rules=rules,
-                                 credential=credential)
+                                 credential=credential,
+                                 private=args.private)
 
     doers = [issueDoer]
     return doers

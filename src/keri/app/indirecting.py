@@ -14,7 +14,6 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
-
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .. import help, kering
 from ..core import eventing, parsing, routing
@@ -493,7 +492,8 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None, **kwa):
+    def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
+                 tvy=None, **kwa):
         """
         Initialize instance.
 
@@ -539,12 +539,12 @@ class MailboxDirector(doing.DoDoer):
         self.kvy.registerReplyRoutes(self.rtr)
 
         if self.verifier is not None:
-            self.tevery = Tevery(reger=self.verifier.reger,
-                                 db=self.hby.db, rvy=self.rvy,
-                                 lax=True, local=False, cues=self.cues)
-            self.tevery.registerReplyRoutes(self.rtr)
+            self.tvy = tvy if tvy is not None else Tevery(reger=self.verifier.reger,
+                                                          db=self.hby.db, rvy=self.rvy,
+                                                          lax=True, local=False, cues=self.cues)
+            self.tvy.registerReplyRoutes(self.rtr)
         else:
-            self.tevery = None
+            self.tvy = None
 
         if self.exchanger is not None:
             doers.extend([doing.doify(self.exchangerDo)])
@@ -552,7 +552,7 @@ class MailboxDirector(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
-                                     tvy=self.tevery,
+                                     tvy=self.tvy,
                                      exc=self.exchanger,
                                      rvy=self.rvy,
                                      vry=self.verifier)
@@ -688,8 +688,8 @@ class MailboxDirector(doing.DoDoer):
         while True:
             self.kvy.processEscrows()
             self.rvy.processEscrowReply()
-            if self.tevery is not None:
-                self.tevery.processEscrows()
+            if self.tvy is not None:
+                self.tvy.processEscrows()
             if self.verifier is not None:
                 self.verifier.processEscrows()
 
@@ -946,7 +946,6 @@ class QryRpyMailboxIterable:
 
 
 class MailboxIterable:
-
     TimeoutMBX = 30000000
 
     def __init__(self, mbx, pre, topics, retry=5000):
