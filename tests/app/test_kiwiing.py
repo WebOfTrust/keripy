@@ -1510,7 +1510,7 @@ def test_presentation_ends(seeder, mockCoringRandomNonce, mockHelpingNowIso8601)
         raw = json.dumps(body).encode("utf-8")
         response = client.simulate_post("/credentials/pal/presentations", body=raw)
         assert response.status == falcon.HTTP_202
-        assert len(presentEnd.postman.evts) == 7
+        assert len(presentEnd.postman.evts) == 10
 
         # Bad alias
         body = dict(

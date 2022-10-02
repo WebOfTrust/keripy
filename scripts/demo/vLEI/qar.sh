@@ -70,8 +70,8 @@ kli oobi generate --name intgar2 --alias intgar2 --role witness
 
 kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
 kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
-kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs
+kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ
+kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ
 
 # kli vc list --name intgar1 --alias "GLEIF Internal" --poll
 # kli vc list --name intgar2 --alias "GLEIF Internal" --poll
