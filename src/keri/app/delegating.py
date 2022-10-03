@@ -5,8 +5,6 @@ keri.app.delegating module
 
 module for enveloping and forwarding KERI message
 """
-import json
-from urllib import parse
 
 from hio import help
 from hio.base import doing
@@ -14,8 +12,7 @@ from hio.help import decking
 
 from . import agenting, forwarding
 from ..core import coring
-from ..db import dbing, basing
-from ..help import helping
+from ..db import dbing
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -114,7 +111,6 @@ class Boatswain(doing.DoDoer):
                 # Send exn message for notification purposes
                 exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.gaids)
                 # exn of /oobis of all multisig participants to rootgar
-                # self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="oobis", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 

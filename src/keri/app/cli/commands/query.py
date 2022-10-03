@@ -51,7 +51,7 @@ class QueryDoer(doing.DoDoer):
         self.cues = help.decking.Deck()
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
-        self.witq = agenting.WitnessInquisitor(hhby=self.hby)
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.witq, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)

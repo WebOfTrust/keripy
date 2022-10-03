@@ -13,7 +13,7 @@ import sys
 from hio.base import doing
 
 from keri import help, kering
-from keri.app import indirecting, grouping, habbing
+from keri.app import indirecting, grouping, habbing, forwarding
 from keri.app.cli.common import existing, displaying
 from keri.core import coring
 
@@ -88,8 +88,9 @@ class GroupMultisigIncept(doing.DoDoer):
 
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics)
         self.counselor = grouping.Counselor(hby=self.hby)
+        self.postman = forwarding.Postman(hby=self.hby)
 
-        doers = [self.hbyDoer, self.mbx, self.counselor]
+        doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo)])
@@ -137,6 +138,9 @@ class GroupMultisigIncept(doing.DoDoer):
                 break
 
             yield self.tock
+
+        if ghab.kever.delegator:
+            yield from self.postman.sendEvent(hab=ghab, fn=ghab.kever.sn)
 
         print()
         displaying.printIdentifier(self.hby, ghab.pre)

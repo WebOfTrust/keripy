@@ -126,7 +126,9 @@ class Postman(doing.DoDoer):
         icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
         ser = coring.Serder(raw=icp)
         del icp[:ser.size]
-        self.send(src=hab.pre, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
+
+        sender = hab.lhab.pre if hab.lhab is not None else hab.pre
+        self.send(src=sender, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:
                 cue = self.cues.popleft()

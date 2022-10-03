@@ -5,13 +5,16 @@ keri.kli.commands module
 
 """
 import argparse
+import datetime
 
+import sys
 from hio import help
 from hio.base import doing
 
+from keri.app import indirecting
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
-from keri.kering import ConfigurationError
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -24,47 +27,67 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--prefix', help='qb64 identifier prefix to display', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument("--poll", "-P", help="Poll mailboxes for any events", action="store_true")
 
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 
 def handler(args):
     kwa = dict(args=args)
-    return [doing.doify(kevers, **kwa)]
+    kever = KeverDoer(name=args.name, base=args.base, bran=args.bran, prefix=args.prefix, poll=args.poll,
+                      verbose=args.verbose)
+    return [kever]
 
 
-def kevers(tymth, tock=0.0, **opts):
-    """ Command line status handler
+class KeverDoer(doing.DoDoer):
 
-    """
-    _ = (yield tock)
-    args = opts["args"]
-    name = args.name
-    prefix = args.prefix
-    base = args.base
-    bran = args.bran
+    def __init__(self, name, base, bran, prefix, poll=False, verbose=False):
+        self.prefix = prefix
+        self.poll = poll
+        self.verbose = verbose
+        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby,
+                                               topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
+                                                       "/challenge", "/oobi"])
+        doers = [self.mbx, doing.doify(self.kevers)]
+        super(KeverDoer, self).__init__(doers=doers)
 
-    try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+    def kevers(self, tymth, tock=0.0, **opts):
+        """ Command line status handler
 
-            if prefix not in hby.kevers:
-                print(f"identifier prefix {prefix} is not known locally")
-                return -1
-            displaying.printExternal(hby, prefix)
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield tock)
 
-            if args.verbose:
-                kever = hby.kevers[prefix]
+        if self.poll:
+            end = helping.nowUTC() + datetime.timedelta(seconds=5)
+            sys.stdout.write(f"Checking mailboxes for any events")
+            sys.stdout.flush()
+            while helping.nowUTC() < end:
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                yield 1.0
+            print("\n")
+
+        if self.prefix not in self.hby.kevers:
+            print(f"identifier prefix {self.prefix} is not known locally")
+        else:
+            displaying.printExternal(self.hby, self.prefix)
+
+            if self.verbose:
+                kever = self.hby.kevers[self.prefix]
                 print("\nWitnesses:\t")
                 for idx, wit in enumerate(kever.wits):
-                    print(f'\t{idx+1}. {wit}')
+                    print(f'\t{idx + 1}. {wit}')
                 print()
 
-                cloner = hby.db.clonePreIter(pre=prefix, fn=0)  # create iterator at 0
+                cloner = self.hby.db.clonePreIter(pre=self.prefix, fn=0)  # create iterator at 0
                 for msg in cloner:
                     srdr = coring.Serder(raw=msg)
                     print(srdr.pretty())
                     print()
 
-    except ConfigurationError as e:
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
-        return -1
+        self.remove([self.mbx])
+
+        return True
