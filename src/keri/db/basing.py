@@ -128,6 +128,7 @@ class OobiRecord:
     eid: str = None
     role: str = None
     date: str = None
+    state: str = None
 
 
 @dataclass
@@ -813,6 +814,30 @@ class Baser(dbing.LMDBer):
         # OOBIs with outstand client requests.
         self.coobi = koming.Komer(db=self,
                                   subkey='coobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Resolved OOBIs (those that have been processed successfully for this database.
+        self.roobi = koming.Komer(db=self,
+                                  subkey='roobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.woobi = koming.Komer(db=self,
+                                  subkey='wknwn.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Multifactor well known OOBI auth records to process.  Keys by controller URL
+        self.mfa = koming.Komer(db=self,
+                                  subkey='mfa.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Resolved multifactor well known OOBI auth records.  Keys by controller URL
+        self.rmfa = koming.Komer(db=self,
+                                  subkey='mfa.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 

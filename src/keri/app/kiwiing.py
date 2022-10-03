@@ -13,6 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 
+import keri.app.oobiing
 from . import grouping, challenging, connecting, notifying, signaling, oobiing
 from .. import help
 from .. import kering
@@ -3786,7 +3787,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(signaler=signaler, exc=exchanger)
     grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
-    oobiery = ending.Oobiery(hby=hby)
+    oobiery = keri.app.oobiing.Oobiery(hby=hby)
     delegating.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiing.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
 
@@ -3817,7 +3818,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler)
 
     obi = dict(oobiery=oobiery)
-    doers.extend([rep, counselor, registrar, credentialer, oobiery, doing.doify(oobiCueDo, **obi)])
+    doers.extend([rep, counselor, registrar, credentialer, *oobiery.doers, doing.doify(oobiCueDo, **obi)])
     doers.extend(endDoers)
     servery.msgs.append(dict(app=app, doers=doers))
 

@@ -6,6 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
+import keri.app.oobiing
 from keri import kering
 from keri.app import habbing, delegating, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
@@ -198,7 +199,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
 
         notifier = notifying.Notifier(hby=hby)
         exc = exchanging.Exchanger(hby=hby, handlers=[])
-        oobiery = ending.Oobiery(hby=hby)
+        oobiery = keri.app.oobiing.Oobiery(hby=hby)
 
         delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 

@@ -13,18 +13,14 @@ import sys
 from ordered_set import OrderedSet as oset
 from collections import namedtuple
 from collections.abc import Mapping
-from urllib import parse
 
 import falcon
 from hio import base
-from hio.base import doing
 from hio.core import http, wiring
-from hio.help import decking
 
-from keri.core import parsing, eventing, routing, scheming
 from .. import help
 from .. import kering
-from ..app import habbing, connecting
+from ..app import habbing
 from ..core import coring
 
 logger = help.ogler.getLogger()
@@ -52,6 +48,7 @@ Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind")
 OOBI_URL_TEMPLATE = "/oobi/{cid}/{role}"
 OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z', re.IGNORECASE)
 DOOBI_RE = re.compile('\\A/oobi/(?P<said>[^/]+)\\Z', re.IGNORECASE)
+WOOBI_RE = re.compile('\\A/.well-known/keri/oobi/(?P<cid>[^/]+)\\Z')
 
 OOBI_AID_HEADER = "KERI-AID"
 
@@ -551,199 +548,3 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     return [hbyDoer, wireDoer, webServerDoer]
 
 
-class Oobiery(doing.DoDoer):
-    """ Resolver for OOBIs
-
-    """
-
-    def __init__(self, hby, cues=None):
-        """  DoDoer to handle the request and parsing of OOBIs
-
-        Parameters:
-            hby (Habery): database environment
-            cues (decking.Deck): outbound cues from processing oobis
-        """
-
-        self.hby = hby
-        self.org = connecting.Organizer(hby=self.hby)
-        rtr = routing.Router()
-        rvy = routing.Revery(db=self.hby.db, rtr=rtr)
-        kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
-        kvy.registerReplyRoutes(router=rtr)
-        self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy)
-
-        self.cues = cues if cues is not None else decking.Deck()
-        self.clients = dict()
-
-        super(Oobiery, self).__init__(doers=[doing.doify(self.scoobiDo), doing.doify(self.clientsDo),
-                                             doing.doify(self.retryDo)])
-
-    def scoobiDo(self, tymth, tock=0.0):
-        """ Scooby-Dooby-Doo!
-
-        Process OOBI URLs by requesting from the endpoint and parsing the results
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            # There should be only one OOBIERY that minds the OOBI table, this should read from the table
-            # like an escrow
-            for (url, ), obr in self.hby.db.oobis.getItemIter():
-                try:
-                    purl = parse.urlparse(url)
-
-                    if purl.path == "/oobi":  # Self and Blinded Introductions
-                        params = parse.parse_qs(purl.query)
-
-                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
-                        if "name" in params and obr.oobialias is None:
-                            obr.oobialias = params["name"][0]
-
-                        self.request(url, purl, obr)
-
-                    elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr.cid = match.group("cid")
-                        obr.eid = match.group("eid")
-                        obr.role = match.group("role")
-                        params = parse.parse_qs(purl.query)
-
-                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
-                        if "name" in params and obr.oobialias is None:
-                            obr.oobialias = params["name"][0]
-
-                        self.request(url, purl, obr)
-
-                    elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
-                        obr.said = match.group("said")
-                        self.request(url, purl, obr)
-
-                    elif purl.path.startswith("/.well-known/keri/oobi"):  # Well Known
-                        params = parse.parse_qs(purl.query)
-
-                        # If name is hinted in query string, use it as alias if not provided in OOBIRecord
-                        if "name" in params and obr.oobialias is None:
-                            obr.oobialias = params["name"][0]
-
-                        self.request(url, purl, obr)
-
-                except ValueError as ex:
-                    print("error requesting invalid OOBI URL {}", url)
-                yield self.tock
-
-            yield self.tock
-
-    def clientsDo(self, tymth, tock=0.0):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            for (url, ), obr in self.hby.db.coobi.getItemIter():
-                if url not in self.clients:
-                    purl = parse.urlparse(url)
-                    self.request(url, purl, obr)
-                    continue
-
-                (client, clientDoer) = self.clients[url]
-
-                if client.responses:
-                    response = client.responses.popleft()
-                    self.remove([clientDoer])
-
-                    if response["status"] == 404:
-                        print(f"{url} not found")
-                        self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.eoobi.pin(keys=(url,), val=obr)
-
-                    elif not response["status"] == 200:
-                        self.hby.db.coobi.rem(keys=(url,))
-                        print("invalid status for oobi response: {}".format(response["status"]))
-                        self.cues.append(dict(kin="failed", oobi=url))
-
-                    elif response["headers"]["Content-Type"] == "application/json+cesr":
-                        self.parser.parse(ims=bytearray(response["body"]))
-                        if "Keri-Aid" in response["headers"]:
-                            obr.cid = response["headers"]["Keri-Aid"]
-
-                        if obr.oobialias is not None and obr.cid:
-                            self.org.replace(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
-
-                        self.hby.db.coobi.rem(keys=(url,))
-                        self.cues.append(dict(kin="resolved", oobi=url))
-
-                    elif response["headers"]["Content-Type"] == "application/schema+json":
-                        try:
-                            schemer = scheming.Schemer(raw=bytearray(response["body"]))
-                            if schemer.said == obr.said:
-                                self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
-                                self.cues.append(dict(kin="resolved", oobi=url))
-                            else:
-                                self.cues.append(dict(kin="failed", oobi=url))
-
-                        except Exception:
-                            self.cues.append(dict(kin="failed", oobi=url))
-
-                        self.hby.db.coobi.rem(keys=(url,))
-
-                    else:
-                        self.cues.append(dict(kin="failed", oobi=url))
-                        print("invalid content type for oobi response: {}"
-                              .format(response["headers"]["Content-Type"]))
-
-                yield self.tock
-
-            yield self.tock
-
-    def retryDo(self, tymth, tock=0.0):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        retryDelay = 10.0
-        while True:
-            for (url, ), obr in self.hby.db.eoobi.getItemIter():
-                self.hby.db.eoobi.rem(keys=(url,))
-                self.hby.db.oobis.pin(keys=(url,), val=obr)
-                yield retryDelay
-
-            yield retryDelay
-
-    def request(self, url, purl, obr):
-
-        client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
-        clientDoer = http.clienting.ClientDoer(client=client)
-        self.extend([clientDoer])
-
-        client.request(
-            method="GET",
-            path=purl.path,
-            qargs=parse.parse_qs(purl.query),
-        )
-
-        self.clients[url] = (client, clientDoer)
-        self.hby.db.oobis.rem(keys=(url,))
-        self.hby.db.coobi.pin(keys=(url,), val=obr)

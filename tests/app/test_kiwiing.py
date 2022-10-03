@@ -12,6 +12,7 @@ import falcon
 from falcon import testing
 from hio.base import doing
 
+import keri.app.oobiing
 from keri import kering
 from keri.app import (habbing, storing, kiwiing, grouping, booting, notifying,
                       signing, connecting)
@@ -741,7 +742,7 @@ def test_oobi_ends(seeder):
         assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
         notifier = notifying.Notifier(hby=palHby)
-        oobiery = ending.Oobiery(hby=palHby)
+        oobiery = keri.app.oobiing.Oobiery(hby=palHby)
         app = falcon.App()
         regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,

@@ -696,7 +696,7 @@ class Credentialer(doing.DoDoer):
         """
 
         Args:
-            creder:
+            creder (Creder): creder object representing the credential to validate
 
         Returns:
             bool: true if credential is valid against a known schema

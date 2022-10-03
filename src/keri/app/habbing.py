@@ -649,6 +649,10 @@ class Habery:
                 for oobi in conf["durls"]:
                     obr = basing.OobiRecord(date=help.toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
+            if "wurls" in conf:  # well known OOBI URLs for MFA
+                for oobi in conf["wurls"]:
+                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    self.db.woobi.put(keys=(oobi,), val=obr)
 
     @property
     def signator(self):

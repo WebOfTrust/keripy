@@ -6,7 +6,6 @@ Includes Falcon ReST endpoints for testing purposes
 
 """
 import logging
-import time
 
 import falcon
 from falcon import testing
@@ -15,10 +14,7 @@ from hio.base import tyming, doing
 from keri import help, kering
 from keri.app import habbing
 from keri.core import coring
-from keri.db import basing
 from keri.end import ending
-from keri.app import oobiing
-from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -446,41 +442,3 @@ def test_end_demo():
     doist.do(doers=doers, limit=1)
 
     logger.error("\nWeb Server shutdown on port %s.\n\n", webPort)
-
-
-def test_oobiery():
-    with habbing.openHby(name="oobi") as hby:
-        oobiery = ending.Oobiery(hby=hby)
-
-        url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
-              '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
-        hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
-        hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
-        hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi?name=Blind'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
-        hby.db.oobis.pin(keys=(url,), val=obr)
-
-        app = falcon.App()  # falcon.App instances are callable WSGI apps
-        endDoers = oobiing.loadEnds(app, hby=hby)
-
-        limit = 2.0
-        tock = 0.03125
-        doers = endDoers + [oobiery]
-        doist = doing.Doist(limit=limit, tock=tock)
-        doist.do(doers=doers)
-
-        assert doist.limit == limit
-
-        doist.exit()
-
-    """Done Test"""
-
-
-if __name__ == '__main__':
-    test_oobiery()

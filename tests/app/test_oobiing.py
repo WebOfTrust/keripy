@@ -8,7 +8,11 @@ import json
 import falcon
 from falcon import testing
 from hio.base import doing
+
+import keri
 from keri.app import habbing, oobiing, notifying
+from keri.db import basing
+from keri.help import helping
 from keri.peer import exchanging
 
 from tests.app import openMultiSig
@@ -105,3 +109,36 @@ def test_oobi_share_endpoint():
         # Assert that a message has been send to each participant for each OOBI
         assert len(oobiEnd.postman.evts) == 6
 
+
+def test_oobiery():
+    with habbing.openHby(name="oobi") as hby:
+        oobiery = keri.app.oobiing.Oobiery(hby=hby)
+
+        url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
+              '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/oobi?name=Blind'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(url,), val=obr)
+
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        endDoers = oobiing.loadEnds(app, hby=hby)
+
+        limit = 2.0
+        tock = 0.03125
+        doers = endDoers + [oobiery]
+        doist = doing.Doist(limit=limit, tock=tock)
+        doist.do(doers=doers)
+
+        assert doist.limit == limit
+
+        doist.exit()
+
+    """Done Test"""
