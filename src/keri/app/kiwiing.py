@@ -1235,6 +1235,9 @@ class CredentialEnd(doing.DoDoer):
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
+                    private:
+                      type: boolean
+                      description: flag to inidicate this credential should support privacy preserving presentations
         responses:
            200:
               description: Credential issued.
@@ -1259,14 +1262,17 @@ class CredentialEnd(doing.DoDoer):
         source = body.get("source")
         rules = body.get("rules")
         data = body.get("credentialData")
+        private = body.get("private") is not None and body.get("private") is True
+
+        edges = None
+        if source is not None:
+            try:
+                _, edges = coring.Saider.saidify(sad=source)
+            except KeyError:
+                edges = source
 
         try:
-            _, edges = coring.Saider.saidify(sad=source)
-        except KeyError:
-            edges = source
-
-        try:
-            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data, private=private)
             self.credentialer.issue(creder=creder)
 
         except kering.ConfigurationError as e:
@@ -1334,6 +1340,9 @@ class CredentialEnd(doing.DoDoer):
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
+                    private:
+                      type: boolean
+                      description: flag to inidicate this credential should support privacy preserving presentations
         responses:
            200:
               description: Credential issued.
@@ -1359,14 +1368,17 @@ class CredentialEnd(doing.DoDoer):
         source = body.get("source")
         rules = body.get("rules")
         data = body.get("credentialData")
+        private = body.get("private") is not None and body.get("private") is True
+
+        edges = None
+        if source is not None:
+            try:
+                _, edges = coring.Saider.saidify(sad=source)
+            except KeyError:
+                edges = source
 
         try:
-            _, edges = coring.Saider.saidify(sad=source)
-        except KeyError:
-            edges = source
-
-        try:
-            creder = self.credentialer.create(regname, recp, schema, edges, rules, data)
+            creder = self.credentialer.create(regname, recp, schema, edges, rules, data, private=private)
             self.credentialer.issue(creder=creder)
         except kering.ConfigurationError as e:
             rep.status = falcon.HTTP_400
@@ -1884,12 +1896,14 @@ class PresentationEnd(doing.DoDoer):
 
 class MultisigEndBase(doing.DoDoer):
 
-    def __init__(self, counselor, notifier, doers):
-
+    def __init__(self, hby, counselor, notifier, doers):
+        self.hby = hby
         self.notifier = notifier
         self.counselor = counselor
+        self.postman = forwarding.Postman(hby=hby)
+
         self.evts = decking.Deck()
-        doers.extend([doing.doify(self.evtDo)])
+        doers.extend([self.postman, doing.doify(self.evtDo)])
 
         super(MultisigEndBase, self).__init__(doers=doers)
 
@@ -1922,8 +1936,12 @@ class MultisigEndBase(doing.DoDoer):
             route = evt["r"]
             prefixer = coring.Prefixer(qb64=pre)
             seqner = coring.Seqner(sn=sn)
+            hab = self.hby.habs[pre]
 
             if self.counselor.complete(prefixer, seqner, saider):
+                if hab.kever.delegator:
+                    yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
+
                 self.notifier.add(attrs=dict(
                     r=f"/multisig{route}",
                     a=dict(i=pre, s=sn),
@@ -1955,7 +1973,7 @@ class MultisigInceptEnd(MultisigEndBase):
         self.postman = forwarding.Postman(hby=self.hby)
         doers = [self.postman]
 
-        super(MultisigInceptEnd, self).__init__(notifier=notifier, counselor=counselor, doers=doers)
+        super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
         """Incept group multisig
@@ -2228,7 +2246,7 @@ class MultisigEventEnd(MultisigEndBase):
         self.postman = forwarding.Postman(hby=self.hby)
         doers = [self.postman]
 
-        super(MultisigEventEnd, self).__init__(notifier=notifier, counselor=counselor, doers=doers)
+        super(MultisigEventEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
 
     def initialize(self, body, rep, alias):
         if "aids" not in body:

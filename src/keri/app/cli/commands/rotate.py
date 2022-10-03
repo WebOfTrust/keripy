@@ -9,7 +9,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import rotating, existing
-from ... import habbing, agenting, indirecting, directing, delegating
+from ... import habbing, agenting, indirecting, directing, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))
@@ -75,8 +75,9 @@ class RotateDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.swain = delegating.Boatswain(hby=self.hby)
+        self.postman = forwarding.Postman(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
-        doers = [self.hbyDoer, self.mbx, self.swain, doing.doify(self.rotateDo)]
+        doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
 
@@ -122,12 +123,15 @@ class RotateDoer(doing.DoDoer):
             while not witDoer.cues:
                 _ = yield self.tock
 
+        if hab.kever.delegator:
+            yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
+
         print(f'Prefix  {hab.pre}')
         print(f'New Sequence No.  {hab.kever.sn}')
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
 
-        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx]
+        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx, self.postman]
         self.remove(toRemove)
 
         return

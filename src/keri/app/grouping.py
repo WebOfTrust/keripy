@@ -65,7 +65,6 @@ class Counselor(doing.DoDoer):
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
-
     def rotate(self, ghab, aids, sith, toad, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
@@ -98,8 +97,8 @@ class Counselor(doing.DoDoer):
         pkever = ghab.lhab.kever
         pnkey = pkever.nexter.digs[0]
 
-        rec = basing.RotateRecord(aids=aids, sn=kever.sn+1, sith=sith, toad=toad,
-                    cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
+        rec = basing.RotateRecord(aids=aids, sn=kever.sn + 1, sith=sith, toad=toad,
+                                  cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.lhab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
@@ -607,7 +606,6 @@ class MultisigRotateHandler(doing.DoDoer):
 
 
 def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
-
     exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
                                            aids=aids,
