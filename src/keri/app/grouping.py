@@ -245,7 +245,7 @@ class Counselor(doing.DoDoer):
                 continue
 
             rot = ghab.rotate(sith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              mskeys=gverfers, msdigers=ndigers)
+                              gverfers=gverfers, gdigers=ndigers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 

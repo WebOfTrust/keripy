@@ -495,9 +495,10 @@ class Habery:
             if aid not in self.kevers:
                 raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={gaids}")
 
-        mskeys, msdigers = self.extractKeysDigs(gaids)
-        kwa["mskeys"] = mskeys
-        kwa["msdigers"] = msdigers
+        # multisig group verfers of current signing keys and digers of next key digests
+        gverfers, gdigers = self.extractKeysDigs(gaids)  # group verfers and digers
+        kwa["gverfers"] = gverfers
+        kwa["gdigers"] = gdigers
 
         # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
@@ -518,8 +519,8 @@ class Habery:
             aids(list): qb64 identifier prefix of all participants of the multisig group
 
         """
-        mskeys = []
-        msdigers = []
+        gverfers = []  # verfers of multisig group signing keys
+        gdigers = []  # digers of multisig group next key digests
         for aid in aids:
             kever = self.kevers[aid]
             keys = kever.verfers
@@ -533,10 +534,10 @@ class Habery:
 
             diger = coring.Diger(qb64=nkeys[0])
 
-            mskeys.append(keys[0])
-            msdigers.append(diger)
+            gverfers.append(keys[0])
+            gdigers.append(diger)
 
-        return mskeys, msdigers
+        return gverfers, gdigers
 
     def close(self, clear=False):
         """Close resources.
@@ -873,7 +874,7 @@ class Hab:
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
              transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
-             mskeys=None, msdigers=None, hidden=False):
+             gverfers=None, gdigers=None, hidden=False):
         """
         Finish setting up or making Hab from parameters.
         Assumes injected dependencies were already setup.
@@ -884,7 +885,8 @@ class Hab:
             code (str): prefix derivation code
             transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-            isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
+            isith (Union[int, str, list]): incepting signing threshold as
+                    int, str hex, or list
             icount (int): incepting key count for number of keys
             nsith (Union[int, str, list]): next signing threshold as int, str hex or list
             ncount (int): next key count for number of next keys
@@ -893,9 +895,12 @@ class Hab:
             delpre (str): qb64 of delegator identifier prefix
             estOnly (bool): eventing.TraitCodex.EstOnly means only establishment
                 events allowed in KEL for this Hab
-            DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
-            mskeys (list): Verfers of public keys collected from inception of participants in group identifier
-            msdigers (list): Digers of next public keys collected from inception of participants in group identifier
+            DnD (bool): eventing.TraitCodex.DnD means do allow delegated
+                       identifiers from this identifier
+            gverfers (list): Verfer instances of public keys collected from
+                           inception of participants in group identifier
+            gdigers (list): Diger instances of next public key digests collected
+                          from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
 
         ToDo:
@@ -914,9 +919,9 @@ class Hab:
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
-        if mskeys:
-            verfers = mskeys
-            digers = msdigers
+        if gverfers:
+            verfers = gverfers
+            digers = gdigers
             cst = coring.Tholder(sith=isith).sith  # current signing threshold
             nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
@@ -976,7 +981,7 @@ class Hab:
                                      code=code)
 
         self.pre = serder.ked["i"]  # new pre
-        if not mskeys:
+        if not gverfers:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
@@ -1129,7 +1134,7 @@ class Hab:
             return self.mgr.sign(ser, pubs=pubs, verfers=verfers, indexed=indexed)
 
     def rotate(self, sith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
-               data=None, mskeys=None, msdigers=None):
+               data=None, gverfers=None, gdigers=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -1142,8 +1147,10 @@ class Hab:
             cuts (list) of qb64 pre of witnesses to be removed from witness list
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
-            mskeys (list): Verfers of public keys collected from inception of participants in group identifier
-            msdigers (list): Digers of next public keys collected from inception of participants in group identifier
+            gverfers (list): Verfer instances of public keys collected from
+                            inception of participants in group identifier
+            gdigers (list): Diger instances of next public key digests collected
+                            from inception of participants in group identifier
 
         """
         kever = self.kever  # kever.pre == self.pre
@@ -1154,9 +1161,9 @@ class Hab:
         if count is None:
             count = len(kever.verfers)  # use previous count
 
-        if mskeys:
-            verfers = mskeys
-            digers = msdigers
+        if gverfers:
+            verfers = gverfers
+            digers = gdigers
             cst = coring.Tholder(sith=sith).sith  # current signing threshold
             nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:
