@@ -870,8 +870,9 @@ class Hab:
         self.inited = False
         self.delpre = None  # assigned laster if delegated
 
-    def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, icount=1,
-             nsith=None, ncount=None, toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
+    def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
+             transferable=True, isith=None, icount=1, nsith=None, ncount=None,
+             toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
              mskeys=None, msdigers=None, hidden=False):
         """
         Finish setting up or making Hab from parameters.
@@ -927,6 +928,7 @@ class Hab:
                                       transferable=transferable,
                                       temp=self.temp)
             verfers, digers, cst, nst = self.mgr.replay(pre=ipre, advance=False)
+
         else:
             verfers, digers, cst, nst = self.mgr.incept(icount=icount,
                                                         isith=isith,
@@ -935,6 +937,14 @@ class Hab:
                                                         stem=self.name,
                                                         transferable=transferable,
                                                         temp=self.temp)
+
+        if isith is None:
+            pass
+            #assert cst == f"{max(1, ceil(icount / 2)):x}"
+        if nsith is None:
+            pass
+            #assert nst == f"{max(1, ceil(ncount / 2)):x}"
+
 
         opre = verfers[0].qb64  # default original pre from key store move below
 

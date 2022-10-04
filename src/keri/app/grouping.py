@@ -230,22 +230,22 @@ class Counselor(doing.DoDoer):
             ghab = self.hby.habs[pre]
             gkever = ghab.kever
 
-            keys = []
-            ndigs = list(gkever.nexter.digers)
+            gverfers = []  # verfers of group signing keys
+            ndigers = list(gkever.nexter.digers)
             for aid in rec.aids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.gaids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
-                    keys.append(pkever.verfers[0])
-                    ndigs[idx] = pkever.nexter.digers[0]
+                    gverfers.append(pkever.verfers[0])
+                    ndigers[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
-            if len(keys) != len(rec.aids):
+            if len(gverfers) != len(rec.aids):
                 continue
 
             rot = ghab.rotate(sith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              mskeys=keys, msdigers=ndigs)
+                              mskeys=gverfers, msdigers=ndigers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 

@@ -1604,65 +1604,6 @@ class Manager:
         return (verfers, digers, cst, nst)
 
 
-    def replayOld(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
-        """
-        Returns duple (verfers, digers) associated with public key set from
-        the key sequence for identifier prefix pre at rotation index ridx stored
-        in db .pubs. Inception is at ridx == 0.
-        Enables replay of preexisting public key sequence.
-        In returned duple:
-            verfers is list of current public key verfers
-                public key is verfer.qb64
-            digers is list of next public key digers
-                digest to xor is diger.raw
-
-        If key sequence at ridx does already exist in .pubs database for pre then
-            raises ValueError.
-        If  preexisting pubs for pre exist but .ridx is two large for preexisting
-            pubs then raises IndexError.
-
-        Parameters:
-            pre (str): fully qualified qb64 identifier prefix
-            ridx (int): rotation index
-            code (str): derivation code for digers. Default is MtrDex.Blake3_256
-            erase (bool): True means erase old private keys made stale by rotation
-
-        """
-        oldps = None
-        if ridx - 1 >= 0:
-            oldps = self.ks.pubs.get(riKey(pre, ridx-1))
-
-        newps = self.ks.pubs.get(riKey(pre, ridx))
-        nxtps = self.ks.pubs.get(riKey(pre, ridx+1))
-
-        if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
-            if self.ks.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
-                # raises IndexError to indicate replay at ridx past end but valid
-                # next keys at ridx
-                raise IndexError("Invalid replay attempt at ridx={} for pubs of "
-                                 "pre={}.".format(ridx, pre))
-            else:  # past replay at ridx and no next keys at ridx
-                # raise ValueError to indicate replay at ridx is past end of replay
-                # and no valid next keys at ridx
-                raise ValueError("Invalid replay at ridx={} missing pubs for "
-                                 "pre={}.".format(ridx, pre))
-
-        if erase and oldps:
-            for pub in oldps.pubs:  # remove old prikeys
-                self.ks.pris.rem(pub)
-
-        verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
-        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
-
-        csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
-        cst = coring.Tholder(sith=csith).sith
-
-        nsith = "{:x}".format(max(0, math.ceil(len(digers) / 2)))
-        nst = coring.Tholder(sith=nsith).sith
-
-        return (verfers, digers, cst, nst)
-
-
 class ManagerDoer(doing.Doer):
     """
     Basic Manager Doer to initialize keystore database .ks
