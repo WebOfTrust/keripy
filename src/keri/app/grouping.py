@@ -244,7 +244,7 @@ class Counselor(doing.DoDoer):
             if len(gverfers) != len(rec.aids):
                 continue
 
-            rot = ghab.rotate(sith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
+            rot = ghab.rotate(isith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
                               gverfers=gverfers, gdigers=ndigers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]

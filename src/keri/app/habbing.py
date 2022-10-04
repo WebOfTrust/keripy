@@ -1133,14 +1133,14 @@ class Hab:
                 verfers = self.kever.verfers
             return self.mgr.sign(ser, pubs=pubs, verfers=verfers, indexed=indexed)
 
-    def rotate(self, sith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
+    def rotate(self, isith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
                data=None, gverfers=None, gdigers=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
 
         Parameters:
-            sith (Optional[int,str]) next signing threshold as int or str hex or list of str weights
+            isith (Optional[int,str]) current signing threshold as int or str hex or list of str weights
             nsith (Optional[int,str]) next, next signing threshold as int or str hex or list of str weights
             count (int) next number of signing keys
             toad (Optional[int,str]) hex of witness threshold after cuts and adds
@@ -1154,8 +1154,8 @@ class Hab:
 
         """
         kever = self.kever  # kever.pre == self.pre
-        if sith is None:
-            sith = kever.tholder.sith  # use previous sith
+        if isith is None:
+            isith = kever.tholder.sith  # use previous sith
         if nsith is None:
             nsith = kever.ntholder.sith
         if count is None:
@@ -1164,7 +1164,7 @@ class Hab:
         if gverfers:
             verfers = gverfers
             digers = gdigers
-            cst = coring.Tholder(sith=sith).sith  # current signing threshold
+            cst = coring.Tholder(sith=isith).sith  # current signing threshold
             nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:
             try:
@@ -1172,7 +1172,7 @@ class Hab:
             except IndexError:
                 verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                             count=count,  # old next is new current
-                                                            sith=sith,
+                                                            nsith=nsith,
                                                             temp=self.temp)
 
         keys = [verfer.qb64 for verfer in verfers]

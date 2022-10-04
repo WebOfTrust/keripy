@@ -1123,7 +1123,7 @@ class Manager:
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     sith=None, dcode=coring.MtrDex.Blake3_256,
+                     isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
@@ -1144,7 +1144,9 @@ class Manager:
             count (int): count of next public keys when icodes not provided
             code (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            sith (Union[int, str, list]): next signing threshold as:
+            isith (Union[int, str, list]): current signing threshold as:
+                int, str hex, or list of weights
+            nsith (Union[int, str, list]): next signing threshold as:
                 int, str hex, or list of weights
             dcode i(str): derivation code qb64 of digers to make next xor digest.
                 Default is MtrDex.Blake3_256
@@ -1187,7 +1189,11 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold (cst)
+        #cst = ps.new.st  # get new current signing threshold (cst)
+
+        if isith is None:
+            isith = "{:x}".format(max(0, math.ceil(len(verfers) / 2)))
+        cst = coring.Tholder(sith=isith).sith  # next signing threshold
 
         salt = pp.salt
         if salt:
@@ -1215,9 +1221,9 @@ class Manager:
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
-        if sith is None:
-            sith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
-        nst = coring.Tholder(sith=sith).sith  # next signing threshold
+        if nsith is None:
+            nsith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
