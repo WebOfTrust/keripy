@@ -141,7 +141,7 @@ def test_delegation_request(mockHelpingNowUTC):
 
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
-                                  nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
@@ -160,7 +160,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         src = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
-                                  nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
         notifier = notifying.Notifier(hby=hby)
         handler = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
@@ -192,7 +192,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         src = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
-                                  nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=hab.pre, ked=serder.ked)
 

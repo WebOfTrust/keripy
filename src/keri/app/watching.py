@@ -66,7 +66,7 @@ class KiwiServer(doing.DoDoer):
         serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  sith=cst,
                                  nsith=nst,
-                                 nkeys=[diger.qb64 for diger in digers],
+                                 ndigs=[diger.qb64 for diger in digers],
                                  toad=cur.toader.num,
                                  wits=cur.wits,
                                  code=code)

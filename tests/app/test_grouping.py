@@ -279,7 +279,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
         aids = [hab.pre, "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         serder = eventing.incept(keys=["DAEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"],
-                                 nkeys=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                 ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
         notifier = notifying.Notifier(hby=hby)
         handler = grouping.MultisigInceptHandler(hby=hby, notifier=notifier)

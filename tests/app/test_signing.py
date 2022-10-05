@@ -190,7 +190,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
     signer1 = coring.Signer(raw=seed1)  # next signing keypair transferable is default
     keys0 = [signer0.verfer.qb64]
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
-    serder = eventing.incept(keys=keys0, nkeys=nxt1, code=coring.MtrDex.Blake3_256, intive=True)
+    serder = eventing.incept(keys=keys0, ndigs=nxt1, code=coring.MtrDex.Blake3_256, intive=True)
     assert serder.pre == "EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL"
     d = dict(
         d="",

@@ -39,7 +39,7 @@ def test_parser():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        nkeys=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -64,7 +64,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -82,7 +82,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
@@ -132,7 +132,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
@@ -200,7 +200,7 @@ def test_parser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1

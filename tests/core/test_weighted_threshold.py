@@ -42,7 +42,7 @@ def test_weighted():
         wesSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                   sith=sith,
                                   nsith=nxtsith,
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
@@ -119,7 +119,7 @@ def test_weighted():
                                   sith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
                                   data=[])
 
@@ -167,7 +167,7 @@ def test_weighted():
                                   sith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
                                   data=[])
 
@@ -214,7 +214,7 @@ def test_weighted():
                                   sith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
                                   data=[])
 

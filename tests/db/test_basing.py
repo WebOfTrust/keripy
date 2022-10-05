@@ -1736,7 +1736,7 @@ def test_clean_baser():
                                       dig=natHab.kever.serder.said,
                                       sn=natHab.kever.sn+1,
                                       sith='2',
-                                      nkeys=natHab.kever.nexter.digs)
+                                      ndigs=natHab.kever.nexter.digs)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
 
@@ -1925,7 +1925,7 @@ def test_usebaser():
         serder = incept(keys=keys,
                         code=code,
                         sith=sith,
-                        nkeys=[coring.Diger(ser=key).qb64 for key in nxtkeys])
+                        ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys])
 
 
         # sign serialization
@@ -1940,7 +1940,7 @@ def test_usebaser():
                         keys=keys,
                         sith=sith,
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=key).qb64 for key in nxtkeys],
+                        ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys],
                         sn=1)
 
         # sign serialization

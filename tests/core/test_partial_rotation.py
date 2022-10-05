@@ -27,7 +27,7 @@ def test_partial_rotation():
         with pytest.raises(ValueError):
             _ = eventing.incept(keys=[signers[0].verfer.qb64],
                                 nsith='2',
-                                nkeys=nkeys,
+                                ndigs=nkeys,
                                 code=coring.MtrDex.Blake3_256)
 
         # 5 keys for the next rotation
@@ -41,7 +41,7 @@ def test_partial_rotation():
 
         serder = eventing.incept(keys=[signers[0].verfer.qb64],
                                  nsith='2',  # next signed event must satisfy this along with the new `kt`
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  code=coring.MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
@@ -69,7 +69,7 @@ def test_partial_rotation():
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='4',
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  sn=1)
 
         # sign serialization
@@ -104,7 +104,7 @@ def test_partial_rotation():
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='2',
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  sn=2)
 
         # sign serialization
@@ -130,7 +130,7 @@ def test_partial_rotation():
 
         serder = eventing.incept(keys=[signers[0].verfer.qb64],
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  code=coring.MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
@@ -158,7 +158,7 @@ def test_partial_rotation():
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  sn=1)
 
         # sign serialization
@@ -186,7 +186,7 @@ def test_partial_rotation():
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='0',
-                                 nkeys=nkeys,
+                                 ndigs=nkeys,
                                  sn=2)
 
         # sign serialization

@@ -577,7 +577,7 @@ MaxIntThold = 2 ** 32 - 1
 def incept(keys,
            *,
            sith=None,
-           nkeys=None,
+           ndigs=None,
            nsith=None,
            toad=None,
            wits=None,
@@ -596,7 +596,7 @@ def incept(keys,
     Parameters:
         keys  (list): current signing keys qb64
         sith (int | str | list | None): current signing threshold input to Tholder
-        nkeys (list | None): current signing key digests qb64
+        ndigs (list | None): current signing key digests qb64
         nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): witness identifier prefixes qb64
@@ -623,17 +623,17 @@ def incept(keys,
     if tholder.size > len(keys):
         raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
-    if nkeys is None:
-        nkeys = []
+    if ndigs is None:
+        ndigs = []
 
     if nsith is None:
-        nsith = max(0, ceil(len(nkeys) / 2))
+        nsith = max(0, ceil(len(ndigs) / 2))
 
     ntholder = Tholder(sith=nsith)
     if ntholder.num is not None and ntholder.num < 0:
         raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
-    if ntholder.size > len(nkeys):
-            raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
+    if ntholder.size > len(ndigs):
+            raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
 
 
     wits = wits if wits is not None else []
@@ -670,7 +670,7 @@ def incept(keys,
                k=keys,  # list of qb64
                nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
-               n=nkeys,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -714,7 +714,7 @@ def delcept(keys, delpre, **kwa):
     Parameters:
         keys  (list): current signing keys qb64
         sith (int | str | list | None): current signing threshold input to Tholder
-        nkeys (list | None): current signing key digests qb64
+        ndigs (list | None): current signing key digests qb64
         nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): witness identifier prefixes qb64
@@ -738,7 +738,7 @@ def rotate(pre,
            ilk=Ilks.rot,
            sn=1,
            sith=None,
-           nkeys=None,
+           ndigs=None,
            nsith=None,
            toad=None,
            wits=None,  # prior existing wits
@@ -760,7 +760,7 @@ def rotate(pre,
         ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
         sn (int | str): sequence number int or hex str
         sith (int | str | list | None): current signing threshold input to Tholder
-        nkeys (list | None): current signing key digests qb64
+        ndigs (list | None): current signing key digests qb64
         nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): prior witness identifier prefixes qb64
@@ -791,17 +791,17 @@ def rotate(pre,
     if tholder.size > len(keys):
         raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
-    if nkeys is None:
-        nkeys = []
+    if ndigs is None:
+        ndigs = []
 
     if nsith is None:
-        nsith = max(0, ceil(len(nkeys) / 2))
+        nsith = max(0, ceil(len(ndigs) / 2))
 
     ntholder = Tholder(sith=nsith)
     if ntholder.num is not None and ntholder.num < 0:
         raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
-    if ntholder.size > len(nkeys):
-        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
+    if ntholder.size > len(ndigs):
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -858,7 +858,7 @@ def rotate(pre,
                k=keys,  # list of qb64
                nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
-               n=nkeys,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
@@ -887,7 +887,7 @@ def deltate(pre,
         ilk (str): ilk of event. Must be in (Ilks.rot, Ilks.drt)
         sn (int | str): sequence number int or hex str
         sith (int | str | list): current signing threshold input to Tholder
-        nkeys (list): current signing key digests qb64
+        ndigs (list): current signing key digests qb64
         nsith int | str | list): next signing threshold input to Tholder
         toad (int | str ): witness threshold number if str then hex str
         wits (list): prior witness identifier prefixes qb64

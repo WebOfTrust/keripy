@@ -39,7 +39,7 @@ def test_delegation():
         # Setup Bob by creating inception event
         verfers, digers, cst, nst = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)
 
         bob = bobSrdr.ked["i"]
@@ -81,7 +81,7 @@ def test_delegation():
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   nkeys=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers])
 
         delPre = delSrdr.ked["i"]
         assert delPre == 'EHng2fV42DdKb5TLMIs6bbjFkPNmIdQ5mSFn6BTnySJj'
@@ -180,7 +180,7 @@ def test_delegation():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.saider.qb64,
                                    sn=bobDelK.sn + 1,
-                                   nkeys=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers])
 
         assert delSrdr.said == 'EM5fj7YtOQYH3iLyWJr6HZVVxrY5t46LRL2vkNpdnPi0'
 
