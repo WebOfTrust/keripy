@@ -47,7 +47,7 @@ def rotateGroupIdentifier(args):
     data = rotating.loadData(args)
 
     rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, aids=args.aids, bran=args.bran,
-                                  wits=args.witnesses, cuts=args.cuts, adds=args.witness_add, sith=args.sith,
+                                  wits=args.witnesses, cuts=args.cuts, adds=args.witness_add, isith=args.sith,
                                   nsith=args.nsith, toad=args.toad, data=data)
 
     doers = [rotDoer]
@@ -62,11 +62,11 @@ class GroupMultisigRotate(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, alias, aids=None, sith=None, nsith=None, toad=None, wits=None, cuts=None,
+    def __init__(self, name, base, bran, alias, aids=None, isith=None, nsith=None, toad=None, wits=None, cuts=None,
                  adds=None, data: list = None):
 
         self.alias = alias
-        self.sith = sith
+        self.isith = isith
         self.nsith = nsith
         self.toad = toad
         self.aids = aids
@@ -118,7 +118,7 @@ class GroupMultisigRotate(doing.DoDoer):
             self.adds = set(self.wits) - set(ewits)
 
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        self.counselor.rotate(ghab=ghab, aids=self.aids, sith=self.sith, toad=self.toad,
+        self.counselor.rotate(ghab=ghab, aids=self.aids, isith=self.isith, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds),
                               data=self.data)
 
