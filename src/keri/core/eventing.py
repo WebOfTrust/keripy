@@ -992,7 +992,7 @@ def state(pre,
           eevt,
           stamp=None,  # default current datetime
           sith=None,  # default based on keys
-          nkeys=None,
+          ndigs=None,
           nsith=None,
           toad=None,  # default based on wits
           wits=None,  # default to []
@@ -1022,7 +1022,7 @@ def state(pre,
         stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data
         sith sith (int | str | list | None): current signing threshold input to Tholder
-        nkeys (list | None): current signing key digests qb64
+        ndigs (list | None): current signing key digests qb64
         nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): prior witness identifier prefixes qb64
@@ -1084,17 +1084,17 @@ def state(pre,
     if tholder.size > len(keys):
         raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
 
-    if nkeys is None:
-        nkeys = []
+    if ndigs is None:
+        ndigs = []
 
     if nsith is None:
-        nsith = max(0, ceil(len(nkeys) / 2))
+        nsith = max(0, ceil(len(ndigs) / 2))
 
     ntholder = Tholder(sith=nsith)
     if ntholder.num is not None and ntholder.num < 0:
         raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
-    if ntholder.size > len(nkeys):
-        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {nkeys}")
+    if ntholder.size > len(ndigs):
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -1159,7 +1159,7 @@ def state(pre,
                k=keys,  # list of qb64
                nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
-               n=nkeys,
+               n=ndigs,
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg if cnfg is not None else [],
@@ -2496,7 +2496,7 @@ class Kever:
                       eevt=eevt,
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
-                      nkeys=self.nexter.digs if self.nexter else [],
+                      ndigs=self.nexter.digs if self.nexter else [],
                       toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,

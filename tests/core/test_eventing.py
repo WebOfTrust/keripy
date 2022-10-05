@@ -1109,7 +1109,7 @@ def test_state(mockHelpingNowUTC):
                     keys=keys,
                     eevt=eevt,
                     sith=sith,
-                    nkeys=nxt,
+                    ndigs=nxt,
                     toad=toad,
                     wits=wits,
                     )
@@ -1246,7 +1246,7 @@ def test_state(mockHelpingNowUTC):
                     keys=keys,
                     eevt=eevt,
                     sith=sith,
-                    nkeys=nxt,
+                    ndigs=nxt,
                     toad=toad,
                     wits=wits,
                     dpre=preD

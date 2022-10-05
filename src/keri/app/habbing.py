@@ -527,12 +527,12 @@ class Habery:
             if len(keys) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
                                                 .format(aid, len(keys)))
-            nkeys = kever.nexter.digs
-            if len(nkeys) > 1:
+            ndigs = kever.nexter.digs
+            if len(ndigs) > 1:
                 raise kering.ConfigurationError("Identifier must have only one nexy key commitment, {} has {}"
-                                                .format(aid, len(nkeys)))
+                                                .format(aid, len(ndigs)))
 
-            diger = coring.Diger(qb64=nkeys[0])
+            diger = coring.Diger(qb64=ndigs[0])
 
             gverfers.append(keys[0])
             gdigers.append(diger)
@@ -1185,7 +1185,7 @@ class Hab:
                                       sn=kever.sner.num + 1,
                                       sith=cst,
                                       nsith=nst,
-                                      nkeys=[diger.qb64 for diger in digers],
+                                      ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=kever.wits,
                                       cuts=cuts,
