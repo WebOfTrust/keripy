@@ -782,8 +782,13 @@ class Poller(doing.DoDoer):
             witrec = basing.TopicsRecord(topics=dict())
 
         while self.retry > 0:
-            self.retry = 0
-            client, clientDoer = agenting.httpClient(self.hab, self.witness)
+            self.retry -= 1
+            try:
+                client, clientDoer = agenting.httpClient(self.hab, self.witness)
+            except kering.MissingEntryError as e:
+                traceback.print_exception(e, file=sys.stderr)
+                yield self.tock
+                continue
             self.extend([clientDoer])
 
             topics = dict()
