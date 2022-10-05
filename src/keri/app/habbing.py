@@ -1155,9 +1155,9 @@ class Hab:
         """
         kever = self.kever  # kever.pre == self.pre
         if isith is None:
-            isith = kever.tholder.sith  # use previous sith
+            isith = kever.ntholder.sith  # use prior next sith as defualt
         if nsith is None:
-            nsith = kever.ntholder.sith
+            nsith = isith
         if count is None:
             count = len(kever.verfers)  # use previous count
 
@@ -1172,6 +1172,7 @@ class Hab:
             except IndexError:
                 verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                                             count=count,  # old next is new current
+                                                            isith=isith,
                                                             nsith=nsith,
                                                             temp=self.temp)
 

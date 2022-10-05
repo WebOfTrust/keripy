@@ -32,8 +32,11 @@ def rotate(args):
 
     """
     data = rotating.loadData(args)
-    rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias, bran=args.bran, wits=args.witnesses,
-                         cuts=args.cuts, adds=args.witness_add, nsith=args.nsith, count=args.next_count, toad=args.toad,
+    rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias,
+                         bran=args.bran, wits=args.witnesses,
+                         cuts=args.cuts, adds=args.witness_add,
+                         isith=args.isith, nsith=args.nsith,
+                         count=args.next_count, toad=args.toad,
                          data=data)
 
     doers = [rotDoer]
@@ -47,13 +50,14 @@ class RotateDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, nsith=None, count=None,
+    def __init__(self, name, base, bran, alias, isith=None, nsith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
         Parameters:
             name is human readable str of identifier
+            isith is next signing threshold as int or str hex or list of str weights
             nsith is next signing threshold as int or str hex or list of str weights
             count is int next number of signing keys
             toad is int or str hex of witness threshold after cuts and adds
@@ -63,6 +67,7 @@ class RotateDoer(doing.DoDoer):
        """
 
         self.alias = alias
+        self.isith = isith
         self.nsith = nsith
         self.count = count
         self.toad = toad
@@ -103,7 +108,7 @@ class RotateDoer(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
-        hab.rotate(nsith=self.nsith, count=self.count, toad=self.toad,
+        hab.rotate(isith=self.isith, nsith=self.nsith, count=self.count, toad=self.toad,
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 

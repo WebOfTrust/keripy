@@ -66,7 +66,8 @@ class Counselor(doing.DoDoer):
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
 
-    def rotate(self, ghab, aids, sith, toad, cuts=None, adds=None, data=None):
+    def rotate(self, ghab, aids, isith=None, nsith=None,
+               toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -74,7 +75,10 @@ class Counselor(doing.DoDoer):
         Parameters:
             ghab (Hab): group identifier Hab
             aids (list): qb64 identifier prefixes of participants
-            sith (Optional[int,str])next signing threshold as int or str hex or list of str weights
+            isith (Optional[int,str]) currentsigning threshold as int or str hex
+                 or list of str weights
+            nsith (Optional[int,str])next signing threshold as int or str hex
+                 or list of str weights
             toad (int) or str hex of witness threshold after cuts and adds
             cuts (list) of qb64 pre of witnesses to be removed from witness list
             adds (list) of qb64 pre of witnesses to be added to witness list
@@ -98,8 +102,8 @@ class Counselor(doing.DoDoer):
         pkever = ghab.lhab.kever
         pnkey = pkever.nexter.digs[0]
 
-        rec = basing.RotateRecord(aids=aids, sn=kever.sn+1, sith=sith, toad=toad,
-                    cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
+        rec = basing.RotateRecord(aids=aids, sn=kever.sn+1, isith=isith, nsith=nsith,
+            toad=toad, cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.lhab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
@@ -244,7 +248,8 @@ class Counselor(doing.DoDoer):
             if len(gverfers) != len(rec.aids):
                 continue
 
-            rot = ghab.rotate(isith=rec.sith, toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
+            rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
+                              toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
                               gverfers=gverfers, gdigers=ndigers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
@@ -371,7 +376,8 @@ class Counselor(doing.DoDoer):
             data = dict(
                 aids=rec.aids,
                 sn=rec.sn,
-                sith=rec.sith,
+                isith=rec.isith,
+                nsith=rec.nsith,
                 timestamp=rec.date,
                 toad=rec.toad,
                 cuts=rec.cuts,
@@ -383,7 +389,8 @@ class Counselor(doing.DoDoer):
             data = dict(
                 aids=rec.aids,
                 sn=rec.sn,
-                sith=rec.sith,
+                isith=rec.isith,
+                nsith=rec.nsith,
                 timestamp=rec.date,
                 toad=rec.toad,
                 cuts=rec.cuts,
