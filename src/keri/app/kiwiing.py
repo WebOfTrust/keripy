@@ -220,9 +220,7 @@ class IdentifierEnd(doing.DoDoer):
         """
         hab = self.hby.habByName(alias)
         if hab is None:
-            rep.status = falcon.HTTP_404
-            rep.content_type = f"no identifier for alias {alias}"
-            return
+            raise falcon.HTTPNotFound(description=f"no identifier for alias {alias}")
 
         info = self.info(hab)
 
