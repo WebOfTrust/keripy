@@ -255,7 +255,7 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, isith=sith, nsith=nxtsith, temp=True)
         assert nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
@@ -286,7 +286,11 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = mgr.rotate(pre=pre,
+                                               count=5,
+                                               isith=sith,
+                                               nsith=nxtsith,
+                                               temp=True)
         assert cst == nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
@@ -657,7 +661,7 @@ def test_out_of_order_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5,isith=sith, nsith=nxtsith, temp=True)
         assert cst == sith
         assert nst == [['1/2', '1/2', '1/2'], ['1', '1']] # normalized nxtsith
 
@@ -1251,7 +1255,7 @@ def test_unverified_trans_receipt_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = mgr.rotate(pre=pre, count=5, isith=sith, nsith=nxtsith, temp=True)
         assert cst == sith
         assert nst == [['1/2', '1/2', '1/2'], ['1', '1']]  # normalized nxtsith
 
