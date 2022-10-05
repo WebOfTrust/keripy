@@ -506,7 +506,7 @@ def loadEnds(app, hby, *, tymth=None, default=None):
     app.add_route("/oobi/{aid}/{role}/{eid}", end)
 
 
-def setup(name="who", temp=False, tymth=None, sith=None, count=1,
+def setup(name="who", temp=False, tymth=None, isith=None, count=1,
           remotePort=5621, localPort=5620, webPort=8081):
     """
     Setup and return doers list to run controller
@@ -516,7 +516,7 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     # make hab
-    hab = hby.makeHab(name=name, isith=sith, icount=count)
+    hab = hby.makeHab(name=name, isith=isith, icount=count)
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)

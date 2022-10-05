@@ -36,10 +36,10 @@ isSuccess
 kli interact --name test --alias trans --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 isSuccess
 
-kli rotate --name test --alias trans --next-count 3 --sith 2
+kli rotate --name test --alias trans --next-count 3 --nsith 2
 isSuccess
 
-kli rotate --name test --alias trans --next-count 3 --sith 2
+kli rotate --name test --alias trans --next-count 3 --nsith 2
 isSuccess
 
 # SIGN AND VERIFY ARBITRARY DATA
