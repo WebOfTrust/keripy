@@ -64,7 +64,7 @@ class KiwiServer(doing.DoDoer):
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
 
         serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                 sith=cst,
+                                 isith=cst,
                                  nsith=nst,
                                  ndigs=[diger.qb64 for diger in digers],
                                  toad=cur.toader.num,

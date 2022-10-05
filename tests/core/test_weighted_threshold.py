@@ -40,7 +40,7 @@ def test_weighted():
         assert cst == nst == sith
 
         wesSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                  sith=sith,
+                                  isith=sith,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)

@@ -1924,7 +1924,7 @@ def test_usebaser():
         code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
-                        sith=sith,
+                        isith=sith,
                         ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys])
 
 

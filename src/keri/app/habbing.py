@@ -964,7 +964,7 @@ class Hab:
         if self.delpre:
             serder = eventing.delcept(keys=keys,
                                       delpre=self.delpre,
-                                      sith=cst,
+                                      isith=cst,
                                       nsith=nst,
                                       ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
@@ -972,7 +972,7 @@ class Hab:
                                       cnfg=cnfg, )
         else:
             serder = eventing.incept(keys=keys,
-                                     sith=cst,
+                                     isith=cst,
                                      nsith=nst,
                                      ndigs=[diger.qb64 for diger in digers],
                                      toad=toad,

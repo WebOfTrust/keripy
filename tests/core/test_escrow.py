@@ -42,7 +42,7 @@ def test_partial_signed_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
@@ -621,7 +621,7 @@ def test_out_of_order_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
@@ -836,7 +836,7 @@ def test_unverified_receipt_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
@@ -1111,7 +1111,7 @@ def test_unverified_trans_receipt_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
@@ -1138,7 +1138,7 @@ def test_unverified_trans_receipt_escrow():
 
         # create recepter's inception event
         rsrdr = eventing.incept(keys=[verfer.qb64 for verfer in rverfers],
-                                sith=rsith,
+                                isith=rsith,
                                 nsith=rsith,
                                 ndigs=[diger.qb64 for diger in rdigers],
                                 code=coring.MtrDex.Blake3_256)

@@ -576,7 +576,7 @@ MaxIntThold = 2 ** 32 - 1
 
 def incept(keys,
            *,
-           sith=None,
+           isith=None,
            ndigs=None,
            nsith=None,
            toad=None,
@@ -614,10 +614,10 @@ def incept(keys,
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
 
-    if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+    if isith is None:
+        isith = max(1, ceil(len(keys) / 2))
 
-    tholder = Tholder(sith=sith)
+    tholder = Tholder(sith=isith)
     if tholder.num is not None and tholder.num < 1:
         raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):

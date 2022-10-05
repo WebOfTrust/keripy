@@ -2298,7 +2298,7 @@ def test_multisig_digprefix():
         code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
-                        sith=sith,
+                        isith=sith,
                         ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys])
 
         # create sig counter
