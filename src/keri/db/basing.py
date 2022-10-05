@@ -146,7 +146,8 @@ class HabitatRecord:  # baser.habs
 class RotateRecord:
     aids: list
     sn: Optional[int]
-    sith: Optional[str|list]
+    isith: Optional[str|list]
+    nsith: Optional[str|list]
     toad: Optional[int]
     cuts: Optional[list]
     adds: Optional[list]

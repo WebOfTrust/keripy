@@ -102,7 +102,7 @@ def test_standalone_kli_commands(helpers, capsys):
              }
         ]
 
-    rotate_args = ["rotate", "--name", "test", "--alias", "trans", "--next-count", "3", "--sith", "2"]
+    rotate_args = ["rotate", "--name", "test", "--alias", "trans", "--next-count", "3", "--nsith", "2"]
     args = parser.parse_args(rotate_args)
     assert args.handler is not None
     doers = args.handler(args)

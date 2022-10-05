@@ -111,7 +111,7 @@ def test_weighted():
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
         nxtsith = ["1/2", "1/2", "1/2"]  # 2 of 3 but with weighted threshold
-        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=3, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=3, nsith=nxtsith, temp=True)
         assert nst == nxtsith
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
@@ -158,7 +158,7 @@ def test_weighted():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"], ["1", "1"]]
-        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, isith=sith, nsith=nxtsith, temp=True)
         assert cst == sith
         assert nst == nxtsith
 
@@ -206,7 +206,7 @@ def test_weighted():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
-        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, sith=nxtsith, temp=True)
+        verfers, digers, cst, nst = wesMgr.rotate(pre=wesPre, count=5, isith=sith, nsith=nxtsith, temp=True)
         assert cst == nst == [['1/2', '1/2', '1/2'], ['1', '1']] # normalized nxtsith
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,

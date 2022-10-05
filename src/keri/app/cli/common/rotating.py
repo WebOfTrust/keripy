@@ -4,7 +4,7 @@ from keri import kering
 
 
 def addRotationArgs(parser):
-    parser.add_argument('--sith', '-s', help='signing threshold for the rotation event', default=None,
+    parser.add_argument('--isith', '-s', help='signing threshold for the rotation event', default=None,
                         required=False)
     parser.add_argument('--nsith', '-x', help='signing threshold for the next rotation event', default=None,
                         required=False)

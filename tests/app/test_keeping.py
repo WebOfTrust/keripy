@@ -9,6 +9,7 @@ import os
 import stat
 import json
 from dataclasses import asdict
+from math import ceil
 
 import lmdb
 import pysodium
@@ -1791,7 +1792,90 @@ def test_manager_with_aeid():
 
     """End Test"""
 
+def test_manager_sign_dual_indices():
+    """
+    test Manager signing with dual indices
+    """
+    raw = b'0123456789abcdef'
+    salt = coring.Salter(raw=raw).qb64
 
+
+
+    # the particular serialization does not matter test purposes
+    ser = (b"See ya later Alligator. In a while Crocodile. "
+           b"Not to soon Baboon. That's the plan Toucan. "
+           b"As you wish Jellyfish. Have a nice day Bluejay.")
+
+
+    with keeping.openKS() as keeper:
+
+        manager = keeping.Manager(ks=keeper, salt=salt)
+        assert manager.ks.opened
+        assert manager.pidx == 0
+        assert manager.tier == coring.Tiers.low
+        assert manager.salt == salt
+        assert manager.aeid == ""
+        assert manager.seed == ""
+        assert manager.encrypter == None
+        assert manager.decrypter == None
+
+        # salty algorithm incept
+        stem = 'phlegm'
+        icount = 4
+        ncount =  3
+        # algo default salty
+        verfers, digers, cst, nst = manager.incept(icount=icount,
+                                                   ncount=ncount,
+                                                   salt=salt,
+                                                   stem = 'phlegm',
+                                                   temp=True)
+        assert len(verfers) == icount
+        assert len(digers) == ncount
+        assert cst == f"{max(1, ceil(icount / 2)):x}"
+        assert nst == f"{max(1, ceil(ncount / 2)):x}"
+        assert manager.pidx == 1
+        spre = verfers[0].qb64b  # lookup index in ks for incept key-pairs
+
+        ## Test sign with indices
+        #indices = [3]
+
+        ## Test with pubs list
+        #psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
+        #for siger in psigers:
+            #assert isinstance(siger, coring.Siger)
+        #assert psigers[0].index == indices[0]
+        #psigs = [siger.qb64 for siger in psigers]
+
+        ## Test with verfers list
+        #vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
+        #for siger in vsigers:
+            #assert isinstance(siger, coring.Siger)
+        #assert psigers[0].index == indices[0]
+        #vsigs = [siger.qb64 for siger in vsigers]
+        #assert vsigs == psigs
+
+        #pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
+        #for cigar in pcigars:
+            #assert isinstance(cigar, coring.Cigar)
+        #vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
+        #psigs = [cigar.qb64 for cigar in pcigars]
+        #vsigs = [cigar.qb64 for cigar in vcigars]
+        #assert psigs == vsigs
+
+
+        ## salty algorithm rotate
+        #oldpubs = [verfer.qb64 for verfer in verfers]
+        #verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
+        #assert len(verfers) == 1
+        #assert len(digers) == 1
+        #assert cst == '1'
+        #assert nst == '1'
+
+
+
+    assert not os.path.exists(manager.ks.path)
+    assert not manager.ks.opened
+    """End Test"""
 
 if __name__ == "__main__":
     test_creator()

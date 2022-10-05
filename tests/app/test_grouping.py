@@ -88,11 +88,11 @@ def test_counselor():
 
         # Partial rotation
         aids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, aids=aids, sith='2', toad=0, cuts=list(), adds=list())
+        counselor.rotate(ghab=ghab, aids=aids, nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.aids == aids
-        assert rec.sith == '2'
+        assert rec.nsith == '2'
         assert rec.toad == 0
 
         counselor.processEscrows()  # process escrows to get witness-less event to next step
@@ -460,7 +460,8 @@ def test_pending_events():
         rec = basing.RotateRecord(
             aids=[hab.pre],
             sn=0,
-            sith=["1/2, 1/2, 1/2"],
+            isith=["1/2, 1/2, 1/2"],
+            nsith=["1/2, 1/2, 1/2"],
             toad=3,
             cuts=[],
             adds=[],
@@ -475,7 +476,8 @@ def test_pending_events():
                            'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
                            'cuts': [],
                            'data': [{'a': 1}],
-                           'sith': ['1/2, 1/2, 1/2'],
+                           'isith': ['1/2, 1/2, 1/2'],
+                           'nsith': ['1/2, 1/2, 1/2'],
                            'sn': 0,
                            'timestamp': '2021-06-09T17:35:54.169967+00:00',
                            'toad': 3}
@@ -483,7 +485,8 @@ def test_pending_events():
         rec = basing.RotateRecord(
             aids=[hab.pre],
             sn=3,
-            sith="1",
+            isith=['1/2, 1/2, 1/2'],
+            nsith="1",
             toad=1,
             cuts=[],
             adds=[],
@@ -497,7 +500,8 @@ def test_pending_events():
                            'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
                            'cuts': [],
                            'data': [],
-                           'sith': '1',
+                           'isith': ['1/2, 1/2, 1/2'],
+                           'nsith': '1',
                            'sn': 3,
                            'timestamp': '2021-06-09T17:35:54.169967+00:00',
                            'toad': 1}

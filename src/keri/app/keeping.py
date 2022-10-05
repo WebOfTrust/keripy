@@ -1123,7 +1123,7 @@ class Manager:
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     sith=None, dcode=coring.MtrDex.Blake3_256,
+                     isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
@@ -1144,7 +1144,9 @@ class Manager:
             count (int): count of next public keys when icodes not provided
             code (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            sith (Union[int, str, list]): next signing threshold as:
+            isith (Union[int, str, list]): current signing threshold as:
+                int, str hex, or list of weights
+            nsith (Union[int, str, list]): next signing threshold as:
                 int, str hex, or list of weights
             dcode i(str): derivation code qb64 of digers to make next xor digest.
                 Default is MtrDex.Blake3_256
@@ -1187,7 +1189,11 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold (cst)
+        #cst = ps.new.st  # get new current signing threshold (cst)
+
+        if isith is None:
+            isith = "{:x}".format(max(0, math.ceil(len(verfers) / 2)))
+        cst = coring.Tholder(sith=isith).sith  # next signing threshold
 
         salt = pp.salt
         if salt:
@@ -1215,9 +1221,9 @@ class Manager:
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
-        if sith is None:
-            sith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
-        nst = coring.Tholder(sith=sith).sith  # next signing threshold
+        if nsith is None:
+            nsith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
@@ -1600,65 +1606,6 @@ class Manager:
             if erase:
                 for pub in old.pubs:  # remove prior old prikeys not current old
                     self.ks.pris.rem(pub)
-
-        return (verfers, digers, cst, nst)
-
-
-    def replayOld(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
-        """
-        Returns duple (verfers, digers) associated with public key set from
-        the key sequence for identifier prefix pre at rotation index ridx stored
-        in db .pubs. Inception is at ridx == 0.
-        Enables replay of preexisting public key sequence.
-        In returned duple:
-            verfers is list of current public key verfers
-                public key is verfer.qb64
-            digers is list of next public key digers
-                digest to xor is diger.raw
-
-        If key sequence at ridx does already exist in .pubs database for pre then
-            raises ValueError.
-        If  preexisting pubs for pre exist but .ridx is two large for preexisting
-            pubs then raises IndexError.
-
-        Parameters:
-            pre (str): fully qualified qb64 identifier prefix
-            ridx (int): rotation index
-            code (str): derivation code for digers. Default is MtrDex.Blake3_256
-            erase (bool): True means erase old private keys made stale by rotation
-
-        """
-        oldps = None
-        if ridx - 1 >= 0:
-            oldps = self.ks.pubs.get(riKey(pre, ridx-1))
-
-        newps = self.ks.pubs.get(riKey(pre, ridx))
-        nxtps = self.ks.pubs.get(riKey(pre, ridx+1))
-
-        if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
-            if self.ks.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
-                # raises IndexError to indicate replay at ridx past end but valid
-                # next keys at ridx
-                raise IndexError("Invalid replay attempt at ridx={} for pubs of "
-                                 "pre={}.".format(ridx, pre))
-            else:  # past replay at ridx and no next keys at ridx
-                # raise ValueError to indicate replay at ridx is past end of replay
-                # and no valid next keys at ridx
-                raise ValueError("Invalid replay at ridx={} missing pubs for "
-                                 "pre={}.".format(ridx, pre))
-
-        if erase and oldps:
-            for pub in oldps.pubs:  # remove old prikeys
-                self.ks.pris.rem(pub)
-
-        verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
-        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
-
-        csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
-        cst = coring.Tholder(sith=csith).sith
-
-        nsith = "{:x}".format(max(0, math.ceil(len(digers) / 2)))
-        nst = coring.Tholder(sith=nsith).sith
 
         return (verfers, digers, cst, nst)
 
