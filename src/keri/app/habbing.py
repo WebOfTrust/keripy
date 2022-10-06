@@ -527,12 +527,12 @@ class Habery:
             if len(keys) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
                                                 .format(aid, len(keys)))
-            nkeys = kever.nexter.digs
-            if len(nkeys) > 1:
+            ndigs = kever.nexter.digs
+            if len(ndigs) > 1:
                 raise kering.ConfigurationError("Identifier must have only one nexy key commitment, {} has {}"
-                                                .format(aid, len(nkeys)))
+                                                .format(aid, len(ndigs)))
 
-            diger = coring.Diger(qb64=nkeys[0])
+            diger = coring.Diger(qb64=ndigs[0])
 
             gverfers.append(keys[0])
             gdigers.append(diger)
@@ -964,17 +964,17 @@ class Hab:
         if self.delpre:
             serder = eventing.delcept(keys=keys,
                                       delpre=self.delpre,
-                                      sith=cst,
+                                      isith=cst,
                                       nsith=nst,
-                                      nkeys=[diger.qb64 for diger in digers],
+                                      ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=wits,
                                       cnfg=cnfg, )
         else:
             serder = eventing.incept(keys=keys,
-                                     sith=cst,
+                                     isith=cst,
                                      nsith=nst,
-                                     nkeys=[diger.qb64 for diger in digers],
+                                     ndigs=[diger.qb64 for diger in digers],
                                      toad=toad,
                                      wits=wits,
                                      cnfg=cnfg,
@@ -1183,9 +1183,9 @@ class Hab:
                                       keys=[verfer.qb64 for verfer in verfers],
                                       dig=kever.serder.saider.qb64,
                                       sn=kever.sner.num + 1,
-                                      sith=cst,
+                                      isith=cst,
                                       nsith=nst,
-                                      nkeys=[diger.qb64 for diger in digers],
+                                      ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=kever.wits,
                                       cuts=cuts,
@@ -1196,9 +1196,9 @@ class Hab:
                                      keys=[verfer.qb64 for verfer in verfers],
                                      dig=kever.serder.saider.qb64,
                                      sn=kever.sner.num + 1,
-                                     sith=cst,
+                                     isith=cst,
                                      nsith=nst,
-                                     nkeys=[diger.qb64 for diger in digers],
+                                     ndigs=[diger.qb64 for diger in digers],
                                      toad=toad,
                                      wits=kever.wits,
                                      cuts=cuts,

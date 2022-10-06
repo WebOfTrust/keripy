@@ -30,7 +30,7 @@ def test_direct_mode_bob_eve_demo():
 
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
@@ -42,7 +42,7 @@ def test_direct_mode_bob_eve_demo():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
@@ -161,7 +161,7 @@ def test_direct_mode_sam_eve_demo():
 
     # sam inception transferable (nxt digest not empty)
     samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
@@ -173,7 +173,7 @@ def test_direct_mode_sam_eve_demo():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
@@ -444,7 +444,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         # confirm that makeHab works the same as manual setup
         # sam inception transferable (nxt digest not empty)
         serder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
-                                     nkeys=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
+                                     ndigs=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
                                             code=coring.MtrDex.Blake3_256)
 
         assert samHab.iserder.said == serder.said  # same setup
@@ -484,7 +484,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         # confirm that makeHab works same as manual setup
         # cam inception transferable (nxt digest not empty)
         serder = eventing.incept(keys=[camSigners[0].verfer.qb64],
-                                        nkeys=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
+                                        ndigs=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
                                         code=coring.MtrDex.Blake3_256)
 
         assert camHab.iserder.said == serder.said  # same setup

@@ -42,9 +42,9 @@ def test_partial_signed_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
@@ -260,10 +260,10 @@ def test_partial_signed_escrow():
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=kvr.serder.saider.qb64,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                sn=kvr.sn+1,
                                data=[])
 
@@ -295,10 +295,10 @@ def test_partial_signed_escrow():
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=kvr.serder.saider.qb64,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                sn=kvr.sn+1,
                                data=[])
 
@@ -378,7 +378,7 @@ def test_missing_delegator_escrow():
         # Setup Bob by creating inception event
         verfers, digers, cst, nst = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                  nkeys=[diger.qb64 for diger in digers],
+                                  ndigs=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
@@ -408,7 +408,7 @@ def test_missing_delegator_escrow():
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobPre,
-                                   nkeys=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers])
 
         delPre = delSrdr.ked["i"]
 
@@ -522,7 +522,7 @@ def test_missing_delegator_escrow():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.saider.qb64,
                                    sn=bobDelK.sn+1,
-                                   nkeys=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers])
 
         # Now create delegating interaction event
         seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
@@ -621,9 +621,9 @@ def test_out_of_order_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
@@ -667,10 +667,10 @@ def test_out_of_order_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                sn=2,
                                data=[])
 
@@ -836,9 +836,9 @@ def test_unverified_receipt_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
@@ -946,10 +946,10 @@ def test_unverified_receipt_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                sn=2,
                                data=[])
 
@@ -1111,9 +1111,9 @@ def test_unverified_trans_receipt_escrow():
         assert cst == nst == sith
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
@@ -1138,9 +1138,9 @@ def test_unverified_trans_receipt_escrow():
 
         # create recepter's inception event
         rsrdr = eventing.incept(keys=[verfer.qb64 for verfer in rverfers],
-                                sith=rsith,
+                                isith=rsith,
                                 nsith=rsith,
-                                nkeys=[diger.qb64 for diger in rdigers],
+                                ndigs=[diger.qb64 for diger in rdigers],
                                 code=coring.MtrDex.Blake3_256)
 
         rpre = rsrdr.ked["i"]
@@ -1205,10 +1205,10 @@ def test_unverified_trans_receipt_escrow():
 
         rsrdr = eventing.rotate(pre=rpre,
                                 keys=[verfer.qb64 for verfer in rverfers],
-                                sith=rsith,
+                                isith=rsith,
                                 dig=ricpdig,
                                 nsith=rsith,
-                                nkeys=[diger.qb64 for diger in rdigers],
+                                ndigs=[diger.qb64 for diger in rdigers],
                                 sn=1,
                                 data=[])
 
@@ -1261,10 +1261,10 @@ def test_unverified_trans_receipt_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
-                               nkeys=[diger.qb64 for diger in digers],
+                               ndigs=[diger.qb64 for diger in digers],
                                sn=2,
                                data=[])
 

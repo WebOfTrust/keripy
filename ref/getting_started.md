@@ -1,5 +1,5 @@
 # Getting Started
-This guide is meant to be a brief introduction for how to use keripy.  For a comprehensive 
+This guide is meant to be a brief introduction for how to use keripy.  For a comprehensive
 overview of the protocol please refer to the [whitepaper](https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/KERI_WP_2.x.web.pdf)
 or view other KERI related resources on the [KERI website](https://keri.one/keri-resources/).
 
@@ -64,7 +64,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -98,7 +98,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -109,15 +109,15 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, ndigs=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
 ```
 
 ### Self-Addressing
-A self addressing identifier allows inception configuration data to be included in the inception statement. 
-The inception statement is cryptographically bound to the identifier by replacing the public key in the 
+A self addressing identifier allows inception configuration data to be included in the inception statement.
+The inception statement is cryptographically bound to the identifier by replacing the public key in the
 identifier prefix with a content digest (hash) of the inception statement and the incepting public key.
 
 #### Inception
@@ -147,8 +147,8 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 
     # ----------Abandoned Self-Addressing Identifier(Non Transferable)----------
-    # Has a transferable derivation code, but contains an empty pre-rotation key.  Essentially the identifier has been 
-    # abandoned.  This example is for illustration purposes only you should never need to abandon a self-addressing 
+    # Has a transferable derivation code, but contains an empty pre-rotation key.  Essentially the identifier has been
+    # abandoned.  This example is for illustration purposes only you should never need to abandon a self-addressing
     # identifier on inception.  Normally this is done with a rotation.
     salt = coring.Salter().qb64
 
@@ -182,7 +182,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -190,8 +190,8 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 #### Rotation
 
 ##### Non Transferable
-In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a 
-non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning 
+In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a
+non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning
 your identifier.
 
 ##### Transferable
@@ -216,7 +216,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64],
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64],
                            code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
@@ -228,7 +228,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, ndigs=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -287,7 +287,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfer.qb64 for verfer in verfers]
 
-    srdr = eventing.incept(keys=keys, nkeys=[diger.qb64 for diger in digers], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
+    srdr = eventing.incept(keys=keys, ndigs=[diger.qb64 for diger in digers], code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -295,8 +295,8 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 #### Rotation
 
 ##### Non Transferable
-In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a 
-non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning 
+In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a
+non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning
 your identifier.
 
 ##### Transferable
@@ -322,7 +322,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfer.qb64 for verfer in verfers]
 
-    srdr = eventing.incept(keys=keys, nkeys=[diger.qb64 for diger in digers],
+    srdr = eventing.incept(keys=keys, ndigs=[diger.qb64 for diger in digers],
                            code=coring.MtrDex.Blake3_256)  # code marks identifier as self-addressing
     print(srdr.raw.decode("utf-8"))
     print()
@@ -334,7 +334,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfer.qb64 for verfer in verfers]
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, ndigs=[digers[0].qb64], sn=1)
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -354,8 +354,8 @@ This type is not supported by KERI
 #### Rotation
 
 ##### Non Transferable
-In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a 
-non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning 
+In order to rotate, your identifier must be transferable.  You cannot change a transferable identifier to a
+non transferable identifier after an inception event. You can however rotate to a null key(s) effectively abandoning
 your identifier.
 
 ##### Transferable
@@ -364,8 +364,8 @@ your identifier.
 There are currently two types of messages the KERI protocol uses Events and Receipts.
 
 ### Events
-Events contain information about a controllers identifier and it's current or past key state. 
-See [KID0003](https://github.com/WebOfTrust/keri/blob/master/kids/kid0003.md#element-labels) for 
+Events contain information about a controllers identifier and it's current or past key state.
+See [KID0003](https://github.com/WebOfTrust/keri/blob/master/kids/kid0003.md#element-labels) for
 explanations of the different keys meanings.  There are several types of event messages including:
 
 * inception
@@ -406,11 +406,11 @@ explanations of the different keys meanings.  There are several types of event m
     ```
 * delegated inception
     ```json
-    
+
     ```
 * delegated rotation
     ```json
-    
+
     ```
 * interaction
     ```json
@@ -425,12 +425,12 @@ explanations of the different keys meanings.  There are several types of event m
     ```
 
 ### Receipts
-Receipts are used to confirm and or prove that a witness or validator received an event message.  The receipt is signed 
-by the validator or witness and can be used to detect duplicity if the witness or validator ever tries to claim it never 
+Receipts are used to confirm and or prove that a witness or validator received an event message.  The receipt is signed
+by the validator or witness and can be used to detect duplicity if the witness or validator ever tries to claim it never
 saw the event. There are two types of receipts:
 * Witness Receipts
     ```json
-    
+
     ```
 * Validator Receipts
     ```json
@@ -461,7 +461,7 @@ Indirect mode needs supporting infrastructure like witness and validators to fun
 ## Event Life Cycle
 
 #### Creating An Inception Event Message
-Creating an event message involves appending count code prefixes and signatures to an event object.  
+Creating an event message involves appending count code prefixes and signatures to an event object.
 There is a function that will handle all this for you called messagize().
 ```python
 import keri.core.eventing as eventing
@@ -478,7 +478,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     verfers, digers, _, _ = mgr.incept(icount=1, ncount=1)
 
     keys = [verfers[0].qb64]
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
     # Create the message
@@ -489,7 +489,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
 #### Signing An Inception Event
 In order for an event to be valid it must be signed.  The Manager object can be used to sign an event. This will create
-signatures, but they are not yet attached to the event.  See the section below for how to attach them to the event by 
+signatures, but they are not yet attached to the event.  See the section below for how to attach them to the event by
 creating an event message.
 
 ```python
@@ -508,7 +508,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)
 
     # Create Signatures
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
@@ -532,7 +532,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)
 
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -569,7 +569,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -581,7 +581,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     identifier = srdr.pre
     keys = [verfers[0].qb64]
     icpDigest = srdr.saider.qb64
-    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, nkeys=[digers[0].qb64], sn=1)  # Create rotation event
+    srdr = eventing.rotate(pre=identifier, keys=keys, dig=icpDigest, ndigs=[digers[0].qb64], sn=1)  # Create rotation event
 
     print(srdr.raw.decode("utf-8"))
     print()
@@ -590,7 +590,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 #### Interaction
 
 #### Abandonment
-Abandonment or revocation is a subset of rotation.  KERI events always include a pre rotated key.  To abandon an 
+Abandonment or revocation is a subset of rotation.  KERI events always include a pre rotated key.  To abandon an
 identifier a rotation event is created and the pre rotated key is set to an empty string or null.
 
 ```python
@@ -609,7 +609,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
 
     keys = [verfers[0].qb64]
 
-    srdr = eventing.incept(keys=keys, nkeys=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
+    srdr = eventing.incept(keys=keys, ndigs=[digers[0].qb64], code=coring.MtrDex.Ed25519)  # code marks this identifier as basic
 
     print(srdr.raw.decode("utf-8"))
     print()

@@ -30,7 +30,7 @@ def test_directing_basic():
 
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
@@ -43,7 +43,7 @@ def test_directing_basic():
 
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                nkeys=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
+                                ndigs=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]

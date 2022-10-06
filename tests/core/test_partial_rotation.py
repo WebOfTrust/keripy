@@ -21,17 +21,17 @@ def test_partial_rotation():
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:
 
-        nkeys = [coring.Diger(ser=signers[1].verfer.qb64b).qb64]
+        ndigs = [coring.Diger(ser=signers[1].verfer.qb64b).qb64]
 
         # raises ValueError because nsith 2 is invalud for 1 nkey
         with pytest.raises(ValueError):
             _ = eventing.incept(keys=[signers[0].verfer.qb64],
                                 nsith='2',
-                                nkeys=nkeys,
+                                ndigs=ndigs,
                                 code=coring.MtrDex.Blake3_256)
 
         # 5 keys for the next rotation
-        nkeys = [
+        ndigs = [
             coring.Diger(ser=signers[1].verfer.qb64b).qb64,
             coring.Diger(ser=signers[2].verfer.qb64b).qb64,
             coring.Diger(ser=signers[3].verfer.qb64b).qb64,
@@ -41,7 +41,7 @@ def test_partial_rotation():
 
         serder = eventing.incept(keys=[signers[0].verfer.qb64],
                                  nsith='2',  # next signed event must satisfy this along with the new `kt`
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  code=coring.MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
@@ -57,7 +57,7 @@ def test_partial_rotation():
             signers[4].verfer.qb64,
             signers[5].verfer.qb64
         ]
-        nkeys = [
+        ndigs = [
             coring.Diger(ser=signers[6].verfer.qb64b).qb64,
             coring.Diger(ser=signers[7].verfer.qb64b).qb64,
             coring.Diger(ser=signers[8].verfer.qb64b).qb64,
@@ -65,11 +65,11 @@ def test_partial_rotation():
             coring.Diger(ser=signers[10].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='3',
+                                 isith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='4',
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  sn=1)
 
         # sign serialization
@@ -92,7 +92,7 @@ def test_partial_rotation():
             signers[7].verfer.qb64,
             signers[8].verfer.qb64
         ]
-        nkeys = [
+        ndigs = [
             coring.Diger(ser=signers[11].verfer.qb64b).qb64,
             coring.Diger(ser=signers[12].verfer.qb64b).qb64,
             coring.Diger(ser=signers[13].verfer.qb64b).qb64,
@@ -100,11 +100,11 @@ def test_partial_rotation():
             coring.Diger(ser=signers[15].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='3',
+                                 isith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='2',
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  sn=2)
 
         # sign serialization
@@ -120,7 +120,7 @@ def test_partial_rotation():
     with openDB(name="controller") as db:
 
         # 5 keys for the next rotation
-        nkeys = [
+        ndigs = [
             coring.Diger(ser=signers[1].verfer.qb64b).qb64,
             coring.Diger(ser=signers[2].verfer.qb64b).qb64,
             coring.Diger(ser=signers[3].verfer.qb64b).qb64,
@@ -130,7 +130,7 @@ def test_partial_rotation():
 
         serder = eventing.incept(keys=[signers[0].verfer.qb64],
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  code=coring.MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
@@ -146,7 +146,7 @@ def test_partial_rotation():
             signers[4].verfer.qb64,
             signers[5].verfer.qb64
         ]
-        nkeys = [
+        ndigs = [
             coring.Diger(ser=signers[11].verfer.qb64b).qb64,
             coring.Diger(ser=signers[12].verfer.qb64b).qb64,
             coring.Diger(ser=signers[13].verfer.qb64b).qb64,
@@ -154,11 +154,11 @@ def test_partial_rotation():
             coring.Diger(ser=signers[15].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith=["1/2", "1/2", "1/3"],
+                                 isith=["1/2", "1/2", "1/3"],
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  sn=1)
 
         # sign serialization
@@ -180,13 +180,13 @@ def test_partial_rotation():
             signers[13].verfer.qb64,
             signers[14].verfer.qb64,
         ]
-        nkeys = []
+        ndigs = []
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='2',
+                                 isith='2',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='0',
-                                 nkeys=nkeys,
+                                 ndigs=ndigs,
                                  sn=2)
 
         # sign serialization

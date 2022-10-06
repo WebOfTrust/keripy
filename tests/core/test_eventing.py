@@ -698,7 +698,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     with pytest.raises(DerivationError):
         # non-empty nxt with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, nkeys=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"])
 
     with pytest.raises(DerivationError):
         # non-empty witnesses with non-transferable code
@@ -735,7 +735,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
@@ -761,7 +761,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
@@ -787,7 +787,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, nkeys=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -812,7 +812,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, nkeys=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -842,7 +842,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -871,7 +871,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=keys2, sn=1, intive=True)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -921,7 +921,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
 
     # Receipt  transferable identifier
-    serderA = incept(keys=keys0, nkeys=nxt1, code=MtrDex.Blake3_256)
+    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)
     assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
                         b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
                         b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
@@ -953,7 +953,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     nxtD = nexterD.digs  # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
-    serderD = delcept(keys=keysD, delpre=delpre, nkeys=nxtD)
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
     pre = serderD.ked["i"]
     assert serderD.ked["i"] == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
     assert serderD.ked["s"] == '0'
@@ -983,7 +983,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       keys=keysR,
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
-                      nkeys=nxtR)
+                      ndigs=nxtR)
 
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
@@ -1109,7 +1109,7 @@ def test_state(mockHelpingNowUTC):
                     keys=keys,
                     eevt=eevt,
                     sith=sith,
-                    nkeys=nxt,
+                    ndigs=nxt,
                     toad=toad,
                     wits=wits,
                     )
@@ -1246,7 +1246,7 @@ def test_state(mockHelpingNowUTC):
                     keys=keys,
                     eevt=eevt,
                     sith=sith,
-                    nkeys=nxt,
+                    ndigs=nxt,
                     toad=toad,
                     wits=wits,
                     dpre=preD
@@ -1951,7 +1951,7 @@ def test_keyeventsequence_0():
         nexter1 = coring.Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [nexter1.qb64]  # transferable so nxt is not empty
         assert nxt1 == ['EIQsSW4KMrLzY1HQI9H_XxY6MyzhaFFXhG6fdBb5Wxta']
-        serder0 = incept(keys=keys0, nkeys=nxt1)
+        serder0 = incept(keys=keys0, ndigs=nxt1)
         pre = serder0.ked["i"]
         event_digs.append(serder0.said)
         assert serder0.ked["i"] == signers[0].verfer.qb64
@@ -1982,7 +1982,7 @@ def test_keyeventsequence_0():
         nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
         assert nxt2 == ['EHuvLs1hmwxo4ImDoCpaAermYVQhiPsPDNaZsz4bcgko']
-        serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=nxt2, sn=1)
+        serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
         event_digs.append(serder1.said)
         assert serder1.ked["i"] == pre
         assert serder1.ked["s"] == '1'
@@ -2008,7 +2008,7 @@ def test_keyeventsequence_0():
         keys3 = [signers[3].verfer.qb64]
         nexter3 = coring.Diger(ser=signers[3].verfer.qb64b)
         nxt3 = [nexter3.qb64]  # transferable so nxt is not empty
-        serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, nkeys=nxt3, sn=2)
+        serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, ndigs=nxt3, sn=2)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
         assert serder2.ked["s"] == '2'
@@ -2071,7 +2071,7 @@ def test_keyeventsequence_0():
         keys4 = [signers[4].verfer.qb64]
         nexter4 = coring.Diger(ser=signers[4].verfer.qb64b)
         nxt4 = [nexter4.qb64]  # transferable so nxt is not empty
-        serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, nkeys=nxt4, sn=5)
+        serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, ndigs=nxt4, sn=5)
         event_digs.append(serder5.said)
         assert serder5.ked["i"] == pre
         assert serder5.ked["s"] == '5'
@@ -2149,7 +2149,7 @@ def test_keyeventsequence_0():
         keys5 = [signers[5].verfer.qb64]
         nexter5 = coring.Diger(ser=signers[5].verfer.qb64b)
         nxt5 = [nexter4.qb64]  # transferable so nxt is not empty
-        serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, nkeys=nxt5, sn=8)
+        serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, ndigs=nxt5, sn=8)
         assert serder8.ked["i"] == pre
         assert serder8.ked["s"] == '8'
         assert serder8.ked["p"] == serder7.said
@@ -2198,7 +2198,7 @@ def test_keyeventsequence_1():
         nexter1 = coring.Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [nexter1.qb64]  # transferable so nxt is not empty
         cnfg = [TraitDex.EstOnly]  # EstOnly
-        serder0 = incept(keys=keys0, nkeys=nxt1, cnfg=cnfg)
+        serder0 = incept(keys=keys0, ndigs=nxt1, cnfg=cnfg)
         event_digs.append(serder0.said)
         pre = serder0.ked["i"]
         assert serder0.ked["i"] == signers[0].verfer.qb64
@@ -2238,7 +2238,7 @@ def test_keyeventsequence_1():
         # compute nxt digest from keys2  but from event0
         nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
-        serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, nkeys=nxt2, sn=1)
+        serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
         assert serder2.ked["s"] == '1'
@@ -2298,8 +2298,8 @@ def test_multisig_digprefix():
         code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
-                        sith=sith,
-                        nkeys=[coring.Diger(ser=sig).qb64 for sig in nxtkeys])
+                        isith=sith,
+                        ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys])
 
         # create sig counter
         count = len(keys)
@@ -2333,9 +2333,9 @@ def test_multisig_digprefix():
         nxtkeys = [signers[5].verfer.qb64b, signers[6].verfer.qb64b, signers[7].verfer.qb64b]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
-                        sith=sith,
+                        isith=sith,
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=sig).qb64 for sig in nxtkeys],
+                        ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys],
                         sn=1)
         # create sig counter
         count = len(keys)
@@ -2387,7 +2387,7 @@ def test_multisig_digprefix():
         keys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
-                        sith="2",
+                        isith="2",
                         dig=kever.serder.saider.qb64,
                         sn=4)
         # create sig counter
@@ -2437,7 +2437,7 @@ def test_recovery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[esn].verfer.qb64],
-                        nkeys=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64])
 
         assert sn == int(serder.ked["s"], 16) == 0
 
@@ -2460,7 +2460,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
 
         event_digs.append(serder.said)
@@ -2502,7 +2502,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -2582,7 +2582,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=event_digs[sn - 1],
-                        nkeys=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -2688,7 +2688,7 @@ def test_receipt():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[coeSigners[esn].verfer.qb64],
-                        nkeys=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64])
 
         assert sn == int(serder.ked["s"], 16) == 0
         coepre = serder.ked["i"]
@@ -2801,7 +2801,7 @@ def test_receipt():
         serder = rotate(pre=coeKever.prefixer.qb64,
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
 
         event_digs.append(serder.said)
@@ -2848,7 +2848,7 @@ def test_receipt():
         serder = rotate(pre=coeKever.prefixer.qb64,
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.saider.qb64,
-                        nkeys=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -2979,7 +2979,7 @@ def test_direct_mode():
 
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
-                           nkeys=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
@@ -3012,7 +3012,7 @@ def test_direct_mode():
 
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
-                           nkeys=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
@@ -3192,7 +3192,7 @@ def test_direct_mode():
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeSigners[cesn].verfer.qb64],
                            dig=coeKever.serder.saider.qb64,
-                           nkeys=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
@@ -3439,7 +3439,7 @@ def test_direct_mode_cbor_mgpk():
 
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
-                           nkeys=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
                            kind=Serials.cbor)
 
@@ -3471,7 +3471,7 @@ def test_direct_mode_cbor_mgpk():
 
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
-                           nkeys=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
                            kind=Serials.mgpk)
 
@@ -3654,7 +3654,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeSigners[cesn].verfer.qb64],
                            dig=coeKever.serder.saider.qb64,
-                           nkeys=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn,
                            kind=Serials.cbor)
         coe_event_digs.append(coeSerder.said)
