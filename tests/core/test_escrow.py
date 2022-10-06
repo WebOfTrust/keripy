@@ -260,7 +260,7 @@ def test_partial_signed_escrow():
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=kvr.serder.saider.qb64,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -295,7 +295,7 @@ def test_partial_signed_escrow():
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=kvr.serder.saider.qb64,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -667,7 +667,7 @@ def test_out_of_order_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -946,7 +946,7 @@ def test_unverified_receipt_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -1205,7 +1205,7 @@ def test_unverified_trans_receipt_escrow():
 
         rsrdr = eventing.rotate(pre=rpre,
                                 keys=[verfer.qb64 for verfer in rverfers],
-                                sith=rsith,
+                                isith=rsith,
                                 dig=ricpdig,
                                 nsith=rsith,
                                 ndigs=[diger.qb64 for diger in rdigers],
@@ -1261,7 +1261,7 @@ def test_unverified_trans_receipt_escrow():
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
-                               sith=sith,
+                               isith=sith,
                                dig=ixndig,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],

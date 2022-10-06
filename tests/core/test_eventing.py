@@ -2333,7 +2333,7 @@ def test_multisig_digprefix():
         nxtkeys = [signers[5].verfer.qb64b, signers[6].verfer.qb64b, signers[7].verfer.qb64b]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
-                        sith=sith,
+                        isith=sith,
                         dig=kever.serder.saider.qb64,
                         ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys],
                         sn=1)
@@ -2387,7 +2387,7 @@ def test_multisig_digprefix():
         keys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
-                        sith="2",
+                        isith="2",
                         dig=kever.serder.saider.qb64,
                         sn=4)
         # create sig counter

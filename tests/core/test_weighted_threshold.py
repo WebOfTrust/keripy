@@ -116,7 +116,7 @@ def test_weighted():
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
-                                  sith=sith,
+                                  isith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
@@ -164,7 +164,7 @@ def test_weighted():
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
-                                  sith=sith,
+                                  isith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
@@ -211,7 +211,7 @@ def test_weighted():
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
-                                  sith=sith,
+                                  isith=sith,
                                   dig=wesK.serder.saider.qb64,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],

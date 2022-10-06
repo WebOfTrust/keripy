@@ -65,7 +65,7 @@ def test_partial_rotation():
             coring.Diger(ser=signers[10].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='3',
+                                 isith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='4',
@@ -100,7 +100,7 @@ def test_partial_rotation():
             coring.Diger(ser=signers[15].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='3',
+                                 isith='3',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='2',
@@ -154,7 +154,7 @@ def test_partial_rotation():
             coring.Diger(ser=signers[15].verfer.qb64b).qb64
         ]
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith=["1/2", "1/2", "1/3"],
+                                 isith=["1/2", "1/2", "1/3"],
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
@@ -182,7 +182,7 @@ def test_partial_rotation():
         ]
         ndigs = []
         rotser = eventing.rotate(pre=kever.prefixer.qb64,
-                                 sith='2',
+                                 isith='2',
                                  keys=keys,
                                  dig=kever.serder.saider.qb64,
                                  nsith='0',

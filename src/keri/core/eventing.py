@@ -737,7 +737,7 @@ def rotate(pre,
            *,
            ilk=Ilks.rot,
            sn=1,
-           sith=None,
+           isith=None,
            ndigs=None,
            nsith=None,
            toad=None,
@@ -782,10 +782,10 @@ def rotate(pre,
     if sner.num < 1:  # sn for rotate must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for rot or drt.")
 
-    if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+    if isith is None:
+        isith = max(1, ceil(len(keys) / 2))
 
-    tholder = Tholder(sith=sith)
+    tholder = Tholder(sith=isith)
     if tholder.num is not None and tholder.num < 1:
         raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
     if tholder.size > len(keys):
