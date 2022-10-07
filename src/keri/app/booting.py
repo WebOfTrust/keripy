@@ -9,12 +9,14 @@ import string
 
 import falcon
 import hio.core.tcp
+import pysodium
 from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.help import decking
 
 from keri.app import specing, configing, habbing, kiwiing, httping, keeping, oobiing
+from keri.core import coring
 from keri.vdr import credentialing
 
 DEFAULT_PASSCODE_SIZE = 21
@@ -268,7 +270,11 @@ class BootEnd(doing.DoDoer):
         name = body["name"]
 
         kwa = dict()
-        kwa["salt"] = body["salt"] if "salt" in body else None
+        if "salt" in body:
+            kwa["salt"] = body["salt"]
+        else:
+            kwa["salt"] = coring.Salter(raw=pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)).qb64
+
         kwa["bran"] = bran
         kwa["aeid"] = body["aeid"] if "aeid" in body else None
         kwa["seed"] = body["seed"] if "seed" in body else None
