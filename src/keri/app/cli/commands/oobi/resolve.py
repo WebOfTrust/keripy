@@ -9,7 +9,7 @@ from hio import help
 from hio.base import doing
 
 import keri.app.oobiing
-from keri.app import habbing
+from keri.app import habbing, oobiing
 from keri.app.cli.common import existing
 from keri.db import basing
 from keri.end import ending
@@ -71,7 +71,8 @@ class OobiDoer(doing.DoDoer):
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
         self.obi = keri.app.oobiing.Oobiery(hby=self.hby)
-        doers = [self.hbyDoer, *self.obi.doers, doing.doify(self.waitDo)]
+        self.authn = oobiing.Authenticator(hby=self.hby)
+        doers = [self.hbyDoer, doing.doify(self.waitDo)]
 
         super(OobiDoer, self).__init__(doers=doers)
 
@@ -91,10 +92,13 @@ class OobiDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        self.extend(self.obi.doers)
+        self.extend(self.authn.doers)
+
         while not self.obi.hby.db.roobi.get(keys=(self.oobi,)):
             yield 0.25
 
         obr = self.obi.hby.db.roobi.get(keys=(self.oobi,))
         print(self.oobi, obr.state)
 
-        self.remove([self.hbyDoer, *self.obi.doers])
+        self.remove([self.hbyDoer, *self.obi.doers, *self.authn.doers])

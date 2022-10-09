@@ -414,7 +414,7 @@ class Oobiery:
             try:
                 # Don't process OOBIs we've already resolved or are in escrow being retried
                 if ((fnd := self.hby.db.roobi.get(keys=(url,))) is not None and fnd.state == Result.resolved) and \
-                        self.hby.db.eoobis.get(keys=(url,)) is not None:
+                        self.hby.db.eoobi.get(keys=(url,)) is not None:
                     logging.info(f"OOBI {url} already resolved, skipping")
                     self.hby.db.oobis.rem(keys=(url,))
                     continue
@@ -531,6 +531,7 @@ class Oobiery:
             last = helping.fromIso8601(obr.date)
             now = helping.nowUTC()
             if (now - last) > datetime.timedelta(seconds=self.RetryDelay):
+                obr.date = helping.toIso8601(now)
                 self.hby.db.eoobi.rem(keys=(url,))
                 self.hby.db.oobis.pin(keys=(url,), val=obr)
 
@@ -543,16 +544,14 @@ class Oobiery:
 
 class Authenticator:
 
-    def __init__(self, hby, org, clienter=None):
+    def __init__(self, hby, clienter=None):
         """
 
         Parameters:
             hby (Habery): Identifier database environment
-            org (Organizer): contact database organizer
             clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
         """
         self.hby = hby
-        self.org = org
         self.clienter = clienter if clienter is not None else httping.Clienter()
         self.clients = dict()
         self.doers = [self.clienter, doing.doify(self.authzDo)]
@@ -565,9 +564,9 @@ class Authenticator:
         self.hby.db.mfa.pin(keys=(wurl,), val=obr)
 
     def addAuthToAid(self, cid, url):
-        wellknowns = self.org.get(cid, field="well-knowns") or []
-        wellknowns.append(url)
-        self.org.set(cid, field="well-knowns", val=wellknowns)
+        now = help.nowIso8601()
+        wkan = basing.WellKnownAuthN(url=url, dt=now)
+        self.hby.db.wkas.add(keys=(cid,), val=wkan)
 
     def authzDo(self, tymth=None, tock=0.0):
         """

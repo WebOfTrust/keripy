@@ -227,10 +227,10 @@ def test_multisig_incept(mockHelpingNowUTC):
         exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'ENzaH42YagJx5HLYXPtZF08jIdMnPvxQYiBE0zhHXnIb'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACrnW5luu62'
-                       b'evN9gBhFFwH5zd5Y5DmOsdwg-UG9Eg0g2zKrhUtKfjA4RnsNhWmehZFE0nSCnlU3'
-                       b'h6sbQN_rfAMI')
+        assert exn.saidb == b'EEl70ZAj2v8kR8X2IkKB2tuhhYa4lHSO1UqvA3_cZK7G'
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAB-u_h6NLNe'
+                       b'MVCh3k07dY7smtLV4MhGD-Fgl3IAuJOIa2IpNYGG_YsvfD4GLcv1zU1btNHmnfXm'
+                       b'OdoKbaTOY_YH')
         data = exn.ked["a"]
         assert data["aids"] == aids
         assert data["ked"] == hab.kever.serder.ked
@@ -242,10 +242,10 @@ def test_multisig_rotate(mockHelpingNowUTC):
                                               adds=[], data=[])
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'ECTRP6zZR7hnzVBmqwQBF2-uxnAQX9cdd8Q3KO-PVmL3'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAAKcqFRGDAa'
-                       b'fwd-JNcnmW5vWtKVJ8qQ5DdV8foekSH7ErFgwQKDZVitGxkRBWkdcIR2vm8LjRj7'
-                       b'ib3oNIB3geUB')
+        assert exn.saidb == b'EEheekL5ct-RK_-4xx7Yj3Nxj0WZY3JyXGN8ZMD8IxmH'
+        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAADFjbd96xYB'
+                       b'BjLD4vux9EET7vTUvS7lxY6gUHKehU-SiaHX3hiW9cbRy5iKv56k7QQjp5cSWKw7'
+                       b'SF4q9J5_yN4O')
 
         data = exn.ked["a"]
         assert data["aids"] == ghab1.gaids
@@ -263,10 +263,10 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EBQ3JnvamTcPNju6skxXJW33LQuI-gCeVcgV0Is3PYME'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAAEZk_SDop8'
-                       b'm5ONAt3Ro8qKzE3dpzPbuJVvbk7oDuSCU4jhhKF08Cpi2vUlRQd5yoPWhLH1YM4c'
-                       b'I1LDFmg0BFgA')
+        assert exn.saidb == b'EN9CoGmdCd8fNaYK3FrYUJhmJHL7aZ3OhFZzEutJ5xZZ'
+        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABKPpOh4dSt'
+                       b'geh8iLU95Vk9dtOyvCujQu6zsy0a5cvHctgew_acCv4ZAT_oYneVBDkPnEdcdFJW'
+                       b'wlqtQ784zK4L')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.gaids
         assert data["gid"] == ghab1.pre
@@ -311,7 +311,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
 
         notifier = notifying.Notifier(hby=hby)
-        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        exc = exchanging.Exchanger(db=hby.db, handlers=[])
         grouping.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 
         ims = bytearray(exn.raw)
@@ -370,7 +370,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.gaids, isith='2', toad=0, cuts=[],
                                               adds=[], data=[])
         notifier = notifying.Notifier(hby=hby1)
-        exc = exchanging.Exchanger(hby=hby1, handlers=[])
+        exc = exchanging.Exchanger(db=hby1.db, handlers=[])
         grouping.loadHandlers(hby=hby1, exc=exc, notifier=notifier)
 
         ims = bytearray(exn.raw)
@@ -429,7 +429,7 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         notifier = notifying.Notifier(hby=hby1)
-        exc = exchanging.Exchanger(hby=hby1, handlers=[])
+        exc = exchanging.Exchanger(db=hby1.db, handlers=[])
         grouping.loadHandlers(hby=hby1, exc=exc, notifier=notifier)
 
         ims = bytearray(exn.raw)

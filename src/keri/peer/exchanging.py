@@ -12,7 +12,7 @@ from hio.help import decking
 from .. import help
 from ..core import eventing, coring
 from ..help import helping
-from ..kering import ValidationError, MissingSignatureError, AuthZError
+from ..kering import ValidationError, MissingSignatureError
 
 ExchangeMessageTimeWindow = timedelta(seconds=300)
 
@@ -24,21 +24,21 @@ class Exchanger(doing.DoDoer):
      Peer to Peer KERI message Exchanger.
     """
 
-    def __init__(self, hby, handlers, controller=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
+    def __init__(self, db, handlers, local=False, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
         """ Initialize instance
 
         Parameters:
-            hab (Hab): instance of local controller's
+            db (Baser): database environment
             handler(list): list of Handlers capable of responding to exn messages
-            controller (str) qb64 prefix of the controlling identifier
+            local (bool): True means local event that should not process behavior and always persist event
             cues (Deck):  of Cues i.e. notices of requests needing response
             delta (timedelta): message timeout window
         """
 
-        self.hby = hby
-        self.controller = controller
-        self.kevers = self.hby.kevers
+        self.db = db
+        self.kevers = self.db.kevers
         self.delta = delta
+        self.local = local
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
@@ -77,15 +77,11 @@ class Exchanger(doing.DoDoer):
         modifiers = serder.ked["q"] if 'q' in serder.ked else dict()
         pathed = kwargs["pathed"] if "pathed" in kwargs else []
 
-        if route not in self.routes:
+        if not self.local and route not in self.routes:
             raise AttributeError("unregistered route {} for exchange message = {}"
                                  "".format(route, serder.pretty()))
 
-        behavior = self.routes[route]
-
-        if self.controller is not None and self.controller != source.qb64:
-            raise AuthZError("Message {} is from invalid source {}"
-                             "".format(payload, source.qb64))
+        behavior = self.routes[route] if route in self.routes else None
 
         # delta = behavior.delta if behavior.delta is not None else self.delta
         # delta = self.delta
@@ -97,19 +93,19 @@ class Exchanger(doing.DoDoer):
         #                           "".format(delta, serder.pretty()))
 
         if source is not None and sigers is not None:
-            if source.qb64 not in self.hby.kevers:
+            if source.qb64 not in self.kevers:
                 if self.escrowPSEvent(serder=serder, source=source, sigers=sigers, pathed=pathed):
                     self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError(f"Unable to find sender {source.qb64} in kevers"
                                             f" for evt = {serder.ked}.")
 
-            kever = self.hby.kevers[source.qb64]
-            tholder, verfers = self.hby.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
+            kever = self.kevers[source.qb64]
+            tholder, verfers = self.db.resolveVerifiers(pre=source.qb64, sn=kever.lastEst.s)
 
             #  Verify provided sigers using verfers
             ssigers, indices = eventing.verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
             if not tholder.satisfy(indices):  # at least one but not enough
-                psigers = self.hby.db.esigs.get(keys=(serder.said,))
+                psigers = self.db.esigs.get(keys=(serder.said,))
                 if self.escrowPSEvent(serder=serder, source=source, sigers=sigers, pathed=pathed):
                     self.cues.append(dict(kin="query", q=dict(r="ksn", pre=source.qb64)))
                 raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
@@ -122,6 +118,9 @@ class Exchanger(doing.DoDoer):
                     raise MissingSignatureError("Failure satisfying exn on cigs for {}"
                                                 " for evt = {}.".format(cigar,
                                                                         serder.ked))
+        else:
+            raise MissingSignatureError("Failure satisfying exn, no cigs or sigs"
+                                        " for evt = {}.".format(serder.ked))
 
         a = coring.Pather(path=["a"])
         attachments = []
@@ -131,14 +130,24 @@ class Exchanger(doing.DoDoer):
                 np = pather.strip(a)
                 attachments.append((np, pattach))
 
-        msg = dict(
-            payload=payload,
-            modifiers=modifiers,
-            pre=source,
-            attachments=attachments,
-        )
+        # Always persis local events and events where the behavior has indicated persistence is required
+        if self.local or (hasattr(behavior, 'persist') and behavior.persist):
+            try:
+                self.logEvent(serder, [pathed for (_, pathed) in attachments], sigers, cigars)
+            except Exception as ex:
+                print(ex)
 
-        behavior.msgs.append(msg)
+        # Do not execute behavior for local events, just validate and save
+        if not self.local:
+            msg = dict(
+                payload=payload,
+                modifiers=modifiers,
+                pre=source,
+                serder=serder,
+                attachments=attachments
+            )
+
+            behavior.msgs.append(msg)
 
     def processResponseIter(self):
         """ Iterate through cues and yields one or more responses for each cue.
@@ -172,17 +181,17 @@ class Exchanger(doing.DoDoer):
         """
         dig = serder.said
         for siger in sigers:
-            self.hby.db.esigs.add(keys=(dig,), val=siger)
-        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
-        self.hby.db.esrc.put(keys=(dig,), val=source)
-        return self.hby.db.epse.put(keys=(dig,), val=serder)
+            self.db.esigs.add(keys=(dig,), val=siger)
+        self.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        self.db.esrc.put(keys=(dig,), val=source)
+        return self.db.epse.put(keys=(dig,), val=serder)
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages """
-        for (dig,), serder in self.hby.db.epse.getItemIter():
-            sigers = self.hby.db.esigs.get(keys=(dig,))
-            source = self.hby.db.esrc.get(keys=(dig,))
-            pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
+        for (dig,), serder in self.db.epse.getItemIter():
+            sigers = self.db.esigs.get(keys=(dig,))
+            source = self.db.esrc.get(keys=(dig,))
+            pathed = [bytearray(p.encode("utf-8")) for p in self.db.epath.get(keys=(dig,))]
 
             try:
                 self.processEvent(serder=serder, source=source, sigers=sigers, pathed=pathed)
@@ -193,19 +202,33 @@ class Exchanger(doing.DoDoer):
                 else:
                     logger.info("Exchange partially signed failed: %s\n", ex.args[0])
             except Exception as ex:
-                self.hby.db.epse.rem(dig)
-                self.hby.db.esigs.rem(dig)
-                self.hby.db.esrc.rem(dig)
+                self.db.epse.rem(dig)
+                self.db.esigs.rem(dig)
+                self.db.esrc.rem(dig)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
                 else:
                     logger.info("Exchange partially signed unescrowed: %s\n", ex.args[0])
             else:
-                self.hby.db.epse.rem(dig)
-                self.hby.db.esigs.rem(dig)
-                self.hby.db.esrc.rem(dig)
+                self.db.epse.rem(dig)
+                self.db.esigs.rem(dig)
+                self.db.esrc.rem(dig)
                 logger.info("Exchanger unescrow succeeded in valid exchange: "
                             "creder=\n%s\n", serder.pretty())
+
+    def logEvent(self, serder, pathed=None, sigers=None, cigars=None):
+        dig = serder.said
+        pathed = pathed or []
+        sigers = sigers or []
+        cigars = cigars or []
+
+        for siger in sigers:
+            self.db.esigs.add(keys=(dig,), val=siger)
+        for cigar in cigars:
+            self.db.esigs.add(keys=(dig,), val=cigar)
+
+        self.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        self.db.exns.put(keys=(dig,), val=serder)
 
 
 def exchange(route, payload, date=None, modifiers=None, version=coring.Version, kind=coring.Serials.json):
@@ -228,6 +251,7 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version, 
     ked = dict(v=vs,
                t=ilk,
                d="",
+               dt=dt,
                r=route,
                q=modifiers,
                a=payload

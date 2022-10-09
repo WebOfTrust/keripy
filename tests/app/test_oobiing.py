@@ -18,11 +18,11 @@ from keri.peer import exchanging
 from tests.app import openMultiSig
 
 
-def test_oobi_share():
+def test_oobi_share(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
     with habbing.openHab(name="test", temp=True) as (hby, hab):
-        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        exc = exchanging.Exchanger(db=hby.db, handlers=[])
         notifier = notifying.Notifier(hby=hby)
 
         oobiing.loadHandlers(hby=hby, exc=exc, notifier=notifier)
@@ -75,14 +75,15 @@ def test_oobi_share():
                                           oobi="http://127.0.0.1/oobi")
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
-                           'd': 'EGkcFuzBKKPI8MxP3u5Z0nxyuKOOu1GfWaWx2UT7mU_C',
+                           'd': 'EHuKAScxCSm3v8ooWR2wIilGul_ZUwHAXt63Y5bhfvmt',
+                           'dt': '2021-01-01T00:00:00.000000+00:00',
                            'q': {},
                            'r': '/oobis',
                            't': 'exn',
-                           'v': 'KERI10JSON0000c5_'}
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABjXDLWfNtF'
-                       b'GQAvJwJk-LeyzCXcCXLqxhPhQgiR45jZ-rzFoxjG2C3SaX7AbaGbm0XImx7XtK02'
-                       b'YkjK792iDOIC')
+                           'v': 'KERI10JSON0000ed_'}
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACS1e3y_nIO'
+                       b'l5UQAtrq2O9w-CaYTNTSDNjBK5k01nUFkV4yiHo-HE40nVsjrb9uKQYAHTaRVTUo'
+                       b'nj3KashCBTMP')
 
 
 def test_oobi_share_endpoint():
@@ -133,7 +134,7 @@ def test_oobiery():
 
         limit = 2.0
         tock = 0.03125
-        doers = endDoers + [oobiery]
+        doers = endDoers + oobiery.doers
         doist = doing.Doist(limit=limit, tock=tock)
         doist.do(doers=doers)
 
@@ -142,3 +143,29 @@ def test_oobiery():
         doist.exit()
 
     """Done Test"""
+
+
+def test_authenticator(mockHelpingNowUTC):
+    with habbing.openHby(name="oobi") as hby:
+        authn = keri.app.oobiing.Authenticator(hby=hby)
+
+        url = 'http://127.0.0.1:5644/.well-known/keri/oobi/EN9CoGmdCd8fNaYK3FrYUJhmJHL7aZ3OhFZzEutJ5xZZ?name=Root'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.woobi.pin(keys=(url,), val=obr)
+        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.woobi.pin(keys=(url,), val=obr)
+
+        app = falcon.App()  # falcon.App instances are callable WSGI apps
+        endDoers = oobiing.loadEnds(app, hby=hby)
+
+        limit = 2.0
+        tock = 0.03125
+        doers = endDoers + authn.doers
+        doist = doing.Doist(limit=limit, tock=tock)
+        doist.do(doers=doers)
+
+        assert doist.limit == limit
+
+        doist.exit()
+

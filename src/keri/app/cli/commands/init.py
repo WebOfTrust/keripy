@@ -136,14 +136,20 @@ class InitDoer(doing.DoDoer):
 
             self.remove(obi.doers)
 
-        wc = hby.db.woobi.cntAll()
-        if wc:
+        wc = [oobi for (oobi,), _ in hby.db.woobi.getItemIter()]
+        if len(wc) > 0:
             print(f"\nAuthenticating {wc} Well-Knowns...")
-            org = connecting.Organizer(hby=hby)
-            authz = oobiing.Authenticator(hby=hby, org=org)
-            self.extend(authz.doers)
+            authn = oobiing.Authenticator(hby=hby)
+            self.extend(authn.doers)
 
             while True:
-                yield 1.0
+                cap = []
+                for (_,), wellKnowns in hby.db.wkas.getItemIter(keys=b''):
+                    cap.extend([wk.url for wk in wellKnowns])
+
+                if set(wc) & set(cap) == set(wc):
+                    break
+
+                yield 0.5
 
         hby.close()

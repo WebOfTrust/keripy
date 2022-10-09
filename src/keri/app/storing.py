@@ -210,6 +210,8 @@ class Respondant(doing.DoDoer):
 
                     # sign the exn to get the signature
                     eattach = senderHab.endorse(exn, last=True, pipelined=False)
+                    # TODO: switch to the following and test that outbound events are persisted:
+                    #    eattach = senderHab.exchange(exn, save=True)
                     del eattach[:exn.size]
 
                     # create and sign the forward exn that will contain the exn
