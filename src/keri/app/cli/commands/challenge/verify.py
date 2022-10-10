@@ -59,12 +59,12 @@ class VerifyDoer(doing.DoDoer):
         self.signer = signer
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        self.exc = exchanging.Exchanger(db=self.hby.db, handlers=[])
         self.org = connecting.Organizer(hby=self.hby)
         self.mbx = storing.Mailboxer(name=name)
         self.mbx.reopen()
 
-        challenging.loadHandlers(hby=self.hby, exc=self.exc, mbx=self.mbx, controller=self.hab.pre)
+        challenging.loadHandlers(db=self.hby.db, signaler=None, exc=self.exc)
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 

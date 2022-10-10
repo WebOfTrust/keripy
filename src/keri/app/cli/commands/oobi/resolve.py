@@ -8,7 +8,8 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing
+import keri.app.oobiing
+from keri.app import habbing, oobiing
 from keri.app.cli.common import existing
 from keri.db import basing
 from keri.end import ending
@@ -59,7 +60,7 @@ class OobiDoer(doing.DoDoer):
     def __init__(self, name, oobi, oobiAlias, bran=None, base=None):
 
         self.processed = 0
-
+        self.oobi = oobi
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
@@ -69,8 +70,9 @@ class OobiDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-        self.obi = ending.Oobiery(hby=self.hby)
-        doers = [self.hbyDoer, self.obi, doing.doify(self.waitDo)]
+        self.obi = keri.app.oobiing.Oobiery(hby=self.hby)
+        self.authn = oobiing.Authenticator(hby=self.hby)
+        doers = [self.hbyDoer, doing.doify(self.waitDo)]
 
         super(OobiDoer, self).__init__(doers=doers)
 
@@ -90,12 +92,13 @@ class OobiDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        while not self.obi.cues:
+        self.extend(self.obi.doers)
+        self.extend(self.authn.doers)
+
+        while not self.obi.hby.db.roobi.get(keys=(self.oobi,)):
             yield 0.25
 
-        cue = self.obi.cues.popleft()
-        kin = cue["kin"]
-        oobi = cue["oobi"]
-        print(oobi, kin)
+        obr = self.obi.hby.db.roobi.get(keys=(self.oobi,))
+        print(self.oobi, obr.state)
 
-        self.remove([self.hbyDoer, self.obi])
+        self.remove([self.hbyDoer, *self.obi.doers, *self.authn.doers])

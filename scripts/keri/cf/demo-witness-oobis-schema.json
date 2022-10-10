@@ -4,7 +4,6 @@
     "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller",
     "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller",
     "http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller",
-    "http://20.121.171.161:7723/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG?name=GLEIF%20Root"
   ],
   "durls": [
     "http://127.0.0.1:7723/oobi/EIL-RWno8cEnkGTi9cr7-PFg_IXTPx9fZ0r9snFFZ0nm",
@@ -15,11 +14,7 @@
     "http://127.0.0.1:7723/oobi/ED_PcIn1wFDe0GB0W7Bk9I4Q_c9bQJZCM2w7Ex9Plsta",
     "http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz"
   ],
-  "murls": [
-    "https://www.gleif.org/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG",
-    "https://github.io/WebOfTrust/vLEI/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG",
-    "https://github.io/GLEIF-IT/vLEI/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG",
-    "https://www.first-roc-member.com/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG",
-    "https://www.another-roc-member.com/.well-known/keri/oobi/EL0QKj5uCRRAawr91sVWCVvKM1XNMQ3WJGo_g0O9s-BG"
+  "wurls": [
+    "http://127.0.0.1:7723/.well-known/keri/oobi/EKogWaeSHa4KXPhWT-6NkRmF1J4FIWkyVilQ7VT6dxnB"
   ]
 }

@@ -45,7 +45,7 @@ def test_pathed_material(mockHelpingNowUTC):
         fwd = debHab.endorse(fwd, last=True, pipelined=False)
         fwd.extend(atc)
         handler = MockHandler()
-        exc = exchanging.Exchanger(hby=debHby, handlers=[handler])
+        exc = exchanging.Exchanger(db=debHby.db, handlers=[handler])
         parser = parsing.Parser(exc=exc)
 
         parser.parseOne(ims=fwd)

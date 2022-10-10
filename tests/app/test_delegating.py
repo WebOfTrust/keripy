@@ -6,6 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
+import keri.app.oobiing
 from keri import kering
 from keri.app import habbing, delegating, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
@@ -145,10 +146,10 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'ECExH5XhemF79vJOPuhIHzuWG-Zpc8ckIKkB1e3UDfzf'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADpPd_zfD-Q'
-                       b'60O7de1woc7H6UJUCaiuUIzKs_MgRcrxjfH_5h6HzfI6B-rjt0pgCJRNFKgVRgv4'
-                       b'llWS_u6DS58I')
+        assert exn.saidb == b'EMj7eSEtgYjkjLPwBFelUX6I2RMzSudhqdDwzgofHhGn'
+        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACf_qKy8TCn'
+                       b'K_2xoBzBZeGRd_bzUj8WAsIXKRAy7bmf881bLLi0KyjLDmdZ4YvEd2i-aG7qn6nI'
+                       b'9QXT8vApFtsP')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         assert data["ked"] == serder.ked
@@ -197,8 +198,8 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=hab.pre, ked=serder.ked)
 
         notifier = notifying.Notifier(hby=hby)
-        exc = exchanging.Exchanger(hby=hby, handlers=[])
-        oobiery = ending.Oobiery(hby=hby)
+        exc = exchanging.Exchanger(db=hby.db, handlers=[])
+        oobiery = keri.app.oobiing.Oobiery(hby=hby)
 
         delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 

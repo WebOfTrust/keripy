@@ -15,6 +15,7 @@ from keri import help
 from keri.app import habbing, keeping, configing
 from keri.db import basing
 from keri.core import coring, eventing, parsing
+from keri.peer import exchanging
 
 
 def test_habery():
@@ -749,13 +750,69 @@ def test_habery_reconfigure(mockHelpingNowUTC):
     """Done Test"""
 
 
+def test_hab_exchange(mockHelpingNowUTC):
+
+    with habbing.openHby() as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        data = dict(a=1, b=2, c=3)
+        exn = exchanging.exchange(route='/test/fwd', modifiers=dict(),
+                                  payload=data)
+
+        msg = hab.exchange(serder=exn, save=True)
+        assert msg == (b'{"v":"KERI10JSON0000ad_","t":"exn","d":"EF4u9o0M_Qs0Vkqb0vwDnrqP'
+                       b'aQyCiI1Y_9ezNH2WtNKH","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/test/fwd","q":{},"a":{"a":1,"b":2,"c":3}}-HABEIaGMMWJFPmtXzn'
+                       b'Y1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABGv3uei98BwqLUt96_366zqonSFpf'
+                       b'TKE4fVHBVoa6t5nVRHPRc-R7m8Ck5q7ie5SzhciTq5oT9CujANkV5UG0A')
+
+        serder = hab.db.exns.get(keys=(exn.said,))
+        assert serder.ked == exn.ked
+
+        hab = hby.makeHab(name="test1", transferable=False)
+        assert hab.pre == "BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG"
+        msg = hab.exchange(serder=exn, save=True)
+        assert msg == (b'{"v":"KERI10JSON0000ad_","t":"exn","d":"EF4u9o0M_Qs0Vkqb0vwDnrqP'
+                       b'aQyCiI1Y_9ezNH2WtNKH","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/test/fwd","q":{},"a":{"a":1,"b":2,"c":3}}-CABBJZ_LF61JTCCSCI'
+                       b'w2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BCb_ZFWN6truKuBCekbTfxeVFTQJGjjuPe'
+                       b'uEhIDyxUvH72A_vp3lllrVnW9MPJPZHYltGfqvxXnO5jOyk2BWZgN')
+
+        serder = hab.db.exns.get(keys=(exn.said,))
+        assert serder.ked == exn.ked
+
+
+def test_make_other_event():
+    with habbing.openHby() as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        hab.rotate()
+        hab.rotate()
+
+        msg = hab.makeOtherEvent(hab.pre, sn=1)
+        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
+                       b'E7prFWFBbghgcMuJ4VeM","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+                       b'V8dDjI3","s":"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
+                       b'I3","kt":"1","k":["DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP"'
+                       b'],"nt":"1","n":["EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax"],'
+                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAC2DAJCt6KLh442NsGVLE0pYKvL'
+                       b'-3MVh-kWcBWWqpVmXbhlQ3oGHD5h4jUY7Trw2jFvsQyC4A_1kJpmNP1AgXcM')
+
+        msg = hab.makeOtherEvent(hab.pre, sn=2)
+        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EJCaUsmfvR35xZxpenqEWCtX'
+                       b'sXnD_efjlvvRd1hEvu5d","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+                       b'V8dDjI3","s":"2","p":"EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4V'
+                       b'eM","kt":"1","k":["DPjsUEx6Nqby9-yUO1DtExQ81CRYdvpwQZufBRzBM5yk"'
+                       b'],"nt":"1","n":["EIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5R-Yh"],'
+                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAADGsMs4ifEPuBH9vApQTnJyGCXm'
+                       b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
+
+
+
+
 if __name__ == "__main__":
     pass
-    #test_make_load_hab_with_habery()
     test_habery()
-    #test_hab_rotate_with_witness()
-    #test_habery_reinitialization()
-    #test_habery_signatory()
-    #test_habitat_reinitialization_reload()
-    #test_habery_reconfigure()
     #pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])

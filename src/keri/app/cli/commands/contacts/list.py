@@ -47,6 +47,26 @@ def list(tymth, tock=0.0, **opts):
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
             org = connecting.Organizer(hby=hby)
             for c in org.list():
+
+                aid = c['id']
+                accepted = [saider.qb64 for saider in hby.db.chas.get(keys=(aid,))]
+                received = [saider.qb64 for saider in hby.db.reps.get(keys=(aid,))]
+                valid = set(accepted) & set(received)
+
+                challenges = []
+                for said in valid:
+                    exn = hby.db.exns.get(keys=(said,))
+                    challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words']))
+
+                c["challenges"] = challenges
+
+                wellKnowns = []
+                wkans = hby.db.wkas.get(keys=(aid,))
+                for wkan in wkans:
+                    wellKnowns.append(dict(url=wkan.url, dt=wkan.dt))
+
+                c["wellKnowns"] = wellKnowns
+
                 print(c)
 
     except ConfigurationError as e:

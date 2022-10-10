@@ -3,16 +3,22 @@
 keri.peer.httping module
 
 """
+import datetime
 import json
 from dataclasses import dataclass
+from urllib import parse
+from urllib.parse import urlparse
 
 import falcon
+from hio.base import doing
+from hio.core import http
 from hio.help import Hict
 
 from keri import help
 from keri import kering
 from keri.core import coring, parsing
 from keri.end import ending
+from keri.help import helping
 
 logger = help.ogler.getLogger()
 
@@ -196,4 +202,70 @@ def streamCESRRequests(client, ims, path=None):
 
     return cnt
 
+
+class Clienter(doing.DoDoer):
+
+    TimeoutClient = 300
+
+    def __init__(self):
+        self.clients = []
+        doers = [doing.doify(self.clientDo)]
+        super(Clienter, self).__init__(doers=doers)
+
+    def request(self, method, url):
+        purl = parse.urlparse(url)
+
+        client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
+
+        client.request(
+            method=method,
+            path=purl.path,
+            qargs=parse.parse_qs(purl.query),
+        )
+
+        clientDoer = http.clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
+        self.clients.append((client, clientDoer, helping.nowUTC()))
+
+        return client
+
+    def remove(self, client):
+        doers = [(c, d, dt) for (c, d, dt) in self.clients if c == client]
+        if len(doers) == 0:
+            return
+
+        tup = doers[0]
+        self.clients.remove(doers[0])
+        (_, doer, _) = tup
+        super(Clienter, self).remove([doer])
+
+    def clientDo(self, tymth, tock=0.0):
+        """ Periodically prune stale clients
+
+        Process existing clients and prune any that have receieved a response longer than timeout
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            toRemove = []
+            for (client, doer, dt) in self.clients:
+                if client.responses:
+                    now = helping.nowUTC()
+                    if (now - dt) > datetime.timedelta(seconds=self.TimeoutClient):
+                        toRemove.append(client)
+
+                yield self.tock
+
+            for client in toRemove:
+                self.remove(client)
+
+            yield self.tock
 

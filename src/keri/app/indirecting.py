@@ -14,6 +14,7 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
+import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .. import help, kering
 from ..core import eventing, parsing, routing
@@ -46,8 +47,9 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
-    oobiery = ending.Oobiery(hby=hby)
+    exchanger = exchanging.Exchanger(db=hby.db, handlers=[forwarder])
+    clienter = httping.Clienter()
+    oobiery = keri.app.oobiing.Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
@@ -93,7 +95,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
                             responses=rep.cues, queries=httpEnd.qrycues)
 
     doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, oobiery])
+    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, *oobiery.doers])
 
     return doers
 

@@ -13,7 +13,7 @@ def test_exchanger():
     with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab):
         mbx = storing.Mailboxer(hby=hby)
         forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-        exc = exchanging.Exchanger(hby=hby, handlers=[forwarder])
+        exc = exchanging.Exchanger(db=hby.db, handlers=[forwarder])
 
         ser, sigs, _ = hab.getOwnEvent(sn=0)
         sadsig = signing.SadPathSigGroup(pather=coring.Pather(path=[]), sigers=sigs)

@@ -70,7 +70,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         # Create Red's wallet and Issue Handler for receiving the credential
         redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, notifier=notifier)
-        redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
+        redExc = exchanging.Exchanger(db=sidHby.db, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
@@ -231,7 +231,8 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         notifier = notifying.Notifier(hby=hanHby)
         hanRequestHandler = PresentationRequestHandler(hby=hanHby, notifier=notifier)
         hanPresentHandler = PresentationProofHandler(notifier=notifier)
-        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler, hanPresentHandler])
+        hanExc = exchanging.Exchanger(db=hanHby.db, tymth=doist.tymen(), handlers=[hanRequestHandler,
+                                                                                   hanPresentHandler])
 
         # Create the issue credential payload
         pl = dict(
@@ -260,9 +261,9 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
         assert exn.ked['r'] == "/presentation"
-        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADvA_qhbOB-'
-                                b'mJ_PnRAek20MnRHYKQia4MmA03nElwqCeaoD-CCx2I4K56e9srLku7d4OpnopFXV'
-                                b'TM3L9liOW-8N')
+        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADqyvceNUq0'
+                                b'utmXQ6fFtE6juYK9B9lszFHgtM09FX5VCc5aESYM5lqgwHqOgaBjU11qfSMkIQ9K'
+                                b'OrBRPNu_PMIP')
 
         msg = bytearray(exn.raw)
         msg.extend(atc)

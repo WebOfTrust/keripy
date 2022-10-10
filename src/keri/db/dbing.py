@@ -305,7 +305,7 @@ class LMDBer(filing.Filer):
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
-    MaxNamedDBs = 64
+    MaxNamedDBs = 96
 
 
     def __init__(self, readonly=False, **kwa):

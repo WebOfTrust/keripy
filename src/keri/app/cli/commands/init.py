@@ -9,9 +9,9 @@ import getpass
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, configing, oobiing
+import keri.app.oobiing
+from keri.app import habbing, configing, oobiing, connecting
 from keri.app.keeping import Algos
-from keri.end import ending
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 
@@ -122,22 +122,34 @@ class InitDoer(doing.DoDoer):
         if oc:
             print(f"\nLoading {oc} OOBIs...")
 
-            obi = ending.Oobiery(hby=hby)
-            self.extend([obi])
+            obi = keri.app.oobiing.Oobiery(hby=hby)
+            self.extend(obi.doers)
 
-            while oc > 0:
-                while obi.cues:
-                    cue = obi.cues.popleft()
-                    oc -= 1
-                    kin = cue["kin"]
-                    oobi = cue["oobi"]
-                    if kin in ("resolved",):
-                        print(oobi, "succeeded")
-                    if kin in ("failed",):
-                        print(oobi, "failed")
+            while oc != hby.db.roobi.cntAll():
+                yield 0.25
 
-                    yield 0.25
-                yield self.tock
-            self.remove([obi])
+            for (oobi,), obr in hby.db.roobi.getItemIter():
+                if obr.state in (oobiing.Result.resolved,):
+                    print(oobi, "succeeded")
+                if obr in (oobiing.Result.failed,):
+                    print(oobi, "failed")
+
+            self.remove(obi.doers)
+
+        wc = [oobi for (oobi,), _ in hby.db.woobi.getItemIter()]
+        if len(wc) > 0:
+            print(f"\nAuthenticating {wc} Well-Knowns...")
+            authn = oobiing.Authenticator(hby=hby)
+            self.extend(authn.doers)
+
+            while True:
+                cap = []
+                for (_,), wellKnowns in hby.db.wkas.getItemIter(keys=b''):
+                    cap.extend([wk.url for wk in wellKnowns])
+
+                if set(wc) & set(cap) == set(wc):
+                    break
+
+                yield 0.5
 
         hby.close()

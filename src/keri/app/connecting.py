@@ -96,11 +96,12 @@ class Organizer:
         self.hby.db.cons.rem(keys=(pre,))
         return self.hby.db.cfld.trim(keys=(pre,))
 
-    def get(self, pre):
+    def get(self, pre, field=None):
         """ Retrieve all contact information for identifier prefix
 
         Parameters:
             pre (str): qb64 identifier prefix for contact
+            field (str): optional field name to retrieve a single field value
 
         Returns:
             dict: Contact data
@@ -117,8 +118,11 @@ class Organizer:
         data = json.loads(raw)
         if data is None:
             return None
-        data["id"] = pre
 
+        if field is not None:
+            return data[field] if field in data else None
+
+        data["id"] = pre
         return data
 
     def list(self):

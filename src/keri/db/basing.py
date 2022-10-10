@@ -26,7 +26,7 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional
 
 import lmdb
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
@@ -128,6 +128,7 @@ class OobiRecord:
     eid: str = None
     role: str = None
     date: str = None
+    state: str = None
 
 
 @dataclass
@@ -144,10 +145,13 @@ class HabitatRecord:  # baser.habs
 
 @dataclass
 class RotateRecord:
+    """
+    Tracks requests to perform multisig rotation during lifecycle of a rotation
+    """
     aids: list
     sn: Optional[int]
-    isith: Optional[str|list]
-    nsith: Optional[str|list]
+    isith: Optional[str | list]
+    nsith: Optional[str | list]
     toad: Optional[int]
     cuts: Optional[list]
     adds: Optional[list]
@@ -314,6 +318,18 @@ class LocationRecord:  # baser.locs
 
     def __iter__(self):
         return iter(asdict(self))
+
+
+@dataclass
+class WellKnownAuthN:
+    """
+    Each WellKnownAuthN represents a successfully resolved .well-known OOBI URL keyed by
+    the AID of the OOBI tuple embedded in the URL
+
+    """
+
+    url: str  # full .well-known OOBI URL resolved
+    dt: str  # iso8601 date/time of success resolution
 
 
 def openDB(*, cls=None, name="test", **kwa):
@@ -759,14 +775,32 @@ class Baser(dbing.LMDBer):
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")
 
+        # exchange messages
+        self.exns = subing.SerderSuber(db=self, subkey="exns.")
+
+        # exchange messages
+        self.sxns = subing.SerderSuber(db=self, subkey="sxns.")
+
         # exchange message signatures
         self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=coring.Siger)
+
+        # exchange message signatures
+        self.ecigs = subing.CesrIoSetSuber(db=self, subkey='ecigs.', klas=coring.Cigar)
 
         # exchange source prefix
         self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
 
         # exchange pathed attachments
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")
+
+        # accepted signed 12-word challenge response exn messages keys by prefix of signer
+        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Saider)
+
+        # successfull signed 12-word challenge response exn messages keys by prefix of signer
+        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Saider)
+
+        # group partial signature escrow
+        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', schema=WellKnownAuthN)
 
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
@@ -815,6 +849,30 @@ class Baser(dbing.LMDBer):
                                   subkey='coobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Resolved OOBIs (those that have been processed successfully for this database.
+        self.roobi = koming.Komer(db=self,
+                                  subkey='roobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.woobi = koming.Komer(db=self,
+                                  subkey='wknwn.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Multifactor well known OOBI auth records to process.  Keys by controller URL
+        self.mfa = koming.Komer(db=self,
+                                subkey='mfa.',
+                                schema=OobiRecord,
+                                sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Resolved multifactor well known OOBI auth records.  Keys by controller URL
+        self.rmfa = koming.Komer(db=self,
+                                 subkey='mfa.',
+                                 schema=OobiRecord,
+                                 sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
         # JSON schema SADs keys by the SAID
         self.schema = subing.SchemerSuber(db=self,
@@ -1097,6 +1155,46 @@ class Baser(dbing.LMDBer):
         toad = kever.toader.num
 
         return not len(wigs) < toad
+
+    def resolveVerifiers(self, pre=None, sn=0, dig=None):
+        """
+        Returns the Tholder and Verfers for the provided identifier prefix.
+        Default pre is own .pre
+
+        Parameters:
+            pre(str) is qb64 str of bytes of identifier prefix.
+            sn(int) is the sequence number of the est event
+            dig(str) is qb64 str of digest of est event
+
+        """
+
+        prefixer = coring.Prefixer(qb64=pre)
+        if prefixer.transferable:
+            # receipted event and receipter in database so get receipter est evt
+            # retrieve dig of last event at sn of est evt of receipter.
+            sdig = self.getKeLast(key=dbing.snKey(pre=prefixer.qb64b,
+                                                  sn=sn))
+            if sdig is None:
+                # receipter's est event not yet in receipters's KEL
+                raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
+                                             "".format(sn, pre))
+            # retrieve last event itself of receipter est evt from sdig
+            sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = coring.Serder(raw=bytes(sraw))
+            if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
+                raise kering.ValidationError("Bad proof sig group at sn = {}"
+                                             " for ksn = {}."
+                                             "".format(sn, sserder.ked))
+
+            verfers = sserder.verfers
+            tholder = sserder.tholder
+
+        else:
+            verfers = [coring.Verfer(qb64=pre)]
+            tholder = coring.Tholder(sith="1")
+
+        return tholder, verfers
 
     def putEvt(self, key, val):
         """

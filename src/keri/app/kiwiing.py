@@ -13,6 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 
+import keri.app.oobiing
 from . import grouping, challenging, connecting, notifying, signaling, oobiing
 from .. import help
 from .. import kering
@@ -2703,7 +2704,7 @@ class ChallengeEnd:
         rep.data = json.dumps(msg).encode("utf-8")
 
     def on_post_resolve(self, req, rep, alias):
-        """ Challenge GET endpoint
+        """ Challenge POST endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -2760,6 +2761,65 @@ class ChallengeEnd:
         dt = "2022-05-19T20:20:00.751126+00:00"
         exn = exchanging.exchange(route="/challenge/response", payload=payload, date=dt)
         self.rep.reps.append(dict(src=hab.pre, dest=recpt, rep=exn, topic="challenge"))
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_accept(self, req, rep, alias):
+        """ Challenge POST accept endpoint
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+            alias: human readable name of identifier to use to sign the challange/response
+
+        ---
+        summary:  Sign challange message and forward to peer identfiier
+        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
+                      to recipient
+        tags:
+           - Challenge/Response
+        parameters:
+          - in: path
+            name: alias
+            schema:
+              type: string
+            required: true
+            description: Human readable alias for the identifier to create
+        requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                    description: Challenge response
+                    properties:
+                        aid:
+                          type: string
+                          description: aid of signer of accepted challenge response
+                        said:
+                          type: array
+                          description:  challenge in form of word list
+                          items:
+                              type: string
+        responses:
+           202:
+              description: Success submission of signed challenge/response
+        """
+        hab = self.hby.habByName(alias)
+        if hab is None:
+            rep.status = falcon.HTTP_400
+            rep.text = f"no matching Hab for alias {alias}"
+            return
+
+        body = req.get_media()
+        if "aid" not in body or "said" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "challenge response acceptance requires 'aid' and 'said'"
+            return
+
+        aid = body["aid"]
+        said = body["said"]
+        saider = coring.Saider(qb64=said)
+        self.hby.db.chas.add(keys=(aid,), val=saider)
 
         rep.status = falcon.HTTP_202
 
@@ -2953,6 +3013,7 @@ class ContactEnd:
             values = self.org.values(group, val)
             for value in values:
                 contacts = self.org.find(group, value)
+                self.authn(contacts)
                 data[value] = contacts
 
             rep.status = falcon.HTTP_200
@@ -2966,6 +3027,7 @@ class ContactEnd:
                 return
 
             contacts = self.org.find(field=field, val=val)
+            self.authn(contacts)
             rep.status = falcon.HTTP_200
             rep.data = json.dumps(contacts).encode("utf-8")
 
@@ -2978,8 +3040,30 @@ class ContactEnd:
                 if aid in self.hby.kevers and aid not in self.hby.prefixes:
                     data.append(contact)
 
+            self.authn(data)
             rep.status = falcon.HTTP_200
             rep.data = json.dumps(data).encode("utf-8")
+
+    def authn(self, contacts):
+        for contact in contacts:
+            aid = contact['id']
+            accepted = [saider.qb64 for saider in self.hby.db.chas.get(keys=(aid,))]
+            received = [saider.qb64 for saider in self.hby.db.reps.get(keys=(aid,))]
+            valid = set(accepted) & set(received)
+
+            challenges = []
+            for said in valid:
+                exn = self.hby.db.exns.get(keys=(said,))
+                challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words']))
+
+            contact["challenges"] = challenges
+
+            wellKnowns = []
+            wkans = self.hby.db.wkas.get(keys=(aid,))
+            for wkan in wkans:
+                wellKnowns.append(dict(url=wkan.url, dt=wkan.dt))
+
+            contact["wellKnowns"] = wellKnowns
 
     def on_post(self, req, rep, prefix):
         """ Contact plural GET endpoint
@@ -3712,6 +3796,7 @@ def loadEnds(app, *,
     chacha = ChallengeEnd(hby=hby, rep=rep)
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha, suffix="resolve")
+    app.add_route("/challenge/accept/{alias}", chacha, suffix="accept")
 
     org = connecting.Organizer(hby=hby)
     contact = ContactEnd(hby=hby, org=org)
@@ -3783,10 +3868,12 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
 
     handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler])
 
-    exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
-    challenging.loadHandlers(signaler=signaler, exc=exchanger)
+    exchanger = exchanging.Exchanger(db=hby.db, handlers=handlers)
+    challenging.loadHandlers(db=hby.db, signaler=signaler, exc=exchanger)
     grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
-    oobiery = ending.Oobiery(hby=hby)
+    oobiery = keri.app.oobiing.Oobiery(hby=hby)
+    authn = oobiing.Authenticator(hby=hby)
+
     delegating.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiing.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
 
@@ -3817,7 +3904,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                         servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler)
 
     obi = dict(oobiery=oobiery)
-    doers.extend([rep, counselor, registrar, credentialer, oobiery, doing.doify(oobiCueDo, **obi)])
+    doers.extend([rep, counselor, registrar, credentialer, *oobiery.doers, *authn.doers, doing.doify(oobiCueDo, **obi)])
     doers.extend(endDoers)
     servery.msgs.append(dict(app=app, doers=doers))
 

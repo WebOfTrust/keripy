@@ -8,15 +8,16 @@ from hio.base import doing
 from hio.help import decking
 
 
-def loadHandlers(signaler, exc):
+def loadHandlers(db, signaler, exc):
     """ Load handlers for the peer-to-peer challenge response protocol
 
     Parameters:
+        db (Baser): database environment
         signaler (Signaler): Signaler for transient messages for the controller of the agent
         exc (Exchanger): Peer-to-peer message router
 
     """
-    chacha = ChallengeHandler(signaler=signaler)
+    chacha = ChallengeHandler(db=db, signaler=signaler)
     exc.addHandler(chacha)
 
 
@@ -24,10 +25,12 @@ class ChallengeHandler(doing.Doer):
     """  Handle challange response peer to peer `exn` message """
 
     resource = "/challenge/response"
+    persist = True
 
-    def __init__(self, signaler):
+    def __init__(self, db, signaler):
         """ Initialize peer to peer challange response messsage """
 
+        self.db = db
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
         self.signaler = signaler
@@ -55,13 +58,19 @@ class ChallengeHandler(doing.Doer):
                 signer = msg["pre"]
                 words = payload["words"]
 
+                serder = msg["serder"]
+
                 msg = dict(
                     signer=signer.qb64,
+                    said=serder.said,
                     words=words
                 )
 
+                # Notify controller of sucessful challenge
                 self.signaler.push(msg, topic="/challenge")
+
+                # Log signer against event to track successful challenges with signed response
+                self.db.reps.add(keys=(signer.qb64,), val=serder.saider)
 
                 yield self.tock
             yield self.tock
-

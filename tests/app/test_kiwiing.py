@@ -12,6 +12,7 @@ import falcon
 from falcon import testing
 from hio.base import doing
 
+import keri.app.oobiing
 from keri import kering
 from keri.app import (habbing, storing, kiwiing, grouping, booting, notifying,
                       signing, connecting)
@@ -741,7 +742,7 @@ def test_oobi_ends(seeder):
         assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
         notifier = notifying.Notifier(hby=palHby)
-        oobiery = ending.Oobiery(hby=palHby)
+        oobiery = keri.app.oobiing.Oobiery(hby=palHby)
         app = falcon.App()
         regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,
@@ -1041,35 +1042,47 @@ def test_contact_ends(seeder):
 
         response = client.simulate_get("/contacts", query_string="filter_field=last&filter_value=Burns3")
         assert response.status == falcon.HTTP_200
-        assert response.json == [{'company': 'GLEIF',
+        assert response.json == [{'challenges': [],
+                                  'company': 'GLEIF',
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
-                                  'last': 'Burns3'}]
+                                  'last': 'Burns3',
+                                  'wellKnowns': []}]
 
         # Begins with search on last name
         response = client.simulate_get("/contacts",
                                        query_string="filter_field=last&filter_value=Burns")
         assert response.status == falcon.HTTP_200
-        assert response.json == [{'company': 'GLEIF',
+        assert response.json == [{'challenges': [],
+                                  'company': 'GLEIF',
                                   'first': 'Ken3',
                                   'id': 'EAjKmvW6flpWJfdYYZ2Lu4pllPWKFjCBz0dcX-S86Nvg',
-                                  'last': 'Burns3'},
-                                 {'company': 'GLEIF',
+                                  'last': 'Burns3',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'GLEIF',
                                   'first': 'Ken1',
                                   'id': 'EER-n23rDM2RQB8Kw4KRrm8SFpoid4Jnelhauo6KxQpz',
-                                  'last': 'Burns1'},
-                                 {'company': 'ProSapien',
+                                  'last': 'Burns1',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'ProSapien',
                                   'first': 'Ken4',
                                   'id': 'EGwcSt3uvK5-oHI7hVU7dKMvWt0vRfMW2demzBBMDnBG',
-                                  'last': 'Burns4'},
-                                 {'company': 'ProSapien',
+                                  'last': 'Burns4',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'ProSapien',
                                   'first': 'Ken2',
                                   'id': 'ELTQ3tF3n7QS8LDpKMdJyCMhVyMdvNPTiisnqW5ZQP3C',
-                                  'last': 'Burns2'},
-                                 {'company': 'GLEIF',
+                                  'last': 'Burns2',
+                                  'wellKnowns': []},
+                                 {'challenges': [],
+                                  'company': 'GLEIF',
                                   'first': 'Ken0',
                                   'id': 'EPo8Wy1xpTa6ri25M4IlmWBBzs5y8v4Qn3Z8xP4kEjcK',
-                                  'last': 'Burns0'}]
+                                  'last': 'Burns0',
+                                  'wellKnowns': []}]
 
         response = client.simulate_delete(f"/contacts/E8AKUcbZyik8EdkOwXgnyAxO5mSIPJWGZ_o7zMhnNnjo")
         assert response.status == falcon.HTTP_404
