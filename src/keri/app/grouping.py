@@ -37,14 +37,14 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, lids, pid, prefixer, seqner, saider):
+    def start(self, lids, lid, prefixer, seqner, saider):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
             lids (list): qb64 local identifier prefixes of group participants
-            pid (str): qb64 identifier prefix of local participant (laid)
+            pilidd (str): qb64 local identifier prefix of group participant
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
             saider (Saider): saider of inception event of group identifier
@@ -56,11 +56,11 @@ class Counselor(doing.DoDoer):
         del evt[:serder.size]
 
         others = list(lids)
-        others.remove(pid)
+        others.remove(lid)
 
         print(f"Sending multisig event to {len(lids) - 1} other participants")
         for recpt in others:
-            self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
+            self.postman.send(src=lid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
@@ -93,9 +93,9 @@ class Counselor(doing.DoDoer):
 
         """
         lids = lids if lids is not None else ghab.lids
-        pid = ghab.lhab.pre
-        if pid not in lids:
-            raise kering.ConfigurationError(f"local identifier {pid} not elected"
+        lid = ghab.lhab.pre
+        if lid not in lids:
+            raise kering.ConfigurationError(f"local identifier {lid} not elected"
                                             f" to participate in rotation: {lids}")
 
         kever = ghab.kever
@@ -117,13 +117,13 @@ class Counselor(doing.DoDoer):
         else:
             rot = ghab.lhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
             others = list(lids)
-            others.remove(pid)
+            others.remove(lid)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
             print(f"Sending local rotation event to {len(lids) - 1} other participants")
             for recpt in others:
-                self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
+                self.postman.send(src=lid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
@@ -189,25 +189,25 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), rec in self.hby.db.glwe.getItemIter():  # group partial witness escrow
             ghab = self.hby.habs[pre]
-            pid = ghab.lhab.pre
+            lid = ghab.lhab.pre
             pkever = ghab.lhab.kever
-            dgkey = dbing.dgKey(pid, pkever.serder.saidb)
+            dgkey = dbing.dgKey(lid, pkever.serder.saidb)
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
             if len(wigs) == len(pkever.wits):  # We have all of them, this event is finished
                 self.hby.db.glwe.rem(keys=(pre,))
 
-                rot = self.hby.db.cloneEvtMsg(pid, pkever.sn, pkever.serder.said)  # grab latest est evt
+                rot = self.hby.db.cloneEvtMsg(lid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
                 others = list(rec.lids)
-                others.remove(pid)
+                others.remove(lid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
 
                 print(f"Sending local rotation event to {len(others)} other participants")
                 for recpt in others:
-                    self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
+                    self.postman.send(src=lid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
                 return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 

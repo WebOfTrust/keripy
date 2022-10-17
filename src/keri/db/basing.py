@@ -140,8 +140,8 @@ class HabitatRecord:  # baser.habs
     Add lid and lindex and londex ?
 
     """
-    prefix: str  # aid qb64
-    pid: Optional[str]  # participant aid of group aid
+    prefix: str  # aid qb64 ot Hab
+    lid: Optional[str]  # participant aid of group aid
     lids: Optional[list]  # local identifiers of all multisig group participants
 
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
@@ -923,7 +923,7 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            elif data.pid is None:  # in .habs but no corresponding key state and not a group so remove
+            elif data.lid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records

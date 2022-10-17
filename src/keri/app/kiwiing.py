@@ -2056,7 +2056,7 @@ class MultisigInceptEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
-        self.counselor.start(lids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(lids=aids, lid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
     def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
@@ -2639,7 +2639,7 @@ class MultisigEventEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(lids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(lids=aids, lid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         return serder
 
 

@@ -47,7 +47,7 @@ def test_counselor():
         saider = coring.Saider(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(lids=lids, pid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.start(lids=lids, lid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"

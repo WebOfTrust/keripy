@@ -411,19 +411,19 @@ class Habery:
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
             #    delegator has not sealed it
-            if not hab.accepted and not habord.pid:
+            if not hab.accepted and not habord.lid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
             hab.inited = True
             self.habs[hab.pre] = hab
-            if habord.pid:
+            if habord.lid:
                 groups.append(habord)
 
         # Populate the participant hab after loading all habs
         for habord in groups:
-            self.habs[habord.prefix].lhab = self.habs[habord.pid]
+            self.habs[habord.prefix].lhab = self.habs[habord.lid]
 
         self.reconfigure()  # post hab load reconfiguration
 
@@ -956,9 +956,9 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, lids=self.lids)
+        habord = basing.HabitatRecord(prefix=self.pre, lid=None, lids=self.lids)
         if self.lhab:
-            habord.pid = self.lhab.pre
+            habord.lid = self.lhab.pre
 
         if not hidden:
             self.db.habs.put(keys=self.name,
@@ -1043,7 +1043,7 @@ class Hab:
         self.db.habs.pin(keys=self.name,
                          val=basing.HabitatRecord(prefix=self.pre,
                                                   watchers=habr.watchers,
-                                                  pid=None,
+                                                  lid=None,
                                                   lids=None))
         self.prefixes.add(self.pre)
 
