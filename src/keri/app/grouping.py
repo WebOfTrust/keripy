@@ -43,7 +43,7 @@ class Counselor(doing.DoDoer):
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
-            aids (list): qb64 identifier prefixes of group participants
+            lids (list): qb64 local identifier prefixes of group participants
             pid (str): qb64 identifier prefix of local participant (laid)
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
