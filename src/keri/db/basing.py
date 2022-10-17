@@ -137,11 +137,12 @@ class HabitatRecord:  # baser.habs
     Habitat application state information keyed by habitat name (baser.habs)
 
     ToDo: NRR
-    change aids to lids
+    Add lid and lindex and londex ?
+
     """
     prefix: str  # aid qb64
     pid: Optional[str]  # participant aid of group aid
-    aids: Optional[list]  # all identifiers participating in the group identity
+    lids: Optional[list]  # local identifiers of all multisig group participants
 
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
 
@@ -152,9 +153,9 @@ class RotateRecord:
     Tracks requests to perform multisig rotation during lifecycle of a rotation
 
     ToDo: NRR
-    change aids to lids
+    Add lid and lindex and londex ?
     """
-    aids: list
+    lids: list
     sn: Optional[int]
     isith: Optional[str | list]
     nsith: Optional[str | list]
@@ -612,6 +613,8 @@ class Baser(dbing.LMDBer):
             that participate in the group identifier.
             key is group identifier prefix
             value is serialized GroupIdentifier dataclass
+
+
 
 
     Properties:

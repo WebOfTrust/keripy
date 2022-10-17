@@ -105,7 +105,7 @@ class Counselor(doing.DoDoer):
         pnkey = pkever.nexter.digs[0]
 
 
-        rec = basing.RotateRecord(aids=lids, sn=kever.sn+1, isith=isith, nsith=nsith,
+        rec = basing.RotateRecord(lids=lids, sn=kever.sn+1, isith=isith, nsith=nsith,
             toad=toad, cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
 
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
@@ -200,7 +200,7 @@ class Counselor(doing.DoDoer):
 
                 rot = self.hby.db.cloneEvtMsg(pid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
-                others = list(rec.aids)
+                others = list(rec.lids)
                 others.remove(pid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
@@ -241,7 +241,7 @@ class Counselor(doing.DoDoer):
 
             lverfers = []  # local verfers of group signing keys
             ldigers = list(gkever.nexter.digers)  # local participants next digers
-            for aid in rec.aids:
+            for aid in rec.lids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.lids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
@@ -250,7 +250,7 @@ class Counselor(doing.DoDoer):
                 else:
                     break
 
-            if len(lverfers) != len(rec.aids):
+            if len(lverfers) != len(rec.lids):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
@@ -259,7 +259,7 @@ class Counselor(doing.DoDoer):
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            others = list(rec.aids)
+            others = list(rec.lids)
             others.remove(ghab.lhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
@@ -379,7 +379,7 @@ class Counselor(doing.DoDoer):
         evts = []
         if (rec := self.hby.db.gpae.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.aids,
+                aids=rec.lids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,
@@ -392,7 +392,7 @@ class Counselor(doing.DoDoer):
             evts.append(data)
         if (rec := self.hby.db.glwe.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.aids,
+                aids=rec.lids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,
