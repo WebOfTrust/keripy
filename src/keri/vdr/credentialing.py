@@ -426,11 +426,11 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            gids (list): participant identifier prefixes of a multisig group
+            lids (list): participant identifier prefixes of a multisig group
                          in the anchoring event
 
         ToDo: NRR
-        change gaids to gids
+        change gaids to lids
 
         """
         registry = self.rgy.regs[regk]
@@ -477,10 +477,10 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            gids (list): participants of a multisig group in the anchoring event
+            lids (list): participants of a multisig group in the anchoring event
 
         ToDo: NRR
-        change gaids to gids
+        change gaids to lids
 
         """
         registry = self.rgy.regs[regk]
@@ -729,10 +729,10 @@ class Credentialer(doing.DoDoer):
 
         Args:
             creder (Creder): Credential object to issue
-            gids (list): optional participant list for multisig issuance
+            lids (list): optional participant list for multisig issuance
 
         ToDo: NRR
-        change gaids to gids
+        change gaids to lids
 
         """
         regk = creder.crd["ri"]
