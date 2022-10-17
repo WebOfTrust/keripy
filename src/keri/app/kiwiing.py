@@ -1980,8 +1980,8 @@ class MultisigInceptEnd(MultisigEndBase):
         """Incept group multisig
 
         ToDo: NRR
-        changes aids to gaids and make it a list of tuples (laid, index, ondex)
-        Then pass these into self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
+        Add to body  (lid, lindex, londex) for lhab
+        Then pass these into self.hby.makeGroupHab(group=alias, lhab=hab, lids=aids, **inits)
 
 
         """
@@ -1991,11 +1991,11 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = "Invalid multisig group inception request, 'aids' is required'"
             return None, None
 
-        gaids = body["aids"]  # change to gaids for group aids to be clearer
+        lids = body["aids"]  # change to lids for local participant ids in group
         hab = None
-        for gaid in gaids:
-            if gaid in self.hby.habs:
-                hab = self.hby.habs[gaid]
+        for lid in lids:
+            if lid in self.hby.habs:
+                hab = self.hby.habs[lid]
                 break
 
         if hab is None:
@@ -2036,7 +2036,7 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         try:
-            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, lids=gaids, **inits)
+            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, lids=lids, **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")
@@ -2056,7 +2056,7 @@ class MultisigInceptEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
-        self.counselor.start(gaids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(lids=aids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
     def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
@@ -2377,7 +2377,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         sn = ghab.kever.sn
         # begin the rotation process
-        self.counselor.rotate(ghab=ghab, gaids=aids, isith=isith, nsith=nsith,
+        self.counselor.rotate(ghab=ghab, lids=aids, isith=isith, nsith=nsith,
                               toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
         # Create `exn` peer to peer message to notify other participants UI
@@ -2500,7 +2500,7 @@ class MultisigEventEnd(MultisigEndBase):
             adds = set(wits) - set(ewits)
 
         sn = ghab.kever.sn
-        self.counselor.rotate(ghab=ghab, gaids=aids, isith=isith, nsith=nsith,
+        self.counselor.rotate(ghab=ghab, lids=aids, isith=isith, nsith=nsith,
                               toad=toad, cuts=list(cuts), adds=list(adds), data=data)
 
         # cue up an event to send notification when complete
@@ -2639,7 +2639,7 @@ class MultisigEventEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(gaids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(lids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         return serder
 
 

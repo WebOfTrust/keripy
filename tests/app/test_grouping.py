@@ -47,7 +47,7 @@ def test_counselor():
         saider = coring.Saider(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(gaids=aids, pid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.start(lids=aids, pid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
@@ -88,7 +88,7 @@ def test_counselor():
 
         # Partial rotation
         aids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, gaids=aids, nsith='2', toad=0, cuts=list(), adds=list())
+        counselor.rotate(ghab=ghab, lids=aids, nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.aids == aids
