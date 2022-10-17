@@ -1972,12 +1972,14 @@ class MultisigInceptEnd(MultisigEndBase):
         self.postman = forwarding.Postman(hby=self.hby)
         doers = [self.postman]
 
-        super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
+        super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier,
+                                                counselor=counselor, doers=doers)
+
 
     def initialize(self, body, rep, alias):
         """Incept group multisig
 
-        ToDo
+        ToDo: NRR
         changes aids to gaids and make it a list of tuples (laid, index, ondex)
         Then pass these into self.hby.makeGroupHab(group=alias, lhab=hab, gaids=aids, **inits)
 
@@ -1989,7 +1991,7 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = "Invalid multisig group inception request, 'aids' is required'"
             return None, None
 
-        aids = body["aids"]
+        aids = body["aids"]  # change to gaids for group aids to be clearer
         hab = None
         for aid in aids:
             if aid in self.hby.habs:
