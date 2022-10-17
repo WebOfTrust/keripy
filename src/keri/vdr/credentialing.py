@@ -370,14 +370,14 @@ class Registrar(doing.DoDoer):
 
         super(Registrar, self).__init__(doers=doers)
 
-    def incept(self, name, pre, conf=None, aids=None):
+    def incept(self, name, pre, conf=None, gaids=None):
         """
 
         Parameters:
             name (str): human readable name for the registry
             pre (str): qb64 identifier prefix of issuing identifier in control of this registry
             conf (dict): configuration information for the registry (noBackers, estOnly)
-            aids (list): participants of a multisig group in the anchoring event
+            gaids (list): participants of a multisig group in the anchoring event
 
         Returns:
             Registry:  created registry
@@ -408,9 +408,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            aids = aids if aids is not None else hab.gaids
+            gaids = gaids if gaids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
@@ -418,7 +418,7 @@ class Registrar(doing.DoDoer):
 
         return registry
 
-    def issue(self, regk, said, dt=None, aids=None):
+    def issue(self, regk, said, dt=None, gaids=None):
         """
         Create and process the credential issuance TEL events on the given registry
 
@@ -426,7 +426,11 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            aids (list): participants of a multisig group in the anchoring event
+            gids (list): participant identifier prefixes of a multisig group
+                         in the anchoring event
+
+        ToDo: NRR
+        change gaids to gids
 
         """
         registry = self.rgy.regs[regk]
@@ -439,7 +443,7 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if hab.lhab is None:
+        if hab.lhab is None:  # not a multisig group
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -454,17 +458,18 @@ class Registrar(doing.DoDoer):
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
-        else:
-            aids = aids if aids is not None else hab.gaids
+
+        else:  # multisig group hab
+            gaids = gaids if gaids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
-    def revoke(self, regk, said, dt=None, aids=None):
+    def revoke(self, regk, said, dt=None, gaids=None):
         """
         Create and process the credential revocation TEL events on the given registry
 
@@ -472,7 +477,10 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            aids (list): participants of a multisig group in the anchoring event
+            gids (list): participants of a multisig group in the anchoring event
+
+        ToDo: NRR
+        change gaids to gids
 
         """
         registry = self.rgy.regs[regk]
@@ -505,9 +513,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            aids = aids if aids is not None else hab.gaids
+            gaids = gaids if gaids is not None else hab.gaids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
@@ -716,30 +724,33 @@ class Credentialer(doing.DoDoer):
 
         return True
 
-    def issue(self, creder, aids=None):
+    def issue(self, creder, gaids=None):
         """ Issue the credential creder and handle witness propagation and communication
 
         Args:
             creder (Creder): Credential object to issue
-            aids (list): optional participant list for multisig issuance
+            gids (list): optional participant list for multisig issuance
+
+        ToDo: NRR
+        change gaids to gids
 
         """
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
-        aids = aids if aids is not None else hab.gaids
+        gaids = gaids if gaids is not None else hab.gaids
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
-        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, aids=aids)
+        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, gaids=gaids)
 
         rseq = coring.Seqner(sn=seq)
         if hab.lhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
-            others = list(aids)
+            others = list(gaids)
             others.remove(hab.lhab.pre)
 
-            print(f"Sending signed credential to {len(aids) - 1} other participants")
+            print(f"Sending signed credential to {len(gaids) - 1} other participants")
             for recpt in others:
                 self.postman.send(src=hab.lhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 

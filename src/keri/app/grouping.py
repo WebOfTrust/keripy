@@ -37,7 +37,7 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, aids, pid, prefixer, seqner, saider):
+    def start(self, gaids, pid, prefixer, seqner, saider):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -55,10 +55,10 @@ class Counselor(doing.DoDoer):
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
 
-        others = list(aids)
+        others = list(gaids)
         others.remove(pid)
 
-        print(f"Sending multisig event to {len(aids) - 1} other participants")
+        print(f"Sending multisig event to {len(gaids) - 1} other participants")
         for recpt in others:
             self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
@@ -67,7 +67,7 @@ class Counselor(doing.DoDoer):
 
 
 
-    def rotate(self, ghab, aids, isith=None, nsith=None,
+    def rotate(self, ghab, gaids, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
@@ -91,11 +91,11 @@ class Counselor(doing.DoDoer):
 
 
         """
-        aids = aids if aids is not None else ghab.gaids
+        gaids = gaids if gaids is not None else ghab.gaids
         pid = ghab.lhab.pre
-        if pid not in aids:
+        if pid not in gaids:
             raise kering.ConfigurationError(f"local identifier {pid} not elected"
-                                            f" to participate in rotation: {aids}")
+                                            f" to participate in rotation: {gaids}")
 
         kever = ghab.kever
 
@@ -104,7 +104,7 @@ class Counselor(doing.DoDoer):
         pnkey = pkever.nexter.digs[0]
 
 
-        rec = basing.RotateRecord(aids=aids, sn=kever.sn+1, isith=isith, nsith=nsith,
+        rec = basing.RotateRecord(aids=gaids, sn=kever.sn+1, isith=isith, nsith=nsith,
             toad=toad, cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
 
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
@@ -115,12 +115,12 @@ class Counselor(doing.DoDoer):
 
         else:
             rot = ghab.lhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
-            others = list(aids)
+            others = list(gaids)
             others.remove(pid)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            print(f"Sending local rotation event to {len(aids) - 1} other participants")
+            print(f"Sending local rotation event to {len(gaids) - 1} other participants")
             for recpt in others:
                 self.postman.send(src=pid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 

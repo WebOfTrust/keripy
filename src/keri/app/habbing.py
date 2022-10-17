@@ -785,7 +785,9 @@ class Hab:
 
     Todo: NRR
     Change gaids to list of tuples (laid, index, ondex) to provide local participants
-    in this event
+    in this event.
+    If .lhab then need .lindex .londex for signing need to persist? put in
+    HabitatRecord for group habitat .laid .lindex .londex
 
     """
 
@@ -869,8 +871,9 @@ class Hab:
                           from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
 
-        ToDo:
+        ToDo: NRR
         HabitatRecord needs to also store indices for each gaid (index, ondex)
+        to know how to sign in future?
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
@@ -951,7 +954,7 @@ class Hab:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        # ToDo: NRR add dual indices to HabitatRecord? No only need when signing.
+        # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
         habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
         if self.lhab:
             habord.pid = self.lhab.pre
