@@ -1728,7 +1728,7 @@ def test_clean_baser():
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
+            assert data.hid == natHab.pre
 
             # add garbage event to corrupt database
             badsrdr = eventing.rotate(pre=natHab.pre,
@@ -1785,7 +1785,7 @@ def test_clean_baser():
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
+            assert data.hid == natHab.pre
 
 
     assert not os.path.exists(hby.ks.path)

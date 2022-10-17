@@ -401,7 +401,7 @@ class Habery:
         groups = []
         for name, habord in self.db.habs.getItemIter():
             name, = name  # detupleize the database key name
-            pre = habord.prefix
+            pre = habord.hid
 
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
@@ -423,7 +423,7 @@ class Habery:
 
         # Populate the participant hab after loading all habs
         for habord in groups:
-            self.habs[habord.prefix].lhab = self.habs[habord.lid]
+            self.habs[habord.hid].lhab = self.habs[habord.lid]
 
         self.reconfigure()  # post hab load reconfiguration
 
@@ -579,7 +579,7 @@ class Habery:
 
         """
         if (habord := self.db.habs.get(name)) is not None:
-            return self.habs[habord.prefix] if habord.prefix in self.habs else None
+            return self.habs[habord.hid] if habord.hid in self.habs else None
         return None
 
     def reconfigure(self):
@@ -956,7 +956,7 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(prefix=self.pre, lid=None, lids=self.lids)
+        habord = basing.HabitatRecord(hid=self.pre, lid=None, lids=self.lids)
         if self.lhab:
             habord.lid = self.lhab.pre
 
@@ -1041,7 +1041,7 @@ class Hab:
         habr = self.db.habs.get(self.name)
         # may want db method that updates .habs. and .prefixes together
         self.db.habs.pin(keys=self.name,
-                         val=basing.HabitatRecord(prefix=self.pre,
+                         val=basing.HabitatRecord(hid=self.pre,
                                                   watchers=habr.watchers,
                                                   lid=None,
                                                   lids=None))

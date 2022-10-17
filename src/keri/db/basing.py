@@ -136,15 +136,20 @@ class HabitatRecord:  # baser.habs
     """
     Habitat application state information keyed by habitat name (baser.habs)
 
+    Attributes:
+        prefix (str): identifier prefix of hab qb64
+        lid (str | None): local identifier prefix of group participant qb64
+        lids: (list | None)  local identifiers qb64 of all multisig group participants
+        watchers: (list[str]) = list of id prefixes qb64 of watchers
+
     ToDo: NRR
     Add lid and lindex and londex ?
 
     """
-    prefix: str  # aid qb64 ot Hab
-    lid: Optional[str]  # participant aid of group aid
-    lids: Optional[list]  # local identifiers of all multisig group participants
-
-    watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+    hid: str  # identifier prefix of hab qb64
+    lid: str | None  # local identifier prefix of group participant qb64
+    lids: list | None  # local identifiers of all multisig group participants qb64
+    watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
 @dataclass
@@ -913,7 +918,7 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (state := self.states.get(keys=data.prefix)) is not None:
+            if (state := self.states.get(keys=data.hid)) is not None:
                 try:
                     kever = eventing.Kever(state=state, db=self,
                                            prefixes=self.prefixes,
@@ -964,9 +969,9 @@ class Baser(dbing.LMDBer):
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, val in self.habs.getItemIter():
-                    if val.prefix in copy.kevers:  # only copy habs that verified
+                    if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
-                        copy.prefixes.add(val.prefix)
+                        copy.prefixes.add(val.hid)
 
                 if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."
