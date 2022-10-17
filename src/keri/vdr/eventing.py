@@ -71,9 +71,6 @@ def incept(
     Returns:
         Serder: Event message Serder
 
-    Todo:
-        Apply nonce to registry inception event to guarantee uniquiness of identifier
-
     """
 
     vs = versify(version=version, kind=kind, size=0)

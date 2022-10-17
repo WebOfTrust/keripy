@@ -482,7 +482,7 @@ class Habery:
                 events allowed in KEL for this Hab
             DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
 
-        ToDo:
+        ToDo: NRR
         change gaids to list of tuples (laid, index, ondex) for local participant
         in group aid multisig.
 
@@ -783,7 +783,7 @@ class Hab:
         accepted (bool): True means accepted into local KEL.
                           False otherwise
 
-    Todo:
+    Todo: NRR
     Change gaids to list of tuples (laid, index, ondex) to provide local participants
     in this event
 
@@ -835,6 +835,7 @@ class Hab:
 
         self.inited = False
         self.delpre = None  # assigned laster if delegated
+
 
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
              transferable=True, isith=None, icount=1, nsith=None, ncount=None,
@@ -950,6 +951,7 @@ class Hab:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
+        # ToDo: NRR add dual indices to HabitatRecord? No only need when signing.
         habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
         if self.lhab:
             habord.pid = self.lhab.pre
@@ -981,6 +983,7 @@ class Hab:
             self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
+
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
@@ -1034,7 +1037,10 @@ class Hab:
         habr = self.db.habs.get(self.name)
         # may want db method that updates .habs. and .prefixes together
         self.db.habs.pin(keys=self.name,
-                         val=basing.HabitatRecord(prefix=self.pre, watchers=habr.watchers, pid=None, aids=None))
+                         val=basing.HabitatRecord(prefix=self.pre,
+                                                  watchers=habr.watchers,
+                                                  pid=None,
+                                                  aids=None))
         self.prefixes.add(self.pre)
 
         # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
@@ -1084,8 +1090,10 @@ class Hab:
         """
         return self.db.prefixes
 
+
     def group(self):
         return self.gaids
+
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
         if self.lhab:
@@ -1097,6 +1105,7 @@ class Hab:
             if verfers is None:
                 verfers = self.kever.verfers
             return self.mgr.sign(ser, pubs=pubs, verfers=verfers, indexed=indexed)
+
 
     def rotate(self, isith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
                data=None, gverfers=None, gdigers=None):

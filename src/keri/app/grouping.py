@@ -85,7 +85,7 @@ class Counselor(doing.DoDoer):
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
 
-        ToDo
+        ToDo: NRR
         changes aids to gaids and make it a list of tuples (laid, index, ondex)
         Then store these with rotationRecord to be used by .processPartialAidEscrow()
 
@@ -210,13 +210,14 @@ class Counselor(doing.DoDoer):
 
                 return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
+
     def processPartialAidEscrow(self):
         """
         Process escrow of group multisig rotate requests missing rotations from other participants.  Message
         processing will send this local controllers rotation event to all other participants
         then this escrow waits for rotations from all other participants
 
-        ToDo
+        ToDo: NRR
         rec includes the dual indices for current and next for new rotation
         add database for each group hab to store for each local hab the reference
         to the event used in by local hab to provided current and/or next keys
