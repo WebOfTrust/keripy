@@ -510,9 +510,9 @@ class MultisigInceptHandler(doing.DoDoer):
             yield
 
 
-def multisigInceptExn(hab, aids, ked, delegator=None):
+def multisigInceptExn(hab, lids, ked, delegator=None):
     data = dict(
-        aids=aids,
+        aids=lids,
         ked=ked
     )
 

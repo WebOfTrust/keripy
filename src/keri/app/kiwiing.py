@@ -1992,13 +1992,13 @@ class MultisigInceptEnd(MultisigEndBase):
             return None, None
 
         lids = body["aids"]  # change to lids for local participant ids in group
-        hab = None
+        lhab = None
         for lid in lids:
             if lid in self.hby.habs:
-                hab = self.hby.habs[lid]
+                lhab = self.hby.habs[lid]
                 break
 
-        if hab is None:
+        if lhab is None:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group inception request, aid list must contain a local identifier'"
             return None, None
@@ -2036,13 +2036,13 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         try:
-            ghab = self.hby.makeGroupHab(group=alias, lhab=hab, lids=lids, **inits)
+            ghab = self.hby.makeGroupHab(group=alias, lhab=lhab, lids=lids, **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")
             return None, None
 
-        return hab, ghab
+        return lhab, ghab
 
     def icp(self, hab, ghab, aids):
         """
@@ -2120,7 +2120,7 @@ class MultisigInceptEnd(MultisigEndBase):
         """
         body = req.get_media()
 
-        hab, ghab = self.initialize(body, rep, alias)
+        lhab, ghab = self.initialize(body, rep, alias)
         if ghab is None:
             return
 
@@ -2132,16 +2132,16 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(hab, aids=ghab.lids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(lhab, lids=ghab.lids, ked=serder.ked)
 
         others = list(ghab.lids)
-        others.remove(hab.pre)
+        others.remove(lhab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
-            self.postman.send(src=hab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
+            self.postman.send(src=lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         #  signal to the group counselor to start the inception
-        self.icp(hab=hab, ghab=ghab, aids=ghab.lids)
+        self.icp(hab=lhab, ghab=ghab, aids=ghab.lids)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
