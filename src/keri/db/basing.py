@@ -139,6 +139,8 @@ class HabitatRecord:  # baser.habs
     Attributes:
         hid (str): identifier prefix of hab qb64
         lid (str | None): local identifier qb64 of group participant when hid is group
+        lindex (int | None): current signing key index
+        londex (int | None): prior next key digest index
         lids: (list | None) local identifiers qb64 of all group participants when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
@@ -147,8 +149,10 @@ class HabitatRecord:  # baser.habs
 
     """
     hid: str  # hab own identifier prefix qb64
-    lid: str | None  # local identifier qb64 of group participant when hid is group
-    lids: list | None  # local identifiers qb64 of all group participants when hid is group
+    lid: str | None = None  # local identifier qb64 of group participant when hid is group
+    lindex: int | None = None # lid current signing key index
+    londex: int | None = None  # lid prior next key digest index
+    lids: list | None = None  # local identifiers qb64 of all group participants when hid is group
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
