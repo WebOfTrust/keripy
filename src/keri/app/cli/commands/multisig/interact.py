@@ -98,7 +98,7 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        aids = self.aids if self.aids is not None else ghab.gaids
+        aids = self.aids if self.aids is not None else ghab.lids
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)
@@ -106,7 +106,7 @@ class GroupMultisigInteract(doing.DoDoer):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(aids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(lids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

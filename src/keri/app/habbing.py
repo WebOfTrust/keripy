@@ -406,7 +406,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, gaids=habord.aids)
+                      name=name, pre=pre, temp=self.temp, lids=habord.aids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -455,14 +455,14 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, lhab, gaids, **kwa):
+    def makeGroupHab(self, group, lhab, lids, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
         Parameters: (non-pass-through):
             group (str): human readable alias for group identifier
             lhab (Hab): local (participant) hab of group hab.
-            gaids (list): of qb64 prefixes aids of participants in group
+            lids (list): of qb64 prefixes aids of participants in group
 
 
         Parameters: (**kwa pass-through to hab.make)
@@ -483,62 +483,63 @@ class Habery:
             DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
 
         ToDo: NRR
-        change gaids to list of tuples (laid, index, ondex) for local participant
+        add lindex, londex for local  local participant
         in group aid multisig.
 
         """
 
-        if lhab.pre not in gaids:
+        if lhab.pre not in lids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
-                                            .format(gaids))
+                                            .format(lids))
 
-        for aid in gaids:
+        for aid in lids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={gaids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={lids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
-        gverfers, gdigers = self.extractKeysDigs(gaids)  # group verfers and digers
-        kwa["gverfers"] = gverfers
-        kwa["gdigers"] = gdigers
+        lverfers, ldigers = self.extractKeysDigs(lids)  # group verfers and digers
+        kwa["lverfers"] = lverfers
+        kwa["ldigers"] = ldigers
 
         # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, lhab=lhab, gaids=gaids, temp=self.temp)
+                  name=group, lhab=lhab, lids=lids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
 
         return hab
 
-    def extractKeysDigs(self, aids):
+    def extractKeysDigs(self, lids):
         """
         Extract the public key and next digest from the current est event of the other
         participants in the multisig group.
 
         Parameters:
-            aids(list): qb64 identifier prefix of all participants of the multisig group
+            lids (list): qb64 identifier prefix of all local single sig
+                        participants of the multisig group
 
         """
-        gverfers = []  # verfers of multisig group signing keys
-        gdigers = []  # digers of multisig group next key digests
-        for aid in aids:
-            kever = self.kevers[aid]
+        lverfers = []  # verfers of multisig group signing keys
+        ldigers = []  # digers of multisig group next key digests
+        for lid in lids:
+            kever = self.kevers[lid]
             keys = kever.verfers
             if len(keys) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
-                                                .format(aid, len(keys)))
+                                                .format(lid, len(keys)))
             ndigs = kever.nexter.digs
             if len(ndigs) > 1:
                 raise kering.ConfigurationError("Identifier must have only one nexy key commitment, {} has {}"
-                                                .format(aid, len(ndigs)))
+                                                .format(lid, len(ndigs)))
 
             diger = coring.Diger(qb64=ndigs[0])
 
-            gverfers.append(keys[0])
-            gdigers.append(diger)
+            lverfers.append(keys[0])
+            ldigers.append(diger)
 
-        return gverfers, gdigers
+        return (lverfers, ldigers)
 
     def close(self, clear=False):
         """Close resources.
@@ -766,7 +767,7 @@ class Hab:
         pre (str): qb64 prefix of own local controller or None if new
         lhab (Hab | None): local (participant) hab when this Hab is multisig group
                            else None
-        gaids (list | None): group (participant) aids (prefixes) when this Hab is
+        lids (list | None): local participant ids (prefixes) when this Hab is
                            multisig group else None
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
@@ -784,13 +785,15 @@ class Hab:
                           False otherwise
 
     Todo: NRR
-    Change gaids to list of tuples (laid, index, ondex) to provide local participants
-    in this event
+    augment with lindex londex to provide local lid siging indices
+    in this event.
+    If .lhab then need .lindex .londex for signing need to persist? put in
+    HabitatRecord for group habitat .laid .lindex .londex
 
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, lhab=None, gaids=None, temp=False):
+                 name='test', pre=None, lhab=None, lids=None, temp=False):
         """
         Initialize instance.
 
@@ -810,7 +813,7 @@ class Hab:
             pre (str | None): qb64 identifier prefix of own local controller else None
             lhab (Hab | None): local (participant) hab when this Hab is multisig group
                            else None
-            gaids (list | None): group (participant) aids (prefixes) when this Hab is
+            lids (list | None): local participant ids (prefixes) when this Hab is
                            multisig group else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
@@ -830,7 +833,7 @@ class Hab:
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
         self.lhab = lhab  # local participant Hab of this group hab
-        self.gaids = gaids  # group aids of participant in this group hab
+        self.lids = lids  # group aids of participant in this group hab
         self.temp = True if temp else False
 
         self.inited = False
@@ -840,7 +843,7 @@ class Hab:
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
              transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
-             gverfers=None, gdigers=None, hidden=False):
+             lverfers=None, ldigers=None, hidden=False):
         """
         Finish setting up or making Hab from parameters.
         Assumes injected dependencies were already setup.
@@ -863,14 +866,15 @@ class Hab:
                 events allowed in KEL for this Hab
             DnD (bool): eventing.TraitCodex.DnD means do allow delegated
                        identifiers from this identifier
-            gverfers (list): Verfer instances of public keys collected from
+            lverfers (list): local Verfer instances of public keys collected from
                            inception of participants in group identifier
-            gdigers (list): Diger instances of next public key digests collected
+            ldigers (list): local Diger instances of next public key digests collected
                           from inception of participants in group identifier
             hidden (bool): A hidden Hab is not included in the list of Habs.
 
-        ToDo:
-        HabitatRecord needs to also store indices for each gaid (index, ondex)
+        ToDo: NRR
+        HabitatRecord needs to also store indices for each lid (lindex, londex)
+        to know how to sign in future?
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
@@ -885,9 +889,9 @@ class Hab:
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
-        if gverfers:
-            verfers = gverfers
-            digers = gdigers
+        if lverfers:
+            verfers = lverfers
+            digers = ldigers
             cst = coring.Tholder(sith=isith).sith  # current signing threshold
             nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
@@ -947,12 +951,12 @@ class Hab:
                                      code=code)
 
         self.pre = serder.ked["i"]  # new pre
-        if not gverfers:
+        if not lverfers:
             self.mgr.move(old=opre, new=self.pre)  # move index to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        # ToDo: NRR add dual indices to HabitatRecord? No only need when signing.
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
+        # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
+        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.lids)
         if self.lhab:
             habord.pid = self.lhab.pre
 
@@ -1092,7 +1096,7 @@ class Hab:
 
 
     def group(self):
-        return self.gaids
+        return self.lids
 
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
@@ -1108,7 +1112,7 @@ class Hab:
 
 
     def rotate(self, isith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
-               data=None, gverfers=None, gdigers=None):
+               data=None, lverfers=None, ldigers=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -1121,9 +1125,9 @@ class Hab:
             cuts (list) of qb64 pre of witnesses to be removed from witness list
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
-            gverfers (list): Verfer instances of public keys collected from
+            lverfers (list): local Verfer instances of public keys collected from
                             inception of participants in group identifier
-            gdigers (list): Diger instances of next public key digests collected
+            ldigers (list): local Diger instances of next public key digests collected
                             from inception of participants in group identifier
 
         """
@@ -1135,9 +1139,9 @@ class Hab:
         if count is None:
             count = len(kever.verfers)  # use previous count
 
-        if gverfers:
-            verfers = gverfers
-            digers = gdigers
+        if lverfers:
+            verfers = lverfers
+            digers = ldigers
             cst = coring.Tholder(sith=isith).sith  # current signing threshold
             nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:

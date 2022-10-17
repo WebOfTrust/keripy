@@ -109,7 +109,7 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.gaids)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.lids)
                 # exn of /oobis of all multisig participants to rootgar
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)

@@ -135,6 +135,9 @@ class OobiRecord:
 class HabitatRecord:  # baser.habs
     """
     Habitat application state information keyed by habitat name (baser.habs)
+
+    ToDo: NRR
+    change aids to lids
     """
     prefix: str  # aid qb64
     pid: Optional[str]  # participant aid of group aid
@@ -147,6 +150,9 @@ class HabitatRecord:  # baser.habs
 class RotateRecord:
     """
     Tracks requests to perform multisig rotation during lifecycle of a rotation
+
+    ToDo: NRR
+    change aids to lids
     """
     aids: list
     sn: Optional[int]
