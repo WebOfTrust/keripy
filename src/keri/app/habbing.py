@@ -1094,9 +1094,9 @@ class Hab:
         """
         return self.db.prefixes
 
-
-    def group(self):
-        return self.lids
+    # should this be property?
+    #def group(self):
+        #return self.lids
 
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):

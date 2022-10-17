@@ -137,18 +137,18 @@ class HabitatRecord:  # baser.habs
     Habitat application state information keyed by habitat name (baser.habs)
 
     Attributes:
-        prefix (str): identifier prefix of hab qb64
-        lid (str | None): local identifier prefix of group participant qb64
-        lids: (list | None)  local identifiers qb64 of all multisig group participants
+        hid (str): identifier prefix of hab qb64
+        lid (str | None): local identifier qb64 of group participant when hid is group
+        lids: (list | None) local identifiers qb64 of all group participants when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
     ToDo: NRR
     Add lid and lindex and londex ?
 
     """
-    hid: str  # identifier prefix of hab qb64
-    lid: str | None  # local identifier prefix of group participant qb64
-    lids: list | None  # local identifiers of all multisig group participants qb64
+    hid: str  # hab own identifier prefix qb64
+    lid: str | None  # local identifier qb64 of group participant when hid is group
+    lids: list | None  # local identifiers qb64 of all group participants when hid is group
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
@@ -157,18 +157,30 @@ class RotateRecord:
     """
     Tracks requests to perform multisig rotation during lifecycle of a rotation
 
+    Attributes:
+        lids (list):  list of local ids of group participants qb64
+        sn (int | None ):  sequence number of est event
+        isith (str | list | None):  current signing threshold
+        nsith (str | list | None):  next signing threshold
+        toad (int | None): threshold of accountable duplicity
+        cuts (list | None):  list of backers to remove qb64
+        adds (list | None):  list of backers to add qb64
+        data (list | None): seals
+        date (str | None):  datetime of rotation
+
+
     ToDo: NRR
-    Add lid and lindex and londex ?
+    Add  lid, lindex, londex or lindices londices ?
     """
-    lids: list
-    sn: Optional[int]
-    isith: Optional[str | list]
-    nsith: Optional[str | list]
-    toad: Optional[int]
-    cuts: Optional[list]
-    adds: Optional[list]
-    data: Optional[list]
-    date: Optional[str]
+    lids: list  # list of local ids of group participants qb64
+    sn: int |  None  # sequence number of est event
+    isith: str | list | None  # current signing threshold
+    nsith: str | list | None  # next signing threshold
+    toad: int | None  # threshold of accountable duplicity
+    cuts: list | None  # list of backers to remove qb64
+    adds: list | None  # list of backers to add qb64
+    data: list | None  # seals
+    date: str | None  # datetime of rotation
 
 
 @dataclass
