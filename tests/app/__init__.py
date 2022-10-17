@@ -38,9 +38,9 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             nsith='3'
         )
 
-        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, gaids=gaids, **inits)
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, gaids=gaids, **inits)
-        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", lhab=hab3, gaids=gaids, **inits)
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, lids=gaids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, lids=gaids, **inits)
+        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", lhab=hab3, lids=gaids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eraw = hab1.db.getEvt(dgkey)

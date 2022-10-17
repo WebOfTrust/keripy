@@ -120,7 +120,7 @@ class GroupMultisigIncept(doing.DoDoer):
             gaids = self.inits["aids"]  # not a pass through in makeGroupHab
             del self.inits["aids"]
 
-            ghab = self.hby.makeGroupHab(group=self.group, lhab=hab, gaids=gaids, **self.inits)
+            ghab = self.hby.makeGroupHab(group=self.group, lhab=hab, lids=gaids, **self.inits)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)

@@ -408,7 +408,7 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            gaids = gaids if gaids is not None else hab.gaids
+            gaids = gaids if gaids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
@@ -460,7 +460,7 @@ class Registrar(doing.DoDoer):
             return vcid, rseq.sn
 
         else:  # multisig group hab
-            gaids = gaids if gaids is not None else hab.gaids
+            gaids = gaids if gaids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
@@ -513,7 +513,7 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            gaids = gaids if gaids is not None else hab.gaids
+            gaids = gaids if gaids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(gaids=gaids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
@@ -738,7 +738,7 @@ class Credentialer(doing.DoDoer):
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
-        gaids = gaids if gaids is not None else hab.gaids
+        gaids = gaids if gaids is not None else hab.lids
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
         vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, gaids=gaids)

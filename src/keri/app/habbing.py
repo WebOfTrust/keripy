@@ -406,7 +406,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, gaids=habord.aids)
+                      name=name, pre=pre, temp=self.temp, lids=habord.aids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -455,7 +455,7 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, lhab, gaids, **kwa):
+    def makeGroupHab(self, group, lhab, lids, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
@@ -488,23 +488,23 @@ class Habery:
 
         """
 
-        if lhab.pre not in gaids:
+        if lhab.pre not in lids:
             raise kering.ConfigurationError("Local identifier must be member of aids ={}"
-                                            .format(gaids))
+                                            .format(lids))
 
-        for aid in gaids:
+        for aid in lids:
             if aid not in self.kevers:
-                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={gaids}")
+                raise kering.ConfigurationError(f"Identifier {aid} not recognized from group aids ={lids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
-        gverfers, gdigers = self.extractKeysDigs(gaids)  # group verfers and digers
+        gverfers, gdigers = self.extractKeysDigs(lids)  # group verfers and digers
         kwa["gverfers"] = gverfers
         kwa["gdigers"] = gdigers
 
         # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, lhab=lhab, gaids=gaids, temp=self.temp)
+                  name=group, lhab=lhab, lids=lids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
@@ -766,7 +766,7 @@ class Hab:
         pre (str): qb64 prefix of own local controller or None if new
         lhab (Hab | None): local (participant) hab when this Hab is multisig group
                            else None
-        gaids (list | None): group (participant) aids (prefixes) when this Hab is
+        lids (list | None): local participant ids (prefixes) when this Hab is
                            multisig group else None
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation
@@ -784,7 +784,7 @@ class Hab:
                           False otherwise
 
     Todo: NRR
-    Change gaids to list of tuples (laid, index, ondex) to provide local participants
+    augment with lindex londex to provide local lid siging indices
     in this event.
     If .lhab then need .lindex .londex for signing need to persist? put in
     HabitatRecord for group habitat .laid .lindex .londex
@@ -792,7 +792,7 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, lhab=None, gaids=None, temp=False):
+                 name='test', pre=None, lhab=None, lids=None, temp=False):
         """
         Initialize instance.
 
@@ -812,7 +812,7 @@ class Hab:
             pre (str | None): qb64 identifier prefix of own local controller else None
             lhab (Hab | None): local (participant) hab when this Hab is multisig group
                            else None
-            gaids (list | None): group (participant) aids (prefixes) when this Hab is
+            lids (list | None): local participant ids (prefixes) when this Hab is
                            multisig group else None
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
@@ -832,7 +832,7 @@ class Hab:
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
         self.lhab = lhab  # local participant Hab of this group hab
-        self.gaids = gaids  # group aids of participant in this group hab
+        self.lids = lids  # group aids of participant in this group hab
         self.temp = True if temp else False
 
         self.inited = False
@@ -872,7 +872,7 @@ class Hab:
             hidden (bool): A hidden Hab is not included in the list of Habs.
 
         ToDo: NRR
-        HabitatRecord needs to also store indices for each gaid (index, ondex)
+        HabitatRecord needs to also store indices for each lid (lindex, londex)
         to know how to sign in future?
 
         """
@@ -955,7 +955,7 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.gaids)
+        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.lids)
         if self.lhab:
             habord.pid = self.lhab.pre
 
@@ -1095,7 +1095,7 @@ class Hab:
 
 
     def group(self):
-        return self.gaids
+        return self.lids
 
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
