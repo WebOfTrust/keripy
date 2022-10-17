@@ -235,26 +235,26 @@ class Counselor(doing.DoDoer):
         """
         # ignore saider because it is not relevant yet
         for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially aid escrow
-            ghab = self.hby.habs[pre]
-            gkever = ghab.kever
+            ghab = self.hby.habs[pre]  # group hab Hab instance
+            gkever = ghab.kever  # group hab's Kever instance key state
 
-            gverfers = []  # verfers of group signing keys
-            ndigers = list(gkever.nexter.digers)
+            lverfers = []  # local verfers of group signing keys
+            ldigers = list(gkever.nexter.digers)  # local participants next digers
             for aid in rec.aids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.lids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
-                    gverfers.append(pkever.verfers[0])
-                    ndigers[idx] = pkever.nexter.digers[0]
+                    lverfers.append(pkever.verfers[0])
+                    ldigers[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
-            if len(gverfers) != len(rec.aids):
+            if len(lverfers) != len(rec.aids):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
                               toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              gverfers=gverfers, gdigers=ndigers)
+                              lverfers=lverfers, ldigers=ldigers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
