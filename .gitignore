@@ -137,3 +137,6 @@ dmypy.json
 
 klid.log
 config/
+
+# keripy virtualenv
+keripy/
