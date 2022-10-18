@@ -249,19 +249,19 @@ class OobiResource(doing.DoDoer):
             rep.text = f"Unknown identifier {alias}"
             return
 
-        if hab.lhab is None:
+        if hab.mhab is None:
             rep.status = falcon.HTTP_400
             rep.text = f"Identifer for {alias} is not a group hab, not supported"
             return
 
         oobis = body["oobis"]
-        for aid in hab.lids:
-            if aid == hab.lhab.pre:
+        for aid in hab.mids:
+            if aid == hab.mhab.pre:
                 continue
 
             for oobi in oobis:
-                exn, atc = oobiRequestExn(hab.lhab, aid, oobi)
-                self.postman.send(src=hab.lhab.pre, dest=aid, topic="oobi", serder=exn, attachment=atc)
+                exn, atc = oobiRequestExn(hab.mhab, aid, oobi)
+                self.postman.send(src=hab.mhab.pre, dest=aid, topic="oobi", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_200
         return
