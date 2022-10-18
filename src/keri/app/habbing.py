@@ -8,6 +8,7 @@ import json
 import os
 from contextlib import contextmanager
 from urllib.parse import urlsplit
+from math import ceil
 
 from hio.base import doing
 from hio.core import wiring
@@ -888,23 +889,24 @@ class Hab:
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
-        if merfers:
+
+
+        if merfers:  # group multisig so use group info
             verfers = merfers
             digers = migers
-            cst = coring.Tholder(sith=isith).sith  # current signing threshold
-            nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
-        elif secrecies:
+        elif secrecies:  # replay
             ipre, _ = self.mgr.ingest(secrecies,
                                       iridx=iridx,
                                       ncount=ncount,
                                       stem=self.name,
                                       transferable=transferable,
                                       temp=self.temp)
-            verfers, digers, cst, nst = self.mgr.replay(pre=ipre, advance=False)
+            verfers, digers, _, _ = self.mgr.replay(pre=ipre, advance=False)
 
-        else:
-            verfers, digers, cst, nst = self.mgr.incept(icount=icount,
+
+        else:  # use defaults
+            verfers, digers, _, _ = self.mgr.incept(icount=icount,
                                                         isith=isith,
                                                         ncount=ncount,
                                                         nsith=nsith,
@@ -912,12 +914,15 @@ class Hab:
                                                         transferable=transferable,
                                                         temp=self.temp)
 
-        if isith is None:
-            pass
-            #assert cst == f"{max(1, ceil(icount / 2)):x}"
-        if nsith is None:
-            pass
-            #assert nst == f"{max(1, ceil(ncount / 2)):x}"
+        icount = len(verfers)
+        ncount = len(digers) if digers is not None else 0
+        if isith is None:  # compute default
+            isith = f"{max(1, ceil(icount / 2)):x}"
+        if nsith is None:  # compute default
+            nsith = f"{max(0, ceil(ncount / 2)):x}"
+
+        cst = coring.Tholder(sith=isith).sith  # current signing threshold
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
 
         opre = verfers[0].qb64  # default original pre from key store move below
@@ -1141,17 +1146,27 @@ class Hab:
         if merfers:
             verfers = merfers
             digers = migers
-            cst = coring.Tholder(sith=isith).sith  # current signing threshold
-            nst = coring.Tholder(sith=nsith).sith  # next signing threshold
+            #cst = coring.Tholder(sith=isith).sith  # current signing threshold
+            #nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:
             try:
-                verfers, digers, cst, nst = self.mgr.replay(pre=self.pre)
+                verfers, digers, _, _ = self.mgr.replay(pre=self.pre)
             except IndexError:
-                verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
+                verfers, digers, _, _ = self.mgr.rotate(pre=self.pre,
                                                             count=count,  # old next is new current
                                                             isith=isith,
                                                             nsith=nsith,
                                                             temp=self.temp)
+
+        icount = len(verfers)
+        ncount = len(digers) if digers is not None else 0
+        if isith is None:  # compute default
+            isith = f"{max(1, ceil(icount / 2)):x}"
+        if nsith is None:  # compute default
+            nsith = f"{max(0, ceil(ncount / 2)):x}"
+
+        cst = coring.Tholder(sith=isith).sith  # current signing threshold
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         keys = [verfer.qb64 for verfer in verfers]
         # this is wrong sith is not kever.tholder.sith as next was different
