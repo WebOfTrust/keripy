@@ -35,28 +35,23 @@ def test_dataclasses():
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == '0'
     assert pl.dt == ''
-    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, st='0', dt='')
+    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
 
 
-    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, st=0, dt=''))
+    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == 0
     assert pl.dt == ''
 
-    # st = coring.Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]).limen
-    st = [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+
     # dt = helping.nowIso8601()
     dt = '2020-11-16T22:30:34.812526+00:00'
-    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, st=st, dt=dt)
+    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
     assert pl.pubs == []
     assert pl.ridx == 1
     assert pl.kidx == 3
-    # assert pl.st == st == '1/2,1/2,1/4,1/4,1/4&1,1'
-    assert pl.st == st == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
     assert pl.dt == dt == '2020-11-16T22:30:34.812526+00:00'
 
     pp = keeping.PrePrm()
@@ -110,13 +105,13 @@ def test_dataclasses():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
-                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
-                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''}}
+    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
+                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
+                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''}}
     ps = helping.datify(keeping.PreSit, dict(
-                                             old=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
-                                             new=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
-                                             nxt=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
+                                             old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
     assert isinstance(ps, keeping.PreSit)
@@ -126,17 +121,14 @@ def test_dataclasses():
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
-    assert ps.old.st == '0'
     assert ps.old.dt == ''
     assert ps.new.pubs == []
     assert ps.new.ridx ==  0
     assert ps.new.kidx == 0
-    assert ps.new.st == '0'
     assert ps.new.dt == ''
     assert ps.nxt.pubs == []
     assert ps.nxt.ridx == 0
     assert ps.nxt.kidx == 0
-    assert ps.nxt.st == '0'
     assert ps.nxt.dt == ''
 
     old = keeping.PubLot(ridx=0, kidx=0)
@@ -468,17 +460,14 @@ def test_keeper():
                                old=keeping.PubLot(pubs=[],
                                                   ridx=0,
                                                   kidx=0,
-                                                  st='0',
                                                   dt=''),
                                new=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                              )
 
@@ -486,17 +475,14 @@ def test_keeper():
                                old=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=0,
                                                   kidx=0,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                new=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                              )
 
