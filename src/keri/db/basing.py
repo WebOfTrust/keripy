@@ -136,14 +136,24 @@ class HabitatRecord:  # baser.habs
     """
     Habitat application state information keyed by habitat name (baser.habs)
 
-    ToDo: NRR
-    change aids to lids
-    """
-    prefix: str  # aid qb64
-    pid: Optional[str]  # participant aid of group aid
-    aids: Optional[list]  # all identifiers participating in the group identity
+    Attributes:
+        hid (str): identifier prefix of hab qb64
+        lid (str | None): local identifier qb64 of group participant when hid is group
+        lindex (int | None): current signing key index
+        londex (int | None): prior next key digest index
+        lids: (list | None) local identifiers qb64 of all group participants when hid is group
+        watchers: (list[str]) = list of id prefixes qb64 of watchers
 
-    watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+    ToDo: NRR
+    Add lid and lindex and londex ?
+
+    """
+    hid: str  # hab own identifier prefix qb64
+    lid: str | None = None  # local identifier qb64 of group participant when hid is group
+    lindex: int | None = None # lid current signing key index
+    londex: int | None = None  # lid prior next key digest index
+    lids: list | None = None  # local identifiers qb64 of all group participants when hid is group
+    watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
 @dataclass
@@ -151,18 +161,30 @@ class RotateRecord:
     """
     Tracks requests to perform multisig rotation during lifecycle of a rotation
 
+    Attributes:
+        lids (list):  list of local ids of group participants qb64
+        sn (int | None ):  sequence number of est event
+        isith (str | list | None):  current signing threshold
+        nsith (str | list | None):  next signing threshold
+        toad (int | None): threshold of accountable duplicity
+        cuts (list | None):  list of backers to remove qb64
+        adds (list | None):  list of backers to add qb64
+        data (list | None): seals
+        date (str | None):  datetime of rotation
+
+
     ToDo: NRR
-    change aids to lids
+    Add  lid, lindex, londex or lindices londices ?
     """
-    aids: list
-    sn: Optional[int]
-    isith: Optional[str | list]
-    nsith: Optional[str | list]
-    toad: Optional[int]
-    cuts: Optional[list]
-    adds: Optional[list]
-    data: Optional[list]
-    date: Optional[str]
+    lids: list  # list of local ids of group participants qb64
+    sn: int |  None  # sequence number of est event
+    isith: str | list | None  # current signing threshold
+    nsith: str | list | None  # next signing threshold
+    toad: int | None  # threshold of accountable duplicity
+    cuts: list | None  # list of backers to remove qb64
+    adds: list | None  # list of backers to add qb64
+    data: list | None  # seals
+    date: str | None  # datetime of rotation
 
 
 @dataclass
@@ -614,6 +636,8 @@ class Baser(dbing.LMDBer):
             value is serialized GroupIdentifier dataclass
 
 
+
+
     Properties:
 
 
@@ -910,7 +934,7 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (state := self.states.get(keys=data.prefix)) is not None:
+            if (state := self.states.get(keys=data.hid)) is not None:
                 try:
                     kever = eventing.Kever(state=state, db=self,
                                            prefixes=self.prefixes,
@@ -920,7 +944,7 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            elif data.pid is None:  # in .habs but no corresponding key state and not a group so remove
+            elif data.lid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records
@@ -961,9 +985,9 @@ class Baser(dbing.LMDBer):
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, val in self.habs.getItemIter():
-                    if val.prefix in copy.kevers:  # only copy habs that verified
+                    if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
-                        copy.prefixes.add(val.prefix)
+                        copy.prefixes.add(val.hid)
 
                 if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."

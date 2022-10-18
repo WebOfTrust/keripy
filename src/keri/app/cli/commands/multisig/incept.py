@@ -126,7 +126,7 @@ class GroupMultisigIncept(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(lids=lids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+            self.counselor.start(lids=lids, lid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)

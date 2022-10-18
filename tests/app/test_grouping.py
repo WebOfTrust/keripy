@@ -37,17 +37,17 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
-        aids = [hab1.pre, hab2.pre, hab3.pre]
+        lids = [hab1.pre, hab2.pre, hab3.pre]
         inits = dict(isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
-        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, lids=aids, **inits)
+        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", lhab=hab1, lids=lids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(lids=aids, pid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.start(lids=lids, lid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
@@ -64,7 +64,7 @@ def test_counselor():
         assert saider.qb64 == "EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s"
 
         # Sith 2 so create second signature to get past the first escrow
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, lids=aids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", lhab=hab2, lids=lids, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
         assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0a'
                        b'fydw9y474RJbcoNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
@@ -87,11 +87,11 @@ def test_counselor():
         counselor.postman.evts.popleft()
 
         # Partial rotation
-        aids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, lids=aids, nsith='2', toad=0, cuts=list(), adds=list())
+        lids = [hab1.pre, hab2.pre]
+        counselor.rotate(ghab=ghab, lids=lids, nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.aids == aids
+        assert rec.lids == lids
         assert rec.nsith == '2'
         assert rec.toad == 0
 
@@ -110,7 +110,7 @@ def test_counselor():
                                      b'EZ08zMICPhPTw"],"bt":"0","br":[],"ba":[],"a":[]}')
         rec = hby1.db.gpae.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.aids == aids
+        assert rec.lids == lids
 
         # rotate second identifiter in group, process escrows to generate group rotation event.
         hab2.rotate()
@@ -458,7 +458,7 @@ def test_pending_events():
         counselor = grouping.Counselor(hby=hby)
 
         rec = basing.RotateRecord(
-            aids=[hab.pre],
+            lids=[hab.pre],
             sn=0,
             isith=["1/2, 1/2, 1/2"],
             nsith=["1/2, 1/2, 1/2"],
@@ -483,7 +483,7 @@ def test_pending_events():
                            'toad': 3}
 
         rec = basing.RotateRecord(
-            aids=[hab.pre],
+            lids=[hab.pre],
             sn=3,
             isith=['1/2, 1/2, 1/2'],
             nsith="1",

@@ -410,7 +410,7 @@ class Registrar(doing.DoDoer):
         else:
             lids = lids if lids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(lids=lids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(lids=lids, lid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
@@ -458,7 +458,7 @@ class Registrar(doing.DoDoer):
         else:  # multisig group hab
             lids = lids if lids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(lids=lids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(lids=lids, lid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
@@ -507,7 +507,7 @@ class Registrar(doing.DoDoer):
         else:
             lids = lids if lids is not None else hab.lids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(lids=lids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
+            self.counselor.start(lids=lids, lid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
                                  saider=saider)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")

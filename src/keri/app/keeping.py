@@ -65,7 +65,7 @@ class PubLot:
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
     st: int | str | list = '0' # signing threshold
-    dt:   str = ""  # datetime ISO8601 when key set created
+    dt: str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
         return iter(asdict(self))

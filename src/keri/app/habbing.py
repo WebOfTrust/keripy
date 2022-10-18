@@ -401,29 +401,29 @@ class Habery:
         groups = []
         for name, habord in self.db.habs.getItemIter():
             name, = name  # detupleize the database key name
-            pre = habord.prefix
+            pre = habord.hid
 
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, lids=habord.aids)
+                      name=name, pre=pre, temp=self.temp, lids=habord.lids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
             #    delegator has not sealed it
-            if not hab.accepted and not habord.pid:
+            if not hab.accepted and not habord.lid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
             hab.inited = True
             self.habs[hab.pre] = hab
-            if habord.pid:
+            if habord.lid:
                 groups.append(habord)
 
         # Populate the participant hab after loading all habs
         for habord in groups:
-            self.habs[habord.prefix].lhab = self.habs[habord.pid]
+            self.habs[habord.hid].lhab = self.habs[habord.lid]
 
         self.reconfigure()  # post hab load reconfiguration
 
@@ -579,7 +579,7 @@ class Habery:
 
         """
         if (habord := self.db.habs.get(name)) is not None:
-            return self.habs[habord.prefix] if habord.prefix in self.habs else None
+            return self.habs[habord.hid] if habord.hid in self.habs else None
         return None
 
     def reconfigure(self):
@@ -956,9 +956,9 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(prefix=self.pre, pid=None, aids=self.lids)
+        habord = basing.HabitatRecord(hid=self.pre, lid=None, lids=self.lids)
         if self.lhab:
-            habord.pid = self.lhab.pre
+            habord.lid = self.lhab.pre
 
         if not hidden:
             self.db.habs.put(keys=self.name,
@@ -1041,10 +1041,10 @@ class Hab:
         habr = self.db.habs.get(self.name)
         # may want db method that updates .habs. and .prefixes together
         self.db.habs.pin(keys=self.name,
-                         val=basing.HabitatRecord(prefix=self.pre,
+                         val=basing.HabitatRecord(hid=self.pre,
                                                   watchers=habr.watchers,
-                                                  pid=None,
-                                                  aids=None))
+                                                  lid=None,
+                                                  lids=None))
         self.prefixes.add(self.pre)
 
         # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
@@ -1094,9 +1094,9 @@ class Hab:
         """
         return self.db.prefixes
 
-
-    def group(self):
-        return self.lids
+    # should this be property?
+    #def group(self):
+        #return self.lids
 
 
     def sign(self, ser, verfers=None, pubs=None, indexed=True):
