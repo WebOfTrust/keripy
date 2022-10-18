@@ -483,8 +483,7 @@ class Habery:
             DnD (bool): eventing.TraitCodex.DnD means do allow delegated identifiers from this identifier
 
         ToDo: NRR
-        add lindex, londex for local  local participant
-        in group aid multisig.
+        add midxs tuples for each group member or all in group multisig.
 
         """
 
@@ -786,10 +785,9 @@ class Hab:
                           False otherwise
 
     Todo: NRR
-    augment with lindex londex to provide local lid siging indices
+    add midxs tuples for each group member or all in group multisig.
     in this event.
-    If .lhab then need .lindex .londex for signing need to persist? put in
-    HabitatRecord for group habitat .laid .lindex .londex
+    If .mhab then need indices for signing need to persist?
 
     """
 
@@ -874,7 +872,7 @@ class Hab:
             hidden (bool): A hidden Hab is not included in the list of Habs.
 
         ToDo: NRR
-        HabitatRecord needs to also store indices for each lid (lindex, londex)
+        HabitatRecord needs to also store indices for each mid midex tuple(csi, pni)
         to know how to sign in future?
 
         """

@@ -86,8 +86,8 @@ class Counselor(doing.DoDoer):
             data (list) of dicts of committed data such as seals
 
         ToDo: NRR
-        Add lindices londices for each local identifier or just lindex londex
-        for lhab.pre
+        Add midxs for each group member identifier or just the local member
+        for mhab.pre
         Then store these with rotationRecord to be used by .processPartialAidEscrow()
 
 
@@ -189,25 +189,25 @@ class Counselor(doing.DoDoer):
         """
         for (pre,), rec in self.hby.db.glwe.getItemIter():  # group partial witness escrow
             ghab = self.hby.habs[pre]
-            lid = ghab.mhab.pre
+            mid = ghab.mhab.pre
             pkever = ghab.mhab.kever
-            dgkey = dbing.dgKey(lid, pkever.serder.saidb)
+            dgkey = dbing.dgKey(mid, pkever.serder.saidb)
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
             if len(wigs) == len(pkever.wits):  # We have all of them, this event is finished
                 self.hby.db.glwe.rem(keys=(pre,))
 
-                rot = self.hby.db.cloneEvtMsg(lid, pkever.sn, pkever.serder.said)  # grab latest est evt
+                rot = self.hby.db.cloneEvtMsg(mid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
                 others = list(rec.mids)
-                others.remove(lid)
+                others.remove(mid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
 
                 print(f"Sending local rotation event to {len(others)} other participants")
                 for recpt in others:
-                    self.postman.send(src=lid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
+                    self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
                 return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
