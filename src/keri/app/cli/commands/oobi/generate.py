@@ -23,7 +23,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument("--role", "-r", help="role of oobis to generate", required=True)
 
 # Parameters for Manager access
@@ -55,7 +55,11 @@ def generate(tymth, tock=0.0, **opts):
     bran = args.bran
     role = args.role
 
-    with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        if alias is None:
+            alias = existing.aliasInput(hby)
+
+        hab = hby.habByName(name=alias)
         if role in (kering.Roles.witness,):
             if not hab.kever.wits:
                 print(f"{alias} identfier {hab.pre} does not have any witnesses.")

@@ -122,6 +122,16 @@ class GroupMultisigIncept(doing.DoDoer):
 
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, mids=mids,
                                          **self.inits)
+            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+            serder = coring.Serder(raw=evt)
+
+            # Create a notification EXN message to send to the other agents
+            exn, ims = grouping.multisigInceptExn(ghab.mhab, aids=ghab.mids, ked=serder.ked)
+            others = list(mids)
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
@@ -146,6 +156,5 @@ class GroupMultisigIncept(doing.DoDoer):
 
         print()
         displaying.printIdentifier(self.hby, ghab.pre)
-
         self.remove(self.toRemove)
 

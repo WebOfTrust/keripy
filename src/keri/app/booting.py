@@ -15,7 +15,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 
-from keri.app import specing, configing, habbing, kiwiing, httping, keeping, oobiing
+from keri.app import specing, configing, habbing, kiwiing, httping, keeping
 from keri.core import coring
 from keri.vdr import credentialing
 
