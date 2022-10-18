@@ -138,21 +138,19 @@ class HabitatRecord:  # baser.habs
 
     Attributes:
         hid (str): identifier prefix of hab qb64
-        lid (str | None): local identifier qb64 of group participant when hid is group
-        lindex (int | None): current signing key index
-        londex (int | None): prior next key digest index
-        lids: (list | None) local identifiers qb64 of all group participants when hid is group
+        mid (str | None): group member identifier qb64 when hid is group
+        midxs (tuple[int, int] | None): mid index tuple (csi, pni)
+        mids: (list | None) group member identifiers qb64 when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
     ToDo: NRR
-    Add lid and lindex and londex ?
+
 
     """
     hid: str  # hab own identifier prefix qb64
-    lid: str | None = None  # local identifier qb64 of group participant when hid is group
-    lindex: int | None = None # lid current signing key index
-    londex: int | None = None  # lid prior next key digest index
-    lids: list | None = None  # local identifiers qb64 of all group participants when hid is group
+    mid: str | None = None  # group member identifier qb64 when hid is group
+    midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
+    mids: list | None = None  # local identifiers qb64 of all group participants when hid is group
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
@@ -162,7 +160,7 @@ class RotateRecord:
     Tracks requests to perform multisig rotation during lifecycle of a rotation
 
     Attributes:
-        lids (list):  list of local ids of group participants qb64
+        mids (list):  group member ids in multisig qb64
         sn (int | None ):  sequence number of est event
         isith (str | list | None):  current signing threshold
         nsith (str | list | None):  next signing threshold
@@ -174,9 +172,10 @@ class RotateRecord:
 
 
     ToDo: NRR
-    Add  lid, lindex, londex or lindices londices ?
+    Add mid, midxs tuple (csi, pni)
+
     """
-    lids: list  # list of local ids of group participants qb64
+    mids: list  # list of local ids of group participants qb64
     sn: int |  None  # sequence number of est event
     isith: str | list | None  # current signing threshold
     nsith: str | list | None  # next signing threshold
@@ -944,7 +943,7 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            elif data.lid is None:  # in .habs but no corresponding key state and not a group so remove
+            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records

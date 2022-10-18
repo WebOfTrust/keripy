@@ -85,8 +85,8 @@ class Boatswain(doing.DoDoer):
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if hab.lhab:
-                    phab = hab.lhab
+                if hab.mhab:
+                    phab = hab.mhab
                 elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:
@@ -109,7 +109,7 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.lids)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.mids)
                 # exn of /oobis of all multisig participants to rootgar
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
