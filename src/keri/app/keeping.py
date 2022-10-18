@@ -54,9 +54,6 @@ class PubLot:
         kidx (int): key index of starting key in key set in sequence wrt to all
                     public keys. Example if each set has 3 keys then ridx 2 has
                     kidx of 2*3 = 6.
-        st (Union[str, list]): signing theshold for key set at ridx. May be
-                    str, or list based on threshold expression type. Suitable for
-                    serializing  by Komer and compat with sith of Tholder.
         dt (str): datetime in ISO8601 format of when key set was first created
 
 
@@ -64,7 +61,6 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list qb64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st: int | str | list = '0' # signing threshold
     dt: str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
@@ -924,13 +920,11 @@ class Manager:
                      algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
-        Returns tuple (verfers, digers, cst, nst) for inception event where
+        Returns tuple (verfers, digers) for inception event where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold for digers for Tholder or Nexter
 
         Incept a prefix. Use first public key as temporary prefix.
         Must .repre later to move pubsit dict to correct permanent prefix.
@@ -1030,9 +1024,9 @@ class Manager:
         dt = helping.nowIso8601()
         ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   ridx=ridx, kidx=kidx, st=cst, dt=dt),
+                                   ridx=ridx, kidx=kidx, dt=dt),
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
+                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
         pre = verfers[0].qb64b
         if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
@@ -1059,7 +1053,7 @@ class Manager:
         # store publics keys for lookup of private key for replay
         self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def move(self, old, new):
@@ -1126,13 +1120,11 @@ class Manager:
                      isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
-        Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
+        Returns tuple (verfers, digers) for rotation event of keys for pre where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold fo digers for Tholder or Nexter
 
         Rotate a prefix.
         Store the updated dictified PreSit in the keeper under pre
@@ -1189,8 +1181,6 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        #cst = ps.new.st  # get new current signing threshold (cst)
-
         if isith is None:
             isith = "{:x}".format(max(0, math.ceil(len(verfers) / 2)))
         cst = coring.Tholder(sith=isith).sith  # next signing threshold
@@ -1227,7 +1217,7 @@ class Manager:
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
-                              ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                              ridx=ridx, kidx=kidx, dt=dt)
 
         if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1243,7 +1233,7 @@ class Manager:
             for pub in old.pubs:  # remove prior old prikeys not current old
                 self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
@@ -1471,7 +1461,7 @@ class Manager:
                     osigners = csigners
                     osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
                     ost = coring.Tholder(sith=osith).sith
-                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=ost, dt=dt)
+                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps = PreSit(old=old)  # .new and .nxt are default
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1481,7 +1471,7 @@ class Manager:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
                 csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
                 cst = coring.Tholder(sith=csith).sith
-                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=cst, dt=dt)
+                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.new = new
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1492,7 +1482,7 @@ class Manager:
                 nsigners = csigners
                 nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
                 nst = coring.Tholder(sith=nsith).sith
-                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.nxt = nxt
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1518,7 +1508,7 @@ class Manager:
                 raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
             nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
             nst = coring.Tholder(sith=nsith).sith
-            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
             ps.nxt = nxt
             if not self.ks.sits.pin(pre, val=ps):
                 raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1579,7 +1569,7 @@ class Manager:
             dt = helping.nowIso8601()
             nsith = "{:x}".format(max(0, math.ceil(len(pubs) / 2)))
             nst = coring.Tholder(sith=nsith).sith
-            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, st=nst, dt=dt)
+            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, dt=dt)
             ps.nxt = nxt
 
 
@@ -1594,11 +1584,8 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold (cst)
-
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=dcode)
                     for pub in ps.nxt.pubs]
-        nst = ps.nxt.st
 
         if advance:
             if not self.ks.sits.pin(pre, val=ps):
@@ -1607,7 +1594,7 @@ class Manager:
                 for pub in old.pubs:  # remove prior old prikeys not current old
                     self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
 class ManagerDoer(doing.Doer):
