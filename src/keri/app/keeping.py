@@ -924,13 +924,11 @@ class Manager:
                      algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
-        Returns tuple (verfers, digers, cst, nst) for inception event where
+        Returns tuple (verfers, digers) for inception event where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold for digers for Tholder or Nexter
 
         Incept a prefix. Use first public key as temporary prefix.
         Must .repre later to move pubsit dict to correct permanent prefix.
@@ -1059,7 +1057,7 @@ class Manager:
         # store publics keys for lookup of private key for replay
         self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def move(self, old, new):
@@ -1126,13 +1124,11 @@ class Manager:
                      isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
-        Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
+        Returns tuple (verfers, digers) for rotation event of keys for pre where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold fo digers for Tholder or Nexter
 
         Rotate a prefix.
         Store the updated dictified PreSit in the keeper under pre
@@ -1243,7 +1239,7 @@ class Manager:
             for pub in old.pubs:  # remove prior old prikeys not current old
                 self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
@@ -1607,7 +1603,7 @@ class Manager:
                 for pub in old.pubs:  # remove prior old prikeys not current old
                     self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
 class ManagerDoer(doing.Doer):

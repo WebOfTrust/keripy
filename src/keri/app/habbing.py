@@ -902,11 +902,11 @@ class Hab:
                                       stem=self.name,
                                       transferable=transferable,
                                       temp=self.temp)
-            verfers, digers, _, _ = self.mgr.replay(pre=ipre, advance=False)
+            verfers, digers = self.mgr.replay(pre=ipre, advance=False)
 
 
         else:  # use defaults
-            verfers, digers, _, _ = self.mgr.incept(icount=icount,
+            verfers, digers = self.mgr.incept(icount=icount,
                                                         isith=isith,
                                                         ncount=ncount,
                                                         nsith=nsith,
@@ -1150,9 +1150,9 @@ class Hab:
             #nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:
             try:
-                verfers, digers, _, _ = self.mgr.replay(pre=self.pre)
+                verfers, digers = self.mgr.replay(pre=self.pre)
             except IndexError:
-                verfers, digers, _, _ = self.mgr.rotate(pre=self.pre,
+                verfers, digers = self.mgr.rotate(pre=self.pre,
                                                             count=count,  # old next is new current
                                                             isith=isith,
                                                             nsith=nsith,

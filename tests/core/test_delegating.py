@@ -37,7 +37,7 @@ def test_delegation():
         delKvy = eventing.Kevery(db=delDB)
 
         # Setup Bob by creating inception event
-        verfers, digers, cst, nst = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
+        verfers, digers = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
                                   code=coring.MtrDex.Blake3_256)
@@ -77,7 +77,7 @@ def test_delegation():
         assert bob in delKvy.kevers
 
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
-        verfers, digers, cst, nst = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
+        verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
@@ -174,7 +174,7 @@ def test_delegation():
         assert couple == seqner.qb64b + bobSrdr.saider.qb64b
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
-        verfers, digers, cst, nst = delMgr.rotate(pre=delPre, temp=True)
+        verfers, digers = delMgr.rotate(pre=delPre, temp=True)
 
         delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
