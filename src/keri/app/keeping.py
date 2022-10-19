@@ -914,8 +914,8 @@ class Manager:
         self.ks.gbls.pin('tier', tier)
 
 
-    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
-                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
+    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
+                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
@@ -937,15 +937,11 @@ class Manager:
             icount is int count of incepting public keys when icodes not provided
             icode is str derivation code qb64  of all icount incepting private keys
                 when icodes list not provided
-            isith is incepting signing threshold as:
-                int, str hex, or list of weights
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            nsith is next singning threshold as:
-                int, str hex, or list of weights
             dcode is str derivation code qb64 of next digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
@@ -994,10 +990,6 @@ class Manager:
                                   transferable=transferable, temp=temp)
         verfers = [signer.verfer for signer in isigners]
 
-        if isith is None:
-            isith = "{:x}".format(max(1, math.ceil(len(isigners) / 2)))
-        cst = coring.Tholder(sith=isith).sith  # current signing threshold
-
         if not ncodes:  # all same code, make list of len ncount of same code
             if ncount < 0:  # next may be zero if non-trans
                 raise ValueError("Invalid ncount={} must be >= 0.".format(ncount))
@@ -1009,9 +1001,6 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
-        if nsith is None:
-            nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
@@ -1116,8 +1105,9 @@ class Manager:
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
-    def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
+    def rotate(self, pre, codes=None, count=1,
+                     code=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns tuple (verfers, digers) for rotation event of keys for pre where
@@ -1136,10 +1126,6 @@ class Manager:
             count (int): count of next public keys when icodes not provided
             code (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            isith (Union[int, str, list]): current signing threshold as:
-                int, str hex, or list of weights
-            nsith (Union[int, str, list]): next signing threshold as:
-                int, str hex, or list of weights
             dcode i(str): derivation code qb64 of digers to make next xor digest.
                 Default is MtrDex.Blake3_256
             transferable (bool): True means each public key uses transferable
@@ -1181,10 +1167,6 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        if isith is None:
-            isith = "{:x}".format(max(0, math.ceil(len(verfers) / 2)))
-        cst = coring.Tholder(sith=isith).sith  # next signing threshold
-
         salt = pp.salt
         if salt:
             if self.aeid:
@@ -1210,10 +1192,6 @@ class Manager:
                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
-
-        if nsith is None:
-            nsith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
@@ -1249,7 +1227,8 @@ class Manager:
                 is an offset into pubs/verfers/signers.
                 False means do not use indexed signatures.
                 for index and return Siger instances. False means return Cigar instances
-            indices is optional list of int indices (offsets) to use for indexed signatures
+            indices is optional list of int indices (offsets) to use
+                when indexed is True for indexed signatures
                 that may differ from the order of appearance in the pubs or verfers
                 lists. This allows witness indexed sigs or controller multi-sig
                 where the parties do not share the same manager or ordering so
@@ -1257,9 +1236,9 @@ class Manager:
                 If provided the length of indices must match pubs/verfers/signers
                 else raises ValueError. If not provided and indexed is True then use
                 default index that is offset into pubs/verfers/signers
-            ondices is  optional list of other indices (offsets) to use for
-                indexed signatures with a prior next index that differs from
-                its current signing index.
+            ondices is  optional list of other indices (offsets) to use
+                when indexed is True  for indexed signatures with a
+                prior next index that differs from its current signing index.
                 This may also differ from the order of appearance in the pubs or verfers
                 lists. This allows partial rotation with reserve or custodial key
                 management so that the index (hash of index) of the public key
@@ -1311,7 +1290,7 @@ class Manager:
             raise ValueError("Mismatch length indices={} and resultant signers "
                              "list={}".format(len(indices), len(signers)))
 
-        if indexed:  # or indices:
+        if indexed:
             sigers = []
             for j, signer in enumerate(signers):
                 if indices:  # not the default get index from indices
@@ -1469,8 +1448,6 @@ class Manager:
             if ridx == iridx:  # setup ps.new at this ridx
                 if (ps := self.ks.sits.get(pre)) is None:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-                csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
-                cst = coring.Tholder(sith=csith).sith
                 new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.new = new
                 if not self.ks.sits.pin(pre, val=ps):
@@ -1480,8 +1457,6 @@ class Manager:
                 if (ps := self.ks.sits.get(pre)) is None:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
                 nsigners = csigners
-                nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
-                nst = coring.Tholder(sith=nsith).sith
                 nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.nxt = nxt
                 if not self.ks.sits.pin(pre, val=ps):
@@ -1506,8 +1481,6 @@ class Manager:
             dt = helping.nowIso8601()
             if (ps := self.ks.sits.get(pre)) is None:
                 raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
-            nst = coring.Tholder(sith=nsith).sith
             nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
             ps.nxt = nxt
             if not self.ks.sits.pin(pre, val=ps):
@@ -1567,8 +1540,6 @@ class Manager:
                                  f"ridx={ridx}.")
             pubs = pubset.pubs  # create nxt from pubs
             dt = helping.nowIso8601()
-            nsith = "{:x}".format(max(0, math.ceil(len(pubs) / 2)))
-            nst = coring.Tholder(sith=nsith).sith
             nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, dt=dt)
             ps.nxt = nxt
 

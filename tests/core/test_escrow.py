@@ -36,9 +36,7 @@ def test_partial_signed_escrow():
         # defaults are algo salty and rooted
         sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
         nxtsith = ["1/2", "1/2", "1/2"]
-        verfers, digers = mgr.incept(icount=3, isith=sith,
-                                               ncount=3, nsith=nxtsith,
-                                               stem='wes', temp=True)
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
@@ -254,7 +252,7 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, isith=sith, nsith=nxtsith, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -284,11 +282,7 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre,
-                                               count=5,
-                                               isith=sith,
-                                               nsith=nxtsith,
-                                               temp=True)
+        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -611,9 +605,7 @@ def test_out_of_order_escrow():
         # defaults are algo salty and rooted
         sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
         nxtsith = ["1/2", "1/2", "1/2"]
-        verfers, digers = mgr.incept(icount=3, isith=sith,
-                                     ncount=3, nsith=nxtsith,
-                                     stem='wes', temp=True)
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
@@ -656,7 +648,7 @@ def test_out_of_order_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5,isith=sith, nsith=nxtsith, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -823,9 +815,7 @@ def test_unverified_receipt_escrow():
         # defaults are algo salty and rooted
         sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
         nxtsith = ["1/2", "1/2", "1/2"]
-        verfers, digers = mgr.incept(icount=3, isith=sith,
-                                               ncount=3, nsith=nxtsith,
-                                               stem='edy', temp=True)
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
@@ -1097,9 +1087,7 @@ def test_unverified_trans_receipt_escrow():
         # defaults are algo salty and rooted
         sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
         nxtsith = ["1/2", "1/2", "1/2"]
-        verfers, digers = mgr.incept(icount=3, isith=sith,
-                                               ncount=3, nsith=nxtsith,
-                                               stem='edy', temp=True)
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
         srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
@@ -1246,7 +1234,7 @@ def test_unverified_trans_receipt_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, isith=sith, nsith=nxtsith, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],

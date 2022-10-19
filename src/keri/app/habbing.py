@@ -889,8 +889,6 @@ class Hab:
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
-
-
         if merfers:  # group multisig so use group info
             verfers = merfers
             digers = migers
@@ -904,15 +902,12 @@ class Hab:
                                       temp=self.temp)
             verfers, digers = self.mgr.replay(pre=ipre, advance=False)
 
-
         else:  # use defaults
             verfers, digers = self.mgr.incept(icount=icount,
-                                                        isith=isith,
-                                                        ncount=ncount,
-                                                        nsith=nsith,
-                                                        stem=self.name,
-                                                        transferable=transferable,
-                                                        temp=self.temp)
+                                                ncount=ncount,
+                                                stem=self.name,
+                                                transferable=transferable,
+                                                temp=self.temp)
 
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
@@ -923,7 +918,6 @@ class Hab:
 
         cst = coring.Tholder(sith=isith).sith  # current signing threshold
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
-
 
         opre = verfers[0].qb64  # default original pre from key store move below
 
@@ -1146,17 +1140,13 @@ class Hab:
         if merfers:
             verfers = merfers
             digers = migers
-            #cst = coring.Tholder(sith=isith).sith  # current signing threshold
-            #nst = coring.Tholder(sith=nsith).sith  # next signing threshold
         else:
             try:
                 verfers, digers = self.mgr.replay(pre=self.pre)
-            except IndexError:
+            except IndexError:  # old next is new current
                 verfers, digers = self.mgr.rotate(pre=self.pre,
-                                                            count=count,  # old next is new current
-                                                            isith=isith,
-                                                            nsith=nsith,
-                                                            temp=self.temp)
+                                                  count=count,
+                                                  temp=self.temp)
 
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
