@@ -108,7 +108,7 @@ def test_weighted():
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
         nxtsith = ["1/2", "1/2", "1/2"]  # 2 of 3 but with weighted threshold
-        verfers, digers = wesMgr.rotate(pre=wesPre, count=3, temp=True)
+        verfers, digers = wesMgr.rotate(pre=wesPre, ncount=3, temp=True)
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
@@ -154,7 +154,7 @@ def test_weighted():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"], ["1", "1"]]
-        verfers, digers = wesMgr.rotate(pre=wesPre, count=5, temp=True)
+        verfers, digers = wesMgr.rotate(pre=wesPre, ncount=5, temp=True)
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
@@ -200,7 +200,7 @@ def test_weighted():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
-        verfers, digers = wesMgr.rotate(pre=wesPre, count=5, temp=True)
+        verfers, digers = wesMgr.rotate(pre=wesPre, ncount=5, temp=True)
 
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],

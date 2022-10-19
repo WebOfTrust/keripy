@@ -252,7 +252,7 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -282,7 +282,7 @@ def test_partial_signed_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -648,7 +648,7 @@ def test_out_of_order_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
@@ -921,7 +921,7 @@ def test_unverified_receipt_escrow():
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
-        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
@@ -1180,7 +1180,7 @@ def test_unverified_trans_receipt_escrow():
 
         # Create rotation event of receipter
         # get current keys as verfers and next digests as digers
-        rverfers, rdigers = mgr.rotate(pre=rpre, count=3, temp=True)
+        rverfers, rdigers = mgr.rotate(pre=rpre, ncount=3, temp=True)
 
         rsrdr = eventing.rotate(pre=rpre,
                                 keys=[verfer.qb64 for verfer in rverfers],
@@ -1234,7 +1234,7 @@ def test_unverified_trans_receipt_escrow():
         sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
-        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = eventing.rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],

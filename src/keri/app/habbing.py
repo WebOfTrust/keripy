@@ -1145,7 +1145,7 @@ class Hab:
                 verfers, digers = self.mgr.replay(pre=self.pre)
             except IndexError:  # old next is new current
                 verfers, digers = self.mgr.rotate(pre=self.pre,
-                                                  count=count,
+                                                  ncount=count,
                                                   temp=self.temp)
 
         icount = len(verfers)

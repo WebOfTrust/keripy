@@ -1105,8 +1105,8 @@ class Manager:
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
-    def rotate(self, pre, codes=None, count=1,
-                     code=coring.MtrDex.Ed25519_Seed,
+    def rotate(self, pre, ncodes=None, ncount=1,
+                     ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
@@ -1121,12 +1121,12 @@ class Manager:
 
         Parameters:
             pre (str) qb64 of prefix
-            codes (list): of private key derivation codes qb64 str
+            ncodes (list): of private key derivation codes qb64 str
                 one per next key pair
-            count (int): count of next public keys when icodes not provided
-            code (str): derivation code qb64  of all ncount next public keys
+            ncount (int): count of next public keys when icodes not provided
+            ncode (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            dcode i(str): derivation code qb64 of digers to make next xor digest.
+            dcode i(str): derivation code qb64 of next key digest of digers
                 Default is MtrDex.Blake3_256
             transferable (bool): True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
@@ -1178,17 +1178,17 @@ class Manager:
 
         creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
-        if not codes:  # all same code, make list of len count of same code
-            if count < 0:  # next may be zero if non-trans
-                raise ValueError("Invalid count={} must be >= 0.".format(count))
-            codes = [code for i in range(count)]
+        if not ncodes:  # all same code, make list of len count of same code
+            if ncount < 0:  # next may be zero if non-trans
+                raise ValueError("Invalid count={} must be >= 0.".format(ncount))
+            ncodes = [ncode for i in range(ncount)]
 
         pidx = pp.pidx  # get pidx for this key sequence, may be used by salty creator
         ridx = ps.new.ridx + 1
         kidx = ps.nxt.kidx + len(ps.new.pubs)
 
         # count set to 0 to ensure does not create signers if codes is empty
-        signers = creator.create(codes=codes, count=0,
+        signers = creator.create(codes=ncodes, count=0,
                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
