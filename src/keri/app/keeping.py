@@ -618,8 +618,10 @@ class Manager:
             authentication or encryption of key sets. Use initial attribute because
             keeper may not be open on init.
 
-        pidx (int): initial pidx prefix index. Use initial attribute because keeper
-            may not be open on init.
+        pidx (int): pidx prefix index.
+            Use initial attribute because keeper
+            may not be open on init. Each sequence gets own pidx. Enables
+            unique recreatable salting of key sequence based on pidx.
 
         salt (str): qb64 of root salt. Makes random root salt if not provided
             initial salt. Use inital attribute because keeper may not be
@@ -656,8 +658,9 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided seed must not be empty. A change in aeid should require
                 a second authentication mechanism besides the seed.
-            pidx (int): index of next new created key pair sequence for given
-                identifier prefix
+            pidx (int): index of next new created key pair sequence bound to a
+                given identifier prefix. Each sequence gets own pidx. Enables
+                unique recreatable salting of key sequence based on pidx.
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
@@ -1317,11 +1320,17 @@ class Manager:
             sigers = []
             for j, signer in enumerate(signers):
                 if indices:  # not the default get index from indices
-                    i = indices[j]  # must be int
+                    i = indices[j]  # must be whole number
+                    if not (isinstance(i, int) and i >= 0):
+                        raise ValueError(f"Invalid signing index = {i}, not "
+                                         f"whole number.")
                 else:  # the default
                     i = j  # same index as database
                 if ondices:  # not the default get ondex from ondices
                     o = ondices[j]  # int means both, None means current only
+                    if not (o is None or (isinstance(0, int) and  o >= 0)):
+                        raise ValueError(f"Invalid other signing index = {i}, not "
+                                         f"whole number or not None.")
                 else:  # default
                     o = i  # must both be same value int
                 # .sign assigns .verfer of siger and sets code of siger

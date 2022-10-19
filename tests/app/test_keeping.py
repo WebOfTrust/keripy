@@ -18,6 +18,7 @@ from hio.base import doing
 
 from keri.help import helping
 from keri.core import coring
+from keri.core.coring import IdrDex
 from keri.app import keeping
 
 
@@ -1747,6 +1748,56 @@ def test_manager_with_aeid():
 def test_manager_sign_dual_indices():
     """
     test Manager signing with dual indices
+
+    Parameters to Manager.sign()
+        ser (bytes): serialization to sign
+        pubs (list[str] | None): of qb64 public keys to lookup private keys
+            one of pubs or verfers is required. If both then verfers is ignored.
+        verfers (list[Verfer] | None): Verfer instances of public keys
+            one of pubs or verfers is required. If both then verfers is ignored.
+        indexed (bool):
+            True means use use indexed signatures and return
+            list of Siger instances.
+            False means do not use indexed signatures and return
+            list of Cigar instances
+
+            When indexed True, each index is an offset that maps the offset
+            in the coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            onto the appropriate offset into the signing keys or prior next
+            keys lists of a key event as determined by the indices and ondices
+            lists, or appropriate defaults when indices and/or ondices are not
+            provided.
+
+        indices (list[int] | None): indices (offsets) when indexed == True,
+            to use for indexed signatures whose offset into the current keys
+            or prior next list may differ from the order of appearance
+            in the provided coherent pubs, verfers, signers lists.
+            This allows witness indexed sigs or controller multi-sig
+            where the parties do not share the same manager or ordering so
+            the default ordering in pubs or verfers is wrong for the index.
+            This sets the value of the index property of the returned Siger.
+            When provided the length of indices must match the len of the
+            coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            else raises ValueError.
+            When not provided and indexed is True then use default index that
+            is the offset into the coherent lists:
+            pubs, verfers, signers (pris from keystore .ks)
+
+        ondices (list[int | None] | None): other indices (offsets)
+            when indexed is True  for indexed signatures whose offset into
+            the prior next list may differ from the order of appearance
+            in the provided coherent pubs, verfers, signers lists.
+            This allows partial rotation with reserve or custodial key
+            management so that the index (hash of index) of the public key
+            for the signature appears at a different index in the
+            current key list from the prior next list.
+            This sets the value of the ondex property of the returned Siger.
+            When provided the length of indices must match the len of the
+            coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            else raises ValueError.
+            When no ondex is applicable to a given signature then the value
+            of the entry in ondices MUST be None.
+            When  ondices is not provided then all sigers .ondex is None.
     """
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
@@ -1758,7 +1809,6 @@ def test_manager_sign_dual_indices():
 
 
     with keeping.openKS() as keeper:
-
         manager = keeping.Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
@@ -1779,14 +1829,105 @@ def test_manager_sign_dual_indices():
                                         salt=salt,
                                         stem = 'phlegm',
                                         temp=True)
+
         assert len(verfers) == icount
         assert len(digers) == ncount
-        assert manager.pidx == 1
-        spre = verfers[0].qb64b  # lookup index in ks for incept key-pairs
+        assert manager.pidx == 1  # incremented
 
-        # Test sign with indices and ondices
-        indices = [3]
-        ondices = [2]
+        pre = verfers[0].qb64b  # Key sequence parameters lookup by pre
+        pp = manager.ks.prms.get(pre)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem
+        assert pp.tier == coring.Tiers.low
+
+        ps = manager.ks.sits.get(pre)
+        assert len(ps.old.pubs) == 0
+        assert ps.old.ridx == 0
+        assert ps.old.kidx == 0
+
+        assert len(ps.new.pubs) == icount
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+
+        assert len(ps.nxt.pubs) == ncount
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 0 + icount
+
+        pubs0 = [verfer.qb64 for verfer in verfers]
+        digs0 = [diger.qb64 for  diger in digers]
+
+
+        # default seed (private key) code is MtrDex.Ed25519_Seed
+        # so sign codes will be from Ed25519 set
+        #IdrDex.Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
+        #IdrDex.Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
+        #IdrDex.Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
+        #IdrDex.Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
+
+        # Test sign with indices different order and no ondices.
+        # This idicates both same
+        indices0 = [3, 2, 1, 0]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == siger.index  # both same
+            assert siger.code == IdrDex.Ed25519_Sig   # both same
+
+        # Test sign with indices different order  and ondices all None.
+        # This indicates current only
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [None, None, None, None]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == None  # current only
+            assert siger.code == IdrDex.Ed25519_Crt_Sig  # current only
+
+        # Test sign with indices and ondices different from each other.
+        # This indicates both different
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, 0, 3, 1]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == ondices0[x]
+            assert siger.code == IdrDex.Ed25519_Big_Sig  # both different
+
+        # Test sign with indices and ondices different including None.
+        # This indicates both different
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == ondices0[x]
+            if siger.index == siger.ondex:
+                assert siger.code == IdrDex.Ed25519_Sig
+            elif siger.ondex is None:
+                assert siger.code == IdrDex.Ed25519_Crt_Sig
+            else:
+                assert siger.code == IdrDex.Ed25519_Big_Sig
+
+        indices0 = [None, 2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+        indices0 = [3, -2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, -1]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
 
         ## Test with pubs list
         #psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
@@ -1826,4 +1967,4 @@ def test_manager_sign_dual_indices():
     """End Test"""
 
 if __name__ == "__main__":
-    test_creator()
+    test_manager_sign_dual_indices()
