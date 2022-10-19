@@ -1975,7 +1975,6 @@ class MultisigInceptEnd(MultisigEndBase):
         super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier,
                                                 counselor=counselor, doers=doers)
 
-
     def initialize(self, body, rep, alias):
         """Incept group multisig
 
@@ -3050,12 +3049,12 @@ class ContactEnd:
             aid = contact['id']
             accepted = [saider.qb64 for saider in self.hby.db.chas.get(keys=(aid,))]
             received = [saider.qb64 for saider in self.hby.db.reps.get(keys=(aid,))]
-            valid = set(accepted) & set(received)
 
             challenges = []
-            for said in valid:
+            for said in received:
                 exn = self.hby.db.exns.get(keys=(said,))
-                challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words']))
+                challenges.append(dict(dt=exn.ked['dt'], words=exn.ked['a']['words'], said=said,
+                                       authenticated=said in accepted))
 
             contact["challenges"] = challenges
 
