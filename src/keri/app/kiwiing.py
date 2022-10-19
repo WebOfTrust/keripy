@@ -593,7 +593,7 @@ class IdentifierEnd(doing.DoDoer):
             adds = set(wits) - set(ewits)
 
         try:
-            rot = hab.rotate(isith=isith, count=count, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+            rot = hab.rotate(isith=isith, ncount=count, toad=toad, cuts=list(cuts), adds=list(adds), data=data)
             self.cues.append(dict(pre=hab.pre))
 
             serder = coring.Serder(raw=rot)

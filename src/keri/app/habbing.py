@@ -889,8 +889,6 @@ class Hab:
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
-
-
         if merfers:  # group multisig so use group info
             verfers = merfers
             digers = migers
@@ -904,15 +902,12 @@ class Hab:
                                       temp=self.temp)
             verfers, digers = self.mgr.replay(pre=ipre, advance=False)
 
-
         else:  # use defaults
             verfers, digers = self.mgr.incept(icount=icount,
-                                                        isith=isith,
-                                                        ncount=ncount,
-                                                        nsith=nsith,
-                                                        stem=self.name,
-                                                        transferable=transferable,
-                                                        temp=self.temp)
+                                                ncount=ncount,
+                                                stem=self.name,
+                                                transferable=transferable,
+                                                temp=self.temp)
 
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
@@ -923,7 +918,6 @@ class Hab:
 
         cst = coring.Tholder(sith=isith).sith  # current signing threshold
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
-
 
         opre = verfers[0].qb64  # default original pre from key store move below
 
@@ -1115,55 +1109,64 @@ class Hab:
             return self.mgr.sign(ser, pubs=pubs, verfers=verfers, indexed=indexed)
 
 
-    def rotate(self, isith=None, nsith=None, count=None, toad=None, cuts=None, adds=None,
-               data=None, merfers=None, migers=None):
+    def rotate(self, *, isith=None, nsith=None, ncount=None,
+                        toad=None, cuts=None, adds=None,
+                        data=None, merfers=None, migers=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
 
         Parameters:
-            isith (Optional[int,str]) current signing threshold as int or str hex or list of str weights
-            nsith (Optional[int,str]) next, next signing threshold as int or str hex or list of str weights
-            count (int) next number of signing keys
-            toad (Optional[int,str]) hex of witness threshold after cuts and adds
-            cuts (list) of qb64 pre of witnesses to be removed from witness list
-            adds (list) of qb64 pre of witnesses to be added to witness list
-            data (list) of dicts of committed data such as seals
-            merfers (list): group member Verfer instances of public keys qb64,
+            isith (int |str | None): current signing threshold as int or str hex
+                                     or list of str weights
+                                     default is prior next sith
+            nsith (int |str | None): next, next signing threshold as int
+                                     or str hex or list of str weights
+                                     default is based on isith when None
+            ncount (int | None): next number of signing keys
+                                 default is len of prior next digs
+            toad (int | str | None): hex of witness threshold after cuts and adds
+            cuts (list | None): of qb64 pre of witnesses to be removed from witness list
+            adds (list | None): of qb64 pre of witnesses to be added to witness list
+            data (list | None): of dicts of committed data such as seals
+            merfers (list | None): group member Verfer instances of public keys qb64,
                             one collected from each multisig group member
-            migers (list): group member Diger instances of public next key digests qb64
+            migers (list | None): group member Diger instances of public next key digests qb64
                            one collected from each multisig group member
 
         """
-        kever = self.kever  # kever.pre == self.pre
-        if isith is None:
-            isith = kever.ntholder.sith  # use prior next sith as defualt
-        if nsith is None:
-            nsith = isith
-        if count is None:
-            count = len(kever.verfers)  # use previous count
+        # recall that kever.pre == self.pre
+        kever = self.kever  # before rotation kever is prior next
 
-        if merfers:
+        if isith is None:
+            isith = kever.ntholder.sith  # use prior next sith as default
+        if nsith is None:
+            nsith = isith  # use new current as default
+        if ncount is None:
+            ncount = len(kever.nexter.digers)  # use len of prior next digers as default
+
+
+        # ToDo: NRR
+        # Add itholder(isith), ntholder(nsith) and compare to each case below
+        # when multisig make sure merfers and migers are sized right
+        # when not multisig make sure verfers and digers are sized right
+
+
+        if merfers:  # multisig group rotate so not from keystore
             verfers = merfers
             digers = migers
-            #cst = coring.Tholder(sith=isith).sith  # current signing threshold
-            #nst = coring.Tholder(sith=nsith).sith  # next signing threshold
-        else:
+        else:  # from keystore
             try:
                 verfers, digers = self.mgr.replay(pre=self.pre)
-            except IndexError:
+            except IndexError:  # old next is new current
                 verfers, digers = self.mgr.rotate(pre=self.pre,
-                                                            count=count,  # old next is new current
-                                                            isith=isith,
-                                                            nsith=nsith,
-                                                            temp=self.temp)
+                                                  ncount=ncount,
+                                                  temp=self.temp)
 
-        icount = len(verfers)
-        ncount = len(digers) if digers is not None else 0
-        if isith is None:  # compute default
-            isith = f"{max(1, ceil(icount / 2)):x}"
-        if nsith is None:  # compute default
-            nsith = f"{max(0, ceil(ncount / 2)):x}"
+        if isith is None:  # compute default from newly rotated verfers above
+            isith = f"{max(1, ceil(len(verfers) / 2)):x}"
+        if nsith is None:  # compute default from newly rotated digers above
+            nsith = f"{max(0, ceil((len(digers) if digers is not None else 0) / 2)):x}"
 
         cst = coring.Tholder(sith=isith).sith  # current signing threshold
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold

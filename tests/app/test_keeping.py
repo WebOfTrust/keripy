@@ -863,7 +863,7 @@ def test_manager():
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
-        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), count=0)
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), ncount=0)
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -1729,7 +1729,7 @@ def test_manager_with_aeid():
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
-        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), count=0)
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), ncount=0)
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0

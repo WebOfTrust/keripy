@@ -57,7 +57,6 @@ class KiwiServer(doing.DoDoer):
 
         verfers, digers = mgr.incept(icount=icount,
                                             ncount=ncount,
-                                            isith=cur.tholder.sith,
                                             algo=keeping.Algos.randy,
                                             transferable=False,
                                             temp=False)
