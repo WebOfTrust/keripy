@@ -1172,10 +1172,10 @@ class Hab:
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         keys = [verfer.qb64 for verfer in verfers]
-        # this is wrong sith is not kever.tholder.sith as next was different
+
         if kever.delegator is not None:
             serder = eventing.deltate(pre=kever.prefixer.qb64,
-                                      keys=[verfer.qb64 for verfer in verfers],
+                                      keys=keys,
                                       dig=kever.serder.saider.qb64,
                                       sn=kever.sner.num + 1,
                                       isith=cst,
@@ -1188,7 +1188,7 @@ class Hab:
                                       data=data)
         else:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
-                                     keys=[verfer.qb64 for verfer in verfers],
+                                     keys=keys,
                                      dig=kever.serder.saider.qb64,
                                      sn=kever.sner.num + 1,
                                      isith=cst,
