@@ -1751,9 +1751,7 @@ def test_manager_sign_dual_indices():
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
 
-
-
-    # the particular serialization does not matter test purposes
+    # the particular serialization does not matter for test purposes
     ser = (b"See ya later Alligator. In a while Crocodile. "
            b"Not to soon Baboon. That's the plan Toucan. "
            b"As you wish Jellyfish. Have a nice day Bluejay.")
@@ -1777,17 +1775,18 @@ def test_manager_sign_dual_indices():
         ncount =  3
         # algo default salty
         verfers, digers = manager.incept(icount=icount,
-                                                   ncount=ncount,
-                                                   salt=salt,
-                                                   stem = 'phlegm',
-                                                   temp=True)
+                                        ncount=ncount,
+                                        salt=salt,
+                                        stem = 'phlegm',
+                                        temp=True)
         assert len(verfers) == icount
         assert len(digers) == ncount
         assert manager.pidx == 1
         spre = verfers[0].qb64b  # lookup index in ks for incept key-pairs
 
-        ## Test sign with indices
-        #indices = [3]
+        # Test sign with indices and ondices
+        indices = [3]
+        ondices = [2]
 
         ## Test with pubs list
         #psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)

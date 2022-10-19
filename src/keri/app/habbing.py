@@ -1173,7 +1173,7 @@ class Hab:
 
         keys = [verfer.qb64 for verfer in verfers]
 
-        if kever.delegator is not None:
+        if kever.delegator is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.saider.qb64,
