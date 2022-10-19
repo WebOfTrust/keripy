@@ -2891,6 +2891,8 @@ class Nexter:
     Attributes:
 
     Properties:
+        digers (list[Diger]): instances of next Digers
+        digs (list[str]): next key digs from .digers qb64
 
     Methods:
 
@@ -5122,8 +5124,10 @@ class Tholder:
 
     Properties:
         .weighted is Boolean True if fractional weighted threshold False if numeric
-        .size is int of minimun size of keys list
-
+        .size is int of minimum size of keys list
+                    when weighted is size of keys list
+                    when unweighted is size of int thold since don't have anyway
+                        to know size of keys list in this case
 
         .limen is qualified b64 signing threshold suitable for CESR serialization.
             either Number.qb64b or Bexter.qb64b.

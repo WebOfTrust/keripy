@@ -516,7 +516,7 @@ def test_hab_rotate_with_witness():
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
-        hab.rotate(count=3)
+        hab.rotate(ncount=3)
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
