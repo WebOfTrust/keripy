@@ -5,6 +5,8 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
+import datetime
+
 import falcon
 import time
 import sys
@@ -786,13 +788,13 @@ class Poller(doing.DoDoer):
             witrec = basing.TopicsRecord(topics=dict())
 
         while self.retry > 0:
-            self.retry -= 1
             try:
                 client, clientDoer = agenting.httpClient(self.hab, self.witness)
             except kering.MissingEntryError as e:
-                traceback.print_exception(e, file=sys.stderr) # logging
+                traceback.print_exception(e, file=sys.stderr)  # logging
                 yield self.tock
                 continue
+
             self.extend([clientDoer])
 
             topics = dict()
@@ -813,8 +815,12 @@ class Poller(doing.DoDoer):
             while client.requests:
                 yield self.tock
 
+            created = helping.nowUTC()
             while True:
-                if client.respondent.eventSource and client.respondent.eventSource.closed:
+
+                now = helping.nowUTC()
+                if now - created > datetime.timedelta(seconds=5):
+                    self.remove([clientDoer])
                     break
 
                 while client.events:
