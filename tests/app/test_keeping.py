@@ -1834,7 +1834,7 @@ def test_manager_sign_dual_indices():
         assert len(digers) == ncount
         assert manager.pidx == 1  # incremented
 
-        pre = verfers[0].qb64b  # Key sequence parameters lookup by pre
+        pre = verfers[0].qb64  # Key sequence parameters lookup by pre
         pp = manager.ks.prms.get(pre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
@@ -1929,35 +1929,41 @@ def test_manager_sign_dual_indices():
         with pytest.raises(ValueError):
             sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
 
-        ## Test with pubs list
-        #psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
-        #for siger in psigers:
-            #assert isinstance(siger, coring.Siger)
-        #assert psigers[0].index == indices[0]
-        #psigs = [siger.qb64 for siger in psigers]
 
-        ## Test with verfers list
-        #vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
-        #for siger in vsigers:
-            #assert isinstance(siger, coring.Siger)
-        #assert psigers[0].index == indices[0]
-        #vsigs = [siger.qb64 for siger in vsigers]
-        #assert vsigs == psigs
+        # salty algorithm rotate
+        ocount = icount
+        icount = ncount
+        ncount = 5
+        verfers, digers = manager.rotate(pre=pre, ncount=ncount, temp=True)
+        assert len(verfers) == icount
+        assert len(digers) == ncount
 
-        #pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
-        #for cigar in pcigars:
-            #assert isinstance(cigar, coring.Cigar)
-        #vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
-        #psigs = [cigar.qb64 for cigar in pcigars]
-        #vsigs = [cigar.qb64 for cigar in vcigars]
-        #assert psigs == vsigs
+        # Key sequence parameters lookup by pre
+        pp = manager.ks.prms.get(pre)
+        assert pp.pidx == 0  # same sequence
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem
+        assert pp.tier == coring.Tiers.low
 
+        ps = manager.ks.sits.get(pre)
+        assert len(ps.old.pubs) == ocount
+        assert ps.old.ridx == 0
+        assert ps.old.kidx == 0
 
-        ## salty algorithm rotate
-        #oldpubs = [verfer.qb64 for verfer in verfers]
-        #verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
-        #assert len(verfers) == 1
-        #assert len(digers) == 1
+        assert len(ps.new.pubs) == icount
+        assert ps.new.ridx == 1
+        assert ps.new.kidx == 0 + ocount
+
+        assert len(ps.nxt.pubs) == ncount
+        assert ps.nxt.ridx == 2
+        assert ps.nxt.kidx == ocount + icount
+
+        pubs1 = [verfer.qb64 for verfer in verfers]
+        digs1 = [diger.qb64 for  diger in digers]
+
+        # now do signing with combination of keys from inception and rotation
+
 
 
 
