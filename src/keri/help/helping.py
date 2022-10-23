@@ -157,7 +157,8 @@ def verify64uEd25519(signature, message, verkey):
 
 def nonStringIterable(obj):
     """
-    Returns True if obj is non-string iterable, False otherwise
+    Returns:
+        (bool): True if obj is non-string iterable, False otherwise
 
     Future proof way that is compatible with both Python3 and Python2 to check
     for non string iterables.
@@ -170,7 +171,7 @@ def nonStringIterable(obj):
 
 def nonStringSequence(obj):
     """
-    Returns True if obj is non-string sequence, False otherwise
+    Returns: True if obj is non-string sequence, False otherwise
 
     Future proof way that is compatible with both Python3 and Python2 to check
     for non string sequences.
