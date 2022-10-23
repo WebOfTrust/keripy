@@ -1929,6 +1929,11 @@ def test_manager_sign_dual_indices():
         with pytest.raises(ValueError):
             sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
 
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, False]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
 
         # salty algorithm rotate
         ocount = icount
@@ -1963,6 +1968,21 @@ def test_manager_sign_dual_indices():
         digs1 = [diger.qb64 for  diger in digers]
 
         # now do signing with combination of keys from inception and rotation
+        pubs = pubs1 + [pubs0[0], pubs0[2]]  # 3 from current + 2 from prior next
+        indices1 = [0, 1, 2, 3, 4]  # current signing list indices
+        ondices1 = [None, None, None, 0, 2]  # prior next signing ondices
+
+        sigers1 = manager.sign(ser=ser, pubs=pubs, indices=indices1, ondices=ondices1)
+        for x in range(len(pubs)):
+            siger = sigers1[x]
+            assert siger.index == indices1[x]
+            assert siger.ondex == ondices1[x]
+            if siger.index == siger.ondex:
+                assert siger.code == IdrDex.Ed25519_Sig
+            elif siger.ondex is None:
+                assert siger.code == IdrDex.Ed25519_Crt_Sig
+            else:
+                assert siger.code == IdrDex.Ed25519_Big_Sig
 
 
 

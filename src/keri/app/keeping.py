@@ -1321,16 +1321,18 @@ class Manager:
             for j, signer in enumerate(signers):
                 if indices:  # not the default get index from indices
                     i = indices[j]  # must be whole number
-                    if not (isinstance(i, int) and i >= 0):
+                    if not isinstance(i, int) or i < 0:
                         raise ValueError(f"Invalid signing index = {i}, not "
                                          f"whole number.")
                 else:  # the default
                     i = j  # same index as database
+
                 if ondices:  # not the default get ondex from ondices
                     o = ondices[j]  # int means both, None means current only
-                    if not (o is None or (isinstance(0, int) and  o >= 0)):
-                        raise ValueError(f"Invalid other signing index = {i}, not "
-                                         f"whole number or not None.")
+                    if not (o is None or
+                            isinstance(o, int) and not isinstance(o, bool) and o >= 0):
+                        raise ValueError(f"Invalid other signing index = {o}, not "
+                                         f"None or not whole number.")
                 else:  # default
                     o = i  # must both be same value int
                 # .sign assigns .verfer of siger and sets code of siger

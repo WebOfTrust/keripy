@@ -2424,7 +2424,8 @@ class Salter(Matter):
 class Cipher(Matter):
     """
     Cipher is Matter subclass holding a cipher text of a secret that may be
-    either a secret seed (private key) or secret salt. The cipher text is created
+    either a secret seed (private key) or secret salt with appropriate CESR code
+    to indicate which kind (which indicates size). The cipher text is created
     with assymetric encryption using an unrelated (public, private)
     encryption/decryption key pair. The public key is used for encryption the
     private key for decryption. The default is to use X25519 sealed box encryption.
@@ -5407,6 +5408,18 @@ class Tholder:
         self._number = None
         self._bexter = Bexter(bext=bext)
 
+
+    @staticmethod
+    def _checkWeight(w: SmallVrzDex) -> Fraction:
+        """Returns w if 0 <= w <= 1 and is strict rational fraction expression
+        or "1" or "0"  Else raises ValueError
+
+        Parameters:
+            w (Fraction): Threshold weight Fraction
+        """
+        if not 0 <= w <= 1:
+            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+        return w
 
     @staticmethod
     def _checkWeight(w: Fraction) -> Fraction:
