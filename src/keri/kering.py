@@ -128,11 +128,11 @@ class EmptyMaterialError(MaterialError):
     """
 
 
-class UnknownCodeError(MaterialError):
+class InvalidCodeError(MaterialError):
     """
-    Unknown or unrecognized code encountered during crypto material init
+    Invalid, Unknown, or unrecognized code encountered during crypto material init
     Usage:
-        raise UnknownCodeError("error message")
+        raise InvalidCodeError("error message")
     """
 
 class InvalidTypeError(MaterialError):

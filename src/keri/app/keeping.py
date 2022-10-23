@@ -618,8 +618,10 @@ class Manager:
             authentication or encryption of key sets. Use initial attribute because
             keeper may not be open on init.
 
-        pidx (int): initial pidx prefix index. Use initial attribute because keeper
-            may not be open on init.
+        pidx (int): pidx prefix index.
+            Use initial attribute because keeper
+            may not be open on init. Each sequence gets own pidx. Enables
+            unique recreatable salting of key sequence based on pidx.
 
         salt (str): qb64 of root salt. Makes random root salt if not provided
             initial salt. Use inital attribute because keeper may not be
@@ -656,8 +658,9 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided seed must not be empty. A change in aeid should require
                 a second authentication mechanism besides the seed.
-            pidx (int): index of next new created key pair sequence for given
-                identifier prefix
+            pidx (int): index of next new created key pair sequence bound to a
+                given identifier prefix. Each sequence gets own pidx. Enables
+                unique recreatable salting of key sequence based on pidx.
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
@@ -1220,34 +1223,53 @@ class Manager:
         .verfer assigned.
 
         Parameters:
-            ser is bytes serialization to sign
-            pubs is list of qb64 public keys to lookup private keys
-            verfers is list of Verfers for public keys
-            indexed is Boolean, True means use use indexed signatures with index
-                is an offset into pubs/verfers/signers.
-                False means do not use indexed signatures.
-                for index and return Siger instances. False means return Cigar instances
-            indices is optional list of int indices (offsets) to use
-                when indexed is True for indexed signatures
-                that may differ from the order of appearance in the pubs or verfers
-                lists. This allows witness indexed sigs or controller multi-sig
+            ser (bytes): serialization to sign
+            pubs (list[str] | None): of qb64 public keys to lookup private keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+            verfers (list[Verfer] | None): Verfer instances of public keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+            indexed (bool):
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+
+                When indexed True, each index is an offset that maps the offset
+                in the coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                onto the appropriate offset into the signing keys or prior next
+                keys lists of a key event as determined by the indices and ondices
+                lists, or appropriate defaults when indices and/or ondices are not
+                provided.
+
+            indices (list[int] | None): indices (offsets) when indexed == True,
+                to use for indexed signatures whose offset into the current keys
+                or prior next list may differ from the order of appearance
+                in the provided coherent pubs, verfers, signers lists.
+                This allows witness indexed sigs or controller multi-sig
                 where the parties do not share the same manager or ordering so
                 the default ordering in pubs or verfers is wrong for the index.
-                If provided the length of indices must match pubs/verfers/signers
-                else raises ValueError. If not provided and indexed is True then use
-                default index that is offset into pubs/verfers/signers
-            ondices is  optional list of other indices (offsets) to use
-                when indexed is True  for indexed signatures with a
-                prior next index that differs from its current signing index.
-                This may also differ from the order of appearance in the pubs or verfers
-                lists. This allows partial rotation with reserve or custodial key
+                This sets the value of the index property of the returned Siger.
+                When provided the length of indices must match the len of the
+                coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                else raises ValueError.
+                When not provided and indexed is True then use default index that
+                is the offset into the coherent lists:
+                pubs, verfers, signers (pris from keystore .ks)
+
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True  for indexed signatures whose offset into
+                the prior next list may differ from the order of appearance
+                in the provided coherent pubs, verfers, signers lists.
+                This allows partial rotation with reserve or custodial key
                 management so that the index (hash of index) of the public key
                 for the signature appears at a different index in the
-                current key list from where the hash appears in the prior next
-                list. This sets the value of the ondex property of the returned
-                Siger. When provided the length of ondices must match pubs/verfers/signers
-                else raises ValueError. When no ondex is applicable to a given
-                signature then the value of the entry in ondices MUST be None.
+                current key list from the prior next list.
+                This sets the value of the ondex property of the returned Siger.
+                When provided the length of indices must match the len of the
+                coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                else raises ValueError.
+                When no ondex is applicable to a given signature then the value
+                of the entry in ondices MUST be None.
                 When  ondices is not provided then all sigers .ondex is None.
 
 
@@ -1287,26 +1309,40 @@ class Manager:
                 signers.append(signer)
 
         if indices and len(indices) != len(signers):
-            raise ValueError("Mismatch length indices={} and resultant signers "
-                             "list={}".format(len(indices), len(signers)))
+            raise ValueError(f"Mismatch indices length={len(indices)} and resultant"
+                             f" signers length={len(signers)}")
+
+        if ondices and len(ondices) != len(signers):
+            raise ValueError(f"Mismatch ondices length={len(ondices)} and resultant"
+                             f" signers length={len(signers)}")
 
         if indexed:
             sigers = []
             for j, signer in enumerate(signers):
                 if indices:  # not the default get index from indices
-                    i = indices[j]  # must be int
+                    i = indices[j]  # must be whole number
+                    if not isinstance(i, int) or i < 0:
+                        raise ValueError(f"Invalid signing index = {i}, not "
+                                         f"whole number.")
                 else:  # the default
                     i = j  # same index as database
+
                 if ondices:  # not the default get ondex from ondices
                     o = ondices[j]  # int means both, None means current only
+                    if not (o is None or
+                            isinstance(o, int) and not isinstance(o, bool) and o >= 0):
+                        raise ValueError(f"Invalid other signing index = {o}, not "
+                                         f"None or not whole number.")
                 else:  # default
                     o = i  # must both be same value int
                 # .sign assigns .verfer of siger and sets code of siger
                 # appropriately for single or dual indexed signatures
-                sigers.append(signer.sign(ser, index=i,
+                sigers.append(signer.sign(ser,
+                                          index=i,
                                           only=True if o is None else False,
                                           ondex=o))
             return sigers
+
         else:
             cigars = []
             for signer in signers:

@@ -5441,7 +5441,7 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         tholder = Tholder()
 
     limen = b'MAAL'
@@ -5525,11 +5525,33 @@ def test_tholder():
     assert tholder.satisfy(indices=list(range(tholder.thold)))
 
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # not 0 <= w <= 1
         tholder = Tholder(sith=-1)
 
-    with pytest.raises(ValueError):
-        tholder = Tholder(sith="-1")
+    tholder = Tholder(sith=2)  # single weight not weighted
+    assert not tholder.weighted
+    assert  tholder.thold == 2
+
+    with pytest.raises(ValueError):  # json with int not str for given weight
+        tholder = Tholder(sith='[1]')
+
+    with pytest.raises(ValueError):  # json with int not str for given weight
+        tholder = Tholder(sith='[2]')
+
+    with pytest.raises(ValueError):  # json but not 0 <= w <= 1 for a given weight
+        tholder = Tholder(sith='["2"]')
+
+    with pytest.raises(ValueError):  # json but given weight evals to float
+        tholder = Tholder(sith='["0.5", "0.5"]')
+
+    with pytest.raises(ValueError):  # non int for unweighted
+        tholder = Tholder(sith="1.0")
+
+    with pytest.raises(ValueError):  # non int for unweighted
+        tholder = Tholder(sith="0.5")
+
+    with pytest.raises(ValueError):  # ratio of floats
+        tholder = Tholder(sith="1.0/2.0")
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[])
@@ -5549,7 +5571,7 @@ def test_tholder():
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[["1/3", "1/2"], []])
 
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(ValueError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
     with pytest.raises(ValueError) as ex:
@@ -5569,6 +5591,21 @@ def test_tholder():
 
     with pytest.raises(ValueError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2", "2"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], "1"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], 1])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], "1.0"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", []])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", 0.5])
 
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
     assert tholder.weighted
@@ -5773,7 +5810,8 @@ if __name__ == "__main__":
     #test_matter()
     #test_counter()
     #test_indexer()
-    test_number()
+    #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
+    test_tholder()

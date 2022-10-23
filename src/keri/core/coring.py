@@ -20,7 +20,7 @@ import pysodium
 import blake3
 import hashlib
 
-from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
+from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
@@ -30,7 +30,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..help import helping
-from ..help.helping import sceil
+from ..help.helping import sceil, nonStringIterable
 
 """
 ilk is short for message type
@@ -808,7 +808,7 @@ class Matter:
                 raise TypeError(f"Not a bytes or bytearray, raw={raw}.")
 
             if code not in self.Sizes:
-                raise UnknownCodeError("Unsupported code={}.".format(code))
+                raise InvalidCodeError("Unsupported code={}.".format(code))
 
             if code[0] in SmallVrzDex or code[0] in LargeVrzDex:  # dynamic size
                 if rize:  # use rsize to determin length of raw to extract
@@ -2424,7 +2424,8 @@ class Salter(Matter):
 class Cipher(Matter):
     """
     Cipher is Matter subclass holding a cipher text of a secret that may be
-    either a secret seed (private key) or secret salt. The cipher text is created
+    either a secret seed (private key) or secret salt with appropriate CESR code
+    to indicate which kind (which indicates size). The cipher text is created
     with assymetric encryption using an unrelated (public, private)
     encryption/decryption key pair. The public key is used for encryption the
     private key for decryption. The default is to use X25519 sealed box encryption.
@@ -4474,7 +4475,7 @@ class Counter:
         """
         if code is not None:  # code provided
             if code not in self.Sizes:
-                raise UnknownCodeError("Unsupported code={}.".format(code))
+                raise InvalidCodeError("Unsupported code={}.".format(code))
 
             hs, ss, fs, ls = self.Sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
@@ -5151,6 +5152,12 @@ class Tholder:
         .satisfy returns bool, True means ilist of verified signature key indices satisfies
              threshold, False otherwise.
 
+    Static Methods:
+        weight (str): converts weight str expression into either int or Fraction
+                    else raises ValueError must satisfy 0 <= w <= 1
+                    Ensures strict proper rational number fraction of ints or
+                    0 or 1
+
     Hidden:
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
         ._size is int minimum size of of keys list
@@ -5219,7 +5226,7 @@ class Tholder:
             self._processSith(sith=sith)
 
         else:
-            raise ValueError("Missing threshold expression.")
+            raise EmptyMaterialError("Missing threshold expression.")
 
 
     @property
@@ -5303,12 +5310,11 @@ class Tholder:
             t = bexter.bext.replace('s', '/')
             # get clauses
             thold = [clause.split('c') for clause in t.split('a')]
-            thold = [[self._checkWeight(Fraction(w)) for w in clause]
-                                                        for clause in thold]
+            thold = [[self.weight(w) for w in clause] for clause in thold]
             self._processWeighted(thold=thold)
 
         else:
-            raise ValueError(f"Invalid code for limen = {matter.code}.")
+            raise InvalidCodeError(f"Invalid code for limen = {matter.code}.")
 
 
     def _processSith(self, sith: int | str | Iterable):
@@ -5322,9 +5328,10 @@ class Tholder:
                 non-negative hex string of threshold number (M-of-N threshold)
                     next threshold may be zero
                 fractional weight clauses which may be expressed as either:
-                    an iterable of rational number fraction weight strings
+                    an iterable of rational number fraction weight str or int str
                         each denoted w where 0 <= w <= 1
-                    an iterable of iterables of rational number fraction weight strings
+                    an iterable of iterables of rational number fraction weight
+                       or int str
                        each denoted w where 0 <= w <= 1>= 0
                 JSON serialized str of either:
                     list of rational number fraction weight strings
@@ -5347,18 +5354,25 @@ class Tholder:
             if not sith:  # empty iterable
                 raise ValueError(f"Empty weight list = {sith}.")
 
-            mask = [isinstance(w, str) for w in sith]  # list of strings
-            if mask and all(mask):  # not empty and all strings
-                sith = [sith]  # make list of lists so uniform
-            elif any(mask):  # some strings but not all
-                raise ValueError("Invalid sith = {} some weights non non string."
-                                 "".format(sith))
+            # because all([]) == True  have to also test for emply mask
+            # is it non str iterable of non str iterable of strs
+            mask = [nonStringIterable(c) for c in sith]
+            if mask and not all(mask):  # not empty and not iterable of iterables
+                sith = [sith]  # attempt to make Iterable of Iterables
 
-            # replace fractional strings with fractions
+            for c in sith:  # get each clause
+                mask = [isinstance(w, str) for w in c]  # must be all strs
+                if mask and not all(mask):  # not empty and not iterable of strs?
+                    raise ValueError(f"Invalid sith = {sith} some weights in"
+                                     f"clause {c} are non string.")
+
+
+            # replace weight str expression, int str or fractional strings with
+            # int or fraction as appropriate.
             thold = []
             for clause in sith:  # convert string fractions to Fractions
-                # append list of Fractions
-                thold.append([self._checkWeight(Fraction(w)) for w in clause])
+                # append list of weights converted fromnn str expression
+                thold.append([self.weight(w) for w in clause])
 
             self._processWeighted(thold=thold)
 
@@ -5392,8 +5406,8 @@ class Tholder:
         """
         for clause in thold:  # sum of fractions in clause must be >= 1
             if not (sum(clause) >= 1):
-                raise ValueError(f"Invalid sith clause = {thold}, all clause weight "
-                                 f"sums must be >= 1.")
+                raise ValueError(f"Invalid sith clause = {thold}, all "
+                                 f"clause weight sums must be >= 1.")
 
         self._thold = thold
         self._weighted = True
@@ -5409,12 +5423,49 @@ class Tholder:
 
 
     @staticmethod
-    def _checkWeight(w: Fraction) -> Fraction:
+    def _oldcheckWeight(w: Fraction) -> Fraction:
         """Returns w if 0 <= w <= 1 Else raises ValueError
 
         Parameters:
             w (Fraction): Threshold weight Fraction
         """
+        if not 0 <= w <= 1:
+            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+        return w
+
+    #@staticmethod
+    #def _checkWeight(w: SmallVrzDex) -> Fraction:
+        #"""Returns w if 0 <= w <= 1 and is strict rational fraction expression
+        #or "1" or "0"  Else raises ValueError
+
+        #Parameters:
+            #w (Fraction): Threshold weight Fraction
+        #"""
+        #if not 0 <= w <= 1:
+            #raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+        #return w
+
+    @staticmethod
+    def weight(w: str) -> Fraction:
+        """Returns valid weight from w else raises error (ValueError or TypeError).
+        w expression must evaluate to 0, 1, or strict proper rational fraction.
+        w expression must be 0 <= w <= 1 Else raises ValueError
+        w must not be float else raises TypeError
+        When not int w must be ratio of integers n/d else raise ValueError.
+
+        Parameters:
+            w (str): threshold weight expression
+        """
+        try:  # float str or ratio str raises ValueError
+            if int(float(w)) != float(w):  # float str
+                raise TypeError("Invalid weight str got float w={w}.")
+            w = int(w)  # expression is int str
+        except TypeError as ex:
+            raise  ValueError(str(ex)) from  ex
+
+        except ValueError as ex:  # not float str or int str so try ration str
+            w = Fraction(w)
+
         if not 0 <= w <= 1:
             raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
         return w
