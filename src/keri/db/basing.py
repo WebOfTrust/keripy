@@ -144,7 +144,10 @@ class HabitatRecord:  # baser.habs
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
     ToDo: NRR
-
+        May need to save midxs for interact event signing by .mhab because
+        merfers and migers and mindices are not provided. Reserve members of
+        group do not participate in signing so must either ignore or raise error
+        if asked to sign interaction event.
 
     """
     hid: str  # hab own identifier prefix qb64
