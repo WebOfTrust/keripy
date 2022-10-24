@@ -499,7 +499,7 @@ class Habery:
                                                 f"members ={mids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
-        merfers, migers = self.extractKeysDigs(mids)  # group verfers and digers
+        merfers, migers = self.extractMerfersMigers(mids)  # group verfers and digers
         kwa["merfers"] = merfers
         kwa["migers"] = migers
 
@@ -513,32 +513,31 @@ class Habery:
 
         return hab
 
-    def extractKeysDigs(self, mids):
+    def extractMerfersMigers(self, mids):
         """
-        Extract the public key and next digest from the current est event of the other
-        participants in the multisig group.
+        Extract the public key verfer and next digest diger from the current
+        est event of all the members of the multisig group. Assumes that the KEL
+        for each member is already in .kevers
 
         Parameters:
             mids (list): group member ids qb64 of all single sig members in multisig
 
         """
-        merfers = []  # verfers of multisig group signing keys
-        migers = []  # digers of multisig group next key digests
+        merfers = []  # multisig group signing key verfers
+        migers = []  # multisig group next key digest digers
         for mid in mids:
             kever = self.kevers[mid]
-            keys = kever.verfers
-            if len(keys) > 1:
+            verfers = kever.verfers
+            if len(verfers) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
-                                                .format(mid, len(keys)))
-            ndigs = kever.nexter.digs
-            if len(ndigs) > 1:
-                raise kering.ConfigurationError("Identifier must have only one nexy key commitment, {} has {}"
-                                                .format(mid, len(ndigs)))
+                                                .format(mid, len(verfers)))
+            digers = kever.nexter.digers
+            if len(digers) > 1:
+                raise kering.ConfigurationError("Identifier must have only one next key commitment, {} has {}"
+                                                .format(mid, len(digers)))
 
-            diger = coring.Diger(qb64=ndigs[0])
-
-            merfers.append(keys[0])
-            migers.append(diger)
+            merfers.append(verfers[0])
+            migers.append(digers[0])
 
         return (merfers, migers)
 
@@ -984,13 +983,15 @@ class Hab:
         # create inception event
         if self.mhab:  # Group multisig member. Sign with single sig of mhab
             # convention use indices from mhab's first current signing key if
-            # participating and first prior next dig if participating. One or
-            # the other or both must be participant
+            # participating
             # mid index tuple (csi, pni)
-            csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
-            pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
+            csi = keys.index(self.mhab.kever.verfers[0].qb64)  # first key of mhab
+            # inception so no prior next so pni could be None but for backwards
+            # compatibility set to same as csi since inception event validation
+            # ignores pni index since not required. In future should set to None
+            pni = csi
             sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        verfers=self.mhab.kever.verfers,
+                                        verfers=[self.mhab.kever.verfers[0]],
                                         indices=[csi],
                                         ondices=[pni])
 
@@ -1154,7 +1155,7 @@ class Hab:
             csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
             pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
             return (self.mhab.mgr.sign(ser=ser,
-                                        verfers=self.mhab.kever.verfers,
+                                        verfers=[self.mhab.kever.verfers[0]],
                                         indices=[csi],
                                         ondices=[pni]))
 
@@ -1273,7 +1274,7 @@ class Hab:
             csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
             pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
             sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        verfers=self.mhab.kever.verfers,
+                                        verfers=[self.mhab.kever.verfers[0]],
                                         indices=[csi],
                                         ondices=[pni])
 
@@ -1367,6 +1368,7 @@ class Hab:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
+
     def exchange(self, serder, save=False):
         """
         Returns signed exn, message of serder with count code and receipt
@@ -1388,6 +1390,7 @@ class Hab:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
 
         return msg
+
 
     def witness(self, serder):
         """
