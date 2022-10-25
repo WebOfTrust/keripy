@@ -1426,6 +1426,7 @@ class Hab:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
+
     def endorse(self, serder, last=False, pipelined=True):
         """
         Returns msg with own endorsement of msg from serder with attached signature
@@ -1468,6 +1469,7 @@ class Hab:
                                      pipelined=pipelined)
 
         return msg
+
 
     def replay(self, pre=None, fn=0):
         """
