@@ -113,15 +113,17 @@ class GroupMultisigIncept(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.name}")
+            raise kering.ConfigurationError(f"invalid alias {self.alias} "
+                                            f"specified for database {self.name}")
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:
             mids = self.inits["aids"]  # not a pass through in makeGroupHab
             del self.inits["aids"]
+            nids = None
 
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, mids=mids,
-                                         **self.inits)
+                                         nids=None, **self.inits)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)

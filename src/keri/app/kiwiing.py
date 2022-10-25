@@ -1992,6 +1992,7 @@ class MultisigInceptEnd(MultisigEndBase):
             return None, None
 
         mids = body["aids"]  # change body mids for group member ids
+        nids = None
         mhab = None
         for mid in mids:
             if mid in self.hby.habs:
@@ -2036,7 +2037,11 @@ class MultisigInceptEnd(MultisigEndBase):
         inits["delpre"] = body["delpre"] if "delpre" in body else None
 
         try:
-            ghab = self.hby.makeGroupHab(group=alias, mhab=mhab, mids=mids, **inits)
+            ghab = self.hby.makeGroupHab(group=alias,
+                                         mhab=mhab,
+                                         mids=mids,
+                                         nids=nids,
+                                         **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400
             rep.data = json.dumps(dict(msg=ex.args[0])).encode("utf-8")
@@ -2056,7 +2061,11 @@ class MultisigInceptEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
-        self.counselor.start(mids=aids, mid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(mids=aids,
+                             mid=hab.pre,
+                             prefixer=prefixer,
+                             seqner=seqner,
+                             saider=saider)
 
     def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
@@ -2149,6 +2158,8 @@ class MultisigInceptEnd(MultisigEndBase):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = serder.raw
+
+
 
     def on_put(self, req, rep, alias):
         """  Multisig PUT endpoint
