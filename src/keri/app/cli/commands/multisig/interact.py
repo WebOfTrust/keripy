@@ -5,7 +5,7 @@ keri.kli.commands.multisig module
 """
 
 import argparse
-
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -114,7 +114,7 @@ class GroupMultisigInteract(doing.DoDoer):
         serder = coring.Serder(raw=ixn)
         exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
         others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
-        #others = list(ghab.mids)
+        #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
