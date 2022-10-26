@@ -121,8 +121,6 @@ class GroupMultisigIncept(doing.DoDoer):
             smids = self.inits["aids"]  # not a pass through in makeGroupHab
             del self.inits["aids"]
             rmids = None  # get from inits
-            if rmids == None:  # default is smids and rmids are same
-                rmids = list(smids)
 
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
@@ -131,8 +129,8 @@ class GroupMultisigIncept(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(mids=smids, mid=hab.pre, prefixer=prefixer,
-                                 seqner=seqner, saider=saider)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                                 mid=hab.pre, smids=smids, rmids=rmids)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)

@@ -38,7 +38,7 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
-        #rmids = list(smids)  # only if different
+        rmids = None  # need to fixe this
         inits = dict(isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
@@ -49,7 +49,8 @@ def test_counselor():
         saider = coring.Saider(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(mids=smids, mid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                        mid=hab1.pre, smids=smids, rmids=rmids)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
@@ -91,7 +92,9 @@ def test_counselor():
 
         # Partial rotation
         smids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, mids=smids, nsith='2', toad=0, cuts=list(), adds=list())
+        rmids = None  # need to fix
+        counselor.rotate(ghab=ghab, smids=smids, rmids=rmids,
+                         nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.smids == smids

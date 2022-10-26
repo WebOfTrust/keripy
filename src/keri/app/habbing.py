@@ -467,7 +467,7 @@ class Habery:
                         inception event current signing keys
             rmids (list): group member rotation ids (qb64) from which to extract
                         inception event next key digests
-                        if rmids is None then use assign mids to rmids
+                        if rmids is None then use assign smids to rmids
                         if rmids is empty then no next key digests
                         which means group identifier is no longer transferable.
 
@@ -497,8 +497,8 @@ class Habery:
         if mhab.pre not in smids and mhab.pre not in rmids:
             raise kering.ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
-                                            f"mids ={smids} and/or "
-                                            f"nids={rmids}.")
+                                            f"smids ={smids} and/or "
+                                            f"rmids={rmids}.")
 
         for mid in smids:
             if mid not in self.kevers:
@@ -506,55 +506,62 @@ class Habery:
                                                 f"identifier {mid} from group's "
                                                 f"current members ={smids}")
 
-        if rmids is None:
-            rmids = list(smids)
-
-        for rmid in rmids:
-            if rmid not in self.kevers:
-                raise kering.ConfigurationError(f"KEL missing for next member "
-                                                f"identifier {rmid} in group's"
-                                                f" next members ={rmids}")
+        if rmids is not None:
+            for rmid in rmids:
+                if rmid not in self.kevers:
+                    raise kering.ConfigurationError(f"KEL missing for next member "
+                                                    f"identifier {rmid} in group's"
+                                                    f" next members ={rmids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
-        merfers, migers = self.extractMerfersMigers(smids)  # group verfers and digers
+        merfers, migers = self.extractMerfersMigers(smids, rmids)  # group verfers and digers
         kwa["merfers"] = merfers
         kwa["migers"] = migers
 
         # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, mhab=mhab, smids=smids, temp=self.temp)
+                  name=group, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
 
         return hab
 
-    def extractMerfersMigers(self, mids):
+    def extractMerfersMigers(self, smids, rmids=None):
         """
         Extract the public key verfer and next digest diger from the current
         est event of all the members of the multisig group. Assumes that the KEL
         for each member is already in .kevers
 
         Parameters:
-            mids (list): group member ids qb64 of all single sig members in multisig
+            smids (list): group signing member ids qb64 in group multisig
+            rmids (list): group rotating member ids qb64 in group multisig
 
         """
+        if rmids is None:  # default the same for both lists
+            rmids = list(smids)
+
         merfers = []  # multisig group signing key verfers
         migers = []  # multisig group next key digest digers
-        for mid in mids:
+
+        for mid in smids:
             kever = self.kevers[mid]
             verfers = kever.verfers
+            merfers.append(verfers[0])  # assumes always verfers
             if len(verfers) > 1:
                 raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
                                                 .format(mid, len(verfers)))
+
+
+        for mid in rmids:
+            kever = self.kevers[mid]
             digers = kever.nexter.digers
+            if digers:  # abandoned id  may have empty next digers
+                migers.append(digers[0])
             if len(digers) > 1:
                 raise kering.ConfigurationError("Identifier must have only one next key commitment, {} has {}"
                                                 .format(mid, len(digers)))
-
-            merfers.append(verfers[0])
-            migers.append(digers[0])
 
         return (merfers, migers)
 
@@ -782,9 +789,11 @@ class Hab:
      Attributes:
         name (str): alias of controller
         pre (str): qb64 prefix of own local controller or None if new
-        mhab (Hab | None): group member (local) hab when this Hab is multisig
+        mhab (Hab | None): group member (local) hab when this Hab is multisig group
                            else None
-        mids (list | None): group member ids qb64 when this Hab is multisig
+        smids (list | None): group signing member ids qb64 when this Hab is group
+                            else None
+        rmids (list | None): group rotating member ids qb64 when this Hab is group
                             else None
         temp (bool): True means testing:
                      use weak level when salty algo for stretching in key creation

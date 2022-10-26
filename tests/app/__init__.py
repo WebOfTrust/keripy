@@ -30,7 +30,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = list(smids)
+        rmids = None  # may need to fix
 
         inits = dict(
             toad=0,

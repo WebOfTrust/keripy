@@ -37,17 +37,19 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, mids, mid, prefixer, seqner, saider):
+    def start(self, prefixer, seqner, saider, mid, smids, rmids=None):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
-            mids (list): group member ids qb64 (multisig group)
-            mid (str): group member (local) identifier prefix qb64
+
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
             saider (Saider): saider of inception event of group identifier
+            mid (str): group member (local) identifier prefix qb64
+            smids (list): group signing member ids qb64 (multisig group)
+            rmids (list | None): group rotating member ids qb64 (multisig group)
 
 
         """
@@ -55,10 +57,11 @@ class Counselor(doing.DoDoer):
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
 
-        others = list(mids)
-        others.remove(mid)
+        #others = list(set(smids + (rmids if rmids is not None else [])))
+        others = list(smids)
+        others.remove(mid)  # don't send to self
 
-        print(f"Sending multisig event to {len(mids) - 1} other participants")
+        print(f"Sending multisig event to {len(others)} other participants")
         for recpt in others:
             self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
@@ -67,7 +70,7 @@ class Counselor(doing.DoDoer):
 
 
 
-    def rotate(self, ghab, mids, isith=None, nsith=None,
+    def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
@@ -75,7 +78,8 @@ class Counselor(doing.DoDoer):
 
         Parameters:
             ghab (Hab): group identifier Hab
-            mids (list): group member identifier prefixes qb64
+            smids (list): group signing member identifier prefixes qb64
+            smids (list): group rotating member identifier prefixes qb64
             isith (Optional[int,str]) currentsigning threshold as int or str hex
                  or list of str weights
             nsith (Optional[int,str])next signing threshold as int or str hex
@@ -92,12 +96,12 @@ class Counselor(doing.DoDoer):
 
 
         """
-        mids = mids if mids is not None else ghab.smids
+        smids = smids if smids is not None else ghab.smids
         rmids = None
         mid = ghab.mhab.pre
-        if mid not in mids:
+        if mid not in smids:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
-                                            f" to participate in rotation: {mids}")
+                                            f" to participate in rotation: {smids}")
 
         kever = ghab.kever
 
@@ -109,7 +113,7 @@ class Counselor(doing.DoDoer):
         rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
                                   data=data, date=helping.nowIso8601(),
-                                  smids=mids, rmids=rmids, )
+                                  smids=smids, rmids=rmids)
 
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.mhab.rotate()
@@ -119,16 +123,17 @@ class Counselor(doing.DoDoer):
 
         else:
             rot = ghab.mhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
-            others = list(mids)
+            others = list(smids)
             others.remove(mid)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            print(f"Sending local rotation event to {len(mids) - 1} other participants")
+            print(f"Sending local rotation event to {len(smids) - 1} other participants")
             for recpt in others:
                 self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
+
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -149,6 +154,7 @@ class Counselor(doing.DoDoer):
                 raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
 
         return True
+
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.

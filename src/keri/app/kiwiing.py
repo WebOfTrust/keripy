@@ -1981,7 +1981,7 @@ class MultisigInceptEnd(MultisigEndBase):
         ToDo: NRR
         Add to body  midxs tuple (csi, pni)
         Then pass these into
-        self.hby.makeGroupHab(group=alias, mhab=hab, mids=aids, **inits)
+        self.hby.makeGroupHab(group=alias, mhab=hab, smids=aids, **inits)
 
 
         """
@@ -1991,10 +1991,8 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = "Invalid multisig group inception request, 'aids' is required'"
             return None, None
 
-        smids = body["aids"]  # change body mids for group member ids
+        smids = body["aids"]  # change body aids to smids for group member ids
         rmids = None  # group rotation member ids get from body
-        if rmids == None:
-            rmids = list(smids)
         mhab = None
         for mid in smids:
             if mid in self.hby.habs:
@@ -2051,23 +2049,22 @@ class MultisigInceptEnd(MultisigEndBase):
 
         return mhab, ghab
 
-    def icp(self, hab, ghab, aids):
+
+    def icp(self, hab, ghab, aids, rmids=None):
         """
 
         Args:
             ghab (Hab): Group Hab to start processing
             hab (Hab): Local participant Hab
-            aids (list) Other group participant qb64 identifier prefixes
+            aids (list): Other group signing member qb64 ids
+            rmids (list | None) Other group rotating member qb64 ids
 
         """
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
-        self.counselor.start(mids=aids,
-                             mid=hab.pre,
-                             prefixer=prefixer,
-                             seqner=seqner,
-                             saider=saider)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                              mid=hab.pre, smids=aids, rmids=rmids)
 
     def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
@@ -2370,6 +2367,7 @@ class MultisigEventEnd(MultisigEndBase):
                 nsith = nsith.split(",")
 
         aids = body["aids"] if "aids" in body else ghab.smids
+        rmids = body["rmids"] if "rmids" in body else ghab.rmids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2390,8 +2388,10 @@ class MultisigEventEnd(MultisigEndBase):
 
         sn = ghab.kever.sn
         # begin the rotation process
-        self.counselor.rotate(ghab=ghab, mids=aids, isith=isith, nsith=nsith,
-                              toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+        self.counselor.rotate(ghab=ghab, smids=aids, rmids=rmids,
+                              isith=isith, nsith=nsith,
+                              toad=toad, cuts=list(cuts), adds=list(adds),
+                              data=data)
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
@@ -2494,6 +2494,7 @@ class MultisigEventEnd(MultisigEndBase):
                 nsith = nsith.split(",")
 
         aids = body["aids"] if "aids" in body else ghab.smids
+        rmids = body["rmids"] if "rmids" in body else ghab.rmids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2513,8 +2514,10 @@ class MultisigEventEnd(MultisigEndBase):
             adds = set(wits) - set(ewits)
 
         sn = ghab.kever.sn
-        self.counselor.rotate(ghab=ghab, mids=aids, isith=isith, nsith=nsith,
-                              toad=toad, cuts=list(cuts), adds=list(adds), data=data)
+        self.counselor.rotate(ghab=ghab, smids=aids, rmids=rmids,
+                              isith=isith, nsith=nsith,
+                              toad=toad, cuts=list(cuts), adds=list(adds),
+                              data=data)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
@@ -2644,7 +2647,12 @@ class MultisigEventEnd(MultisigEndBase):
 
         rep.status = falcon.HTTP_202
 
-    def ixn(self, ghab, data, aids):
+
+    def ixn(self, ghab, data, aids, rmids=None):
+        """Todo Document this method
+
+        Parameters
+        """
         ixn = ghab.interact(data=data)
 
         serder = coring.Serder(raw=ixn)
@@ -2652,7 +2660,8 @@ class MultisigEventEnd(MultisigEndBase):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(mids=aids, mid=ghab.mhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
         return serder
 
 
