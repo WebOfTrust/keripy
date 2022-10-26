@@ -21,7 +21,6 @@ from ..app import specing, forwarding, agenting, storing, indirecting, httping, 
 from ..core import coring, eventing
 from ..db import dbing
 from ..db.dbing import dgKey
-from ..end import ending
 from ..peer import exchanging
 from ..vc import proving, protocoling, walleting
 from ..vdr import verifying, credentialing
@@ -2643,19 +2642,20 @@ class MultisigEventEnd(MultisigEndBase):
         return serder
 
 
-class ChallengeEnd:
+class ChallengeEnd(doing.DoDoer):
     """ Resource for Challenge/Response Endpoints """
 
-    def __init__(self, hby, rep):
+    def __init__(self, hby):
         """ Initialize Challenge/Response Endpoint
 
         Parameters:
             hby (Habery): database and keystore environment
-            rep (Respondant): Doer capable of processing responses from endpoints
 
         """
         self.hby = hby
-        self.rep = rep
+        self.postman = forwarding.Postman(hby=self.hby)
+
+        super(ChallengeEnd, self).__init__(doers=[self.postman])
 
     @staticmethod
     def on_get(req, rep):
@@ -2758,9 +2758,12 @@ class ChallengeEnd:
         words = body["words"]
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
-        dt = "2022-05-19T20:20:00.751126+00:00"
-        exn = exchanging.exchange(route="/challenge/response", payload=payload, date=dt)
-        self.rep.reps.append(dict(src=hab.pre, dest=recpt, rep=exn, topic="challenge"))
+        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        del ims[:exn.size]
+
+        senderHab = hab.mhab if hab.mhab else hab
+        self.postman.send(src=senderHab.pre, dest=recpt, topic="challenge", serder=exn, attachment=ims)
 
         rep.status = falcon.HTTP_202
 
@@ -3717,7 +3720,6 @@ def loadEnds(app, *,
              path,
              hby,
              rgy,
-             rep,
              verifier,
              counselor,
              signaler,
@@ -3793,7 +3795,7 @@ def loadEnds(app, *,
     app.add_route("/oobi", oobiEnd)
     app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
 
-    chacha = ChallengeEnd(hby=hby, rep=rep)
+    chacha = ChallengeEnd(hby=hby)
     app.add_route("/challenge", chacha)
     app.add_route("/challenge/{alias}", chacha, suffix="resolve")
     app.add_route("/challenge/accept/{alias}", chacha, suffix="accept")
@@ -3826,7 +3828,7 @@ def loadEnds(app, *,
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, presentationEnd, lockEnd]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, presentationEnd, lockEnd, chacha]
 
 
 def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, staticPath="", **kwargs):
@@ -3890,8 +3892,6 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     doers.extend([exchanger, mbd, rep])
 
     # Load admin interface
-    rep = storing.Respondant(hby=hby, mbx=mbx)
-
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
     if not insecure:
@@ -3899,7 +3899,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     app.req_options.media_handlers.update(media.Handlers())
     app.resp_options.media_handlers.update(media.Handlers())
 
-    endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, rep=rep, verifier=verifier,
+    endDoers = loadEnds(app, path=staticPath, hby=hby, rgy=rgy, verifier=verifier,
                         counselor=counselor, registrar=registrar, credentialer=credentialer,
                         servery=servery, bootConfig=bootConfig, notifier=notifier, signaler=signaler)
 

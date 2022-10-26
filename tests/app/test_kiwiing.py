@@ -3,7 +3,6 @@
 tests.app.agent_kiwiserver module
 
 """
-import pytest
 
 import json
 import os
@@ -14,13 +13,12 @@ from hio.base import doing
 
 import keri.app.oobiing
 from keri import kering
-from keri.app import (habbing, storing, kiwiing, grouping, booting, notifying,
+from keri.app import (habbing, kiwiing, grouping, booting, notifying,
                       signing, connecting)
 from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
 from keri.db import basing, dbing
-from keri.end import ending
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
 
@@ -51,13 +49,11 @@ def test_credential_handlers(mockHelpingNowUTC, seeder):
         parsing.Parser().parseOne(ims=bytearray(icp), kvy=kvy)
 
         notifier = notifying.Notifier(hby=hby)
-        repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
         registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
         credentialer = credentialing.Credentialer(hby=hby, rgy=regery, registrar=registrar, verifier=verifier)
 
         _ = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
                              rgy=regery,
                              verifier=verifier,
                              notifier=notifier,
@@ -475,13 +471,11 @@ def test_identifier_ends():
         verifier = verifying.Verifier(hby=hby, reger=regery.reger)
 
         notifier = notifying.Notifier(hby=hby)
-        repd = storing.Respondant(hby=hby)
         counselor = grouping.Counselor(hby=hby)
         registrar = credentialing.Registrar(hby=hby, rgy=regery, counselor=counselor)
         credentialer = credentialing.Credentialer(hby=hby, rgy=regery, registrar=registrar, verifier=verifier)
 
         doers = kiwiing.loadEnds(hby=hby,
-                                 rep=repd,
                                  rgy=regery,
                                  verifier=verifier,
                                  notifier=notifier,
@@ -746,7 +740,6 @@ def test_oobi_ends(seeder):
         app = falcon.App()
         regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,
-                             rep=None,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -850,10 +843,8 @@ def test_challenge_ends(seeder):
 
         app = falcon.App()
         notifier = notifying.Notifier(hby=palHby)
-        repd = storing.Respondant(hby=palHby)
         regery = credentialing.Regery(hby=palHby, name=palHab.name, temp=True)
         _ = kiwiing.loadEnds(hby=palHby,
-                             rep=repd,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -896,11 +887,11 @@ def test_challenge_ends(seeder):
         result = client.simulate_post(path="/challenge/pal", body=b)
         assert result.status == falcon.HTTP_202
 
-        assert len(repd.reps) == 1
-        rep = repd.reps.popleft()
-        assert rep["topic"] == "challenge"
-        assert rep["dest"] == "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
-        assert rep["rep"].ked['r'] == '/challenge/response'
+        # assert len(.reps) == 1
+        # rep = repd.reps.popleft()
+        # assert rep["topic"] == "challenge"
+        # assert rep["dest"] == "Eo6MekLECO_ZprzHwfi7wG2ubOt2DWKZQcMZvTbenBNU"
+        # assert rep["rep"].ked['r'] == '/challenge/response'
 
 
 def test_contact_ends(seeder):
@@ -929,7 +920,6 @@ def test_contact_ends(seeder):
         notifier = notifying.Notifier(hby=palHby)
         app = falcon.App()
         _ = kiwiing.loadEnds(hby=palHby,
-                             rep=None,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -1135,7 +1125,6 @@ def test_keystate_end():
         counselor = grouping.Counselor(hby=hby)
 
         _ = kiwiing.loadEnds(hby=hby,
-                             rep=None,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -1190,7 +1179,6 @@ def test_schema_ends():
         notifier = notifying.Notifier(hby=hby)
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         _ = kiwiing.loadEnds(hby=hby,
-                             rep=None,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -1253,7 +1241,6 @@ def test_escrow_end(mockHelpingNowUTC):
         notifier = notifying.Notifier(hby=hby)
         app = falcon.App()
         _ = kiwiing.loadEnds(hby=hby,
-                             rep=None,
                              rgy=rgy,
                              verifier=None,
                              notifier=notifier,
@@ -1311,7 +1298,8 @@ def test_escrow_end(mockHelpingNowUTC):
                        'receipts': {},
                        'signatures': [{'index': 0,
                                        'signature':
-                                           'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeIGZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
+                                           'AAArkDBeflIAo4kBsKnc754XHJvdLnf04iq-noTFEJkbv2MeI'
+                                           'GZtx6lIfJPmRSEmFMUkFW4otRrMeBGQ0-nlhHEE'}],
                        'stored': True,
                        'timestamp': '2021-01-01T00:00:00.000000+00:00',
                        'witness_signatures': [],
@@ -1435,7 +1423,6 @@ def test_presentation_ends(seeder, mockCoringRandomNonce, mockHelpingNowIso8601)
         notifier = notifying.Notifier(hby=palHby)
         app = falcon.App()
         ends = kiwiing.loadEnds(hby=palHby,
-                                rep=None,
                                 rgy=palReg,
                                 verifier=None,
                                 notifier=notifier,
@@ -1617,7 +1604,6 @@ def test_aied_ends():
         notifier = notifying.Notifier(hby=hby)
         regery = credentialing.Regery(hby=hby, name="test", temp=True)
         _ = kiwiing.loadEnds(hby=hby,
-                             rep=None,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
