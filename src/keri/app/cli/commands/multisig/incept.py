@@ -124,7 +124,7 @@ class GroupMultisigIncept(doing.DoDoer):
             if rmids == None:  # default is smids and rmids are same
                 rmids = list(smids)
 
-            ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, mids=smids,
+            ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
             print(f"Group identifier inception initialized for {ghab.pre}")

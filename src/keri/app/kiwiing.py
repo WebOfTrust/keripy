@@ -238,7 +238,7 @@ class IdentifierEnd(doing.DoDoer):
         if hab.mhab:
             data["group"] = dict(
                 pid=hab.mhab.pre,
-                aids=hab.mids,
+                aids=hab.smids,
                 accepted=hab.accepted
             )
 
@@ -1385,7 +1385,7 @@ class CredentialEnd(doing.DoDoer):
             return
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
-        others = list(hab.mids)
+        others = list(hab.smids)
         others.remove(hab.mhab.pre)
 
         for recpt in others:
@@ -2041,7 +2041,7 @@ class MultisigInceptEnd(MultisigEndBase):
         try:
             ghab = self.hby.makeGroupHab(group=alias,
                                          mhab=mhab,
-                                         mids=smids,
+                                         smids=smids,
                                          rmids=rmids,
                                          **inits)
         except ValueError as ex:
@@ -2143,16 +2143,16 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(lhab, aids=ghab.mids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(lhab, aids=ghab.smids, ked=serder.ked)
 
-        others = list(ghab.mids)
+        others = list(ghab.smids)
         others.remove(lhab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
             self.postman.send(src=lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         #  signal to the group counselor to start the inception
-        self.icp(hab=lhab, ghab=ghab, aids=ghab.mids)
+        self.icp(hab=lhab, ghab=ghab, aids=ghab.smids)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
@@ -2369,7 +2369,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(nsith, str) and "," in nsith:
                 nsith = nsith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.mids
+        aids = body["aids"] if "aids" in body else ghab.smids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2395,7 +2395,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(ghab.mids)
+        others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2493,7 +2493,7 @@ class MultisigEventEnd(MultisigEndBase):
             if isinstance(nsith, str) and "," in nsith:
                 nsith = nsith.split(",")
 
-        aids = body["aids"] if "aids" in body else ghab.mids
+        aids = body["aids"] if "aids" in body else ghab.smids
         toad = body["toad"] if "toad" in body else None
         wits = body["wits"] if "wits" in body else []
         adds = body["adds"] if "adds" in body else []
@@ -2570,11 +2570,11 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.mids
+        aids = body["aids"] if "aids" in body else ghab.smids
         data = body["data"] if "data" in body else None
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
-        others = list(ghab.mids)
+        others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2635,7 +2635,7 @@ class MultisigEventEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        aids = body["aids"] if "aids" in body else ghab.mids
+        aids = body["aids"] if "aids" in body else ghab.smids
         data = body["data"] if "data" in body else None
 
         serder = self.ixn(ghab=ghab, data=data, aids=aids)

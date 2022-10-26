@@ -92,7 +92,7 @@ class Counselor(doing.DoDoer):
 
 
         """
-        mids = mids if mids is not None else ghab.mids
+        mids = mids if mids is not None else ghab.smids
         mid = ghab.mhab.pre
         if mid not in mids:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
@@ -243,7 +243,7 @@ class Counselor(doing.DoDoer):
             ldigers = list(gkever.nexter.digers)  # local participants next digers
             for aid in rec.mids:
                 pkever = self.hby.kevers[aid]
-                idx = ghab.mids.index(aid)
+                idx = ghab.smids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
                     lverfers.append(pkever.verfers[0])
                     ldigers[idx] = pkever.nexter.digers[0]
@@ -594,7 +594,7 @@ class MultisigRotateHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.mids or src not in ghab.kevers:
+                if src not in ghab.smids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 
@@ -697,7 +697,7 @@ class MultisigInteractHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.mids or src not in ghab.kevers:
+                if src not in ghab.smids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 

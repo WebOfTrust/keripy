@@ -109,7 +109,7 @@ def transSeal(hab):
     if not hab.mhab:  # not a group use own kever
         indices = None  # use default order
     else:  # group so use gid kever
-        indices = [hab.mids.index(hab.mhab.pre)]  # use group order*
+        indices = [hab.smids.index(hab.mhab.pre)]  # use group order*
 
     kever = hab.kever
     prefixer = kever.prefixer

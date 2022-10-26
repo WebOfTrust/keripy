@@ -407,7 +407,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, mids=habord.mids)
+                      name=name, pre=pre, temp=self.temp, smids=habord.mids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -456,7 +456,7 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, mhab, mids, rmids=None, **kwa):
+    def makeGroupHab(self, group, mhab, smids, rmids=None, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
@@ -494,20 +494,20 @@ class Habery:
 
         """
 
-        if mhab.pre not in mids and mhab.pre not in rmids:
+        if mhab.pre not in smids and mhab.pre not in rmids:
             raise kering.ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
-                                            f"mids ={mids} and/or "
+                                            f"mids ={smids} and/or "
                                             f"nids={rmids}.")
 
-        for mid in mids:
+        for mid in smids:
             if mid not in self.kevers:
                 raise kering.ConfigurationError(f"KEL missing for signing member "
                                                 f"identifier {mid} from group's "
-                                                f"current members ={mids}")
+                                                f"current members ={smids}")
 
         if rmids is None:
-            rmids = list(mids)
+            rmids = list(smids)
 
         for rmid in rmids:
             if rmid not in self.kevers:
@@ -516,14 +516,14 @@ class Habery:
                                                 f" next members ={rmids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
-        merfers, migers = self.extractMerfersMigers(mids)  # group verfers and digers
+        merfers, migers = self.extractMerfersMigers(smids)  # group verfers and digers
         kwa["merfers"] = merfers
         kwa["migers"] = migers
 
         # create group Hab in this Habery
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=group, mhab=mhab, mids=mids, temp=self.temp)
+                  name=group, mhab=mhab, smids=smids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
@@ -809,7 +809,8 @@ class Hab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, mhab=None, mids=None, temp=False):
+                 name='test', pre=None, mhab=None, smids=None, rmids=None,
+                 temp=False):
         """
         Initialize instance.
 
@@ -828,9 +829,15 @@ class Hab:
             name (str): alias name for local controller of habitat
             pre (str | None): qb64 identifier prefix of own local controller else None
             mhab (Hab | None): group member hab (local) when this Hab is multisig group
-                           else None
-            mids (list | None): group member ids (prefixes) when this Hab is
-                           multisig group else None
+                           else None. The mhab.pre aid could be a member of
+                           .smids, or .rmids, or both.
+            smids (list | None): group signing member ids (prefixes) when this Hab is
+                           multisig group else None. Set holds current signing authority
+                           for group multi-sig identifier.
+            rmids (list | None): group rotation member ids (prefixes) when this Hab is
+                           multisig group else None. Set holds next rotating authority
+                           for group multi-sig identifier. When None defaults to
+                           copy of smids.
             temp (bool): True means testing:
                 use weak level when salty algo for stretching in key creation
                 for incept and rotate of keys for this hab.pre
@@ -849,7 +856,8 @@ class Hab:
         self.name = name
         self.pre = pre  # wait to setup until after db is known to be opened
         self.mhab = mhab  # local participant Hab of this group hab
-        self.mids = mids  # group aids of participant in this group hab
+        self.smids = smids  # group signing member aids in this group hab
+        self.rmids = rmids  # group rotating member aids in this group hab
         self.temp = True if temp else False
 
         self.inited = False
@@ -988,7 +996,7 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(hid=self.pre, mid=None, mids=self.mids)
+        habord = basing.HabitatRecord(hid=self.pre, mid=None, mids=self.smids)
         if self.mhab:
             habord.mid = self.mhab.pre
 
@@ -1136,10 +1144,6 @@ class Hab:
         Returns .db.prefixes
         """
         return self.db.prefixes
-
-    # should this be property?
-    #def group(self):
-        #return self.mids
 
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True):

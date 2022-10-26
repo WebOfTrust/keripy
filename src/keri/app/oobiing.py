@@ -255,7 +255,7 @@ class OobiResource(doing.DoDoer):
             return
 
         oobis = body["oobis"]
-        for aid in hab.mids:
+        for aid in hab.smids:
             if aid == hab.mhab.pre:
                 continue
 
