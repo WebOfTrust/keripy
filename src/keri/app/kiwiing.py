@@ -1991,10 +1991,12 @@ class MultisigInceptEnd(MultisigEndBase):
             rep.text = "Invalid multisig group inception request, 'aids' is required'"
             return None, None
 
-        mids = body["aids"]  # change body mids for group member ids
-        nids = None
+        smids = body["aids"]  # change body mids for group member ids
+        rmids = None  # group rotation member ids get from body
+        if rmids == None:
+            rmids = list(smids)
         mhab = None
-        for mid in mids:
+        for mid in smids:
             if mid in self.hby.habs:
                 mhab = self.hby.habs[mid]
                 break
@@ -2039,8 +2041,8 @@ class MultisigInceptEnd(MultisigEndBase):
         try:
             ghab = self.hby.makeGroupHab(group=alias,
                                          mhab=mhab,
-                                         mids=mids,
-                                         nids=nids,
+                                         mids=smids,
+                                         rmids=rmids,
                                          **inits)
         except ValueError as ex:
             rep.status = falcon.HTTP_400

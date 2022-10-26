@@ -456,20 +456,20 @@ class Habery:
 
         return hab
 
-    def makeGroupHab(self, group, mhab, mids, nids=None, **kwa):
+    def makeGroupHab(self, group, mhab, mids, rmids=None, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
         Parameters: (non-pass-through):
             group (str): human readable alias for group identifier
             mhab (Hab): group member (local) hab
-            mids (list): group member ids (qb64) from which to extract
+            smids (list): group member signing ids (qb64) from which to extract
                         inception event current signing keys
-            nids (list): group member ids (qb64) from which to extract
+            rmids (list): group member rotation ids (qb64) from which to extract
                         inception event next key digests
-                        if nids is None then use assign mids to nids
-                        if nids is empty then no next key digests i.e group
-                        identifier is no longer transferable.
+                        if rmids is None then use assign mids to rmids
+                        if rmids is empty then no next key digests
+                        which means group identifier is no longer transferable.
 
 
         Parameters: (**kwa pass-through to hab.make)
@@ -494,11 +494,11 @@ class Habery:
 
         """
 
-        if mhab.pre not in mids and mhab.pre not in nids:
+        if mhab.pre not in mids and mhab.pre not in rmids:
             raise kering.ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
                                             f"mids ={mids} and/or "
-                                            f"nids={nids}.")
+                                            f"nids={rmids}.")
 
         for mid in mids:
             if mid not in self.kevers:
@@ -506,14 +506,14 @@ class Habery:
                                                 f"identifier {mid} from group's "
                                                 f"current members ={mids}")
 
-        if nids is None:
-            nids = list(mids)
+        if rmids is None:
+            rmids = list(mids)
 
-        for nid in nids:
-            if nid not in self.kevers:
+        for rmid in rmids:
+            if rmid not in self.kevers:
                 raise kering.ConfigurationError(f"KEL missing for next member "
-                                                f"identifier {nid} in group's"
-                                                f" next members ={nids}")
+                                                f"identifier {rmid} in group's"
+                                                f" next members ={rmids}")
 
         # multisig group verfers of current signing keys and digers of next key digests
         merfers, migers = self.extractMerfersMigers(mids)  # group verfers and digers

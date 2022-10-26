@@ -118,18 +118,20 @@ class GroupMultisigIncept(doing.DoDoer):
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:
-            mids = self.inits["aids"]  # not a pass through in makeGroupHab
+            smids = self.inits["aids"]  # not a pass through in makeGroupHab
             del self.inits["aids"]
-            nids = None
+            rmids = None  # get from inits
+            if rmids == None:  # default is smids and rmids are same
+                rmids = list(smids)
 
-            ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, mids=mids,
-                                         nids=None, **self.inits)
+            ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, mids=smids,
+                                         rmids=rmids, **self.inits)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(mids=mids, mid=hab.pre, prefixer=prefixer,
+            self.counselor.start(mids=smids, mid=hab.pre, prefixer=prefixer,
                                  seqner=seqner, saider=saider)
 
         else:

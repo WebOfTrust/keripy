@@ -37,17 +37,19 @@ def test_counselor():
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
-        mids = [hab1.pre, hab2.pre, hab3.pre]
+        smids = [hab1.pre, hab2.pre, hab3.pre]
+        #rmids = list(smids)  # only if different
         inits = dict(isith='2', nsith='2', toad=0, wits=[])
 
         # Create group hab with init params
-        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1, mids=mids, **inits)
+        ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
+                                 mids=smids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(mids=mids, mid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        counselor.start(mids=smids, mid=hab1.pre, prefixer=prefixer, seqner=seqner, saider=saider)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
@@ -64,7 +66,8 @@ def test_counselor():
         assert saider.qb64 == "EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbcoNBES3s"
 
         # Sith 2 so create second signature to get past the first escrow
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2, mids=mids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
+                                  mids=smids, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
         assert evt == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EFHbsKUAMxGqGinFKsuEHW0a'
                        b'fydw9y474RJbcoNBES3s","i":"EFHbsKUAMxGqGinFKsuEHW0afydw9y474RJbc'
@@ -87,11 +90,11 @@ def test_counselor():
         counselor.postman.evts.popleft()
 
         # Partial rotation
-        mids = [hab1.pre, hab2.pre]
-        counselor.rotate(ghab=ghab, mids=mids, nsith='2', toad=0, cuts=list(), adds=list())
+        smids = [hab1.pre, hab2.pre]
+        counselor.rotate(ghab=ghab, mids=smids, nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.mids == mids
+        assert rec.mids == smids
         assert rec.nsith == '2'
         assert rec.toad == 0
 
@@ -110,7 +113,7 @@ def test_counselor():
                                      b'EZ08zMICPhPTw"],"bt":"0","br":[],"ba":[],"a":[]}')
         rec = hby1.db.gpae.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.mids == mids
+        assert rec.mids == smids
 
         # rotate second identifiter in group, process escrows to generate group rotation event.
         hab2.rotate()
@@ -185,7 +188,9 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
-        mids = [hab1.pre, hab2.pre, hab3.pre]
+        smids = [hab1.pre, hab2.pre, hab3.pre]
+        rmids = list(smids)
+
 
         inits = dict(
             toad=0,
@@ -194,9 +199,12 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             nsith='3'
         )
 
-        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1, mids=mids, **inits)
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2, mids=mids, **inits)
-        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3, mids=mids, **inits)
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
+                                  mids=smids, rmids=rmids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
+                                  mids=smids, rmids=rmids,**inits)
+        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
+                                  mids=smids, rmids=rmids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eraw = hab1.db.getEvt(dgkey)
