@@ -407,7 +407,7 @@ class Habery:
             # create Hab instance and inject dependencies
             hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                      name=name, pre=pre, temp=self.temp, smids=habord.mids)
+                      name=name, pre=pre, temp=self.temp, smids=habord.smids)
 
             # Rules for acceptance
             #  if its delegated its accepted into its own local KEL even if the
@@ -996,7 +996,10 @@ class Hab:
 
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(hid=self.pre, mid=None, mids=self.smids)
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      mid=None,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
         if self.mhab:
             habord.mid = self.mhab.pre
 
@@ -1093,9 +1096,7 @@ class Hab:
         # may want db method that updates .habs. and .prefixes together
         self.db.habs.pin(keys=self.name,
                          val=basing.HabitatRecord(hid=self.pre,
-                                                  watchers=habr.watchers,
-                                                  mid=None,
-                                                  mids=None))
+                                                  watchers=habr.watchers))
         self.prefixes.add(self.pre)
 
         # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)

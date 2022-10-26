@@ -93,6 +93,7 @@ class Counselor(doing.DoDoer):
 
         """
         mids = mids if mids is not None else ghab.smids
+        rmids = None
         mid = ghab.mhab.pre
         if mid not in mids:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
@@ -105,8 +106,10 @@ class Counselor(doing.DoDoer):
         pnkey = pkever.nexter.digs[0]
 
 
-        rec = basing.RotateRecord(mids=mids, sn=kever.sn+1, isith=isith, nsith=nsith,
-            toad=toad, cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
+        rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
+                                  toad=toad, cuts=cuts, adds=adds,
+                                  data=data, date=helping.nowIso8601(),
+                                  smids=mids, rmids=rmids, )
 
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.mhab.rotate()
@@ -200,7 +203,7 @@ class Counselor(doing.DoDoer):
 
                 rot = self.hby.db.cloneEvtMsg(mid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
-                others = list(rec.mids)
+                others = list(rec.smids)
                 others.remove(mid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
@@ -241,7 +244,7 @@ class Counselor(doing.DoDoer):
 
             lverfers = []  # local verfers of group signing keys
             ldigers = list(gkever.nexter.digers)  # local participants next digers
-            for aid in rec.mids:
+            for aid in rec.smids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.smids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
@@ -250,7 +253,7 @@ class Counselor(doing.DoDoer):
                 else:
                     break
 
-            if len(lverfers) != len(rec.mids):
+            if len(lverfers) != len(rec.smids):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
@@ -259,7 +262,7 @@ class Counselor(doing.DoDoer):
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            others = list(rec.mids)
+            others = list(rec.smids)
             others.remove(ghab.mhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
@@ -379,7 +382,7 @@ class Counselor(doing.DoDoer):
         evts = []
         if (rec := self.hby.db.gpae.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.mids,
+                aids=rec.smids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,
@@ -392,7 +395,7 @@ class Counselor(doing.DoDoer):
             evts.append(data)
         if (rec := self.hby.db.glwe.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.mids,
+                aids=rec.smids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,

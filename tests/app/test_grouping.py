@@ -94,7 +94,7 @@ def test_counselor():
         counselor.rotate(ghab=ghab, mids=smids, nsith='2', toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.mids == smids
+        assert rec.smids == smids
         assert rec.nsith == '2'
         assert rec.toad == 0
 
@@ -113,7 +113,7 @@ def test_counselor():
                                      b'EZ08zMICPhPTw"],"bt":"0","br":[],"ba":[],"a":[]}')
         rec = hby1.db.gpae.get(keys=(ghab.pre,))
         assert rec is not None
-        assert rec.mids == smids
+        assert rec.smids == smids
 
         # rotate second identifiter in group, process escrows to generate group rotation event.
         hab2.rotate()
@@ -466,7 +466,6 @@ def test_pending_events():
         counselor = grouping.Counselor(hby=hby)
 
         rec = basing.RotateRecord(
-            mids=[hab.pre],
             sn=0,
             isith=["1/2, 1/2, 1/2"],
             nsith=["1/2, 1/2, 1/2"],
@@ -474,7 +473,8 @@ def test_pending_events():
             cuts=[],
             adds=[],
             data=[dict(a=1)],
-            date="2021-06-09T17:35:54.169967+00:00"
+            date="2021-06-09T17:35:54.169967+00:00",
+            smids=[hab.pre]
         )
         hby.db.gpae.put(keys=(hab.pre,), val=rec)
 
@@ -491,7 +491,6 @@ def test_pending_events():
                            'toad': 3}
 
         rec = basing.RotateRecord(
-            mids=[hab.pre],
             sn=3,
             isith=['1/2, 1/2, 1/2'],
             nsith="1",
@@ -499,7 +498,8 @@ def test_pending_events():
             cuts=[],
             adds=[],
             data=[],
-            date="2021-06-09T17:35:54.169967+00:00"
+            date="2021-06-09T17:35:54.169967+00:00",
+            smids=[hab.pre]
         )
         hby.db.glwe.put(keys=(hab.pre,), val=rec)
         evts = counselor.pendingEvents(hab.pre)
