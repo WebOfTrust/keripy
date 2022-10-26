@@ -5,6 +5,7 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -58,6 +59,9 @@ class GroupMultisigInteract(doing.DoDoer):
        This DoDoer will remove the multisig coroutine and exit when it receives a message
        that the multisig coroutine has successfully completed a cooperative rotation.
 
+       ToDo: NRR
+       Add .rmids and .smids
+
     """
 
     def __init__(self, name, alias, aids, base, bran, data):
@@ -89,6 +93,9 @@ class GroupMultisigInteract(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
+        ToDo: NRR
+        confirm only needs ghab.smids or do we need to add self.rmids to
+
         """
         # enter context
         self.wind(tymth)
@@ -99,12 +106,15 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        aids = self.aids if self.aids is not None else ghab.mids
+        aids = self.aids if self.aids is not None else ghab.smids
+        #rmids = self.aids if self.aids is not None else ghab.rmids
+        rmids = None  # need to fix
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)
         exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
-        others = list(ghab.mids)
+        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -113,7 +123,8 @@ class GroupMultisigInteract(doing.DoDoer):
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(mids=aids, mid=ghab.mhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

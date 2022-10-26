@@ -29,7 +29,8 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
-        mids = [hab1.pre, hab2.pre, hab3.pre]
+        smids = [hab1.pre, hab2.pre, hab3.pre]
+        rmids = None  # may need to fix
 
         inits = dict(
             toad=0,
@@ -38,9 +39,12 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             nsith='3'
         )
 
-        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1, mids=mids, **inits)
-        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2, mids=mids, **inits)
-        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3, mids=mids, **inits)
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
+                                  smids=smids, rmids=rmids, **inits)
+        ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
+                                  smids=smids, rmids=rmids, **inits)
+        ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
+                                  smids=smids, rmids=rmids, **inits)
 
         dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
         eraw = hab1.db.getEvt(dgkey)

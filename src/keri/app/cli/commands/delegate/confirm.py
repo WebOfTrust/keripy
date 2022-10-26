@@ -5,6 +5,7 @@ keri.kli.commands.delegate module
 
 """
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
@@ -133,7 +134,8 @@ class ConfirmDoer(doing.DoDoer):
                         serder = coring.Serder(raw=msg)
 
                         exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
-                        others = list(hab.mids)
+                        others = list(oset(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+                        #others = list(hab.smids)
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism

@@ -139,8 +139,8 @@ class HabitatRecord:  # baser.habs
     Attributes:
         hid (str): identifier prefix of hab qb64
         mid (str | None): group member identifier qb64 when hid is group
-        midxs (tuple[int, int] | None): mid index tuple (csi, pni)
-        mids: (list | None) group member identifiers qb64 when hid is group
+        smids (list | None): group signing member identifiers qb64 when hid is group
+        rmids (list | None): group signing member identifiers qb64 when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
     ToDo: NRR
@@ -149,11 +149,13 @@ class HabitatRecord:  # baser.habs
         group do not participate in signing so must either ignore or raise error
         if asked to sign interaction event.
 
+        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
+
     """
     hid: str  # hab own identifier prefix qb64
     mid: str | None = None  # group member identifier qb64 when hid is group
-    midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
-    mids: list | None = None  # local identifiers qb64 of all group participants when hid is group
+    smids: list | None = None  # group signing member ids when hid is group
+    rmids: list | None = None  # group rotating member ids when hid is group
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
@@ -163,7 +165,6 @@ class RotateRecord:
     Tracks requests to perform multisig rotation during lifecycle of a rotation
 
     Attributes:
-        mids (list):  group member ids in multisig qb64
         sn (int | None ):  sequence number of est event
         isith (str | list | None):  current signing threshold
         nsith (str | list | None):  next signing threshold
@@ -172,14 +173,15 @@ class RotateRecord:
         adds (list | None):  list of backers to add qb64
         data (list | None): seals
         date (str | None):  datetime of rotation
+        smids (list | None): group signing member identifiers qb64
+        rmids (list | None): group signing member identifiers qb64
 
 
     ToDo: NRR
     Add mid, midxs tuple (csi, pni)
 
     """
-    mids: list  # list of local ids of group participants qb64
-    sn: int |  None  # sequence number of est event
+    sn: int | None  # sequence number of est event
     isith: str | list | None  # current signing threshold
     nsith: str | list | None  # next signing threshold
     toad: int | None  # threshold of accountable duplicity
@@ -187,6 +189,8 @@ class RotateRecord:
     adds: list | None  # list of backers to add qb64
     data: list | None  # seals
     date: str | None  # datetime of rotation
+    smids: list | None   # group signing member ids
+    rmids: list | None = None  # group rotating member ids
 
 
 @dataclass

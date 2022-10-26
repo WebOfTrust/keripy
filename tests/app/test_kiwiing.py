@@ -1642,3 +1642,7 @@ def test_aied_ends():
         body = dict(current=bran, passcode="ABCDEF")
         response = client.simulate_post("/codes", body=json.dumps(body).encode("utf-8"))
         assert response.status == falcon.HTTP_400
+
+
+if __name__ == "__main__":
+    test_multisig_incept()

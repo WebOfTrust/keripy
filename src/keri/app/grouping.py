@@ -6,6 +6,7 @@ keri.app.grouping module
 module for enveloping and forwarding KERI message
 """
 import json
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -37,17 +38,19 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, mids, mid, prefixer, seqner, saider):
+    def start(self, prefixer, seqner, saider, mid, smids, rmids=None):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
-            mids (list): group member ids qb64 (multisig group)
-            mid (str): group member (local) identifier prefix qb64
+
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
             saider (Saider): saider of inception event of group identifier
+            mid (str): group member (local) identifier prefix qb64
+            smids (list): group signing member ids qb64 (multisig group)
+            rmids (list | None): group rotating member ids qb64 (multisig group)
 
 
         """
@@ -55,17 +58,19 @@ class Counselor(doing.DoDoer):
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
 
-        others = list(mids)
-        others.remove(mid)
+        others = list(oset(smids + (rmids if rmids is not None else [])))
+        #others = list(smids)
+        others.remove(mid)  # don't send to self
 
-        print(f"Sending multisig event to {len(mids) - 1} other participants")
+        print(f"Sending multisig event to {len(others)} other participants")
         for recpt in others:
             self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
-    def rotate(self, ghab, mids, isith=None, nsith=None,
+
+    def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
 
@@ -73,7 +78,8 @@ class Counselor(doing.DoDoer):
 
         Parameters:
             ghab (Hab): group identifier Hab
-            mids (list): group member identifier prefixes qb64
+            smids (list): group signing member identifier prefixes qb64
+            smids (list): group rotating member identifier prefixes qb64
             isith (Optional[int,str]) currentsigning threshold as int or str hex
                  or list of str weights
             nsith (Optional[int,str])next signing threshold as int or str hex
@@ -90,11 +96,14 @@ class Counselor(doing.DoDoer):
 
 
         """
-        mids = mids if mids is not None else ghab.mids
         mid = ghab.mhab.pre
-        if mid not in mids:
+        smids = smids if smids is not None else ghab.smids
+        rmids = rmids if rmids is not None else ghab.rmids
+        both = list(oset(smids + (rmids if rmids is not None else [])))
+
+        if mid not in both:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
-                                            f" to participate in rotation: {mids}")
+                                            f" to participate in rotation: {both}")
 
         kever = ghab.kever
 
@@ -102,8 +111,10 @@ class Counselor(doing.DoDoer):
         pkever = ghab.mhab.kever
         pnkey = pkever.nexter.digs[0]
 
-        rec = basing.RotateRecord(mids=mids, sn=kever.sn + 1, isith=isith, nsith=nsith,
-                                  toad=toad, cuts=cuts, adds=adds, data=data, date=helping.nowIso8601())
+        rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
+                                  toad=toad, cuts=cuts, adds=adds,
+                                  data=data, date=helping.nowIso8601(),
+                                  smids=smids, rmids=rmids)
 
         if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
             ghab.mhab.rotate()
@@ -113,16 +124,17 @@ class Counselor(doing.DoDoer):
 
         else:
             rot = ghab.mhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
-            others = list(mids)
+            others = list(both)
             others.remove(mid)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            print(f"Sending local rotation event to {len(mids) - 1} other participants")
+            print(f"Sending local rotation event to {others} other participants")
             for recpt in others:
                 self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
+
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -143,6 +155,7 @@ class Counselor(doing.DoDoer):
                 raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
 
         return True
+
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -197,7 +210,7 @@ class Counselor(doing.DoDoer):
 
                 rot = self.hby.db.cloneEvtMsg(mid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
-                others = list(rec.mids)
+                others = list(rec.smids)
                 others.remove(mid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
@@ -229,33 +242,38 @@ class Counselor(doing.DoDoer):
         if current key was not exposed then the lhab does not need to be rotated and the
         unexposed next key can be reused in the new rotation event.
 
+        ToDo: NRR
+        Need to fix this logic to be for new rotation rules
+        need to use both rec.smids and rec.rmids
+        both = list(oset(smids + (rmids if rmids is not None else [])))
+
         """
         # ignore saider because it is not relevant yet
         for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially aid escrow
             ghab = self.hby.habs[pre]  # group hab Hab instance
             gkever = ghab.kever  # group hab's Kever instance key state
 
-            lverfers = []  # local verfers of group signing keys
-            ldigers = list(gkever.nexter.digers)  # local participants next digers
-            for aid in rec.mids:
+            merfers = []  # local verfers of group signing keys
+            migers = list(gkever.nexter.digers)  # local participants next digers
+            for aid in rec.smids:
                 pkever = self.hby.kevers[aid]
-                idx = ghab.mids.index(aid)
+                idx = ghab.smids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
-                    lverfers.append(pkever.verfers[0])
-                    ldigers[idx] = pkever.nexter.digers[0]
+                    merfers.append(pkever.verfers[0])
+                    migers[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
-            if len(lverfers) != len(rec.mids):
+            if len(merfers) != len(rec.smids):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
                               toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              merfers=lverfers, migers=ldigers)
+                              merfers=merfers, migers=migers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            others = list(rec.mids)
+            others = list(rec.smids)
             others.remove(ghab.mhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
@@ -375,7 +393,7 @@ class Counselor(doing.DoDoer):
         evts = []
         if (rec := self.hby.db.gpae.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.mids,
+                aids=rec.smids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,
@@ -388,7 +406,7 @@ class Counselor(doing.DoDoer):
             evts.append(data)
         if (rec := self.hby.db.glwe.get(keys=key)) is not None:  # RotateRecord
             data = dict(
-                aids=rec.mids,
+                aids=rec.smids,
                 sn=rec.sn,
                 isith=rec.isith,
                 nsith=rec.nsith,
@@ -559,6 +577,9 @@ class MultisigRotateHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
 
+        ToDo: NRR
+        fix to use both ghab.smids and ghab.rmids
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -591,7 +612,7 @@ class MultisigRotateHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.mids or src not in ghab.kevers:
+                if src not in ghab.smids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 
@@ -662,6 +683,9 @@ class MultisigInteractHandler(doing.DoDoer):
             payload is dict representing the body of a multisig/ixn message
             pre is qb64 identifier prefix of sender
 
+        ToDo: NRR
+        fix to use both ghab.smids and ghab.rmids
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -694,7 +718,7 @@ class MultisigInteractHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.mids or src not in ghab.kevers:
+                if src not in ghab.smids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 

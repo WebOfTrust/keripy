@@ -255,13 +255,14 @@ class OobiResource(doing.DoDoer):
             return
 
         oobis = body["oobis"]
-        for aid in hab.mids:
-            if aid == hab.mhab.pre:
+        both = list(set(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+        for mid in both: #hab.smids
+            if mid == hab.mhab.pre:
                 continue
 
             for oobi in oobis:
-                exn, atc = oobiRequestExn(hab.mhab, aid, oobi)
-                self.postman.send(src=hab.mhab.pre, dest=aid, topic="oobi", serder=exn, attachment=atc)
+                exn, atc = oobiRequestExn(hab.mhab, mid, oobi)
+                self.postman.send(src=hab.mhab.pre, dest=mid, topic="oobi", serder=exn, attachment=atc)
 
         rep.status = falcon.HTTP_200
         return

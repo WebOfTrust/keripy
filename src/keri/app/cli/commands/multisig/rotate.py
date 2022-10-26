@@ -118,7 +118,10 @@ class GroupMultisigRotate(doing.DoDoer):
             self.adds = set(self.wits) - set(ewits)
 
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        self.counselor.rotate(ghab=ghab, mids=self.aids, isith=self.isith, toad=self.toad,
+        rmids = None  # need to fix
+        nsith = None
+        self.counselor.rotate(ghab=ghab, smids=self.aids, rmids=rmids,
+                              isith=self.isith, nsith=nsith, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds),
                               data=self.data)
 
