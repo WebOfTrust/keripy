@@ -9,7 +9,7 @@ import argparse
 from hio.base import doing
 
 from keri import help
-from keri.app import directing, habbing, indirecting, agenting
+from keri.app import habbing, indirecting, agenting, grouping, forwarding
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.db import dbing
@@ -55,8 +55,12 @@ class ConfirmDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/delegate"])
-        doers = [self.hbyDoer, self.witq, self.mbx, doing.doify(self.confirmDo)]
+        self.postman = forwarding.Postman(hby=hby)
+        self.counselor = grouping.Counselor(hby=hby)
+        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'])
+        doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
+        self.toRemove = list(doers)
+        doers.extend([doing.doify(self.confirmDo)])
 
         self.alias = alias
         self.hby = hby
@@ -92,13 +96,11 @@ class ConfirmDoer(doing.DoDoer):
                 if ilk in (coring.Ilks.dip,):
                     typ = "inception"
                     delpre = eserder.ked["di"]
-                    wits = eserder.ked["b"]
 
                 elif ilk in (coring.Ilks.drt,):
                     typ = "rotation"
                     dkever = self.hby.kevers[eserder.pre]
                     delpre = dkever.delegator
-                    wits = dkever.wits
 
                 else:
                     continue
@@ -112,7 +114,51 @@ class ConfirmDoer(doing.DoDoer):
                         yn = input(f"Delegation {typ} request from {eserder.pre}.\nAccept [Y|n]? ")
                         approve = yn in ('', 'y', 'Y')
 
-                    if approve:
+                    if not approve:
+                        continue
+
+                    if hab.mhab:
+                        aids = hab.mids
+                        seqner = coring.Seqner(sn=eserder.sn)
+                        anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
+                        if self.interact:
+                            msg = hab.interact(data=[anchor])
+                        else:
+                            print("Confirm does not support rotation for delegation approval with group multisig")
+                            continue
+                            # self.counselor.rotate(ghab=hab, mids=self.aids, isith=self.isith, toad=self.toad,
+                            #                       cuts=list(self.cuts), adds=list(self.adds),
+                            #                       data=self.data)
+
+                        serder = coring.Serder(raw=msg)
+
+                        exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
+                        others = list(hab.mids)
+                        others.remove(hab.mhab.pre)
+
+                        for recpt in others:  # send notification to other participants as a signalling mechanism
+                            self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
+                                              attachment=atc)
+
+                        prefixer = coring.Prefixer(qb64=hab.pre)
+                        seqner = coring.Seqner(sn=serder.sn)
+                        saider = coring.Saider(qb64b=serder.saidb)
+                        self.counselor.start(mids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
+                                             saider=saider)
+
+                        while True:
+                            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+                            if saider is not None:
+                                break
+
+                            yield self.tock
+
+                        print(f"Delegate {eserder.pre} {typ} event committed.")
+
+                        self.remove(self.toRemove)
+                        return True
+
+                    else:
                         cur = hab.kever.sner.num
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
@@ -123,6 +169,7 @@ class ConfirmDoer(doing.DoDoer):
 
                         witDoer = agenting.WitnessReceiptor(hby=self.hby)
                         self.extend(doers=[witDoer])
+                        self.toRemove.append(witDoer)
                         yield self.tock
 
                         if hab.kever.wits:
@@ -141,8 +188,8 @@ class ConfirmDoer(doing.DoDoer):
                             yield self.tock
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
-                        toRemove = [self.hbyDoer, self.mbx, self.witq, witDoer]
-                        self.remove(toRemove)
+
+                        self.remove(self.toRemove)
                         return True
 
                 yield self.tock

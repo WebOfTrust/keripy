@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # To run this script you need to run the following 2 commands in separate terminals:
-#   > kli agent demo --config-file demo-witness-oobis-schema
+#   > kli agent vlei
 #   > kli witness demo
 # and from the vLEI repo run:
 #   > vLEI-server -s ./schema/acdc -c ./samples/acdc/ -o ./samples/oobis/
@@ -18,7 +18,7 @@ sleep 5
 curl -s -X POST "http://localhost:5623/ids/external" -H "accept: */*" -H "Content-Type: application/json" -d "{\"transferable\":true,\"wits\":[\"BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\", \"BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM\",\"BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX\"],\"toad\":3, \"icount\":1,\"ncount\":1,\"isith\":1,\"nsith\":1}" | jq
 
 echo "create/open qvi wallet; issue icp event"
-## EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM - qvi
+## EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX - qvi
 curl -s -X POST "http://localhost:5626/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"qvi\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9aBc\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5626/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"qvi\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
@@ -26,7 +26,7 @@ sleep 5
 curl -s -X POST "http://localhost:5626/ids/qvi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"transferable\":true,\"wits\":[\"BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\", \"BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM\",\"BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX\"],\"toad\":3, \"icount\":1,\"ncount\":1,\"isith\":1,\"nsith\":1}" | jq
 
 echo "create/open LE wallet; issue icp event"
-## EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws
+## EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz
 curl -s -X POST "http://localhost:5628/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9AbC\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5628/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"legal-entity\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
@@ -34,7 +34,7 @@ sleep 5
 curl -s -X POST "http://localhost:5628/ids/legal-entity" -H "accept: */*" -H "Content-Type: application/json" -d "{\"transferable\":true,\"wits\":[\"BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\", \"BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM\",\"BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX\"],\"toad\":3, \"icount\":1,\"ncount\":1,\"isith\":1,\"nsith\":1}" | jq
 
 echo "create/open person wallet; issue icp event"
-## Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE
+## EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe
 ## Passcode: DoB2-6Fj4x-9Lbo-AFWJr-a17O
 curl -s -X POST "http://localhost:5630/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"person\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9dEf\"}" | jq
 sleep 1
@@ -44,24 +44,24 @@ curl -s -X POST "http://localhost:5630/ids/person" -H "accept: */*" -H "Content-
 
 echo 'resolving external'
 sleep 3
-curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EWN6BzdXo6IByOsuh_fYanK300iEOrQKf6msmbIeC4Y0/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EWN6BzdXo6IByOsuh_fYanK300iEOrQKf6msmbIeC4Y0/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EWN6BzdXo6IByOsuh_fYanK300iEOrQKf6msmbIeC4Y0/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EHOuGiHMxJShXHgSb6k_9pqxmRb8H-LT0R2hQouHp8pW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EHOuGiHMxJShXHgSb6k_9pqxmRb8H-LT0R2hQouHp8pW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"external\", \"url\":\"http://127.0.0.1:5642/oobi/EHOuGiHMxJShXHgSb6k_9pqxmRb8H-LT0R2hQouHp8pW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
 
 echo 'resolving qvi'
-curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"qvi\", \"url\":\"http://127.0.0.1:5642/oobi/EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
 
 echo 'resolving legal-entity'
-curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5630/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"legal-entity\", \"url\":\"http://127.0.0.1:5642/oobi/EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
 
 echo 'resolving person'
-curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
-curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5623/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5626/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
+curl -s -X POST "http://localhost:5628/oobi" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"person\", \"url\":\"http://127.0.0.1:5642/oobi/EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
 
 echo 'create registries'
 sleep 3
@@ -73,10 +73,10 @@ sleep 5
 
 # Issue QVI credential vLEI from GLEIF External to QVI
 echo 'external issues qvi credential'
-curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM\",\"registry\":\"vLEI-external\",\"schema\":\"EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\",\"source\":{}}" | jq
+curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-external\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\",\"source\":{}}"
 sleep 8
 echo "qvi retrieves Credentials..."
-curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json" | jq
+curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json"
 sleep 3
 
 # Issue LE credential from QVI to Legal Entity - have to create the edges first
@@ -85,7 +85,7 @@ QVI_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" 
 echo $QVI_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/legal-entity-edges-filter.jq  > /tmp/legal-entity-edges.json
 LE_EDGES=`cat /tmp/legal-entity-edges.json`
 RULES=`cat ${KERI_DEMO_SCRIPT_DIR}/data/rules.json`
-curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EKXPX7hWw8KK5Y_Mxs2TOuCrGdN45vPIZ78NofRlVBws\",\"registry\":\"vLEI-qvi\",\"schema\":\"EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ\",\"source\":$LE_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz\",\"registry\":\"vLEI-qvi\",\"schema\":\"EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ\",\"source\":$LE_EDGES,\"rules\":$RULES}" | jq
 
 sleep 8
 echo "LE retrieves Credentials..."
@@ -98,7 +98,7 @@ LE_SAID=$(curl -s -X GET "http://localhost:5628/credentials/legal-entity?type=re
 echo $LE_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-auth-edges-filter.jq > /tmp/oor-auth-edges.json
 OOR_AUTH_EDGES=`cat /tmp/oor-auth-edges.json`
 
-curl -s -X POST "http://localhost:5628/credentials/legal-entity" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"AID\": \"Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE\", \"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EY4ldIBDZP4Tpnm3RX320BO0yz8Uz2nUSN-C409GnCJM\",\"registry\":\"vLEI-legal-entity\",\"schema\":\"EDqjl80uP0r_SNSp-yImpLGglTEbOwgO77wsOPjyRVKy\",\"source\":$OOR_AUTH_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5628/credentials/legal-entity" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"AID\": \"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\", \"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-legal-entity\",\"schema\":\"EDqjl80uP0r_SNSp-yImpLGglTEbOwgO77wsOPjyRVKy\",\"source\":$OOR_AUTH_EDGES,\"rules\":$RULES}" | jq
 sleep 8
 echo "QVI retrieves Credentials..."
 curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json" | jq
@@ -110,7 +110,7 @@ AUTH_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received&
 echo "[$QVI_SAID, $AUTH_SAID]" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-edges-filter.jq > /tmp/oor-edges.json
 OOR_EDGES=`cat /tmp/oor-edges.json`
 
-curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"Esf8b_AngI1d0KbOFjPGIfpVani0HTagWeaYTLs14PlE\",\"registry\":\"vLEI-qvi\",\"schema\":\"EIL-RWno8cEnkGTi9cr7-PFg_IXTPx9fZ0r9snFFZ0nm\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\",\"registry\":\"vLEI-qvi\",\"schema\":\"EIL-RWno8cEnkGTi9cr7-PFg_IXTPx9fZ0r9snFFZ0nm\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
 sleep 8
 echo "Person retrieves Credentials..."
 curl -s -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" | jq
@@ -124,7 +124,7 @@ XBRL_EDGES=`cat /tmp/xbrl-edges.json`
 NOW=`date -u +"%Y-%m-%dT%H:%M:%S+00:00"`
 echo \"$NOW\" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-data.jq > /tmp/xbrl-data.json
 XBRL_DATA=`cat /tmp/xbrl-data.json`
-curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"EH9jKc3FQ0O2hvp7YPG5sFBgM7wUFVy4OlssP038w6j0\",\"source\":$XBRL_EDGES}" | jq
+curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u\",\"source\":$XBRL_EDGES}" | jq
 sleep 4
 echo "Person retrieves attestation..."
 curl -s -X GET "http://localhost:5630/credentials/person?type=issued" -H "accept: application/json" -d "{\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq

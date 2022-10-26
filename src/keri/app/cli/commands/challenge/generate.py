@@ -36,19 +36,23 @@ def generate(tock=0.0, **opts):
     _ = (yield tock)
 
     args = opts["args"]
+    generateWords(args.strength, args.out)
+    return True
 
+
+def generateWords(strength, out):
     mnem = mnemonic.Mnemonic(language='english')
-    s = args.strength
+    s = strength
     strength = int(s) if s is not None else 128
 
     words = mnem.generate(strength=strength)
-    if args.out == "json":
+    if out == "json":
         msg = words.split(" ")
         print(json.dumps(msg))
-    elif args.out == "string":
+    elif out == "string":
         print(words)
     else:
         for w in words.split(" "):
             print(w)
 
-    return True
+    return words.split(" ")

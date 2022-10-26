@@ -6,13 +6,13 @@ keri.kli.commands module
 """
 import argparse
 import datetime
-import json
 import sys
 
 from hio import help
 from hio.base import doing
 
-from keri.app import indirecting, challenging, storing, connecting
+from keri.app import indirecting, challenging, connecting, signaling
+from keri.app.cli.commands.challenge.generate import generateWords
 from keri.app.cli.common import existing
 from keri.help import helping
 from keri.peer import exchanging
@@ -25,14 +25,22 @@ parser.set_defaults(handler=lambda args: verify(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
-                    required=True)
+                    default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
-parser.add_argument('--words', '-d', help='JSON formatted array of words to sign, \'@\' allowed to load from a file',
-                    action="store", required=True)
+parser.add_argument('--words', '-d', help='JSON formatted array of words to verfiy, \'@\' allowed to load from a file',
+                    action="store", required=False)
+parser.add_argument('--generate', '-g', help="Generate words, print to stdout and wait for verification",
+                    action="store_true")
+parser.add_argument('--strength', help='Cryptographic strength in bits.  Defaults to 128.  Only applies with '
+                                       '--generate', default=128, required=False)
+parser.add_argument("--out", "-o", help="Output type [words|string|json] of phrase.  Default is json.  Only applies "
+                                        "with --generate", choices=["words", "string", "json"], default="json",
+                    required=False)
+
 parser.add_argument('--signer', '-s', help='Contact alias of the AID to verify',
                     action="store", required=True)
 
@@ -46,25 +54,33 @@ def verify(args):
                     base=args.base,
                     bran=args.bran,
                     words=args.words,
+                    generate=args.generate,
+                    strength=args.strength,
+                    out=args.out,
                     signer=args.signer)
     return [ld]
 
 
 class VerifyDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, words, signer):
+    def __init__(self, name, alias, base, bran, words, generate, strength, out, signer):
 
         self.wordstr = words
-        self.words = words.split(" ")
+        self.words = words
+        self.generate = generate
+        self.strength = strength
+        self.out = out
         self.signer = signer
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        if alias is None:
+            alias = existing.aliasInput(self.hby)
+
         self.hab = self.hby.habByName(alias)
         self.exc = exchanging.Exchanger(db=self.hby.db, handlers=[])
         self.org = connecting.Organizer(hby=self.hby)
-        self.mbx = storing.Mailboxer(name=name)
-        self.mbx.reopen()
+        signaler = signaling.Signaler()
 
-        challenging.loadHandlers(db=self.hby.db, signaler=None, exc=self.exc)
+        challenging.loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 
@@ -96,27 +112,35 @@ class VerifyDoer(doing.DoDoer):
                 raise ValueError(f"invalid signer {self.signer}")
             sig = sig[0]['id']
 
-        end = helping.nowUTC() + datetime.timedelta(seconds=5)
+        if self.generate:
+            words = generateWords(self.strength, self.out)
+        else:
+            words = self.words.split(" ")
+
+        end = helping.nowUTC() + datetime.timedelta(seconds=300)
         sys.stdout.write(f"Checking mailboxes for any challenge responses")
         sys.stdout.flush()
+        found = False
         while helping.nowUTC() < end:
             sys.stdout.write(".")
             sys.stdout.flush()
-            if "/challenge" in self.mbd.times:
-                end = self.mbd.times['/challenge'] + datetime.timedelta(seconds=5)
-            yield 1.0
-        print("\n")
 
-        actual = self.mbx.getTopicMsgs(topic=f"{self.hab.pre}/challenge")
-        found = False
-        for msg in actual:
-            data = json.loads(msg)
-            if data["signer"] == sig and data["words"] == self.words:
-                found = True
+            saiders = self.hby.db.reps.get(keys=(sig,))
+            for saider in saiders:
+                exn = self.hby.db.exns.get(keys=(saider.qb64,))
+                if words == exn.ked['a']['words']:
+                    found = True
+                    self.hby.db.chas.add(keys=(sig,), val=saider)
+                    break
+
+            if found:
                 break
 
+            yield 2.0
+        print("\n")
+
         if found:
-            print(f"Signer {self.signer} successfully responded to challenge words: {self.wordstr}")
+            print(f"Signer {self.signer} successfully responded to challenge words: '{self.words}'")
         else:
             print(f"No response found from {self.signer}")
 

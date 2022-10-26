@@ -10,7 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import grouping, indirecting, habbing
+from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, displaying, rotating
 from keri.core import coring
 
@@ -69,11 +69,12 @@ class GroupMultisigInteract(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.postman = forwarding.Postman(hby=self.hby)
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
         self.counselor = grouping.Counselor(hby=self.hby)
 
-        doers = [mbd, self.hbyDoer, self.counselor]
+        doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.interactDo)])
@@ -102,6 +103,12 @@ class GroupMultisigInteract(doing.DoDoer):
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)
+        exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
+        others = list(ghab.mids)
+        others.remove(ghab.mhab.pre)
+
+        for recpt in others:  # send notification to other participants as a signalling mechanism
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)

@@ -179,17 +179,6 @@ def sizeify(ked, kind=None):
     return raw, ident, kind, ked, version
 
 
-def randomNonce():
-    """ Generate a random ed25519 seed and encode as qb64
-
-    Returns:
-        str: qb64 encoded ed25519 random seed
-    """
-    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seedqb64 = Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
-    return seedqb64
-
-
 # Base64 utilities
 BASE64_PAD = b'='
 
