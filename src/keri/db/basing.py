@@ -181,7 +181,7 @@ class RotateRecord:
     Add mid, midxs tuple (csi, pni)
 
     """
-    sn: int |  None  # sequence number of est event
+    sn: int | None  # sequence number of est event
     isith: str | list | None  # current signing threshold
     nsith: str | list | None  # next signing threshold
     toad: int | None  # threshold of accountable duplicity
