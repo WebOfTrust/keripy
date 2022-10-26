@@ -5,6 +5,8 @@ keri.vdr.credentialing module
 
 VC issuer support
 """
+from ordered_set import OrderedSet as oset
+
 from hio.base import doing
 from hio.help import decking
 
@@ -512,6 +514,7 @@ class Registrar(doing.DoDoer):
             return vcid, rseq.sn
         else:
             smids = smids if smids is not None else hab.smids
+            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
                                  mid=hab.mhab.pre, smids=smids, rmids=rmids)
@@ -726,29 +729,34 @@ class Credentialer(doing.DoDoer):
 
         return True
 
-    def issue(self, creder, smids=None):
+    def issue(self, creder, smids=None, rmids=None):
         """ Issue the credential creder and handle witness propagation and communication
 
         Args:
             creder (Creder): Credential object to issue
             smids (list[str] | None): optional group signing member ids for multisig
+            rmids (list[str] | None): optional group rotating member ids for multisig
         """
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
         smids = smids if smids is not None else hab.smids
+        rmids = rmids if rmids is not None else hab.rmids
+
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
-        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, smids=smids)
+        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said,
+                                         dt=dt, smids=smids, rmids=rmids)
 
         rseq = coring.Seqner(sn=seq)
         if hab.mhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
-            others = list(smids)
+            others = list(oset(smids + (rmids if rmids is not None else [])))
+            #others = list(smids)
             others.remove(hab.mhab.pre)
 
-            print(f"Sending signed credential to {len(smids) - 1} other participants")
+            print(f"Sending signed credential to {others} other participants")
             for recpt in others:
                 self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 

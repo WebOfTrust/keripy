@@ -5,6 +5,7 @@ keri.app.agenting module
 
 """
 import json
+from ordered_set import OrderedSet as oset
 
 import falcon
 import mnemonic
@@ -1385,7 +1386,9 @@ class CredentialEnd(doing.DoDoer):
             return
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
-        others = list(hab.smids)
+
+        others = list(oset(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+        #others = list(hab.smids)
         others.remove(hab.mhab.pre)
 
         for recpt in others:
@@ -1396,6 +1399,7 @@ class CredentialEnd(doing.DoDoer):
 
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
+
 
     def on_put_iss(self, req, rep, alias=None):
         """ Participate in a credential issuance from a group identfier
@@ -2066,6 +2070,7 @@ class MultisigInceptEnd(MultisigEndBase):
         self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
                               mid=hab.pre, smids=aids, rmids=rmids)
 
+
     def on_post(self, req, rep, alias):
         """  Multisig POST endpoint
 
@@ -2128,7 +2133,7 @@ class MultisigInceptEnd(MultisigEndBase):
         """
         body = req.get_media()
 
-        lhab, ghab = self.initialize(body, rep, alias)
+        mhab, ghab = self.initialize(body, rep, alias)
         if ghab is None:
             return
 
@@ -2140,16 +2145,17 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(lhab, aids=ghab.smids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(mhab, aids=ghab.smids, ked=serder.ked)
 
-        others = list(ghab.smids)
-        others.remove(lhab.pre)
+        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        #others = list(ghab.smids)
+        others.remove(mhab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
-            self.postman.send(src=lhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
+            self.postman.send(src=mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         #  signal to the group counselor to start the inception
-        self.icp(hab=lhab, ghab=ghab, aids=ghab.smids)
+        self.icp(hab=mhab, ghab=ghab, aids=ghab.smids, rmids=ghab.rmids)
 
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/icp/complete", i=serder.pre, s=serder.sn, d=serder.said))
@@ -2395,7 +2401,8 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(ghab.smids)
+        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2574,10 +2581,13 @@ class MultisigEventEnd(MultisigEndBase):
             return
 
         aids = body["aids"] if "aids" in body else ghab.smids
+        rmids = body["rmids"] if "rmids" in body else ghab.rmids
         data = body["data"] if "data" in body else None
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
-        others = list(ghab.smids)
+
+        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -2639,6 +2649,8 @@ class MultisigEventEnd(MultisigEndBase):
             return
 
         aids = body["aids"] if "aids" in body else ghab.smids
+        rmids = body["rmids"] if "rmids" in body else ghab.rmids
+
         data = body["data"] if "data" in body else None
 
         serder = self.ixn(ghab=ghab, data=data, aids=aids)

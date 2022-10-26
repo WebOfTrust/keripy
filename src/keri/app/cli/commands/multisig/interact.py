@@ -58,6 +58,9 @@ class GroupMultisigInteract(doing.DoDoer):
        This DoDoer will remove the multisig coroutine and exit when it receives a message
        that the multisig coroutine has successfully completed a cooperative rotation.
 
+       ToDo: NRR
+       Add .rmids and .smids
+
     """
 
     def __init__(self, name, alias, aids, base, bran, data):
@@ -88,6 +91,9 @@ class GroupMultisigInteract(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
+        ToDo: NRR
+        confirm only needs ghab.smids or do we need to add self.rmids to
+
         """
         # enter context
         self.wind(tymth)
@@ -99,6 +105,7 @@ class GroupMultisigInteract(doing.DoDoer):
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
         aids = self.aids if self.aids is not None else ghab.smids
+        #rmids = self.aids if self.aids is not None else ghab.rmids
         rmids = None  # need to fix
         ixn = ghab.interact(data=self.data)
 

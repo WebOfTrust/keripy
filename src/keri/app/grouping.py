@@ -6,6 +6,7 @@ keri.app.grouping module
 module for enveloping and forwarding KERI message
 """
 import json
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -57,8 +58,8 @@ class Counselor(doing.DoDoer):
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
 
-        #others = list(set(smids + (rmids if rmids is not None else [])))
-        others = list(smids)
+        others = list(oset(smids + (rmids if rmids is not None else [])))
+        #others = list(smids)
         others.remove(mid)  # don't send to self
 
         print(f"Sending multisig event to {len(others)} other participants")
@@ -96,12 +97,14 @@ class Counselor(doing.DoDoer):
 
 
         """
-        smids = smids if smids is not None else ghab.smids
-        rmids = None
         mid = ghab.mhab.pre
-        if mid not in smids:
+        smids = smids if smids is not None else ghab.smids
+        rmids = rmids if rmids is not None else ghab.rmids
+        both = list(oset(smids + (rmids if rmids is not None else [])))
+
+        if mid not in both:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
-                                            f" to participate in rotation: {smids}")
+                                            f" to participate in rotation: {both}")
 
         kever = ghab.kever
 
@@ -123,12 +126,12 @@ class Counselor(doing.DoDoer):
 
         else:
             rot = ghab.mhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
-            others = list(smids)
+            others = list(both)
             others.remove(mid)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            print(f"Sending local rotation event to {len(smids) - 1} other participants")
+            print(f"Sending local rotation event to {others} other participants")
             for recpt in others:
                 self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
@@ -242,29 +245,34 @@ class Counselor(doing.DoDoer):
         if current key was not exposed then the lhab does not need to be rotated and the
         unexposed next key can be reused in the new rotation event.
 
+        ToDo: NRR
+        Need to fix this logic to be for new rotation rules
+        need to use both rec.smids and rec.rmids
+        both = list(oset(smids + (rmids if rmids is not None else [])))
+
         """
         # ignore saider because it is not relevant yet
         for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially aid escrow
             ghab = self.hby.habs[pre]  # group hab Hab instance
             gkever = ghab.kever  # group hab's Kever instance key state
 
-            lverfers = []  # local verfers of group signing keys
-            ldigers = list(gkever.nexter.digers)  # local participants next digers
+            merfers = []  # local verfers of group signing keys
+            migers = list(gkever.nexter.digers)  # local participants next digers
             for aid in rec.smids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.smids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
-                    lverfers.append(pkever.verfers[0])
-                    ldigers[idx] = pkever.nexter.digers[0]
+                    merfers.append(pkever.verfers[0])
+                    migers[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
-            if len(lverfers) != len(rec.smids):
+            if len(merfers) != len(rec.smids):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
                               toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              merfers=lverfers, migers=ldigers)
+                              merfers=merfers, migers=migers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
@@ -571,6 +579,9 @@ class MultisigRotateHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
 
+        ToDo: NRR
+        fix to use both ghab.smids and ghab.rmids
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -673,6 +684,9 @@ class MultisigInteractHandler(doing.DoDoer):
         Parameters:
             payload is dict representing the body of a multisig/ixn message
             pre is qb64 identifier prefix of sender
+
+        ToDo: NRR
+        fix to use both ghab.smids and ghab.rmids
 
         """
         self.wind(tymth)

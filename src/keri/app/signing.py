@@ -103,6 +103,9 @@ def transSeal(hab):
 
     Returns:
        tuple:  seal components with signing indices
+
+    ToDo: NRR
+       indices for both hab.smids and hab.rmids
     """
     # create SealEvent or SealLast for endorser's est evt whose keys are
     # used to sign
