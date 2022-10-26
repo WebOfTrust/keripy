@@ -17,7 +17,7 @@ parser.set_defaults(handler=lambda args: respond(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--words', '-d', help='JSON formatted array of words to sign, \'@\' allowed to load from a file',
@@ -91,6 +91,9 @@ class RespondDoer(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
+
+        if self.alias is None:
+            self.alias = existing.aliasInput(self.hby)
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:

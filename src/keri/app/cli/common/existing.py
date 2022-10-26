@@ -92,3 +92,23 @@ def existingHab(name, alias, base="", bran=None):
     with existingHby(name, base, bran) as hby:
         hab = hby.habByName(name=alias)
         yield hby, hab
+
+
+def aliasInput(hby):
+    habs = list(hby.habs.values())
+    if len(habs) == 1:
+        return habs[0].name
+
+    while True:
+        print("Enter the number of your local AID to use:")
+        for idx, hab in enumerate(habs):
+            print(f"\t{idx+1}: {hab.name} ({hab.pre})")
+        try:
+            idx = input("Number: ")
+            idx = int(idx) - 1
+            if 0 <= idx < len(habs):
+                return habs[idx].name
+            else:
+                print("Invalid number\n")
+        except ValueError:
+            print("Invalid number\n")

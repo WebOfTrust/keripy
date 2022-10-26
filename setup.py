@@ -85,7 +85,8 @@ setup(
                         'hjson>=3.0.2',
                         'PyYaml>=6.0',
                         'apispec>=5.2.2',
-                        'mnemonic>=0.20'
+                        'mnemonic>=0.20',
+                        'PrettyTable>=3.4.1'
     ],
     extras_require={
     },

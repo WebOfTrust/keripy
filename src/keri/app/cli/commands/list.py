@@ -45,7 +45,7 @@ def ids(tymth, tock=0.0, **opts):
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
             for hab in hby.habs.values():
-                print(hab.name, ":", hab.pre)
+                print(f"{hab.name} ({hab.pre})")
 
     except ConfigurationError as e:
         print(e)

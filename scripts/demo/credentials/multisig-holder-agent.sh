@@ -26,9 +26,9 @@ curl -s -X POST "http://localhost:5823/oobi/issuer" -H "accept: */*" -H "Content
 curl -s -X POST "http://localhost:5823/oobi/issuer" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"multisig1\", \"url\":\"http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha\"}" | jq
 
 echo "--schema oobis"
-curl -s -X POST "http://localhost:5623/oobi/multisig1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"multisig1\", \"url\":\"http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\"}" | jq
-curl -s -X POST "http://localhost:5723/oobi/multisig2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"multisig2\", \"url\":\"http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\"}" | jq
-curl -s -X POST "http://localhost:5823/oobi/issuer" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"issuer\", \"url\":\"http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\"}" | jq
+curl -s -X POST "http://localhost:5623/oobi/multisig1" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"multisig1\", \"url\":\"http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\"}" | jq
+curl -s -X POST "http://localhost:5723/oobi/multisig2" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"multisig2\", \"url\":\"http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\"}" | jq
+curl -s -X POST "http://localhost:5823/oobi/issuer" -H "accept: */*" -H "Content-Type: application/json" -d "{\"oobialias\": \"issuer\", \"url\":\"http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\"}" | jq
 echo "finished adding oobis"
 
 echo "inception event for multisig holder"
@@ -51,4 +51,4 @@ curl -s -X POST "http://localhost:5823/registries" -H "accept: */*" -H "Content-
 
 sleep 3
 echo "Issue Credential"
-curl -X POST "http://localhost:5823/credentials/issuer" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk\",\"registry\":\"vLEI\",\"schema\":\"EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\",\"source\":{}}"
+curl -X POST "http://localhost:5823/credentials/issuer" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk\",\"registry\":\"vLEI\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\",\"source\":{}}"

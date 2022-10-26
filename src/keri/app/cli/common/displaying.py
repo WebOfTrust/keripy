@@ -6,7 +6,6 @@ keri.kli.common.displaying module
 import sys
 
 from keri.app.cli.common import terming
-from keri.core import coring
 from keri.db import dbing
 
 
@@ -29,6 +28,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         dgkey = dbing.dgKey(ser.preb, kever.lastEst.d)
         anchor = hab.db.getAes(dgkey)
 
+        print(f"Alias: \t{hab.name}")
         print("{}: {}".format(label, pre))
         print("Seq No:\t{}".format(kever.sner.num))
         if kever.delegated:

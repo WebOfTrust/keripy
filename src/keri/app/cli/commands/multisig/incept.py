@@ -8,6 +8,7 @@ keri.kli.commands.multisig module
 import argparse
 import json
 from json import JSONDecodeError
+from ordered_set import OrderedSet as oset
 
 import sys
 from hio.base import doing
@@ -119,11 +120,30 @@ class GroupMultisigIncept(doing.DoDoer):
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:
             smids = self.inits["aids"]  # not a pass through in makeGroupHab
+            rmids = self.inits["rmids"] if "rmids" in self.inits else None
             del self.inits["aids"]
-            rmids = None  # get from inits
+            del self.inits['rmids']
 
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
+
+            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+            serder = coring.Serder(raw=evt)
+
+            # Create a notification EXN message to send to the other agents
+            exn, ims = grouping.multisigInceptExn(ghab.mhab,
+                                                  aids=ghab.smids,
+                                                  ked=serder.ked)
+            others = list(oset(smids + (rmids if rmids is not None else [])))
+            #others = list(smids)
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
@@ -148,6 +168,5 @@ class GroupMultisigIncept(doing.DoDoer):
 
         print()
         displaying.printIdentifier(self.hby, ghab.pre)
-
         self.remove(self.toRemove)
 

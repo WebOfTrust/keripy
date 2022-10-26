@@ -11,7 +11,7 @@ from falcon import testing
 from hio.base import doing
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting, notifying
+from keri.app import habbing, kiwiing, grouping, indirecting, directing, booting, notifying
 from keri.core import scheming, coring, eventing, parsing
 from keri.db import basing
 from keri.vc import proving
@@ -24,7 +24,6 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 def loadApp(hby, rgy, verifier, notifier):
     app = falcon.App()
 
-    repd = storing.Respondant(hby=hby)
     counselor = grouping.Counselor(hby=hby)
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
@@ -32,7 +31,6 @@ def loadApp(hby, rgy, verifier, notifier):
                                       verifier=verifier)
     servery = booting.Servery(port=1234)
     doers = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
                              rgy=rgy,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -43,7 +41,7 @@ def loadApp(hby, rgy, verifier, notifier):
                              servery=servery,
                              bootConfig=dict(),
                              counselor=counselor)
-    doers.extend([repd, counselor, registrar, credentialer, mbx])
+    doers.extend([counselor, registrar, credentialer, mbx])
     return app, doers
 
 
@@ -269,5 +267,3 @@ def test_multisig_issue_agent():
         directing.runController(doers=[testDoer], expire=60.0)
 
         assert testDoer.done is True
-
-

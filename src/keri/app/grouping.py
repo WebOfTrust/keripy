@@ -70,7 +70,6 @@ class Counselor(doing.DoDoer):
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
 
-
     def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
@@ -111,7 +110,6 @@ class Counselor(doing.DoDoer):
         # Get local next key and see if we are in current group next keys
         pkever = ghab.mhab.kever
         pnkey = pkever.nexter.digs[0]
-
 
         rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
@@ -222,7 +220,6 @@ class Counselor(doing.DoDoer):
                     self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
 
                 return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
-
 
     def processPartialAidEscrow(self):
         """
@@ -449,6 +446,7 @@ class MultisigInceptHandler(doing.DoDoer):
 
     """
     resource = "/multisig/icp"
+    persist = True
 
     def __init__(self, hby, notifier, **kwa):
         """
@@ -727,6 +725,7 @@ class MultisigInteractHandler(doing.DoDoer):
                 data = dict(
                     r='/multisig/ixn',
                     src=src,
+                    gid=gid,
                     aids=aids,
                 )
                 data["data"] = pay["data"] if "data" in pay else None
