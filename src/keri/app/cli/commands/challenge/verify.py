@@ -140,7 +140,7 @@ class VerifyDoer(doing.DoDoer):
         print("\n")
 
         if found:
-            print(f"Signer {self.signer} successfully responded to challenge words: '{self.words}'")
+            print(f"Signer {self.signer} successfully responded to challenge words: '{words}'")
         else:
             print(f"No response found from {self.signer}")
 

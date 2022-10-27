@@ -178,7 +178,7 @@ class ConfirmDoer(doing.DoDoer):
                     break
 
             try:
-                ghab = self.hby.makeGroupHab(group=alias, mhab=mhab, mids=mids, **inits)
+                ghab = self.hby.makeGroupHab(group=alias, mhab=mhab, smids=mids, **inits)
             except ValueError as e:
                 print(f"{e.args[0]}")
                 return False
@@ -230,7 +230,7 @@ class ConfirmDoer(doing.DoDoer):
             return True
 
     def startCounselor(self, aids, hab, prefixer, seqner, saider):
-        self.counselor.start(mids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

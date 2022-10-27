@@ -233,7 +233,6 @@ class ForwardHandler(doing.Doer):
                     print("error with message, nothing to forward", msg)
                     continue
 
-                print(f"storing event for {resource}")
                 self.mbx.storeMsg(topic=resource, msg=pevt)
                 yield self.tock
 
