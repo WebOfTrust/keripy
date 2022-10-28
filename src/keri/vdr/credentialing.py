@@ -752,7 +752,7 @@ class Credentialer(doing.DoDoer):
         if hab.mhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
-            others = list(oset(smids + (rmids if rmids is not None else [])))
+            others = list(oset(smids + (rmids or [])))
             #others = list(smids)
             others.remove(hab.mhab.pre)
 

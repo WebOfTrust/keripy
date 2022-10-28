@@ -58,7 +58,7 @@ class Counselor(doing.DoDoer):
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
 
-        others = list(oset(smids + (rmids if rmids is not None else [])))
+        others = list(oset(smids + (rmids or [])))
         #others = list(smids)
         others.remove(mid)  # don't send to self
 
@@ -99,7 +99,7 @@ class Counselor(doing.DoDoer):
         mid = ghab.mhab.pre
         smids = smids if smids is not None else ghab.smids
         rmids = rmids if rmids is not None else ghab.rmids
-        both = list(oset(smids + (rmids if rmids is not None else [])))
+        both = list(oset(smids + (rmids or [])))
 
         if mid not in both:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
@@ -245,7 +245,7 @@ class Counselor(doing.DoDoer):
         ToDo: NRR
         Need to fix this logic to be for new rotation rules
         need to use both rec.smids and rec.rmids
-        both = list(oset(smids + (rmids if rmids is not None else [])))
+        both = list(oset(smids + (rmids or [])))
 
         """
         # ignore saider because it is not relevant yet

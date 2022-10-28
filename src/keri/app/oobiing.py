@@ -255,7 +255,7 @@ class OobiResource(doing.DoDoer):
             return
 
         oobis = body["oobis"]
-        both = list(set(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+        both = list(set(hab.smids + (hab.rmids or [])))
         for mid in both: #hab.smids
             if mid == hab.mhab.pre:
                 continue

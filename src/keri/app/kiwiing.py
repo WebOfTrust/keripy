@@ -1386,7 +1386,7 @@ class CredentialEnd(doing.DoDoer):
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
 
-        others = list(oset(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+        others = list(oset(hab.smids + (hab.rmids or [])))
         #others = list(hab.smids)
         others.remove(hab.mhab.pre)
 
@@ -2146,7 +2146,7 @@ class MultisigInceptEnd(MultisigEndBase):
         # Create a notification EXN message to send to the other agents
         exn, ims = grouping.multisigInceptExn(mhab, aids=ghab.smids, ked=serder.ked)
 
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(mhab.pre)
 
@@ -2400,7 +2400,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
@@ -2585,7 +2585,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
 
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
