@@ -136,7 +136,7 @@ class ConfirmDoer(doing.DoDoer):
         Add rmids
         """
         smids = attrs["aids"]  # change body mids for group member ids
-        rmids = attrs["rmids"] if rmids in attrs else None
+        rmids = attrs["rmids"] if "rmids" in attrs else None
         ked = attrs["ked"]
 
         both = list(set(smids + (rmids or [])))
@@ -199,7 +199,7 @@ class ConfirmDoer(doing.DoDoer):
     def interact(self, attrs):
         pre = attrs["gid"]
         smids = attrs["aids"]  # change attrs["aids"]" to "smids"
-        rmids = attrs["rmids"] if rmids in attrs else None
+        rmids = attrs["rmids"] if "rmids" in attrs else None
         data = attrs["data"]
 
         if pre not in self.hby.habs:
