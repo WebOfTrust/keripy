@@ -113,7 +113,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         serder = coring.Serder(raw=ixn)
         exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 

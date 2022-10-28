@@ -6,6 +6,7 @@ keri.kli.commands.delegate module
 """
 import argparse
 import json
+from ordered_set import OrderedSet as oset
 
 from prettytable import PrettyTable
 
@@ -131,18 +132,17 @@ class ConfirmDoer(doing.DoDoer):
     def incept(self, attrs):
         """Incept group multisig
 
-        Add to body  midxs tuple (csi, pni)
-        Then pass these into
-        self.hby.makeGroupHab(group=alias, mhab=hab, mids=aids, **inits)
-
-
+        ToDo: NRR
+        Add rmids
         """
-
-        mids = attrs["aids"]  # change body mids for group member ids
+        smids = attrs["aids"]  # change body mids for group member ids
+        rmids = attrs["rmids"] if "rmids" in attrs else None
         ked = attrs["ked"]
 
+        both = list(set(smids + (rmids or [])))
+
         mhab = None
-        for mid in mids:
+        for mid in both:
             if mid in self.hby.habs:
                 mhab = self.hby.habs[mid]
                 break
@@ -165,7 +165,7 @@ class ConfirmDoer(doing.DoDoer):
 
         print()
         print("Group Multisig Inception proposed:")
-        self.showEvent(mhab, mids, ked)
+        self.showEvent(mhab, both, ked)
         yn = input(f"\nJoin [Y|n]? ")
         approve = yn in ('', 'y', 'Y')
 
@@ -178,25 +178,28 @@ class ConfirmDoer(doing.DoDoer):
                     break
 
             try:
-                ghab = self.hby.makeGroupHab(group=alias, mhab=mhab, smids=mids, **inits)
+                ghab = self.hby.makeGroupHab(group=alias, mhab=mhab,
+                                             smids=smids, rmids=rmids, **inits)
             except ValueError as e:
                 print(f"{e.args[0]}")
                 return False
 
-            aids = attrs["aids"]
+
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
-            yield from self.startCounselor(aids, ghab, prefixer, seqner, saider)
+            yield from self.startCounselor(smids, rmids, ghab, prefixer, seqner, saider)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
 
             return True
 
+
     def interact(self, attrs):
         pre = attrs["gid"]
-        aids = attrs["aids"]
+        smids = attrs["aids"]  # change attrs["aids"]" to "smids"
+        rmids = attrs["rmids"] if "rmids" in attrs else None
         data = attrs["data"]
 
         if pre not in self.hby.habs:
@@ -205,8 +208,10 @@ class ConfirmDoer(doing.DoDoer):
 
         ghab = self.hby.habs[pre]
 
-        if ghab.mhab.pre not in aids:
-            print(f"Local AID {ghab.mhab.pre} not a requested signer in {aids}")
+        both = list(set(smids + (rmids or [])))
+
+        if ghab.mhab.pre not in both:
+            print(f"Local AID {ghab.mhab.pre} not a requested signer in {both}")
             return False
 
         print(f"Group Multisig Interaction for {ghab.name} ({ghab.pre}) proposed:")
@@ -222,15 +227,16 @@ class ConfirmDoer(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
-            yield from self.startCounselor(aids, ghab, prefixer, seqner, saider)
+            yield from self.startCounselor(smids, rmids, ghab, prefixer, seqner, saider)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
 
             return True
 
-    def startCounselor(self, aids, hab, prefixer, seqner, saider):
-        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+    def startCounselor(self, smids, rmids, hab, prefixer, seqner, saider):
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                             mid=hab.mhab.pre, smids=smids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

@@ -1386,7 +1386,7 @@ class CredentialEnd(doing.DoDoer):
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
 
-        others = list(oset(hab.smids + (hab.rmids if hab.rmids is not None else [])))
+        others = list(oset(hab.smids + (hab.rmids or [])))
         #others = list(hab.smids)
         others.remove(hab.mhab.pre)
 
@@ -1982,9 +1982,6 @@ class MultisigInceptEnd(MultisigEndBase):
         """Incept group multisig
 
         ToDo: NRR
-        Add to body  midxs tuple (csi, pni)
-        Then pass these into
-        self.hby.makeGroupHab(group=alias, mhab=hab, smids=aids, **inits)
 
 
         """
@@ -1995,9 +1992,11 @@ class MultisigInceptEnd(MultisigEndBase):
             return None, None
 
         smids = body["aids"]  # change body aids to smids for group member ids
-        rmids = None  # group rotation member ids get from body
+        rmids = body["rmids"] if "rmids" in body else None
+        both = list(oset(smids + (rmids or [])))
+
         mhab = None
-        for mid in smids:
+        for mid in both:
             if mid in self.hby.habs:
                 mhab = self.hby.habs[mid]
                 break
@@ -2146,7 +2145,7 @@ class MultisigInceptEnd(MultisigEndBase):
         # Create a notification EXN message to send to the other agents
         exn, ims = grouping.multisigInceptExn(mhab, aids=ghab.smids, ked=serder.ked)
 
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(mhab.pre)
 
@@ -2400,7 +2399,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
@@ -2585,7 +2584,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         exn, atc = grouping.multisigInteractExn(ghab, aids, data)
 
-        others = list(oset(ghab.smids + (ghab.rmids if ghab.rmids is not None else [])))
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 

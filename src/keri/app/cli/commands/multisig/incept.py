@@ -134,7 +134,7 @@ class GroupMultisigIncept(doing.DoDoer):
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
                                                   aids=ghab.smids,
                                                   ked=serder.ked)
-            others = list(oset(smids + (rmids if rmids is not None else [])))
+            others = list(oset(smids + (rmids or [])))
             #others = list(smids)
             others.remove(ghab.mhab.pre)
 

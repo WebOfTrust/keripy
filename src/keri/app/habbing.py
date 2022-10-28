@@ -1156,7 +1156,8 @@ class Hab:
         return self.db.prefixes
 
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True):
+    def sign(self, ser, pubs=None, verfers=None,
+             indexed=True, indices=None, ondices=None):
         """Sign given serialization ser using keys from .mgr
         When .mhab is not None then use .mhab's verfers to lookup keys to sign
         Othersise use provided pubs or verfers or .kever.verfers to lookup keys to sign
@@ -1175,6 +1176,11 @@ class Hab:
                 list of Siger instances.
                 False means do not use indexed signatures and return
                 list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
 
         """
         if self.mhab:  # Group multisig member. Sign with single sig of mhab
@@ -1186,16 +1192,21 @@ class Hab:
             csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
             pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
             return (self.mhab.mgr.sign(ser=ser,
-                                        verfers=[self.mhab.kever.verfers[0]],
-                                        indices=[csi],
-                                        ondices=[pni]))
+                                       verfers=[self.mhab.kever.verfers[0]],
+                                       indices=[csi],
+                                       ondices=[pni]))
 
         else:
             if pubs is None:
                 if verfers is None:
                     verfers = self.kever.verfers
 
-            return self.mgr.sign(ser, pubs=pubs, verfers=verfers, indexed=indexed)
+            return self.mgr.sign(ser=ser,
+                                 pubs=pubs,
+                                 verfers=verfers,
+                                 indexed=indexed,
+                                 indices=indices,
+                                 ondices=ondices)
 
 
     def incept(self, **kwa):
