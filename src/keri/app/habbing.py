@@ -1033,7 +1033,7 @@ class Hab:
                                         ondices=[pni])
 
         else:
-            sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
+            sigers = self.sign(ser=serder.raw, verfers=verfers)
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
@@ -1155,61 +1155,6 @@ class Hab:
         """
         return self.db.prefixes
 
-
-    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None):
-        """Sign given serialization ser using keys from .mgr
-        When .mhab is not None then use .mhab's verfers to lookup keys to sign
-        Othersise use provided pubs or verfers or .kever.verfers to lookup keys to sign
-
-
-
-        Parameters:
-            ser (bytes): serialization to sign
-            verfers (list[Verfer] | None): When not .mhab. Verfer instances to lookup
-                private keys. When not .mhab and both .pubs and .verfers is None
-                then use .kever.verfers
-                pass in verfers for rotate because not in .kever
-                verfers None means use .kever.verfers
-            indexed (bool): When not mhab then
-                True means use use indexed signatures and return
-                list of Siger instances.
-                False means do not use indexed signatures and return
-                list of Cigar instances
-            indices (list[int] | None): indices (offsets)
-                when indexed == True. See Manager.sign
-
-            ondices (list[int | None] | None): other indices (offsets)
-                when indexed is True. See Manager.sign
-
-        """
-        if verfers is None:
-            verfers = self.kever.verfers
-
-        keys = [verfer.qb64 for verfer in verfers]
-
-        if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            # convention use indices from mhab's first current signing key if
-            # participating and first prior next dig if participating. One or
-            # the other or both must be participant
-            # mid index tuple (csi, pni)
-            keys = [verfer.qb64 for verfer in self.kever.verfers]  # lookup from .mhab
-            # always use first key of mhab
-            csi = keys.index(self.mhab.kever.verfers[0].qb64)
-            #always use first prior dig of mhab
-            # get prior Next keys by looking up from self.mhab.kever.lastEst
-            pni = csi
-            return (self.mhab.mgr.sign(ser=ser,
-                                       verfers=[self.mhab.kever.verfers[0]],
-                                       indices=[csi],
-                                       ondices=[pni]))
-
-        else:
-
-            return self.mgr.sign(ser=ser,
-                                 verfers=verfers,
-                                 indexed=indexed,
-                                 indices=indices,
-                                 ondices=ondices)
 
 
     def incept(self, **kwa):
@@ -1365,6 +1310,64 @@ class Hab:
 
         return msg
 
+
+
+    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None):
+        """Sign given serialization ser using keys from .mgr
+        When .mhab is not None then use .mhab's verfers to lookup keys to sign
+        Othersise use provided pubs or verfers or .kever.verfers to lookup keys to sign
+
+
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): When not .mhab. Verfer instances to lookup
+                private keys. When not .mhab and both .pubs and .verfers is None
+                then use .kever.verfers
+                pass in verfers for rotate because not in .kever
+                verfers None means use .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
+        if verfers is None:
+            verfers = self.kever.verfers
+
+        keys = [verfer.qb64 for verfer in verfers]
+
+        if self.mhab:  # Group multisig member. Sign with single sig of mhab
+            # convention use indices from mhab's first current signing key if
+            # participating and first prior next dig if participating. One or
+            # the other or both must be participant
+            # mid index tuple (csi, pni)
+            keys = [verfer.qb64 for verfer in self.kever.verfers]  # lookup from .mhab
+            # always use first key of mhab
+            csi = keys.index(self.mhab.kever.verfers[0].qb64)
+            #always use first prior dig of mhab
+            # get prior Next keys by looking up from self.mhab.kever.lastEst
+            pni = csi
+            return (self.mhab.mgr.sign(ser=ser,
+                                       verfers=[self.mhab.kever.verfers[0]],
+                                       indices=[csi],
+                                       ondices=[pni]))
+
+        else:
+
+            return self.mgr.sign(ser=ser,
+                                 verfers=verfers,
+                                 indexed=indexed,
+                                 indices=indices,
+                                 ondices=ondices)
+
+
+
     def query(self, pre, src, query=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
@@ -1385,91 +1388,6 @@ class Hab:
         serder = eventing.query(query=query, **kwa)
 
         return self.endorse(serder, last=True)
-
-    def receipt(self, serder):
-        """
-        Returns own receipt, rct, message of serder with count code and receipt
-        couples (pre+cig)
-        Builds msg and then processes it into own db to validate
-        """
-        ked = serder.ked
-        reserder = eventing.receipt(pre=ked["i"],
-                                    sn=int(ked["s"], 16),
-                                    said=serder.said)
-
-        # sign serder event
-        if self.kever.prefixer.transferable:
-            seal = eventing.SealEvent(i=self.pre,
-                                      s="{:x}".format(self.kever.lastEst.s),
-                                      d=self.kever.lastEst.d)
-            sigers = self.sign(ser=serder.raw,
-                               indexed=True)
-            msg = eventing.messagize(serder=reserder, sigers=sigers, seal=seal)
-        else:
-            cigars = self.sign(ser=serder.raw,
-                               indexed=False)
-            msg = eventing.messagize(reserder, cigars=cigars)
-
-        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
-        return msg
-
-
-    def exchange(self, serder, save=False):
-        """
-        Returns signed exn, message of serder with count code and receipt
-        couples (pre+cig)
-        Builds msg and then processes it into own db to validate
-        """
-        # sign serder event
-        if self.kever.prefixer.transferable:
-            seal = eventing.SealLast(i=self.kever.prefixer.qb64)
-            sigers = self.sign(ser=serder.raw,
-                               indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
-        else:
-            cigars = self.sign(ser=serder.raw,
-                               indexed=False)
-            msg = eventing.messagize(serder, cigars=cigars)
-
-        if save:
-            self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
-
-        return msg
-
-
-    def witness(self, serder):
-        """
-        Returns own receipt, rct, message of serder with count code and witness
-        indexed receipt signatures if key state of serder.pre shows that own pre
-        is a current witness of event in serder
-        """
-        if self.kever.prefixer.transferable:  # not non-transferable prefix
-            raise ValueError("Attempt to create witness receipt with"
-                             " transferable pre={}.".format(self.pre))
-        ked = serder.ked
-
-        if serder.pre not in self.kevers:
-            raise ValueError("Attempt by {} to witness event with missing key "
-                             "state.".format(self.pre))
-        kever = self.kevers[serder.pre]
-        if self.pre not in kever.wits:
-            print("Attempt by {} to witness event of {} when not a "
-                  "witness in wits={}.".format(self.pre,
-                                               serder.pre,
-                                               kever.wits))
-        index = kever.wits.index(self.pre)
-
-        reserder = eventing.receipt(pre=ked["i"],
-                                    sn=int(ked["s"], 16),
-                                    said=serder.said)
-        # sign serder event
-        wigers = self.mgr.sign(ser=serder.raw,
-                               pubs=[self.pre],
-                               indices=[index])
-
-        msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
-        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
-        return msg
 
 
     def endorse(self, serder, last=False, pipelined=True):
@@ -1514,6 +1432,98 @@ class Hab:
                                      pipelined=pipelined)
 
         return msg
+
+
+    def exchange(self, serder, save=False):
+        """
+        Returns signed exn, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        # sign serder event
+        if self.kever.prefixer.transferable:
+            seal = eventing.SealLast(i=self.kever.prefixer.qb64)
+            sigers = self.sign(ser=serder.raw,
+                               indexed=True)
+            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+        else:
+            cigars = self.sign(ser=serder.raw,
+                               indexed=False)
+            msg = eventing.messagize(serder, cigars=cigars)
+
+        if save:
+            self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+
+        return msg
+
+
+    def receipt(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        ked = serder.ked
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    said=serder.said)
+
+        # sign serder event
+        if self.kever.prefixer.transferable:
+            seal = eventing.SealEvent(i=self.pre,
+                                      s="{:x}".format(self.kever.lastEst.s),
+                                      d=self.kever.lastEst.d)
+            sigers = self.sign(ser=serder.raw,
+                               indexed=True)
+            msg = eventing.messagize(serder=reserder, sigers=sigers, seal=seal)
+        else:
+            cigars = self.sign(ser=serder.raw,
+                               indexed=False)
+            msg = eventing.messagize(reserder, cigars=cigars)
+
+        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def witness(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and witness
+        indexed receipt signatures if key state of serder.pre shows that own pre
+        is a current witness of event in serder
+        """
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
+            raise ValueError("Attempt to create witness receipt with"
+                             " transferable pre={}.".format(self.pre))
+        ked = serder.ked
+
+        if serder.pre not in self.kevers:
+            raise ValueError("Attempt by {} to witness event with missing key "
+                             "state.".format(self.pre))
+        kever = self.kevers[serder.pre]
+        if self.pre not in kever.wits:
+            print("Attempt by {} to witness event of {} when not a "
+                  "witness in wits={}.".format(self.pre,
+                                               serder.pre,
+                                               kever.wits))
+        index = kever.wits.index(self.pre)
+
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    said=serder.said)
+
+        # sign serder event
+        if self.mhab:  # groupHab can't sign not a valid witness
+            raise ValueError("Attempt to witness by group hab ={self.pre}.")
+
+        # assumes witness id is nontrans so public key is same as pre
+        wigers = self.mgr.sign(ser=serder.raw,
+                               pubs=[self.pre],
+                               indices=[index])
+
+        msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
+        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
 
 
     def replay(self, pre=None, fn=0):
