@@ -1018,22 +1018,22 @@ class Hab:
             self.prefixes.add(self.pre)
 
         # create inception event
-        if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            # convention use indices from mhab's first current signing key if
-            # participating
-            # mid index tuple (csi, pni)
-            csi = keys.index(self.mhab.kever.verfers[0].qb64)  # first key of mhab
-            # inception so no prior next so pni could be None but for backwards
-            # compatibility set to same as csi since inception event validation
-            # ignores pni index since not required. In future should set to None
-            pni = csi
-            sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        verfers=[self.mhab.kever.verfers[0]],
-                                        indices=[csi],
-                                        ondices=[pni])
+        #if self.mhab:  # Group multisig member. Sign with single sig of mhab
+            ## convention use indices from mhab's first current signing key if
+            ## participating
+            ## mid index tuple (csi, pni)
+            #csi = keys.index(self.mhab.kever.verfers[0].qb64)  # first key of mhab
+            ## inception so no prior next so pni could be None but for backwards
+            ## compatibility set to same as csi since inception event validation
+            ## ignores pni index since not required. In future should set to None
+            #pni = csi
+            #sigers = self.mhab.mgr.sign(ser=serder.raw,
+                                        #verfers=[self.mhab.kever.verfers[0]],
+                                        #indices=[csi],
+                                        #ondices=[pni])
 
-        else:
-            sigers = self.sign(ser=serder.raw, verfers=verfers)
+        #else:
+        sigers = self.sign(ser=serder.raw, verfers=verfers)
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
@@ -1256,20 +1256,20 @@ class Hab:
                                      adds=adds,
                                      data=data)
 
-        if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            # convention use indices from mhab's first current signing key if
-            # participating and first prior next dig if participating. One or
-            # the other or both must be participant
-            # mid index tuple (csi, pni)
-            csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
-            pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
-            sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        verfers=[self.mhab.kever.verfers[0]],
-                                        indices=[csi],
-                                        ondices=[pni])
+        #if self.mhab:  # Group multisig member. Sign with single sig of mhab
+            ## convention use indices from mhab's first current signing key if
+            ## participating and first prior next dig if participating. One or
+            ## the other or both must be participant
+            ## mid index tuple (csi, pni)
+            #csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
+            #pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
+            #sigers = self.mhab.mgr.sign(ser=serder.raw,
+                                        #verfers=[self.mhab.kever.verfers[0]],
+                                        #indices=[csi],
+                                        #ondices=[pni])
 
-        else:
-            sigers = self.sign(ser=serder.raw, verfers=verfers)
+        #else:
+        sigers = self.sign(ser=serder.raw, verfers=verfers)
 
         # update own key event verifier state
         msg = eventing.messagize(serder, sigers=sigers)
