@@ -834,8 +834,6 @@ class Poller(doing.DoDoer):
                     msg = evt["data"]
                     tpc = evt["name"]
 
-                    print(f"got {tpc}/{idx}")
-
                     if not idx or not msg or not tpc:
                         logger.error(f"bad mailbox event: {evt}")
                         continue
