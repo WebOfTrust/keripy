@@ -1156,21 +1156,20 @@ class Hab:
         return self.db.prefixes
 
 
-    def sign(self, ser, pubs=None, verfers=None,
-             indexed=True, indices=None, ondices=None):
+    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None):
         """Sign given serialization ser using keys from .mgr
         When .mhab is not None then use .mhab's verfers to lookup keys to sign
         Othersise use provided pubs or verfers or .kever.verfers to lookup keys to sign
 
 
+
         Parameters:
             ser (bytes): serialization to sign
-            pubs (list[str] | None): When not .mhab. public keys qb64 to lookup
+            verfers (list[Verfer] | None): When not .mhab. Verfer instances to lookup
                 private keys. When not .mhab and both .pubs and .verfers is None
                 then use .kever.verfers
-            verfers (list[Verfer] | None): When not .mhab. Verfer instance to lookup
-                private keys. When not .mhab and both .pubs and .verfers is None
-                then use .kever.verfers
+                pass in verfers for rotate because not in .kever
+                verfers None means use .kever.verfers
             indexed (bool): When not mhab then
                 True means use use indexed signatures and return
                 list of Siger instances.
@@ -1183,26 +1182,30 @@ class Hab:
                 when indexed is True. See Manager.sign
 
         """
+        if verfers is None:
+            verfers = self.kever.verfers
+
+        keys = [verfer.qb64 for verfer in verfers]
+
         if self.mhab:  # Group multisig member. Sign with single sig of mhab
             # convention use indices from mhab's first current signing key if
             # participating and first prior next dig if participating. One or
             # the other or both must be participant
             # mid index tuple (csi, pni)
             keys = [verfer.qb64 for verfer in self.kever.verfers]  # lookup from .mhab
-            csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
-            pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
+            # always use first key of mhab
+            csi = keys.index(self.mhab.kever.verfers[0].qb64)
+            #always use first prior dig of mhab
+            # get prior Next keys by looking up from self.mhab.kever.lastEst
+            pni = csi
             return (self.mhab.mgr.sign(ser=ser,
                                        verfers=[self.mhab.kever.verfers[0]],
                                        indices=[csi],
                                        ondices=[pni]))
 
         else:
-            if pubs is None:
-                if verfers is None:
-                    verfers = self.kever.verfers
 
             return self.mgr.sign(ser=ser,
-                                 pubs=pubs,
                                  verfers=verfers,
                                  indexed=indexed,
                                  indices=indices,
