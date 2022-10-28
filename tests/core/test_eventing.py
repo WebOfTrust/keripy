@@ -1976,6 +1976,9 @@ def test_keyeventsequence_0():
         assert kever.estOnly is False
         assert kever.transferable is True
 
+        nexter = kever.fetchPriorNexter()
+        assert nexter is None
+
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2
         keys2 = [signers[2].verfer.qb64]
@@ -2003,6 +2006,10 @@ def test_keyeventsequence_0():
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert kever.nexter.digs == nxt2
 
+        nexter = kever.fetchPriorNexter()
+        assert nexter is not None
+        assert nexter.digs == nxt1  # digs from inception before rotation
+
         # Event 2 Rotation Transferable
         # compute nxt digest from keys3
         keys3 = [signers[3].verfer.qb64]
@@ -2028,6 +2035,10 @@ def test_keyeventsequence_0():
         assert [verfer.qb64 for verfer in kever.verfers] == keys2
         assert kever.nexter.digs == nxt3
 
+        nexter = kever.fetchPriorNexter()
+        assert nexter is not None
+        assert nexter.digs == nxt2  # digs from rotation before rotation
+
         # Event 3 Interaction
         serder3 = interact(pre=pre, dig=serder2.said, sn=3)
         event_digs.append(serder3.said)
@@ -2047,6 +2058,10 @@ def test_keyeventsequence_0():
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
         assert kever.nexter.digs == nxt3  # no change
 
+        nexter = kever.fetchPriorNexter()
+        assert nexter is not None
+        assert nexter.digs == nxt2  # digs from rot before rot before ixn
+
         # Event 4 Interaction
         serder4 = interact(pre=pre, dig=serder3.said, sn=4)
         event_digs.append(serder4.said)
@@ -2065,6 +2080,10 @@ def test_keyeventsequence_0():
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
         assert kever.nexter.digs == nxt3  # no change
+
+        nexter = kever.fetchPriorNexter()
+        assert nexter is not None
+        assert nexter.digs == nxt2  # digs from rot before rot before ixn ixn
 
         # Event 5 Rotation Transferable
         # compute nxt digest from keys4
@@ -2090,6 +2109,10 @@ def test_keyeventsequence_0():
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys3
         assert kever.nexter.digs == nxt4
+
+        nexter = kever.fetchPriorNexter()
+        assert nexter is not None
+        assert nexter.digs == nxt3  # digs from rot before ixn ixn before rot
 
         # Event 6 Interaction
         serder6 = interact(pre=pre, dig=serder5.said, sn=6)
@@ -4389,4 +4412,5 @@ def test_load_event(mockHelpingNowUTC):
 
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    test_process_manual()
+    #test_process_manual()
+    test_keyeventsequence_0()

@@ -2506,6 +2506,37 @@ class Kever:
                 )
 
 
+    def fetchPriorNexter(self) -> (Nexter | None):
+        """ Returns either the most recent prior Nexter before .lastEst or None
+
+        Starts searching at sn = .lastEst.s - 1
+
+        Returns the Nexter instance at the most recent prior Nexter to the
+        current nexter of the given sequence number (sn) otherwise returns None.
+        Walks backwards to the more recent prior establishment event before the
+        .sn if any.
+        If sn represents an interaction event (ixn) then the result will be the
+        current valid nexter. If sn represents an establishment event then
+        the result will be the prior nexter to the current one.
+
+        Parameters:
+
+        Returns:
+            Nexter instance or None if no prior est event to current .lastEst
+
+        """
+        pre = self.prefixer.qb64
+        sn = self.lastEst.s - 1
+        for digb in self.db.getKelBackIter(pre, sn):
+            dgkey = dgKey(pre, digb)
+            raw = self.db.getEvt(dgkey)
+            serder = coring.Serder(raw=bytes(raw))
+            if serder.est:  # establishment event
+                return serder.nexter
+
+        return None
+
+
 class Kevery:
     """
     Kevery (Key Event Message Processing Facility) processes an incoming

@@ -1353,9 +1353,15 @@ class Hab:
             keys = [verfer.qb64 for verfer in verfers]  # group hab's keys
             merfer = self.mhab.kever.verfers[0]  # always use first key of mhab
             csi = keys.index(merfer.qb64) # find mhab key index in group hab keys
-            if rotated:  # rotation so use dual index
-                #always use first prior dig of mhab
-                # get prior Next keys by looking up from self.mhab.kever.lastEst
+
+            if rotated:  # rotation uses dual index
+                # get .mhab's prior Next digs
+                #nexter = self.mhab.kever.fetchPriorNexter()
+                #if nexter is not None:
+                    #miger = nexter.digers[0]  #always use first prior dig of mhab
+                    #pni = digs.index(miger.qb64)  # find mhab dig index in group hab digs
+                #else:
+                    #pni = None  # not part of prior next
                 pni = csi
             else:  # not a rotation so either both same or current signing keys only
                 pni = csi  # backwards compatible is both same
