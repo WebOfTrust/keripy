@@ -1982,9 +1982,6 @@ class MultisigInceptEnd(MultisigEndBase):
         """Incept group multisig
 
         ToDo: NRR
-        Add to body  midxs tuple (csi, pni)
-        Then pass these into
-        self.hby.makeGroupHab(group=alias, mhab=hab, smids=aids, **inits)
 
 
         """
@@ -1995,9 +1992,11 @@ class MultisigInceptEnd(MultisigEndBase):
             return None, None
 
         smids = body["aids"]  # change body aids to smids for group member ids
-        rmids = None  # group rotation member ids get from body
+        rmids = body["rmids"] if "rmids" in body else None
+        both = list(oset(smids + (rmids or [])))
+
         mhab = None
-        for mid in smids:
+        for mid in both:
             if mid in self.hby.habs:
                 mhab = self.hby.habs[mid]
                 break
