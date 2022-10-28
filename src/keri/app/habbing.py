@@ -1269,7 +1269,7 @@ class Hab:
                                         #ondices=[pni])
 
         #else:
-        sigers = self.sign(ser=serder.raw, verfers=verfers)
+        sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
         msg = eventing.messagize(serder, sigers=sigers)
@@ -1312,7 +1312,9 @@ class Hab:
 
 
 
-    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None):
+    def sign(self, ser, verfers=None, indexed=True, rotated=False,
+             indices=None, ondices=None,
+             ):
         """Sign given serialization ser using appropriate keys.
         Use provided verfers or .kever.verfers to lookup keys to sign unless
         .mhab is not None then find .mhab's zeroth verfer to get index into
@@ -1328,6 +1330,12 @@ class Hab:
                 list of Siger instances.
                 False means do not use indexed signatures and return
                 list of Cigar instances
+            rotated (bool): When indexed and .mhab then
+                True means use use dual indexed signatures, i.e. current indices
+                and prior next ondices
+                False means do not use dual indexed signatures, i.e. current
+                siging indices only
+                Otherwise ignore
             indices (list[int] | None): indices (offsets)
                 when indexed == True. See Manager.sign
             ondices (list[int | None] | None): other indices (offsets)
@@ -1345,9 +1353,14 @@ class Hab:
             keys = [verfer.qb64 for verfer in verfers]  # group hab's keys
             merfer = self.mhab.kever.verfers[0]  # always use first key of mhab
             csi = keys.index(merfer.qb64) # find mhab key index in group hab keys
-            #always use first prior dig of mhab
-            # get prior Next keys by looking up from self.mhab.kever.lastEst
-            pni = csi
+            if rotated:  # rotation so use dual index
+                #always use first prior dig of mhab
+                # get prior Next keys by looking up from self.mhab.kever.lastEst
+                pni = csi
+            else:  # not a rotation so either both same or current signing keys only
+                pni = csi  # backwards compatible is both same
+                # in the future should fix this to pni = None.
+
             return (self.mhab.sign(ser=ser,
                                        verfers=[merfer],
                                        indexed=indexed,
