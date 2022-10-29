@@ -1356,7 +1356,7 @@ class Hab:
                 else:
                     pni = None  # default not participant
 
-            else:  # not a rotation so ignores other index of dual index
+            else:  # not a rotation so ignores other index from dual indices
                 pni = csi  # backwards compatible is both same
                 # in the future may want to fix this so pni = None works
 
