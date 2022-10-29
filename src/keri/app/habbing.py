@@ -1319,28 +1319,31 @@ class Hab:
             verfers = self.kever.verfers
 
         if self.mhab:  # Group multisig member. Sign with single sig of mhab.
-            # Convention is to always use always use first key of mhab.kever and
-            # first dig mhab prior nexter.digs. Assumes that prior next and
-            # current key after rotation of mhab always match, that is the
-            # prior next dig is the digest of current key at same index in
-            # both lists. Key or both key and prior dig might be participants
-            # in group hab's rotation. Recall that can't participate as prior dig
-            # unless exposed as participant in curren (after rotation) key.
-            # If mhab.kever.verfer[0] key in new group verfers then
-            # participating in group as new key at index csi. If in addition
-            # mhab .prior  nexter.digs[0] in group.kever.digers (which is prior
-            # next for group) then also participating as group prior next at index
-            # pni else pni is None.
+            # Convention is to always use first key of mhab.kever.verfers and
+            # first dig of mhab's prior nexter.digs. Assumes that index in
+            # prior next and current key after rotation of mhab always match in
+            # their respective lists. that is the prior next dig at index i
+            # is the digest of current key at index i in both lists.
 
             keys = [verfer.qb64 for verfer in verfers]  # group hab's keys
             merfer = self.mhab.kever.verfers[0]  # always use first key of mhab
             try:
                 csi = keys.index(merfer.qb64) # find mhab key index in group hab keys
             except ValueError as ex:
-                raise ValueError(f"Member hab={mhab.pre} not a participant in "
-                                 "this group hab={self.pre} event.") from ex
+                raise ValueError(f"Member hab={self.mhab.pre} not a participant in "
+                                 f"event for this group hab={self.pre}.") from ex
 
-            if rotated:  # rotation so uses other index of dual index
+            if rotated:  # rotation so uses the other index from dual indices
+                # Either the verfer key or both the verfer key and prior dig
+                # might be participants in group hab's rotation.
+                # Each prior dig participant must also be exposed as participant
+                # in current (after rotation) key list.
+                # If mhab.kever.verfer[0] key is in group's new verfers (after rot)
+                # then mhab participates in group as new key at index csi.
+                # If in addition mhab prior dig at nexter.digs[0] is in group's
+                # kever.digers (which will be prior next for group after rotation)
+                # then mhab participates as group prior next at index pni.
+                # else pni is None which means mhab only participates as new key.
                 # get nexter of .mhab's prior Next est event
                 mexter = self.mhab.kever.fetchPriorNexter()
                 if mexter is not None:
