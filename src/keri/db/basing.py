@@ -1944,8 +1944,8 @@ class Baser(dbing.LMDBer):
     def getKelBackIter(self, pre, fn):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
+        with same prefix across all sequence numbers without gaps in decreasing
+        order starting with first sequence number fn. Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 

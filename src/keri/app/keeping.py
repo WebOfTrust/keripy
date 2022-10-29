@@ -1228,6 +1228,7 @@ class Manager:
                 one of pubs or verfers is required. If both then verfers is ignored.
             verfers (list[Verfer] | None): Verfer instances of public keys
                 one of pubs or verfers is required. If both then verfers is ignored.
+                If not pubs then gets public key from verfer.qb64
             indexed (bool):
                 True means use use indexed signatures and return
                 list of Siger instances.
