@@ -1017,22 +1017,7 @@ class Hab:
                              val=habord)
             self.prefixes.add(self.pre)
 
-        # create inception event
-        #if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            ## convention use indices from mhab's first current signing key if
-            ## participating
-            ## mid index tuple (csi, pni)
-            #csi = keys.index(self.mhab.kever.verfers[0].qb64)  # first key of mhab
-            ## inception so no prior next so pni could be None but for backwards
-            ## compatibility set to same as csi since inception event validation
-            ## ignores pni index since not required. In future should set to None
-            #pni = csi
-            #sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        #verfers=[self.mhab.kever.verfers[0]],
-                                        #indices=[csi],
-                                        #ondices=[pni])
-
-        #else:
+        # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
@@ -1256,19 +1241,7 @@ class Hab:
                                      adds=adds,
                                      data=data)
 
-        #if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            ## convention use indices from mhab's first current signing key if
-            ## participating and first prior next dig if participating. One or
-            ## the other or both must be participant
-            ## mid index tuple (csi, pni)
-            #csi = keys.index(self.mhab.kever.verfers[0].qb64)  # always use first key of mhab
-            #pni = csi # self.mhab.kever.nexter.digs[0] #always use first dig of mhab
-            #sigers = self.mhab.mgr.sign(ser=serder.raw,
-                                        #verfers=[self.mhab.kever.verfers[0]],
-                                        #indices=[csi],
-                                        #ondices=[pni])
-
-        #else:
+        # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
@@ -1345,27 +1318,44 @@ class Hab:
         if verfers is None:
             verfers = self.kever.verfers
 
-        if self.mhab:  # Group multisig member. Sign with single sig of mhab
-            # convention use indices from mhab's first current signing key if
-            # participating and first prior next dig if participating. One or
-            # the other or both must be participant csi and/or pni
-            # always use first key of mhab
+        if self.mhab:  # Group multisig member. Sign with single sig of mhab.
+            # Convention is to always use always use first key of mhab.kever and
+            # first dig mhab prior nexter.digs. Assumes that prior next and
+            # current key after rotation of mhab always match, that is the
+            # prior next dig is the digest of current key at same index in
+            # both lists. Key or both key and prior dig might be participants
+            # in group hab's rotation. Recall that can't participate as prior dig
+            # unless exposed as participant in curren (after rotation) key.
+            # If mhab.kever.verfer[0] key in new group verfers then
+            # participating in group as new key at index csi. If in addition
+            # mhab .prior  nexter.digs[0] in group.kever.digers (which is prior
+            # next for group) then also participating as group prior next at index
+            # pni else pni is None.
+
             keys = [verfer.qb64 for verfer in verfers]  # group hab's keys
             merfer = self.mhab.kever.verfers[0]  # always use first key of mhab
-            csi = keys.index(merfer.qb64) # find mhab key index in group hab keys
+            try:
+                csi = keys.index(merfer.qb64) # find mhab key index in group hab keys
+            except ValueError as ex:
+                raise ValueError(f"Member hab={mhab.pre} not a participant in "
+                                 "this group hab={self.pre} event.") from ex
 
-            if rotated:  # rotation uses dual index
-                # get .mhab's prior Next digs
-                #nexter = self.mhab.kever.fetchPriorNexter()
-                #if nexter is not None:
-                    #miger = nexter.digers[0]  #always use first prior dig of mhab
-                    #pni = digs.index(miger.qb64)  # find mhab dig index in group hab digs
-                #else:
-                    #pni = None  # not part of prior next
-                pni = csi
-            else:  # not a rotation so either both same or current signing keys only
+            if rotated:  # rotation so uses other index of dual index
+                # get nexter of .mhab's prior Next est event
+                mexter = self.mhab.kever.fetchPriorNexter()
+                if mexter is not None:
+                    mig = mexter.digers[0].qb64  #always use first prior dig of mhab
+                    digs = self.kever.nexter.digs  # group habs prior digs
+                    try:
+                        pni = digs.index(mig)  # find mhab dig index in group hab digs
+                    except ValueError:  # not found
+                        pni = None  # default not participant
+                else:
+                    pni = None  # default not participant
+
+            else:  # not a rotation so ignores other index of dual index
                 pni = csi  # backwards compatible is both same
-                # in the future should fix this to pni = None.
+                # in the future may want to fix this so pni = None works
 
             return (self.mhab.sign(ser=ser,
                                        verfers=[merfer],
