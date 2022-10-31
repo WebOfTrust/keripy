@@ -10,9 +10,12 @@ from falcon import testing
 from hio.base import doing
 
 import keri
+from hio.core import http
 from keri.app import habbing, oobiing, notifying
 from keri.db import basing
+from keri.end import ending
 from keri.help import helping
+from keri import help, kering
 from keri.peer import exchanging
 
 from tests.app import openMultiSig
@@ -113,8 +116,20 @@ def test_oobi_share_endpoint():
 
 def test_oobiery():
     with habbing.openHby(name="oobi") as hby:
+        hab = hby.makeHab(name="oobi")
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=kering.Roles.controller,
+                                    stamp=help.nowIso8601()))
+
+        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
+                                      scheme=kering.Schemes.http,
+                                      stamp=help.nowIso8601()))
+        hab.psr.parse(ims=msgs)
+
         oobiery = keri.app.oobiing.Oobiery(hby=hby)
 
+        # Insert some that will fail
         url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
               '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
         obr = basing.OobiRecord(date=helping.nowIso8601())
@@ -122,27 +137,69 @@ def test_oobiery():
         url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/.well-known/keri/oobi?name=Root'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
-        hby.db.oobis.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/oobi?name=Blind'
         obr = basing.OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
 
+        # Configure the MOOBI rpy URL and the controller URL
+        curl = f'http://127.0.0.1:5644/oobi/{hab.pre}/controller'
+        murl = f'http://127.0.0.1:5644/.well-known/keri/oobi/{hab.pre}?name=Root'
+        obr = basing.OobiRecord(date=helping.nowIso8601())
+        hby.db.oobis.pin(keys=(murl,), val=obr)
+
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        endDoers = oobiing.loadEnds(app, hby=hby)
+        ending.loadEnds(app, hby=hby)
+        moobi = MOOBIEnd(hab=hab, url=curl)
+        app.add_route(f"/.well-known/keri/oobi/{hab.pre}", moobi)
+
+        server = http.Server(port=5644, app=app)
+        httpServerDoer = http.ServerDoer(server=server)
 
         limit = 2.0
         tock = 0.03125
-        doers = endDoers + oobiery.doers
+        doers = oobiery.doers + [httpServerDoer]
         doist = doing.Doist(limit=limit, tock=tock)
         doist.do(doers=doers)
 
         assert doist.limit == limit
 
+        obr = hby.db.roobi.get(keys=(curl,))
+        assert obr is not None
+        assert obr.state == oobiing.Result.resolved
+        obr = hby.db.roobi.get(keys=(murl,))
+        assert obr is not None
+        assert obr.state == oobiing.Result.resolved
+
         doist.exit()
 
     """Done Test"""
+
+
+class MOOBIEnd:
+    """ Test endpoint returning a static MOOBI """
+    def __init__(self, hab, url):
+        self.hab = hab
+        self.url = url
+
+    def on_get(self, req, rep):
+        """ Return controller rpy message with embedded controller OOBI
+
+        Args:
+            req (Request): Falcon request object
+            rep (Response): Falcon response object
+
+        """
+        a = {
+            "urls": [
+                self.url
+            ],
+            "aid": self.hab.pre
+        }
+
+        rpy = (self.hab.reply(route="/oobi/controller", data=a))
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = rpy
 
 
 def test_authenticator(mockHelpingNowUTC):
