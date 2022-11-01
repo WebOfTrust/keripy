@@ -10,7 +10,7 @@ echo "KERI_SCRIPT_DIR=" +${KERI_SCRIPT_DIR}
 echo "KERI_DEMO_SCRIPT_DIR=" +${KERI_DEMO_SCRIPT_DIR}
 
 echo "create/open external wallet; issue icp event"
-# EWN6BzdXo6IByOsuh_fYanK300iEOrQKf6msmbIeC4Y0 - external
+# EHOuGiHMxJShXHgSb6k_9pqxmRb8H-LT0R2hQouHp8pW - external
 curl -s -X POST "http://localhost:5623/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"external\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\",\"salt\":\"0ACDEyMzQ1Njc4OWxtbm9GhI\"}" | jq
 sleep 1
 curl -s -X PUT "http://localhost:5623/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"external\",\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
@@ -73,7 +73,7 @@ sleep 5
 
 # Issue QVI credential vLEI from GLEIF External to QVI
 echo 'external issues qvi credential'
-curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-external\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\",\"source\":{}}"
+curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-external\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\"}"
 sleep 8
 echo "qvi retrieves Credentials..."
 curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json"
