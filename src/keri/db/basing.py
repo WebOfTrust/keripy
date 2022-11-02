@@ -129,34 +129,69 @@ class OobiRecord:
     role: str = None
     date: str = None
     state: str = None
+    urls: list = None
 
 
 @dataclass
 class HabitatRecord:  # baser.habs
     """
     Habitat application state information keyed by habitat name (baser.habs)
-    """
-    prefix: str  # aid qb64
-    pid: Optional[str]  # participant aid of group aid
-    aids: Optional[list]  # all identifiers participating in the group identity
 
-    watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+    Attributes:
+        hid (str): identifier prefix of hab qb64
+        mid (str | None): group member identifier qb64 when hid is group
+        smids (list | None): group signing member identifiers qb64 when hid is group
+        rmids (list | None): group signing member identifiers qb64 when hid is group
+        watchers: (list[str]) = list of id prefixes qb64 of watchers
+
+    ToDo: NRR
+        May need to save midxs for interact event signing by .mhab because
+        merfers and migers and mindices are not provided. Reserve members of
+        group do not participate in signing so must either ignore or raise error
+        if asked to sign interaction event.
+
+        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
+
+    """
+    hid: str  # hab own identifier prefix qb64
+    mid: str | None = None  # group member identifier qb64 when hid is group
+    smids: list | None = None  # group signing member ids when hid is group
+    rmids: list | None = None  # group rotating member ids when hid is group
+    watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
 @dataclass
 class RotateRecord:
     """
     Tracks requests to perform multisig rotation during lifecycle of a rotation
+
+    Attributes:
+        sn (int | None ):  sequence number of est event
+        isith (str | list | None):  current signing threshold
+        nsith (str | list | None):  next signing threshold
+        toad (int | None): threshold of accountable duplicity
+        cuts (list | None):  list of backers to remove qb64
+        adds (list | None):  list of backers to add qb64
+        data (list | None): seals
+        date (str | None):  datetime of rotation
+        smids (list | None): group signing member identifiers qb64
+        rmids (list | None): group signing member identifiers qb64
+
+
+    ToDo: NRR
+    Add mid, midxs tuple (csi, pni)
+
     """
-    aids: list
-    sn: Optional[int]
-    isith: Optional[str | list]
-    nsith: Optional[str | list]
-    toad: Optional[int]
-    cuts: Optional[list]
-    adds: Optional[list]
-    data: Optional[list]
-    date: Optional[str]
+    sn: int | None  # sequence number of est event
+    isith: str | list | None  # current signing threshold
+    nsith: str | list | None  # next signing threshold
+    toad: int | None  # threshold of accountable duplicity
+    cuts: list | None  # list of backers to remove qb64
+    adds: list | None  # list of backers to add qb64
+    data: list | None  # seals
+    date: str | None  # datetime of rotation
+    smids: list | None   # group signing member ids
+    rmids: list | None = None  # group rotating member ids
 
 
 @dataclass
@@ -608,6 +643,8 @@ class Baser(dbing.LMDBer):
             value is serialized GroupIdentifier dataclass
 
 
+
+
     Properties:
 
 
@@ -858,7 +895,13 @@ class Baser(dbing.LMDBer):
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         self.woobi = koming.Komer(db=self,
-                                  subkey='wknwn.',
+                                  subkey='woobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.moobi = koming.Komer(db=self,
+                                  subkey='moobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
@@ -904,7 +947,7 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (state := self.states.get(keys=data.prefix)) is not None:
+            if (state := self.states.get(keys=data.hid)) is not None:
                 try:
                     kever = eventing.Kever(state=state, db=self,
                                            prefixes=self.prefixes,
@@ -914,7 +957,7 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
-            elif data.pid is None:  # in .habs but no corresponding key state and not a group so remove
+            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
         for keys in removes:  # remove bare .habs records
@@ -955,9 +998,9 @@ class Baser(dbing.LMDBer):
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, val in self.habs.getItemIter():
-                    if val.prefix in copy.kevers:  # only copy habs that verified
+                    if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
-                        copy.prefixes.add(val.prefix)
+                        copy.prefixes.add(val.hid)
 
                 if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."
@@ -1908,8 +1951,8 @@ class Baser(dbing.LMDBer):
     def getKelBackIter(self, pre, fn):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
+        with same prefix across all sequence numbers without gaps in decreasing
+        order starting with first sequence number fn. Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 

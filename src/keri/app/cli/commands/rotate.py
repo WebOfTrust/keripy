@@ -109,7 +109,7 @@ class RotateDoer(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
-        hab.rotate(isith=self.isith, nsith=self.nsith, count=self.count, toad=self.toad,
+        hab.rotate(isith=self.isith, nsith=self.nsith, ncount=self.count, toad=self.toad,
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 

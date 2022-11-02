@@ -217,7 +217,8 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capsigs = capsys.readouterr()
-    assert capsigs.out == ('Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
+    assert capsigs.out == ('Alias: \ttrans\n'
+                           'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
                            'Seq No:\t5\n'
                            '\n'
                            'Witnesses:\n'

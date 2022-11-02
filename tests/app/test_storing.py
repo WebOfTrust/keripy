@@ -103,9 +103,10 @@ def test_mailboxing():
 
         msgs = []
         for tn, topic, msg in mber.cloneTopicIter(topic=dest.qb64b, fn=4):
-            msgs.append(msg)
+            msgs.append((tn, msg))
 
         assert(len(msgs)) == 6
+        assert msgs[0][0] == 4
 
 
 

@@ -21,7 +21,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -45,8 +45,11 @@ def status(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (hby, hab):
+        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+            if alias is None:
+                alias = existing.aliasInput(hby)
 
+            hab = hby.habByName(alias)
             displaying.printIdentifier(hby, hab.pre)
 
             if args.verbose:

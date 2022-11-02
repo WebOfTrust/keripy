@@ -5,7 +5,7 @@ keri.app.agenting module
 
 """
 import json
-
+from math import ceil
 import falcon
 from hio.base import doing
 from hio.help import decking
@@ -48,18 +48,25 @@ class KiwiServer(doing.DoDoer):
         tier = prms.tier
         pidx = prms.pidx
 
-        ncount = 0  # next count
+        icount = 1  # inception signing key count
+        ncount = 0  # next key digest count
         code = coring.MtrDex.Ed25519N
 
         mgr = keeping.Manager(ks=self.hab.ks, aeid=aeid, pidx=pidx,
                               algo=algo, salt=salt, tier=tier)
 
-        verfers, digers, cst, nst = mgr.incept(icount=1,
-                                               ncount=ncount,
-                                               isith=cur.tholder.sith,
-                                               algo=keeping.Algos.randy,
-                                               transferable=False,
-                                               temp=False)
+        verfers, digers = mgr.incept(icount=icount,
+                                            ncount=ncount,
+                                            algo=keeping.Algos.randy,
+                                            transferable=False,
+                                            temp=False)
+
+        isith = f"{max(1, ceil(icount / 2)):x}"
+        nsith = f"{max(0, ceil(ncount / 2)):x}"
+
+        cst = coring.Tholder(sith=isith).sith  # current signing threshold
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
+
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
 

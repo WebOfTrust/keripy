@@ -5,6 +5,8 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
+import datetime
+
 import falcon
 import time
 import sys
@@ -786,13 +788,13 @@ class Poller(doing.DoDoer):
             witrec = basing.TopicsRecord(topics=dict())
 
         while self.retry > 0:
-            self.retry -= 1
             try:
                 client, clientDoer = agenting.httpClient(self.hab, self.witness)
             except kering.MissingEntryError as e:
-                traceback.print_exception(e, file=sys.stderr) # logging
+                traceback.print_exception(e, file=sys.stderr)  # logging
                 yield self.tock
                 continue
+
             self.extend([clientDoer])
 
             topics = dict()
@@ -803,8 +805,8 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            if self.hab.lhab:
-                msg = self.hab.lhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+            if self.hab.mhab:
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
@@ -813,8 +815,12 @@ class Poller(doing.DoDoer):
             while client.requests:
                 yield self.tock
 
+            created = helping.nowUTC()
             while True:
-                if client.respondent.eventSource and client.respondent.eventSource.closed:
+
+                now = helping.nowUTC()
+                if now - created > datetime.timedelta(seconds=30):
+                    self.remove([clientDoer])
                     break
 
                 while client.events:
@@ -977,8 +983,8 @@ class MailboxIterable:
             for topic, idx in self.topics.items():
                 key = self.pre + topic
                 for fn, _, msg in self.mbx.cloneTopicIter(key, idx):
-                    data.extend(bytearray("id: {}\nevent: {}\nretry: {}\ndata: ".format(fn, topic, self.retry).encode(
-                        "utf-8")))
+                    data.extend(bytearray("id: {}\nevent: {}\nretry: {}\ndata: ".format(fn, topic, self.retry)
+                                          .encode("utf-8")))
                     data.extend(msg)
                     data.extend(b'\n\n')
                     idx = idx + 1

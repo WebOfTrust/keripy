@@ -5,13 +5,13 @@ keri.kli.commands module
 
 """
 import argparse
+import json
 
 from hio import help
 from hio.base import doing
 
 from keri.app import connecting
-from keri.app.cli.common import displaying, existing
-from keri.core import coring
+from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
@@ -67,7 +67,7 @@ def list(tymth, tock=0.0, **opts):
 
                 c["wellKnowns"] = wellKnowns
 
-                print(c)
+                print(json.dumps(c, indent=2))
 
     except ConfigurationError as e:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )

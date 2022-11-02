@@ -5441,7 +5441,7 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         tholder = Tholder()
 
     limen = b'MAAL'
@@ -5525,11 +5525,33 @@ def test_tholder():
     assert tholder.satisfy(indices=list(range(tholder.thold)))
 
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # not 0 <= w <= 1
         tholder = Tholder(sith=-1)
 
-    with pytest.raises(ValueError):
-        tholder = Tholder(sith="-1")
+    tholder = Tholder(sith=2)  # single weight not weighted
+    assert not tholder.weighted
+    assert  tholder.thold == 2
+
+    with pytest.raises(ValueError):  # json with int not str for given weight
+        tholder = Tholder(sith='[1]')
+
+    with pytest.raises(ValueError):  # json with int not str for given weight
+        tholder = Tholder(sith='[2]')
+
+    with pytest.raises(ValueError):  # json but not 0 <= w <= 1 for a given weight
+        tholder = Tholder(sith='["2"]')
+
+    with pytest.raises(ValueError):  # json but given weight evals to float
+        tholder = Tholder(sith='["0.5", "0.5"]')
+
+    with pytest.raises(ValueError):  # non int for unweighted
+        tholder = Tholder(sith="1.0")
+
+    with pytest.raises(ValueError):  # non int for unweighted
+        tholder = Tholder(sith="0.5")
+
+    with pytest.raises(ValueError):  # ratio of floats
+        tholder = Tholder(sith="1.0/2.0")
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[])
@@ -5549,7 +5571,7 @@ def test_tholder():
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[["1/3", "1/2"], []])
 
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(ValueError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
     with pytest.raises(ValueError) as ex:
@@ -5569,6 +5591,21 @@ def test_tholder():
 
     with pytest.raises(ValueError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2", "2"]])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], "1"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], 1])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], "1.0"])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", "1/2", []])
+
+    with pytest.raises(ValueError) as ex:
+        tholder = Tholder(sith=["1/2", 0.5])
 
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
     assert tholder.weighted
@@ -5654,6 +5691,7 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
+    # test json sith is string json expression
     tholder = Tholder(sith='[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1/1", "1"]]')
     assert tholder.weighted
     assert tholder.size == 7
@@ -5674,6 +5712,52 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
+    # test json sith is string json expression
+    tholder = Tholder(sith='[["1/2", "1/2", "1/4", "1/4", "1/4"]]')
+    assert tholder.weighted
+    assert tholder.size == 5
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4)]]
+    assert tholder.limen == b'4AAFA1s2c1s2c1s4c1s4c1s4'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4"]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[1, 2, 3])
+    assert tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1, 4, 4])
+    assert not tholder.satisfy(indices=[0, 2])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+
+    # test json sith is string json expression
+    tholder = Tholder(sith='["1/2", "1/2", "1/4", "1/4", "1/4", "0"]')
+    assert tholder.weighted
+    assert tholder.size == 6
+    assert tholder.thold == [[Fraction(1, 2),
+                              Fraction(1, 2),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(1, 4),
+                              Fraction(0, 1)]]
+    assert tholder.limen == b'6AAGAAA1s2c1s2c1s4c1s4c1s4c0'
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4", "0"]
+    assert tholder.json == '["1/2", "1/2", "1/4", "1/4", "1/4", "0"]'
+    assert tholder.num == None
+    assert tholder.satisfy(indices=[0, 2, 4])
+    assert tholder.satisfy(indices=[0, 1])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1])
+    assert not tholder.satisfy(indices=[0, 2, 5])
+    assert not tholder.satisfy(indices=[2, 3, 4, 5])
+
+    # bexter
     tholder = Tholder(limen=b'4AAGA1s2c1s2c1s4c1s4c1s4a1c1')
     assert tholder.weighted
     assert tholder.size == 7
@@ -5726,7 +5810,8 @@ if __name__ == "__main__":
     #test_matter()
     #test_counter()
     #test_indexer()
-    test_number()
+    #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
+    test_tholder()

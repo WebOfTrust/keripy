@@ -34,11 +34,11 @@ kli oobi generate --name extgar2 --alias extgar2 --role witness
 # kli vc registry incept --name extgar2 --alias "GLEIF External" --registry-name vLEI --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s
 
 # Resolve Credential Schema
-# kli oobi resolve --name extgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-# kli oobi resolve --name extgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+# kli oobi resolve --name extgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
+# kli oobi resolve --name extgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
 
 # Issue QVI Credential from GLEIF External
-# kli vc issue --name extgar1 --alias "GLEIF External" --registry-name vLEI --schema EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw --recipient "UbiSecure QVI" --data @scripts/demo/qvi-data.json
+# kli vc issue --name extgar1 --alias "GLEIF External" --registry-name vLEI --schema ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz --recipient "UbiSecure QVI" --data @scripts/demo/qvi-data.json
 # kli vc issue --name extgar2 --alias "GLEIF External" --credential @./credential.json
 
 sleep 3
@@ -68,8 +68,8 @@ kli oobi generate --name intgar2 --alias intgar2 --role witness
 # kli challenge respond --name intgar1 --alias "GLEIF Internal" --recipient "UbiSecure QVI" --words ""
 # kli challenge respond --name intgar2 --alias "GLEIF Internal" --recipient "UbiSecure QVI" --words ""
 
-kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
-kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw
+kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
+kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
 kli oobi resolve --name intgar1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ
 kli oobi resolve --name intgar2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ
 

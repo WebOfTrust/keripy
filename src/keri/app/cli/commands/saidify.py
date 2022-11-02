@@ -41,4 +41,4 @@ def saidify(tock=0.0, **opts):
         _, out = coring.Saider.saidify(sad=sad, label=args.label)
 
     with open(args.file, 'w') as f:
-        json.dump(out, f, indent=2)
+        json.dump(out, f)

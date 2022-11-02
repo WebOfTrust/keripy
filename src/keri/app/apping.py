@@ -4,20 +4,15 @@ KERI
 keri.app.apping module
 
 """
-import os
+import cmd
 
 from hio.base import doing
-from hio.core import wiring
 from hio.core.serial import serialing
 
-from .. import kering
 from .. import help
 from ..db import basing
-from . import keeping, habbing, directing, configing
 
 logger = help.ogler.getLogger()
-
-
 
 
 class Consoler(doing.Doer):
@@ -73,7 +68,6 @@ class Consoler(doing.Doer):
         if not chunks:  # empty list
             self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
-        command = None
         verb = chunks[0]
 
         if verb.startswith(b'r'):
@@ -89,13 +83,13 @@ class Consoler(doing.Doer):
             command = ('stop', '')
 
         else:
-            self.console.put( "Invalid command: {0}\n".format(verb))
+            self.console.put("Invalid command: {0}\n".format(verb))
             self.console.put("Try one of: t[urn] s[top] w[alk]\n")
             return False
 
         self.console.put("Did: {} {}\n".format(command[0], command[1]).encode("utf-8"))
 
-        return (False)
+        return False
 
     def exit(self):
         """"""

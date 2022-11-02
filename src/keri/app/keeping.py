@@ -54,9 +54,6 @@ class PubLot:
         kidx (int): key index of starting key in key set in sequence wrt to all
                     public keys. Example if each set has 3 keys then ridx 2 has
                     kidx of 2*3 = 6.
-        st (Union[str, list]): signing theshold for key set at ridx. May be
-                    str, or list based on threshold expression type. Suitable for
-                    serializing  by Komer and compat with sith of Tholder.
         dt (str): datetime in ISO8601 format of when key set was first created
 
 
@@ -64,8 +61,7 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list qb64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st: int | str | list = '0' # signing threshold
-    dt:   str = ""  # datetime ISO8601 when key set created
+    dt: str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
         return iter(asdict(self))
@@ -622,8 +618,10 @@ class Manager:
             authentication or encryption of key sets. Use initial attribute because
             keeper may not be open on init.
 
-        pidx (int): initial pidx prefix index. Use initial attribute because keeper
-            may not be open on init.
+        pidx (int): pidx prefix index.
+            Use initial attribute because keeper
+            may not be open on init. Each sequence gets own pidx. Enables
+            unique recreatable salting of key sequence based on pidx.
 
         salt (str): qb64 of root salt. Makes random root salt if not provided
             initial salt. Use inital attribute because keeper may not be
@@ -660,8 +658,9 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided seed must not be empty. A change in aeid should require
                 a second authentication mechanism besides the seed.
-            pidx (int): index of next new created key pair sequence for given
-                identifier prefix
+            pidx (int): index of next new created key pair sequence bound to a
+                given identifier prefix. Each sequence gets own pidx. Enables
+                unique recreatable salting of key sequence based on pidx.
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
@@ -918,19 +917,17 @@ class Manager:
         self.ks.gbls.pin('tier', tier)
 
 
-    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
-                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
+    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
+                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
-        Returns tuple (verfers, digers, cst, nst) for inception event where
+        Returns tuple (verfers, digers) for inception event where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold for digers for Tholder or Nexter
 
         Incept a prefix. Use first public key as temporary prefix.
         Must .repre later to move pubsit dict to correct permanent prefix.
@@ -943,15 +940,11 @@ class Manager:
             icount is int count of incepting public keys when icodes not provided
             icode is str derivation code qb64  of all icount incepting private keys
                 when icodes list not provided
-            isith is incepting signing threshold as:
-                int, str hex, or list of weights
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            nsith is next singning threshold as:
-                int, str hex, or list of weights
             dcode is str derivation code qb64 of next digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
@@ -1000,10 +993,6 @@ class Manager:
                                   transferable=transferable, temp=temp)
         verfers = [signer.verfer for signer in isigners]
 
-        if isith is None:
-            isith = "{:x}".format(max(1, math.ceil(len(isigners) / 2)))
-        cst = coring.Tholder(sith=isith).sith  # current signing threshold
-
         if not ncodes:  # all same code, make list of len ncount of same code
             if ncount < 0:  # next may be zero if non-trans
                 raise ValueError("Invalid ncount={} must be >= 0.".format(ncount))
@@ -1015,9 +1004,6 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
-        if nsith is None:
-            nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
@@ -1030,9 +1016,9 @@ class Manager:
         dt = helping.nowIso8601()
         ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   ridx=ridx, kidx=kidx, st=cst, dt=dt),
+                                   ridx=ridx, kidx=kidx, dt=dt),
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
+                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
         pre = verfers[0].qb64b
         if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
@@ -1059,7 +1045,7 @@ class Manager:
         # store publics keys for lookup of private key for replay
         self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def move(self, old, new):
@@ -1122,33 +1108,28 @@ class Manager:
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
-    def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     isith=None, nsith=None, dcode=coring.MtrDex.Blake3_256,
+    def rotate(self, pre, ncodes=None, ncount=1,
+                     ncode=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
-        Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
+        Returns tuple (verfers, digers) for rotation event of keys for pre where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
-            cst is current signing threshold for verfers for Tholder
-            nst is next signing threshold fo digers for Tholder or Nexter
 
         Rotate a prefix.
         Store the updated dictified PreSit in the keeper under pre
 
         Parameters:
             pre (str) qb64 of prefix
-            codes (list): of private key derivation codes qb64 str
+            ncodes (list): of private key derivation codes qb64 str
                 one per next key pair
-            count (int): count of next public keys when icodes not provided
-            code (str): derivation code qb64  of all ncount next public keys
+            ncount (int): count of next public keys when icodes not provided
+            ncode (str): derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            isith (Union[int, str, list]): current signing threshold as:
-                int, str hex, or list of weights
-            nsith (Union[int, str, list]): next signing threshold as:
-                int, str hex, or list of weights
-            dcode i(str): derivation code qb64 of digers to make next xor digest.
+            dcode i(str): derivation code qb64 of next key digest of digers
                 Default is MtrDex.Blake3_256
             transferable (bool): True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
@@ -1189,12 +1170,6 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        #cst = ps.new.st  # get new current signing threshold (cst)
-
-        if isith is None:
-            isith = "{:x}".format(max(0, math.ceil(len(verfers) / 2)))
-        cst = coring.Tholder(sith=isith).sith  # next signing threshold
-
         salt = pp.salt
         if salt:
             if self.aeid:
@@ -1206,28 +1181,24 @@ class Manager:
 
         creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
-        if not codes:  # all same code, make list of len count of same code
-            if count < 0:  # next may be zero if non-trans
-                raise ValueError("Invalid count={} must be >= 0.".format(count))
-            codes = [code for i in range(count)]
+        if not ncodes:  # all same code, make list of len count of same code
+            if ncount < 0:  # next may be zero if non-trans
+                raise ValueError("Invalid count={} must be >= 0.".format(ncount))
+            ncodes = [ncode for i in range(ncount)]
 
         pidx = pp.pidx  # get pidx for this key sequence, may be used by salty creator
         ridx = ps.new.ridx + 1
         kidx = ps.nxt.kidx + len(ps.new.pubs)
 
         # count set to 0 to ensure does not create signers if codes is empty
-        signers = creator.create(codes=codes, count=0,
+        signers = creator.create(codes=ncodes, count=0,
                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
-        if nsith is None:
-            nsith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
-
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
-                              ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                              ridx=ridx, kidx=kidx, dt=dt)
 
         if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1243,7 +1214,7 @@ class Manager:
             for pub in old.pubs:  # remove prior old prikeys not current old
                 self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
@@ -1252,33 +1223,54 @@ class Manager:
         .verfer assigned.
 
         Parameters:
-            ser is bytes serialization to sign
-            pubs is list of qb64 public keys to lookup private keys
-            verfers is list of Verfers for public keys
-            indexed is Boolean, True means use use indexed signatures with index
-                is an offset into pubs/verfers/signers.
-                False means do not use indexed signatures.
-                for index and return Siger instances. False means return Cigar instances
-            indices is optional list of int indices (offsets) to use for indexed signatures
-                that may differ from the order of appearance in the pubs or verfers
-                lists. This allows witness indexed sigs or controller multi-sig
+            ser (bytes): serialization to sign
+            pubs (list[str] | None): of qb64 public keys to lookup private keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+            verfers (list[Verfer] | None): Verfer instances of public keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+                If not pubs then gets public key from verfer.qb64
+            indexed (bool):
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+
+                When indexed True, each index is an offset that maps the offset
+                in the coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                onto the appropriate offset into the signing keys or prior next
+                keys lists of a key event as determined by the indices and ondices
+                lists, or appropriate defaults when indices and/or ondices are not
+                provided.
+
+            indices (list[int] | None): indices (offsets) when indexed == True,
+                to use for indexed signatures whose offset into the current keys
+                or prior next list may differ from the order of appearance
+                in the provided coherent pubs, verfers, signers lists.
+                This allows witness indexed sigs or controller multi-sig
                 where the parties do not share the same manager or ordering so
                 the default ordering in pubs or verfers is wrong for the index.
-                If provided the length of indices must match pubs/verfers/signers
-                else raises ValueError. If not provided and indexed is True then use
-                default index that is offset into pubs/verfers/signers
-            ondices is  optional list of other indices (offsets) to use for
-                indexed signatures with a prior next index that differs from
-                its current signing index.
-                This may also differ from the order of appearance in the pubs or verfers
-                lists. This allows partial rotation with reserve or custodial key
+                This sets the value of the index property of the returned Siger.
+                When provided the length of indices must match the len of the
+                coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                else raises ValueError.
+                When not provided and indexed is True then use default index that
+                is the offset into the coherent lists:
+                pubs, verfers, signers (pris from keystore .ks)
+
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True  for indexed signatures whose offset into
+                the prior next list may differ from the order of appearance
+                in the provided coherent pubs, verfers, signers lists.
+                This allows partial rotation with reserve or custodial key
                 management so that the index (hash of index) of the public key
                 for the signature appears at a different index in the
-                current key list from where the hash appears in the prior next
-                list. This sets the value of the ondex property of the returned
-                Siger. When provided the length of ondices must match pubs/verfers/signers
-                else raises ValueError. When no ondex is applicable to a given
-                signature then the value of the entry in ondices MUST be None.
+                current key list from the prior next list.
+                This sets the value of the ondex property of the returned Siger.
+                When provided the length of indices must match the len of the
+                coherent lists: pubs, verfers, signers (pris from keystore .ks)
+                else raises ValueError.
+                When no ondex is applicable to a given signature then the value
+                of the entry in ondices MUST be None.
                 When  ondices is not provided then all sigers .ondex is None.
 
 
@@ -1318,26 +1310,40 @@ class Manager:
                 signers.append(signer)
 
         if indices and len(indices) != len(signers):
-            raise ValueError("Mismatch length indices={} and resultant signers "
-                             "list={}".format(len(indices), len(signers)))
+            raise ValueError(f"Mismatch indices length={len(indices)} and resultant"
+                             f" signers length={len(signers)}")
 
-        if indexed:  # or indices:
+        if ondices and len(ondices) != len(signers):
+            raise ValueError(f"Mismatch ondices length={len(ondices)} and resultant"
+                             f" signers length={len(signers)}")
+
+        if indexed:
             sigers = []
             for j, signer in enumerate(signers):
                 if indices:  # not the default get index from indices
-                    i = indices[j]  # must be int
+                    i = indices[j]  # must be whole number
+                    if not isinstance(i, int) or i < 0:
+                        raise ValueError(f"Invalid signing index = {i}, not "
+                                         f"whole number.")
                 else:  # the default
                     i = j  # same index as database
+
                 if ondices:  # not the default get ondex from ondices
                     o = ondices[j]  # int means both, None means current only
+                    if not (o is None or
+                            isinstance(o, int) and not isinstance(o, bool) and o >= 0):
+                        raise ValueError(f"Invalid other signing index = {o}, not "
+                                         f"None or not whole number.")
                 else:  # default
                     o = i  # must both be same value int
                 # .sign assigns .verfer of siger and sets code of siger
                 # appropriately for single or dual indexed signatures
-                sigers.append(signer.sign(ser, index=i,
+                sigers.append(signer.sign(ser,
+                                          index=i,
                                           only=True if o is None else False,
                                           ondex=o))
             return sigers
+
         else:
             cigars = []
             for signer in signers:
@@ -1471,7 +1477,7 @@ class Manager:
                     osigners = csigners
                     osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
                     ost = coring.Tholder(sith=osith).sith
-                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=ost, dt=dt)
+                    old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps = PreSit(old=old)  # .new and .nxt are default
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1479,9 +1485,7 @@ class Manager:
             if ridx == iridx:  # setup ps.new at this ridx
                 if (ps := self.ks.sits.get(pre)) is None:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-                csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
-                cst = coring.Tholder(sith=csith).sith
-                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=cst, dt=dt)
+                new=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.new = new
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1490,9 +1494,7 @@ class Manager:
                 if (ps := self.ks.sits.get(pre)) is None:
                     raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
                 nsigners = csigners
-                nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
-                nst = coring.Tholder(sith=nsith).sith
-                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+                nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps.nxt = nxt
                 if not self.ks.sits.pin(pre, val=ps):
                     raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1516,9 +1518,7 @@ class Manager:
             dt = helping.nowIso8601()
             if (ps := self.ks.sits.get(pre)) is None:
                 raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
-            nst = coring.Tholder(sith=nsith).sith
-            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, st=nst, dt=dt)
+            nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
             ps.nxt = nxt
             if not self.ks.sits.pin(pre, val=ps):
                 raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
@@ -1577,9 +1577,7 @@ class Manager:
                                  f"ridx={ridx}.")
             pubs = pubset.pubs  # create nxt from pubs
             dt = helping.nowIso8601()
-            nsith = "{:x}".format(max(0, math.ceil(len(pubs) / 2)))
-            nst = coring.Tholder(sith=nsith).sith
-            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, st=nst, dt=dt)
+            nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, dt=dt)
             ps.nxt = nxt
 
 
@@ -1594,11 +1592,8 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        cst = ps.new.st  # get new current signing threshold (cst)
-
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=dcode)
                     for pub in ps.nxt.pubs]
-        nst = ps.nxt.st
 
         if advance:
             if not self.ks.sits.pin(pre, val=ps):
@@ -1607,7 +1602,7 @@ class Manager:
                 for pub in old.pubs:  # remove prior old prikeys not current old
                     self.ks.pris.rem(pub)
 
-        return (verfers, digers, cst, nst)
+        return (verfers, digers)
 
 
 class ManagerDoer(doing.Doer):

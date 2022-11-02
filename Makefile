@@ -12,4 +12,4 @@ interop-sam:
 
 .PHONY: build-keri
 build-keri:
-	@docker build --no-cache -f Dockerfile --tag gleif/keri:0.0.1 .
+	@docker build --no-cache -f Dockerfile --tag gleif/keri:0.6.7 .

@@ -67,6 +67,36 @@ def test_mailbox_iter():
         next(mbi)
 
 
+def test_mailbox_multiple_iter():
+    pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
+    msg = dict(words=["abc", "def"])
+    mbx = storing.Mailboxer(temp=True)
+    mbx.storeMsg(topic=f"{pre}/challenge", msg=json.dumps(msg).encode("utf-8"))
+
+    mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 0, "/multisig": 0},
+                                     retry=1000)
+    mbi = iter(mb)
+
+    assert mb.start != 0
+    assert mb.end == mb.start
+
+    # First stored challenge message will not be found because topics indicates already seen
+    val = next(mbi)
+    assert val == b'retry: 1000\n\n'
+
+    # Second one will be found
+    mbx.storeMsg(topic=f"{pre}/challenge", msg=json.dumps(msg).encode("utf-8"))
+    val = next(mbi)
+    assert val == (b'id: 0\nevent: /challenge\nretry: 1000\ndata: {"words": ["abc", "def'
+                   b'"]}\n\nid: 1\nevent: /challenge\nretry: 1000\ndata: {"words": ["a'
+                   b'bc", "def"]}\n\n')
+
+    mb.TimeoutMBX = 0  # Force the iter to timeout
+
+    with pytest.raises(StopIteration):
+        next(mbi)
+
+
 def test_qrymailbox_iter():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'

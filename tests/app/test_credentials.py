@@ -11,7 +11,7 @@ from falcon import testing
 from hio.base import doing
 
 from keri import kering
-from keri.app import habbing, storing, kiwiing, grouping, indirecting, directing, booting, notifying
+from keri.app import habbing, kiwiing, grouping, indirecting, directing, booting, notifying
 from keri.core import scheming, coring, eventing, parsing
 from keri.db import basing
 from keri.vc import proving
@@ -24,7 +24,6 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 def loadApp(hby, rgy, verifier, notifier):
     app = falcon.App()
 
-    repd = storing.Respondant(hby=hby)
     counselor = grouping.Counselor(hby=hby)
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
@@ -32,7 +31,6 @@ def loadApp(hby, rgy, verifier, notifier):
                                       verifier=verifier)
     servery = booting.Servery(port=1234)
     doers = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
                              rgy=rgy,
                              notifier=notifier,
                              signaler=notifier.signaler,
@@ -43,7 +41,7 @@ def loadApp(hby, rgy, verifier, notifier):
                              servery=servery,
                              bootConfig=dict(),
                              counselor=counselor)
-    doers.extend([repd, counselor, registrar, credentialer, mbx])
+    doers.extend([counselor, registrar, credentialer, mbx])
     return app, doers
 
 
@@ -80,9 +78,9 @@ class TestDoer(doing.DoDoer):
         wanHab = wanHby.habByName("wan")
         # Verify the group identifier was incepted properly and matches the identifiers
         assert wanHab.pre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
-        assert hab1.lhab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
-        assert hab2.lhab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
-        assert hab3.lhab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
+        assert hab1.mhab.pre == 'EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba'
+        assert hab2.mhab.pre == 'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu'
+        assert hab3.mhab.pre == 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'
         gid = 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
         assert hab1.pre == hab2.pre == hab3.pre == gid
         assert hab1.name == "test_group1"
@@ -100,9 +98,9 @@ class TestDoer(doing.DoDoer):
 
         # Set up mailbox end role for each participant using wan
         for hab in [hab1, hab2, hab3]:
-            createMbxEndRole(hab1, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
-            createMbxEndRole(hab2, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
-            createMbxEndRole(hab3, hab.lhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab1, hab.mhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab2, hab.mhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
+            createMbxEndRole(hab3, hab.mhab.pre, wanHab.pre, "http://127.0.0.1:5642/")
 
         createMbxEndRole(hab1, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
         createMbxEndRole(hab2, recp.pre, wanHab.pre, "http://127.0.0.1:5642/")
@@ -194,7 +192,7 @@ class TestDoer(doing.DoDoer):
             yield tock
 
         # Let rotate our keys for good hygiene
-        rotd = dict(aids=[self.hab1.lhab.pre, self.hab2.lhab.pre, self.hab3.lhab.pre])
+        rotd = dict(aids=[self.hab1.mhab.pre, self.hab2.mhab.pre, self.hab3.mhab.pre])
         b = json.dumps(rotd).encode("utf-8")
         response = client1.simulate_post(f"/groups/{self.hab1.name}/rot", body=b)
         assert response.status == falcon.HTTP_202
@@ -269,5 +267,3 @@ def test_multisig_issue_agent():
         directing.runController(doers=[testDoer], expire=60.0)
 
         assert testDoer.done is True
-
-

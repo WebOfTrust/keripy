@@ -39,7 +39,7 @@ curl -s -X POST "http://localhost:5723/registries" -H "accept: */*" -H "Content-
 # curl -s -X PUT "http://localhost:5723/groups/issuer/rot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"adds\":[],\"aids\":[\"EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1\", \"EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4\"],\"count\":2,\"cuts\":[],\"data\":[],\"isith\":\"2\",\"toad\":2, \"wits\":[]}" | jq
 
 sleep 3
-CRED=`curl -s -X POST "http://localhost:5623/groups/issuer/credentials" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"Ew9ae1KDP6apL8N7WeyaUBCXOEbEmCcO6uzgCo3WU72A\",\"registry\":\"vLEI\",\"schema\":\"EWCeT9zTxaZkaC_3-amV2JtG6oUxNA36sCC0P5MI7Buw\",\"source\":{}}"`
+CRED=`curl -s -X POST "http://localhost:5623/groups/issuer/credentials" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"Ew9ae1KDP6apL8N7WeyaUBCXOEbEmCcO6uzgCo3WU72A\",\"registry\":\"vLEI\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\",\"source\":{}}"`
 ESCAPED=`echo -n $CRED  | jq '{credential: . }'`
 curl -s -X PUT "http://localhost:5723/groups/issuer/credentials" -H "accept: application/json" -H "Content-Type: application/json" -d "${ESCAPED}" | jq
 

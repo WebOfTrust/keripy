@@ -8,6 +8,7 @@ keri.kli.commands.multisig module
 import argparse
 import json
 from json import JSONDecodeError
+from ordered_set import OrderedSet as oset
 
 import sys
 from hio.base import doing
@@ -113,20 +114,43 @@ class GroupMultisigIncept(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.name}")
+            raise kering.ConfigurationError(f"invalid alias {self.alias} "
+                                            f"specified for database {self.name}")
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:
-            gaids = self.inits["aids"]  # not a pass through in makeGroupHab
+            smids = self.inits["aids"]  # not a pass through in makeGroupHab
+            rmids = self.inits["rmids"] if "rmids" in self.inits else None
             del self.inits["aids"]
+            del self.inits['rmids']
 
-            ghab = self.hby.makeGroupHab(group=self.group, lhab=hab, gaids=gaids, **self.inits)
+            ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
+                                         rmids=rmids, **self.inits)
+
+            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+            serder = coring.Serder(raw=evt)
+
+            # Create a notification EXN message to send to the other agents
+            exn, ims = grouping.multisigInceptExn(ghab.mhab,
+                                                  aids=ghab.smids,
+                                                  ked=serder.ked)
+            others = list(oset(smids + (rmids or [])))
+            #others = list(smids)
+            others.remove(ghab.mhab.pre)
+
+            for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
 
             print(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(aids=gaids, pid=hab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                                 mid=hab.pre, smids=smids, rmids=rmids)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)
@@ -144,6 +168,5 @@ class GroupMultisigIncept(doing.DoDoer):
 
         print()
         displaying.printIdentifier(self.hby, ghab.pre)
-
         self.remove(self.toRemove)
 

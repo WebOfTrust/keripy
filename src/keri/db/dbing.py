@@ -1539,7 +1539,7 @@ class LMDBer(filing.Filer):
     def getIoValsAllPreIter(self, db, pre):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in order without gaps
+        with same prefix across all sequence numbers in increasing order without gaps
         starting with zero. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
@@ -1566,8 +1566,9 @@ class LMDBer(filing.Filer):
     def getIoValsAllPreBackIter(self, db, pre, fn):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in order without gaps
-        starting with zero. Stops if gap or different pre.
+        with same prefix across all sequence numbers in decreasing order without gaps
+        starting with fn as first sequence number.
+        Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1578,13 +1579,15 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre is bytes of identifier prefix prepended to sn in key
                 within sub db's keyspace
+            fn is first
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = snKey(pre, cnt := fn)
-            while cursor.set_key(key):  # moves to first_dup
+            # set_key returns True if exact key else false
+            while cursor.set_key(key):  # moves to first_dup if valid key
                 for val in cursor.iternext_dup():
                     # slice off prepended ordering prefix
                     yield val[33:]
@@ -1594,7 +1597,7 @@ class LMDBer(filing.Filer):
     def getIoValLastAllPreIter(self, db, pre):
         """
         Returns iterator of last only of dup vals of each key in insertion order
-        for all entries with same prefix across all sequence numbers in order
+        for all entries with same prefix across all sequence numbers in increasing order
         without gaps starting with zero. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().

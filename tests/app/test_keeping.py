@@ -18,6 +18,7 @@ from hio.base import doing
 
 from keri.help import helping
 from keri.core import coring
+from keri.core.coring import IdrDex
 from keri.app import keeping
 
 
@@ -35,28 +36,23 @@ def test_dataclasses():
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == '0'
     assert pl.dt == ''
-    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, st='0', dt='')
+    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
 
 
-    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, st=0, dt=''))
+    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == 0
     assert pl.dt == ''
 
-    # st = coring.Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]).limen
-    st = [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+
     # dt = helping.nowIso8601()
     dt = '2020-11-16T22:30:34.812526+00:00'
-    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, st=st, dt=dt)
+    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
     assert pl.pubs == []
     assert pl.ridx == 1
     assert pl.kidx == 3
-    # assert pl.st == st == '1/2,1/2,1/4,1/4,1/4&1,1'
-    assert pl.st == st == [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
     assert pl.dt == dt == '2020-11-16T22:30:34.812526+00:00'
 
     pp = keeping.PrePrm()
@@ -110,13 +106,13 @@ def test_dataclasses():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
-                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
-                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''}}
+    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
+                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
+                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''}}
     ps = helping.datify(keeping.PreSit, dict(
-                                             old=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
-                                             new=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
-                                             nxt=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
+                                             old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
     assert isinstance(ps, keeping.PreSit)
@@ -126,17 +122,14 @@ def test_dataclasses():
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
-    assert ps.old.st == '0'
     assert ps.old.dt == ''
     assert ps.new.pubs == []
     assert ps.new.ridx ==  0
     assert ps.new.kidx == 0
-    assert ps.new.st == '0'
     assert ps.new.dt == ''
     assert ps.nxt.pubs == []
     assert ps.nxt.ridx == 0
     assert ps.nxt.kidx == 0
-    assert ps.nxt.st == '0'
     assert ps.nxt.dt == ''
 
     old = keeping.PubLot(ridx=0, kidx=0)
@@ -468,17 +461,14 @@ def test_keeper():
                                old=keeping.PubLot(pubs=[],
                                                   ridx=0,
                                                   kidx=0,
-                                                  st='0',
                                                   dt=''),
                                new=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                              )
 
@@ -486,17 +476,14 @@ def test_keeper():
                                old=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=0,
                                                   kidx=0,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                new=keeping.PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                                nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
-                                                  st='1',
                                                   dt=helping.nowIso8601()),
                              )
 
@@ -736,11 +723,9 @@ def test_manager():
         assert manager.decrypter == None
 
         # salty algorithm incept
-        verfers, digers, cst, nst = manager.incept(salt=salt, temp=True)  # algo default salty
+        verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
         assert manager.pidx == 1
 
         spre = verfers[0].qb64b
@@ -825,11 +810,9 @@ def test_manager():
 
         # salty algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -861,9 +844,7 @@ def test_manager():
         oldpubs = [verfer.qb64 for verfer in verfers]
         deadpubs = ps.old.pubs
 
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
-        assert cst == '1'
-        assert nst == '1'
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -883,9 +864,7 @@ def test_manager():
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"), count=0)
-        assert cst == '1'
-        assert nst == '0'
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), ncount=0)
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -895,15 +874,13 @@ def test_manager():
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
+            verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
         assert ex.value.args[0].startswith('Attempt to rotate nontransferable ')
 
         # randy algo incept
-        verfers, digers, cst, nst = manager.incept(algo=keeping.Algos.randy)
+        verfers, digers = manager.incept(algo=keeping.Algos.randy)
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
         assert manager.pidx == 2
         rpre = verfers[0].qb64b
 
@@ -937,9 +914,7 @@ def test_manager():
         # randy algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
 
-        verfers, digers, cst, nst = manager.rotate(pre=rpre.decode("utf-8"))
-        assert cst == '1'
-        assert nst == '1'
+        verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
 
         pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 1
@@ -948,11 +923,9 @@ def test_manager():
         assert oldpubs == ps.old.pubs
 
         # randy algo incept with null nxt
-        verfers, digers, cst, nst = manager.incept(algo=keeping.Algos.randy, ncount=0)
+        verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
         assert manager.pidx == 3
         rpre = verfers[0].qb64b
-        assert cst == '1'
-        assert nst == '0'
 
         pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 2
@@ -963,14 +936,12 @@ def test_manager():
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers, cst, nst = manager.rotate(pre=rpre.decode("utf-8"))
+            verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
 
         # salty algorithm incept with stem
-        verfers, digers, cst, nst = manager.incept(salt=salt, stem=stem, temp=True)  # algo default salty
+        verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)  # algo default salty
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
         assert manager.pidx == 4
 
         spre = verfers[0].qb64b
@@ -1003,7 +974,7 @@ def test_manager():
 
         #  attempt to reincept same first pub
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers, cst, nst = manager.incept(salt=salt, stem=stem, temp=True)
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
         assert ex.value.args[0].startswith('Already incepted pre')
 
         oldspre = spre
@@ -1012,23 +983,19 @@ def test_manager():
 
         #  attempt to reincept same first pub after move pre
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers, cst, nst = manager.incept(salt=salt, stem=stem, temp=True)
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
         assert ex.value.args[0].startswith('Already incepted pre')
 
         # Create nontransferable keys that are nontransferable identifier prefixes
-        verfers, digers, cst, nst = manager.incept(ncount=0, salt=salt, stem="wit0",
+        verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit0",
                                          transferable=False, temp=True)
-        assert cst == '1'
-        assert nst == '0'
         wit0pre = verfers[0].qb64
         assert verfers[0].qb64 == 'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n'
         assert verfers[0].code == coring.MtrDex.Ed25519N
         assert not digers
 
-        verfers, digers, cst, nst = manager.incept(ncount=0, salt=salt, stem="wit1",
+        verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit1",
                                          transferable=False, temp=True)
-        assert cst == '1'
-        assert nst == '0'
         wit1pre = verfers[0].qb64
         assert verfers[0].qb64 == 'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt'
         assert verfers[0].code == coring.MtrDex.Ed25519N
@@ -1096,17 +1063,15 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
-        assert cst == nst == '1'
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
-            assert cst == nst == '1'
 
         with pytest.raises(IndexError):  # Test end of replay
             verfers, digers = manager.replay(ipre)
@@ -1173,17 +1138,15 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
-        assert cst == nst == '1'
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
-            assert cst == nst == '1'
 
         with pytest.raises(IndexError):  # Test end of replay
             verfers, digers = manager.replay(ipre)
@@ -1249,17 +1212,15 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
-        assert cst == nst == '1'
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
-            assert cst == nst == '1'
 
         with pytest.raises(IndexError):  # Test end of replay
             verfers, digers = manager.replay(ipre)
@@ -1344,13 +1305,13 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
 
@@ -1437,13 +1398,13 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
 
@@ -1530,13 +1491,13 @@ def test_manager():
         assert pl
 
         # test replay as incept i.e. advance == False
-        verfers, digers, cst, nst = manager.replay(ipre, advance=False)
+        verfers, digers = manager.replay(ipre, advance=False)
         assert verfers[0].qb64 == publicies[iridx][0]
         assert digers
 
         # test replay as rotate i.e. advance == True default
         for i in range(iridx, len(publicies) - 1):
-            verfers, digers, cst, nst = manager.replay(ipre)
+            verfers, digers = manager.replay(ipre)
             assert verfers[0].qb64 == publicies[i+1][0]
             assert digers
 
@@ -1614,11 +1575,9 @@ def test_manager_with_aeid():
         assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
         # salty algorithm incept
-        verfers, digers, cst, nst = manager.incept(salt=salt, temp=True)  # algo default salty
+        verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
         assert manager.pidx == 1
 
         spre = verfers[0].qb64b
@@ -1703,11 +1662,9 @@ def test_manager_with_aeid():
 
         # salty algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
         assert len(verfers) == 1
         assert len(digers) == 1
-        assert cst == '1'
-        assert nst == '1'
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -1753,9 +1710,7 @@ def test_manager_with_aeid():
         oldpubs = [verfer.qb64 for verfer in verfers]
         deadpubs = ps.old.pubs
 
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
-        assert cst == '1'
-        assert nst == '1'
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -1775,9 +1730,7 @@ def test_manager_with_aeid():
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
-        verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"), count=0)
-        assert cst == '1'
-        assert nst == '0'
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), ncount=0)
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
@@ -1787,7 +1740,7 @@ def test_manager_with_aeid():
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
+            verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
         assert ex.value.args[0].startswith('Attempt to rotate nontransferable ')
 
     """End Test"""
@@ -1795,20 +1748,67 @@ def test_manager_with_aeid():
 def test_manager_sign_dual_indices():
     """
     test Manager signing with dual indices
+
+    Parameters to Manager.sign()
+        ser (bytes): serialization to sign
+        pubs (list[str] | None): of qb64 public keys to lookup private keys
+            one of pubs or verfers is required. If both then verfers is ignored.
+        verfers (list[Verfer] | None): Verfer instances of public keys
+            one of pubs or verfers is required. If both then verfers is ignored.
+        indexed (bool):
+            True means use use indexed signatures and return
+            list of Siger instances.
+            False means do not use indexed signatures and return
+            list of Cigar instances
+
+            When indexed True, each index is an offset that maps the offset
+            in the coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            onto the appropriate offset into the signing keys or prior next
+            keys lists of a key event as determined by the indices and ondices
+            lists, or appropriate defaults when indices and/or ondices are not
+            provided.
+
+        indices (list[int] | None): indices (offsets) when indexed == True,
+            to use for indexed signatures whose offset into the current keys
+            or prior next list may differ from the order of appearance
+            in the provided coherent pubs, verfers, signers lists.
+            This allows witness indexed sigs or controller multi-sig
+            where the parties do not share the same manager or ordering so
+            the default ordering in pubs or verfers is wrong for the index.
+            This sets the value of the index property of the returned Siger.
+            When provided the length of indices must match the len of the
+            coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            else raises ValueError.
+            When not provided and indexed is True then use default index that
+            is the offset into the coherent lists:
+            pubs, verfers, signers (pris from keystore .ks)
+
+        ondices (list[int | None] | None): other indices (offsets)
+            when indexed is True  for indexed signatures whose offset into
+            the prior next list may differ from the order of appearance
+            in the provided coherent pubs, verfers, signers lists.
+            This allows partial rotation with reserve or custodial key
+            management so that the index (hash of index) of the public key
+            for the signature appears at a different index in the
+            current key list from the prior next list.
+            This sets the value of the ondex property of the returned Siger.
+            When provided the length of indices must match the len of the
+            coherent lists: pubs, verfers, signers (pris from keystore .ks)
+            else raises ValueError.
+            When no ondex is applicable to a given signature then the value
+            of the entry in ondices MUST be None.
+            When  ondices is not provided then all sigers .ondex is None.
     """
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
 
-
-
-    # the particular serialization does not matter test purposes
+    # the particular serialization does not matter for test purposes
     ser = (b"See ya later Alligator. In a while Crocodile. "
            b"Not to soon Baboon. That's the plan Toucan. "
            b"As you wish Jellyfish. Have a nice day Bluejay.")
 
 
     with keeping.openKS() as keeper:
-
         manager = keeping.Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
@@ -1824,52 +1824,167 @@ def test_manager_sign_dual_indices():
         icount = 4
         ncount =  3
         # algo default salty
-        verfers, digers, cst, nst = manager.incept(icount=icount,
-                                                   ncount=ncount,
-                                                   salt=salt,
-                                                   stem = 'phlegm',
-                                                   temp=True)
+        verfers, digers = manager.incept(icount=icount,
+                                        ncount=ncount,
+                                        salt=salt,
+                                        stem = 'phlegm',
+                                        temp=True)
+
         assert len(verfers) == icount
         assert len(digers) == ncount
-        assert cst == f"{max(1, ceil(icount / 2)):x}"
-        assert nst == f"{max(1, ceil(ncount / 2)):x}"
-        assert manager.pidx == 1
-        spre = verfers[0].qb64b  # lookup index in ks for incept key-pairs
+        assert manager.pidx == 1  # incremented
 
-        ## Test sign with indices
-        #indices = [3]
+        pre = verfers[0].qb64  # Key sequence parameters lookup by pre
+        pp = manager.ks.prms.get(pre)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem
+        assert pp.tier == coring.Tiers.low
 
-        ## Test with pubs list
-        #psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
-        #for siger in psigers:
-            #assert isinstance(siger, coring.Siger)
-        #assert psigers[0].index == indices[0]
-        #psigs = [siger.qb64 for siger in psigers]
+        ps = manager.ks.sits.get(pre)
+        assert len(ps.old.pubs) == 0
+        assert ps.old.ridx == 0
+        assert ps.old.kidx == 0
 
-        ## Test with verfers list
-        #vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
-        #for siger in vsigers:
-            #assert isinstance(siger, coring.Siger)
-        #assert psigers[0].index == indices[0]
-        #vsigs = [siger.qb64 for siger in vsigers]
-        #assert vsigs == psigs
+        assert len(ps.new.pubs) == icount
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
 
-        #pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
-        #for cigar in pcigars:
-            #assert isinstance(cigar, coring.Cigar)
-        #vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
-        #psigs = [cigar.qb64 for cigar in pcigars]
-        #vsigs = [cigar.qb64 for cigar in vcigars]
-        #assert psigs == vsigs
+        assert len(ps.nxt.pubs) == ncount
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 0 + icount
+
+        pubs0 = [verfer.qb64 for verfer in verfers]
+        digs0 = [diger.qb64 for  diger in digers]
 
 
-        ## salty algorithm rotate
-        #oldpubs = [verfer.qb64 for verfer in verfers]
-        #verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
-        #assert len(verfers) == 1
-        #assert len(digers) == 1
-        #assert cst == '1'
-        #assert nst == '1'
+        # default seed (private key) code is MtrDex.Ed25519_Seed
+        # so sign codes will be from Ed25519 set
+        #IdrDex.Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
+        #IdrDex.Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
+        #IdrDex.Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
+        #IdrDex.Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
+
+        # Test sign with indices different order and no ondices.
+        # This idicates both same
+        indices0 = [3, 2, 1, 0]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == siger.index  # both same
+            assert siger.code == IdrDex.Ed25519_Sig   # both same
+
+        # Test sign with indices different order  and ondices all None.
+        # This indicates current only
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [None, None, None, None]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == None  # current only
+            assert siger.code == IdrDex.Ed25519_Crt_Sig  # current only
+
+        # Test sign with indices and ondices different from each other.
+        # This indicates both different
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, 0, 3, 1]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == ondices0[x]
+            assert siger.code == IdrDex.Ed25519_Big_Sig  # both different
+
+        # Test sign with indices and ondices different including None.
+        # This indicates both different
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+        for x in range(len(pubs0)):
+            siger = sigers0[x]
+            assert siger.index == indices0[x]
+            assert siger.ondex == ondices0[x]
+            if siger.index == siger.ondex:
+                assert siger.code == IdrDex.Ed25519_Sig
+            elif siger.ondex is None:
+                assert siger.code == IdrDex.Ed25519_Crt_Sig
+            else:
+                assert siger.code == IdrDex.Ed25519_Big_Sig
+
+        indices0 = [None, 2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+        indices0 = [3, -2, 1, 0]
+        ondices0 = [2, None, None, 0]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, -1]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+        indices0 = [3, 2, 1, 0]
+        ondices0 = [2, None, None, False]
+        with pytest.raises(ValueError):
+            sigers0 = manager.sign(ser=ser, pubs=pubs0, indices=indices0, ondices=ondices0)
+
+
+        # salty algorithm rotate
+        ocount = icount
+        icount = ncount
+        ncount = 5
+        verfers, digers = manager.rotate(pre=pre, ncount=ncount, temp=True)
+        assert len(verfers) == icount
+        assert len(digers) == ncount
+
+        # Key sequence parameters lookup by pre
+        pp = manager.ks.prms.get(pre)
+        assert pp.pidx == 0  # same sequence
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem
+        assert pp.tier == coring.Tiers.low
+
+        ps = manager.ks.sits.get(pre)
+        assert len(ps.old.pubs) == ocount
+        assert ps.old.ridx == 0
+        assert ps.old.kidx == 0
+
+        assert len(ps.new.pubs) == icount
+        assert ps.new.ridx == 1
+        assert ps.new.kidx == 0 + ocount
+
+        assert len(ps.nxt.pubs) == ncount
+        assert ps.nxt.ridx == 2
+        assert ps.nxt.kidx == ocount + icount
+
+        pubs1 = [verfer.qb64 for verfer in verfers]
+        digs1 = [diger.qb64 for  diger in digers]
+
+        # now do signing with combination of keys from inception and rotation
+        pubs = pubs1 + [pubs0[0], pubs0[2]]  # 3 from current + 2 from prior next
+        indices1 = [0, 1, 2, 3, 4]  # current signing list indices
+        ondices1 = [None, None, None, 0, 2]  # prior next signing ondices
+
+        sigers1 = manager.sign(ser=ser, pubs=pubs, indices=indices1, ondices=ondices1)
+        for x in range(len(pubs)):
+            siger = sigers1[x]
+            assert siger.index == indices1[x]
+            assert siger.ondex == ondices1[x]
+            if siger.index == siger.ondex:
+                assert siger.code == IdrDex.Ed25519_Sig
+            elif siger.ondex is None:
+                assert siger.code == IdrDex.Ed25519_Crt_Sig
+            else:
+                assert siger.code == IdrDex.Ed25519_Big_Sig
+
+
 
 
 
@@ -1878,4 +1993,4 @@ def test_manager_sign_dual_indices():
     """End Test"""
 
 if __name__ == "__main__":
-    test_creator()
+    test_manager_sign_dual_indices()

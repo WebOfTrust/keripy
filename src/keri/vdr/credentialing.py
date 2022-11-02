@@ -5,6 +5,8 @@ keri.vdr.credentialing module
 
 VC issuer support
 """
+from ordered_set import OrderedSet as oset
+
 from hio.base import doing
 from hio.help import decking
 
@@ -370,14 +372,16 @@ class Registrar(doing.DoDoer):
 
         super(Registrar, self).__init__(doers=doers)
 
-    def incept(self, name, pre, conf=None, aids=None):
+
+    def incept(self, name, pre, conf=None, smids=None, rmids=None):
         """
 
         Parameters:
             name (str): human readable name for the registry
             pre (str): qb64 identifier prefix of issuing identifier in control of this registry
             conf (dict): configuration information for the registry (noBackers, estOnly)
-            aids (list): participants of a multisig group in the anchoring event
+            smids (list): group signing member ids qb64 in the anchoring event
+            rmids (list): group rotating member ids in the anchoring event
 
         Returns:
             Registry:  created registry
@@ -392,7 +396,7 @@ class Registrar(doing.DoDoer):
         rseq = coring.Seqner(sn=0)
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
-        if hab.lhab is None:
+        if hab.mhab is None:
             if estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -408,17 +412,19 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            aids = aids if aids is not None else hab.gaids
+            smids = smids if smids is not None else hab.smids
+            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
-                                 saider=saider)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
         return registry
 
-    def issue(self, regk, said, dt=None, aids=None):
+
+    def issue(self, regk, said, dt=None, smids=None, rmids=None):
         """
         Create and process the credential issuance TEL events on the given registry
 
@@ -426,8 +432,8 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            aids (list): participants of a multisig group in the anchoring event
-
+            smids (list): group signing member ids qb64 in the anchoring event
+            rmids (list): group rotating member ids qb64 in the anchoring event
         """
         registry = self.rgy.regs[regk]
         hab = registry.hab
@@ -439,7 +445,7 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if hab.lhab is None:
+        if hab.mhab is None:  # not a multisig group
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -454,17 +460,19 @@ class Registrar(doing.DoDoer):
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
-        else:
-            aids = aids if aids is not None else hab.gaids
+
+        else:  # multisig group hab
+            smids = smids if smids is not None else hab.smids
+            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
-                                 saider=saider)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
-    def revoke(self, regk, said, dt=None, aids=None):
+    def revoke(self, regk, said, dt=None, smids=None, rmids=None):
         """
         Create and process the credential revocation TEL events on the given registry
 
@@ -472,8 +480,8 @@ class Registrar(doing.DoDoer):
             regk (str): qb64 identifier prefix of the credential registry
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
-            aids (list): participants of a multisig group in the anchoring event
-
+            smids (list): group signing member ids (multisig) in the anchoring event
+            rmids (list | None): group rotating member ids (multisig) in the anchoring event
         """
         registry = self.rgy.regs[regk]
         hab = registry.hab
@@ -489,7 +497,7 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, rserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if hab.lhab is None:
+        if hab.mhab is None:
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -505,14 +513,16 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            aids = aids if aids is not None else hab.gaids
+            smids = smids if smids is not None else hab.smids
+            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(aids=aids, pid=hab.lhab.pre, prefixer=prefixer, seqner=seqner,
-                                 saider=saider)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
+
 
     @staticmethod
     def multisigIxn(hab, rseal):
@@ -532,6 +542,7 @@ class Registrar(doing.DoDoer):
         seqner = coring.Seqner(sn=sn)
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None
+
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -559,6 +570,7 @@ class Registrar(doing.DoDoer):
             self.processEscrows()
             yield 0.5
 
+
     def processEscrows(self):
         """
         Process credential registry anchors:
@@ -567,6 +579,7 @@ class Registrar(doing.DoDoer):
         self.processWitnessEscrow()
         self.processMultisigEscrow()
         self.processDiseminationEscrow()
+
 
     def processWitnessEscrow(self):
         """
@@ -716,32 +729,36 @@ class Credentialer(doing.DoDoer):
 
         return True
 
-    def issue(self, creder, aids=None):
+    def issue(self, creder, smids=None, rmids=None):
         """ Issue the credential creder and handle witness propagation and communication
 
         Args:
             creder (Creder): Credential object to issue
-            aids (list): optional participant list for multisig issuance
-
+            smids (list[str] | None): optional group signing member ids for multisig
+            rmids (list[str] | None): optional group rotating member ids for multisig
         """
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
-        aids = aids if aids is not None else hab.gaids
+        smids = smids if smids is not None else hab.smids
+        rmids = rmids if rmids is not None else hab.rmids
+
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
-        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said, dt=dt, aids=aids)
+        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said,
+                                         dt=dt, smids=smids, rmids=rmids)
 
         rseq = coring.Seqner(sn=seq)
-        if hab.lhab:
+        if hab.mhab:
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
-            others = list(aids)
-            others.remove(hab.lhab.pre)
+            others = list(oset(smids + (rmids or [])))
+            #others = list(smids)
+            others.remove(hab.mhab.pre)
 
-            print(f"Sending signed credential to {len(aids) - 1} other participants")
+            print(f"Sending signed credential to {others} other participants")
             for recpt in others:
-                self.postman.send(src=hab.lhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
+                self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
 
             # escrow waiting for other signatures
             self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
@@ -752,6 +769,7 @@ class Credentialer(doing.DoDoer):
             self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
 
         parsing.Parser().parse(ims=craw, vry=self.verifier)
+
 
     def processCredentialMissingSigEscrow(self):
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
@@ -769,6 +787,7 @@ class Credentialer(doing.DoDoer):
             kever = hab.kever
             # place in escrow to diseminate to other if witnesser and if there is an issuee
             self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
+
 
     def processCredentialIssuedEscrow(self):
         for (said, snq), creder in self.rgy.reger.crie.getItemIter():
@@ -789,8 +808,8 @@ class Credentialer(doing.DoDoer):
                 recp = creder.subject["i"]
 
                 hab = self.hby.habs[issr]
-                if hab.lhab:
-                    sender = hab.lhab.pre
+                if hab.mhab:
+                    sender = hab.mhab.pre
                 else:
                     sender = issr
 
@@ -854,6 +873,7 @@ class Credentialer(doing.DoDoer):
 
             self.rgy.reger.crie.rem(keys=(said, snq))
 
+
     def processCredentialSentEscrow(self):
         """
         Process Postman cues to ensure that the last message (exn notification) has
@@ -872,8 +892,10 @@ class Credentialer(doing.DoDoer):
                 self.rgy.reger.crse.rem(keys=(said,))
                 self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
 
+
     def complete(self, said):
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
+
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be completed.
@@ -901,6 +923,7 @@ class Credentialer(doing.DoDoer):
             self.processEscrows()
             yield 0.5
 
+
     def processEscrows(self):
         """
         Process credential registry anchors:
@@ -925,8 +948,8 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     Returns:
 
     """
-    if hab.lhab:
-        sender = hab.lhab.pre
+    if hab.mhab:
+        sender = hab.mhab.pre
     else:
         sender = hab.pre
 

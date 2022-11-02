@@ -34,7 +34,7 @@ def test_direct_mode_with_manager():
          openKS(name="controller") as coeKpr, openKS(name="validator") as valKpr:
         # Init key pair manager
         coeMgr = Manager(ks=coeKpr, salt=coeSalt)
-        coeVerfers, coeDigers, cst, nst = coeMgr.incept(icount=1, ncount=1)
+        coeVerfers, coeDigers = coeMgr.incept(icount=1, ncount=1)
 
         #  init Keverys
         coeKevery = eventing.Kevery(db=coeLogger)
@@ -71,7 +71,7 @@ def test_direct_mode_with_manager():
         # Validator Event 0  Inception Transferable (nxt digest not empty)
         # Init key pair manager
         valMgr = Manager(ks=valKpr, salt=valSalt)
-        valVerfers, valDigers, cst, nst = valMgr.incept(icount=1, ncount=1)
+        valVerfers, valDigers = valMgr.incept(icount=1, ncount=1)
 
         valSerder = incept(keys=[valVerfers[0].qb64],
                            ndigs=[valDigers[0].qb64],
@@ -209,7 +209,7 @@ def test_direct_mode_with_manager():
         csn += 1
         cesn += 1
         assert csn == cesn == 1
-        coeVerfers, coeDigers, cst, nst = coeMgr.rotate(pre=coeVerfers[0].qb64)
+        coeVerfers, coeDigers = coeMgr.rotate(pre=coeVerfers[0].qb64)
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeVerfers[0].qb64],
                            dig=coeKever.serder.saider.qb64,

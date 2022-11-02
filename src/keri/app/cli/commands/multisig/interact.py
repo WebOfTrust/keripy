@@ -5,12 +5,13 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import grouping, indirecting, habbing
+from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, displaying, rotating
 from keri.core import coring
 
@@ -58,6 +59,9 @@ class GroupMultisigInteract(doing.DoDoer):
        This DoDoer will remove the multisig coroutine and exit when it receives a message
        that the multisig coroutine has successfully completed a cooperative rotation.
 
+       ToDo: NRR
+       Add .rmids and .smids
+
     """
 
     def __init__(self, name, alias, aids, base, bran, data):
@@ -69,11 +73,12 @@ class GroupMultisigInteract(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.postman = forwarding.Postman(hby=self.hby)
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
         self.counselor = grouping.Counselor(hby=self.hby)
 
-        doers = [mbd, self.hbyDoer, self.counselor]
+        doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.interactDo)])
@@ -88,6 +93,9 @@ class GroupMultisigInteract(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
+        ToDo: NRR
+        confirm only needs ghab.smids or do we need to add self.rmids to
+
         """
         # enter context
         self.wind(tymth)
@@ -98,15 +106,25 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        aids = self.aids if self.aids is not None else ghab.gaids
+        aids = self.aids if self.aids is not None else ghab.smids
+        #rmids = self.aids if self.aids is not None else ghab.rmids
+        rmids = None  # need to fix
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)
+        exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
+        others = list(oset(ghab.smids + (ghab.rmids or [])))
+        #others = list(ghab.smids)
+        others.remove(ghab.mhab.pre)
+
+        for recpt in others:  # send notification to other participants as a signalling mechanism
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(aids=aids, pid=ghab.lhab.pre, prefixer=prefixer, seqner=seqner, saider=saider)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

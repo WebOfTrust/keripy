@@ -172,13 +172,11 @@ wanPre = "BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s"
 def loadApp(hby, notifier):
     app = falcon.App()
 
-    repd = storing.Respondant(hby=hby)
     counselor = grouping.Counselor(hby=hby)
     mbx = indirecting.MailboxDirector(hby=hby, topics=["/receipt", "/replay", "/credential", "/multisig"])
     regery = credentialing.Regery(hby=hby, name="test", temp=True)
 
     doers = kiwiing.loadEnds(hby=hby,
-                             rep=repd,
                              rgy=regery,
                              verifier=None,
                              notifier=notifier,
@@ -189,7 +187,7 @@ def loadApp(hby, notifier):
                              servery=booting.Servery(port=1234),
                              bootConfig=dict(),
                              counselor=counselor)
-    doers.extend([repd, counselor, mbx])
+    doers.extend([counselor, mbx])
     return app, doers
 
 

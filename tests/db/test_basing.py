@@ -1715,7 +1715,7 @@ def test_clean_baser():
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.sn == 6
         assert state.ked["f"] == '6'
-        assert natHab.db.env.stat()['entries'] == 67
+        assert natHab.db.env.stat()['entries'] == 68
 
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
@@ -1724,11 +1724,11 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.saidb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] == 67
+            assert natHab.db.env.stat()['entries'] == 68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
+            assert data.hid == natHab.pre
 
             # add garbage event to corrupt database
             badsrdr = eventing.rotate(pre=natHab.pre,
@@ -1785,7 +1785,7 @@ def test_clean_baser():
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
+            assert data.hid == natHab.pre
 
 
     assert not os.path.exists(hby.ks.path)

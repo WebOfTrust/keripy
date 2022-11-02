@@ -17,7 +17,7 @@ parser.set_defaults(handler=lambda args: respond(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--words', '-d', help='JSON formatted array of words to sign, \'@\' allowed to load from a file',
@@ -92,6 +92,9 @@ class RespondDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        if self.alias is None:
+            self.alias = existing.aliasInput(self.hby)
+
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
             raise ValueError(f"invalid alias {self.alias}")
@@ -107,7 +110,7 @@ class RespondDoer(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.lhab if hab.lhab else hab
+        senderHab = hab.mhab if hab.mhab else hab
         self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock
