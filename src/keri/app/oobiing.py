@@ -499,7 +499,6 @@ class Oobiery:
 
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.resolved
-                    print(f"{url} resolved")
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
