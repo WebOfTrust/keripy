@@ -5,11 +5,11 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && \
     apt-get install -y ca-certificates libsodium23
 
-COPY ./ /keripy
-WORKDIR /keripy
-
 # Setup Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+COPY ./ /keripy
+WORKDIR /keripy
 
 # Install KERIpy dependencies
 # Must source the Cargo environment for the blake3 library to see the Rust intallation during requirements install
