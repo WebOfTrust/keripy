@@ -129,6 +129,7 @@ class OobiRecord:
     role: str = None
     date: str = None
     state: str = None
+    urls: list = None
 
 
 @dataclass
@@ -894,7 +895,13 @@ class Baser(dbing.LMDBer):
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         self.woobi = koming.Komer(db=self,
-                                  subkey='wknwn.',
+                                  subkey='woobi.',
+                                  schema=OobiRecord,
+                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.moobi = koming.Komer(db=self,
+                                  subkey='moobi.',
                                   schema=OobiRecord,
                                   sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 

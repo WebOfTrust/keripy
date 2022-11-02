@@ -1,16 +1,18 @@
-FROM python:3.10.4
 
-RUN apt-get update
-RUN apt-get install -y ca-certificates
+FROM python:3.10.4-buster
 
-RUN apt-get install -y libsodium23
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+SHELL ["/bin/bash", "-c"]
 
-ENV PATH="/root/.cargo/bin:${PATH}"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONIOENCODING=UTF-8
+RUN apt-get update && \
+    apt-get install -y ca-certificates libsodium23
+
+# Setup Rust for blake3 dependency build
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
 COPY ./ /keripy
 WORKDIR /keripy
 
-RUN pip install -r requirements.txt
+# Install KERIpy dependencies
+# Must source the Cargo environment for the blake3 library to see the Rust intallation during requirements install
+RUN source "$HOME/.cargo/env" && pip install -r requirements.txt
+

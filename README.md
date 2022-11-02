@@ -10,6 +10,24 @@ Project Name:  keripy
 
 ## Installation
 
+### Local installation - build from source
+Once all dependencies are installed and working then run:
+
+`$ python3 -m pip install -e ./`
+
+Then you can run 
+
+`$ kli version` 
+
+to get a version string similar to the following: 
+
+`0.6.7`
+
+### Local installation - Docker build
+Run `docker build -t keripy .` to build your docker image.
+
+Then run `docker run -it keripy /bin/bash` and you can run `kli version` from within the running container to play with KERIpy.
+
 ### Dependencies
 #### Binaries
 
@@ -60,4 +78,9 @@ pytest tests/ --ignore tests/demo/
 pytest tests/demo/
 ```
 
+## Building Documentation in `/docs`
+* Install sphinx: 
+  * `$ pip install sphinx`
+* Build with Sphinx in `/docs`: 
+  * `$ make html`
 
