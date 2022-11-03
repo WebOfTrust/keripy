@@ -59,7 +59,7 @@ class Counselor(doing.DoDoer):
         del evt[:serder.size]
 
         others = list(oset(smids + (rmids or [])))
-        #others = list(smids)
+
         others.remove(mid)  # don't send to self
 
         print(f"Sending multisig event to {len(others)} other participants")
@@ -68,7 +68,6 @@ class Counselor(doing.DoDoer):
 
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
-
 
     def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
@@ -135,7 +134,6 @@ class Counselor(doing.DoDoer):
 
             return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
-
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
 
@@ -155,7 +153,6 @@ class Counselor(doing.DoDoer):
                 raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
 
         return True
-
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -342,6 +339,7 @@ class Counselor(doing.DoDoer):
                 dgkey = dbing.dgKey(pre, saider.qb64b)
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
                 self.hby.db.gdee.rem(keys=(pre,))
+                print(f"Delegation approval for {pre} received.")
 
                 if witer:  # We are elected witnesser, send off event to witnesses
                     print(f"We are the witnesser, sending {pre} to witnesses")
@@ -375,7 +373,7 @@ class Counselor(doing.DoDoer):
                             witnessed = True
                     if not witnessed:
                         continue
-
+                print(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
