@@ -17,6 +17,10 @@ def main():
     parser = multicommand.create_parser(commands)
     args = parser.parse_args()
 
+    if not hasattr(args, 'handler'):
+        parser.print_help()
+        return
+
     try:
         doers = args.handler(args)
         directing.runController(doers=doers, expire=0.0)
