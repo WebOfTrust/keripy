@@ -8,6 +8,8 @@ KERI_SCRIPT_DIR = f'{TEST_DIR}/../../../../scripts'
 env = {
     'KERI_DEMO_SCRIPT_DIR': KERI_DEMO_SCRIPT_DIR,
     'KERI_SCRIPT_DIR': KERI_SCRIPT_DIR,
+    'OOBI_HOST': '127.0.0.1',
+    'CONFIG_NAME': 'demo-witness-oobis'
 }
 
 
