@@ -8,7 +8,6 @@ on:
     branches:
       - 'main'
       - 'development'
-      - 'feat-pytest-shell'
   pull_request:
   workflow_dispatch:
 
@@ -64,15 +63,6 @@ jobs:
 
   scripts:
     runs-on: ubuntu-latest
-
-    # Service container for running witnesses used by KLI tests
-    services:
-      witnesses:
-        image: gleif/keri-witness-demo:0.6.7
-        ports:
-          - 5642:5642
-          - 5643:5643
-          - 5644:5644
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.10.4
@@ -86,7 +76,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run KERI kli tests
         run: |
-          pytest tests/scripts/
+          ./scripts/demo/test_scripts.sh
 
   interop-setup:
     runs-on: ubuntu-latest
