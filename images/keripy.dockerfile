@@ -9,7 +9,7 @@ RUN apt-get update && \
 # Setup Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
-COPY ./ /keripy
+COPY .. /keripy
 WORKDIR /keripy
 
 # Install KERIpy dependencies
