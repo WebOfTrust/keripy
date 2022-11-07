@@ -38,7 +38,7 @@ jobs:
           flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
       - name: Run core KERI tests
         run: |
-          pytest tests/ --ignore tests/demo/
+          pytest tests/ --ignore tests/demo/ --ignore test/scripts
       - name: Run KERI demo tests
         run: |
           pytest tests/demo/
@@ -60,6 +60,23 @@ jobs:
         run: |
           pytest --cov=./ --cov-report=xml
           codecov
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.10.4
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.10.4
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov codecov hio pytest-shell
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run KERI kli tests
+        run: |
+          ./scripts/demo/test_scripts.sh
 
   interop-setup:
     runs-on: ubuntu-latest

@@ -13,3 +13,7 @@ interop-sam:
 .PHONY: build-keri
 build-keri:
 	@docker build --no-cache -f Dockerfile --tag gleif/keri:0.6.7 .
+
+.PHONY: build-witness-demo
+build-witness-demo:
+	@docker build --no-cache -f images/witness.demo.dockerfile --tag gleif/keri-witness-demo:0.6.7 .

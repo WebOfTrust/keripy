@@ -93,6 +93,7 @@ setup(
     tests_require=[
                     'coverage>=6.5.0',
                     'pytest>=7.2.0',
+                    'pytest-shell>=0.3.2'
                   ],
     setup_requires=[
     ],
