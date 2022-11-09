@@ -876,7 +876,7 @@ class Hab:
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
              transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
-             merfers=None, migers=None, mindices=None, hidden=False):
+             merfers=None, migers=None, mindices=None, hidden=False, data=None):
         """
         Finish setting up or making Hab from parameters includes inception.
         Assumes injected dependencies were already setup.
@@ -917,6 +917,7 @@ class Hab:
                 (csi, npi)
 
             hidden (bool): A hidden Hab is not included in the list of Habs.
+            data (list | None): seal dicts
 
         ToDo: NRR
         HabitatRecord needs to also store indices for each mid midex tuple(csi, pni)
@@ -993,7 +994,8 @@ class Hab:
                                      toad=toad,
                                      wits=wits,
                                      cnfg=cnfg,
-                                     code=code)
+                                     code=code,
+                                     data=data)
 
         self.pre = serder.ked["i"]  # new pre
 

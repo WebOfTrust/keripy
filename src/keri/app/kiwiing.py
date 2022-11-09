@@ -476,6 +476,7 @@ class IdentifierEnd(doing.DoDoer):
         ncount = int(body.get("ncount")) if "ncount" in body else 1
         estOnly = int(body.get("estOnly")) if "estOnly" in body else False
         DnD = int(body.get("DnD")) if "DnD" in body else False
+        data = body.get("data") if "data" in body else None
 
         kwa = dict(
             transferable=transferable,
@@ -487,6 +488,7 @@ class IdentifierEnd(doing.DoDoer):
             ncount=ncount,
             estOnly=estOnly,
             DnD=DnD,
+            data=data,
         )
         if "delpre" in body:
             kwa["delpre"] = body["delpre"]

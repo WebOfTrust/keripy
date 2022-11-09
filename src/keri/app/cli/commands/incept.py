@@ -51,6 +51,7 @@ class InceptOptions:
     toad: int = 0
     delpre: str = None
     estOnly: bool = False
+    data: list = None
 
 
 def handler(args):
