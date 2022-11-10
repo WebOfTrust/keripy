@@ -537,7 +537,7 @@ class HttpWitnesser(doing.DoDoer):
 
     @property
     def idle(self):
-        return self.posted == len(self.sent)
+        return len(self.msgs) == 0 and self.posted == len(self.sent)
 
 
 def mailbox(hab, cid):

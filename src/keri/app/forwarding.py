@@ -92,7 +92,7 @@ class Postman(doing.DoDoer):
                 witer.msgs.append(bytearray(msg))  # make a copy
                 self.extend([witer])
 
-                while not witer.sent:
+                while not witer.idle:
                     _ = (yield self.tock)
 
                 self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
@@ -277,5 +277,4 @@ def introduce(hab, wit):
             msgs.extend(msg)
 
         msgs.extend(hab.replyEndRole(cid=hab.pre, role=kering.Roles.witness))
-
     return msgs

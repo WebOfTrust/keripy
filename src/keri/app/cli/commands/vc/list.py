@@ -26,7 +26,7 @@ parser.set_defaults(handler=lambda args: list_credentials(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
-                    required=True)
+                    default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
@@ -68,6 +68,9 @@ class ListDoer(doing.DoDoer):
         self.schema = schema
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        if alias is None:
+            alias = existing.aliasInput(self.hby)
+
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
