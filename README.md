@@ -24,7 +24,7 @@ to get a version string similar to the following:
 `0.6.7`
 
 ### Local installation - Docker build
-Run `docker build -t keripy .` to build your docker image.
+Run `docker build -f images/keripy.dockerfile -t keripy .` to build your docker image.
 
 Then run `docker run -it keripy /bin/bash` and you can run `kli version` from within the running container to play with KERIpy.
 
