@@ -40,11 +40,11 @@ kli oobi resolve --name external --oobi-alias person --oobi http://127.0.0.1:564
 kli oobi resolve --name qvi --oobi-alias person --oobi http://127.0.0.1:5642/oobi/EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 kli oobi resolve --name legal-entity --oobi-alias person --oobi http://127.0.0.1:5642/oobi/EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
-echo 'resolving iXBRL Data Attestation Schema EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u'
-kli oobi resolve --name external --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u
-kli oobi resolve --name qvi --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u
-kli oobi resolve --name legal-entity --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u
-kli oobi resolve --name person --passcode DoB26Fj4x9LboAFWJra17O --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u
+echo 'resolving iXBRL Data Attestation Schema EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi'
+kli oobi resolve --name external --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi
+kli oobi resolve --name qvi --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi
+kli oobi resolve --name legal-entity --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi
+kli oobi resolve --name person --passcode DoB26Fj4x9LboAFWJra17O --oobi-alias credential --oobi http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi
 
 kli vc registry incept --name external --alias external --registry-name vLEI-external
 kli vc registry incept --name qvi --alias qvi --registry-name vLEI-qvi
@@ -96,5 +96,5 @@ kli saidify --file /tmp/xbrl-edges.json
 NOW=`date -u +"%Y-%m-%dT%H:%M:%S+00:00"`
 echo \"$NOW\" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-data.jq > /tmp/xbrl-data.json
 kli saidify --file /tmp/xbrl-data.json
-kli vc issue --name person --alias person --passcode DoB26Fj4x9LboAFWJra17O --registry-name vLEI-person --schema EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u --data @/tmp/xbrl-data.json --edges @/tmp/xbrl-edges.json
+kli vc issue --name person --alias person --passcode DoB26Fj4x9LboAFWJra17O --registry-name vLEI-person --schema EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi --data @/tmp/xbrl-data.json --edges @/tmp/xbrl-edges.json
 kli vc list --name person --alias person --passcode DoB26Fj4x9LboAFWJra17O --issued
