@@ -72,7 +72,7 @@ def generate(tymth, tock=0.0, **opts):
                 raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
             up = urlparse(urls[kering.Schemes.http])
-            print(f"did:keri:{hab.pre}:http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness/{wit}")
+            print(f"did:keri:{hab.pre}:http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
         elif role in (kering.Roles.controller,):
             urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
             if not urls:

@@ -42,12 +42,6 @@ def ids(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
 
-    try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            for hab in hby.habs.values():
-                print(f"{hab.name} ({hab.pre})")
-
-    except ConfigurationError as e:
-        print(e)
-        print(f"identifier prefix for {name} does not exist, incept must be run first", )
-        return -1
+    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        for hab in hby.habs.values():
+            print(f"{hab.name} ({hab.pre})")
