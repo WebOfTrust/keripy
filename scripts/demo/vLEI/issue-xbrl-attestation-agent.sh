@@ -124,7 +124,7 @@ XBRL_EDGES=`cat /tmp/xbrl-edges.json`
 NOW=`date -u +"%Y-%m-%dT%H:%M:%S+00:00"`
 echo \"$NOW\" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/xbrl-data.jq > /tmp/xbrl-data.json
 XBRL_DATA=`cat /tmp/xbrl-data.json`
-curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"EJEMDhCDi8gLqtaXrb36DRLHMfC1c08PqirQvdPPSG5u\",\"source\":$XBRL_EDGES}" | jq
+curl -X POST "http://localhost:5630/credentials/person" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":$XBRL_DATA,\"registry\":\"vLEI-person\",\"schema\":\"EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi\",\"source\":$XBRL_EDGES}" | jq
 sleep 4
 echo "Person retrieves attestation..."
 curl -s -X GET "http://localhost:5630/credentials/person?type=issued" -H "accept: application/json" -d "{\"passcode\":\"DoB2-6Fj4x-9Lbo-AFWJr-a17O\"}" | jq
