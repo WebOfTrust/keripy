@@ -8,15 +8,15 @@ kli incept --name holder --alias holder --file ${KERI_DEMO_SCRIPT_DIR}/data/glei
 
 kli oobi resolve --name issuer --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 kli oobi resolve --name holder --oobi-alias issuer --oobi http://127.0.0.1:5642/oobi/EKxICWTx5Ph4EKq5xie2znZf7amggUn4Sd-2-46MIQTg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name issuer --oobi-alias issuer --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
-kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/oobi/ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
+kli oobi resolve --name issuer --oobi-alias issuer --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
+kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
 
 kli vc registry incept --name issuer --alias issuer --registry-name vLEI
 
-kli vc issue --name issuer --alias issuer --registry-name vLEI --schema ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
+kli vc issue --name issuer --alias issuer --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
 sleep 2
 kli vc list --name holder --alias holder --poll
-SAID=`kli vc list --name holder --alias holder --said --schema ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz`
+SAID=`kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao`
 
 kli vc revoke --name issuer --alias issuer --registry-name vLEI --said ${SAID}
 sleep 2

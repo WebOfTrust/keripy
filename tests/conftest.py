@@ -247,7 +247,7 @@ class DbSeed:
         # NEW: ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0
         db.schema.pin(schemer.said, schemer)
 
-        # OLD: ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz
+        # OLD: EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
         sad = {'$id': '',
                '$schema': 'http://json-schema.org/draft-07/schema#', 'title': 'Qualified vLEI Issuer Credential',
                'description': 'A vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified '
