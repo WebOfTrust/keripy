@@ -73,7 +73,7 @@ sleep 5
 
 # Issue QVI credential vLEI from GLEIF External to QVI
 echo 'external issues qvi credential'
-curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-external\",\"schema\":\"ELqriXX1-lbV9zgXP4BXxqJlpZTgFchll3cyjaCyVKiz\"}"
+curl -s -X POST "http://localhost:5623/credentials/external" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-external\",\"schema\":\"EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao\"}"
 sleep 8
 echo "qvi retrieves Credentials..."
 curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json"
@@ -85,7 +85,7 @@ QVI_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" 
 echo $QVI_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/legal-entity-edges-filter.jq  > /tmp/legal-entity-edges.json
 LE_EDGES=`cat /tmp/legal-entity-edges.json`
 RULES=`cat ${KERI_DEMO_SCRIPT_DIR}/data/rules.json`
-curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz\",\"registry\":\"vLEI-qvi\",\"schema\":\"EK0jwjJbtYLIynGtmXXLO5MGJ7BDuX2vr2_MhM9QjAxZ\",\"source\":$LE_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"5493001KJTIIGC8Y1R17\"},\"recipient\":\"EIitNxxiNFXC1HDcPygyfyv3KUlBfS_Zf-ZYOvwjpTuz\",\"registry\":\"vLEI-qvi\",\"schema\":\"ENPXp1vQzRF6JwIuS-mp2U8Uf1MoADoP_GqQ62VsDZWY\",\"source\":$LE_EDGES,\"rules\":$RULES}" | jq
 
 sleep 8
 echo "LE retrieves Credentials..."
@@ -98,7 +98,7 @@ LE_SAID=$(curl -s -X GET "http://localhost:5628/credentials/legal-entity?type=re
 echo $LE_SAID | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-auth-edges-filter.jq > /tmp/oor-auth-edges.json
 OOR_AUTH_EDGES=`cat /tmp/oor-auth-edges.json`
 
-curl -s -X POST "http://localhost:5628/credentials/legal-entity" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"AID\": \"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\", \"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-legal-entity\",\"schema\":\"EDqjl80uP0r_SNSp-yImpLGglTEbOwgO77wsOPjyRVKy\",\"source\":$OOR_AUTH_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5628/credentials/legal-entity" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"AID\": \"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\", \"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EHMnCf8_nIemuPx-cUHaDQq8zSnQIFAurdEpwHpNbnvX\",\"registry\":\"vLEI-legal-entity\",\"schema\":\"EKA57bKBKxr_kN7iN5i7lMUxpMG-s19dRcmov1iDxz-E\",\"source\":$OOR_AUTH_EDGES,\"rules\":$RULES}" | jq
 sleep 8
 echo "QVI retrieves Credentials..."
 curl -s -X GET "http://localhost:5626/credentials/qvi?type=received" -H "accept: application/json" | jq
@@ -106,11 +106,11 @@ sleep 3
 
 # Issue OOR credential from QVI to Person
 echo 'qvi issues OOR credential to person'
-AUTH_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received&schema=EDqjl80uP0r_SNSp-yImpLGglTEbOwgO77wsOPjyRVKy" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
+AUTH_SAID=$(curl -s -X GET "http://localhost:5626/credentials/qvi?type=received&schema=EKA57bKBKxr_kN7iN5i7lMUxpMG-s19dRcmov1iDxz-E" -H "accept: application/json" -H "Content-Type: application/json" | jq '.[0] | .sad.d')
 echo "[$QVI_SAID, $AUTH_SAID]" | jq -f ${KERI_DEMO_SCRIPT_DIR}/data/oor-edges-filter.jq > /tmp/oor-edges.json
 OOR_EDGES=`cat /tmp/oor-edges.json`
 
-curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\",\"registry\":\"vLEI-qvi\",\"schema\":\"EIL-RWno8cEnkGTi9cr7-PFg_IXTPx9fZ0r9snFFZ0nm\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
+curl -s -X POST "http://localhost:5626/credentials/qvi" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"credentialData\":{\"LEI\":\"6383001AJTYIGC8Y1X37\", \"personLegalName\": \"John Smith\", \"officialRole\": \"Chief Executive Officer\"},\"recipient\":\"EKE7b7owCvObR6dBTrU7w38_oATL9Tcrp_-xjPn05zYe\",\"registry\":\"vLEI-qvi\",\"schema\":\"EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy\",\"source\":$OOR_EDGES,\"rules\":$RULES}" | jq
 sleep 8
 echo "Person retrieves Credentials..."
 curl -s -X GET "http://localhost:5630/credentials/person?type=received" -H "accept: application/json" | jq
