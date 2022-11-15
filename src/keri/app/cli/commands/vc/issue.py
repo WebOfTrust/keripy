@@ -29,6 +29,8 @@ parser.add_argument('--recipient', '-R', help='alias or qb64 identifier prefix o
 parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=None, action="store", required=False)
 parser.add_argument('--credential', help='Full credential, \'@\' allowed', default=None, action="store",
                     required=False)
+parser.add_argument('--out', '-o', help='Name of file for credential output', default="credential.json", action="store",
+                    required=False)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -95,6 +97,7 @@ def issueCredential(args):
                                  edges=edges,
                                  rules=rules,
                                  credential=credential,
+                                 out=args.out,
                                  private=args.private)
 
     doers = [issueDoer]
@@ -108,7 +111,7 @@ class CredentialIssuer(doing.DoDoer):
     """
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
-                 rules=None, credential=None, private=False):
+                 rules=None, credential=None, out=None, private=False):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
@@ -119,6 +122,7 @@ class CredentialIssuer(doing.DoDoer):
              recipient:
              data: (dict) credential data dict
              credential: (dict) full credential to issue when joining a multisig issuance
+             out (str): Filename for credential output
              private: (bool) privacy preserving
 
         """
@@ -157,7 +161,7 @@ class CredentialIssuer(doing.DoDoer):
                                                        data=data,
                                                        private=private)
                 print(f"Writing credential {self.creder.said} to credential.json")
-                f = open("./credential.json", mode="w")
+                f = open(out, mode="w")
                 json.dump(self.creder.crd, f)
                 f.close()
             else:
