@@ -24,7 +24,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: weboftrust/keripy
+          images: gleif/keri
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
