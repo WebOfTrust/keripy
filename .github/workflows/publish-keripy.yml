@@ -32,5 +32,5 @@ jobs:
           context: .
           file: images/keripy.dockerfile
           push: true
-          tags: gleif/keri
+          tags: gleif/keri:0.6.9
           labels: ${{ github.event.inputs.version }}
