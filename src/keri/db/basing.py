@@ -836,7 +836,7 @@ class Baser(dbing.LMDBer):
         # successfull signed 12-word challenge response exn messages keys by prefix of signer
         self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Saider)
 
-        # group partial signature escrow
+        # authorzied well known OOBIs
         self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', schema=WellKnownAuthN)
 
         # KSN support datetime stamps and signatures indexed and not-indexed

@@ -125,7 +125,7 @@ class InitDoer(doing.DoDoer):
             obi = keri.app.oobiing.Oobiery(hby=hby)
             self.extend(obi.doers)
 
-            while oc != hby.db.roobi.cntAll():
+            while oc > hby.db.roobi.cntAll():
                 yield 0.25
 
             for (oobi,), obr in hby.db.roobi.getItemIter():
@@ -138,18 +138,20 @@ class InitDoer(doing.DoDoer):
 
         wc = [oobi for (oobi,), _ in hby.db.woobi.getItemIter()]
         if len(wc) > 0:
-            print(f"\nAuthenticating {wc} Well-Knowns...")
+            print(f"\nAuthenticating Well-Knowns...")
             authn = oobiing.Authenticator(hby=hby)
             self.extend(authn.doers)
 
             while True:
                 cap = []
-                for (_,), wellKnowns in hby.db.wkas.getItemIter(keys=b''):
-                    cap.extend([wk.url for wk in wellKnowns])
+                for (_,), wk in hby.db.wkas.getItemIter(keys=b''):
+                    cap.append(wk.url)
 
                 if set(wc) & set(cap) == set(wc):
                     break
 
                 yield 0.5
+
+            self.remove(authn.doers)
 
         hby.close()

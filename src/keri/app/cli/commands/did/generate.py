@@ -5,6 +5,7 @@ keri.kli.commands.oobi module
 """
 import argparse
 import random
+import urllib
 from urllib.parse import urlparse
 
 import sys
@@ -16,7 +17,7 @@ from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.')
+parser = argparse.ArgumentParser(description='Generate and print an AID\'s DID.')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 
@@ -31,6 +32,7 @@ parser.add_argument("--role", "-r", help="role of oobis to generate", required=F
 # passcode => bran
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)
+parser.add_argument('--url', '-u', help="generate a DID URL instead of a DID", action="store_true")
 
 
 def handler(args):
@@ -55,13 +57,17 @@ def generate(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
     role = args.role
+    didurl = args.url
 
     with existing.existingHby(name=name, base=base, bran=bran) as hby:
         if alias is None:
             alias = existing.aliasInput(hby)
 
         hab = hby.habByName(name=alias)
-        if role in (kering.Roles.witness,):
+        if not didurl:
+            print(f"did:keri:{hab.pre}")
+
+        elif role in (kering.Roles.witness,):
             if not hab.kever.wits:
                 print(f"{alias} identfier {hab.pre} does not have any witnesses.")
                 sys.exit(-1)
@@ -72,11 +78,13 @@ def generate(tymth, tock=0.0, **opts):
                 raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
             up = urlparse(urls[kering.Schemes.http])
-            print(f"did:keri:{hab.pre}:http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
+            enc = urllib.parse.quote_plus(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
+            print(f"did:keri:{hab.pre}?oobi={enc}")
         elif role in (kering.Roles.controller,):
             urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
             if not urls:
                 print(f"{alias} identifier {hab.pre} does not have any controller endpoints")
                 return
             up = urlparse(urls[kering.Schemes.http])
-            print(f"did:keri:{hab.pre}:http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            enc = urllib.parse.quote_plus(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            print(f"did:keri:{hab.pre}?oobi={enc}")
