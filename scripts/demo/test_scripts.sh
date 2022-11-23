@@ -17,4 +17,5 @@ trap 'kill -HUP $wits' EXIT
 "${script_dir}/basic/demo-script.sh"
 "${script_dir}/basic/demo-witness-script.sh"
 "${script_dir}/basic/multisig.sh"
+"${script_dir}/basic/multisig-delegate-delegator.sh"
 "${script_dir}/basic/challenge.sh"

@@ -119,7 +119,7 @@ class ConfirmDoer(doing.DoDoer):
                         continue
 
                     if hab.mhab:
-                        aids = hab.mids
+                        aids = hab.smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
                         if self.interact:
@@ -145,7 +145,7 @@ class ConfirmDoer(doing.DoDoer):
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         seqner = coring.Seqner(sn=serder.sn)
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(mids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
+                        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
                                              saider=saider)
 
                         while True:
