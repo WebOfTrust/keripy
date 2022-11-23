@@ -281,7 +281,7 @@ def test_get_static_sink():
     # get trial.js
     rep = client.simulate_get('/static/index.js')
     assert rep.status == falcon.HTTP_OK
-    assert rep.headers['content-type'] == 'application/javascript; charset=UTF-8'
+    assert "javascript" in rep.headers['content-type']
     assert len(rep.text) > 0
     assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
