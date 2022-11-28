@@ -4579,6 +4579,12 @@ def test_siger():
     siger = Siger(qb64=qsig64, verfer=verfer)
     assert siger.verfer == verfer
 
+    siger = Siger(
+        raw=b'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456'
+            b'789abcdef', code=IdrDex.Ed448_Sig, index=4)
+    assert siger.qb64 == ('0AEEYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTI'
+                          'zNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU2Nzg5YWJjZGVm')
+
 
     """ Done Test """
 

@@ -484,7 +484,7 @@ class Oobiery:
                     continue
 
                 elif not response["status"] == 200:
-                    logger.error("invalid status for oobi response: {}".format(response["status"]))
+                    print("invalid status for oobi response: {}".format(response["status"]))
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)

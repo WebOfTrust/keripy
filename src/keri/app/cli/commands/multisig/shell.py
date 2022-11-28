@@ -138,7 +138,7 @@ class MultiSigShell(cmd.Cmd):
                 self.participants.append(aid)
                 print(f"{alias} AID {aid} added to participants")
                 if not self.static:
-                    self.prompt = "\tEnter threshold: "
+                    self.prompt = "\tEnter weight: "
 
         elif arg.startswith("participant"):
             alias = arg.removeprefix("participant").strip()
@@ -150,7 +150,7 @@ class MultiSigShell(cmd.Cmd):
                 self.participants.append(aid)
                 print(f"{alias} AID {aid} added to participants")
                 if not self.static:
-                    self.prompt = "\tEnter threshold: "
+                    self.prompt = "\tEnter weight: "
 
         elif arg.startswith("witness"):
             alias = arg.removeprefix("witness").strip()
@@ -241,7 +241,7 @@ class MultiSigShell(cmd.Cmd):
         return incept
 
     def precmd(self, line):
-        if self.prompt == "\tEnter threshold: ":
+        if self.prompt == "\tEnter weight: ":
             try:
                 if isNotValidFloat(line):
                     print("Float syntax not supported")

@@ -215,7 +215,10 @@ class Clienter(doing.DoDoer):
     def request(self, method, url):
         purl = parse.urlparse(url)
 
-        client = http.clienting.Client(hostname=purl.hostname, port=purl.port)
+        client = http.clienting.Client(scheme=purl.scheme,
+                                       hostname=purl.hostname,
+                                       port=purl.port,
+                                       portOptional=True)
 
         client.request(
             method=method,
