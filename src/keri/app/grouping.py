@@ -260,13 +260,17 @@ class Counselor(doing.DoDoer):
                     indices.append(idx)
                     merfers.append(pkever.verfers[0])
                     migers[idx] = pkever.nexter.digers[0]
-                else:
-                    break
 
-            if not gkever.tholder.satisfy(indices):
+            if not gkever.ntholder.satisfy(indices):
                 continue
 
-            rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,
+            if gkever.tholder.weighted and rec.isith is None:
+                isith = [gkever.ntholder.sith[idx] for idx in indices]
+            else:
+                isith = rec.isith
+
+            nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
+            rot = ghab.rotate(isith=isith, nsith=nsith,
                               toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
                               merfers=merfers, migers=migers)
             serder = coring.Serder(raw=rot)
