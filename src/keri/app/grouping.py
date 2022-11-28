@@ -251,17 +251,19 @@ class Counselor(doing.DoDoer):
             gkever = ghab.kever  # group hab's Kever instance key state
 
             merfers = []  # local verfers of group signing keys
+            indices = []  # weights of the local signers who have already rotated
             migers = list(gkever.nexter.digers)  # local participants next digers
             for aid in rec.smids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.smids.index(aid)
                 if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
+                    indices.append(idx)
                     merfers.append(pkever.verfers[0])
                     migers[idx] = pkever.nexter.digers[0]
                 else:
                     break
 
-            if len(merfers) != len(rec.smids):
+            if not gkever.tholder.satisfy(indices):
                 continue
 
             rot = ghab.rotate(isith=rec.isith, nsith=rec.nsith,

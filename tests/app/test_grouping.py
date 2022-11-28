@@ -91,7 +91,7 @@ def test_counselor():
         counselor.postman.evts.popleft()
 
         # Partial rotation
-        smids = [hab1.pre, hab2.pre]
+        smids = [hab1.pre, hab2.pre, hab3.pre]
         rmids = None  # need to fix
         counselor.rotate(ghab=ghab, smids=smids, rmids=rmids,
                          nsith='2', toad=0, cuts=list(), adds=list())
@@ -104,7 +104,7 @@ def test_counselor():
         counselor.processEscrows()  # process escrows to get witness-less event to next step
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is None
-        assert len(counselor.postman.evts) == 1
+        assert len(counselor.postman.evts) == 2
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == hab1.pre
         assert evt["dest"] == hab2.pre
@@ -155,7 +155,7 @@ def test_counselor():
                        b'YvFai31ajkT7qpwKFuCSQboCFIJ9T8iP462ltRgL-FbNb-YbybQFamTa23vqn7ve'
                        b'Es4w9C1UK')
 
-        # Create group rotation from second participany
+        # Create group rotation from second participant
 
         parsing.Parser().parse(ims=bytearray(msg), kvy=kev1)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
