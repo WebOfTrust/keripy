@@ -2197,19 +2197,36 @@ def test_counter():
         'SadPathSig': '-J',
         'SadPathSigGroup': '-K',
         'PathedMaterialQuadlets': '-L',
-        'MessageDataGroups': '-U',
         'AttachedMaterialQuadlets': '-V',
-        'MessageDataMaterialQuadlets': '-W',
-        'CombinedMaterialQuadlets': '-X',
-        'MaterialGroups': '-Y',
-        'MaterialQuadlets': '-Z',
-        'BigMessageDataGroups': '-0U',
         'BigAttachedMaterialQuadlets': '-0V',
-        'BigMessageDataMaterialQuadlets': '-0W',
-        'BigCombinedMaterialQuadlets': '-0X',
-        'BigMaterialGroups': '-0Y',
-        'BigMaterialQuadlets': '-0Z'
     }
+
+    #assert dataclasses.asdict(CtrDex) == {
+        #'ControllerIdxSigs': '-A',
+        #'WitnessIdxSigs': '-B',
+        #'NonTransReceiptCouples': '-C',
+        #'TransReceiptQuadruples': '-D',
+        #'FirstSeenReplayCouples': '-E',
+        #'TransIdxSigGroups': '-F',
+        #'SealSourceCouples': '-G',
+        #'TransLastIdxSigGroups': '-H',
+        #'SealSourceTriples': '-I',
+        #'SadPathSig': '-J',
+        #'SadPathSigGroup': '-K',
+        #'PathedMaterialQuadlets': '-L',
+        #'MessageDataGroups': '-U',
+        #'AttachedMaterialQuadlets': '-V',
+        #'MessageDataMaterialQuadlets': '-W',
+        #'CombinedMaterialQuadlets': '-X',
+        #'MaterialGroups': '-Y',
+        #'MaterialQuadlets': '-Z',
+        #'BigMessageDataGroups': '-0U',
+        #'BigAttachedMaterialQuadlets': '-0V',
+        #'BigMessageDataMaterialQuadlets': '-0W',
+        #'BigCombinedMaterialQuadlets': '-0X',
+        #'BigMaterialGroups': '-0Y',
+        #'BigMaterialQuadlets': '-0Z'
+    #}
 
     assert CtrDex.ControllerIdxSigs == '-A'
     assert CtrDex.WitnessIdxSigs == '-B'
@@ -2378,34 +2395,34 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
-    assert qsc == '-0UAAAQA'
+    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigMessageDataGroups, count=count)
-    assert counter.code == CtrDex.BigMessageDataGroups
+    counter = Counter(code=CtrDex.BigAttachedMaterialQuadlets, count=count)
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64b=qscb)  # test with bytes not str
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64=qsc)  # test with str not bytes
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb2=qscb2)  # test with qb2
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2488,14 +2505,14 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
-    assert qsc == '-0UAAAQA'
+    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True)  # test with bytes not str
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2504,7 +2521,7 @@ def test_counter():
 
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True)  # test with qb2
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc

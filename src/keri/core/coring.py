@@ -4322,10 +4322,37 @@ class Siger(Indexer):
         self._verfer = verfer
 
 
+@dataclass(frozen=True)
+class CounterCodex:
+    """
+    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+
+    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
+    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
+    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
+    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
+    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegators or issuers event
+    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
+    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables inclusion test with "in"
+
+CtrDex = CounterCodex()
 
 
 @dataclass(frozen=True)
-class CounterCodex:
+class AltCounterCodex:
     """
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
@@ -4359,9 +4386,6 @@ class CounterCodex:
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
-
-
-CtrDex = CounterCodex()
 
 
 class Counter:
