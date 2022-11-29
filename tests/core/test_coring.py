@@ -26,7 +26,7 @@ from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, sniff)
+                              CtrDex, Counter, sniff, ProDex)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
@@ -2258,27 +2258,9 @@ def test_counter():
         '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
         '--': Sizage(hs=2, ss=6, fs=8, ls=0)
     }
 
@@ -2529,6 +2511,16 @@ def test_counter():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert not ims
+
+    """ Done Test """
+
+def test_prodex():
+    """
+    Test ProtocolGenusCodex
+    """
+    assert dataclasses.asdict(ProDex) == {
+        'KERI': 'AAA',
+    }
 
     """ Done Test """
 
@@ -5834,6 +5826,7 @@ def test_tholder():
 if __name__ == "__main__":
     #test_matter()
     test_counter()
+    test_prodex()
     #test_indexer()
     #test_number()
     #test_siger()
