@@ -4530,6 +4530,7 @@ class Counter:
         """
         return self._code
 
+
     @property
     def count(self):
         """
@@ -4537,6 +4538,7 @@ class Counter:
         Makes ._count read only
         """
         return self._count
+
 
     @property
     def qb64b(self):
@@ -4547,6 +4549,7 @@ class Counter:
         """
         return self._infil()
 
+
     @property
     def qb64(self):
         """
@@ -4556,6 +4559,7 @@ class Counter:
         """
         return self.qb64b.decode("utf-8")
 
+
     @property
     def qb2(self):
         """
@@ -4563,6 +4567,20 @@ class Counter:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
+
+
+    def countToB64(self, l=None):
+        """ Returns count as Base64 left padded with "A"s
+            Parameters:
+                l (int | None): minimum number characters including left padding
+                    When not provided use the softsize of .code
+
+        """
+        if l is None:
+            hs, ss, fs, ls = self.Sizes[self.code]
+            l = ss
+        return (intToB64(self.count, l=l))
+
 
     def _infil(self):
         """

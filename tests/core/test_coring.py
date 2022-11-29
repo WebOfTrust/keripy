@@ -2526,9 +2526,12 @@ def test_counter():
     counter = Counter(code=CtrDex.KERIProtocolStack, count=verint)
     assert counter.code == CtrDex.KERIProtocolStack
     assert counter.count == verint
+    assert counter.countToB64(l=3) == version
+    assert counter.countToB64() == version  # default length
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+
 
     """ Done Test """
 
