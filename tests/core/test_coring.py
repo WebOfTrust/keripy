@@ -2512,6 +2512,24 @@ def test_counter():
     assert counter.qb2 == qscb2
     assert not ims
 
+    #test protocol genus with CESR version
+    # test with big codes index=1024
+    verint = 0
+    version = intToB64(verint, l=3)
+    assert version == 'AAA'
+    assert verint == b64ToInt(version)
+    qsc = CtrDex.KERIProtocolStack + version
+    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.KERIProtocolStack, count=verint)
+    assert counter.code == CtrDex.KERIProtocolStack
+    assert counter.count == verint
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
     """ Done Test """
 
 def test_prodex():
