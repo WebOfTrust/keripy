@@ -2199,6 +2199,7 @@ def test_counter():
         'PathedMaterialQuadlets': '-L',
         'AttachedMaterialQuadlets': '-V',
         'BigAttachedMaterialQuadlets': '-0V',
+        'ProtocolGenusVersion': '--',
     }
 
     #assert dataclasses.asdict(CtrDex) == {
@@ -2241,7 +2242,7 @@ def test_counter():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3
+        '-0': 3, '--': 2,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
@@ -2277,7 +2278,8 @@ def test_counter():
         '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '--': Sizage(hs=2, ss=6, fs=8, ls=0)
     }
 
     assert Counter.Sizes['-A'].hs == 2  # hard size
@@ -5831,10 +5833,10 @@ def test_tholder():
 
 if __name__ == "__main__":
     #test_matter()
-    #test_counter()
+    test_counter()
     #test_indexer()
     #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
-    test_tholder()
+    #test_tholder()

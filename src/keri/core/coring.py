@@ -4344,11 +4344,28 @@ class CounterCodex:
     PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    ProtocolGenusVersion: str = '--'  # Protocol Genus and Version --GGGVVV
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
 
 CtrDex = CounterCodex()
+
+
+@dataclass(frozen=True)
+class ProtocolGenusCodex:
+    """ProtocolGenusCodex is codex of protocol genera.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    KERI: str = 'AAA'  # KERI ACDC Protocol Stack
+
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+ProDex = ProtocolGenusCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -4383,6 +4400,7 @@ class AltCounterCodex:
     BigCombinedMaterialQuadlets: str = '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
     BigMaterialGroups: str = '-0Y'  # Composed Generic Material Group or Primitive
     BigMaterialQuadlets: str = '-0Z'  # Composed Generic Material Quadlet (4 char each)
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -4424,6 +4442,7 @@ class Counter:
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
+    Hards.update([('--', 2)])
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -4459,7 +4478,8 @@ class Counter:
         '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0),
+        '--': Sizage(hs=2, ss=6, fs=8, ls=0),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
