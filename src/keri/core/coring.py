@@ -4322,10 +4322,54 @@ class Siger(Indexer):
         self._verfer = verfer
 
 
+@dataclass(frozen=True)
+class CounterCodex:
+    """
+    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+
+    ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
+    WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
+    NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
+    TransReceiptQuadruples: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
+    FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
+    SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegators or issuers event
+    TransLastIdxSigGroups: str = '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples: str = '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
+    SadPathSig: str = '-J'  # Composed Base64 Group path+TransIdxSigGroup of SAID of content
+    SadPathSigGroup: str = '-K'  # Composed Base64 Group, root(path)+SaidPathCouples
+    PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
+    AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables inclusion test with "in"
+
+CtrDex = CounterCodex()
 
 
 @dataclass(frozen=True)
-class CounterCodex:
+class ProtocolGenusCodex:
+    """ProtocolGenusCodex is codex of protocol genera.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    KERI: str = '--AAA'  # KERI ACDC Protocol Stack
+
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+ProDex = ProtocolGenusCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class AltCounterCodex:
     """
     CounterCodex is codex hard (stable) part of all counter derivation codes.
     Only provide defined codes.
@@ -4357,11 +4401,9 @@ class CounterCodex:
     BigMaterialGroups: str = '-0Y'  # Composed Generic Material Group or Primitive
     BigMaterialQuadlets: str = '-0Z'  # Composed Generic Material Quadlet (4 char each)
 
+
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
-
-
-CtrDex = CounterCodex()
 
 
 class Counter:
@@ -4400,6 +4442,7 @@ class Counter:
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
+    Hards.update([('--', 5)])
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -4416,26 +4459,9 @@ class Counter:
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.

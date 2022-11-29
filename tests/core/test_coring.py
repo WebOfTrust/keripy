@@ -26,7 +26,7 @@ from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
-                              CtrDex, Counter, sniff)
+                              CtrDex, Counter, sniff, ProDex)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
                               Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
@@ -2197,19 +2197,37 @@ def test_counter():
         'SadPathSig': '-J',
         'SadPathSigGroup': '-K',
         'PathedMaterialQuadlets': '-L',
-        'MessageDataGroups': '-U',
         'AttachedMaterialQuadlets': '-V',
-        'MessageDataMaterialQuadlets': '-W',
-        'CombinedMaterialQuadlets': '-X',
-        'MaterialGroups': '-Y',
-        'MaterialQuadlets': '-Z',
-        'BigMessageDataGroups': '-0U',
         'BigAttachedMaterialQuadlets': '-0V',
-        'BigMessageDataMaterialQuadlets': '-0W',
-        'BigCombinedMaterialQuadlets': '-0X',
-        'BigMaterialGroups': '-0Y',
-        'BigMaterialQuadlets': '-0Z'
+        'KERIProtocolStack': '--AAA',
     }
+
+    #assert dataclasses.asdict(CtrDex) == {
+        #'ControllerIdxSigs': '-A',
+        #'WitnessIdxSigs': '-B',
+        #'NonTransReceiptCouples': '-C',
+        #'TransReceiptQuadruples': '-D',
+        #'FirstSeenReplayCouples': '-E',
+        #'TransIdxSigGroups': '-F',
+        #'SealSourceCouples': '-G',
+        #'TransLastIdxSigGroups': '-H',
+        #'SealSourceTriples': '-I',
+        #'SadPathSig': '-J',
+        #'SadPathSigGroup': '-K',
+        #'PathedMaterialQuadlets': '-L',
+        #'MessageDataGroups': '-U',
+        #'AttachedMaterialQuadlets': '-V',
+        #'MessageDataMaterialQuadlets': '-W',
+        #'CombinedMaterialQuadlets': '-X',
+        #'MaterialGroups': '-Y',
+        #'MaterialQuadlets': '-Z',
+        #'BigMessageDataGroups': '-0U',
+        #'BigAttachedMaterialQuadlets': '-0V',
+        #'BigMessageDataMaterialQuadlets': '-0W',
+        #'BigCombinedMaterialQuadlets': '-0X',
+        #'BigMaterialGroups': '-0Y',
+        #'BigMaterialQuadlets': '-0Z'
+    #}
 
     assert CtrDex.ControllerIdxSigs == '-A'
     assert CtrDex.WitnessIdxSigs == '-B'
@@ -2224,7 +2242,7 @@ def test_counter():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3
+        '-0': 3, '--': 5,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
@@ -2240,27 +2258,10 @@ def test_counter():
         '-I': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-J': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-K': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-U': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-W': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-X': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Y': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-Z': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-a': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-c': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-d': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-e': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-k': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-l': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-r': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-w': Sizage(hs=2, ss=2, fs=4, ls=0),
-        '-0U': Sizage(hs=3, ss=5, fs=8, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0W': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0X': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Y': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '-0Z': Sizage(hs=3, ss=5, fs=8, ls=0)
+        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
     }
 
     assert Counter.Sizes['-A'].hs == 2  # hard size
@@ -2378,34 +2379,34 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
-    assert qsc == '-0UAAAQA'
+    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.BigMessageDataGroups, count=count)
-    assert counter.code == CtrDex.BigMessageDataGroups
+    counter = Counter(code=CtrDex.BigAttachedMaterialQuadlets, count=count)
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64b=qscb)  # test with bytes not str
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb64=qsc)  # test with str not bytes
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
 
     counter = Counter(qb2=qscb2)  # test with qb2
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2488,14 +2489,14 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
-    assert qsc == '-0UAAAQA'
+    qsc = CtrDex.BigAttachedMaterialQuadlets + intToB64(count, l=5)
+    assert qsc == '-0VAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
     ims = bytearray(qscb)
     counter = Counter(qb64b=ims, strip=True)  # test with bytes not str
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
@@ -2504,12 +2505,40 @@ def test_counter():
 
     ims = bytearray(qscb2)
     counter = Counter(qb2=ims, strip=True)  # test with qb2
-    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.code == CtrDex.BigAttachedMaterialQuadlets
     assert counter.count == count
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert not ims
+
+    #test protocol genus with CESR version
+    # test with big codes index=1024
+    verint = 0
+    version = intToB64(verint, l=3)
+    assert version == 'AAA'
+    assert verint == b64ToInt(version)
+    qsc = CtrDex.KERIProtocolStack + version
+    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.KERIProtocolStack, count=verint)
+    assert counter.code == CtrDex.KERIProtocolStack
+    assert counter.count == verint
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    """ Done Test """
+
+def test_prodex():
+    """
+    Test ProtocolGenusCodex
+    """
+    assert dataclasses.asdict(ProDex) == {
+        'KERI': '--AAA',
+    }
 
     """ Done Test """
 
@@ -5814,10 +5843,11 @@ def test_tholder():
 
 if __name__ == "__main__":
     #test_matter()
-    #test_counter()
+    test_counter()
+    test_prodex()
     #test_indexer()
     #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
-    test_tholder()
+    #test_tholder()
