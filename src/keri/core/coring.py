@@ -4344,7 +4344,7 @@ class CounterCodex:
     PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack Version
+    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
