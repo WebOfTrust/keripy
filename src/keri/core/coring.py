@@ -4577,7 +4577,7 @@ class Counter:
 
         """
         if l is None:
-            hs, ss, fs, ls = self.Sizes[self.code]
+            _, ss, _, _ = self.Sizes[self.code]
             l = ss
         return (intToB64(self.count, l=l))
 
