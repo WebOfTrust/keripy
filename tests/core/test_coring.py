@@ -2555,6 +2555,7 @@ def test_counter():
     assert Counter.semVerToB64(version="1.2.") == "BCA"
     assert Counter.semVerToB64(version="..") == "AAA"
     assert Counter.semVerToB64(version="1..3") == "BAD"
+    assert Counter.semVerToB64(version="4", major=1, minor=2, patch=3) == "ECD"
 
     with pytest.raises(ValueError):
         Counter.semVerToB64(version="64.0.1")
@@ -2568,8 +2569,6 @@ def test_counter():
         Counter.semVerToB64(minor=-1)
     with pytest.raises(ValueError):
         Counter.semVerToB64(patch=-1)
-
-
 
     """ Done Test """
 
