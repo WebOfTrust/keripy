@@ -2199,7 +2199,7 @@ def test_counter():
         'PathedMaterialQuadlets': '-L',
         'AttachedMaterialQuadlets': '-V',
         'BigAttachedMaterialQuadlets': '-0V',
-        'ProtocolGenusVersion': '--',
+        'KERIProtocolStack': '--AAA',
     }
 
     #assert dataclasses.asdict(CtrDex) == {
@@ -2242,7 +2242,7 @@ def test_counter():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3, '--': 2,
+        '-0': 3, '--': 5,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
@@ -2261,7 +2261,7 @@ def test_counter():
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '--': Sizage(hs=2, ss=6, fs=8, ls=0)
+        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0)
     }
 
     assert Counter.Sizes['-A'].hs == 2  # hard size
@@ -2519,7 +2519,7 @@ def test_prodex():
     Test ProtocolGenusCodex
     """
     assert dataclasses.asdict(ProDex) == {
-        'KERI': 'AAA',
+        'KERI': '--AAA',
     }
 
     """ Done Test """

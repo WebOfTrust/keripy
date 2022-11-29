@@ -4344,7 +4344,7 @@ class CounterCodex:
     PathedMaterialQuadlets: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     AttachedMaterialQuadlets: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachedMaterialQuadlets: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
-    ProtocolGenusVersion: str = '--'  # Protocol Genus and Version --GGGVVV
+    KERIProtocolStack: str = '--AAA'  # KERI ACDC Protocol Stack Version
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
@@ -4359,7 +4359,7 @@ class ProtocolGenusCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI: str = 'AAA'  # KERI ACDC Protocol Stack
+    KERI: str = '--AAA'  # KERI ACDC Protocol Stack
 
 
     def __iter__(self):
@@ -4442,7 +4442,7 @@ class Counter:
     Hards = ({('-' + chr(c)): 2 for c in range(65, 65 + 26)})
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
-    Hards.update([('--', 2)])
+    Hards.update([('--', 5)])
     # Sizes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -4461,7 +4461,7 @@ class Counter:
         '-L': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-V': Sizage(hs=2, ss=2, fs=4, ls=0),
         '-0V': Sizage(hs=3, ss=5, fs=8, ls=0),
-        '--': Sizage(hs=2, ss=6, fs=8, ls=0),
+        '--AAA': Sizage(hs=5, ss=3, fs=8, ls=0),
     }
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
