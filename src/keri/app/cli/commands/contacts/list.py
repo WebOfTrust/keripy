@@ -16,7 +16,7 @@ from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='List existing contacts')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
@@ -24,8 +24,6 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-
-parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 
 def handler(args):
