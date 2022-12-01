@@ -2402,7 +2402,7 @@ class MultisigEventEnd(MultisigEndBase):
         # Create `exn` peer to peer message to notify other participants UI
         exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
-        #others = list(ghab.smids)
+
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
