@@ -470,7 +470,7 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEnds(app, hby, *, tymth=None, default=None):
+def loadEnds(app, hby, *, tymth=None, default=None, static=False):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
@@ -483,10 +483,12 @@ def loadEnds(app, hby, *, tymth=None, default=None):
         hby(Habery): glocal database environment
         tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
         default (str) qb64 AID of the 'self' of the node for
+        static (bool) True exposes a sink end point for static files.
 
     """
-    sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
-    app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
+    if static:
+        sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
+        app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
 
     # Resources are represented by long-lived class instances
     # handles all requests to '/end' URL path

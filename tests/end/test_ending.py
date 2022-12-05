@@ -208,7 +208,7 @@ def test_get_static_sink():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    ending.loadEnds(myapp, hby=None, tymth=tymist.tymen())
+    ending.loadEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
 
     client = testing.TestClient(app=myapp)
 
