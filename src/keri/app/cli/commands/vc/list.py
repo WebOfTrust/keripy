@@ -132,7 +132,7 @@ class ListDoer(doing.DoDoer):
                     raise kering.ConfigurationError("Credential schema {} not found".format(schema))
 
                 schemer = scheming.Schemer(raw=scraw)
-                print(f"Crecential #{idx+1}: {sad['d']}")
+                print(f"Credential #{idx+1}: {sad['d']}")
                 print(f"    Type: {schemer.sed['title']}")
                 if status['et'] == 'iss' or status['et'] == 'bis':
                     print(f"    Status: Issued {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")

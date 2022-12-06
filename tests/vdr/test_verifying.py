@@ -463,7 +463,7 @@ def test_verifier_chained_credential(seeder):
         cue = ianverfer.cues.popleft()
         assert cue["kin"] == "proof"
 
-        # Now lets get Ron's crecential into Ian's Tevers and Database
+        # Now lets get Ron's credential into Ian's Tevers and Database
         iankvy = ceventing.Kevery(db=ian.db, lax=False, local=False)
         iantvy = eventing.Tevery(reger=ianreg.reger, db=ian.db, local=False)
         ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
@@ -489,7 +489,7 @@ def test_verifier_chained_credential(seeder):
         saider = ianreg.reger.schms.get(vLeiSchema)
         assert saider[0].qb64 == vLeiCreder.said
 
-        # Now lets get Ron's crecential into Vic's Tevers and Database
+        # Now lets get Ron's credential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
         victvy = eventing.Tevery(reger=vicreg.reger, db=vic.db, local=False)
         vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
