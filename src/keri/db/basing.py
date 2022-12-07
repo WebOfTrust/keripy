@@ -1154,6 +1154,14 @@ class Baser(dbing.LMDBer):
         msg.extend(atc)
         return msg
 
+    def cloneDelegation(self, kever):
+        if kever.delegated:
+            dkever = self.kevers[kever.delegator]
+            yield from self.cloneDelegation(dkever)
+
+            for dmsg in self.clonePreIter(pre=kever.delegator, fn=0):
+                yield dmsg
+
     def findAnchoringEvent(self, pre, anchor):
         """
         Search through a KEL for the event that contains a specific anchor.

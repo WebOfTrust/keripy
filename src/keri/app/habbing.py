@@ -1551,9 +1551,8 @@ class Hab:
 
         msgs = bytearray()
         kever = self.kevers[pre]
-        if kever.delegated:
-            for msg in self.db.clonePreIter(pre=kever.delegator, fn=0):
-                msgs.extend(msg)
+        for msg in self.db.cloneDelegation(kever=kever):
+            msgs.extend(msg)
 
         for msg in self.db.clonePreIter(pre=pre, fn=fn):
             msgs.extend(msg)
