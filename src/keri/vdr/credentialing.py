@@ -343,7 +343,7 @@ class Registry:
         """  Create key event with seal to serder anchored as data.
 
         Performs a rotation or interaction event for single sig or multiple sig identifier
-        to anchor the provide regsitry event.  Inserts outbound cues for external processing
+        to anchor the provide registry event.  Inserts outbound cues for external processing
         of resulting events or multisig handling.
 
         Parameters:

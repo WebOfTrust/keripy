@@ -88,7 +88,7 @@ class RegerDict(dict):
 
 @dataclass
 class RegistryRecord:
-    """ Registry Key keyed by Regsitry name
+    """ Registry Key keyed by Registry name
     """
     registryKey: str
     prefix: str
