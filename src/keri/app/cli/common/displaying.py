@@ -85,6 +85,7 @@ def printExternal(hby, pre, label="Identifier"):
     ser = kever.serder
     dgkey = dbing.dgKey(ser.preb, ser.saidb)
     wigs = hby.db.getWigs(dgkey)
+    dgkey = dbing.dgKey(ser.preb, kever.lastEst.d)
     anchor = hby.db.getAes(dgkey)
 
     print("{}: {}".format(label, pre))
