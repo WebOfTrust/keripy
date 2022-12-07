@@ -303,11 +303,19 @@ class Counselor(doing.DoDoer):
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
                 keys = [verfer.qb64 for verfer in kever.verfers]
-                witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]  # Elected to perform delegation and witnessing
+                sigs = self.hby.db.getSigs(dbing.dgKey(pre, bytes(sdig)))
+                if not sigs:  # otherwise its a list of sigs
+                    continue
+
+                sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+                windex = min([siger.index for siger in sigers])
+
+                # True if Elected to perform delegation and witnessing
+                witered = ghab.mhab.kever.verfers[0].qb64 == keys[windex]
 
                 if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
-                    if witer:  # We are elected to perform delegation and witnessing messaging
+                    if witered:  # We are elected to perform delegation and witnessing messaging
                         print(f"We are the witnesser, sending {pre} to delegator")
                         self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
                     else:
@@ -317,7 +325,7 @@ class Counselor(doing.DoDoer):
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
                 else:  # Non-delegation, move on to witnessing
-                    if witer:  # We are elected witnesser, send off event to witnesses
+                    if witered:  # We are elected witnesser, send off event to witnesses
                         print(f"We are the fully signed witnesser {seqner.sn}, sending to witnesses")
                         self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
 
