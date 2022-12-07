@@ -33,7 +33,7 @@ class WitnessReceiptor(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, msgs=None, cues=None, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, force=False, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -42,9 +42,11 @@ class WitnessReceiptor(doing.DoDoer):
             hby (Habery): Habitat of the identifier to receipt witnesses
             msgs (Deck): incoming messages to publish to witnesses
             cues (Deck): outgoing cues of successful messages
+            force (bool): True means to send witnesses all receipts even if we have a full compliment.
 
         """
         self.hby = hby
+        self.force = force
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
@@ -88,35 +90,39 @@ class WitnessReceiptor(doing.DoDoer):
 
                 dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
-                # Check to see if we already have all the receipts we need for this event
-                wigs = hab.db.getWigs(dgkey)
-                if len(wigs) == len(wits):  # We have all the receipts, skip
-                    self.cues.append(evt)
-                    continue
-
                 witers = []
                 for wit in wits:
                     witer = witnesser(hab, wit)
-
                     witers.append(witer)
-
-                    for dmsg in hab.db.cloneDelegation(hab.kever):
-                        witer.msgs.append(bytearray(dmsg))
-
-                    if "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
-                        for fmsg in hab.db.clonePreIter(pre=pre):
-                            witer.msgs.append(bytearray(fmsg))
-
-                    witer.msgs.append(bytearray(msg))  # make a copy
                     self.extend([witer])
 
-                    _ = (yield self.tock)
+                # Check to see if we already have all the receipts we need for this event
+                wigs = hab.db.getWigs(dgkey)
+                completed = len(wigs) == len(wits)
+                if len(wigs) != len(wits):  # We have all the receipts, skip
+                    for idx, witer in enumerate(witers):
+                        wit = wits[idx]
 
-                while True:
-                    wigs = hab.db.getWigs(dgkey)
-                    if len(wigs) == len(wits):
-                        break
-                    _ = yield self.tock
+                        for dmsg in hab.db.cloneDelegation(hab.kever):
+                            witer.msgs.append(bytearray(dmsg))
+
+                        if "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
+                            for fmsg in hab.db.clonePreIter(pre=pre):
+                                witer.msgs.append(bytearray(fmsg))
+
+                        witer.msgs.append(bytearray(msg))  # make a copy
+                        _ = (yield self.tock)
+
+                    while True:
+                        wigs = hab.db.getWigs(dgkey)
+                        if len(wigs) == len(wits):
+                            break
+                        _ = yield self.tock
+
+                # If we started with all our recipts, exit unless told to force resubmit of all receipts
+                if completed and not self.force:
+                    self.cues.append(evt)
+                    continue
 
                 # generate all rct msgs to send to all witnesses
                 awigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]

@@ -4,21 +4,16 @@ keri.kli.commands module
 
 """
 import argparse
-import json
-from dataclasses import dataclass
-from json import JSONDecodeError
 
-import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
-from keri.app.cli.common import existing
-from keri.core import coring
+from keri.app import habbing, agenting, indirecting
+from keri.app.cli.common import existing, displaying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser = argparse.ArgumentParser(description='Submit current event to witnesses for receipting')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
@@ -32,6 +27,10 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
+parser.add_argument('--force', action="store_true", required=False,
+                    help='True means to send witnesses all receipts even if we have a full compliment of receipts for '
+                         'the current event')
+
 
 def handler(args):
     """
@@ -45,8 +44,9 @@ def handler(args):
     base = args.base
     bran = args.bran
     alias = args.alias
+    force = args.force
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, force=force)
 
     doers = [icpDoer]
     return doers
@@ -56,16 +56,17 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, ):
+    def __init__(self, name, base, alias, bran, force):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
         self.alias = alias
         self.hby = hby
+        self.force = force
 
         self.witDoer = None
-        doers = [self.hbyDoer,  self.mbx, doing.doify(self.inceptDo)]
+        doers = [self.hbyDoer, self.mbx, doing.doify(self.inceptDo)]
 
         super(InceptDoer, self).__init__(doers=doers)
 
@@ -84,7 +85,7 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witDoer = agenting.WitnessReceiptor(hby=self.hby, force=self.force)
         self.extend([self.witDoer])
 
         if hab.kever.wits:
@@ -93,13 +94,9 @@ class InceptDoer(doing.DoDoer):
             while not self.witDoer.cues:
                 _ = yield self.tock
 
-        print(f'Prefix  {hab.pre}')
-        for idx, verfer in enumerate(hab.kever.verfers):
-            print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
-        print()
+        displaying.printIdentifier(self.hby, hab.pre)
 
         toRemove = [self.hbyDoer, self.witDoer, self.mbx]
         self.remove(toRemove)
 
         return
-
