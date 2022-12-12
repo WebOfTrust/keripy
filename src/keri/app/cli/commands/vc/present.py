@@ -112,7 +112,7 @@ class PresentDoer(doing.DoDoer):
             for msg in senderHab.db.clonePreIter(pre=senderHab.pre):
                 serder = coring.Serder(raw=msg)
                 atc = msg[serder.size:]
-                self.postman.send(src=senderHab, dest=recp, topic="credential", serder=serder, attachment=atc)
+                self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
 
         exn, atc = protocoling.presentationExchangeExn(hab=senderHab, reger=self.rgy.reger, said=self.said)
         self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
