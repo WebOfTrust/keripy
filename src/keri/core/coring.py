@@ -4467,21 +4467,28 @@ class Counter:
     # converted from first two code char. Used for ._bexfil.
     Bards = ({codeB64ToB2(c): hs for c, hs in Hards.items()})
 
-    def __init__(self, code=None, count=1, qb64b=None, qb64=None,
-                 qb2=None, strip=False):
+    def __init__(self, code=None, count=None, countB64=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
-            code is str of stable (hard) part of derivation code
-            count is int count for following group of items (primitives or groups)
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            strip is Boolean True means strip counter contents from input stream
-                bytearray after parsing qb64b or qb2. False means do not strip
+            code (str | None):  stable (hard) part of derivation code
+            count (int | None): count for composition.
+                Count may represent quadlets/triplet, groups, primitives or
+                other numericy
+                When both count and countB64 are None then count defaults to 1
+            countB64 (str | None): count for composition as Base64
+                countB64 may represent quadlets/triplet, groups, primitives or
+                other numericy
+            qb64b (bytes | bytearray | None): fully qualified crypto material text domain
+            qb64 (str | None) fully qualified crypto material text domain
+            qb2 (bytes | bytearray | None)  fully qualified crypto material binary domain
+            strip (bool):  True means strip counter contents from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip.
+                default False
 
 
-        Needs either (code and count) or qb64b or qb64 or qb2
+        Needs either code or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
         When code and count provided then validate that code and count are correct
         Else when qb64b or qb64 or qb2 provided extract and assign
@@ -4497,6 +4504,9 @@ class Counter:
             if fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
                 raise InvalidCodeSizeError("Whole code size not full size or not "
                                            "multiple of 4. cs={} fs={}.".format(cs, fs))
+
+            if count is None:
+                count = 1 if countB64 is None else b64ToInt(countB64)
 
             if count < 0 or count > (64 ** ss - 1):
                 raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
@@ -4530,6 +4540,7 @@ class Counter:
         """
         return self._code
 
+
     @property
     def count(self):
         """
@@ -4537,6 +4548,7 @@ class Counter:
         Makes ._count read only
         """
         return self._count
+
 
     @property
     def qb64b(self):
@@ -4547,6 +4559,7 @@ class Counter:
         """
         return self._infil()
 
+
     @property
     def qb64(self):
         """
@@ -4556,6 +4569,7 @@ class Counter:
         """
         return self.qb64b.decode("utf-8")
 
+
     @property
     def qb2(self):
         """
@@ -4563,6 +4577,55 @@ class Counter:
         Returns Fully Qualified Binary Version Bytes
         """
         return self._binfil()
+
+
+    def countToB64(self, l=None):
+        """ Returns count as Base64 left padded with "A"s
+            Parameters:
+                l (int | None): minimum number characters including left padding
+                    When not provided use the softsize of .code
+
+        """
+        if l is None:
+            _, ss, _, _ = self.Sizes[self.code]
+            l = ss
+        return (intToB64(self.count, l=l))
+
+
+    @staticmethod
+    def semVerToB64(version="", major=0, minor=0, patch=0):
+        """ Converts semantic version to Base64 representation of countB64
+        suitable for CESR protocol genus and version
+
+        Returns:
+            countB64 (str): suitable for input to Counter
+            example: Counter(countB64=semVerToB64(version = "1.0.0"))
+
+        Parameters:
+            version (str | None): dot separated semantic version string of format
+                "major.minor.patch"
+            major (int): When version is None or empty then use major,minor, patch
+            minor (int): When version is None or empty then use major,minor, patch
+            patch (int): When version is None or empty then use major,minor, patch
+
+        each of major, minor, patch must be in range [0,63] for represenation as
+        three Base64 characters
+
+        """
+        parts = [major, minor, patch]
+        if version:
+            splits = version.split(".", maxsplit=3)
+            splits = [(int(s) if s else 0) for s in splits]
+            for i in range(3-len(splits),0, -1):
+                splits.append(parts[-i])
+            parts = splits
+
+        for p in parts:
+            if p < 0 or p > 63:
+                raise ValueError(f"Out of bounds semantic version. "
+                                 f"Part={p} is < 0 or > 63.")
+        return ("".join(intToB64(p, l=1) for p in parts))
+
 
     def _infil(self):
         """

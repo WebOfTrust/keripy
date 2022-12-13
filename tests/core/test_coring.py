@@ -2526,9 +2526,49 @@ def test_counter():
     counter = Counter(code=CtrDex.KERIProtocolStack, count=verint)
     assert counter.code == CtrDex.KERIProtocolStack
     assert counter.count == verint
+    assert counter.countToB64(l=3) == version
+    assert counter.countToB64() == version  # default length
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+
+    counter = Counter(code=CtrDex.KERIProtocolStack, countB64=version)
+    assert counter.code == CtrDex.KERIProtocolStack
+    assert counter.count == verint
+    assert counter.countToB64(l=3) == version
+    assert counter.countToB64() == version  # default length
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    assert Counter.semVerToB64("1.2.3") == "BCD"
+    assert Counter.semVerToB64() == "AAA"
+    assert Counter.semVerToB64(major=1) == "BAA"
+    assert Counter.semVerToB64(minor=1) == "ABA"
+    assert Counter.semVerToB64(patch=1) == "AAB"
+    assert Counter.semVerToB64(major=3, minor=4, patch=5) == "DEF"
+
+    # test defaults for missing parts in string version
+    assert Counter.semVerToB64(version="1.1") == "BBA"
+    assert Counter.semVerToB64(version="1.") == "BAA"
+    assert Counter.semVerToB64(version="1") == "BAA"
+    assert Counter.semVerToB64(version="1.2.") == "BCA"
+    assert Counter.semVerToB64(version="..") == "AAA"
+    assert Counter.semVerToB64(version="1..3") == "BAD"
+    assert Counter.semVerToB64(version="4", major=1, minor=2, patch=3) == "ECD"
+
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(version="64.0.1")
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(version="-1.0.1")
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(version="0.0.64")
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(major=64)
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(minor=-1)
+    with pytest.raises(ValueError):
+        Counter.semVerToB64(patch=-1)
 
     """ Done Test """
 
