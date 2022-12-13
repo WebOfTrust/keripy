@@ -109,7 +109,7 @@ class RegistryInceptor(doing.DoDoer):
             self.rgy.processEscrows()
             yield self.tock
 
-        print("Regsitry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName,
+        print("Registry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName,
                                                                                 registry.regk, hab.pre))
 
         self.remove(self.toRemove)
