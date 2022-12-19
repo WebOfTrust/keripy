@@ -11,6 +11,7 @@ from hio.base import doing
 
 from keri.app import connecting, forwarding
 from keri.app.cli.common import existing
+from keri.core import coring
 from keri.vc import protocoling
 from keri.vdr import credentialing
 
@@ -97,8 +98,24 @@ class PresentDoer(doing.DoDoer):
             credentialing.sendCredential(self.hby, hab=self.hab, reger=self.rgy.reger, postman=self.postman,
                                          creder=creder, recp=recp)
 
-        exn, atc = protocoling.presentationExchangeExn(hab=self.hab, reger=self.rgy.reger, said=self.said)
-        self.postman.send(src=self.hab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
+        if self.hab.mhab:
+            senderHab = self.hab.mhab
+        else:
+            senderHab = self.hab
+
+        if senderHab.pre != creder.issuer:
+            for msg in senderHab.db.cloneDelegation(senderHab.kever):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+            for msg in senderHab.db.clonePreIter(pre=senderHab.pre):
+                serder = coring.Serder(raw=msg)
+                atc = msg[serder.size:]
+                self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+        exn, atc = protocoling.presentationExchangeExn(hab=senderHab, reger=self.rgy.reger, said=self.said)
+        self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=exn, attachment=atc)
 
         while True:
             while self.postman.cues:

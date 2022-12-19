@@ -77,7 +77,7 @@ class RegistryStatusor(doing.DoDoer):
         _ = (yield self.tock)
 
         reg = self.rgy.registryByName(self.registryName)
-        print(f"Regsitry:  {reg.regk}")
+        print(f"Registry:  {reg.regk}")
         print(f"Seq No.  {reg.tever.sn}")
         print(f"    Controlling Identifier:  {reg.hab.pre}")
         print()

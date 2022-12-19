@@ -2006,7 +2006,7 @@ class Tevery:
             serder (Serder): event messate
 
         Returns:
-            str: qb64 regsitry identifier
+            str: qb64 registry identifier
         """
         ilk = serder.ked["t"]
 
