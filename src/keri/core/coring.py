@@ -2951,8 +2951,8 @@ class Nexter:
 
     def satisfies(self, tholder, indices, digers=None,  digs=None):
         """Given prior next digest list in .digers the provided tholder,
-        and ondices with either provided digers or digs together constitute a
-        satisfycing subset of the prior next threshold. Each ondice indicates
+        and indices with either provided digers or digs together constitute a
+        satisfycing subset of the prior next threshold. Each index indicates
         which index offset into .digers is the corresponding diger or dig.
 
         Returns:
@@ -2969,8 +2969,6 @@ class Nexter:
             if digs is None:
                 raise EmptyListError(f"Need digers, digs, verfers, or keys.")
             digers = [Diger(qb64=dig) for dig in digs]
-
-
 
         return False
 
@@ -5025,12 +5023,19 @@ class Serder(Sadder):
 
     Has the following public properties:
 
+    Inherited Properties:
+        raw (bytes): of serialized event only
+        ked (dict): self addressed data dict
+        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+        size (int): number of bytes in serialization
+        version (Versionage): protocol version (Major, Minor)
+        ident (Identage): protocol identifier such as KERI, ACDC
+        saider (Saider): of SAID of this SAD .ked['d'] if present
+        said (str): SAID of .saider qb64
+        saidb (bytes): SAID of .saider  qb64b
+        pretty (str): Pretty JSON of this SAD
+
     Properties:
-        .raw is bytes of serialized event only
-        .ked is key event dict
-        .kind is serialization kind string value (see namedtuple coring.Serials)
-        .version is Versionage instance of event version
-        .size is int of number of bytes in serialed event only
         .diger is Diger instance of digest of .raw
         .dig  is qb64 digest from .diger
         .digb is qb64b digest from .diger
@@ -5042,8 +5047,6 @@ class Serder(Sadder):
         sn (int): sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
-        .said is qb64 of .ked['d'] if present
-        .saidb is qb64b of .ked['d'] of present
 
     Hidden Attributes:
           ._raw is bytes of serialized event only
