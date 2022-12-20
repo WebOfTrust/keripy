@@ -1511,48 +1511,61 @@ class Kever:
     Has the following public attributes and properties:
 
     Class Attributes:
-        .EstOnly is Boolean
+        EstOnly (bool):
                 True means allow only establishment events
                 False means allow all events
-        .DoNotDelegate is Boolean
+        DoNotDelegate (bool):
                 True means do not allow delegation other identifiers
                 False means allow delegation of delegated identifiers
 
     Attributes:
-        .db is reference to Baser instance that manages the LMDB database
-        .cues is reference to Kevery.cues deque when provided
-        .prefixes is list of fully qualified base64 identifier prefixes of own
-            habitat identifiers if any from Kevery when provided. If empty then
-            operate in promiscuous mode
-        .local is Boolean (from kevery when provided)
-            True means only process msgs for own events if .prefixes is not empty
-            False means only process msgs for not own events if .prefixes is not empty
-        .version is version of current event state
-        .prefixer is prefixer instance for current event state
+        db (Baser | None): instance that manages the LMDB database when provided.
+            When None provided then create and assign vacuous instance of Baser.
+        cues (deque | None): Injected Kevery.cues when provided. Default None.
+        prefixes (list | None): Injected from Kevery when provided.
+            qb64 identifier prefixes of own habitat identifiers.
+            Assign db.prefixes when None
+            When empty operate in promiscuous mode
+        local (bool): Injected from kevery when provided.
+            True means only process msgs for own events when .prefixes is not empty
+            False means only process msgs for not own events when .prefixes is not empty
+                Default is False.
+        version (Versionage): serder.version instance of current event state version
+        prefixer (Prefixer):  instance for current event state
         sner (Number): instance of sequence number
-        .fn is first seen ordinal number int
-        .fner (Number): instance of first seen ordinal number
-        .dater is first seen Dater instance (datetime)
-        .serder is Serder instance of current event with .serder.diger for digest
-        .ilk is str of current event type
-        .tholder is Tholder instance for event sith
-        .verfers is list of Verfer instances for current event state set of signing keys
-        .nexter is qualified qb64 of next sith and next signing keys
+        fner (Number): instance of first seen ordinal number
+        dater (Dater): instance of first seen datetime
+        serder (Serder): instance of current event with .serder.diger for digest
+        ilk (str): from Ilks for current event type
+        tholder (Tholder): instance for event signing threshold
+        verfers (list): of Verfer instances for current event state set of signing keys
+        nexter (Nexter): instance that provides nexter.digers of next key digests
+            from .serder.nexter as well as inclusion/matching methods
+        ntholder (Tholder): instance for next (rotation) threshold
+            from serder.ntholder
         toader (Number): instance of TOAD (threshold of accountable duplicity)
-        .wits is list of qualified qb64 aids for witnesses
-        .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
-        .adds is list of qualified qb64 aids for witnesses added to prev wits list
-        .estOnly is boolean trait True means only allow establishment events
-        .doNotDelegate is boolean trait True means do not allow delegation
-        .lastEst is LastEstLoc namedtuple of int sn .s and qb64 digest .d of last est event
-        .delegated is Boolean, True means delegated identifier, False not delegated
-        .delgator is str qb64 of delegator's prefix
+        wits (list): of qualified qb64 aids for witnesses
+        cuts (list): of qualified qb64 aids for witnesses cut from prev wits list
+        adds (list) of qualified qb64 aids for witnesses added to prev wits list
+        estOnly (bool): config trait True means only allow establishment events
+            Default False. Corresponds to config trait string "EO"
+        doNotDelegate (bool): config trait True means do not allow delegation
+            Default False. Corresponds to config trait string "DND"
+        lastEst (LastEstLoc): namedtuple of int sn .s and qb64 digest .d of last est event
+        delegated (bool): True means delegated identifier, False not delegated
+        delgator (str): qb64 of delegator's prefix
 
 
     Properties:
         sn (int): sequence number property that returns .sner.num
+        fn (int): first seen ordinal number property the returns .fner.num
         kevers (dict): reference to self.db.kevers
         transferable (bool): True if nexter is not none and pre is transferable
+
+    ToDo:
+       Change .fn to property that returns .fner.num
+       Add Class variable, instance variable and parse support for Registrar Backer config trait.
+        raise error for now
 
     """
     EstOnly = False
@@ -1662,8 +1675,7 @@ class Kever:
                                 first=True if not check else False, seqner=seqner, saider=saider,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
-            self.fn = fn
-            self.fner = Number(num=self.fn)
+            self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -1675,6 +1687,15 @@ class Kever:
             (int): .sner.num
         """
         return self.sner.num
+
+
+    @property
+    def fn(self):
+        """
+        Returns:
+            (int): .fner.num
+        """
+        return self.fner.num
 
 
     @property
@@ -1712,9 +1733,8 @@ class Kever:
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
-        self.sner = state.sner  # sequence number Number instance
-        self.fn = int(state.ked["f"], 16)
-        self.fner = Number(num=self.fn)
+        self.sner = state.sner  # sequence number Number instance hex str
+        self.fner = state.fner # first seen ordinal Number hex str
         self.dater = Dater(dts=state.ked["dt"])
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
@@ -1949,7 +1969,7 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
-                self.fn = fn
+                self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
                 self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -1996,7 +2016,7 @@ class Kever:
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
-                self.fn = fn
+                self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
                 self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -2486,10 +2506,10 @@ class Kever:
             cnfg.append(TraitDex.DoNotDelegate)
 
         return (state(pre=self.prefixer.qb64,
-                      sn=self.sner.num,
+                      sn=self.sn, # property self.sner.num
                       pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.said,
-                      fn=self.fn,
+                      fn=self.fn, # property self.fner.num
                       stamp=self.dater.dts,  # need to add dater object for first seen dts
                       eilk=self.ilk,
                       keys=[verfer.qb64 for verfer in self.verfers],
