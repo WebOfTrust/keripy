@@ -1533,7 +1533,6 @@ class Kever:
         version (Versionage): serder.version instance of current event state version
         prefixer (Prefixer):  instance for current event state
         sner (Number): instance of sequence number
-        fn (int): first seen ordinal number
         fner (Number): instance of first seen ordinal number
         dater (Dater): instance of first seen datetime
         serder (Serder): instance of current event with .serder.diger for digest
@@ -1541,7 +1540,7 @@ class Kever:
         tholder (Tholder): instance for event signing threshold
         verfers (list): of Verfer instances for current event state set of signing keys
         nexter (Nexter): instance that provides nexter.digers of next key digests
-            from .serder.nexter
+            from .serder.nexter as well as inclusion/matching methods
         ntholder (Tholder): instance for next (rotation) threshold
             from serder.ntholder
         toader (Number): instance of TOAD (threshold of accountable duplicity)
@@ -1559,6 +1558,7 @@ class Kever:
 
     Properties:
         sn (int): sequence number property that returns .sner.num
+        fn (int): first seen ordinal number property the returns .fner.num
         kevers (dict): reference to self.db.kevers
         transferable (bool): True if nexter is not none and pre is transferable
 
@@ -1675,8 +1675,7 @@ class Kever:
                                 first=True if not check else False, seqner=seqner, saider=saider,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
-            self.fn = fn
-            self.fner = Number(num=self.fn)
+            self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -1688,6 +1687,15 @@ class Kever:
             (int): .sner.num
         """
         return self.sner.num
+
+
+    @property
+    def fn(self):
+        """
+        Returns:
+            (int): .fner.num
+        """
+        return self.fner.num
 
 
     @property
@@ -1725,9 +1733,8 @@ class Kever:
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
-        self.sner = state.sner  # sequence number Number instance
-        self.fn = int(state.ked["f"], 16)
-        self.fner = Number(num=self.fn)
+        self.sner = state.sner  # sequence number Number instance hex str
+        self.fner = state.fner # first seen ordinal Number hex str
         self.dater = Dater(dts=state.ked["dt"])
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
@@ -1962,7 +1969,7 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
-                self.fn = fn
+                self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
                 self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -2009,7 +2016,7 @@ class Kever:
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
-                self.fn = fn
+                self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
                 self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
@@ -2499,10 +2506,10 @@ class Kever:
             cnfg.append(TraitDex.DoNotDelegate)
 
         return (state(pre=self.prefixer.qb64,
-                      sn=self.sner.num,
+                      sn=self.sn, # property self.sner.num
                       pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.said,
-                      fn=self.fn,
+                      fn=self.fn, # property self.fner.num
                       stamp=self.dater.dts,  # need to add dater object for first seen dts
                       eilk=self.ilk,
                       keys=[verfer.qb64 for verfer in self.verfers],

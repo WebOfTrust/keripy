@@ -2949,28 +2949,28 @@ class Nexter:
         return idxs
 
 
-    def satisfies(self, tholder, indices, digers=None,  digs=None):
-        """Given prior next digest list in .digers the provided tholder,
-        and indices with either provided digers or digs together constitute a
-        satisfycing subset of the prior next threshold. Each index indicates
-        which index offset into .digers is the corresponding diger or dig.
+    #def satisfies(self, tholder, indices, digers=None,  digs=None):
+        #"""Given prior next digest list in .digers the provided tholder,
+        #and indices with either provided digers or digs together constitute a
+        #satisfycing subset of the prior next threshold. Each index indicates
+        #which index offset into .digers is the corresponding diger or dig.
 
-        Returns:
-            (bool): True if satisfycing, False otherwise
+        #Returns:
+            #(bool): True if satisfycing, False otherwise
 
-        Parameters:
-            tholder (Tholder): instance of prior next threshold
-            indices (list): of int offsets into .digers
-            digers (list | None): of instances of Diger of prior next key digests
-            digs (list | None): of digests qb64 of prior next keys
+        #Parameters:
+            #tholder (Tholder): instance of prior next threshold
+            #indices (list): of int offsets into .digers
+            #digers (list | None): of instances of Diger of prior next key digests
+            #digs (list | None): of digests qb64 of prior next keys
 
-        """
-        if digers is None:
-            if digs is None:
-                raise EmptyListError(f"Need digers, digs, verfers, or keys.")
-            digers = [Diger(qb64=dig) for dig in digs]
+        #"""
+        #if digers is None:
+            #if digs is None:
+                #raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+            #digers = [Diger(qb64=dig) for dig in digs]
 
-        return False
+        #return False
 
 
     @staticmethod
@@ -5045,6 +5045,10 @@ class Serder(Sadder):
         .ntholder is Tholder instance from .ked["nt'] else None
         sner (Number): instance converted from sequence number .ked["s"] hex str
         sn (int): sequence number converted from .ked["s"]
+        fner (Number): instance converted from first seen ordinal number
+            .ked["f"] hex str if any otherwise None
+        fn (int): first seen ordinal number converted from .ked["f"] if any
+            otherwise None
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
 
@@ -5162,6 +5166,27 @@ class Serder(Sadder):
             sn (int): of .sner.num from .ked["s"]
         """
         return (self.sner.num)
+
+    @property
+    def fner(self):
+        """
+        fner (Number of first seen ordinal) property getter
+        Returns:
+            (Number): of .ked["f"] hex number str converted
+        """
+        # auto converts hex num str to int
+        return Number(num=self.ked["f"])  if "f" in self.ked else None
+
+
+    @property
+    def fn(self):
+        """
+        fn (first seen ordinal number) property getter
+        Returns:
+            fn (int): of .fner.num from .ked["f"]
+        """
+        return (self.fner.num)
+
 
     @property
     def pre(self):
