@@ -81,6 +81,7 @@ pytest tests/demo/
 ## Building Documentation in `/docs`
 * Install sphinx: 
   * `$ pip install sphinx`
+  * `$ pip install myst-parser`
 * Build with Sphinx in `/docs`: 
   * `$ make html`
 
