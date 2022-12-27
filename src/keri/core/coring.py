@@ -2981,8 +2981,8 @@ class Nexter:
         Parameters:
             keys (list): public keys qb64 or qb64b
         """
-        digs = [Diger(ser=key.encode("utf-8")
-                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+        digs = [Diger(ser=key.encode("utf-8") if hasattr(key, 'encode') else key).qb64
+                for key in keys]
 
         return digs
 
@@ -3038,6 +3038,8 @@ class Nexter:
                                       f'"{idig} in {self.digs}') from ex
 
         return idxs
+
+
 
 
 
@@ -5553,17 +5555,6 @@ class Tholder:
             raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
         return w
 
-    #@staticmethod
-    #def _checkWeight(w: SmallVrzDex) -> Fraction:
-        #"""Returns w if 0 <= w <= 1 and is strict rational fraction expression
-        #or "1" or "0"  Else raises ValueError
-
-        #Parameters:
-            #w (Fraction): Threshold weight Fraction
-        #"""
-        #if not 0 <= w <= 1:
-            #raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
-        #return w
 
     @staticmethod
     def weight(w: str) -> Fraction:
@@ -5654,6 +5645,101 @@ class Tholder:
             return False
 
         return False
+
+    #def satisfies(self, tholder, indices, digers=None,  digs=None):
+        #"""Given prior next digest list in .digers the provided tholder,
+        #and indices with either provided digers or digs together constitute a
+        #satisfycing subset of the prior next threshold. Each index indicates
+        #which index offset into .digers is the corresponding diger or dig.
+
+        #Returns:
+            #(bool): True if satisfycing, False otherwise
+
+        #Parameters:
+            #tholder (Tholder): instance of prior next threshold
+            #indices (list): of int offsets into .digers
+            #digers (list | None): of instances of Diger of prior next key digests
+            #digs (list | None): of digests qb64 of prior next keys
+
+        #"""
+        #if digers is None:
+            #if digs is None:
+                #raise EmptyListError(f"Need digers, digs, verfers, or keys.")
+            #digers = [Diger(qb64=dig) for dig in digs]
+
+        #return False
+
+
+
+    @staticmethod
+    def _digest(keys):
+        """
+        Returns digs of keys using default digest Blake3
+
+        Parameters:
+            keys (list): public keys qb64 or qb64b
+        """
+        digs = [Diger(ser=key.encode("utf-8")
+                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+
+        return digs
+
+
+    def includes(self, keys, digs):
+        """
+        Returns True if list of Blake3 digests of keys are included as an ordered
+        (potentially non-contiguous) subset  of digs.
+        Each dugest of an element in the provided list keys must appear
+        in digs in the same order but not all elements in digs must appear as
+        a digest of of an element of keys, i.e returns True if the list of
+        digests of keys is an ordered subset of digs
+
+        Parameters:
+            keys (list): public keys qb64
+            digs (list): digests qb64  (prior next digs)
+        """
+        kdigs = self._digest(keys=keys)
+
+        if len(kdigs) == len(digs):
+            return kdigs == digs
+
+        elif len(kdigs) < len(digs):
+            pdigs = list(digs)  # make copy
+            finds = []
+            for kdig in kdigs:
+                while pdigs:
+                    pdig = pdigs.pop(0)
+                    if kdig == pdig:
+                        finds.append(kdig)
+                        break
+
+                if not pdigs:
+                    break
+
+            return kdigs == finds
+
+        else:
+            return False
+
+
+    def matches(self, sigers, digs):
+        """Returns list of indices for list of sigers by matching Blake3 digest of
+        each siger.verfer qb64 public key to element of digs
+
+        Parameters:
+            sigers (list): of indexed signatures
+            digs (list): digests qb64  (prior next digs)
+        """
+        idxs = []
+        for sig in sigers:
+            idig = Diger(ser=sig.verfer.qb64b).qb64  # default Blake3
+            try:
+                idxs.append(digs.index(idig))
+            except ValueError as ex:
+                raise ValidationError(f'indices into verfer unable to locate "'
+                                      f'"{idig} in {digs}') from ex
+
+        return idxs
 
 
 class Dicter:

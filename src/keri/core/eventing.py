@@ -1717,7 +1717,8 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
+        #return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
+        return True if self.digers and self.prefixer.transferable else False
 
 
     def reload(self, state):
@@ -2117,10 +2118,10 @@ class Kever:
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        if not self.nexter:  # prior next is empty so rotations not allowed
-            raise ValidationError("Attempted rotation for nontransferable"
-                                  " prefix = {} for evt = {}."
-                                  "".format(self.prefixer.qb64, ked))
+        #if not self.nexter:  # prior next is empty so rotations not allowed
+            #raise ValidationError("Attempted rotation for nontransferable"
+                                  #" prefix = {} for evt = {}."
+                                  #"".format(self.prefixer.qb64, ked))
 
         tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         keys = ked["k"]  # current keys
@@ -2531,7 +2532,8 @@ class Kever:
                       eevt=eevt,
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
-                      ndigs=self.nexter.digs if self.nexter else [],
+                      ndigs=[diger.qb64 for diger in self.digers],
+                      #ndigs=self.nexter.digs if self.nexter else [],
                       toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,
