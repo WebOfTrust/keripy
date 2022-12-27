@@ -5105,6 +5105,20 @@ class Serder(Sadder):
         return [Verfer(qb64=key) for key in keys]
 
     @property
+    def digers(self):
+        """
+        Returns list of Diger instances as converted from .ked['n'].
+        One for each next key digests.
+        digers property getter
+        """
+        if "n" in self.ked:  # establishment event
+            digs = self.ked["n"]
+        else:  # non-establishment event
+            digs = []
+
+        return [Diger(qb64=dig) for dig in digs]
+
+    @property
     def nexter(self):
         """
         Returns list of Diger instances as converted from .ked['n'].

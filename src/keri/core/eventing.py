@@ -1539,6 +1539,8 @@ class Kever:
         ilk (str): from Ilks for current event type
         tholder (Tholder): instance for event signing threshold
         verfers (list): of Verfer instances for current event state set of signing keys
+        digers (list): of Diger instances for current event state set  of
+            next (rotation) key digests
         nexter (Nexter): instance that provides nexter.digers of next key digests
             from .serder.nexter as well as inclusion/matching methods
         ntholder (Tholder): instance for next (rotation) threshold
@@ -1741,6 +1743,7 @@ class Kever:
         self.tholder = Tholder(sith=state.ked["kt"])
         self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
+        self.digers = [Diger(qb64=dig) for dig in state.ked["n"]]
         self.nexter = coring.Nexter(digs=state.ked["n"])
         self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
         self.wits = state.ked["b"]
@@ -1798,6 +1801,7 @@ class Kever:
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
+        self.digers = serder.digers
         self.nexter = serder.nexter
         self.ntholder = serder.ntholder
 
@@ -1834,6 +1838,7 @@ class Kever:
         # need this to recognize recovery events and transferable receipts
         # last establishment event location
         self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
+
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
         """
@@ -1971,6 +1976,7 @@ class Kever:
             self.verfers = serder.verfers
             # update .nexter
             self.nexter = serder.nexter
+            self.digers = serder.digers
             self.ntholder = serder.ntholder
 
             self.toader = toader
@@ -2105,7 +2111,12 @@ class Kever:
                                       " state dig = {} for evt = {}."
                                       "".format(dig, self.serder.saider.qb64, ked))
 
-        # also check derivation code of pre for non-transferable
+        # check derivation code of pre for non-transferable
+        if not self.digers:  # prior next list is empty so rotations not allowed
+            raise ValidationError("Attempted rotation for nontransferable"
+                                  " prefix = {} for evt = {}."
+                                  "".format(self.prefixer.qb64, ked))
+
         if not self.nexter:  # prior next is empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
