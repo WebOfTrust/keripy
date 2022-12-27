@@ -42,7 +42,7 @@ logger = help.ogler.getLogger()
 
 class dbdict(dict):
     """
-    Subclass of dict that has db as attribute and employs read through cash
+    Subclass of dict that has db as attribute and employs read through cache
     from db Baser.stts of kever states to reload kever from state in database
     if not in memory as dict item
     """
@@ -670,7 +670,7 @@ class Baser(dbing.LMDBer):
         """
         self.prefixes = oset()
         self._kevers = dbdict()
-        self._kevers.db = self  # assign db for read thorugh cache of kevers
+        self._kevers.db = self  # assign db for read through cache of kevers
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 

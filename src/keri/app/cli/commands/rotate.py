@@ -56,8 +56,8 @@ class RotateDoer(doing.DoDoer):
         Returns DoDoer with all registered Doers needed to perform rotation.
 
         Parameters:
-            name is human readable str of identifier
-            isith is next signing threshold as int or str hex or list of str weights
+            name is human-readable str of identifier
+            isith is current signing threshold as int or str hex or list of str weights
             nsith is next signing threshold as int or str hex or list of str weights
             count is int next number of signing keys
             toad is int or str hex of witness threshold after cuts and adds

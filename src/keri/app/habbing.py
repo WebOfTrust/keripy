@@ -192,7 +192,7 @@ class Habery:
     Attributes:
         name (str): name of associated databases
         base (str): optional directory path segment inserted before name
-                    that allows further hierarchical differentation of databases.
+                    that allows further hierarchical differentiation of databases.
                     "" means optional.
         temp (bool): True for testing:
             temporary storage of databases and config file
@@ -228,7 +228,7 @@ class Habery:
         Parameters:
             name (str): alias name for shared environment config databases etc.
             base (str): optional directory path segment inserted before name
-                that allows further differentation with a hierarchy. "" means
+                that allows further differentiation with a hierarchy. "" means
                 optional.
             temp (bool): True means use temporary or limited resources testing.
                 Store .ks, .db, and .cf in /tmp

@@ -38,7 +38,7 @@ class Configer(filing.Filer):
 
     See https://github.com/hjson/hjson-py
 
-    Attributes:  (see Filer for inherited attributres)
+    Attributes:  (see Filer for inherited attributes)
         human (bool): True (default) means use human friendly HJSON when fext is JSON
     """
     TailDirPath = "keri/cf"
@@ -57,7 +57,7 @@ class Configer(filing.Filer):
                 When system employs more than one keri installation, name allows
                 differentiating each instance by name
             base (str): optional directory path segment inserted before name
-                that allows further differentation with a hierarchy. "" means
+                that allows further differentiation with a hierarchy. "" means
                 optional.
             temp (bool): assign to .temp
                 True then open in temporary directory, clear on close
@@ -75,7 +75,7 @@ class Configer(filing.Filer):
             clean (bool): True means path uses clean tail variant
                              False means path uses normal tail variant
             filed (bool): True means .path is file path not directory path
-                          False means .path is directiory path not file path
+                          False means .path is directory path not file path
             mode (str): File open mode when filed default non-truncate r+w
             fext (str): File extension when filed
             human(bool): True means use human friendly HJSON when fext is json

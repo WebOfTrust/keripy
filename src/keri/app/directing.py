@@ -556,7 +556,7 @@ class Reactant(doing.DoDoer):
                       doing.doify(self.cueDo),
                       doing.doify(self.escrowDo)])
 
-        #  neeeds unique kevery with ims per remoter connnection
+        #  needs unique kevery with ims per remoter connnection
         rvy = routing.Revery(db=hab.db)
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
