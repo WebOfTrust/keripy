@@ -5684,8 +5684,8 @@ class Tholder:
 
         return digs
 
-
-    def includes(self, keys, digs):
+    @staticmethod
+    def includes(keys, digs):
         """
         Returns True if list of Blake3 digests of keys are included as an ordered
         (potentially non-contiguous) subset  of digs.
@@ -5698,7 +5698,8 @@ class Tholder:
             keys (list): public keys qb64
             digs (list): digests qb64  (prior next digs)
         """
-        kdigs = self._digest(keys=keys)
+        kdigs = [Diger(ser=key.encode("utf-8")
+                      if hasattr(key, 'encode') else key).qb64 for key in keys]
 
         if len(kdigs) == len(digs):
             return kdigs == digs
@@ -5721,10 +5722,10 @@ class Tholder:
         else:
             return False
 
-
-    def matches(self, sigers, digs):
-        """Returns list of indices for list of sigers by matching Blake3 digest of
-        each siger.verfer qb64 public key to element of digs
+    @staticmethod
+    def matches(sigers, digs):
+        """Returns list of indices from list of sigers for each matching
+        Blake3 digest of each siger.verfer qb64 public key to an element of digs
 
         Parameters:
             sigers (list): of indexed signatures

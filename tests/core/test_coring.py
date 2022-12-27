@@ -5878,16 +5878,62 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
+
+
+    raw = b"raw salt to test"
+
+    #  create signers with verfers for keys
+    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    keys = [signer.verfer.qb64 for signer in signers]
+    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
+                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
+                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
+
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
+    digs = [diger.qb64 for diger in digers]
+    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
+                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
+                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
+
+    assert tholder.includes(keys, digs)
+
+    bdigs = list(digs)
+    del bdigs[0]
+    assert not tholder.includes(keys, bdigs)
+
+    bkeys = list(keys)
+    del bkeys[1]
+    assert tholder.includes(bkeys, digs)
+
+    bkeys.append(keys[1])
+    assert not tholder.includes(bkeys, digs)
+
+    signer = Signer()
+    # create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    index = 0
+    siger = signer.sign(ser, index=index)
+    digs = [Diger(ser=siger.verfer.qb64b).qb64]
+    sigers = [siger]
+
+    assert tholder.matches(sigers, digs) == [0]
+
+
+
+
+
+
     """ Done Test """
 
 
 if __name__ == "__main__":
     #test_matter()
-    test_counter()
-    test_prodex()
+    #test_counter()
+    #test_prodex()
     #test_indexer()
     #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
-    #test_tholder()
+    test_tholder()
