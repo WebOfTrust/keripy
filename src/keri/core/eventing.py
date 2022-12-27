@@ -1563,9 +1563,10 @@ class Kever:
         transferable (bool): True if nexter is not none and pre is transferable
 
     ToDo:
-       Change .fn to property that returns .fner.num
        Add Class variable, instance variable and parse support for Registrar Backer config trait.
         raise error for now
+       Replace Nexter with Kever.digers and ntholder with new Tholder methods
+       to replace Nexter methods.
 
     """
     EstOnly = False
@@ -1926,6 +1927,17 @@ class Kever:
                                                             seqner=seqner,
                                                             saider=saider)
 
+
+            # move this out of here to where ntholder threshold is verified
+            # verify newly current keys are subset of prior next digs
+            keys = ked["k"]  # current keys
+            if not self.nexter.includes(keys=keys):  # new current keys subset prior next digs
+                raise ValidationError("Mismatch prior nxt digs = {} with rotation"
+                                      "current keys = {} for evt = {}."
+                                      "".format(self.nexter.digs, keys, ked))
+
+
+
             if not self.ntholder.satisfy(indices=self.nexter.matches(sigers=sigers)):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
                 if seqner and saider:
@@ -2100,20 +2112,12 @@ class Kever:
                                   "".format(self.prefixer.qb64, ked))
 
         tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
-        if len(serder.verfers) < tholder.size:
-            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
-                                  "".format(ked["kt"],
-                                            [verfer.qb64 for verfer in serder.verfers],
-                                            ked))
-
-        # verify next keys from prior next
-        ntholder = serder.ntholder
         keys = ked["k"]  # current keys
-        if not self.nexter.includes(keys=keys):  # current keys match prior next digs
-            raise ValidationError("Mismatch prior nxt digs = {} with rotation"
-                                  "current keys"
-                                  " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.digs, ntholder.thold, keys, ked))
+        if len(keys) < tholder.size:
+            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
+                                  "".format(ked["kt"], keys, ked))
+
+
 
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
