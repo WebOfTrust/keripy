@@ -5920,10 +5920,6 @@ def test_tholder():
     assert tholder.matches(sigers, digs) == [0]
 
 
-
-
-
-
     """ Done Test """
 
 
