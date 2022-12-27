@@ -27,7 +27,7 @@ logger = help.ogler.getLogger()
 
 class Regery:
 
-    def __init__(self, hby, name="test", base="", reger=None, temp=False, cues=None):
+    def __init__(self, hby, name="test", base="", reger=None, temp=False, cues=None, headDirPath=None):
 
         self.hby = hby
         self.name = name
@@ -36,7 +36,7 @@ class Regery:
         self.cues = cues if cues is not None else decking.Deck()
 
         self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
-                                                           reopen=True)
+                                                           reopen=True, headDirPath=headDirPath)
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy)
 

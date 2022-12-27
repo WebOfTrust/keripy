@@ -39,7 +39,8 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--temp', '-t', help='create a temporary keystore, used for testing', default=False)
 parser.add_argument('--salt', '-s', help='qualified base64 salt for creating key pairs', required=False)
-parser.add_argument("--config-dir", "-c", dest="configDir", help="directory override for configuration data")
+parser.add_argument("--config-dir", "-c", dest="configDir",
+                    help="directory override for configuration data", default=None)
 parser.add_argument('--config-file',
                     dest="configFile",
                     action='store',
@@ -103,14 +104,14 @@ class InitDoer(doing.DoDoer):
         cf = None
         if configFile is not None:
             cf = configing.Configer(name=configFile,
-                                    base="",
+                                    base=base,
                                     headDirPath=configDir,
                                     temp=False,
                                     reopen=True,
                                     clear=False)
 
-        hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
-        rgy = credentialing.Regery(hby=hby, name=name, base=base, temp=temp)
+        hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, headDirPath=configDir, **kwa)
+        rgy = credentialing.Regery(hby=hby, name=name, base=base, temp=temp, headDirPath=configDir)
 
         print("KERI Keystore created at:", hby.ks.path)
         print("KERI Database created at:", hby.db.path)

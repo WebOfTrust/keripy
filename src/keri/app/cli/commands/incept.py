@@ -26,7 +26,7 @@ parser.add_argument('--name', '-n', help='keystore name and file location of KER
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
-parser.add_argument("--config", "-c", help="directory override for configuration data")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
 
@@ -78,10 +78,10 @@ def handler(args):
     base = args.base
     bran = args.bran
     alias = args.alias
-    config = args.config
+    config_dir = args.config_dir
 
     kwa = opts.__dict__
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config_dir=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
@@ -91,13 +91,13 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, config=None, **kwa):
+    def __init__(self, name, base, alias, bran, config_dir=None, **kwa):
 
         cf = None
-        if config is not None:
+        if config_dir is not None:
             cf = configing.Configer(name=name,
                                     base="",
-                                    headDirPath=config,
+                                    headDirPath=config_dir,
                                     temp=False,
                                     reopen=True,
                                     clear=False)

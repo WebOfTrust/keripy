@@ -255,6 +255,13 @@ class Keeper(dbing.LMDBer):
         if perm is None:
             perm = self.Perm  # defaults to restricted permissions for non temp
 
+        # use a declared config path if present
+        try:
+            headDirPath = kwa['cf'].headDirPath if 'cf' in kwa else headDirPath
+        except AttributeError:
+            # Configer not defined, so default to headDirPath passed in
+            pass
+
         super(Keeper, self).__init__(headDirPath=headDirPath, perm=perm,
                                      reopen=reopen, **kwa)
 
