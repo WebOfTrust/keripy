@@ -16,7 +16,7 @@ from hio.help import decking
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Number, Seqner, Siger, Cigar, Dater, Indexer, IdrDex,
-                     Verfer, Diger, Prefixer, Nexter, Serder, Tholder, Saider)
+                     Verfer, Diger, Prefixer, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
 from ..db import basing, dbing
@@ -1561,6 +1561,7 @@ class Kever:
     Properties:
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
+        digs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
         transferable (bool): True if nexter is not none and pre is transferable
 
@@ -1702,6 +1703,15 @@ class Kever:
 
 
     @property
+    def digs(self):
+        """
+        Returns:
+            (list): digs of digers
+        """
+        return [diger.qb64 for diger in self.digers]
+
+
+    @property
     def kevers(self):
         """
         Returns .baser.kevers
@@ -1717,7 +1727,6 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        #return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
         return True if self.digers and self.prefixer.transferable else False
 
 
@@ -1745,7 +1754,6 @@ class Kever:
         self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
         self.digers = [Diger(qb64=dig) for dig in state.ked["n"]]
-        self.nexter = coring.Nexter(digs=state.ked["n"])
         self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1803,7 +1811,7 @@ class Kever:
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
         self.digers = serder.digers
-        self.nexter = serder.nexter
+        #self.nexter = serder.nexter
         self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
@@ -1983,8 +1991,6 @@ class Kever:
             self.ilk = ilk
             self.tholder = tholder
             self.verfers = serder.verfers
-            # update .nexter
-            self.nexter = serder.nexter
             self.digers = serder.digers
             self.ntholder = serder.ntholder
 
@@ -2551,23 +2557,24 @@ class Kever:
                 )
 
 
-    def fetchPriorNexter(self) -> (Nexter | None):
-        """ Returns either the most recent prior Nexter before .lastEst or None
+    def fetchPriorDigers(self) -> (list | None):
+        """ Returns either the most recent prior list of digers before .lastEst or None
 
         Starts searching at sn = .lastEst.s - 1
 
-        Returns the Nexter instance at the most recent prior Nexter to the
-        current nexter of the given sequence number (sn) otherwise returns None.
+        Returns list of Digers instances at the most recent prior est event relative
+        to the given sequence number (sn) otherwise returns None.
         Walks backwards to the more recent prior establishment event before the
         .sn if any.
         If sn represents an interaction event (ixn) then the result will be the
-        current valid nexter. If sn represents an establishment event then
-        the result will be the prior nexter to the current one.
+        current valid list of digers. If sn represents an establishment event then
+        the result will be the list of digers immediately prior to the current list.
 
         Parameters:
 
         Returns:
-            Nexter instance or None if no prior est event to current .lastEst
+            digers (list | None): of Diger instances or None if no prior est evt
+                to current .lastEst
 
         """
         pre = self.prefixer.qb64
@@ -2577,9 +2584,39 @@ class Kever:
             raw = self.db.getEvt(dgkey)
             serder = coring.Serder(raw=bytes(raw))
             if serder.est:  # establishment event
-                return serder.nexter
+                return serder.digers
 
         return None
+
+    #def fetchPriorNexter(self) -> (Nexter | None):
+        #""" Returns either the most recent prior Nexter before .lastEst or None
+
+        #Starts searching at sn = .lastEst.s - 1
+
+        #Returns the Nexter instance at the most recent prior Nexter to the
+        #current nexter of the given sequence number (sn) otherwise returns None.
+        #Walks backwards to the more recent prior establishment event before the
+        #.sn if any.
+        #If sn represents an interaction event (ixn) then the result will be the
+        #current valid nexter. If sn represents an establishment event then
+        #the result will be the prior nexter to the current one.
+
+        #Parameters:
+
+        #Returns:
+            #Nexter instance or None if no prior est event to current .lastEst
+
+        #"""
+        #pre = self.prefixer.qb64
+        #sn = self.lastEst.s - 1
+        #for digb in self.db.getKelBackIter(pre, sn):
+            #dgkey = dgKey(pre, digb)
+            #raw = self.db.getEvt(dgkey)
+            #serder = coring.Serder(raw=bytes(raw))
+            #if serder.est:  # establishment event
+                #return serder.nexter
+
+        #return None
 
 
 class Kevery:

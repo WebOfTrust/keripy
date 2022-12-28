@@ -252,7 +252,7 @@ class IdentifierEnd(doing.DoDoer):
                 isith=kever.tholder.sith,
                 public_keys=[verfer.qb64 for verfer in kever.verfers],
                 nsith=kever.ntholder.sith,
-                next_keys=kever.nexter.digs,
+                next_keys=kever.digs,  # this is misnamed these are not keys but digests of keys
                 toad=kever.toader.num,
                 witnesses=kever.wits,
                 estOnly=kever.estOnly,

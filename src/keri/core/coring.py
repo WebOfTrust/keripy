@@ -2937,84 +2937,84 @@ class Nexter:
         return [diger.qb64 for diger in self.digers]
 
 
-    def indices(self, sigers):
-        """Returns list of indices for list of sigers by verifying the public key
-        for each siger.verfer.qb64b when digested by the digest algoritm of the
-        associated indexed diger in .digers is a match.
-        """
-        idxs = []
-        for sig in sigers:
-            pass
+    #def indices(self, sigers):
+        #"""Returns list of indices for list of sigers by verifying the public key
+        #for each siger.verfer.qb64b when digested by the digest algoritm of the
+        #associated indexed diger in .digers is a match.
+        #"""
+        #idxs = []
+        #for sig in sigers:
+            #pass
 
-        return idxs
-
-
-
-    @staticmethod
-    def _digest(keys):
-        """
-        Returns digs of keys
-
-        Parameters:
-            keys (list): public keys qb64 or qb64b
-        """
-        digs = [Diger(ser=key.encode("utf-8") if hasattr(key, 'encode') else key).qb64
-                for key in keys]
-
-        return digs
+        #return idxs
 
 
-    def includes(self, digs=None, keys=None):
-        """
-        Returns True if digs or digs from keys are included
-        as a ordered (potentially non-contiguous) subset  of .digs.
-        Each element in the provided list digs must appear in .digs in the same
-        order that it appears in digs but not all elements in .digs must appear
-        in digs.
 
-        Parameters:
-            digs (list): digests qb64
-            keys (list): public keys qb64
-        """
-        if not digs:
-            digs = self._digest(keys=keys)
+    #@staticmethod
+    #def _digest(keys):
+        #"""
+        #Returns digs of keys
 
-        if len(digs) == len(self.digs):
-            return self.digs == digs
+        #Parameters:
+            #keys (list): public keys qb64 or qb64b
+        #"""
+        #digs = [Diger(ser=key.encode("utf-8") if hasattr(key, 'encode') else key).qb64
+                #for key in keys]
 
-        elif len(digs) < len(self.digs):
-            existing = list(self.digs)
-            found = []
-            for kdig in digs:
-                while existing:
-                    ndig = existing.pop(0)
-                    if kdig == ndig:
-                        found.append(kdig)
-                        break
-
-                if not existing:
-                    break
-
-            return digs == found
-
-        else:
-            return False
+        #return digs
 
 
-    def matches(self, sigers):
-        """Returns list of indices for list of sigers by matching digest of
-        each siger.verfer qb64 public key to element of .digs
-        """
-        idxs = []
-        for sig in sigers:
-            idig = Diger(ser=sig.verfer.qb64b).qb64
-            try:
-                idxs.append(self.digs.index(idig))
-            except ValueError as ex:
-                raise ValidationError(f'indices into verfer unable to locate "'
-                                      f'"{idig} in {self.digs}') from ex
+    #def includes(self, digs=None, keys=None):
+        #"""
+        #Returns True if digs or digs from keys are included
+        #as a ordered (potentially non-contiguous) subset  of .digs.
+        #Each element in the provided list digs must appear in .digs in the same
+        #order that it appears in digs but not all elements in .digs must appear
+        #in digs.
 
-        return idxs
+        #Parameters:
+            #digs (list): digests qb64
+            #keys (list): public keys qb64
+        #"""
+        #if not digs:
+            #digs = self._digest(keys=keys)
+
+        #if len(digs) == len(self.digs):
+            #return self.digs == digs
+
+        #elif len(digs) < len(self.digs):
+            #existing = list(self.digs)
+            #found = []
+            #for kdig in digs:
+                #while existing:
+                    #ndig = existing.pop(0)
+                    #if kdig == ndig:
+                        #found.append(kdig)
+                        #break
+
+                #if not existing:
+                    #break
+
+            #return digs == found
+
+        #else:
+            #return False
+
+
+    #def matches(self, sigers):
+        #"""Returns list of indices for list of sigers by matching digest of
+        #each siger.verfer qb64 public key to element of .digs
+        #"""
+        #idxs = []
+        #for sig in sigers:
+            #idig = Diger(ser=sig.verfer.qb64b).qb64
+            #try:
+                #idxs.append(self.digs.index(idig))
+            #except ValueError as ex:
+                #raise ValidationError(f'indices into verfer unable to locate "'
+                                      #f'"{idig} in {self.digs}') from ex
+
+        #return idxs
 
 
 
@@ -5097,19 +5097,19 @@ class Serder(Sadder):
 
         return [Diger(qb64=dig) for dig in digs]
 
-    @property
-    def nexter(self):
-        """
-        Returns list of Diger instances as converted from .ked['n'].
-        One for each key.
-        nexter property getter
-        """
-        if "n" in self.ked:  # establishment event
-            digs = self.ked["n"]
-        else:  # non-establishment event
-            digs = []
+    #@property
+    #def nexter(self):
+        #"""
+        #Returns list of Diger instances as converted from .ked['n'].
+        #One for each key.
+        #nexter property getter
+        #"""
+        #if "n" in self.ked:  # establishment event
+            #digs = self.ked["n"]
+        #else:  # non-establishment event
+            #digs = []
 
-        return Nexter(digs=digs)
+        #return Nexter(digs=digs)
 
     @property
     def werfers(self):
