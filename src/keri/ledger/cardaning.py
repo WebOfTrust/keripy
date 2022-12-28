@@ -17,22 +17,20 @@ import os
 import time
 import json
 
-
-
 # TODO
 # Incept data for backer: https://github.com/WebOfTrust/keripy/issues/90
-# Validate duplicate KE before submitting to Ledger
 # Error handling
-# Make ledger a class to conform
+
+QUEUE_DURATION = 60
+NETWORK = Network.TESTNET
 
 class Cardano:
 
     def __init__(self, name='backer', hab=None, ks=None):
         self.name = name
         self.pendingKEL = {}
-        self.timer = Timer(90, self.flushQueue)
+        self.timer = Timer(QUEUE_DURATION, self.flushQueue)
         
-        self.network = Network.TESTNET
         try:
             blockfrostProjectId=os.environ['BLOCKFROST_API_KEY']
         except KeyError:
@@ -43,12 +41,12 @@ class Cardano:
             base_url=ApiUrls.preview.value
             )
         
-        self.context = BlockFrostChainContext(blockfrostProjectId,self.network, ApiUrls.preview.value)
+        self.context = BlockFrostChainContext(blockfrostProjectId,NETWORK, ApiUrls.preview.value)
 
         backerPrivateKey = ks.pris.get(hab.kever.prefixer.qb64).raw
         self.payment_signing_key = PaymentSigningKey(backerPrivateKey,"PaymentSigningKeyShelley_ed25519","PaymentSigningKeyShelley_ed25519")
         payment_verification_key = PaymentVerificationKey.from_signing_key(self.payment_signing_key)
-        self.spending_addr = Address(payment_part=payment_verification_key.hash(),staking_part=None, network=self.network)
+        self.spending_addr = Address(payment_part=payment_verification_key.hash(),staking_part=None, network=NETWORK)
         print("Cardano Backer Address:", self.spending_addr.encode())
         balance = self.getaddressBalance()
         if balance and balance > 5000000:
@@ -67,6 +65,14 @@ class Cardano:
     def flushQueue(self):
         print("Flushing Queue")
         try:
+            # Check last KE in blockchain to avoid duplicates (for some reason mailbox may submit an event twice)
+            txs = self.api.address_transactions(self.spending_addr)
+            meta = self.api.transaction_metadata(txs[-1].tx_hash, return_type='json')
+            if meta:
+                for m in meta:
+                    seq = int(m['label'])
+                    if seq in self.pendingKEL: del self.pendingKEL[seq]
+
             builder = TransactionBuilder(self.context)
             builder.add_input_address(self.spending_addr)
 
@@ -78,7 +84,6 @@ class Cardano:
             self.pendingKEL = {}
         except Exception as e:
             print("error", e)
-
 
     def getaddressBalance(self):
         try:
@@ -92,7 +97,7 @@ class Cardano:
         try:
             funding_payment_signing_key = PaymentSigningKey.from_cbor(os.environ.get("FUNDING_ADDRESS_CBORHEX"))
             funding_payment_verification_key = PaymentVerificationKey.from_signing_key(funding_payment_signing_key)
-            funding_addr = Address(funding_payment_verification_key.hash(), None, network=self.network)
+            funding_addr = Address(funding_payment_verification_key.hash(), None, network=NETWORK)
         except KeyError:
             print("Environment variable FUNDING_ADDRESS_CBORHEX not set")
             exit(1)
