@@ -7,6 +7,8 @@ SHELL ["/bin/bash", "-c"]
 
 RUN apk add alpine-sdk
 RUN apk add libffi-dev
+RUN apk add libsodium
+RUN apk add libsodium-dev
 
 # Setup Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
