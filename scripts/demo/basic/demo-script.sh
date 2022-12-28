@@ -22,6 +22,9 @@ if [ $ret -eq 0 ]; then
    exit $ret
 fi
 
+echo
+echo incept, rotate, and interact with transferable identifier
+echo
 
 # TRANSFERABLE
 kli incept --name test --base "${KERI_TEMP_DIR}"  --alias trans --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
@@ -41,6 +44,10 @@ isSuccess
 
 kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --next-count 3 --nsith 2
 isSuccess
+
+echo
+echo sign and verify
+echo
 
 # SIGN AND VERIFY ARBITRARY DATA
 kli sign --name test --base "${KERI_TEMP_DIR}"  --alias trans --text @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
@@ -62,6 +69,10 @@ if [ $ret -eq 0 ]; then
    exit $ret
 fi
 
+echo
+echo incept and interact for establishment only
+echo
+
 
 # ESTABLISHMENT ONLY
 kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
@@ -79,4 +90,6 @@ isSuccess
 kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 isSuccess
 
-echo 'Test Complete'
+echo
+echo 'Simple demo Test Complete'
+echo
