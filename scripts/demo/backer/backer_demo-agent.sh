@@ -1,4 +1,5 @@
- #!/bin/bash
+#!/bin/bash
+# Run start_agent.sh first in another terminal
 
 curl -s -X POST "http://localhost:5972/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootsagent\",\"passcode\":\"6jiSnnltcxQbxqiaQuLor\"}" | jq
 

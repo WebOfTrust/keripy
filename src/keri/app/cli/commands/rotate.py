@@ -10,6 +10,7 @@ from hio.base import doing
 from keri import kering
 from keri.app.cli.common import rotating, existing
 from ... import habbing, agenting, indirecting, directing, delegating, forwarding
+import time
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))

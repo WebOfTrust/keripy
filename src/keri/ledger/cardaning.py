@@ -24,6 +24,7 @@ from keri.app import keeping
 # Validate duplicate KE before submitting to Ledger (test kli agent)
 # Validate type of events? -> mailbox (understand better)
 # Error handling
+# Error at restart MDB_BAD_RSLOT: Invalid reuse of reader locktable slot
 
 class Cardano:
 
@@ -59,12 +60,11 @@ class Cardano:
             print("Address balance:",balance/1000000, "ADA")
         else:
             self.fundAddress(self.spending_addr)
-            exit(1)
 
     def publishEvent(self, event):
-
+        print("Submitting", event)
         try:
-            seq_no = int(event['ked']['s'])
+            seq_no = int(event['ked']['s'],16)
             tx_meta = {'KE': wrap(json.dumps(event), 64)}
             builder = TransactionBuilder(self.context)
             builder.add_input_address(self.spending_addr)

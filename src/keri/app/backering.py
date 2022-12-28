@@ -142,7 +142,7 @@ class BackerStart(doing.DoDoer):
         while not self.hab.inited:
             yield self.tock
 
-        print("Backer", self.hab.name, ":", self.hab.pre)
+        print("Backer", self.hab.name, "ready", self.hab.pre)
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -329,6 +329,8 @@ class HttpEnd:
             rep.set_header('Content-Type', "text/event-stream")
             rep.status = falcon.HTTP_200
             rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said, hab=self.hab, ledger=self.ledger)
+        
+        print("ROOTSLOG HTTP POST MSG RECEIVED", ilk)
 
 class QryRpyMailboxIterable:
 
