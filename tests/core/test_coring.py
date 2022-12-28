@@ -5858,6 +5858,65 @@ def test_tholder():
 
     assert tholder.matches(sigers, digs) == [0]
 
+    raw = b"raw salt to test"
+    #  create signers with verfers
+    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    # create something to sign
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    # test different index and ondex
+    sigers = []
+    digers = []
+    for i, signer in enumerate(signers):
+        o = len(signers) - 1 - i
+        siger = signer.sign(ser=ser, index=i, ondex=o)
+        diger = Diger(ser=siger.verfer.qb64b)
+        sigers.append(siger)
+        digers.append(diger)
+
+    digers.reverse()
+
+    ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    assert ondices ==[2, 1, 0]
+
+    # test partial mix
+    siger0 = signers[0].sign(ser=ser, index=0)  # both same
+    assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
+    diger0 = Diger(ser=siger0.verfer.qb64b)
+
+    siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
+    assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
+
+    siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
+    assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
+    diger1 = Diger(ser=siger2.verfer.qb64b)
+
+    sigers = [siger0, siger1, siger2]
+    digers = [diger0, diger1]
+
+    ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    assert ondices ==[0, 1]
+
+
+    # test Bad digest
+    siger0 = signers[0].sign(ser=ser, index=0)  # both same
+    assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
+    diger0 = Diger(ser=b"Bad Digest")  # bad digest
+
+    siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
+    assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
+
+    siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
+    assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
+    diger1 = Diger(ser=siger2.verfer.qb64b, code=DigDex.Blake2b_256)
+
+    sigers = [siger0, siger1, siger2]
+    digers = [diger0, diger1]
+
+    ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    assert ondices ==[1]
+
 
     """ Done Test """
 

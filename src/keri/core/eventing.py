@@ -1944,30 +1944,38 @@ class Kever:
 
             # move this out of here to where ntholder threshold is verified
             # verify newly current keys are subset of prior next digs
-            keys = ked["k"]  # proposed new current keys
-            digs = [diger.qb64 for diger in self.digers]  # prior next digs
-            # new current keys must be subset of prior next digs
-            if not self.ntholder.includes(keys=keys, digs=digs):
-                raise ValidationError("Mismatch prior nxt digs = {} with rotation"
-                                      "current keys = {} for evt = {}."
-                                      "".format(digs, keys, ked))
-
-            #if not self.nexter.includes(keys=keys):
+            #keys = ked["k"]  # proposed new current keys
+            #digs = [diger.qb64 for diger in self.digers]  # prior next digs
+            ## new current keys must be subset of prior next digs
+            #if not self.ntholder.includes(keys=keys, digs=digs):
                 #raise ValidationError("Mismatch prior nxt digs = {} with rotation"
                                       #"current keys = {} for evt = {}."
-                                      #"".format(self.nexter.digs, keys, ked))
+                                      #"".format(digs, keys, ked))
+
+            #if not self.ntholder.satisfy(indices=self.ntholder.matches(sigers=sigers,
+                                                                               #digs=digs)):
+                #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                #if seqner and saider:
+                    #self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+                #raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
+                                                    #" for evt = {}.".format(self.ntholder.sith,
+                                                                            #[siger.qb64 for siger in sigers],
+                                                                            #serder.ked))
 
 
-            # current sigers and prior next digs
-            if not self.ntholder.satisfy(indices=self.ntholder.matches(sigers=sigers,
-                                                                       digs=digs)):
+            # current sigers and prior next digers
+            if not self.ntholder.satisfy(indices=self.ntholder.exposeds(
+                                                        sigers=sigers,
+                                                        digers=self.digers)):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
                 if seqner and saider:
                     self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
-                raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
-                                            " for evt = {}.".format(self.ntholder.sith,
-                                                                    [siger.qb64 for siger in sigers],
-                                                                    serder.ked))
+                raise MissingSignatureError(f"Failure satisfying nsith="
+                                            f"{self.ntholder.sith} on sigs="
+                                            f"{[siger.qb64 for siger in sigers]}"
+                                            f" for evt={serder.ked}.")
+
+
 
 
 
