@@ -9,7 +9,7 @@ routes:
 from keri import kering
 
 from keri.core import eventing
-from keri.core.coring import MtrDex, Nexter, Salter
+from keri.core.coring import MtrDex, Salter, Diger
 
 from keri.core.eventing import (SealEvent, messagize)
 
@@ -50,8 +50,8 @@ def test_bare():
     assert preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     sith = '1'
     keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-    nxt = nexter.digs
+    digers = [Diger(ser=signerC.verfer.qb64b)]
+    nxt = [diger.qb64 for diger in digers]
     assert nxt == ['EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg']
 
     # create key pairs for witnesses of KEL

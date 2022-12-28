@@ -1736,7 +1736,7 @@ def test_clean_baser():
                                       dig=natHab.kever.serder.said,
                                       sn=natHab.kever.sn+1,
                                       isith='2',
-                                      ndigs=natHab.kever.nexter.digs)
+                                      ndigs=[diger.qb64 for diger in natHab.kever.digers])
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
 

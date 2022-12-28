@@ -15,7 +15,7 @@ from keri.app.keeping import openKS, Manager
 from keri.core import coring, eventing, parsing
 from keri.core.coring import (Ilks, Diger, MtrDex, Matter, IdrDex, Indexer,
                               CtrDex, Counter, Salter, Serder, Siger, Cigar,
-                              Seqner, Verfer, Signer, Prefixer, Nexter,
+                              Seqner, Verfer, Signer, Prefixer,
                               generateSigners)
 from keri.core.eventing import Kever, Kevery
 from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
@@ -949,8 +949,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signerD.verfer.code == MtrDex.Ed25519
     keysD = [signerD.verfer.qb64]
     # compute nxt digest
-    nexterD = Nexter(keys=keysD)  # default sith is 1
-    nxtD = nexterD.digs  # transferable so nxt is not empty
+    nxtD = [Diger(ser=key.encode("utf-8")).qb64 for key in keysD]  # default sith is 1
+    # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
     serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
@@ -975,8 +975,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signerR.verfer.code == MtrDex.Ed25519
     keysR = [signerR.verfer.qb64]
     # compute nxt digest
-    nexterR = Nexter(keys=keysR)  # default sith is 1
-    nxtR = nexterR.digs  # transferable so nxt is not empty
+    # default sith is 1
+    nxtR = [Diger(ser=signerR.verfer.qb64b).qb64]  # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
     serderR = deltate(pre=pre,
@@ -1066,8 +1066,8 @@ def test_state(mockHelpingNowUTC):
     assert preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     sith = '1'
     keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-    nxt = nexter.digs
+    # compute nxt digest (dummy reuse keys)
+    nxt = [Diger(ser=signerC.verfer.qb64b).qb64]
     assert nxt == ['EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg']
 
     # create key pairs for witnesses of KEL
@@ -1196,8 +1196,8 @@ def test_state(mockHelpingNowUTC):
     assert preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
     sith = '1'
     keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-    nxt = nexter.digs
+    # compute nxt digest (dummy reuse keys)
+    nxt = [Diger(ser=signerC.verfer.qb64b).qb64]
     assert nxt == ['EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg']
 
     # create key pairs for witnesses of KEL
@@ -1610,8 +1610,8 @@ def test_kever(mockHelpingNowUTC):
         assert skp1.verfer.code == MtrDex.Ed25519
         # compute nxt digest
         # transferable so nxt is not empty
-        nexter = Diger(ser=skp1.verfer.qb64b)
-        nxt = [nexter.qb64]
+        ndiger = Diger(ser=skp1.verfer.qb64b)
+        nxt = [ndiger.qb64]
         assert nxt == ['EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7hOrWj']
 
         sn = 0  # inception event so 0
@@ -1658,7 +1658,7 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sner.num == 0
         assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
-        assert kever.nexter.digs == [nexter.qb64]
+        assert kever.digs == nxt
         state = kever.db.states.get(keys=kever.prefixer.qb64)
         assert state.sn == kever.sner.num == 0
         feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
@@ -1692,8 +1692,7 @@ def test_kever(mockHelpingNowUTC):
         assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
-        nexter = Nexter(keys=nxtkeys)
-        nxt = nexter.digs  # nxt is not empty so error
+        nxt = [Diger(ser=skp1.verfer.qb64b).qb64]  # nxt is not empty so error
 
         sn = 0  # inception event so 0
         toad = 0  # no witnesses
@@ -1948,8 +1947,8 @@ def test_keyeventsequence_0():
         keys0 = [signers[0].verfer.qb64]
         # compute nxt digest from keys1
         keys1 = [signers[1].verfer.qb64]
-        nexter1 = coring.Diger(ser=signers[1].verfer.qb64b)
-        nxt1 = [nexter1.qb64]  # transferable so nxt is not empty
+        ndiger1 = coring.Diger(ser=signers[1].verfer.qb64b)
+        nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         assert nxt1 == ['EIQsSW4KMrLzY1HQI9H_XxY6MyzhaFFXhG6fdBb5Wxta']
         serder0 = incept(keys=keys0, ndigs=nxt1)
         pre = serder0.ked["i"]
@@ -1972,18 +1971,18 @@ def test_keyeventsequence_0():
         assert kever.ilk == Ilks.icp
         assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
-        assert kever.nexter.digs == nxt1
+        assert kever.digs == nxt1
         assert kever.estOnly is False
         assert kever.transferable is True
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is None
+        pigers = kever.fetchPriorDigers()
+        assert pigers is None
 
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2
         keys2 = [signers[2].verfer.qb64]
-        nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
-        nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
+        ndiger2 = coring.Diger(ser=signers[2].verfer.qb64b)
+        nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
         assert nxt2 == ['EHuvLs1hmwxo4ImDoCpaAermYVQhiPsPDNaZsz4bcgko']
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
         event_digs.append(serder1.said)
@@ -2004,17 +2003,18 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder1.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
-        assert kever.nexter.digs == nxt2
+        assert kever.digs  == nxt2
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is not None
-        assert nexter.digs == nxt1  # digs from inception before rotation
+        pigers = kever.fetchPriorDigers()  # digs from inception before rotation
+        assert pigers is not None
+        assert [diger.qb64 for diger in pigers] == nxt1
+
 
         # Event 2 Rotation Transferable
         # compute nxt digest from keys3
         keys3 = [signers[3].verfer.qb64]
-        nexter3 = coring.Diger(ser=signers[3].verfer.qb64b)
-        nxt3 = [nexter3.qb64]  # transferable so nxt is not empty
+        ndiger3 = coring.Diger(ser=signers[3].verfer.qb64b)
+        nxt3 = [ndiger3.qb64]  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, ndigs=nxt3, sn=2)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
@@ -2033,11 +2033,11 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder2.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys2
-        assert kever.nexter.digs == nxt3
+        assert kever.digs  == nxt3
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is not None
-        assert nexter.digs == nxt2  # digs from rotation before rotation
+        pigers = kever.fetchPriorDigers()  # digs from rotation before rotation
+        assert pigers is not None
+        assert [diger.qb64 for diger in pigers] == nxt2
 
         # Event 3 Interaction
         serder3 = interact(pre=pre, dig=serder2.said, sn=3)
@@ -2056,11 +2056,11 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder3.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
-        assert kever.nexter.digs == nxt3  # no change
+        assert kever.digs  == nxt3  # no change
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is not None
-        assert nexter.digs == nxt2  # digs from rot before rot before ixn
+        pigers = kever.fetchPriorDigers()
+        assert pigers is not None
+        assert [diger.qb64 for diger in pigers] == nxt2  # digs from rot before rot before ixn
 
         # Event 4 Interaction
         serder4 = interact(pre=pre, dig=serder3.said, sn=4)
@@ -2079,17 +2079,17 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder4.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
-        assert kever.nexter.digs == nxt3  # no change
+        assert kever.digs  == nxt3  # no change
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is not None
-        assert nexter.digs == nxt2  # digs from rot before rot before ixn ixn
+        pigers = kever.fetchPriorDigers()  # digs from rot before rot before ixn ixn
+        assert pigers is not None
+        assert [diger.qb64 for diger in pigers] == nxt2
 
         # Event 5 Rotation Transferable
         # compute nxt digest from keys4
         keys4 = [signers[4].verfer.qb64]
-        nexter4 = coring.Diger(ser=signers[4].verfer.qb64b)
-        nxt4 = [nexter4.qb64]  # transferable so nxt is not empty
+        ndiger4 = coring.Diger(ser=signers[4].verfer.qb64b)
+        nxt4 = [ndiger4.qb64]  # transferable so nxt is not empty
         serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, ndigs=nxt4, sn=5)
         event_digs.append(serder5.said)
         assert serder5.ked["i"] == pre
@@ -2108,11 +2108,11 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder5.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys3
-        assert kever.nexter.digs == nxt4
+        assert kever.digs  == nxt4
 
-        nexter = kever.fetchPriorNexter()
-        assert nexter is not None
-        assert nexter.digs == nxt3  # digs from rot before ixn ixn before rot
+        pigers = kever.fetchPriorDigers()  # digs from rot before ixn ixn before rot
+        assert pigers is not None
+        assert [diger.qb64 for diger in pigers] == nxt3
 
         # Event 6 Interaction
         serder6 = interact(pre=pre, dig=serder5.said, sn=6)
@@ -2131,7 +2131,7 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder6.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys3  # no change
-        assert kever.nexter.digs == nxt4  # no change
+        assert kever.digs  == nxt4  # no change
 
         # Event 7 Rotation to null NonTransferable Abandon
         serder7 = rotate(pre=pre, keys=keys4, dig=serder6.said, sn=7)
@@ -2152,7 +2152,7 @@ def test_keyeventsequence_0():
         assert kever.serder.saider.qb64 == serder7.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys4
-        assert kever.nexter.digs == []
+        assert kever.digs  == []
         assert not kever.transferable
 
         # Event 8 Interaction
@@ -2171,7 +2171,7 @@ def test_keyeventsequence_0():
         # Event 8 Rotation
         keys5 = [signers[5].verfer.qb64]
         nexter5 = coring.Diger(ser=signers[5].verfer.qb64b)
-        nxt5 = [nexter4.qb64]  # transferable so nxt is not empty
+        nxt5 = [ndiger4.qb64]  # transferable so nxt is not empty
         serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, ndigs=nxt5, sn=8)
         assert serder8.ked["i"] == pre
         assert serder8.ked["s"] == '8'
@@ -2218,8 +2218,8 @@ def test_keyeventsequence_1():
         keys0 = [signers[0].verfer.qb64]
         # compute nxt digest from keys1
         keys1 = [signers[1].verfer.qb64]
-        nexter1 = coring.Diger(ser=signers[1].verfer.qb64b)
-        nxt1 = [nexter1.qb64]  # transferable so nxt is not empty
+        ndiger1 = coring.Diger(ser=signers[1].verfer.qb64b)
+        nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         cnfg = [TraitDex.EstOnly]  # EstOnly
         serder0 = incept(keys=keys0, ndigs=nxt1, cnfg=cnfg)
         event_digs.append(serder0.said)
@@ -2241,7 +2241,7 @@ def test_keyeventsequence_1():
         assert kever.ilk == Ilks.icp
         assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
-        assert kever.nexter.digs == nxt1
+        assert kever.digs  == nxt1
         assert kever.estOnly is True
         assert kever.transferable is True
 
@@ -2259,8 +2259,8 @@ def test_keyeventsequence_1():
 
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2  but from event0
-        nexter2 = coring.Diger(ser=signers[2].verfer.qb64b)
-        nxt2 = [nexter2.qb64]  # transferable so nxt is not empty
+        ndiger2 = coring.Diger(ser=signers[2].verfer.qb64b)
+        nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
@@ -2280,7 +2280,7 @@ def test_keyeventsequence_1():
         assert kever.serder.saider.qb64 == serder2.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
-        assert kever.nexter.digs == nxt2
+        assert kever.digs  == nxt2
 
         db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
@@ -3990,8 +3990,7 @@ def test_process_transferable():
     assert skp1.verfer.code == MtrDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
     # compute nxt digest
-    nexter = Nexter(keys=nxtkeys)
-    nxt = nexter.digs  # transferable so next is not empty
+    nxt = [Diger(ser=skp1.verfer.qb64b).qb64]  # transferable so next is not empty
 
     sn = 0  # inception event so 0
     toad = 0  # no witnesses
@@ -4061,8 +4060,8 @@ def test_process_transferable():
     assert raid0.verify(ked=rser0.ked)
 
     # verify nxt digest from event is still valid
-    rnxt1 = Nexter(digs=rser0.ked["n"])
-    assert rnxt1.includes(keys=nxtkeys)
+    digers=rser0.digers
+    #assert rnxt1.includes(keys=nxtkeys)
     """ Done Test """
 
 
