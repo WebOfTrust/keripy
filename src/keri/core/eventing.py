@@ -926,7 +926,7 @@ def interact(pre,
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
     sner = Number(num=sn)
-    if sner.num < 1:  # sn for rotate must be >= 1
+    if sner.num < 1:  # sn for interact must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for ixn.")
 
 
@@ -969,7 +969,7 @@ def receipt(pre,
     ilk = Ilks.rct
 
     sner = Number(num=sn)
-    if sner.num < 0:  # sn for rotate must be >= 1
+    if sner.num < 0:  # sn for receipt must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for rect.")
 
     ked = dict(v=vs,  # version string

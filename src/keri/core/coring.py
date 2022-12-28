@@ -4803,7 +4803,7 @@ class Sadder:
         """
         Deserialize if raw provided
         Serialize if ked provided but not raw
-        When serilaizing if kind provided then use kind instead of field in ked
+        When serializing if kind provided then use kind instead of field in ked
 
         Parameters:
           raw is bytes of serialized event plus any attached signatures
@@ -5071,7 +5071,7 @@ class Serder(Sadder):
         """
         Deserialize if raw provided
         Serialize if ked provided but not raw
-        When serilaizing if kind provided then use kind instead of field in ked
+        When serializing if kind provided then use kind instead of field in ked
 
         Parameters:
           raw is bytes of serialized event plus any attached signatures

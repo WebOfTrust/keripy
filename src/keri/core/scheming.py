@@ -271,7 +271,7 @@ class Schemer:
 
         Deserialize if raw provided
         Serialize if sed provided but not raw
-        When serilaizing if kind provided then use kind instead of field in sed
+        When serializing if kind provided then use kind instead of field in sed
 
         Parameters:
           raw (bytes): of serialized schema
