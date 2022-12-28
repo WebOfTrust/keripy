@@ -2949,29 +2949,6 @@ class Nexter:
         return idxs
 
 
-    #def satisfies(self, tholder, indices, digers=None,  digs=None):
-        #"""Given prior next digest list in .digers the provided tholder,
-        #and indices with either provided digers or digs together constitute a
-        #satisfycing subset of the prior next threshold. Each index indicates
-        #which index offset into .digers is the corresponding diger or dig.
-
-        #Returns:
-            #(bool): True if satisfycing, False otherwise
-
-        #Parameters:
-            #tholder (Tholder): instance of prior next threshold
-            #indices (list): of int offsets into .digers
-            #digers (list | None): of instances of Diger of prior next key digests
-            #digs (list | None): of digests qb64 of prior next keys
-
-        #"""
-        #if digers is None:
-            #if digs is None:
-                #raise EmptyListError(f"Need digers, digs, verfers, or keys.")
-            #digers = [Diger(qb64=dig) for dig in digs]
-
-        #return False
-
 
     @staticmethod
     def _digest(keys):
