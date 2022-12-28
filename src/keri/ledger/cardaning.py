@@ -12,15 +12,15 @@ Environment variables required:
 from blockfrost import BlockFrostApi, ApiError, ApiUrls
 from pycardano import * 
 from textwrap import wrap
+from threading import Timer
 import os
 import time
 import json
-from keri.app import keeping
+
 
 
 # TODO
 # Incept data for backer: https://github.com/WebOfTrust/keripy/issues/90
-# Queue several events
 # Validate duplicate KE before submitting to Ledger
 # Error handling
 # Make ledger a class to conform
@@ -29,6 +29,8 @@ class Cardano:
 
     def __init__(self, name='backer', hab=None, ks=None):
         self.name = name
+        self.pendingKEL = {}
+        self.timer = Timer(90, self.flushQueue)
         
         self.network = Network.TESTNET
         try:
@@ -55,35 +57,28 @@ class Cardano:
             self.fundAddress(self.spending_addr)
 
     def publishEvent(self, event):
-        print("Submitting", event)
+        print("Adding event to queue", event)
+        seq_no = int(event['ked']['s'],16)
+        self.pendingKEL[seq_no]= wrap(json.dumps(event), 64)
+        if not self.timer.is_alive():
+            self.timer = Timer(90, self.flushQueue)
+            self.timer.start()
+
+    def flushQueue(self):
+        print("Flushing Queue")
         try:
-            seq_no = int(event['ked']['s'],16)
-            tx_meta = {'KE': wrap(json.dumps(event), 64)}
             builder = TransactionBuilder(self.context)
             builder.add_input_address(self.spending_addr)
-            # utxos = self.api.address_utxos(self.spending_addr.encode())
-            # utxo_sum = 0
-            # for u in utxos:
-            #     utxo_sum = utxo_sum + int(u.amount[0].quantity)
-            #     print(u.amount[0].quantity)
-            #     print(u.tx_hash, u.tx_index)
-            #     builder.add_input(TransactionInput.from_primitive([u.tx_hash, u.tx_index]))
-            #     if utxo_sum > 1000000: break
 
             builder.add_output(TransactionOutput(self.spending_addr,Value.from_primitive([1000000])))
             
-            builder.auxiliary_data = AuxiliaryData(Metadata(
-                        { 
-                            seq_no: tx_meta
-                        }
-                    )
-                )
+            builder.auxiliary_data = AuxiliaryData(Metadata(self.pendingKEL))
             signed_tx = builder.build_and_sign([self.payment_signing_key], change_address=self.spending_addr)
             self.context.submit_tx(signed_tx.to_cbor())
-            print("Tx submitted", event)
-
+            self.pendingKEL = {}
         except Exception as e:
             print("error", e)
+
 
     def getaddressBalance(self):
         try:
