@@ -44,7 +44,13 @@ def setupHby(name, base="", bran=None, cf=None):
                 bran = bran.replace("-", "")
 
             retries += 1
-            hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf, free=True)
+            headDirPath = None # default
+            try:
+                headDirPath = cf.headDirPath
+            except AttributeError:
+                # Configer passed in without headDirPath specified, so accept default
+                pass
+            hby = habbing.Habery(name=name, cf=cf, headDirPath=headDirPath, base=base, bran=bran, free=True)
             break
         except (kering.AuthError, ValueError):
             if retries >= 3:
@@ -55,7 +61,7 @@ def setupHby(name, base="", bran=None, cf=None):
 
 
 @contextmanager
-def existingHby(name, base="", bran=None):
+def existingHby(name, base="", cf=None, bran=None):
     """
     Context manager wrapper for existing Habitat instance.
     Will raise exception if Habitat and database has not already been created.
@@ -68,7 +74,7 @@ def existingHby(name, base="", bran=None):
     """
     hby = None
     try:
-        hby = setupHby(name=name, base=base, bran=bran)
+        hby = setupHby(name=name, base=base, cf=cf, bran=bran)
         yield hby
 
     finally:
@@ -77,7 +83,7 @@ def existingHby(name, base="", bran=None):
 
 
 @contextmanager
-def existingHab(name, alias, base="", bran=None):
+def existingHab(name, alias, base="", cf=None, bran=None):
     """
     Context manager wrapper for existing Habitat instance.
     Will raise exception if Habitat and database has not already been created.
@@ -89,7 +95,7 @@ def existingHab(name, alias, base="", bran=None):
         base(str): optional base directory prefix
         bran(str): optional passcode if the Habery was created encrypted
     """
-    with existingHby(name, base, bran) as hby:
+    with existingHby(name, base, cf, bran) as hby:
         hab = hby.habByName(name=alias)
         yield hby, hab
 
