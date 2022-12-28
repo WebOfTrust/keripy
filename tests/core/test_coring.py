@@ -4279,67 +4279,6 @@ def test_diger():
     """ Done Test """
 
 
-#def test_nexter():
-    #"""
-    #Test the support functionality for Nexter subclass of Diger
-    #"""
-    #raw = b"raw salt to test"
-
-    ##  create signers with verfers for keys
-    #signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
-
-    #keys = [signer.verfer.qb64 for signer in signers]
-    #assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
-                    #'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
-                    #'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
-
-    #digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-    #digs = [diger.qb64 for diger in digers]
-    #assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
-                    #'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
-                    #'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
-
-    #nexter = Nexter(digs=digs)
-    ##assert nexter.includes(digs=digs)
-
-    #nexter = Nexter(keys=keys)  # compute digs from keys default is Blake3_256
-    #assert len(nexter.digs) == len(keys)
-    ##assert nexter.includes(keys=keys)
-    ##assert nexter.includes(keys=keys + ['ABCDEF']) is False
-
-    #ked = dict(k=keys)  # subsequent event
-    #nexter = Nexter(keys=ked['k'])
-    #assert len(nexter.digs) == len(ked['k'])
-    ##assert nexter.includes(keys=ked['k'])
-
-    ##  Test support for partial rotation
-    #signers = coring.Salter(raw=raw).signers(count=10, start=3, path="next", temp=True)
-    #digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-
-    ## grab first 5 for our nexter
-    #nexter = Nexter(digs=[diger.qb64 for diger in digers[0:5]])
-
-    ## verify inclusion against full set
-    ##assert nexter.includes(digs=nexter.digs)
-
-    ## verify inclusion against a proper subset
-    ##assert nexter.includes(digs=[diger.qb64 for diger in digers[2:5]])
-
-    ## verify inclusion against a single existing dig from set
-    ##assert nexter.includes(digs=[digers[4].qb64])
-
-    ## verify inclusion against a single existing dig not from set
-    ##assert not nexter.includes(digs=[digers[7].qb64])
-
-    ## verify inclusion against non-contiguous subset
-    ##assert nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[4].qb64])
-
-    ## verify inclusion against non subset
-    ##assert not nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[6].qb64])
-
-    #""" Done Test """
-
-
 def test_prefixer():
     """
     Test the support functionality for prefixer subclass of crymat
