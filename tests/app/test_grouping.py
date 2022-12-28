@@ -164,10 +164,10 @@ def test_counselor():
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.nexter.digs[0], hab2.kever.nexter.digs[0], hab3.kever.nexter.digs[0]]
+        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert ghab.kever.nexter.digs == ndigs
+        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
 
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
@@ -245,10 +245,10 @@ def test_counselor():
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.nexter.digs[0], hab2.kever.nexter.digs[0], hab3.kever.nexter.digs[0]]
+        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64]
         assert ghab.kever.sn == 2
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert ghab.kever.nexter.digs == ndigs
+        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
 
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
@@ -545,10 +545,10 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab.kever.nexter.digs[0] for hab in habs]
+        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert ghab.kever.nexter.digs == ndigs
+        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
 
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
@@ -632,10 +632,10 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab.kever.nexter.digs[0] for hab in habs]
+        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
         assert ghab.kever.sn == 2
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert ghab.kever.nexter.digs == ndigs
+        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
 
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
@@ -734,10 +734,10 @@ def test_the_seven():
 
         # Validate successful partial rotation
         nkeys = [hab4.kever.verfers[0].qb64, hab5.kever.verfers[0].qb64, hab6.kever.verfers[0].qb64]
-        ndigs = [hab.kever.nexter.digs[0] for hab in habs]
+        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
         assert ghab4.kever.sn == 3
         assert [verfer.qb64 for verfer in ghab4.kever.verfers] == nkeys
-        assert ghab4.kever.nexter.digs == ndigs
+        assert [diger.qb64 for diger in ghab4.kever.digers] == ndigs
 
 
 @contextmanager

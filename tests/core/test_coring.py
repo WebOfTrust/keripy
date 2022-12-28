@@ -28,7 +28,7 @@ from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
                               CtrDex, Counter, sniff, ProDex)
 from keri.core.coring import (Verfer, Cigar, Signer, Salter, Saider, DigDex,
-                              Diger, Prefixer, Nexter, Cipher, Encrypter, Decrypter)
+                              Diger, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import versify, deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import generateSigners, generatePrivates
 from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2ToB64,
@@ -4279,67 +4279,6 @@ def test_diger():
     """ Done Test """
 
 
-def test_nexter():
-    """
-    Test the support functionality for Nexter subclass of Diger
-    """
-    raw = b"raw salt to test"
-
-    #  create signers with verfers for keys
-    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
-
-    keys = [signer.verfer.qb64 for signer in signers]
-    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
-                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
-                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
-
-    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-    digs = [diger.qb64 for diger in digers]
-    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
-                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
-                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
-
-    nexter = Nexter(digs=digs)
-    assert nexter.includes(digs=digs)
-
-    nexter = Nexter(keys=keys)  # compute digs from keys default is Blake3_256
-    assert len(nexter.digs) == len(keys)
-    assert nexter.includes(keys=keys)
-    assert nexter.includes(keys=keys + ['ABCDEF']) is False
-
-    ked = dict(k=keys)  # subsequent event
-    nexter = Nexter(keys=ked['k'])
-    assert len(nexter.digs) == len(ked['k'])
-    assert nexter.includes(keys=ked['k'])
-
-    #  Test support for partial rotation
-    signers = coring.Salter(raw=raw).signers(count=10, start=3, path="next", temp=True)
-    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-
-    # grab first 5 for our nexter
-    nexter = Nexter(digs=[diger.qb64 for diger in digers[0:5]])
-
-    # verify inclusion against full set
-    assert nexter.includes(digs=nexter.digs)
-
-    # verify inclusion against a proper subset
-    assert nexter.includes(digs=[diger.qb64 for diger in digers[2:5]])
-
-    # verify inclusion against a single existing dig from set
-    assert nexter.includes(digs=[digers[4].qb64])
-
-    # verify inclusion against a single existing dig not from set
-    assert not nexter.includes(digs=[digers[7].qb64])
-
-    # verify inclusion against non-contiguous subset
-    assert nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[4].qb64])
-
-    # verify inclusion against non subset
-    assert not nexter.includes(digs=[digers[1].qb64, digers[3].qb64, digers[6].qb64])
-
-    """ Done Test """
-
-
 def test_prefixer():
     """
     Test the support functionality for prefixer subclass of crymat
@@ -4483,15 +4422,15 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    # test with Nexter
-    nexter = Nexter(keys=[nxtfer.qb64])
+    # test with next digs
+    ndigs = [Diger(ser=nxtfer.qb64b).qb64]
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.digs,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -4525,14 +4464,14 @@ def test_prefixer():
     # Test with sith with one clause
     keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
     sith = [["1/2", "1/2", "1"]]
-    nexter = Nexter(keys=[signers[3].verfer.qb64])  # default limen/sith
+    ndigs = [Diger(ser=signers[3].verfer.qb64b).qb64]  # default limen/sith
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.digs,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -4551,7 +4490,7 @@ def test_prefixer():
                t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.digs,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -4575,7 +4514,7 @@ def test_prefixer():
                t=Ilks.dip,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nexter.digs,  # hash qual Base64
+               n=ndigs,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
                w=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -5878,16 +5817,58 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
     assert not tholder.satisfy(indices=[])
 
+
+
+    raw = b"raw salt to test"
+
+    #  create signers with verfers for keys
+    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    keys = [signer.verfer.qb64 for signer in signers]
+    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
+                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
+                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
+
+    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
+    digs = [diger.qb64 for diger in digers]
+    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
+                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
+                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
+
+    assert tholder.includes(keys, digs)
+
+    bdigs = list(digs)
+    del bdigs[0]
+    assert not tholder.includes(keys, bdigs)
+
+    bkeys = list(keys)
+    del bkeys[1]
+    assert tholder.includes(bkeys, digs)
+
+    bkeys.append(keys[1])
+    assert not tholder.includes(bkeys, digs)
+
+    signer = Signer()
+    # create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    index = 0
+    siger = signer.sign(ser, index=index)
+    digs = [Diger(ser=siger.verfer.qb64b).qb64]
+    sigers = [siger]
+
+    assert tholder.matches(sigers, digs) == [0]
+
+
     """ Done Test """
 
 
 if __name__ == "__main__":
     #test_matter()
-    test_counter()
-    test_prodex()
+    #test_counter()
+    #test_prodex()
     #test_indexer()
     #test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
-    #test_tholder()
+    test_tholder()
