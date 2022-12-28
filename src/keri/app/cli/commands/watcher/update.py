@@ -3,7 +3,7 @@ import argparse
 from hio.base import doing
 
 from keri import kering
-from keri.app import habbing
+from keri.app import habbing, configing
 from keri.core import coring
 
 parser = argparse.ArgumentParser(description='Update set of watchers for this environment (Habitat)')
@@ -18,6 +18,9 @@ parser.add_argument('--cut', '-c', help='Watchers to remove.  Can appear multipl
 parser.add_argument('--add', '-a', help='Watchers to add.  Can appear multiple times', metavar="<prefix>",
                     default=[],
                     action="append", required=False)
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument("--config-dir", help="directory override for configuration data", default=None)
 
 
 def handler(args):
@@ -32,9 +35,20 @@ def updateWatchers(tymth, tock=0.0, **opts):
     _ = (yield tock)
     args = opts["args"]
     name = args.name
+    base = args.base
+    config_dir = args.config_dir
+
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
 
     try:
-        with habbing.existingHabitat(name=name) as hab:
+        with habbing.Habery(name=name, base=base, cf=cf, headDirPath=config_dir) as hab:
 
             habr = hab.db.habs.get(name)
 

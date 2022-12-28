@@ -5,7 +5,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, habbing, grouping, connecting
+from keri.app import indirecting, habbing, grouping, connecting, configing
 from keri.app.cli.common import existing
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
@@ -33,6 +33,7 @@ parser.add_argument('--out', '-o', help='Name of file for credential output', de
                     required=False)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--private", help="flag to indicate if this credential needs privacy preserving features",
                     action="store_true")
@@ -89,6 +90,7 @@ def issueCredential(args):
     issueDoer = CredentialIssuer(name=name,
                                  alias=args.alias,
                                  base=args.base,
+                                 config_dir=args.config_dir,
                                  bran=args.bran,
                                  registryName=args.registry_name,
                                  schema=args.schema,
@@ -110,7 +112,7 @@ class CredentialIssuer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
+    def __init__(self, name, alias, base, config_dir, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
                  rules=None, credential=None, out=None, private=False):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
@@ -124,12 +126,24 @@ class CredentialIssuer(doing.DoDoer):
              credential: (dict) full credential to issue when joining a multisig issuance
              out (str): Filename for credential output
              private: (bool) privacy preserving
+             base       (str): An optional base path component for the directory where config, credentials, and keys are
+                               stored. Defaults to blank
+             config_dir (str): An optional root path component for the directory where config, credentials, and keys are
+                               stored. Defaults to $HOME/.keri or /usr/local/var/keri
 
         """
         self.name = name
         self.alias = alias
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
+        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base, headDirPath=config_dir)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.counselor = grouping.Counselor(hby=self.hby)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)

@@ -8,6 +8,7 @@ import argparse
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
 
@@ -19,6 +20,7 @@ parser.set_defaults(handler=lambda args: remove(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='existing 22 character encryption passcode for keystore',
                     dest="bran", default=None)  # passcode => bran
 
@@ -39,10 +41,20 @@ def remove(tymth, tock=0.0, **opts):
     args = opts["args"]
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
 
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
+
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existing.existingHby(name=name, base=base, cf=cf, bran=bran) as hby:
             hby.mgr.updateAeid(None, None)
             print("Passcode removed and keystore unencrypted.")
 

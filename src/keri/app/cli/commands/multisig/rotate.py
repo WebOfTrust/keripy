@@ -10,7 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import grouping, indirecting, habbing, forwarding
+from keri.app import grouping, indirecting, habbing, forwarding, configing
 from keri.app.cli.common import rotating, existing, displaying
 from keri.core import coring
 
@@ -22,6 +22,7 @@ parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args),
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -46,7 +47,8 @@ def rotateGroupIdentifier(args):
 
     data = rotating.loadData(args)
 
-    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, aids=args.aids, bran=args.bran,
+    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, config_dir=args.config_dir, alias=args.alias,
+                                  aids=args.aids, bran=args.bran,
                                   wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                                   isith=args.isith, nsith=args.nsith, toad=args.toad, data=data)
 
@@ -62,7 +64,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, alias, aids=None, isith=None, nsith=None,
+    def __init__(self, name, base, config_dir, bran, alias, aids=None, isith=None, nsith=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
 
         self.alias = alias
@@ -76,7 +78,16 @@ class GroupMultisigRotate(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])

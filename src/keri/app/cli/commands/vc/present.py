@@ -9,7 +9,7 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import connecting, forwarding
+from keri.app import connecting, forwarding, configing
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.vc import protocoling
@@ -25,6 +25,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -42,6 +43,7 @@ def present_credential(args):
     ed = PresentDoer(name=args.name,
                      alias=args.alias,
                      base=args.base,
+                     config_dir=args.config_dir,
                      bran=args.bran,
                      said=args.said,
                      recipient=args.recipient,
@@ -51,15 +53,24 @@ def present_credential(args):
 
 class PresentDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, recipient, include):
+    def __init__(self, name, alias, base, config_dir, bran, said, recipient, include):
         self.said = said
         self.recipient = recipient
         self.include = include
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base, headDirPath=config_dir)
         self.postman = forwarding.Postman(hby=self.hby)
 
         doers = [self.postman, doing.doify(self.presentDo)]

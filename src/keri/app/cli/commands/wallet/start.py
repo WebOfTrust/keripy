@@ -10,7 +10,7 @@ import logging
 
 from keri import __version__
 from keri import help
-from keri.app import indirecting, storing, habbing
+from keri.app import indirecting, storing, habbing, configing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import exchanging
@@ -29,21 +29,32 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="wallet",
                     help="Name of controller. Default is wallet.")
+parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+                    required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 
 
 def launch(args):
     help.ogler.level = logging.INFO
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
-    return runWallet(name=args.name)
+    return runWallet(name=args.name, base=args.base, config_dir=args.config_dir)
 
 
-def runWallet(name="wallet", base="", bran=None):
+def runWallet(name="wallet", base="", config_dir=None, bran=None):
     """
     Setup and run one wallet
     """
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
 
-    hby = existing.setupHby(name=name, base=base, bran=bran)
+    hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]
 

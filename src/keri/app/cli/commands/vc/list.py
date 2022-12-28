@@ -13,7 +13,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting
+from keri.app import indirecting, configing
 from keri.app.cli.common import existing, terming
 from keri.core import scheming
 from keri.help import helping
@@ -29,6 +29,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -49,6 +50,7 @@ def list_credentials(args):
     ld = ListDoer(name=args.name,
                   alias=args.alias,
                   base=args.base,
+                  config_dir=args.config_dir,
                   bran=args.bran,
                   verbose=args.verbose,
                   poll=args.poll,
@@ -60,19 +62,28 @@ def list_credentials(args):
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False, schema=None):
+    def __init__(self, name, alias, base, config_dir, bran, verbose=False, poll=False, said=False, issued=False, schema=None):
         self.verbose = verbose
         self.poll = poll
         self.said = said
         self.issued = issued
         self.schema = schema
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         if alias is None:
             alias = existing.aliasInput(self.hby)
 
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base, headDirPath=config_dir)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry)
 

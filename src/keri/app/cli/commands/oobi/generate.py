@@ -11,6 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
+from keri.app import configing
 from keri.app.cli.common import existing
 
 logger = help.ogler.getLogger()
@@ -23,6 +24,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument("--role", "-r", help="role of oobis to generate", required=True)
 
@@ -52,10 +54,20 @@ def generate(tymth, tock=0.0, **opts):
     name = args.name
     alias = args.alias
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
     role = args.role
 
-    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
+
+    with existing.existingHby(name=name, base=base, cf=cf, bran=bran) as hby:
         if alias is None:
             alias = existing.aliasInput(hby)
 

@@ -9,7 +9,7 @@ from hio import help
 from hio.base import doing
 
 import keri.app.oobiing
-from keri.app import habbing, oobiing
+from keri.app import habbing, oobiing, configing
 from keri.app.cli.common import existing
 from keri.db import basing
 from keri.end import ending
@@ -25,6 +25,7 @@ parser.set_defaults(handler=lambda args: resolve(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument("--oobi", "-o", help="out-of-band introduciton to load", required=True)
 parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolved from out-of-band introduciton",
                     required=False, default=None)
@@ -44,11 +45,12 @@ def resolve(args):
     """
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
     oobi = args.oobi
     oobiAlias = args.oobiAlias
 
-    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, oobiAlias=oobiAlias)
+    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, config_dir=config_dir, oobiAlias=oobiAlias)
 
     doers = [icpDoer]
     return doers
@@ -57,11 +59,19 @@ def resolve(args):
 class OobiDoer(doing.DoDoer):
     """ DoDoer for loading oobis and waiting for the results """
 
-    def __init__(self, name, oobi, oobiAlias, bran=None, base=None):
+    def __init__(self, name, oobi, oobiAlias, bran=None, base=None, config_dir=None):
 
         self.processed = 0
         self.oobi = oobi
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
         obr = basing.OobiRecord(date=helping.nowIso8601())

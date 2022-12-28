@@ -10,7 +10,7 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, indirecting, agenting, grouping, forwarding
+from keri.app import habbing, indirecting, agenting, grouping, forwarding, configing
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.db import dbing
@@ -23,6 +23,7 @@ parser.set_defaults(handler=lambda args: confirm(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -40,20 +41,30 @@ def confirm(args):
     """
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
     alias = args.alias
     interact = args.interact
     auto = args.auto
 
-    confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto)
+    confirmDoer = ConfirmDoer(name=name, base=base, config_dir=config_dir, alias=alias, bran=bran, interact=interact, auto=auto)
 
     doers = [confirmDoer]
     return doers
 
 
 class ConfirmDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran, interact=False, auto=False):
-        hby = existing.setupHby(name=name, base=base, bran=bran)
+    def __init__(self, name, base, config_dir, alias, bran, interact=False, auto=False):
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        hby = existing.setupHby(name=name, cf=cf, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.postman = forwarding.Postman(hby=hby)

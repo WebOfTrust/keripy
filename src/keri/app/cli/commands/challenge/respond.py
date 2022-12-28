@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import habbing, forwarding, connecting
+from keri.app import habbing, forwarding, connecting, configing
 from keri.app.cli.common import existing
 from keri.peer import exchanging
 
@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(description='Respond to a list of challenge wor
                                              'response')
 parser.set_defaults(handler=lambda args: respond(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
@@ -35,6 +36,7 @@ def respond(args):
     """
     name = args.name
     alias = args.alias
+    config_dir = args.config_dir
     base = args.base
     bran = args.bran
     recp = args.recipient
@@ -49,7 +51,7 @@ def respond(args):
     if not isinstance(words, list):
         raise ValueError("words must be an array of words")
 
-    ixnDoer = RespondDoer(name=name, base=base, alias=alias, bran=bran, words=words, recp=recp)
+    ixnDoer = RespondDoer(name=name, config_dir=config_dir, base=base, alias=alias, bran=bran, words=words, recp=recp)
 
     return [ixnDoer]
 
@@ -60,12 +62,12 @@ class RespondDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, words: list, recp: str):
+    def __init__(self, name, config_dir, base, bran, alias, words: list, recp: str):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
         Parameters:
-            name is human readable str of identifier
+            name is human-readable str of identifier
             proto is tcp or http method for communicating with Witness
             data is list of dicts of committed data such as seals
        """
@@ -74,7 +76,16 @@ class RespondDoer(doing.DoDoer):
         self.words = words
         self.recp = recp
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, cf=cf, base=base, bran=bran)
         self.postman = forwarding.Postman(hby=self.hby)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.org = connecting.Organizer(hby=self.hby)

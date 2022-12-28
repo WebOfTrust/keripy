@@ -9,7 +9,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import indirecting, habbing, grouping, forwarding, connecting
+from keri.app import indirecting, habbing, grouping, forwarding, connecting, configing
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.vdr import credentialing, verifying
@@ -21,6 +21,7 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -32,9 +33,8 @@ parser.add_argument('--send', help='alias of contact to send the revocation even
 def revokeCredential(args):
     name = args.name
 
-    revokeDoer = RevokeDoer(name=name, alias=args.alias, said=args.said, base=args.base, bran=args.bran,
-                            registryName=args.registry_name,
-                            send=args.send)
+    revokeDoer = RevokeDoer(name=name, alias=args.alias, said=args.said, base=args.base, config_dir=args.config_dir,
+                            bran=args.bran, registryName=args.registry_name, send=args.send)
 
     doers = [revokeDoer]
     return doers
@@ -42,11 +42,19 @@ def revokeCredential(args):
 
 class RevokeDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, said, base, bran, registryName, send, **kwa):
+    def __init__(self, name, alias, said, base, config_dir, bran, registryName, send, **kwa):
         self.said = said
         self.send = send
         self.registryName = registryName
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)

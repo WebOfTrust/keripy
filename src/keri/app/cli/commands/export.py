@@ -10,6 +10,7 @@ import sys
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.core import coring
 
@@ -23,6 +24,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--files", help="export artifacts to individual files keyed off of AIDs or SAIDS, default is "
@@ -38,6 +40,7 @@ def export(args):
     ed = ExportDoer(name=args.name,
                     alias=args.alias,
                     base=args.base,
+                    config_dir=args.config_dir,
                     bran=args.bran,
                     ends=args.ends,
                     files=args.files,)
@@ -46,11 +49,20 @@ def export(args):
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, ends, files):
+    def __init__(self, name, alias, base, config_dir, bran, ends, files):
         self.files = files
         self.ends = ends
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hab = self.hby.habByName(alias)
 
         doers = [doing.doify(self.exportDo)]

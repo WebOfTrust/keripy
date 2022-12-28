@@ -10,7 +10,7 @@ import json
 from hio import help
 from hio.base import doing
 
-from keri.app import connecting
+from keri.app import connecting, configing
 from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
 
@@ -22,6 +22,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -39,10 +40,20 @@ def list(tymth, tock=0.0, **opts):
     args = opts["args"]
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
 
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
+
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existing.existingHby(name=name, base=base, cf=cf, bran=bran) as hby:
             org = connecting.Organizer(hby=hby)
             for c in org.list():
 

@@ -9,6 +9,7 @@ import argparse
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
 from keri.kering import ConfigurationError
@@ -21,9 +22,11 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+
 
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
@@ -43,9 +46,19 @@ def status(tymth, tock=0.0, **opts):
     alias = args.alias
     base = args.base
     bran = args.bran
+    config_dir = args.config_dir
+
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existing.existingHby(name=name, base=base, bran=bran, cf=cf) as hby:
             if alias is None:
                 alias = existing.aliasInput(hby)
 

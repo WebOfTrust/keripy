@@ -10,7 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import agenting, indirecting, habbing, httping
+from keri.app import agenting, indirecting, habbing, httping, configing
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
 from keri.kering import ConfigurationError
@@ -23,6 +23,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -40,12 +41,13 @@ def handler(args):
 
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
     alias = args.alias
     witness = args.witness
     verbose = args.verbose
 
-    icpDoer = ReadDoer(name=name, base=base, alias=alias, bran=bran, witness=witness, verbose=verbose)
+    icpDoer = ReadDoer(name=name, base=base, config_dir=config_dir, alias=alias, bran=bran, witness=witness, verbose=verbose)
 
     doers = [icpDoer]
     return doers
@@ -55,9 +57,18 @@ class ReadDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, witness, verbose):
+    def __init__(self, name, base, config_dir, alias, bran, witness, verbose):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby

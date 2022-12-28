@@ -9,13 +9,14 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import rotating, existing
-from ... import habbing, agenting, indirecting, directing, delegating, forwarding
+from ... import habbing, agenting, indirecting, directing, delegating, forwarding, configing
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -33,6 +34,7 @@ def rotate(args):
     """
     data = rotating.loadData(args)
     rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias,
+                         config_dir=args.config_dir,
                          bran=args.bran, wits=args.witnesses,
                          cuts=args.cuts, adds=args.witness_add,
                          isith=args.isith, nsith=args.nsith,
@@ -50,7 +52,7 @@ class RotateDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, isith=None, nsith=None, count=None,
+    def __init__(self, name, base, bran, alias, config_dir, isith=None, nsith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
@@ -77,7 +79,16 @@ class RotateDoer(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.swain = delegating.Boatswain(hby=self.hby)
         self.postman = forwarding.Postman(hby=self.hby)

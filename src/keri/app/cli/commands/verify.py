@@ -8,6 +8,7 @@ import argparse
 from hio.base import doing
 
 from keri import kering
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.core import coring
 
@@ -16,6 +17,7 @@ parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -47,12 +49,22 @@ def verify(tymth, tock=0.0, **opts):
     name = args.name
     alias = args.alias
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
+
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
 
     sigers = [coring.Siger(qb64=sig) for sig in args.signature]
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+        with existing.existingHab(name=name, alias=alias, base=base, cf=cf, bran=bran) as (_, hab):
 
             kever = hab.kevers[args.prefix]
 

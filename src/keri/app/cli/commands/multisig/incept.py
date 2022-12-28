@@ -14,7 +14,7 @@ import sys
 from hio.base import doing
 
 from keri import help, kering
-from keri.app import indirecting, grouping, habbing, forwarding
+from keri.app import indirecting, grouping, habbing, forwarding, configing
 from keri.app.cli.common import existing, displaying
 from keri.core import coring
 
@@ -25,6 +25,7 @@ parser.set_defaults(handler=lambda args: inceptMultisig(args))
 parser.add_argument('--name', '-n', help='Human readable environment reference for local identifier', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -64,8 +65,10 @@ def inceptMultisig(args):
     base = args.base
     bran = args.bran
     group = args.group
+    config_dir = args.config_dir
 
-    icpDoer = GroupMultisigIncept(name=name, base=base, alias=alias, bran=bran, group=group, wait=args.wait, **opts)
+    icpDoer = GroupMultisigIncept(name=name, base=base, alias=alias, bran=bran, group=group, wait=args.wait,
+                                  config_dir=config_dir, **opts)
 
     doers = [icpDoer]
     return doers
@@ -73,9 +76,18 @@ def inceptMultisig(args):
 
 class GroupMultisigIncept(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, group, wait, **kwa):
+    def __init__(self, name, base, alias, bran, group, wait, config_dir, **kwa):
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
         self.name = name
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
 
         self.alias = alias

@@ -11,7 +11,7 @@ import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import indirecting, challenging, connecting, signaling
+from keri.app import indirecting, challenging, connecting, signaling, configing
 from keri.app.cli.commands.challenge.generate import generateWords
 from keri.app.cli.common import existing
 from keri.help import helping
@@ -28,6 +28,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     default=None)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -51,6 +52,7 @@ def verify(args):
     """
     ld = VerifyDoer(name=args.name,
                     alias=args.alias,
+                    config_dir=args.config_dir,
                     base=args.base,
                     bran=args.bran,
                     words=args.words,
@@ -63,7 +65,7 @@ def verify(args):
 
 class VerifyDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, words, generate, strength, out, signer):
+    def __init__(self, name, alias, config_dir, base, bran, words, generate, strength, out, signer):
 
         self.wordstr = words
         self.words = words
@@ -71,7 +73,15 @@ class VerifyDoer(doing.DoDoer):
         self.strength = strength
         self.out = out
         self.signer = signer
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, cf=cf, base=base, bran=bran)
         if alias is None:
             alias = existing.aliasInput(self.hby)
 

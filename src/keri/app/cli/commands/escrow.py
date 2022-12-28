@@ -10,6 +10,7 @@ import json
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.core import eventing
 from keri.app.cli.common import existing
 from keri.db import dbing
@@ -24,6 +25,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -44,12 +46,22 @@ def escrows(tymth, tock=0.0, **opts):
     args = opts["args"]
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
     escrow = args.escrow
 
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
+
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
+        with existing.existingHby(name=name, base=base, cf=cf, bran=bran) as hby:
+            reger = viring.Reger(name=hby.name, db=hby.db, temp=False, headDirPath=config_dir)
 
             escrows = dict()
             if (not escrow) or escrow == "out-of-order-events":

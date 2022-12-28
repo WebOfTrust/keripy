@@ -11,13 +11,14 @@ from hio.base import doing
 
 from keri import kering
 from ..common import existing
-from ... import habbing, agenting, indirecting
+from ... import habbing, agenting, indirecting, configing
 
 parser = argparse.ArgumentParser(description='Create and publish an interaction event')
 parser.set_defaults(handler=lambda args: interact(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -34,6 +35,7 @@ def interact(args):
     name = args.name
     alias = args.alias
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
 
     if args.data is not None:
@@ -52,7 +54,7 @@ def interact(args):
     else:
         data = None
 
-    ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, data=data)
+    ixnDoer = InteractDoer(name=name, base=base, alias=alias, config_dir=config_dir, bran=bran, data=data)
 
     return [ixnDoer]
 
@@ -63,7 +65,7 @@ class InteractDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, data: list = None):
+    def __init__(self, name, base, bran, alias, config_dir, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -76,7 +78,16 @@ class InteractDoer(doing.DoDoer):
         self.alias = alias
         self.data = data
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         doers = [self.hbyDoer, doing.doify(self.interactDo)]
 

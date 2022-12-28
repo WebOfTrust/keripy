@@ -289,7 +289,7 @@ class BootEnd(doing.DoDoer):
                                     clear=False)
 
         hby = habbing.Habery(name=name, base=self.base, temp=self.temp, cf=cf, headDirPath=self.headDirPath, **kwa)
-        rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
+        rgy = credentialing.Regery(hby=hby, name=name, base=self.base, headDirPath=self.headDirPath)
 
         hby.close()
         rgy.close()
@@ -365,7 +365,7 @@ class BootEnd(doing.DoDoer):
             cf = None
 
         hby = habbing.Habery(name=name, base=self.base, bran=bran, cf=cf, headDirPath=self.headDirPath)
-        rgy = credentialing.Regery(hby=hby, name=name, base=self.base)
+        rgy = credentialing.Regery(hby=hby, name=name, base=self.base, headDirPath=self.headDirPath)
 
         kiwiing.setup(hby=hby, rgy=rgy, servery=self.servery, bootConfig=self.bootConfig, **self._kiwinits)
 

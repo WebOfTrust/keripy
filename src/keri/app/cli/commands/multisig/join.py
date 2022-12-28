@@ -13,7 +13,7 @@ from prettytable import PrettyTable
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting
+from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, configing
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing
 from keri.peer import exchanging
@@ -25,6 +25,7 @@ parser.set_defaults(handler=lambda args: confirm(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -38,9 +39,10 @@ def confirm(args):
     """
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
 
-    confirmDoer = ConfirmDoer(name=name, base=base, bran=bran)
+    confirmDoer = ConfirmDoer(name=name, base=base, config_dir=config_dir, bran=bran)
 
     doers = [confirmDoer]
     return doers
@@ -51,7 +53,7 @@ class ConfirmDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran):
+    def __init__(self, name, base, config_dir, bran):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -60,7 +62,15 @@ class ConfirmDoer(doing.DoDoer):
             bran (str): passcode to unlock keystore
 
         """
-        hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.org = connecting.Organizer(hby=hby)

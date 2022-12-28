@@ -7,7 +7,7 @@ import argparse
 
 from hio import help
 from hio.base import doing
-from keri.app import directing, agenting, indirecting, habbing
+from keri.app import directing, agenting, indirecting, habbing, configing
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
 
@@ -19,6 +19,7 @@ parser.set_defaults(handler=lambda args: query(args),
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--witness', '-w', help='QB64 identifier of witness to query', default="", required=True)
 parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
@@ -33,15 +34,24 @@ parser.add_argument('--aeid', help='qualified base64 of non-transferable identif
 def query(args):
     name = args.name
 
-    qryDoer = QueryDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, wit=args.witness, pre=args.prefix)
+    qryDoer = QueryDoer(name=name, alias=args.alias, base=args.base, config_dir=args.config_dir,
+                        bran=args.bran, wit=args.witness, pre=args.prefix)
     return [qryDoer]
 
 
 class QueryDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, wit, pre, **kwa):
+    def __init__(self, name, alias, base, config_dir, bran, wit, pre, **kwa):
         doers = []
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
         self.hab = hab

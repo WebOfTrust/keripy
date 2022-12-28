@@ -11,7 +11,7 @@ import sys
 from hio import help
 from hio.base import doing
 
-from keri.app import indirecting
+from keri.app import indirecting, configing
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
 from keri.help import helping
@@ -24,6 +24,7 @@ parser.set_defaults(handler=lambda args: handler(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--prefix', help='qb64 identifier prefix to display', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -34,18 +35,26 @@ parser.add_argument("--verbose", "-V", help="print JSON of all current events", 
 
 def handler(args):
     kwa = dict(args=args)
-    kever = KeverDoer(name=args.name, base=args.base, bran=args.bran, prefix=args.prefix, poll=args.poll,
-                      verbose=args.verbose)
+    kever = KeverDoer(name=args.name, base=args.base, config_dir=args.config_dir, bran=args.bran, prefix=args.prefix,
+                      poll=args.poll, verbose=args.verbose)
     return [kever]
 
 
 class KeverDoer(doing.DoDoer):
 
-    def __init__(self, name, base, bran, prefix, poll=False, verbose=False):
+    def __init__(self, name, base, config_dir, bran, prefix, poll=False, verbose=False):
         self.prefix = prefix
         self.poll = poll
         self.verbose = verbose
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.mbx = indirecting.MailboxDirector(hby=self.hby,
                                                topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
                                                        "/challenge", "/oobi"])

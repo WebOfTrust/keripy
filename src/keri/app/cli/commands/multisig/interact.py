@@ -11,7 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import grouping, indirecting, habbing, forwarding
+from keri.app import grouping, indirecting, habbing, forwarding, configing
 from keri.app.cli.common import existing, displaying, rotating
 from keri.core import coring
 
@@ -23,6 +23,7 @@ parser.set_defaults(handler=lambda args: interactGroupIdentifier(args),
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
@@ -46,8 +47,8 @@ def interactGroupIdentifier(args):
     """
 
     data = rotating.loadData(args)
-    ixnDoer = GroupMultisigInteract(name=args.name, alias=args.alias, aids=args.aids, base=args.base, bran=args.bran,
-                                    data=data)
+    ixnDoer = GroupMultisigInteract(name=args.name, alias=args.alias, aids=args.aids, base=args.base,
+                                    config_dir=args.config_dir, bran=args.bran, data=data)
 
     doers = [ixnDoer]
     return doers
@@ -64,14 +65,23 @@ class GroupMultisigInteract(doing.DoDoer):
 
     """
 
-    def __init__(self, name, alias, aids, base, bran, data):
+    def __init__(self, name, alias, aids, base, config_dir, bran, data):
         self.base = base
         self.bran = bran
         self.alias = alias
         self.aids=aids
         self.data = data
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.postman = forwarding.Postman(hby=self.hby)
 

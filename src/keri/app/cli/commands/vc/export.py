@@ -10,6 +10,7 @@ import sys
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.core import eventing, coring
 from keri.vdr import credentialing
@@ -24,6 +25,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the identifi
                     required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -54,6 +56,7 @@ def export_credentials(args):
     ed = ExportDoer(name=args.name,
                     alias=args.alias,
                     base=args.base,
+                    config_dir=args.config_dir,
                     bran=args.bran,
                     said=args.said,
                     sigs=sigs,
@@ -66,7 +69,7 @@ def export_credentials(args):
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, sigs, tels, kels, chains, files):
+    def __init__(self, name, alias, base, config_dir, bran, said, sigs, tels, kels, chains, files):
         self.said = said
         self.sigs = sigs
         self.tels = tels
@@ -74,9 +77,18 @@ class ExportDoer(doing.DoDoer):
         self.chains = chains
         self.files = files
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base, headDirPath=config_dir)
 
         doers = [doing.doify(self.exportDo)]
 

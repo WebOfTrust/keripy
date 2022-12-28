@@ -3,7 +3,7 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import indirecting, habbing, grouping
+from keri.app import indirecting, habbing, grouping, configing
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.vdr import credentialing
@@ -18,6 +18,7 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None, required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
@@ -27,10 +28,11 @@ def registryStatus(args):
     name = args.name
     bran = args.bran
     base = args.base
+    config_dir = args.config_dir
     verbose = args.verbose
     registryName = args.registry_name
 
-    icpDoer = RegistryStatusor(name=name, base=base, bran=bran, registryName=registryName, verbose=verbose)
+    icpDoer = RegistryStatusor(name=name, base=base, config_dir=config_dir, bran=bran, registryName=registryName, verbose=verbose)
 
     doers = [icpDoer]
     return doers
@@ -41,7 +43,7 @@ class RegistryStatusor(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, registryName, verbose):
+    def __init__(self, name, base, config_dir, bran, registryName, verbose):
         """
 
 
@@ -49,7 +51,17 @@ class RegistryStatusor(doing.DoDoer):
         self.name = name
         self.registryName = registryName
         self.verbose = verbose
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         counselor = grouping.Counselor(hby=self.hby)

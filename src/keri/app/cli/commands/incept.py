@@ -96,7 +96,7 @@ class InceptDoer(doing.DoDoer):
         cf = None
         if config_dir is not None:
             cf = configing.Configer(name=name,
-                                    base="",
+                                    base=base,
                                     headDirPath=config_dir,
                                     temp=False,
                                     reopen=True,

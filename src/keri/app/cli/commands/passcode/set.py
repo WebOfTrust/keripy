@@ -9,6 +9,7 @@ import getpass
 from hio import help
 from hio.base import doing
 
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.core import coring
 from keri.kering import ConfigurationError
@@ -22,6 +23,7 @@ parser.add_argument("--new", help="new  22 character encryption passcode for key
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='existing 22 character encryption passcode for keystore',
                     dest="bran", default=None)  # passcode => bran
 
@@ -42,12 +44,22 @@ def set_passcode(tymth, tock=0.0, **opts):
     args = opts["args"]
     name = args.name
     base = args.base
+    config_dir = args.config_dir
     bran = args.bran
 
     newpasscode = args.new
 
+    cf = None
+    if config_dir is not None:
+        cf = configing.Configer(name=name,
+                                base=base,
+                                headDirPath=config_dir,
+                                temp=False,
+                                reopen=True,
+                                clear=False)
+
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existing.existingHby(name=name, base=base, cf=cf, bran=bran) as hby:
 
             if newpasscode is None:
                 print("Re-encrypting keystore, please enter the new 22 character passcode:")

@@ -10,6 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
+from keri.app import configing
 from keri.app.cli.common import existing
 from keri.core import coring, eventing
 
@@ -21,6 +22,7 @@ parser.set_defaults(handler=lambda args: export_ends(args),
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
+parser.add_argument("--config-dir", "-c", help="directory override for configuration data", default=None)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 
@@ -34,6 +36,7 @@ def export_ends(args):
     """
     ld = ExportDoer(name=args.name,
                     base=args.base,
+                    config_dir=args.config_dir,
                     bran=args.bran,
                     aid=args.aid)
     return [ld]
@@ -41,10 +44,19 @@ def export_ends(args):
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, base, bran, aid):
+    def __init__(self, name, base, config_dir, bran, aid):
         self.aid = aid
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        cf = None
+        if config_dir is not None:
+            cf = configing.Configer(name=name,
+                                    base=base,
+                                    headDirPath=config_dir,
+                                    temp=False,
+                                    reopen=True,
+                                    clear=False)
+
+        self.hby = existing.setupHby(name=name, base=base, cf=cf, bran=bran)
 
         doers = [doing.doify(self.exportDo)]
 
