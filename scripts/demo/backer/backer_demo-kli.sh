@@ -1,4 +1,7 @@
-# GETTING STARTED
+# Steps to run this demos:
+# 1. Run start_backer.sh in a terminal and wait for "Baker ready"
+# 2. Run this script in a second terminal passing two parameters: backer's prefix and backer's cardano address
+
 function isSuccess() {
     ret=$?
     if [ $ret -ne 0 ]; then

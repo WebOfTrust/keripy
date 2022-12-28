@@ -21,14 +21,13 @@ from keri.app import keeping
 # TODO
 # Incept data for backer: https://github.com/WebOfTrust/keripy/issues/90
 # Queue several events
-# Validate duplicate KE before submitting to Ledger (test kli agent)
-# Validate type of events? -> mailbox (understand better)
+# Validate duplicate KE before submitting to Ledger
 # Error handling
-# Error at restart MDB_BAD_RSLOT: Invalid reuse of reader locktable slot
+# Make ledger a class to conform
 
 class Cardano:
 
-    def __init__(self, name='backer', hab=None):
+    def __init__(self, name='backer', hab=None, ks=None):
         self.name = name
         
         self.network = Network.TESTNET
@@ -44,17 +43,11 @@ class Cardano:
         
         self.context = BlockFrostChainContext(blockfrostProjectId,self.network, ApiUrls.preview.value)
 
-        ks = keeping.Keeper(name=hab.name,
-                    base="",
-                    temp=False,
-                    reopen=True)
         backerPrivateKey = ks.pris.get(hab.kever.prefixer.qb64).raw
         self.payment_signing_key = PaymentSigningKey(backerPrivateKey,"PaymentSigningKeyShelley_ed25519","PaymentSigningKeyShelley_ed25519")
         payment_verification_key = PaymentVerificationKey.from_signing_key(self.payment_signing_key)
         self.spending_addr = Address(payment_part=payment_verification_key.hash(),staking_part=None, network=self.network)
-        
         print("Cardano Backer Address:", self.spending_addr.encode())
-                
         balance = self.getaddressBalance()
         if balance and balance > 5000000:
             print("Address balance:",balance/1000000, "ADA")

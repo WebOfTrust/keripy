@@ -1,5 +1,8 @@
 #!/bin/bash
-# Run start_agent.sh first in another terminal
+# Steps to run this demos:
+# 1. Run start_backer.sh in a terminal and wait for "Baker ready"
+# 2. Run start_agent.sh  in a second terminal
+# 3. Run this script in a third terminal passing two parameters: backer's prefix and backer's cardano address
 
 curl -s -X POST "http://localhost:5972/boot" -H "accept: */*" -H "Content-Type: application/json" -d "{\"name\":\"rootsagent\",\"passcode\":\"6jiSnnltcxQbxqiaQuLor\"}" | jq
 

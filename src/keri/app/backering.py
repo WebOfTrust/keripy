@@ -32,7 +32,7 @@ from keri.ledger import cardaning
 logger = help.ogler.getLogger()
 
 
-def setupBacker(hby, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, ledger="cardano"):
+def setupBacker(hby, ks, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, ledger="cardano"):
     """
     Setup Backer controller and doers
 
@@ -79,8 +79,7 @@ def setupBacker(hby, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, ledg
                             exc=exchanger,
                             rvy=rvy)
     if ledger == "cardano":
-        ldg = cardaning.Cardano(name=alias, hab=hab)
-
+        ldg = cardaning.Cardano(name=alias, hab=hab, ks=ks)
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx, hab=hab, ledger=ldg)
     app.add_route("/", httpEnd)

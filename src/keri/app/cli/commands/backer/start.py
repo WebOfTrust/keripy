@@ -84,8 +84,10 @@ def runBacker(name="backer", base="", alias="backer", bran="", tcp=5631, http=56
 
     doers.extend(backering.setupBacker(alias=alias,
                                           hby=hby,
+                                          ks=ks,
                                           tcpPort=tcp,
                                           httpPort=http,
                                           ledger=ledger))
 
     directing.runController(doers=doers, expire=expire)
+
