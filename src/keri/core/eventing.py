@@ -16,7 +16,7 @@ from hio.help import decking
 from . import coring
 from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Number, Seqner, Siger, Cigar, Dater, Indexer, IdrDex,
-                     Verfer, Diger, Prefixer, Nexter, Serder, Tholder, Saider)
+                     Verfer, Diger, Prefixer, Serder, Tholder, Saider)
 from .. import help
 from .. import kering
 from ..db import basing, dbing
@@ -926,7 +926,7 @@ def interact(pre,
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
     sner = Number(num=sn)
-    if sner.num < 1:  # sn for rotate must be >= 1
+    if sner.num < 1:  # sn for interact must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for ixn.")
 
 
@@ -969,7 +969,7 @@ def receipt(pre,
     ilk = Ilks.rct
 
     sner = Number(num=sn)
-    if sner.num < 0:  # sn for rotate must be >= 1
+    if sner.num < 0:  # sn for receipt must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for rect.")
 
     ked = dict(v=vs,  # version string
@@ -1539,6 +1539,8 @@ class Kever:
         ilk (str): from Ilks for current event type
         tholder (Tholder): instance for event signing threshold
         verfers (list): of Verfer instances for current event state set of signing keys
+        digers (list): of Diger instances for current event state set  of
+            next (rotation) key digests
         nexter (Nexter): instance that provides nexter.digers of next key digests
             from .serder.nexter as well as inclusion/matching methods
         ntholder (Tholder): instance for next (rotation) threshold
@@ -1559,13 +1561,15 @@ class Kever:
     Properties:
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
+        digs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
         transferable (bool): True if nexter is not none and pre is transferable
 
     ToDo:
-       Change .fn to property that returns .fner.num
        Add Class variable, instance variable and parse support for Registrar Backer config trait.
         raise error for now
+       Replace Nexter with Kever.digers and ntholder with new Tholder methods
+       to replace Nexter methods.
 
     """
     EstOnly = False
@@ -1699,6 +1703,15 @@ class Kever:
 
 
     @property
+    def digs(self):
+        """
+        Returns:
+            (list): digs of digers
+        """
+        return [diger.qb64 for diger in self.digers]
+
+
+    @property
     def kevers(self):
         """
         Returns .baser.kevers
@@ -1714,7 +1727,7 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        return self.nexter is not None and self.nexter.digs and self.prefixer.transferable
+        return True if self.digers and self.prefixer.transferable else False
 
 
     def reload(self, state):
@@ -1740,7 +1753,7 @@ class Kever:
         self.tholder = Tholder(sith=state.ked["kt"])
         self.ntholder = Tholder(sith=state.ked["nt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.nexter = coring.Nexter(digs=state.ked["n"])
+        self.digers = [Diger(qb64=dig) for dig in state.ked["n"]]
         self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1797,7 +1810,8 @@ class Kever:
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
-        self.nexter = serder.nexter
+        self.digers = serder.digers
+        #self.nexter = serder.nexter
         self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
@@ -1833,6 +1847,7 @@ class Kever:
         # need this to recognize recovery events and transferable receipts
         # last establishment event location
         self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
+
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
         """
@@ -1926,7 +1941,26 @@ class Kever:
                                                             seqner=seqner,
                                                             saider=saider)
 
-            if not self.ntholder.satisfy(indices=self.nexter.matches(sigers=sigers)):
+
+            # move this out of here to where ntholder threshold is verified
+            # verify newly current keys are subset of prior next digs
+            keys = ked["k"]  # proposed new current keys
+            digs = [diger.qb64 for diger in self.digers]  # prior next digs
+            # new current keys must be subset of prior next digs
+            if not self.ntholder.includes(keys=keys, digs=digs):
+                raise ValidationError("Mismatch prior nxt digs = {} with rotation"
+                                      "current keys = {} for evt = {}."
+                                      "".format(digs, keys, ked))
+
+            #if not self.nexter.includes(keys=keys):
+                #raise ValidationError("Mismatch prior nxt digs = {} with rotation"
+                                      #"current keys = {} for evt = {}."
+                                      #"".format(self.nexter.digs, keys, ked))
+
+
+            # current sigers and prior next digs
+            if not self.ntholder.satisfy(indices=self.ntholder.matches(sigers=sigers,
+                                                                       digs=digs)):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
                 if seqner and saider:
                     self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
@@ -1957,8 +1991,7 @@ class Kever:
             self.ilk = ilk
             self.tholder = tholder
             self.verfers = serder.verfers
-            # update .nexter
-            self.nexter = serder.nexter
+            self.digers = serder.digers
             self.ntholder = serder.ntholder
 
             self.toader = toader
@@ -2093,27 +2126,24 @@ class Kever:
                                       " state dig = {} for evt = {}."
                                       "".format(dig, self.serder.saider.qb64, ked))
 
-        # also check derivation code of pre for non-transferable
-        if not self.nexter:  # prior next is empty so rotations not allowed
+        # check derivation code of pre for non-transferable
+        if not self.digers:  # prior next list is empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
-        if len(serder.verfers) < tholder.size:
-            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
-                                  "".format(ked["kt"],
-                                            [verfer.qb64 for verfer in serder.verfers],
-                                            ked))
+        #if not self.nexter:  # prior next is empty so rotations not allowed
+            #raise ValidationError("Attempted rotation for nontransferable"
+                                  #" prefix = {} for evt = {}."
+                                  #"".format(self.prefixer.qb64, ked))
 
-        # verify next keys from prior next
-        ntholder = serder.ntholder
+        tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         keys = ked["k"]  # current keys
-        if not self.nexter.includes(keys=keys):  # current keys match prior next digs
-            raise ValidationError("Mismatch prior nxt digs = {} with rotation"
-                                  "current keys"
-                                  " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.digs, ntholder.thold, keys, ked))
+        if len(keys) < tholder.size:
+            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
+                                  "".format(ked["kt"], keys, ked))
+
+
 
         # compute wits from existing .wits with new cuts and adds from event
         # use ordered set math ops to verify and ensure strict ordering of wits
@@ -2516,7 +2546,8 @@ class Kever:
                       eevt=eevt,
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
-                      ndigs=self.nexter.digs if self.nexter else [],
+                      ndigs=[diger.qb64 for diger in self.digers],
+                      #ndigs=self.nexter.digs if self.nexter else [],
                       toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,
@@ -2526,23 +2557,24 @@ class Kever:
                 )
 
 
-    def fetchPriorNexter(self) -> (Nexter | None):
-        """ Returns either the most recent prior Nexter before .lastEst or None
+    def fetchPriorDigers(self) -> (list | None):
+        """ Returns either the most recent prior list of digers before .lastEst or None
 
         Starts searching at sn = .lastEst.s - 1
 
-        Returns the Nexter instance at the most recent prior Nexter to the
-        current nexter of the given sequence number (sn) otherwise returns None.
+        Returns list of Digers instances at the most recent prior est event relative
+        to the given sequence number (sn) otherwise returns None.
         Walks backwards to the more recent prior establishment event before the
         .sn if any.
         If sn represents an interaction event (ixn) then the result will be the
-        current valid nexter. If sn represents an establishment event then
-        the result will be the prior nexter to the current one.
+        current valid list of digers. If sn represents an establishment event then
+        the result will be the list of digers immediately prior to the current list.
 
         Parameters:
 
         Returns:
-            Nexter instance or None if no prior est event to current .lastEst
+            digers (list | None): of Diger instances or None if no prior est evt
+                to current .lastEst
 
         """
         pre = self.prefixer.qb64
@@ -2552,9 +2584,39 @@ class Kever:
             raw = self.db.getEvt(dgkey)
             serder = coring.Serder(raw=bytes(raw))
             if serder.est:  # establishment event
-                return serder.nexter
+                return serder.digers
 
         return None
+
+    #def fetchPriorNexter(self) -> (Nexter | None):
+        #""" Returns either the most recent prior Nexter before .lastEst or None
+
+        #Starts searching at sn = .lastEst.s - 1
+
+        #Returns the Nexter instance at the most recent prior Nexter to the
+        #current nexter of the given sequence number (sn) otherwise returns None.
+        #Walks backwards to the more recent prior establishment event before the
+        #.sn if any.
+        #If sn represents an interaction event (ixn) then the result will be the
+        #current valid nexter. If sn represents an establishment event then
+        #the result will be the prior nexter to the current one.
+
+        #Parameters:
+
+        #Returns:
+            #Nexter instance or None if no prior est event to current .lastEst
+
+        #"""
+        #pre = self.prefixer.qb64
+        #sn = self.lastEst.s - 1
+        #for digb in self.db.getKelBackIter(pre, sn):
+            #dgkey = dgKey(pre, digb)
+            #raw = self.db.getEvt(dgkey)
+            #serder = coring.Serder(raw=bytes(raw))
+            #if serder.est:  # establishment event
+                #return serder.nexter
+
+        #return None
 
 
 class Kevery:

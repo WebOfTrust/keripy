@@ -20,7 +20,7 @@ from keri.peer import exchanging
 class Postman(doing.DoDoer):
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
-    delivers to sends them to one of the target recipient's witnesses for store and forward
+    delivers them to one of the target recipient's witnesses for store and forward
     to the intended recipient
 
     """

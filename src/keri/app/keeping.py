@@ -464,7 +464,7 @@ class SaltyCreator(Creator):
 
         Parameters:
             salt is unique salt from which to derive private key
-            stem is path modifier wsed with salt to derive private keys.
+            stem is path modifier used with salt to derive private keys.
                     if stem is None then uses pidx
             tier is derivation criticality that determines how much hashing to use.
 

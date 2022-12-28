@@ -69,6 +69,7 @@ class Counselor(doing.DoDoer):
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
+
     def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
                toad=None, cuts=None, adds=None, data=None):
         """ Begin processing of escrowed group multisig identifier
@@ -108,21 +109,21 @@ class Counselor(doing.DoDoer):
 
         # Get local next key and see if we are in current group next keys
         pkever = ghab.mhab.kever
-        pnkey = pkever.nexter.digs[0]
+        pndig = pkever.digers[0].qb64
 
         rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
                                   data=data, date=helping.nowIso8601(),
                                   smids=smids, rmids=rmids)
 
-        if pnkey in kever.nexter.digs:  # local already participate in last event, rotate
+        if pndig in kever.digs:  # local already participate in last event, rotate
             ghab.mhab.rotate()
             print(f"Rotating local identifier, waiting for witness receipts")
             self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
             return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
-        else:
-            rot = ghab.mhab.makeOwnEvent(pkever.lastEst.sn)  # grab latest est evt
+        else: # XXXX no unit test ever reaches here
+            rot = ghab.mhab.makeOwnEvent(pkever.lastEst.s)  # grab latest est evt
             others = list(both)
             others.remove(mid)
             serder = coring.Serder(raw=rot)
@@ -252,14 +253,14 @@ class Counselor(doing.DoDoer):
 
             merfers = []  # local verfers of group signing keys
             indices = []  # weights of the local signers who have already rotated
-            migers = list(gkever.nexter.digers)  # local participants next digers
+            migers = list(gkever.digers)  # local participants next digers
             for aid in rec.smids:
                 pkever = self.hby.kevers[aid]
                 idx = ghab.smids.index(aid)
-                if pkever.nexter.digs[0] != gkever.nexter.digs[idx]:
+                if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
                     indices.append(idx)
                     merfers.append(pkever.verfers[0])
-                    migers[idx] = pkever.nexter.digers[0]
+                    migers[idx] = pkever.digers[0]
 
             if not gkever.ntholder.satisfy(indices):
                 continue

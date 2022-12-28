@@ -18,7 +18,7 @@ from keri.db import dbing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Confirm success delegate event (icp or rot) and gather and '
-                                             'propagate witness recripts.')
+                                             'propagate witness receipts.')
 parser.set_defaults(handler=lambda args: confirm(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',

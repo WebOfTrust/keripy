@@ -535,7 +535,7 @@ class MailboxDirector(doing.DoDoer):
         self.rvy = rvy if rvy is not None else routing.Revery(db=self.hby.db, rtr=self.rtr, cues=cues,
                                                               lax=True, local=False)
 
-        #  neeeds unique kevery with ims per remoter connnection
+        #  needs unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hby.db,
                                                                cues=self.cues,
                                                                rvy=self.rvy,

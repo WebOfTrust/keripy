@@ -192,7 +192,7 @@ class Habery:
     Attributes:
         name (str): name of associated databases
         base (str): optional directory path segment inserted before name
-                    that allows further hierarchical differentation of databases.
+                    that allows further hierarchical differentiation of databases.
                     "" means optional.
         temp (bool): True for testing:
             temporary storage of databases and config file
@@ -228,7 +228,7 @@ class Habery:
         Parameters:
             name (str): alias name for shared environment config databases etc.
             base (str): optional directory path segment inserted before name
-                that allows further differentation with a hierarchy. "" means
+                that allows further differentiation with a hierarchy. "" means
                 optional.
             temp (bool): True means use temporary or limited resources testing.
                 Store .ks, .db, and .cf in /tmp
@@ -556,7 +556,7 @@ class Habery:
 
         for mid in rmids:
             kever = self.kevers[mid]
-            digers = kever.nexter.digers
+            digers = kever.digers
             if digers:  # abandoned id  may have empty next digers
                 migers.append(digers[0])
             if len(digers) > 1:
@@ -1193,7 +1193,7 @@ class Hab:
         if nsith is None:
             nsith = isith  # use new current as default
         if ncount is None:
-            ncount = len(kever.nexter.digers)  # use len of prior next digers as default
+            ncount = len(kever.digers)  # use len of prior next digers as default
 
         if merfers:  # multisig group rotate so not from keystore
             verfers = merfers
@@ -1347,10 +1347,10 @@ class Hab:
                 # then mhab participates as group prior next at index pni.
                 # else pni is None which means mhab only participates as new key.
                 # get nexter of .mhab's prior Next est event
-                mexter = self.mhab.kever.fetchPriorNexter()
-                if mexter is not None:
-                    mig = mexter.digers[0].qb64  #always use first prior dig of mhab
-                    digs = self.kever.nexter.digs  # group habs prior digs
+                migers = self.mhab.kever.fetchPriorDigers()
+                if migers is not None:
+                    mig = migers[0].qb64  #always use first prior dig of mhab
+                    digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs
                     try:
                         pni = digs.index(mig)  # find mhab dig index in group hab digs
                     except ValueError:  # not found
