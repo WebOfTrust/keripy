@@ -78,7 +78,8 @@ class InteractDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        doers = [self.hbyDoer, doing.doify(self.interactDo)]
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics="/receipt")
+        doers = [self.hbyDoer, self.mbx, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)
 
@@ -95,7 +96,6 @@ class InteractDoer(doing.DoDoer):
         hab = self.hby.habByName(name=self.alias)
         hab.interact(data=self.data)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics="/receipt")
         witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.extend(doers=[witDoer])
 
@@ -109,7 +109,7 @@ class InteractDoer(doing.DoDoer):
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx+1}:  {verfer.qb64}')
 
-        toRemove = [self.hbyDoer, witDoer, mbx]
+        toRemove = [self.hbyDoer, witDoer, self.mbx]
         self.remove(toRemove)
 
         return
