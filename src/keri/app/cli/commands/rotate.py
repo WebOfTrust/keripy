@@ -4,12 +4,13 @@ keri.kli.commands module
 
 """
 import argparse
+from dataclasses import dataclass
 
 from hio.base import doing
 
 from keri import kering
-from keri.app.cli.common import rotating, existing
-from ... import habbing, agenting, indirecting, directing, delegating, forwarding
+from keri.app.cli.common import rotating, existing, config
+from ... import habbing, agenting, indirecting, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: rotate(args))
@@ -19,9 +20,26 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument('--file', '-f', help='file path of config options (JSON) for rotation', default="", required=False)
 parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).',
                     default=None, type=int, required=False)
 rotating.addRotationArgs(parser)
+
+
+@dataclass
+class RotateOptions:
+    """
+    Configurable options for a rotation performed at the command line.
+    Each of the defaults is depended on by the option merge_args_with_file function.
+    """
+    isith: int | str | list
+    ncount: int
+    nsith: int | str | list = '0'
+    toad: int = 0
+    wits: list = None
+    witsCut: list = None
+    witsAdd: list = None
+    data: list = None
 
 
 def rotate(args):
@@ -31,17 +49,58 @@ def rotate(args):
         args (parseargs):  Command line argument
 
     """
-    data = rotating.loadData(args)
+    opts = mergeArgsWithFile(args)
     rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias,
-                         bran=args.bran, wits=args.witnesses,
-                         cuts=args.cuts, adds=args.witness_add,
-                         isith=args.isith, nsith=args.nsith,
-                         count=args.next_count, toad=args.toad,
-                         data=data)
+                         bran=args.bran, wits=opts.wits,
+                         cuts=opts.witsCut, adds=opts.witsAdd,
+                         isith=opts.isith, nsith=opts.nsith,
+                         count=opts.ncount, toad=opts.toad,
+                         data=opts.data)
 
     doers = [rotDoer]
 
     return doers
+
+
+def emptyOptions():
+    """
+    Empty rotation options used for merging file and command line options
+    """
+    return RotateOptions(
+        isith=None, ncount=None
+    )
+
+
+def mergeArgsWithFile(args):
+    """
+    Combine the file-based configuration with command line specified arguments
+        args (Namespace): the arguments from the command line
+    """
+    rotate_opts = config.loadFileOptions(args.file, RotateOptions) if args.file != '' else emptyOptions()
+
+    if args.isith is not None:
+        rotate_opts.isith = args.isith
+    if args.nsith is not None:
+        rotate_opts.nsith = args.nsith
+    else:
+        rotate_opts.nsith = '1'
+    if args.next_count is not None:
+        rotate_opts.ncount = int(args.next_count)
+    else:
+        rotate_opts.ncount = 1
+    if args.toad is not None:
+        rotate_opts.toad = int(args.toad)
+    if len(args.witnesses) > 0:
+        rotate_opts.wits = args.witnesses
+    if len(args.cuts) > 0:
+        rotate_opts.witsCut = args.cuts
+    if len(args.witness_add) > 0:
+        rotate_opts.witsAdd = args.witness_add
+
+    if args.data is not None:
+        rotate_opts.data = config.parseData(args.data)
+
+    return rotate_opts
 
 
 class RotateDoer(doing.DoDoer):

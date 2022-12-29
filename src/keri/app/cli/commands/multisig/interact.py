@@ -12,7 +12,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
-from keri.app.cli.common import existing, displaying, rotating
+from keri.app.cli.common import existing, displaying, config
 from keri.core import coring
 
 logger = help.ogler.getLogger()
@@ -45,7 +45,7 @@ def interactGroupIdentifier(args):
 
     """
 
-    data = rotating.loadData(args)
+    data = config.parseData(args.data) if args.data is not None else None
     ixnDoer = GroupMultisigInteract(name=args.name, alias=args.alias, aids=args.aids, base=args.base, bran=args.bran,
                                     data=data)
 

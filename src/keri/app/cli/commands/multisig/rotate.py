@@ -11,7 +11,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
-from keri.app.cli.common import rotating, existing, displaying
+from keri.app.cli.common import rotating, existing, displaying, config
 from keri.core import coring
 
 logger = help.ogler.getLogger()
@@ -48,7 +48,7 @@ def rotateGroupIdentifier(args):
 
     """
 
-    data = rotating.loadData(args)
+    data = config.parseData(args.data) if args.data is not None else None
 
     rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, smids=args.smids, rmids=args.rmids,
                                   bran=args.bran, wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
