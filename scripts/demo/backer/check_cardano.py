@@ -1,9 +1,10 @@
 from blockfrost import BlockFrostApi, ApiUrls
 import sys
 import json
+import os
 from  pprint import pp
 
-blockfrostProjectId="previewapifaDDKsMZE7asmrcG8W3zbRE1pojXY"
+blockfrostProjectId=os.environ['BLOCKFROST_API_KEY']
 api = BlockFrostApi(
     project_id=blockfrostProjectId,
     base_url=ApiUrls.preview.value

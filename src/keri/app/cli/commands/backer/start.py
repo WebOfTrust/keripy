@@ -14,8 +14,7 @@ from keri.app import directing, backering, habbing, keeping
 from keri.ledger import cardaning
 from keri.app.cli.common import existing
 
-d = "Runs KERI backer controller.\n"
-d += "Example:\nbacker start -H 5631 -t 5632\n"
+d = "Runs KERI backer controller"
 parser = argparse.ArgumentParser(description=d)
 parser.set_defaults(handler=lambda args: launch(args))
 parser.add_argument('-V', '--version',
@@ -40,7 +39,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--ledger', '-l', help='Ledger name. Available options: cardano',
-                    required=False, default=None)
+                    required=True, default=None)
 
 def launch(args):
     help.ogler.level = logging.CRITICAL

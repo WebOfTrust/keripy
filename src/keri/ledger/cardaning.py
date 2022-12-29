@@ -11,6 +11,7 @@ from blockfrost import BlockFrostApi, ApiError, ApiUrls
 from pycardano import * 
 from textwrap import wrap
 from threading import Timer
+from  pprint import pp
 import os
 import time
 import json
@@ -32,9 +33,9 @@ class Cardano:
     See Backer designation event: https://github.com/WebOfTrust/keripy/issues/90
 
     Features:
-        - Cardano Address is derived from the same seed (private key) used to derive the prefix of the backer
+        - Cardano Address is derived from the same Ed25519 seed (private key) used to derive the prefix of the backer
         - Anchoring KELs from multiple prefixes
-        - Queue events during a period to allow several block confirmations as a safety meassure
+        - Queue events during a period of time to allow several block confirmations as a safety meassure
         - Optional funding address to fund the backer address
     """
 
@@ -152,3 +153,73 @@ class Cardano:
                 print("error", e)
         else:
             print("Insuficient balance to fund backer")
+
+
+def getInfo(alias, hab, ks):
+    try:
+        blockfrostProjectId=os.environ['BLOCKFROST_API_KEY']
+    except KeyError:
+        print("Environment variable BLOCKFROST_API_KEY not set")
+        exit(1)
+    api = BlockFrostApi(
+        project_id=blockfrostProjectId,
+        base_url=ApiUrls.preview.value
+        )
+    backerPrivateKey = ks.pris.get(hab.kever.prefixer.qb64).raw
+    payment_signing_key = PaymentSigningKey(backerPrivateKey,"PaymentSigningKeyShelley_ed25519","PaymentSigningKeyShelley_ed25519")
+    payment_verification_key = PaymentVerificationKey.from_signing_key(payment_signing_key)
+    spending_addr = Address(payment_part=payment_verification_key.hash(),staking_part=None, network=NETWORK)
+    try:
+        address = api.address(address=spending_addr.encode())
+        balance = int(address.amount[0].quantity)
+    except ApiError as e:
+        print("error", e)
+
+
+    try:
+        funding_payment_signing_key = PaymentSigningKey.from_cbor(os.environ.get("FUNDING_ADDRESS_CBORHEX"))
+        funding_payment_verification_key = PaymentVerificationKey.from_signing_key(funding_payment_signing_key)
+        funding_addr = Address(funding_payment_verification_key.hash(), None, network=NETWORK).encode()
+        f_address = api.address(address=funding_addr)
+        funding_balace = int(f_address.amount[0].quantity)
+    except:
+        funding_addr = "NA"
+        funding_balace = "NA"
+
+    print("Name:", alias)
+    print("Prefix:", hab.kever.prefixer.qb64)
+    print("Network:", "Cardano", NETWORK.name)
+    print("Cardano address:", spending_addr.encode())
+    print("Balance:", balance/1000000, "ADA")
+    print("Funding address:", funding_addr)
+    print("Funding balance:", funding_balace/1000000, "ADA")
+
+def queryBlockchain(prefix, hab,ks):
+    try:
+        blockfrostProjectId=os.environ['BLOCKFROST_API_KEY']
+    except KeyError:
+        print("Environment variable BLOCKFROST_API_KEY not set")
+        exit(1)
+    api = BlockFrostApi(
+        project_id=blockfrostProjectId,
+        base_url=ApiUrls.preview.value
+        )
+    backerPrivateKey = ks.pris.get(hab.kever.prefixer.qb64).raw
+    payment_signing_key = PaymentSigningKey(backerPrivateKey,"PaymentSigningKeyShelley_ed25519","PaymentSigningKeyShelley_ed25519")
+    payment_verification_key = PaymentVerificationKey.from_signing_key(payment_signing_key)
+    spending_addr = Address(payment_part=payment_verification_key.hash(),staking_part=None, network=NETWORK)
+
+    txs = api.address_transactions(spending_addr.encode())
+    for tx in txs:
+        tx_detail = api.transaction(tx.tx_hash)
+        meta = api.transaction_metadata(tx.tx_hash, return_type='json')
+        if meta:
+            # print("Fees: ",str(int(tx_detail.fees)/1000000), "ADA")
+            for n in meta:
+                ke = json.loads(''.join(n['json_metadata']))
+                if prefix == ke['ked']['i']:
+                    print("SeqNo: ",n['label'])
+                    pp(ke)
+                    print("\n")
+
+    return

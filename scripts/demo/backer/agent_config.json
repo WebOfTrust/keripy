@@ -1,10 +1,10 @@
 {
     "transferable": true,
-    "wits": ["BGRn4dqGCXsbEL8b0oa2Dx36t5VVHGs1K4Yc5e4ORHMK"],
+    "wits": ["BDFB7i6tzkhYntBNEp8EyfWe1XzOXV9olsV6whmIgaaH"],
     "toad": 1,
     "icount": 1,
     "ncount": 1,
     "isith": "1",
     "nsith": "1",
-    "data": [{"ca":"addr_test1vrw7pemeakzwnwv9jvqv95uk6xg95kfkxuj8vkv235cv6wss0gdqr"}]
+    "data": [{"ca":"addsa"}]
   }
