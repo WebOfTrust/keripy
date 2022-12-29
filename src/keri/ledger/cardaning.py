@@ -20,7 +20,7 @@ QUEUE_DURATION = 60
 NETWORK = Network.TESTNET
 MINIMUN_BALANCE = 5000000
 FUNDING_AMOUNT = 30000000
-TRANSACTION_AMOUNT = 4000000
+TRANSACTION_AMOUNT = 1000000
 
 class Cardano:
     """
@@ -29,7 +29,7 @@ class Cardano:
         - FUNDING_ADDRESS_CBORHEX = Private Key of funding address as CBOR Hex. Must be an Enterprice address (no Staking part) as PaymentSigningKeyShelley_ed25519
     
     Additional libraries required:
-        pip install pycardano blockfrost-python textwrap
+        pip install pycardano blockfrost-python 
     See Backer designation event: https://github.com/WebOfTrust/keripy/issues/90
 
     Features:
@@ -43,7 +43,6 @@ class Cardano:
         self.name = name
         self.pendingKEL = {}
         self.timer = Timer(QUEUE_DURATION, self.flushQueue)
-        
         try:
             blockfrostProjectId=os.environ['BLOCKFROST_API_KEY']
         except KeyError:
@@ -84,6 +83,7 @@ class Cardano:
         try:
             txs = self.api.address_transactions(self.spending_addr)
             utxos = self.api.address_utxos(self.spending_addr.encode())
+            kels_to_remove = []
             for key, value in self.pendingKEL.items():
                 # Check last KE in blockchain to avoid duplicates (for some reason mailbox may submit an event twice)                
                 for t in txs:
@@ -96,6 +96,7 @@ class Cardano:
                 builder = TransactionBuilder(self.context)
                 # select utxos
                 utxo_sum = 0
+                utxo_to_remove = []
                 for u in utxos:
                     utxo_sum = utxo_sum + int(u.amount[0].quantity)
                     builder.add_input(
@@ -104,16 +105,22 @@ class Cardano:
                             TransactionOutput(address=Address.from_primitive(u.address), amount=int(u.amount[0].quantity))
                         )
                     )
-                    utxos.remove(u)
-                    if utxo_sum > TRANSACTION_AMOUNT + 1000000: break
+                    utxo_to_remove.append(u)
+                    if utxo_sum > (TRANSACTION_AMOUNT + 2000000): break
+                for ur in utxo_to_remove: utxos.remove(ur)
                 builder.add_output(TransactionOutput(self.spending_addr,Value.from_primitive([TRANSACTION_AMOUNT])))
                 builder.auxiliary_data = AuxiliaryData(Metadata(value))
                 signed_tx = builder.build_and_sign([self.payment_signing_key], change_address=self.spending_addr)
                 # Submit transaction
                 self.context.submit_tx(signed_tx.to_cbor())
+                kels_to_remove.append(key)
             self.pendingKEL = {}
         except Exception as e:
             print("error", e)
+            for k in kels_to_remove: del self.pendingKEL[k]
+            if not self.timer.is_alive():
+                self.timer = Timer(90, self.flushQueue)
+                self.timer.start()
 
     def getaddressBalance(self):
         try:
@@ -124,24 +131,23 @@ class Cardano:
 
     def fundAddress(self, addr):
         try:
-            funding_payment_signing_key = PaymentSigningKey.from_cbor(os.environ.get("FUNDING_ADDRESS_CBORHEX"))
+            funding_payment_signing_key = PaymentSigningKey.from_cbor(os.environ["FUNDING_ADDRESS_CBORHEX"])
             funding_payment_verification_key = PaymentVerificationKey.from_signing_key(funding_payment_signing_key)
             funding_addr = Address(funding_payment_verification_key.hash(), None, network=NETWORK)
         except KeyError:
-            print("Backer address could not be funded.")
-            print("Environment variable FUNDING_ADDRESS_CBORHEX not set")
+            print("Backer address could not be funded. Environment variable FUNDING_ADDRESS_CBORHEX is not set")
             return
 
         funding_balance = self.api.address(address=funding_addr.encode()).amount[0]
         print("Funding address:", funding_addr)
         print("Funding balance:", int(funding_balance.quantity)/1000000,"ADA")
-        if int(funding_balance.quantity) > FUNDING_AMOUNT + 1000000:
+        if int(funding_balance.quantity) > (FUNDING_AMOUNT + 1000000):
             try:
                 builder = TransactionBuilder(self.context)
                 builder.add_input_address(funding_addr)
                 builder.add_output(TransactionOutput(addr,Value.from_primitive([int(FUNDING_AMOUNT/3)])))
-                builder.add_output(TransactionOutput(addr,Value.from_primitive([int(FUNDING_AMOUNT/3)])))
-                builder.add_output(TransactionOutput(addr,Value.from_primitive([int(FUNDING_AMOUNT/3)])))
+                # builder.add_output(TransactionOutput(addr,Value.from_primitive([int(FUNDING_AMOUNT/3)])))
+                # builder.add_output(TransactionOutput(addr,Value.from_primitive([int(FUNDING_AMOUNT/3)])))
                 signed_tx = builder.build_and_sign([funding_payment_signing_key], change_address=funding_addr)
                 self.context.submit_tx(signed_tx.to_cbor())
                 print("Funds submitted. Wait...")

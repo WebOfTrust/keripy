@@ -29,7 +29,7 @@ isSuccess
 
 kli incept --name test  --alias trans --file ./agent_config.json
 isSuccess
-sleep 120
+sleep 60
 
 kli rotate --name test  --alias trans
 isSuccess
