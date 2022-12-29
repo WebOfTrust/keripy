@@ -1963,10 +1963,9 @@ class Kever:
                                                                             #serder.ked))
 
 
-            # current sigers and prior next digers
-            if not self.ntholder.satisfy(indices=self.ntholder.exposeds(
-                                                        sigers=sigers,
-                                                        digers=self.digers)):
+            # current sigers and prior next digers in .digers
+            ondices = self.exposeds(sigers)
+            if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
                 if seqner and saider:
                     self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
@@ -2291,6 +2290,55 @@ class Kever:
                                                        f"{[siger.qb64 for siger in wigers]} "
                                                        f"for event={serder.ked}.")
         return sigers, delegator, wigers
+
+
+    def exposeds(self, sigers):
+        """Returns list of ondices (indices) suitable for Tholder.satisfy
+        into self.digers (prior next key digests ) as exposed by sigers.
+        Uses dual index feature of siger. Assumes that each siger.verfer is
+        from the correct key given by siger.index and the signature has been verified.
+
+        A key given by siger.verfer (at siger.index in the current key list)
+        may expose a prior next key hidden by the diger at siger.ondex in .digers.
+
+        Each returned ondex must be properly exposed by a siger in sigers
+        such that the siger's indexed key given by siger.verfer matches the
+        siger's ondexed digest from digers.
+
+        The ondexed digest's code is used to compute the digest of the corresponding
+        indexed key verfer to verify that they match. This supports crypto agility
+        for different digest codes, i.e. all digests in .digers may use a different
+        algorithm.
+
+        Only ondices from properly matching key and digest are returned.
+
+        Used to extract the indices from the list of prior next digests .digers
+        exposed by the signatures (sigers) on a rotation event of the newly
+        current keys given by each .verfer at .index from sigers. Only checks
+        keys and digests that correspond to provided signatures not all keys and
+        digests defined by the rotation event.
+
+        Parameters:
+            sigers (list): of Siger instances  of indexed signature with .verfer
+        """
+        odxs = []
+        for siger in sigers:
+            try:
+                diger = self.digers[siger.ondex]
+            except TypeError as ex:  # ondex may be None
+                continue
+            except IndexError as ex:
+                continue
+                #raise ValidationError(f'Invalid ondex={siger.ondex} '
+                                      #f'to expose digest.') from ex
+
+            kdig = Diger(ser=siger.verfer.qb64b, code=diger.code).qb64
+            if kdig == diger.qb64:
+                odxs.append(siger.ondex)
+
+        return odxs
+
+
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
         """

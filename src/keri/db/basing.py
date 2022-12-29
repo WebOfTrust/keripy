@@ -175,7 +175,7 @@ class RotateRecord:
         data (list | None): seals
         date (str | None):  datetime of rotation
         smids (list | None): group signing member identifiers qb64
-        rmids (list | None): group signing member identifiers qb64
+        rmids (list | None): group rotating member identifiers qb64
 
 
     ToDo: NRR

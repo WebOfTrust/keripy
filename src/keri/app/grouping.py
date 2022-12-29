@@ -50,8 +50,9 @@ class Counselor(doing.DoDoer):
             saider (Saider): saider of inception event of group identifier
             mid (str): group member (local) identifier prefix qb64
             smids (list): group signing member ids qb64 (multisig group)
+                need to contribute current signing key
             rmids (list | None): group rotating member ids qb64 (multisig group)
-
+                need to contribute digest of next rotating key
 
         """
         evt = getEscrowedEvent(db=self.hby.db, pre=prefixer.qb64, sn=seqner.sn)
@@ -79,7 +80,9 @@ class Counselor(doing.DoDoer):
         Parameters:
             ghab (Hab): group identifier Hab
             smids (list): group signing member identifier prefixes qb64
-            smids (list): group rotating member identifier prefixes qb64
+                need to contribute newly current signing keys
+            rmids (list): group rotating member identifier prefixes qb64
+                need to contribute next rotating key digests
             isith (Optional[int,str]) currentsigning threshold as int or str hex
                  or list of str weights
             nsith (Optional[int,str])next signing threshold as int or str hex
@@ -221,42 +224,70 @@ class Counselor(doing.DoDoer):
 
     def processPartialAidEscrow(self):
         """
-        Process escrow of group multisig rotate requests missing rotations from other participants.  Message
-        processing will send this local controllers rotation event to all other participants
-        then this escrow waits for rotations from all other participants
+        Process escrow of group multisig rotate request for missing rotations by
+        other participants.  Message processing will send this local controller's
+        rotation event to all other participants then this escrow waits for
+        rotations from all other participants to return.
+
+        # group partial signature escrow
+        self.gpae = koming.Komer(db=self, subkey='gpae.',
+                                 schema=RotateRecord)
+
+        @dataclass
+        class RotateRecord:
+
+        Tracks requests to perform multisig rotation during lifecycle of a rotation
+
+        sn: int | None  # sequence number of est event
+        isith: str | list | None  # current signing threshold
+        nsith: str | list | None  # next signing threshold
+        toad: int | None  # threshold of accountable duplicity
+        cuts: list | None  # list of backers to remove qb64
+        adds: list | None  # list of backers to add qb64
+        data: list | None  # seals
+        date: str | None  # datetime of rotation
+        smids: list | None   # group signing member ids
+        rmids: list | None = None  # group rotating member ids
+
+        # group partial signature escrow
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
+                                             klas=(coring.Seqner, coring.Saider))
+
 
         ToDo: NRR
-        rec includes the dual indices for current and next for new rotation
-        add database for each group hab to store for each local hab the reference
-        to the event used in by local hab to provided current and/or next keys
-        to latest est event. This reference is new seal that includes not just
-        reference (sn, said, of event but also the crt and nxt index used by the
-        group hab est event for the local habe est event keys (in either both current
-        next of group habe est event.)
-
-        Logic to determin if current local hab kever is ok to use is based on
-        if latest prior est event in database exposed a its current for the local hab
-        if so then the local hab must rotate and the sn must be at least one greater
-        if current key was not exposed then the lhab does not need to be rotated and the
-        unexposed next key can be reused in the new rotation event.
-
-        ToDo: NRR
+        rec includes the dual indices for current and next for new rotation.
         Need to fix this logic to be for new rotation rules
         need to use both rec.smids and rec.rmids
-        both = list(oset(smids + (rmids or [])))
+        both = list(oset(smids + (rmids or []))) because next rotation keys may be
+            disjoint from current signing keys and all members must contribute
+            either both current signing key and next rotating key digest
+
+        Logic to determine if current local hab kever is ok to use is based on:
+        if latest prior est event in database has been exposed as current for the local hab
+        if so then the local hab must rotate and the sn must be at least one greater
+        if current key was not exposed then the local hab does not need to be rotated and the
+        unexposed next key can be reused in the new rotation event.
+
+        Is this obsolete ??
+        Add database for each group hab to store for each local hab the reference
+        to the event used in by local hab to provide the current and/or next keys
+        to latest est event. This reference is new seal that includes not just
+        reference (sn, said, of event but also the crt and nxt index used by the
+        group hab est event for the local hab est event keys (in either both current
+        next of group habe est event.)
 
         """
         # ignore saider because it is not relevant yet
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partially aid escrow
-            ghab = self.hby.habs[pre]  # group hab Hab instance
+        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial escrow
+            ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
 
-            merfers = []  # local verfers of group signing keys
-            indices = []  # weights of the local signers who have already rotated
-            migers = list(gkever.digers)  # local participants next digers
+            merfers = []  # local member's verfers of group signing keys (usually one)
+            indices = []  # local member's signers who have already rotated
+            migers = list(gkever.digers)  # local member next participants via digers
             for aid in rec.smids:
-                pkever = self.hby.kevers[aid]
-                idx = ghab.smids.index(aid)
+                idx = ghab.smids.index(aid)  # find index into smids for aid
+                pkever = self.hby.kevers[aid]  # given state for given participant
                 if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
                     indices.append(idx)
                     merfers.append(pkever.verfers[0])
@@ -277,15 +308,18 @@ class Counselor(doing.DoDoer):
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]
 
-            others = list(rec.smids)
+            others = list(oset(rec.smids + (rec.rmids or []))) # list(rec.smids)
             others.remove(ghab.mhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
-                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=serder, attachment=rot)
+                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig",
+                                  serder=serder, attachment=rot)
 
             print("Waiting for other signatures...")
             self.hby.db.gpae.rem((pre,))
-            return self.hby.db.gpse.add(keys=(ghab.pre,), val=(coring.Seqner(sn=serder.sn), serder.saider))
+            return self.hby.db.gpse.add(keys=(ghab.pre,),
+                                        val=(coring.Seqner(sn=serder.sn),
+                                        serder.saider))
 
     def processPartialSignedEscrow(self):
         """
