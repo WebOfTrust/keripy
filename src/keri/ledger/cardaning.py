@@ -3,10 +3,8 @@
 KERI
 keri.ledger.cardaning module
 
-Backer operations on Cardano Ledger
-Environment variables required:
-    BLOCKFROST_API_KEY = API KEY from Blockfrots  https://blockfrost.io
-    FUNDING_ADDRESS_CBORHEX = Private Key of funding address as CBOR Hex. Must be an Enterprice address (no Staking part) as PaymentSigningKeyShelley_ed25519
+Registrar Backer operations on Cardano Ledger
+
 """
 
 from blockfrost import BlockFrostApi, ApiError, ApiUrls
@@ -18,13 +16,27 @@ import time
 import json
 
 # TODO
-# Incept data for backer: https://github.com/WebOfTrust/keripy/issues/90
 # Error handling
 
 QUEUE_DURATION = 60
 NETWORK = Network.TESTNET
 
 class Cardano:
+    """
+    Environment variables required:
+        - BLOCKFROST_API_KEY = API KEY from Blockfrots  https://blockfrost.io
+        - FUNDING_ADDRESS_CBORHEX = Private Key of funding address as CBOR Hex. Must be an Enterprice address (no Staking part) as PaymentSigningKeyShelley_ed25519
+    
+    Additional libraries required:
+        pip install pycardano blockfrost-python textwrap
+    See Backer designation event: https://github.com/WebOfTrust/keripy/issues/90
+
+    Features:
+        - Cardano Address is derived from the same seed (private key) used to derive the prefix of the backer
+        - Anchoring KELs from multiple prefixes
+        - Queue events during a period to allow several block confirmations as a safety meassure
+        - Optional funding address to fund the backer address
+    """
 
     def __init__(self, name='backer', hab=None, ks=None):
         self.name = name
@@ -55,9 +67,11 @@ class Cardano:
             self.fundAddress(self.spending_addr)
 
     def publishEvent(self, event):
-        print("Adding event to queue", event)
+        print("Adding event to queue", event['ked']['s'],event['ked']['t'])
         seq_no = int(event['ked']['s'],16)
-        self.pendingKEL[seq_no]= wrap(json.dumps(event), 64)
+        prefix = event['ked']['i']
+        if not prefix in self.pendingKEL: self.pendingKEL[prefix] = {}
+        self.pendingKEL[prefix][seq_no] = wrap(json.dumps(event), 64)
         if not self.timer.is_alive():
             self.timer = Timer(90, self.flushQueue)
             self.timer.start()
@@ -65,22 +79,35 @@ class Cardano:
     def flushQueue(self):
         print("Flushing Queue")
         try:
-            # Check last KE in blockchain to avoid duplicates (for some reason mailbox may submit an event twice)
             txs = self.api.address_transactions(self.spending_addr)
-            meta = self.api.transaction_metadata(txs[-1].tx_hash, return_type='json')
-            if meta:
-                for m in meta:
-                    seq = int(m['label'])
-                    if seq in self.pendingKEL: del self.pendingKEL[seq]
-
-            builder = TransactionBuilder(self.context)
-            builder.add_input_address(self.spending_addr)
-
-            builder.add_output(TransactionOutput(self.spending_addr,Value.from_primitive([1000000])))
-            
-            builder.auxiliary_data = AuxiliaryData(Metadata(self.pendingKEL))
-            signed_tx = builder.build_and_sign([self.payment_signing_key], change_address=self.spending_addr)
-            self.context.submit_tx(signed_tx.to_cbor())
+            utxos = self.api.address_utxos(self.spending_addr.encode())
+            for key, value in self.pendingKEL.items():
+                # Check last KE in blockchain to avoid duplicates (for some reason mailbox may submit an event twice)                
+                for t in txs:
+                    meta = self.api.transaction_metadata(t.tx_hash, return_type='json')
+                    for m in meta:
+                        ke = json.loads(''.join(m['json_metadata']))
+                        seq = int(m['label'])
+                        if ke['ked']['i'] == key and seq in self.pendingKEL[key]: del self.pendingKEL[key][seq]
+                # Build transaction
+                builder = TransactionBuilder(self.context)
+                # select utxos
+                utxo_sum = 0
+                for u in utxos:
+                    utxo_sum = utxo_sum + int(u.amount[0].quantity)
+                    builder.add_input(
+                        UTxO(
+                            TransactionInput.from_primitive([u.tx_hash, u.tx_index]),
+                            TransactionOutput(address=Address.from_primitive(u.address), amount=int(u.amount[0].quantity))
+                        )
+                    )
+                    utxos.remove(u)
+                    if utxo_sum > 6000000: break
+                builder.add_output(TransactionOutput(self.spending_addr,Value.from_primitive([5000000])))
+                builder.auxiliary_data = AuxiliaryData(Metadata(value))
+                signed_tx = builder.build_and_sign([self.payment_signing_key], change_address=self.spending_addr)
+                # Submit transaction
+                self.context.submit_tx(signed_tx.to_cbor())
             self.pendingKEL = {}
         except Exception as e:
             print("error", e)
@@ -105,12 +132,13 @@ class Cardano:
         funding_balance = self.api.address(address=funding_addr.encode()).amount[0]
         print("Funding address:", funding_addr)
         print("Funding balance:", int(funding_balance.quantity)/1000000,"ADA")
-        if int(funding_balance.quantity) > 11000000:
+        if int(funding_balance.quantity) > 50000000:
             try:
                 builder = TransactionBuilder(self.context)
                 builder.add_input_address(funding_addr)
                 builder.add_output(TransactionOutput(addr,Value.from_primitive([10000000])))
-                
+                builder.add_output(TransactionOutput(addr,Value.from_primitive([10000000])))
+                builder.add_output(TransactionOutput(addr,Value.from_primitive([10000000])))
                 signed_tx = builder.build_and_sign([funding_payment_signing_key], change_address=funding_addr)
                 self.context.submit_tx(signed_tx.to_cbor())
                 print("Funds submitted. Wait...")

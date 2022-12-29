@@ -3,7 +3,7 @@
 KERI
 keri.app.backering module
 
-backer mode support classes
+class to support registrar backers
 """
 
 import falcon
@@ -329,7 +329,7 @@ class HttpEnd:
             rep.status = falcon.HTTP_200
             rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said, hab=self.hab, ledger=self.ledger)
         
-        print("ROOTSLOG HTTP POST MSG RECEIVED", ilk)
+        print("Post msg received of type", ilk)
 
 class QryRpyMailboxIterable:
 
