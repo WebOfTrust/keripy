@@ -11,6 +11,7 @@ import logging
 from keri import __version__
 from keri import help
 from keri.app import directing, backering, habbing, keeping
+from keri.ledger import cardaning
 from keri.app.cli.common import existing
 
 d = "Runs KERI backer controller.\n"
@@ -80,14 +81,18 @@ def runBacker(name="backer", base="", alias="backer", bran="", tcp=5631, http=56
         hby = existing.setupHby(name=name, base=base, bran=bran)
 
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    
+    hab = hby.habByName(name=alias)
+    if hab is None:
+        hab = hby.makeHab(name=alias, transferable=False)
+    if ledger == "cardano":
+        ldg = cardaning.Cardano(name=alias, hab=hab, ks=ks)
+    
     doers = [hbyDoer]
-
     doers.extend(backering.setupBacker(alias=alias,
                                           hby=hby,
-                                          ks=ks,
                                           tcpPort=tcp,
                                           httpPort=http,
-                                          ledger=ledger))
+                                          ledger=ldg))
 
     directing.runController(doers=doers, expire=expire)
-

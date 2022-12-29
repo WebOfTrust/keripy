@@ -26,15 +26,12 @@ from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
 from keri.core import coring
 
-from keri.ledger import cardaning
-
-
 logger = help.ogler.getLogger()
 
 
-def setupBacker(hby, ks, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, ledger="cardano"):
+def setupBacker(hby, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, ledger=None):
     """
-    Setup Backer controller and doers
+    Setup Registrar Backer controller and doers
 
     """
     cues = decking.Deck()
@@ -78,10 +75,8 @@ def setupBacker(hby, ks, alias="backer", mbx=None, tcpPort=5631, httpPort=5632, 
                             tvy=tvy,
                             exc=exchanger,
                             rvy=rvy)
-    if ledger == "cardano":
-        ldg = cardaning.Cardano(name=alias, hab=hab, ks=ks)
 
-    httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx, hab=hab, ledger=ldg)
+    httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx, hab=hab, ledger=ledger)
     app.add_route("/", httpEnd)
 
     server = http.Server(port=httpPort, app=app)
