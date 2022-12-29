@@ -3,19 +3,14 @@
 keri.kli.commands module
 
 """
-import sys
 import argparse
-from typing import Union
 from dataclasses import dataclass
-import json
-from json import JSONDecodeError
-from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
-from keri.app.cli.common import existing
+from keri.app.cli.common import existing, incepting, config
 
 logger = help.ogler.getLogger()
 
@@ -28,13 +23,14 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 
-parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
+parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
 # Authentication for keystore
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
+incepting.add_incepting_args(parser)
 
 
 @dataclass
@@ -62,29 +58,62 @@ def handler(args):
         args(Namespace): arguments object from command line
     """
 
-    try:
-        f = open(args.file)
-        config = json.load(f)
-
-        opts = InceptOptions(**config)
-    except FileNotFoundError:
-        print("config file", args.file, "not found")
-        sys.exit(-1)
-    except JSONDecodeError:
-        print("config file", args.file, "not valid JSON")
-        sys.exit(-1)
-
     name = args.name
     base = args.base
     bran = args.bran
     alias = args.alias
-    config = args.config
+    config_dir = args.config
 
-    kwa = opts.__dict__
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config, **kwa)
+    kwa = merge_args_with_file(args).__dict__
+
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
+
+
+def empty_options():
+    """
+    Initializes an empty inception options to be used only when required values are passed in at the command line
+    """
+    return InceptOptions(
+        transferable=None, wits=None, icount=None, isith=None, ncount=None, nsith=None
+    )
+
+
+def merge_args_with_file(args):
+    """
+    Merge options specified with command line arguments with any specified config file
+    with command line arguments taking precedence.
+    """
+    required_args = ['transferable', 'wits', 'icount', 'isith', 'ncount', 'nsith', 'toad']
+    if args.file is None or args.file == '':
+        config.check_required_args(args, required_args)
+
+    incept_opts = config.load_file_options(args.file, InceptOptions) if args.file != '' else empty_options()
+
+    if args.transferable is not None:
+        incept_opts.transferable = args.transferable
+    if len(args.wits) > 0:
+        incept_opts.wits = args.wits
+    if args.icount is not None:
+        incept_opts.icount = int(args.icount)
+    if args.toad is not None:
+        incept_opts.toad = int(args.toad)
+    if args.icount is not None:
+        incept_opts.icount = int(args.icount)
+    if args.isith is not None:
+        incept_opts.isith = args.isith
+    if args.ncount is not None:
+        incept_opts.ncount = int(args.ncount)
+    if args.nsith is not None:
+        incept_opts.nsith = args.nsith
+    if args.est_only is not None:
+        incept_opts.estOnly = args.est_only
+    if args.data is not None:
+        incept_opts.data = config.parse_data(args.data)
+
+    return incept_opts
 
 
 class InceptDoer(doing.DoDoer):
