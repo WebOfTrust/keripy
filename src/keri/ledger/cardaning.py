@@ -116,11 +116,9 @@ class Cardano:
                 kels_to_remove.append(key)
             self.pendingKEL = {}
         except Exception as e:
-            print("error", e)
             for k in kels_to_remove: del self.pendingKEL[k]
-            if not self.timer.is_alive():
-                self.timer = Timer(90, self.flushQueue)
-                self.timer.start()
+            self.timer = Timer(90, self.flushQueue)
+            self.timer.start()
 
     def getaddressBalance(self):
         try:
