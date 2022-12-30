@@ -274,6 +274,13 @@ class Counselor(doing.DoDoer):
         the same rotation event based on what the key state they each see locally
         for other members?
 
+        When creating Habery.group hab and merfers provided then
+        gkever.digers are the provided next digers (migers).
+        How are the merfers and migers provided? They are provided via
+        the makeGroupHab which is provided with the smids and rmids
+        so if rmids is set correctly then the migers is already the correct
+        set of next digers. So why are we updating it below??
+
 
         rec includes the dual indices for current and next for new rotation.
         Need to fix this logic to be for new rotation rules
@@ -302,26 +309,46 @@ class Counselor(doing.DoDoer):
             ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
 
+            # merfers = list(gkever.verfers) why or why not this ?
             merfers = []  # to be newly current verfers of group signing keys
-            migers = list(gkever.digers)  # to be newly next digers of rotation keys
             indices = []  # local member's signers who have already rotated
 
             for aid in rec.smids:
                 idx = ghab.smids.index(aid)  # find index into smids for aid
                 pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
+                if pkever.verfers[0].qb64 != gkever.verfers[idx].qb64:
                     indices.append(idx)
-                    merfers.append(pkever.verfers[0])
-                    migers[idx] = pkever.digers[0]
+                    merfers.append(pkever.verfers[0])  # why append ?
+                    #mervers[idx] = pkever.verfers[0]  # why insert ?
 
-            if not gkever.ntholder.satisfy(indices):
+            if not gkever.tholder.satisfy(indices):  # is verfers a satificing oset ?
                 continue
 
-            # if weighted and new weights not provided then use prior weight
-            if gkever.tholder.weighted and rec.isith is None:
-                isith = [gkever.ntholder.sith[idx] for idx in indices]
-            else:
-                isith = rec.isith  # use provided new isith
+            # migers = list(gkever.digers)  list(gkever.verfers) why or why not this ?
+            migers = []  # to be newly next digers of rotation keys
+            ondices = []  # local member's signers who have already rotated
+
+            for aid in rec.rmids:
+                odx = ghab.rmids.index(aid)  # find index into smids for aid
+                pkever = self.hby.kevers[aid]  # given state for given participant
+                if pkever.digers[0].qb64 != gkever.digers[odx].qb64:
+                    ondices.append(odx)
+                    migers.append(pkever.digers[0])  # why append ?
+                    #migers[odx] = pkever.digers[0]  # why insert ?
+
+            if not gkever.ntholder.satisfy(ondices):  # is migers a satificing oset ?
+                continue
+
+            # This logic above does not check
+
+            ## if weighted and new weights not provided then use prior weight
+            #if gkever.tholder.weighted and rec.isith is None:
+                #isith = [gkever.ntholder.sith[idx] for idx in indices]
+            #else:
+                #isith = rec.isith  # use provided new isith
+
+            # use new isith when provided otherwise default to prior isith
+            isith = rec.isith if rec.isith is not None else gkever.tholder.sith
 
             # use new nsith when provided otherwise default to prior nsith
             nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
