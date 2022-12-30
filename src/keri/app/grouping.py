@@ -281,6 +281,19 @@ class Counselor(doing.DoDoer):
         so if rmids is set correctly then the migers is already the correct
         set of next digers. So why are we updating it below??
 
+        Seems like logic is assuming perfect rotation has happended for all
+        smids and rmids prior to this escrow being checked, otherwise the actual
+        rotation event may not include all the prescribed verfers from the smids
+        nor all the prescribed digers from the rmids. The logic should be 100%.
+        Either all the prescibed smids verfers are included and all prescribed
+        rmid digers are included or it fails.
+
+        If we can assume that all the smids and rmids have already performed their
+        inidivual member rotation prior the group rotation being formed then
+        there should be no need for this escrow. The troubling question is what
+        problem does this escrow solve?
+
+
 
         rec includes the dual indices for current and next for new rotation.
         Need to fix this logic to be for new rotation rules
@@ -339,7 +352,7 @@ class Counselor(doing.DoDoer):
             if not gkever.ntholder.satisfy(ondices):  # is migers a satificing oset ?
                 continue
 
-            # This logic above does not check
+            # This logic above does not assure that all are included.
 
             ## if weighted and new weights not provided then use prior weight
             #if gkever.tholder.weighted and rec.isith is None:
