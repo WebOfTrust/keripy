@@ -789,7 +789,7 @@ class Baser(dbing.LMDBer):
         self.glwe = koming.Komer(db=self, subkey='glwe.',
                                  schema=RotateRecord)
 
-        # group partial signature escrow
+        # group partial member aid escrow
         self.gpae = koming.Komer(db=self, subkey='gpae.',
                                  schema=RotateRecord)
 
