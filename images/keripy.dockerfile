@@ -1,15 +1,19 @@
 
-FROM python:3.10.4-buster
+FROM python:3.10.4-alpine3.16
 
+RUN apk update
+RUN apk add bash
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && \
-    apt-get install -y ca-certificates libsodium23
+RUN apk add alpine-sdk
+RUN apk add libffi-dev
+RUN apk add libsodium
+RUN apk add libsodium-dev
 
 # Setup Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
-COPY .. /keripy
+COPY . /keripy
 WORKDIR /keripy
 
 # Install KERIpy dependencies
