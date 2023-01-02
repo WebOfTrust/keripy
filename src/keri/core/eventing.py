@@ -1549,10 +1549,12 @@ class Kever:
         wits (list): of qualified qb64 aids for witnesses
         cuts (list): of qualified qb64 aids for witnesses cut from prev wits list
         adds (list) of qualified qb64 aids for witnesses added to prev wits list
+
         estOnly (bool): config trait True means only allow establishment events
             Default False. Corresponds to config trait string "EO"
         doNotDelegate (bool): config trait True means do not allow delegation
             Default False. Corresponds to config trait string "DND"
+
         lastEst (LastEstLoc): namedtuple of int sn .s and qb64 digest .d of last est event
         delegated (bool): True means delegated identifier, False not delegated
         delgator (str): qb64 of delegator's prefix
@@ -1735,7 +1737,7 @@ class Kever:
         Reload Kever attributes (aka its state) from state serder
 
         Parameters:
-            state (Serder): instance of key stat notice 'ksn' message body
+            state (Serder): instance of key state notice 'ksn' message body
 
         """
         for k in KSN_LABELS:
@@ -2603,7 +2605,6 @@ class Kever:
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
                       ndigs=[diger.qb64 for diger in self.digers],
-                      #ndigs=self.nexter.digs if self.nexter else [],
                       toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,

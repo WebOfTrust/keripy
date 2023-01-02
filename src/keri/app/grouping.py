@@ -97,6 +97,17 @@ class Counselor(doing.DoDoer):
         for mhab.pre
         Then store these with rotationRecord to be used by .processPartialAidEscrow()
 
+        This code assumes that at the time of this formation of the group
+        rotation record, none of the members in either smids or smids has
+        yet to rotate to the key state to be used in the group rotation. This
+        takes a snapshot vector clock as list of the sequence numbers to ensure
+        all members see the same key state for all other members. Rotation must
+        therefore use the keystate that that latest est evt is at least +1
+        of the sequence number in the vector clock.
+        number of members that must have contributed is configuration dependent
+
+
+
 
         """
         mid = ghab.mhab.pre
@@ -106,37 +117,52 @@ class Counselor(doing.DoDoer):
 
         if mid not in both:
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
-                                            f" to participate in rotation: {both}")
+                                            f" as member of rotation: {both}")
 
-        kever = ghab.kever
 
-        # Get local next key and see if we are in current group next keys
-        pkever = ghab.mhab.kever
-        pndig = pkever.digers[0].qb64
+        if rmids is None:  # default the same for both lists
+            rmids = list(smids)
 
-        rec = basing.RotateRecord(sn=kever.sn+1, isith=isith, nsith=nsith,
+
+        smsns = []  # vector clock of sequence numbers of signing member key states
+        for mid in smids:
+            try:
+                skever = ghab.kevers[mid]
+            except KeyError as ex:
+                logger.error(f"Missing KEL for group singing member={mid}"
+                             f" of rotation for group={ghab.pre}.")
+                raise kering.MissingAidError(f"Missing KEL for group signing "
+                                             f"member={mid} of rotation for"
+                                             f" group={ghab.pre}.") from ex
+            smsns.append(coring.Number(num=skever.sn).numh)
+
+        rmsns = []   # vector clock of sequence numbers of rotating member key states
+        for mid in rmids:
+            try:
+                rkever = ghab.kevers[mid]
+            except KeyError as ex:
+                logger.error(f"Missing KEL for group rotating member={mid}"
+                             f" of rotation for group={ghab.pre}.")
+                raise kering.MissingAidError(f"Missing KEL for group rotating "
+                                             f"member={mid} of rotation for"
+                                             f" group={ghab.pre}.") from ex
+            rmsns.append(coring.Number(num=rkever.sn).numh)
+
+        gkever = ghab.kever
+        rec = basing.RotateRecord(date=helping.nowIso8601(),
+                                  smids=smids, smsns=smsns,
+                                  rmids=rmids, rmsns=rmsns,
+                                  sn=coring.Number(num=gkever.sn+1).numh,
+                                  isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
-                                  data=data, date=helping.nowIso8601(),
-                                  smids=smids, rmids=rmids)
+                                  data=data)
 
-        if pndig in kever.digs:  # local already participate in last event, rotate
-            ghab.mhab.rotate()
-            print(f"Rotating local identifier, waiting for witness receipts")
-            self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
-            return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
+        # perform local member rotation and then wait for own witnesses to receipt
+        ghab.mhab.rotate() # rotate own local member hab
+        print(f"Rotated local member={ghab.mhab.pre}, waiting for witness receipts")
+        self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
+        return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
-        else: # XXXX no unit test ever reaches here
-            rot = ghab.mhab.makeOwnEvent(pkever.lastEst.s)  # grab latest est evt
-            others = list(both)
-            others.remove(mid)
-            serder = coring.Serder(raw=rot)
-            del rot[:serder.size]
-
-            print(f"Sending local rotation event to {others} other participants")
-            for recpt in others:
-                self.postman.send(src=mid, dest=recpt, topic="multisig", serder=serder, attachment=rot)
-
-            return self.hby.db.gpae.put(keys=(ghab.pre,), val=rec)
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -211,7 +237,8 @@ class Counselor(doing.DoDoer):
 
                 rot = self.hby.db.cloneEvtMsg(mid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
-                others = list(rec.smids)
+
+                others = list(oset(rec.smids + (rec.rmids or [])))  #others = list(rec.smids)
                 others.remove(mid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]
@@ -238,16 +265,18 @@ class Counselor(doing.DoDoer):
 
         Tracks requests to perform multisig rotation during lifecycle of a rotation
 
-        sn: int | None  # sequence number of est event
-        isith: str | list | None  # current signing threshold
-        nsith: str | list | None  # next signing threshold
-        toad: int | None  # threshold of accountable duplicity
-        cuts: list | None  # list of backers to remove qb64
-        adds: list | None  # list of backers to add qb64
-        data: list | None  # seals
-        date: str | None  # datetime of rotation
-        smids: list | None   # group signing member ids
-        rmids: list | None = None  # group rotating member ids
+        date (str | None):  datetime of rotation
+        smids (list): group signing member identifiers qb64
+        smsns (list): of group signing member sequence number hex strs
+        rmids (list): group rotating member identifiers qb64
+        rmsns (list): of group rotating member sequence numbers hex strs
+        sn (str | None ):  sequence number of group est event as hex str
+        isith (str | list | None):  current signing threshold
+        nsith (str | list | None):  next signing threshold
+        toad (int | None): threshold of accountable duplicity
+        cuts (list | None):  list of backers to remove qb64
+        adds (list | None):  list of backers to add qb64
+        data (list | None): seals in rotation event
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
@@ -317,48 +346,47 @@ class Counselor(doing.DoDoer):
         next of group habe est event.)
 
         """
-        # ignore saider because it is not relevant yet ???
+        # ignore saider of group rotation event in this escrow because it is not
+        # not yet formed yet ???
+
+        #
         for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial member aid escrow
             ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
 
-            # merfers = list(gkever.verfers) why or why not this ?
-            merfers = []  # to be newly current verfers of group signing keys
-            indices = []  # local member's signers who have already rotated
+            # collect indices and merfers of members who have already performed
+            # local rotation of their  member hab. Need indices to compute
+            # threshold of group formation. Need merfers to contribute to group
+            # rotation event itself.
 
-            for aid in rec.smids:
-                idx = ghab.smids.index(aid)  # find index into smids for aid
-                pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.verfers[0].qb64 != gkever.verfers[idx].qb64:
-                    indices.append(idx)
-                    merfers.append(pkever.verfers[0])  # why append ?
-                    #mervers[idx] = pkever.verfers[0]  # why insert ?
+            indices = []  # indices into smids of members who have already rotated
+            # member's newly rotated verfers in order to contribute to group event
+            # None is placeholder for member who has not rotated yet
+            merfers = [None] * len(rec.smids)
+            for i, mid in enumerate(rec.smids):
+                mkever = self.hby.kevers[mid]  # get key state for given member
+                if mkever.lastEst.s > rec.smsns[i]:  # local member has rotated
+                    merfers[i] = mkever.verfers[0]  # use zeroth verfer
+                    indices.append(i)
 
-            if not gkever.tholder.satisfy(indices):  # is verfers a satificing oset ?
+
+            ondices = [] # indices into rmids of members who have already rotated
+            # member's newly rotated digers in order to contribute to group event
+            # None is placeholder for member who has not rotated yet
+            migers = [None] * len(rec.rmids)
+            for o, mid in enumerate(rec.rmids):
+                mkever = self.hby.kevers[mid]  # given state for given participant
+                if mkever.lastEst.s > rec.rmsns[o]:  # local member has rotated
+                    migers[o] = mkever.digers[0]  # use zeroth diger
+                    ondices.append(o)
+
+
+            # wait until the keys state relative to the vector clock element for each
+            # member of the group shows that they all have rotated their local member
+            # hab before calling a rotate on this local member's instance of
+            # this group hab
+            if True:
                 continue
-
-            # migers = list(gkever.digers)  list(gkever.verfers) why or why not this ?
-            migers = []  # to be newly next digers of rotation keys
-            ondices = []  # local member's signers who have already rotated
-
-            for aid in rec.rmids:
-                odx = ghab.rmids.index(aid)  # find index into smids for aid
-                pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.digers[0].qb64 != gkever.digers[odx].qb64:
-                    ondices.append(odx)
-                    migers.append(pkever.digers[0])  # why append ?
-                    #migers[odx] = pkever.digers[0]  # why insert ?
-
-            if not gkever.ntholder.satisfy(ondices):  # is migers a satificing oset ?
-                continue
-
-            # This logic above does not assure that all are included.
-
-            ## if weighted and new weights not provided then use prior weight
-            #if gkever.tholder.weighted and rec.isith is None:
-                #isith = [gkever.ntholder.sith[idx] for idx in indices]
-            #else:
-                #isith = rec.isith  # use provided new isith
 
             # use new isith when provided otherwise default to prior isith
             isith = rec.isith if rec.isith is not None else gkever.tholder.sith
@@ -366,7 +394,13 @@ class Counselor(doing.DoDoer):
             # use new nsith when provided otherwise default to prior nsith
             nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
 
-            # rot is locally signed rotation event message
+            # rot is locally signed group multisig rotation event message
+            # note actual seq num of group rotation event may be later than proposed
+            # because an automatic aync interaction event may have occurred while
+            # waiting for the group event to process and Hab.rotate just increments
+
+
+
             rot = ghab.rotate(isith=isith, nsith=nsith,
                               toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
                               merfers=merfers, migers=migers)
@@ -382,6 +416,8 @@ class Counselor(doing.DoDoer):
 
             self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
             print("Waiting for other signatures...")
+            # change this to put the said in the keys not the val
+            # should also fix the delegated escrow as well move to key space
             return self.hby.db.gpse.add(keys=(ghab.pre,),
                                         val=(coring.Seqner(sn=serder.sn),
                                              serder.saider))
@@ -442,6 +478,10 @@ class Counselor(doing.DoDoer):
 
         """
         # ignore saider because it is not relevant yet ???
+        # wait until the keys state relative to the vector clock element for each
+        # member of the group shows that they all have rotated their local member
+        # hab before calling a rotate on this local member's instance of the group
+        # hab
         for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial escrow
             ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
@@ -604,6 +644,17 @@ class Counselor(doing.DoDoer):
         Returns:
             Prefixer, Saider: prefixer of identifier and saider of the event (if available)
 
+        ToDo: NRR
+        sn in rec.sn is now a hex str. How is the event data use the sn. Does
+        it merely display or does it do logic on the sn?  Need use to change
+        to understand its a hex str not an int.
+
+        Note:
+        Actual seq num of group rotation event may be later than proposed in
+        RotationRecord, rec because an automatic async interaction event may
+        have occurred while waiting for the group event to process and
+        Hab.rotate just increments whatever is latest sn
+
         """
         key = (pre,)
         evts = []
@@ -620,6 +671,7 @@ class Counselor(doing.DoDoer):
                 data=rec.data
             )
             evts.append(data)
+
         if (rec := self.hby.db.glwe.get(keys=key)) is not None:  # RotateRecord
             data = dict(
                 aids=rec.smids,

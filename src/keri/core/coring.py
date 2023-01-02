@@ -4952,20 +4952,6 @@ class Serder(Sadder):
 
         return [Diger(qb64=dig) for dig in digs]
 
-    #@property
-    #def nexter(self):
-        #"""
-        #Returns list of Diger instances as converted from .ked['n'].
-        #One for each key.
-        #nexter property getter
-        #"""
-        #if "n" in self.ked:  # establishment event
-            #digs = self.ked["n"]
-        #else:  # non-establishment event
-            #digs = []
-
-        #return Nexter(digs=digs)
-
     @property
     def werfers(self):
         """

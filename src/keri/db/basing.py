@@ -164,34 +164,36 @@ class HabitatRecord:  # baser.habs
 class RotateRecord:
     """
     Tracks requests to perform multisig rotation during lifecycle of a rotation
+    Provides psuedo event for which group consensus must be obtained prior to
+    committing group rotation event to group KEL in local db
 
     Attributes:
-        sn (int | None ):  sequence number of est event
+        date (str | None):  datetime of rotation
+        smids (list): group signing member identifiers qb64
+        smsns (list): of group signing member seq nums as hex strs
+        rmids (list): group rotating member identifiers qb64
+        rmsns (list): of group rotating member seq nums as hex strs
+        sn (str | None ): at or after proposed seq num of group est event as hex str
         isith (str | list | None):  current signing threshold
         nsith (str | list | None):  next signing threshold
         toad (int | None): threshold of accountable duplicity
         cuts (list | None):  list of backers to remove qb64
         adds (list | None):  list of backers to add qb64
-        data (list | None): seals
-        date (str | None):  datetime of rotation
-        smids (list | None): group signing member identifiers qb64
-        rmids (list | None): group rotating member identifiers qb64
-
-
-    ToDo: NRR
-    Add mid, midxs tuple (csi, pni)
+        data (list | None): seals in rotation event
 
     """
-    sn: int | None  # sequence number of est event
+    date: str | None  # datetime of rotation
+    smids: list[str] = field(default_factory=list)  # group signing member ids qb64
+    smsns: list[str] = field(default_factory=list)  # group signing member sn hex strs
+    rmids: list[str] = field(default_factory=list)  # group rotating member ids qb64
+    rmsns: list[str] = field(default_factory=list)  # group rotating member sn hex strs
+    sn: str | None  # at or after proposed seq num of group est event as hex str
     isith: str | list | None  # current signing threshold
     nsith: str | list | None  # next signing threshold
     toad: int | None  # threshold of accountable duplicity
-    cuts: list | None  # list of backers to remove qb64
-    adds: list | None  # list of backers to add qb64
+    cuts: list[str] | None  # list of backers to remove qb64
+    adds: list[str] | None  # list of backers to add qb64
     data: list | None  # seals
-    date: str | None  # datetime of rotation
-    smids: list | None   # group signing member ids
-    rmids: list | None = None  # group rotating member ids
 
 
 @dataclass
@@ -642,11 +644,8 @@ class Baser(dbing.LMDBer):
             key is group identifier prefix
             value is serialized GroupIdentifier dataclass
 
-
-
-
     Properties:
-
+        kevers (dbdict): read through cache of kevers of states for KELs in db
 
     """
 

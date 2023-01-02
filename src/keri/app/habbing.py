@@ -465,7 +465,7 @@ class Habery:
             mhab (Hab): group member (local) hab
             smids (list): group member signing ids (qb64) from which to extract
                         inception event current signing keys
-            rmids (list): group member rotation ids (qb64) from which to extract
+            rmids (list | None): group member rotation ids (qb64) from which to extract
                         inception event next key digests
                         if rmids is None then use assign smids to rmids
                         if rmids is empty then no next key digests
@@ -527,6 +527,7 @@ class Habery:
         self.habs[hab.pre] = hab
 
         return hab
+
 
     def extractMerfersMigers(self, smids, rmids=None):
         """
@@ -804,7 +805,9 @@ class Hab:
 
     Properties:
         kever (Kever): instance of key state of local controller
-        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
+        kevers (dict): of eventing.Kever instances from KELs in local db
+            keyed by qb64 prefix. Read through cache of of kevers of states for
+            KELs in db.states
         iserder (coring.Serder): own inception event
         prefixes (OrderedSet): local prefixes for .db
         accepted (bool): True means accepted into local KEL.
