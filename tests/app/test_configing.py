@@ -3,6 +3,7 @@
 tests.app.configin module
 """
 import os
+from pathlib import Path
 import shutil
 
 import pytest
@@ -128,12 +129,12 @@ def test_configer():
     assert not os.path.exists(cfr.path)
 
     # Test with altPath by using not permitted headDirPath /opt/keri to force Alt
-    filepath = '/Users/samuel/.keri/cf/main/conf.json'
+    filepath = str(Path.home()) + '/.keri/cf/main/conf.json'
     if os.path.exists(filepath):
         os.remove(filepath)
 
-    cfr = configing.Configer(headDirPath="/root/keri")
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    cfr = configing.Configer(headDirPath="/root/keri") # cfr.path = ${HOME}/.keri/cf If doesn't have root permission
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert cfr.opened
     assert os.path.exists(cfr.path)
     assert cfr.file
@@ -157,7 +158,7 @@ def test_configer():
     cfr.close()
     assert not cfr.opened
     assert cfr.file.closed
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert os.path.exists(cfr.path)
     with pytest.raises(ValueError):
         rdata = cfr.get()
@@ -165,21 +166,21 @@ def test_configer():
     cfr.reopen(reuse=True)  # reuse True and clear False so don't remake
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
     cfr.reopen()  # reuse False so remake but not clear
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == wdata  # not empty
 
     cfr.reopen(reuse=True, clear=True)  # clear True so remake even if reuse
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
@@ -190,7 +191,7 @@ def test_configer():
     cfr.reopen(clear=True)  # clear True so remake
     assert cfr.opened
     assert not cfr.file.closed
-    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.path.endswith("keri/cf/main/conf.json")
     assert os.path.exists(cfr.path)
     assert (rdata := cfr.get()) == {}  # empty
     wdata = dict(name="hope", oobi="abc")
