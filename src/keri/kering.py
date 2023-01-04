@@ -472,9 +472,15 @@ class InvalidGroupError(KeriError):
     """
     Error trying to process a group identifier for an identifier that is not a participant in the group
     Usage:
-        raise MissingAidError("error message")
+        raise InvalidGroupError("error message")
     """
 
+class GroupFormationError(KeriError):
+    """
+    Error trying to form a group rotation event
+    Usage:
+        raise GroupFormationError("error message")
+    """
 
 
 class MissingChainError(KeriError):

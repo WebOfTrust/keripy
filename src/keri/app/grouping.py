@@ -15,6 +15,7 @@ from hio.help import decking
 from keri import kering
 from keri.app import forwarding, delegating, agenting
 from keri.core import coring
+from keri.core.coring import Number
 from keri.db import dbing, basing
 from keri.db.dbing import snKey
 from keri.help import helping
@@ -92,6 +93,22 @@ class Counselor(doing.DoDoer):
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
 
+        RotateRecord:
+            date (str | None):  datetime of rotation
+            smids (list): group signing member identifiers qb64
+            smsns (list): of group signing member seq num of last est evt as hex str
+            rmids (list): group rotating member identifiers qb64
+            rmsns (list): of group rotating member seq num of last est evt as hex strs
+            sn (str | None ): at or after proposed seq num of group est event as hex str
+            isith (str | list | None):  current signing threshold
+            nsith (str | list | None):  next signing threshold
+            toad (int | None): threshold of accountable duplicity
+            cuts (list | None):  list of backers to remove qb64
+            adds (list | None):  list of backers to add qb64
+            data (list | None): seals in rotation event
+
+
+
         ToDo: NRR
         Add midxs for each group member identifier or just the local member
         for mhab.pre
@@ -124,7 +141,7 @@ class Counselor(doing.DoDoer):
             rmids = list(smids)
 
 
-        smsns = []  # vector clock of sequence numbers of signing member key states
+        smsns = []  # vector clock of sns of signing member last est evt
         for mid in smids:
             try:
                 skever = ghab.kevers[mid]
@@ -134,9 +151,9 @@ class Counselor(doing.DoDoer):
                 raise kering.MissingAidError(f"Missing KEL for group signing "
                                              f"member={mid} of rotation for"
                                              f" group={ghab.pre}.") from ex
-            smsns.append(coring.Number(num=skever.sn).numh)
+            smsns.append(Number(num=skever.lastEst.s).numh)
 
-        rmsns = []   # vector clock of sequence numbers of rotating member key states
+        rmsns = []   # vector clock of sn of rotating member lst est evt
         for mid in rmids:
             try:
                 rkever = ghab.kevers[mid]
@@ -146,13 +163,13 @@ class Counselor(doing.DoDoer):
                 raise kering.MissingAidError(f"Missing KEL for group rotating "
                                              f"member={mid} of rotation for"
                                              f" group={ghab.pre}.") from ex
-            rmsns.append(coring.Number(num=rkever.sn).numh)
+            rmsns.append(Number(num=rkever.lastEst.s).numh)
 
         gkever = ghab.kever
         rec = basing.RotateRecord(date=helping.nowIso8601(),
                                   smids=smids, smsns=smsns,
                                   rmids=rmids, rmsns=rmsns,
-                                  sn=coring.Number(num=gkever.sn+1).numh,
+                                  sn=Number(num=gkever.sn+1).numh,
                                   isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
                                   data=data)
@@ -232,6 +249,7 @@ class Counselor(doing.DoDoer):
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
+            # should not require all witnesses merely the witness threshold
             if len(wigs) == len(pkever.wits):  # We have all of them, this event is finished
                 self.hby.db.glwe.rem(keys=(pre,))
 
@@ -256,31 +274,192 @@ class Counselor(doing.DoDoer):
         rotation event to all other participants then this escrow waits for
         rotations from all other participants to return.
 
-        # group partial member aid escrow
+         # group partial member aid escrow
         self.gpae = koming.Komer(db=self, subkey='gpae.',
                                  schema=RotateRecord)
 
-        @dataclass
-        class RotateRecord:
+        RotateRecord
+            sn: int | None  # sequence number of est event
+            isith: str | list | None  # current signing threshold
+            nsith: str | list | None  # next signing threshold
+            toad: int | None  # threshold of accountable duplicity
+            cuts: list | None  # list of backers to remove qb64
+            adds: list | None  # list of backers to add qb64
+            data: list | None  # seals
+            date: str | None  # datetime of rotation
+            smids: list | None   # group signing member ids
+            rmids: list | None = None  # group rotating member ids
 
-        Tracks requests to perform multisig rotation during lifecycle of a rotation
+        # group member last contribution records keyed by aid of member
+        self.gcrs = koming.Komer(db=self, subkey='gcrs.',
+                                 schema=ContributeRecord)
+        ContributeRecord
+            date (str | None):  datetime of rotation
+            smids (list): group signing member identifiers qb64
+            smsns (list): of group signing member seq nums of last est evt as hex str
+            key (str | None): qb64 of signing key contributed by given member if any
+            rmids (list): group rotating member identifiers qb64
+            rmsns (list): of group rotating member seq nums of last est evt as hex strs
+            dig (str | None): qb64 of rotating key digest contributed by given member if any
+            sn (str): of last est evt contributed to by member as hex str
+            said (str):  # said of last est evt contributed to by member as qb64
 
-        date (str | None):  datetime of rotation
-        smids (list): group signing member identifiers qb64
-        smsns (list): of group signing member sequence number hex strs
-        rmids (list): group rotating member identifiers qb64
-        rmsns (list): of group rotating member sequence numbers hex strs
-        sn (str | None ):  sequence number of group est event as hex str
-        isith (str | list | None):  current signing threshold
-        nsith (str | list | None):  next signing threshold
-        toad (int | None): threshold of accountable duplicity
-        cuts (list | None):  list of backers to remove qb64
-        adds (list | None):  list of backers to add qb64
-        data (list | None): seals in rotation event
+
+        ContributeRecord database for each member of each group hab as keyed by:
+        (group hab aid, member aid) records the reference to members est event that
+        contributed to last group est evt as well as contributif mkever.lastEsts.s != grec.smsns[i]:
+                            raise kering.GroupFormationError(f"Invalid rotation "
+                                                             f"state of smid={mid}.")ed key material
+        of either both siging key and rotating key dig from contributing member
+        est event.
+
+        The logic for required member rotation (i.e. MUST rotate before group event
+        can be formed) is as follows:
+
+        A)  IF a given smid in rotate grec.smids was exposed in the previous
+                group est evt as indicated by inclusion in its contribute
+                mrec.smids if any assuming no keys are recycled.
+            THEN given smid must be rotated before its signing key material can be
+                contributed to new rotation event.
+
+        This rule makes the conservative assumption that a rotation is always
+        considered prophylactic for all smids even if some of them may not have
+        been suspected of compromise. A corner case is that a given member smid
+        was not also an rmid of the prior group est event so it could be reused
+        as a smid in a subsequent group est event. The conservative prophylatic
+        assumption is that regardless of any mitigating circumstance that might
+        allow its use without rotation, any smid contributed previously cannot be
+        re-contributed for any reason without rotation in a subsequent est event for
+        the group. In other words a rotation forces all smids to be prophylatically
+        rotated.
+
+        This rule also enforces that any current smid that corresponds to a
+        prior rmid that has already been exposed as a smid must therefore be
+        rotated so that the member est event that is contributing to the
+        new group est event is the first time exposure of the digest of the now smid.
+        In other words if the rmid was not exposed as a smid in the contrib record
+        then its ok to use the rmid without rotating. So checking the smid covers
+        all must rotate cases.
+
+
+        B)  OTHERWISE the current est event for the smid/rmid MUST NOT be rotated.
+
+        This ensures that every member applies the same logic for evaluating the
+        key material contribution of every other member. Each MUST evaluate to
+        the same condition of either MUST rotate relative to member last est event
+        captured by smsns, rmsns in contrib record or MUST NOT rotate.
+
+        There are Two primary MUST not rotate cases:
+
+        1)  A current member smid does not have a contribute record so it has
+                yet to contribute in any way to a group est event. Therefore
+                is has yet to expose any key material that thereby requires a
+                rotation prior to contribution.
+
+        2)  A current member smid signing key material is newly added as key
+                material i.e. is not in the prior contrib record as a smid.
+
+            a)  This covers the case of a custodial signing key that
+                that never appears as a next rotating key digest.
+                Key member is given by smid
+
+            b) This covers the case of an rmid held in reserve that has yet to
+                be exposed as a smid in the contrib record. So the reserve does
+                not have to rotate prior to contributing in the current rotate
+                record but can use its held in reserve key material as is.
+
+
+        This logic assumes that a given member is not recycling old key material
+        for either signing keys or rotating key digests.
+        i.e. logic assumes that each member only exposes each rotating key
+        one time only and only uses a given signing key up to the next est event.
+        I.E. once a signing key has been rotated out it is never rotated back in.
+
+        Use of an HDK or CSPRNG random key generation algorithm ensures that
+        keys will not be recycled. If a member does not protect itself against
+        key material recycling then recycled keys may have already been exposed
+        making them vulnerable to surprise quantum attack or may have been
+        otherwise compromised. This logic does not protect against deep recycling
+        only that the last use is either appropriate or MUST be rotated before
+        being used in the new rotation. Thus it protects against inadvertent reuse
+        of the last keys (i.e. stale keys) and assumes that new keys are never
+        recycled.
+
+        Failure Cases:
+
+        For MUST and MUST Not rotate case we must ensure everyone captures
+        the same est event for the rotating member in the event that a member
+        performs a surprise recovery rotation during group rotation formation
+        but after the rotate record is captured and if not that everyone fails.
+
+        In all cases, the same failure logic MUST also apply. The rule is all
+        must form the same group or no group must be formed.
+
+        We can enforce either zero or one rotations uniformly but not more than
+        one.
+
+        What if the rotating member has rotated more than once since the rotate
+        record was captured?
+
+        If so then there is a new race condition.
+
+        We can say that if they have rotated more than once in the short time
+        frame of the formation of a new rotation group then there is a problem
+        and therefore the formation should fail, in order to prevent the race
+        condition.
+
+        Note this is a different race condition than the member rotating only
+        once to recover control during the formation process. The MUST rotate
+        rules will work if there is only one rotation for a MUST rotate for any
+        reason either because of the group rotation or serendipidously for a
+        recovery rotation at the same time.
+
+        This means then that we need a hard test that the sn of the MUST rotate set
+        must be exactly 1 greater than the sn captured in the rotate record.
+        We must check the sn of the latest establishment event not the latest event.
+        The sn of the last Est Evt must be 1 greater. The rotate record captures
+        the sequence number of the last Est Evt.  By capturing the sn of the last
+        est event we can allow there to be interaction events in the KELs of
+        members and therefore we do not have to enforce EO (Establishment Only)
+        config trait on member KELs.
+
+        Likewise we have the case where the member of a MUST NOT rotate does a
+        rotation to recover from a compromise after the rotate record if formed.
+        We need a hard test for a MUST NOT rotate which is the sn of the last
+        est event MUST equal the sn in the rotate record.
+        Otherwise the group rotation formation must fail in order to prevent
+        a race condition. This means that the MUST NOT rotate set will fail if
+        any of them must perform a recovery rotation during group formation.
+
+        In general on a likelihood frequency basis:
+
+        Members in the MUST NOT rotate set are contributing largely unexposed
+        key material that is less likely to have become compromised during group
+        formation.
+
+        (the one exception is a group member that has been rotated out and
+        rotated back in and its current signing key material may not have been
+        used in the group but may have been used otherwise for some time. This
+        is only signing key material not next key material that has not been
+        exposed).
+
+        Nonetheless, typically its less likely that a MUST NOT member will need
+        to perform a recovery rotation during rotation group formation.
+
+        Whereas members in the MUST rotate set in all cases are contributing
+        already exposed key material. So the likelihood of a compromise during
+        group rotation formation needing a recover rotation during group formation
+        is higher. So the current rules avoid group formation failure if one
+        rotation happens during formation for MUST rotate members but not
+        two or more. So the trade-off is reasonable.
+
+
+
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
                                              klas=(coring.Seqner, coring.Saider))
+
 
 
         ToDo: NRR
@@ -324,7 +503,7 @@ class Counselor(doing.DoDoer):
 
 
 
-        rec includes the dual indices for current and next for new rotation.
+        grec includes the dual indices for current and next for new rotation.
         Need to fix this logic to be for new rotation rules
         need to use both rec.smids and rec.rmids
         both = list(oset(smids + (rmids or []))) because next rotation keys may be
@@ -337,77 +516,76 @@ class Counselor(doing.DoDoer):
         if current key was not exposed then the local hab does not need to be rotated and the
         unexposed next key can be reused in the new rotation event.
 
-        Is this obsolete ??
-        Add database for each group hab to store for each local hab the reference
-        to the event used in by local hab to provide the current and/or next keys
-        to latest est event. This reference is new seal that includes not just
-        reference (sn, said, of event but also the crt and nxt index used by the
-        group hab est event for the local hab est event keys (in either both current
-        next of group habe est event.)
+
 
         """
         # ignore saider of group rotation event in this escrow because it is not
         # not yet formed yet ???
 
         #
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial member aid escrow
+        for (pre,), grec in self.hby.db.gpae.getItemIter():  # group partial member aid escrow
             ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
 
-            # collect indices and merfers of members who have already performed
-            # local rotation of their  member hab. Need indices to compute
-            # threshold of group formation. Need merfers to contribute to group
-            # rotation event itself.
+            #indices = []  # indices into smids of members who have already rotated
 
-            indices = []  # indices into smids of members who have already rotated
+            # collect merfers of member verfers whose member satisfies
+            # rotation rules relative to their previous contribution.
+            # None is placeholder for member who has not yet satisfied rotation
+            # rules.
             # member's newly rotated verfers in order to contribute to group event
-            # None is placeholder for member who has not rotated yet
-            merfers = [None] * len(rec.smids)
-            for i, mid in enumerate(rec.smids):
+
+            merfers = [None] * len(grec.smids)
+            for i, mid in enumerate(grec.smids):  # assumes kever or else no rec
                 mkever = self.hby.kevers[mid]  # get key state for given member
-                if mkever.lastEst.s > rec.smsns[i]:  # local member has rotated
-                    merfers[i] = mkever.verfers[0]  # use zeroth verfer
-                    indices.append(i)
+                # get old member con rec if any for local member
+                if (mrec := self.hby.db.gcrs.get(keys=((ghab.pre, mid)))) is None:
+                    # no previous contribution so contribute without rotation check
+                    merfers[i] = mkever.verfers[0]
+                else:  # use mrec here
+                    # check if not contributed previously as smid
+                    if mid not in mrec.smids:  # not in prev contrib so MUST NOT rotate
+                        # check if failure because rotated
+                        if mkever.lastEsts.s != Number(num=grec.smsns[i]).num:
+                            raise kering.GroupFormationError(f"Invalidly rotated "
+                                             f"smid={mid} when MUST NOT rotate.")
+                        merfers[i] = mkever.verfers[0]
+                    else:  # prev contrib so MUST rotate only once
+                        if mkever.lastEsts.s > Number(num=grec.smsns[i]).num + 1:
+                            raise kering.GroupFormationError(f"Invalid rotation "
+                                                             f"state of smid={mid}.")
+                        elif mkever.lastEsts.s == Number(num=grec.smsns[i]).num + 1:
+                            merfers[i] = mkever.verfers[0]
+
+                        else:  # not rotated yet
+                            continue
 
 
-            ondices = [] # indices into rmids of members who have already rotated
-            # member's newly rotated digers in order to contribute to group event
-            # None is placeholder for member who has not rotated yet
-            migers = [None] * len(rec.rmids)
-            for o, mid in enumerate(rec.rmids):
-                mkever = self.hby.kevers[mid]  # given state for given participant
-                if mkever.lastEst.s > rec.rmsns[o]:  # local member has rotated
-                    migers[o] = mkever.digers[0]  # use zeroth diger
-                    ondices.append(o)
-
-
-            # wait until the keys state relative to the vector clock element for each
-            # member of the group shows that they all have rotated their local member
-            # hab before calling a rotate on this local member's instance of
-            # this group hab
-            if True:
+            if None in merfers:  # not all members have contributed
                 continue
 
+
+            # contribute diger from each rmid member to group event
+            migers = [self.hby.kevers[mid].digers[0] for mid in grec.rmids]
+
             # use new isith when provided otherwise default to prior isith
-            isith = rec.isith if rec.isith is not None else gkever.tholder.sith
+            isith = grec.isith if grec.isith is not None else gkever.tholder.sith
 
             # use new nsith when provided otherwise default to prior nsith
-            nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
+            nsith = grec.nsith if grec.nsith is not None else gkever.ntholder.sith
 
             # rot is locally signed group multisig rotation event message
             # note actual seq num of group rotation event may be later than proposed
             # because an automatic aync interaction event may have occurred while
             # waiting for the group event to process and Hab.rotate just increments
 
-
-
             rot = ghab.rotate(isith=isith, nsith=nsith,
-                              toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
+                              toad=grec.toad, cuts=grec.cuts, adds=grec.adds, data=grec.data,
                               merfers=merfers, migers=migers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]  # strip signatures from
 
-            others = list(oset(rec.smids + (rec.rmids or []))) # list(rec.smids)
+            others = list(oset(grec.smids + (grec.rmids or []))) # list(rec.smids)
             others.remove(ghab.mhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
             for recpt in others:
@@ -415,66 +593,30 @@ class Counselor(doing.DoDoer):
                                   serder=serder, attachment=rot)
 
             self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
+
+            conrec = basing.ContributeRecord(date=helping.nowIso8601(),
+                            smids=grec.smids, smsns=grec.smsns,
+                            rmids=grec.rmids, rmsns=grec.rmsns,
+                            sn=coring.Number(num=serder.sner.num).numh,
+                            said=serder.said)
+
+            self.hby.db.gcrs.put(keys=(ghab.pre, ghab.mhab.pre), val=conrec)
+            print(f"Saving contrib record for member {ghab.mhab.pre} of "
+                  f"group {ghab.pre}.")
+
             print("Waiting for other signatures...")
-            # change this to put the said in the keys not the val
+            # change below to put the said in the keys not the val
             # should also fix the delegated escrow as well move to key space
             return self.hby.db.gpse.add(keys=(ghab.pre,),
                                         val=(coring.Seqner(sn=serder.sn),
                                              serder.saider))
 
+
+
+
     def oldProcessPartialAidEscrow(self):
         """
-        Process escrow of group multisig rotate request for missing rotations by
-        other participants.  Message processing will send this local controller's
-        rotation event to all other participants then this escrow waits for
-        rotations from all other participants to return.
-
-        # group partial member aid escrow
-        self.gpae = koming.Komer(db=self, subkey='gpae.',
-                                 schema=RotateRecord)
-
-        @dataclass
-        class RotateRecord:
-
-        Tracks requests to perform multisig rotation during lifecycle of a rotation
-
-        sn: int | None  # sequence number of est event
-        isith: str | list | None  # current signing threshold
-        nsith: str | list | None  # next signing threshold
-        toad: int | None  # threshold of accountable duplicity
-        cuts: list | None  # list of backers to remove qb64
-        adds: list | None  # list of backers to add qb64
-        data: list | None  # seals
-        date: str | None  # datetime of rotation
-        smids: list | None   # group signing member ids
-        rmids: list | None = None  # group rotating member ids
-
-        # group partial signature escrow
-        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
-                                             klas=(coring.Seqner, coring.Saider))
-
-
-        ToDo: NRR
-        rec includes the dual indices for current and next for new rotation.
-        Need to fix this logic to be for new rotation rules
-        need to use both rec.smids and rec.rmids
-        both = list(oset(smids + (rmids or []))) because next rotation keys may be
-            disjoint from current signing keys and all members must contribute
-            either both current signing key and next rotating key digest
-
-        Logic to determine if current local hab kever is ok to use is based on:
-        if latest prior est event in database has been exposed as current for the local hab
-        if so then the local hab must rotate and the sn must be at least one greater
-        if current key was not exposed then the local hab does not need to be rotated and the
-        unexposed next key can be reused in the new rotation event.
-
-        Is this obsolete ??
-        Add database for each group hab to store for each local hab the reference
-        to the event used in by local hab to provide the current and/or next keys
-        to latest est event. This reference is new seal that includes not just
-        reference (sn, said, of event but also the crt and nxt index used by the
-        group hab est event for the local hab est event keys (in either both current
-        next of group habe est event.)
+        See new
 
         """
         # ignore saider because it is not relevant yet ???

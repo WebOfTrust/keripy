@@ -170,9 +170,9 @@ class RotateRecord:
     Attributes:
         date (str | None):  datetime of rotation
         smids (list): group signing member identifiers qb64
-        smsns (list): of group signing member seq nums as hex strs
+        smsns (list): of group signing member seq nums of last est evt as hex str
         rmids (list): group rotating member identifiers qb64
-        rmsns (list): of group rotating member seq nums as hex strs
+        rmsns (list): of group rotating member seq nums of last est evt as hex strs
         sn (str | None ): at or after proposed seq num of group est event as hex str
         isith (str | list | None):  current signing threshold
         nsith (str | list | None):  next signing threshold
@@ -182,18 +182,48 @@ class RotateRecord:
         data (list | None): seals in rotation event
 
     """
-    date: str | None  # datetime of rotation
+    date: str | None = None  # datetime of rotation
     smids: list[str] = field(default_factory=list)  # group signing member ids qb64
-    smsns: list[str] = field(default_factory=list)  # group signing member sn hex strs
+    smsns: list[str] = field(default_factory=list)  # group signing member last est evt sns hex str
     rmids: list[str] = field(default_factory=list)  # group rotating member ids qb64
-    rmsns: list[str] = field(default_factory=list)  # group rotating member sn hex strs
-    sn: str | None  # at or after proposed seq num of group est event as hex str
-    isith: str | list | None  # current signing threshold
-    nsith: str | list | None  # next signing threshold
-    toad: int | None  # threshold of accountable duplicity
-    cuts: list[str] | None  # list of backers to remove qb64
-    adds: list[str] | None  # list of backers to add qb64
-    data: list | None  # seals
+    rmsns: list[str] = field(default_factory=list)  # group rotating member last est evt sns hex str
+    sn: str | None = None  # at or after proposed seq num of group est event as hex str
+    isith: str | list | None = None  # current signing threshold
+    nsith: str | list | None = None  # next signing threshold
+    toad: int | None = None  # threshold of accountable duplicity
+    cuts: list[str] | None = None  # list of backers to remove qb64
+    adds: list[str] | None = None # list of backers to add qb64
+    data: list | None = None # seals
+
+
+@dataclass
+class ContributeRecord:
+    """
+    Tracks last establishment event contributed to by a given member. The given
+    member is in the key space of the data base copy of this record.
+
+    Provides reference so that the partial aid escrow can resolve if given member
+    needs to rotate its local hab or not prior to contributing to a proposed rotation.
+
+    Attributes:
+        date (str | None):  datetime of rotation
+        smids (list): group signing member identifiers qb64
+        smsns (list): of group signing member seq nums of last est evt as hex str
+        rmids (list): group rotating member identifiers qb64
+        rmsns (list): of group rotating member seq nums of last est evt as hex strs
+        sn (str): of last est evt contributed to by member as hex str
+        said (str):  # said of last est evt contributed to by member as qb64
+
+
+    """
+    date: str | None = None  # datetime of contribution to rotation
+    smids: list[str] = field(default_factory=list)  # group signing member ids qb64
+    smsns: list[str] = field(default_factory=list)  # group signing member last est evt sns hex str
+    rmids: list[str] = field(default_factory=list)  # group rotating member ids qb64
+    rmsns: list[str] = field(default_factory=list)  # group rotating member last est evt sns hex str
+    sn: str | None = None  # of last est evt contributed to by member as hex str
+    said: str | None = None # said of last est evt contributed by member as qb64
+
 
 
 @dataclass
@@ -787,6 +817,10 @@ class Baser(dbing.LMDBer):
         # group local witness escrow
         self.glwe = koming.Komer(db=self, subkey='glwe.',
                                  schema=RotateRecord)
+
+        # group member last contribution records keyed by (aid of group, aid of member)
+        self.gcrs = koming.Komer(db=self, subkey='gcrs.',
+                                 schema=ContributeRecord)
 
         # group partial member aid escrow
         self.gpae = koming.Komer(db=self, subkey='gpae.',

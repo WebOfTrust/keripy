@@ -5001,6 +5001,7 @@ class Serder(Sadder):
         """
         return (self.sner.num)
 
+
     @property
     def fner(self):
         """
@@ -5030,6 +5031,7 @@ class Serder(Sadder):
         """
         return self.ked["i"]
 
+
     @property
     def preb(self):
         """
@@ -5038,10 +5040,12 @@ class Serder(Sadder):
         """
         return self.pre.encode("utf-8")
 
+
     @property
     def est(self):  # establishative
         """ Returns True if Serder represents an establishment event """
         return self.ked["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
 
     def pretty(self, *, size=1024):
         """
