@@ -266,8 +266,11 @@ def test_multisig_incept():
                                      b',"bt":"2","b":["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo","BCyRFMideczFZ'
                                      b'oapylLIyCjSdhtqVb31wZkRKvPfNqkw","BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh'
                                      b'9c"],"c":[],"a":[]}')
-        assert evt["attachment"] == (b'-AABABA4LBb_ljS-dgSnh_g0fUbc1y5Q_tdh12eMAkzyRsd_Bbqy1zK05Uua-6GM'
-                                     b'pUKP5vIo--fuD3YesuxJ7l6GbFAF')
+        #assert evt["attachment"] == (b'-AABABA4LBb_ljS-dgSnh_g0fUbc1y5Q_tdh12eMAkzyRsd_Bbqy1zK05Uua-6GM'
+                                     #b'pUKP5vIo--fuD3YesuxJ7l6GbFAF')
+
+        assert evt["attachment"] == (b'-AABBBA4LBb_ljS-dgSnh_g0fUbc1y5Q_tdh12eMAkzyRsd_Bbqy1zK05Uua-6GM'
+                                      b'pUKP5vIo--fuD3YesuxJ7l6GbFAF')
         evt = icpEnd.counselor.postman.evts.popleft()
         assert evt["src"] == hab2.pre
         assert evt["dest"] == hab3.pre

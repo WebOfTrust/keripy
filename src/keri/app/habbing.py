@@ -1318,6 +1318,7 @@ class Hab:
                 False means do not use dual indexed signatures, i.e. current
                 siging indices only
                 Otherwise ignore
+                Assumes .kever.digers represent prior next
             indices (list[int] | None): indices (offsets)
                 when indexed == True. See Manager.sign
             ondices (list[int | None] | None): other indices (offsets)
@@ -1369,9 +1370,9 @@ class Hab:
                     pni = None  # default not participant
 
             else:  # not a rotation so ignores other index of dual index
-                pni = csi  # backwards compatible is both same
+                #pni = csi  # backwards compatible is both same
                 # in the future may want to fix Kever validation logic so that
-                # pni = None also works
+                pni = None # should also work
 
             return (self.mhab.sign(ser=ser,
                                        verfers=[merfer],
