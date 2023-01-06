@@ -1295,6 +1295,103 @@ class Hab:
              ):
         """Sign given serialization ser using appropriate keys.
         Use provided verfers or .kever.verfers to lookup keys to sign unless
+        .mhab is not None then walk .mhab's kel to find latest contribution of
+        signing key material to group in order to sign properly. Contributions
+        to group key material always use the zeroth element of signing key and/or
+        rotating key digest lists. Find index into provided group verfers from
+        current group key state.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            rotated (bool): When indexed and .mhab then
+                True means use use dual indexed signatures, i.e. current indices
+                and prior next ondices
+                False means do not use dual indexed signatures, i.e. current
+                siging indices only
+                Otherwise ignore
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
+        if verfers is None:
+            verfers = self.kever.verfers  # when group these provide group signing keys
+
+        if self.mhab:  # Group multisig member. Sign with single sig of of valid
+            # contributed member verfer from .mhab KEL.
+            # Convention is to walk KEL to find correct contributed key if any.
+            # Contributed keys MUSt always be zeroth element of member key list
+            # and or member next key digests list.
+            # first dig of mhab's prior nexter.digs.
+
+
+            # walk member kel to find event if event where member contributed to
+            # group est event from which verfers is taken
+            if (result := self.mhab.kever.fetchLatestContribTo(verfers=verfers)) is None:
+                raise ValueError(f"Member hab={self.mhab.pre} not a participant in "
+                                 f"event for this group hab={self.pre}.")
+
+            sn, csi, merfer = result  # unpack result
+
+            # the rotated flag may now be obsolete since fixing the Kever validation
+            # logic to correctly chack both of the dual indices
+            if rotated:  # rotation so uses the other index from dual indices
+                # Either the verfer key or both the verfer key and prior dig
+                # might be participants in signature on group hab's rotation event.
+                # Each prior dig  must also be exposed as a participant
+                # from current (after rotation) key list.
+                # If mhab.kever.verfer[0] key is in group's new verfers (after rot)
+                # then mhab participates in group as new key at index csi.
+                # If in addition mhab prior dig at nexter.digs[0] is in group's
+                # kever.digers (which will be prior next for group after rotation)
+                # then mhab participates as group prior next at index pni.
+                # else pni is None which means mhab only participates as new key.
+                # get nexter of .mhab's prior Next est event
+                migers = self.mhab.kever.fetchPriorDigers(sn=sn)
+                if migers:  # not  None or not empty
+                    mig = migers[0].qb64  #always use first prior dig of mhab
+                    digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs
+                    try:
+                        pni = digs.index(mig)  # find mhab dig index in group hab digs
+                    except ValueError:  # not found
+                        pni = None  # default not participant
+                else:
+                    pni = None  # default not participant
+
+            else:  # not a rotation so ignores other index of dual index
+                pni = csi  # backwards compatible is both same
+                # in the future may want to fix Kever validation logic so that
+                # pni = None also works
+
+            return (self.mhab.sign(ser=ser,
+                                       verfers=[merfer],
+                                       indexed=indexed,
+                                       indices=[csi],
+                                       ondices=[pni]))
+
+        else:
+            return self.mgr.sign(ser=ser,
+                                 verfers=verfers,
+                                 indexed=indexed,
+                                 indices=indices,
+                                 ondices=ondices)
+
+
+    def oldSign(self, ser, verfers=None, indexed=True, rotated=False,
+             indices=None, ondices=None,
+             ):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign unless
         .mhab is not None then find .mhab's zeroth verfer to get index into
         verfers and sign with mhab's zeroth verfer
 

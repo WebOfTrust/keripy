@@ -2614,10 +2614,10 @@ class Kever:
                 )
 
 
-    def fetchPriorDigers(self) -> (list | None):
+    def fetchPriorDigers(self, sn: int | None = None) -> list | None:
         """ Returns either the most recent prior list of digers before .lastEst or None
 
-        Starts searching at sn = .lastEst.s - 1
+        Starts searching at sn or if sn is None at sn = .lastEst.s - 1
 
         Returns list of Digers instances at the most recent prior est event relative
         to the given sequence number (sn) otherwise returns None.
@@ -2628,6 +2628,7 @@ class Kever:
         the result will be the list of digers immediately prior to the current list.
 
         Parameters:
+          sn (int | None): sn to start searching. If None then start at .lastEst.s - 1
 
         Returns:
             digers (list | None): of Diger instances or None if no prior est evt
@@ -2635,7 +2636,9 @@ class Kever:
 
         """
         pre = self.prefixer.qb64
-        sn = self.lastEst.s - 1
+        if sn is None:
+            sn = self.lastEst.s - 1
+
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
@@ -2645,35 +2648,110 @@ class Kever:
 
         return None
 
-    #def fetchPriorNexter(self) -> (Nexter | None):
-        #""" Returns either the most recent prior Nexter before .lastEst or None
 
-        #Starts searching at sn = .lastEst.s - 1
+    def fetchLatestContribTo(self, verfers, sn: int | None = None):
+        """ Returns tuple of (sn, index, verfer) from latest est event whose
+        verfer is found in verfers at index offset else None if not found.
+        Fetches latest event sn and associated index and verfer that contributed
+        to the provided verfers at index.
 
-        #Returns the Nexter instance at the most recent prior Nexter to the
-        #current nexter of the given sequence number (sn) otherwise returns None.
-        #Walks backwards to the more recent prior establishment event before the
-        #.sn if any.
-        #If sn represents an interaction event (ixn) then the result will be the
-        #current valid nexter. If sn represents an establishment event then
-        #the result will be the prior nexter to the current one.
+        Starts searching at sn or if sn is None at sn = .lastEst.s
 
-        #Parameters:
+        Returns tuple (sn, index, verfer) from the latest est event that matches by
+        starting at the given sequence number (sn) and walking backwards
+        otherwise returns None.
 
-        #Returns:
-            #Nexter instance or None if no prior est event to current .lastEst
+        If given sn represents an interaction event (ixn) then a latest possible
+        matching result may be from an event that is no later than the last est
+        event prior to that interaction event.
+        If the sn represents an establishment event then the latest possible
+        matching result may be from that event.
 
-        #"""
-        #pre = self.prefixer.qb64
-        #sn = self.lastEst.s - 1
-        #for digb in self.db.getKelBackIter(pre, sn):
-            #dgkey = dgKey(pre, digb)
-            #raw = self.db.getEvt(dgkey)
-            #serder = coring.Serder(raw=bytes(raw))
-            #if serder.est:  # establishment event
-                #return serder.nexter
+        Parameters:
+          verfers (list[Verfer]): of verfer instances
+          sn (int | None): sn to start searching. If None then start at .lastEst.s
 
-        #return None
+        Returns:
+            tuple(int, int,Verfer) | None: where tuple is of form (sn, idx, verfer).
+                sn is sequence number.
+                idx is index of verfer in verfers
+                verfer is instance of Verfer
+
+        """
+        pre = self.prefixer.qb64
+        if sn is None:
+            sn = self.lastEst.s
+
+        keys = [verfer.qb64 for verfer in verfers]
+
+        for digb in self.db.getKelBackIter(pre, sn):
+            dgkey = dgKey(pre, digb)
+            raw = self.db.getEvt(dgkey)
+            serder = coring.Serder(raw=bytes(raw))
+            if serder.est:  # establishment event
+                key = serder.verfers[0].qb64
+                try:
+                    i = keys.index(key) # find index of key in keys
+                except ValueError:  # not found
+                    continue
+
+                return (serder.sn, i, serder.verfers[0])
+
+        return None
+
+
+    def fetchLatestContribFrom(self, verfer, sn: int | None = None):
+        """ Returns tuple of  form (sn, index, verfers) where verfers is a list of
+        verfers from latest est event where verfer is found in that event's
+        verfers at index offset else None if not found.
+        Fetches latest event sn and associated verfers list that recieved a
+        contribution from the provided verfer at index.
+
+        Starts searching at sn or if sn is None at sn = .lastEst.s
+
+        Returns tuple (sn, index, list[verfers]) from the latest est event that
+        matches by starting at the given sequence number (sn) and walking backwards
+        otherwise returns None.
+
+        If given sn represents an interaction event (ixn) then a latest possible
+        matching result may be from an event that is no later than the last est
+        event prior to that interaction event.
+        If the sn represents an establishment event then the latest possible
+        matching result may be from that event.
+
+        Parameters:
+          verfer (Verfer): instance of verfer
+          sn (int | None): sn to start searching. If None then start at .lastEst.s
+
+        Returns:
+            tuple(int, int, list[Verfer]) | None: where tuple is of form
+            (sn, index, verfers)
+                sn is sequence number
+                index is index into verfers of verfers
+                verfers is list of Verfer instances.
+
+        """
+        pre = self.prefixer.qb64
+        if sn is None:
+            sn = self.lastEst.s
+
+        key = verfer.qb64
+
+        for digb in self.db.getKelBackIter(pre, sn):
+            dgkey = dgKey(pre, digb)
+            raw = self.db.getEvt(dgkey)
+            serder = coring.Serder(raw=bytes(raw))
+            if serder.est:  # establishment event
+                keys = [verfer.qb64 for verfer in serder.verfers]
+                try:
+                    i = keys.index(key) # find index of key in keys
+                except ValueError:  # not found
+                    continue
+
+                return (serder.sn, i, serder.verfers)
+
+        return None
+
 
 
 class Kevery:
