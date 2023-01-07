@@ -136,10 +136,8 @@ class Counselor(doing.DoDoer):
             raise kering.ConfigurationError(f"local identifier {mid} not elected"
                                             f" as member of rotation: {both}")
 
-
         if rmids is None:  # default the same for both lists
             rmids = list(smids)
-
 
         smsns = []  # vector clock of sns of signing member last est evt
         for mid in smids:
@@ -179,7 +177,6 @@ class Counselor(doing.DoDoer):
         print(f"Rotated local member={ghab.mhab.pre}, waiting for witness receipts")
         self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
         return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
-
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -255,8 +252,7 @@ class Counselor(doing.DoDoer):
 
                 rot = self.hby.db.cloneEvtMsg(mid, pkever.sn, pkever.serder.said)  # grab latest est evt
 
-
-                others = list(oset(rec.smids + (rec.rmids or [])))  #others = list(rec.smids)
+                others = list(oset(rec.smids + (rec.rmids or [])))  # others = list(rec.smids)
                 others.remove(mid)
                 serder = coring.Serder(raw=rot)
                 del rot[:serder.size]

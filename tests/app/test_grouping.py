@@ -78,7 +78,7 @@ def test_counselor():
                        b'":["1/2","1/2","1/2"],"n":["EKMBA8Q1uP3WshghLR_r6MjYwVEids8yKb_0'
                        b'3w8FOOFO","EHV8V6dj_VXvXZFUwMTT4yUy40kw5uYMXnFxoh_KZmos","EMUrvG'
                        b'YprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","b":[],"c":[],'
-                       b'"a":[]}-AABABBkMCMWP1Z2MMd6dBPlogRd1k6mv1joiHIyb8mXvp0H4kY0DHIPM'
+                       b'"a":[]}-AABBBBkMCMWP1Z2MMd6dBPlogRd1k6mv1joiHIyb8mXvp0H4kY0DHIPM'
                        b'9O6udZ1Bbyf3klr4uGnLs07qcCcnKGI6GsH')
 
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -103,7 +103,7 @@ def test_counselor():
         counselor.processEscrows()  # process escrows to get witness-less event to next step
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is None
-        assert len(counselor.postman.evts) == 2
+        assert len(counselor.postman.evts) == 4
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == hab1.pre
         assert evt["dest"] == hab2.pre

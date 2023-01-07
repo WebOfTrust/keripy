@@ -976,7 +976,7 @@ class Hab:
         if estOnly:
             cnfg.append(eventing.TraitCodex.EstOnly)
         if DnD:
-            cnfg.append(eventing.TraitCodex.DND)
+            cnfg.append(eventing.TraitCodex.DoNotDelegate)
 
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
