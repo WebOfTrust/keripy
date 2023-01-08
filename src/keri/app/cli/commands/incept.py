@@ -5,11 +5,9 @@ keri.kli.commands module
 """
 import sys
 import argparse
-from typing import Union
 from dataclasses import dataclass
 import json
 from json import JSONDecodeError
-from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -157,4 +155,3 @@ class InceptDoer(doing.DoDoer):
         self.remove(toRemove)
 
         return
-

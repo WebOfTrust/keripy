@@ -875,7 +875,6 @@ class Hab:
         self.inited = False
         self.delpre = None  # assigned laster if delegated
 
-
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256,
              transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
@@ -1040,7 +1039,6 @@ class Hab:
             self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
-
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
