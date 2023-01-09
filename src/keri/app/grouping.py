@@ -173,7 +173,7 @@ class Counselor(doing.DoDoer):
                                   data=data)
 
         # perform local member rotation and then wait for own witnesses to receipt
-        ghab.mhab.rotate() # rotate own local member hab
+        ghab.mhab.rotate()  # rotate own local member hab
         print(f"Rotated local member={ghab.mhab.pre}, waiting for witness receipts")
         self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
         return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
@@ -522,8 +522,7 @@ class Counselor(doing.DoDoer):
         for (pre,), grec in self.hby.db.gpae.getItemIter():  # group partial member aid escrow
             ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
             gkever = ghab.kever  # group hab's Kever instance key state
-
-            #indices = []  # indices into smids of members who have already rotated
+            verfers = gkever.verfers
 
             # collect merfers of member verfers whose member satisfies
             # rotation rules relative to their previous contribution.
@@ -534,28 +533,18 @@ class Counselor(doing.DoDoer):
             merfers = [None] * len(grec.smids)
             for i, mid in enumerate(grec.smids):  # assumes kever or else no rec
                 mkever = self.hby.kevers[mid]  # get key state for given member
-                # get old member con rec if any for local member
-                if (mrec := self.hby.db.gcrs.get(keys=((ghab.pre, mid)))) is None:
-                    # no previous contribution so contribute without rotation check
+
+                # walk member kel to find event if event where member contributed to
+                # group est event from which verfers is taken
+                if (result := gkever.fetchLatestContribFrom(verfer=mkever.verfers[0])) is None:
                     merfers[i] = mkever.verfers[0]
-                else:  # use mrec here
-                    # check if not contributed previously as smid
-                    if mid not in mrec.smids:  # not in prev contrib so MUST NOT rotate
-                        # check if failure because rotated
-                        if mkever.lastEsts.s != Number(num=grec.smsns[i]).num:
-                            raise kering.GroupFormationError(f"Invalidly rotated "
-                                             f"smid={mid} when MUST NOT rotate.")
+
+                else:  # use result here
+                    sn, csi, merfer = result  # unpack result
+                    if mkever.sn > sn:
                         merfers[i] = mkever.verfers[0]
-                    else:  # prev contrib so MUST rotate only once
-                        if mkever.lastEsts.s > Number(num=grec.smsns[i]).num + 1:
-                            raise kering.GroupFormationError(f"Invalid rotation "
-                                                             f"state of smid={mid}.")
-                        elif mkever.lastEsts.s == Number(num=grec.smsns[i]).num + 1:
-                            merfers[i] = mkever.verfers[0]
-
-                        else:  # not rotated yet
-                            continue
-
+                    else:
+                        continue
 
             if None in merfers:  # not all members have contributed
                 continue
@@ -589,16 +578,6 @@ class Counselor(doing.DoDoer):
                                   serder=serder, attachment=rot)
 
             self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
-
-            conrec = basing.ContributeRecord(date=helping.nowIso8601(),
-                            smids=grec.smids, smsns=grec.smsns,
-                            rmids=grec.rmids, rmsns=grec.rmsns,
-                            sn=coring.Number(num=serder.sner.num).numh,
-                            said=serder.said)
-
-            self.hby.db.gcrs.put(keys=(ghab.pre, ghab.mhab.pre), val=conrec)
-            print(f"Saving contrib record for member {ghab.mhab.pre} of "
-                  f"group {ghab.pre}.")
 
             print("Waiting for other signatures...")
             # change below to put the said in the keys not the val

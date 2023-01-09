@@ -1358,7 +1358,7 @@ class Hab:
                 # then mhab participates as group prior next at index pni.
                 # else pni is None which means mhab only participates as new key.
                 # get nexter of .mhab's prior Next est event
-                migers = self.mhab.kever.fetchPriorDigers(sn=sn)
+                migers = self.mhab.kever.fetchPriorDigers(sn=sn-1)
                 if migers:  # not  None or not empty
                     mig = migers[0].qb64  #always use first prior dig of mhab
                     digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs

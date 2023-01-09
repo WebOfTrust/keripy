@@ -2691,7 +2691,7 @@ class Kever:
             if serder.est:  # establishment event
                 key = serder.verfers[0].qb64
                 try:
-                    i = keys.index(key) # find index of key in keys
+                    i = keys.index(key)  # find index of key in keys
                 except ValueError:  # not found
                     continue
 
