@@ -73,9 +73,9 @@ def test_partial_rotation():
                                  sn=1)
 
         # sign serialization
-        siger0 = signers[2].sign(rotser.raw, index=0)  # returns siger
-        siger1 = signers[4].sign(rotser.raw, index=1)  # returns siger
-        siger2 = signers[5].sign(rotser.raw, index=2)  # returns siger
+        siger0 = signers[2].sign(rotser.raw, index=0, ondex=1)  # returns siger
+        siger1 = signers[4].sign(rotser.raw, index=1, ondex=3)  # returns siger
+        siger2 = signers[5].sign(rotser.raw, index=2, ondex=4)  # returns siger
         # update key event verifier state
         kever.update(serder=rotser, sigers=[siger0, siger1, siger2])
 
@@ -162,9 +162,9 @@ def test_partial_rotation():
                                  sn=1)
 
         # sign serialization
-        siger0 = signers[3].sign(rotser.raw, index=0)  # returns siger
-        siger1 = signers[4].sign(rotser.raw, index=1)  # returns siger
-        siger2 = signers[5].sign(rotser.raw, index=2)  # returns siger
+        siger0 = signers[3].sign(rotser.raw, index=0, ondex=2)  # returns siger
+        siger1 = signers[4].sign(rotser.raw, index=1, ondex=3)  # returns siger
+        siger2 = signers[5].sign(rotser.raw, index=2, ondex=4)  # returns siger
         # update key event verifier state
         kever.update(serder=rotser, sigers=[siger0, siger1, siger2])
 
@@ -190,8 +190,8 @@ def test_partial_rotation():
                                  sn=2)
 
         # sign serialization
-        siger0 = signers[13].sign(rotser.raw, index=0)  # returns siger
-        siger1 = signers[14].sign(rotser.raw, index=1)  # returns siger
+        siger0 = signers[13].sign(rotser.raw, index=0, ondex=2)  # returns siger
+        siger1 = signers[14].sign(rotser.raw, index=1, ondex=3)  # returns siger
 
         # update key event verifier state
         with pytest.raises(kering.MissingSignatureError):

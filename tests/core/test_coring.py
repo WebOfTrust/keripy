@@ -5819,44 +5819,103 @@ def test_tholder():
 
 
 
-    raw = b"raw salt to test"
+    #raw = b"raw salt to test"
 
-    #  create signers with verfers for keys
-    signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+    ##  create signers with verfers for keys
+    #signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
 
-    keys = [signer.verfer.qb64 for signer in signers]
-    assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
-                    'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
-                    'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
+    #keys = [signer.verfer.qb64 for signer in signers]
+    #assert keys == ['DKX2UxU85IcgiGdhfAQUfd2kYyVVf6CLUp7ejNBlCYyC',
+                    #'DDo75eoTr0yuYsgEwf5PGAZ7z9dsDb7jjt0ymdNGMKIy',
+                    #'DBnsqw0gaUXMBqFs_4A3wUjnOyiVEMCrY5tWwvRj-wwl']
 
-    digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
-    digs = [diger.qb64 for diger in digers]
-    assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
-                    'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
-                    'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
+    #digers = [Diger(ser=signer.verfer.qb64b) for signer in signers]
+    #digs = [diger.qb64 for diger in digers]
+    #assert digs == ['EAfMsW8tCq-tdsBufV9kqgqvfuKVWNdf9mSpIXQ1Vjdf',
+                    #'EA76Pjxa03Bm62TjwO07C3_EVViO4Bgn5SLSr7FedoEG',
+                    #'EBnncARb7X0yWLOTBW9X387vakzaiAwF6DCFYdiIDob2']
 
-    assert tholder.includes(keys, digs)
+    #assert tholder.includes(keys, digs)
 
-    bdigs = list(digs)
-    del bdigs[0]
-    assert not tholder.includes(keys, bdigs)
+    #bdigs = list(digs)
+    #del bdigs[0]
+    #assert not tholder.includes(keys, bdigs)
 
-    bkeys = list(keys)
-    del bkeys[1]
-    assert tholder.includes(bkeys, digs)
+    #bkeys = list(keys)
+    #del bkeys[1]
+    #assert tholder.includes(bkeys, digs)
 
-    bkeys.append(keys[1])
-    assert not tholder.includes(bkeys, digs)
+    #bkeys.append(keys[1])
+    #assert not tholder.includes(bkeys, digs)
 
-    signer = Signer()
-    # create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    index = 0
-    siger = signer.sign(ser, index=index)
-    digs = [Diger(ser=siger.verfer.qb64b).qb64]
-    sigers = [siger]
+    #signer = Signer()
+    ## create something to sign and verify
+    #ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    #index = 0
+    #siger = signer.sign(ser, index=index)
+    #digs = [Diger(ser=siger.verfer.qb64b).qb64]
+    #sigers = [siger]
 
-    assert tholder.matches(sigers, digs) == [0]
+    #assert tholder.matches(sigers, digs) == [0]
+
+    #raw = b"raw salt to test"
+    ##  create signers with verfers
+    #signers = coring.Salter(raw=raw).signers(count=3, path="next", temp=True)
+
+    ## create something to sign
+    #ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    ## test different index and ondex
+    #sigers = []
+    #digers = []
+    #for i, signer in enumerate(signers):
+        #o = len(signers) - 1 - i
+        #siger = signer.sign(ser=ser, index=i, ondex=o)
+        #diger = Diger(ser=siger.verfer.qb64b)
+        #sigers.append(siger)
+        #digers.append(diger)
+
+    #digers.reverse()
+
+    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    #assert ondices ==[2, 1, 0]
+
+    ## test partial mix
+    #siger0 = signers[0].sign(ser=ser, index=0)  # both same
+    #assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
+    #diger0 = Diger(ser=siger0.verfer.qb64b)
+
+    #siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
+    #assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
+
+    #siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
+    #assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
+    #diger1 = Diger(ser=siger2.verfer.qb64b)
+
+    #sigers = [siger0, siger1, siger2]
+    #digers = [diger0, diger1]
+
+    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    #assert ondices ==[0, 1]
+
+
+    ## test Bad digest
+    #siger0 = signers[0].sign(ser=ser, index=0)  # both same
+    #assert siger0.code == IdxSigDex.Ed25519_Sig  # both same
+    #diger0 = Diger(ser=b"Bad Digest")  # bad digest
+
+    #siger1 = signers[1].sign(ser=ser, index=1, only=True)  # current only
+    #assert siger1.code == IdxSigDex.Ed25519_Crt_Sig  # current only
+
+    #siger2 = signers[2].sign(ser=ser, index=2, ondex=1)  # both different
+    #assert siger2.code == IdxSigDex.Ed25519_Big_Sig  # both different
+    #diger1 = Diger(ser=siger2.verfer.qb64b, code=DigDex.Blake2b_256)
+
+    #sigers = [siger0, siger1, siger2]
+    #digers = [diger0, diger1]
+
+    #ondices = tholder.exposeds(digers=digers, sigers=sigers)
+    #assert ondices ==[1]
 
 
     """ Done Test """

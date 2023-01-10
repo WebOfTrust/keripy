@@ -78,7 +78,7 @@ def test_counselor():
                        b'":["1/2","1/2","1/2"],"n":["EKMBA8Q1uP3WshghLR_r6MjYwVEids8yKb_0'
                        b'3w8FOOFO","EHV8V6dj_VXvXZFUwMTT4yUy40kw5uYMXnFxoh_KZmos","EMUrvG'
                        b'YprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","b":[],"c":[],'
-                       b'"a":[]}-AABABBkMCMWP1Z2MMd6dBPlogRd1k6mv1joiHIyb8mXvp0H4kY0DHIPM'
+                       b'"a":[]}-AABBBBkMCMWP1Z2MMd6dBPlogRd1k6mv1joiHIyb8mXvp0H4kY0DHIPM'
                        b'9O6udZ1Bbyf3klr4uGnLs07qcCcnKGI6GsH')
 
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -91,19 +91,19 @@ def test_counselor():
         counselor.postman.evts.popleft()
 
         # First Partial Rotation
-        smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = None  # need to fix
-        counselor.rotate(ghab=ghab, smids=smids, rmids=rmids, toad=0, cuts=list(), adds=list())
+        smids = [hab1.pre, hab2.pre]
+        rmids = [hab1.pre, hab2.pre]  # need to fix
+        counselor.rotate(ghab=ghab, smids=smids, nsith="2", isith="2", rmids=rmids, toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.smids == smids
-        assert rec.nsith is None
+        assert rec.nsith == "2"
         assert rec.toad == 0
 
         counselor.processEscrows()  # process escrows to get witness-less event to next step
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is None
-        assert len(counselor.postman.evts) == 2
+        assert len(counselor.postman.evts) == 1
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == hab1.pre
         assert evt["dest"] == hab2.pre
@@ -129,30 +129,28 @@ def test_counselor():
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 1
-        assert saider.qb64b == b'EEXgdTuVXx6xxNc6g3y3Vql2Ocf4DW6quwgfh1iAia1e'
+        assert saider.qb64b == b'EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb'
         key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
         evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON000207_","t":"rot","d":"EEXgdTuVXx6xxNc6g3y3Vql2Ocf4DW6quwgf'
-                              b'h1iAia1e","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"1","p":"EN'
-                              b'uUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","kt":["1/2","1/2"],"k":["DEbwF93'
-                              b'4m5TjdQbC18jSmk2CcPO7xzAemzePy4LKnA_U","DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWc'
-                              b'msPoUuED"],"nt":["1/2","1/2","1/2"],"n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ0'
-                              b'8zMICPhPTw","EGyO8jUZpLIlACoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4","EMUrvGYprwKm77Oj'
-                              b'u22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","br":[],"ba":[],"a":[]}')
+        assert bytes(evt) == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQz'
+                              b'phoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"1","p":"EN'
+                              b'uUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","kt":"2","k":["DEbwF934m5TjdQbC1'
+                              b'8jSmk2CcPO7xzAemzePy4LKnA_U","DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"]'
+                              b',"nt":"2","n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMICPhPTw","EGyO8jUZpLIlA'
+                              b'CoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         serder = coring.Serder(raw=bytes(evt))
-        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1], ondices=[1])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg == (b'{"v":"KERI10JSON000207_","t":"rot","d":"EEXgdTuVXx6xxNc6g3y3Vql2'
-                       b'Ocf4DW6quwgfh1iAia1e","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
+        assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0t'
+                       b'kJfD_rPULkQzphoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"1","p":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EV'
-                       b'AS","kt":["1/2","1/2"],"k":["DEbwF934m5TjdQbC18jSmk2CcPO7xzAemze'
-                       b'Py4LKnA_U","DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"],"nt":'
-                       b'["1/2","1/2","1/2"],"n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMI'
-                       b'CPhPTw","EGyO8jUZpLIlACoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4","EMUrvGYp'
-                       b'rwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","br":[],"ba":[],'
-                       b'"a":[]}-AABABDluTcoHbY-lxoCVAFS7wIyhJ5Wy4I7v1GRtO1vFnA4Q-du9z9LZ'
-                       b'JDRRzWYmO9N4J_kpOFNqgJ5UECmmiz6qP0H')
+                       b'AS","kt":"2","k":["DEbwF934m5TjdQbC18jSmk2CcPO7xzAemzePy4LKnA_U"'
+                       b',"DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"],"nt":"2","n":["'
+                       b'EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMICPhPTw","EGyO8jUZpLIlACoeL'
+                       b'mfUzvE3mnxmcU2m_nyKfSDfpxV4"],"bt":"0","br":[],"ba":[],"a":[]}-A'
+                       b'ABABBIyjNbfOMPWr6Klz_mr3tqwZd-PYHxPwueh9lO68175xlaq9p6bo17f5D064'
+                       b'JN3IvgWjXhB8B4T7y3bvrKodQF')
 
         # Create group rotation from second participant
 
@@ -164,7 +162,7 @@ def test_counselor():
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64]
+        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
         assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
@@ -172,8 +170,8 @@ def test_counselor():
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
         # Second Partial Rotation
-        smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = None  # need to fix
+        smids = [hab1.pre, hab2.pre]
+        rmids = [hab1.pre, hab2.pre, hab3.pre]
         counselor.rotate(ghab=ghab, smids=smids, rmids=rmids, toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
@@ -210,30 +208,30 @@ def test_counselor():
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 2
-        assert saider.qb64b == b'EL8zEo0h9y6ZxAPI9wpJJnJQKgOQlJH69otwD6BhyLH7'
+        assert saider.qb64b == b'EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc'
         key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
         evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON000207_","t":"rot","d":"EL8zEo0h9y6ZxAPI9wpJJnJQKgOQlJH69otw'
-                              b'D6BhyLH7","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"2","p":"EE'
-                              b'XgdTuVXx6xxNc6g3y3Vql2Ocf4DW6quwgfh1iAia1e","kt":["1/2","1/2"],"k":["DK-j3Fs'
-                              b'pSlqvjM0v9nRUbgog54vminulol46VO1dDSAP","DPkCnS9Z62sYgHuZSZH8whM0CiwZFdwLIAX-'
-                              b'pfrbntdi"],"nt":["1/2","1/2","1/2"],"n":["EHMdUV5PuMt37ooqo1nW5DXkYC_lQXjqgX'
-                              b'Y4V7GaWrAJ","EPbvHZm-pvhTH4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EMUrvGYprwKm77Oj'
-                              b'u22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","br":[],"ba":[],"a":[]}')
+        assert bytes(evt) == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8j'
+                              b'ylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"2","p":"EF'
+                              b'WaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb","kt":"2","k":["DK-j3FspSlqvjM0v9'
+                              b'nRUbgog54vminulol46VO1dDSAP","DPkCnS9Z62sYgHuZSZH8whM0CiwZFdwLIAX-pfrbntdi"]'
+                              b',"nt":"2","n":["EHMdUV5PuMt37ooqo1nW5DXkYC_lQXjqgXY4V7GaWrAJ","EPbvHZm-pvhTH'
+                              b'4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJ'
+                              b'Un"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         serder = coring.Serder(raw=bytes(evt))
         sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg == (b'{"v":"KERI10JSON000207_","t":"rot","d":"EL8zEo0h9y6ZxAPI9wpJJnJQ'
-                       b'KgOQlJH69otwD6BhyLH7","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
-                       b'DS1EVAS","s":"2","p":"EEXgdTuVXx6xxNc6g3y3Vql2Ocf4DW6quwgfh1iAia'
-                       b'1e","kt":["1/2","1/2"],"k":["DK-j3FspSlqvjM0v9nRUbgog54vminulol4'
-                       b'6VO1dDSAP","DPkCnS9Z62sYgHuZSZH8whM0CiwZFdwLIAX-pfrbntdi"],"nt":'
-                       b'["1/2","1/2","1/2"],"n":["EHMdUV5PuMt37ooqo1nW5DXkYC_lQXjqgXY4V7'
-                       b'GaWrAJ","EPbvHZm-pvhTH4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EMUrvGYp'
-                       b'rwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJUn"],"bt":"0","br":[],"ba":[],'
-                       b'"a":[]}-AABABDRZxyCUi78dR6qVLVVFvTJPNFt5Xc5uMzmmBKwI3MR5ntqACPce'
-                       b'Svuy8o_rtWT9wLMAm9AkKM52VJF83bMgikE')
+        assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L'
+                       b'-aT9RESXYh8jylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
+                       b'DS1EVAS","s":"2","p":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_E'
+                       b'Vb","kt":"2","k":["DK-j3FspSlqvjM0v9nRUbgog54vminulol46VO1dDSAP"'
+                       b',"DPkCnS9Z62sYgHuZSZH8whM0CiwZFdwLIAX-pfrbntdi"],"nt":"2","n":["'
+                       b'EHMdUV5PuMt37ooqo1nW5DXkYC_lQXjqgXY4V7GaWrAJ","EPbvHZm-pvhTH4KrW'
+                       b'vInrg8gW3KbcYKiGceWFtwDfxmV","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfO'
+                       b'BFPO1IyJUn"],"bt":"0","br":[],"ba":[],"a":[]}-AABABB4LwIPSggvF_E'
+                       b'NzgPjNGb7L6jeFWgVEmy4AtBcK0pPzU6KGNvL2w1EciDE3OIdfeFa0ruuvxOhEAW'
+                       b'ZtrvzYswD')
 
         # Create group rotation from second participant
 
@@ -253,8 +251,8 @@ def test_counselor():
         counselor.postman.evts.clear()  # Clear out postman for next rotation
 
         # Third Partial Rotation with Recovery
-        smids = [hab1.pre, hab2.pre, hab3.pre]
-        rmids = None  # need to fix
+        smids = [hab1.pre, hab3.pre]
+        rmids = smids
         counselor.rotate(ghab=ghab, smids=smids, rmids=rmids, toad=0, cuts=list(), adds=list())
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
@@ -265,10 +263,10 @@ def test_counselor():
         counselor.processEscrows()  # process escrows to get witness-less event to next step
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is None
-        assert len(counselor.postman.evts) == 2
+        assert len(counselor.postman.evts) == 1
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == hab1.pre
-        assert evt["dest"] == hab2.pre
+        assert evt["dest"] == hab3.pre
         assert evt["topic"] == "multisig"
         assert evt["serder"].raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EAgOz6WCuULYu0JKkLIZvFqy8NWEiSgy0jwL'
                                      b'KpVKo3BH","i":"EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa","s":"3","p":"EP'
@@ -291,30 +289,28 @@ def test_counselor():
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 3
-        assert saider.qb64b == b'ECLqqyDAeqATdON4m8AapJc6XvQIuU9A5j1-gnDuzNc5'
+        assert saider.qb64b == b'EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1oxGj_hnXw'
         key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
         evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON000207_","t":"rot","d":"ECLqqyDAeqATdON4m8AapJc6XvQIuU9A5j1-'
-                              b'gnDuzNc5","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"3","p":"EL'
-                              b'8zEo0h9y6ZxAPI9wpJJnJQKgOQlJH69otwD6BhyLH7","kt":["1/2","1/2"],"k":["DE_7Y-c'
-                              b'-xZXLb7TclInn6Q6hRbiYuaTTDqZGmBNjvVXA","DDnDI3TRcmH_qzFOS3waORkqRcoydAWOboZq'
-                              b'0gvermHM"],"nt":["1/2","1/2","1/2"],"n":["ELyh1BXGM7C0jfx3x-k8f1GLx9mIRHzFq3'
-                              b'tiZgc9N5Vm","EPbvHZm-pvhTH4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EH0h1byPWpTfiMUc'
-                              b'nk_nbeS4HEfnS_j0q2TAJAeIkFlu"],"bt":"0","br":[],"ba":[],"a":[]}')
+        assert bytes(evt) == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1o'
+                              b'xGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"3","p":"EA'
+                              b'FmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc","kt":"2","k":["DE_7Y-c-xZXLb7Tcl'
+                              b'Inn6Q6hRbiYuaTTDqZGmBNjvVXA","DDnDI3TRcmH_qzFOS3waORkqRcoydAWOboZq0gvermHM"]'
+                              b',"nt":"2","n":["ELyh1BXGM7C0jfx3x-k8f1GLx9mIRHzFq3tiZgc9N5Vm","EH0h1byPWpTfi'
+                              b'MUcnk_nbeS4HEfnS_j0q2TAJAeIkFlu"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         serder = coring.Serder(raw=bytes(evt))
-        sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[1])
+        sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[1], ondices=[2])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg == (b'{"v":"KERI10JSON000207_","t":"rot","d":"ECLqqyDAeqATdON4m8AapJc6'
-                       b'XvQIuU9A5j1-gnDuzNc5","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
-                       b'DS1EVAS","s":"3","p":"EL8zEo0h9y6ZxAPI9wpJJnJQKgOQlJH69otwD6BhyL'
-                       b'H7","kt":["1/2","1/2"],"k":["DE_7Y-c-xZXLb7TclInn6Q6hRbiYuaTTDqZ'
-                       b'GmBNjvVXA","DDnDI3TRcmH_qzFOS3waORkqRcoydAWOboZq0gvermHM"],"nt":'
-                       b'["1/2","1/2","1/2"],"n":["ELyh1BXGM7C0jfx3x-k8f1GLx9mIRHzFq3tiZg'
-                       b'c9N5Vm","EPbvHZm-pvhTH4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EH0h1byP'
-                       b'WpTfiMUcnk_nbeS4HEfnS_j0q2TAJAeIkFlu"],"bt":"0","br":[],"ba":[],'
-                       b'"a":[]}-AABABDx3BuR3TuosKtRYfMjJgphpxISET6DTB3Iec9JJRewt7_WixffS'
-                       b'ClsyD2RBLiNzt9ud37UNQrI3WDXlXU4EBYG')
+        assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvI'
+                       b'KkEbVRDDVf1oxGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
+                       b'DS1EVAS","s":"3","p":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dE'
+                       b'Gc","kt":"2","k":["DE_7Y-c-xZXLb7TclInn6Q6hRbiYuaTTDqZGmBNjvVXA"'
+                       b',"DDnDI3TRcmH_qzFOS3waORkqRcoydAWOboZq0gvermHM"],"nt":"2","n":["'
+                       b'ELyh1BXGM7C0jfx3x-k8f1GLx9mIRHzFq3tiZgc9N5Vm","EH0h1byPWpTfiMUcn'
+                       b'k_nbeS4HEfnS_j0q2TAJAeIkFlu"],"bt":"0","br":[],"ba":[],"a":[]}-A'
+                       b'AB2AABACB5hx8m8D908jtNsipRU3L-e2SYnR-2jihXLv-v2G_Z7cfJYJZPUfXNl8'
+                       b'qvOQQdD-oyXQaTgU0kuJQbARZ3nWAD')
 
         # Create group rotation from second participant
 
@@ -406,7 +402,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABABAD108k4sWtYRv8jQaRbzX6kDebjdzFNVCh3N9cOAJqXV5IzmKdi60Cr0Eu'
+        assert evt[serd.size:] == (b'-AABBBAD108k4sWtYRv8jQaRbzX6kDebjdzFNVCh3N9cOAJqXV5IzmKdi60Cr0Eu'
                                    b'MaACskw0FCi73V2VX8BgFlxO8VIK')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -415,7 +411,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab3.db, ghab3.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABACD6V2UkAovhY07MrJUNb-ICddDoyLde9i0FWclxfs7jes01YUEihfgbGERF'
+        assert evt[serd.size:] == (b'-AABBCD6V2UkAovhY07MrJUNb-ICddDoyLde9i0FWclxfs7jes01YUEihfgbGERF'
                                    b'dKDR4kSr4WF3AskrZOPvMuXipAgP')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -424,7 +420,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab4.db, ghab4.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABADBCZuZSFWy0tFshGny1pTR47GphDljd0SShmGRpUSpBX_BeHB1tdIObizaA'
+        assert evt[serd.size:] == (b'-AABBDBCZuZSFWy0tFshGny1pTR47GphDljd0SShmGRpUSpBX_BeHB1tdIObizaA'
                                    b'4GMoOcZ2sOWIe6muJPF_RaoKedYE')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -433,7 +429,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab5.db, ghab5.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABAEBsR6_hPId3H8fFG8EfevQVji8MsLAC72MjkkRxJp3h9v1vyFS1hAGGGxno'
+        assert evt[serd.size:] == (b'-AABBEBsR6_hPId3H8fFG8EfevQVji8MsLAC72MjkkRxJp3h9v1vyFS1hAGGGxno'
                                    b'F5xSHOnpBpPwjMJwOCurAa3VrNAD')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -442,7 +438,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab6.db, ghab6.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABAFCi5hK6Ax4aBNsdoUkh7Q_CcSWJfpwkeF68aCO34J3BDN7k483lOxiyj6pl'
+        assert evt[serd.size:] == (b'-AABBFCi5hK6Ax4aBNsdoUkh7Q_CcSWJfpwkeF68aCO34J3BDN7k483lOxiyj6pl'
                                    b'8TQIQ7VJLBkoRscUMi_mls9jbpcD')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -451,7 +447,7 @@ def test_the_seven():
                                   smids=smids, rmids=rmids, **inits)
         evt = grouping.getEscrowedEvent(hab7.db, ghab7.pre, 0)
         serd = coring.Serder(raw=bytearray(evt))
-        assert evt[serd.size:] == (b'-AABAGCtPvRj00vEfT5Po6eH50DWfBWwAcQgvBaJ7LlYT7kQswkl_r-K9Lsxi5tm'
+        assert evt[serd.size:] == (b'-AABBGCtPvRj00vEfT5Po6eH50DWfBWwAcQgvBaJ7LlYT7kQswkl_r-K9Lsxi5tm'
                                    b'Pvsb2xFtcMJkFf-BxamGhFo9OOcD')
         assert serd.raw == raw
         parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)  # parse second signed group inception
@@ -465,12 +461,16 @@ def test_the_seven():
         counselor.postman.evts.clear()
 
         # First Partial Rotation
-        rmids = None  # need to fix
-        counselor.rotate(ghab=ghab, smids=smids, rmids=rmids, toad=0, cuts=list(), adds=list())
+        smids = [hab1.pre, hab2.pre, hab3.pre]
+        rmids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre, hab5.pre, hab6.pre, hab7.pre]  # need to fix
+        counselor.rotate(ghab=ghab, isith='["1/3", "1/3", "1/3"]',
+                         nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]', smids=smids,
+                         rmids=rmids, toad=0, cuts=list(), adds=list())
+
         rec = hby1.db.glwe.get(keys=(ghab.pre,))
         assert rec is not None
         assert rec.smids == smids
-        assert rec.nsith is None
+        assert rec.nsith == '["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]'
         assert rec.toad == 0
 
         counselor.processEscrows()  # process escrows to get witness-less event to next step
@@ -528,15 +528,15 @@ def test_the_seven():
         serder = coring.Serder(raw=bytes(evt))
         sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6Ra'
-                                     b'PQASXvnBn6sKJ78zKM9o499Zaz76j940nBoMT-yb9i8N')
+        assert msg[serder.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6RaPQASXvnBn6sKJ78z'
+                                     b'KM9o499Zaz76j940nBoMT-yb9i8N')
         parsing.Parser().parse(ims=bytearray(msg), kvy=kev1)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
         sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIc'
-                                     b'QxRF4iCqCYNPKM9DNbZbA1WDaQ72enSsR2UWMftX2kYD')
+        assert msg[serder.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIcQxRF4iCqCYNPKM9D'
+                                     b'NbZbA1WDaQ72enSsR2UWMftX2kYD')
 
         parsing.Parser().parse(ims=bytearray(msg), kvy=kev1)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
@@ -545,7 +545,9 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
+        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64,
+                 hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64,
+                 hab7.kever.digers[0].qb64]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
         assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
@@ -609,6 +611,7 @@ def test_the_seven():
                b'","EHsPjPxkY00PW0IG3n834sBYqaLGWat9KKh-7qNSvH5O","EF9BqvXiUmAMpLVtxCQ0m9BD3k'
                b'wlzM6hx-jrI1CAt96R","EOKRgzqsueblcnkIrJhInqlpOwq8BVZCfJ7jBJ88Rt2Q"],"bt":"0"'
                b',"br":[],"ba":[],"a":[]}')
+
         assert bytes(evt) == raw
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
@@ -632,7 +635,10 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
+        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64,
+                 hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64,
+                 hab7.kever.digers[0].qb64]
+
         assert ghab.kever.sn == 2
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
         assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
@@ -652,22 +658,25 @@ def test_the_seven():
         assert kev7.kevers[ghab.pre] is not None
 
         # Create a new counselor with #4
+        smids = [hab4.pre, hab5.pre, hab6.pre]
+        rmids = smids
         counselor4 = grouping.Counselor(hby=hby4)
 
-        counselor4.rotate(ghab=ghab4, smids=smids, rmids=rmids, toad=0, cuts=list(), adds=list())
+        counselor4.rotate(ghab=ghab4, smids=smids, rmids=rmids, isith='["1/3", "1/3", "1/3"]',
+                          nsith='["1/3", "1/3", "1/3"]', toad=0, cuts=list(), adds=list())
         rec = hby4.db.glwe.get(keys=(ghab4.pre,))
         assert rec is not None
         assert rec.smids == smids
-        assert rec.nsith is None
+        assert rec.nsith == '["1/3", "1/3", "1/3"]'
         assert rec.toad == 0
 
         counselor4.processEscrows()  # process escrows to get witness-less event to next step
         rec = hby4.db.glwe.get(keys=(ghab4.pre,))
         assert rec is None
-        assert len(counselor4.postman.evts) == 6
+        assert len(counselor4.postman.evts) == 2
         evt = counselor4.postman.evts.popleft()
         assert evt["src"] == hab4.pre
-        assert evt["dest"] == hab1.pre
+        assert evt["dest"] == hab5.pre
         assert evt["topic"] == "multisig"
         assert evt["serder"].raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EBG71ULs1iZBLHdynKBPy14M_tyO4oIeMcWd'
                                      b'vB6lj5vj","i":"EE2KPMeOSEs9aQqRsrg5yFtzPkWusWIG0cT-D4EBqjmy","s":"1","p":"EE'
@@ -695,36 +704,33 @@ def test_the_seven():
         val = hby4.db.gpse.get(keys=(ghab4.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 3
-        assert saider.qb64b == b'EE2hCv1C4ErAMq4U5TxYx127EQT4L2H4VjcC0lvZYqjU'
+        assert saider.qb64b == b'EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAuLM8BnqxV'
         key = dbing.dgKey(ghab4.pre, saider.qb64b)  # digest key
         evt = hby4.db.getEvt(key=key)
 
-        raw = (b'{"v":"KERI10JSON000310_","t":"rot","d":"EE2hCv1C4ErAMq4U5TxYx127EQT4L2H4VjcC'
-               b'0lvZYqjU","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"3","p":"EH'
+        raw = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
+               b'LM8BnqxV","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"3","p":"EH'
                b'V57zdXq3lB3PZ4mmlOWt4SOOubIKDpcG5sSZh5jayZ","kt":["1/3","1/3","1/3"],"k":["D'
                b'OKBAV-_3Z63w7yGmzu6pZCdUlpnEytbnChUhiTZGLa_","DOKFe0a-q2yyi_Yyh9wxLsSnG9e3nx'
                b'vAXlgMaIFSo0YE","DKq5vZxsl7lCtFkuxSdfRRm-Edzdk_mRnh3xlVESXpck"],"nt":["1/3",'
-               b'"1/3","1/3","1/3","1/3","1/3","1/3"],"n":["EHMdUV5PuMt37ooqo1nW5DXkYC_lQXjqg'
-               b'XY4V7GaWrAJ","EPbvHZm-pvhTH4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EAzDrPNvr1S2IqV'
-               b'u40Tf08O9BT3hKD19pQFGByATE7Xu","EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2'
-               b'","EFl4us5uR0hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW'
-               b'-_1oKw7rvqlDdgha9v","EOKRgzqsueblcnkIrJhInqlpOwq8BVZCfJ7jBJ88Rt2Q"],"bt":"0"'
-               b',"br":[],"ba":[],"a":[]}')
+               b'"1/3","1/3"],"n":["EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2","EFl4us5uR0'
+               b'hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW-_1oKw7rvqlDd'
+               b'gha9v"],"bt":"0","br":[],"ba":[],"a":[]}')
         assert bytes(evt) == raw
 
         # Grab the group ROT event, sign with Hab5 and parse into Kev4
         serder = coring.Serder(raw=bytes(evt))
-        sigers = hab5.mgr.sign(serder.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1])
+        sigers = hab5.mgr.sign(serder.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1], ondices=[4])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABABDJS8Uim5AggXjdFqKVg2OCd1paQmHp-glJeej24YE9-M8jytVx-XZ4LXEQ'
-                                     b'jezq1RyeWeApgUOm95vxktzVxRYE')
+        assert msg[serder.size:] == (b'-AAB2AABAEDSs99oM-KOhJ8q3H8lqGqPE3EvZxCHvCjZFvWHLzhqm91YlcskGqvK'
+                                     b'8DwCg9dj8wRZP54ienzD52EIKvJWWh4J')
         parsing.Parser().parse(ims=bytearray(msg), kvy=kev4)  # parse second signed group inception
 
         # Now sign the group ROT with Hab6 and parse into Kev4.  This should commit the event
-        sigers = hab6.mgr.sign(serder.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2])
+        sigers = hab6.mgr.sign(serder.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2], ondices=[5])
         msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABACA_UZMp4ubo4O2AAe92FigLn1tcxEUQ1_Z33jBGbifBP-KRvPqTsOrx4vbL'
-                                     b'WJNGqCuBFUTotiC40PsurSabAnMJ')
+        assert msg[serder.size:] == (b'-AAB2AACAFBNVTM0Gw4rSd-S5HQ_KpmBfDedi7XNvB24ijMjQaekIfKlcdguPS8p'
+                                     b'ax9ht7EE3SiTj9fSO_3f4SVUfJMPmHIK')
 
         parsing.Parser().parse(ims=bytearray(msg), kvy=kev4)  # parse second signed group inception
         kev4.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
@@ -734,7 +740,7 @@ def test_the_seven():
 
         # Validate successful partial rotation
         nkeys = [hab4.kever.verfers[0].qb64, hab5.kever.verfers[0].qb64, hab6.kever.verfers[0].qb64]
-        ndigs = [hab.kever.digers[0].qb64 for hab in habs]
+        ndigs = [hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64]
         assert ghab4.kever.sn == 3
         assert [verfer.qb64 for verfer in ghab4.kever.verfers] == nkeys
         assert [diger.qb64 for diger in ghab4.kever.digers] == ndigs

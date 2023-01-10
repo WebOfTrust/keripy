@@ -381,7 +381,9 @@ class Registrar(doing.DoDoer):
             pre (str): qb64 identifier prefix of issuing identifier in control of this registry
             conf (dict): configuration information for the registry (noBackers, estOnly)
             smids (list): group signing member ids qb64 in the anchoring event
+                need to contribute current signing key
             rmids (list): group rotating member ids in the anchoring event
+                need to contribute digest of next rotating key
 
         Returns:
             Registry:  created registry
@@ -433,7 +435,9 @@ class Registrar(doing.DoDoer):
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
             smids (list): group signing member ids qb64 in the anchoring event
+                need to contribute current signing key
             rmids (list): group rotating member ids qb64 in the anchoring event
+                need to contribute digest of next rotating key
         """
         registry = self.rgy.regs[regk]
         hab = registry.hab
@@ -481,7 +485,9 @@ class Registrar(doing.DoDoer):
             said (str): qb64 SAID of the credential to issue
             dt (str): iso8601 formatted date string of issuance date
             smids (list): group signing member ids (multisig) in the anchoring event
+                need to contribute digest of current signing key
             rmids (list | None): group rotating member ids (multisig) in the anchoring event
+                need to contribute digest of next rotating key
         """
         registry = self.rgy.regs[regk]
         hab = registry.hab
@@ -735,7 +741,9 @@ class Credentialer(doing.DoDoer):
         Args:
             creder (Creder): Credential object to issue
             smids (list[str] | None): optional group signing member ids for multisig
+                need to contributed current signing key
             rmids (list[str] | None): optional group rotating member ids for multisig
+                need to contribute digest of next rotating key
         """
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]

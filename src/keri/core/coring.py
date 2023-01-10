@@ -4952,20 +4952,6 @@ class Serder(Sadder):
 
         return [Diger(qb64=dig) for dig in digs]
 
-    #@property
-    #def nexter(self):
-        #"""
-        #Returns list of Diger instances as converted from .ked['n'].
-        #One for each key.
-        #nexter property getter
-        #"""
-        #if "n" in self.ked:  # establishment event
-            #digs = self.ked["n"]
-        #else:  # non-establishment event
-            #digs = []
-
-        #return Nexter(digs=digs)
-
     @property
     def werfers(self):
         """
@@ -5015,6 +5001,7 @@ class Serder(Sadder):
         """
         return (self.sner.num)
 
+
     @property
     def fner(self):
         """
@@ -5044,6 +5031,7 @@ class Serder(Sadder):
         """
         return self.ked["i"]
 
+
     @property
     def preb(self):
         """
@@ -5052,10 +5040,12 @@ class Serder(Sadder):
         """
         return self.pre.encode("utf-8")
 
+
     @property
     def est(self):  # establishative
         """ Returns True if Serder represents an establishment event """
         return self.ked["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
 
     def pretty(self, *, size=1024):
         """
@@ -5420,7 +5410,9 @@ class Tholder:
         threshold, False otherwise.
 
         Parameters:
-            indices is list of indices (offsets into key list) of verified signatures
+            indices is list of non-negative indices (offsets into key list)
+                of verified signatures. the indices may be in any order, they
+                are normalized herein
         """
         return (self._satisfy(indices=indices))
 
@@ -5448,7 +5440,9 @@ class Tholder:
 
 
         Parameters:
-            indices is list of indices (offsets into key list) of verified signatures
+            indices is list of non-negative indices (offsets into key list)
+                of verified signatures. the indices may be in any order, they
+                are normalized herein
 
         """
         try:
@@ -5478,6 +5472,56 @@ class Tholder:
 
         return False
 
+
+    #@staticmethod
+    #def exposeds(digers, sigers):
+        #"""Returns list of ondices (indices) into digers (key digests) as
+        #exposed by sigers. Uses dual index feature of siger. Assumes that each
+        #siger.verfer is from the correct key given by siger.index.
+        #Assumes that digers comes from the list of prior next digests.
+
+        #A key given by siger.verfer (at siger.index in the current key list)
+        #may expose a prior next key hidden by the diger at siger.ondex in digers.
+
+        #Each returned ondex must be properly exposed by a siger in sigers
+        #such that the siger's indexed key given by siger.verfer matches the
+        #siger's ondexed digest from digers.
+
+        #The ondexed digest's code is used to compute the digest of the corresponding
+        #indexed key verfer to verify that they match. This supports crypto agility
+        #for different digest codes, i.e. all digests in digers do not have to
+        #use the same algorithm.
+
+        #Only ondices from properly matching key and digest are returned.
+
+        #Used to extract the indices from the list of prior next digests (digers)
+        #exposed by the signatures (sigers) on a rotation event of the newly
+        #current keys given by each .verfer at .index from sigers. Only checks
+        #keys and digests that correspond to provided signatures not all keys and
+        #digests defined by the rotation event.
+
+        #Parameters:
+            #digers (list): of Diger instance prior next digests
+            #sigers (list): of Siger instances  of indexed signature with .verfer
+        #"""
+        #odxs = []
+        #for siger in sigers:
+            #try:
+                #diger = digers[siger.ondex]
+            #except TypeError as ex:  # ondex may be None
+                #continue
+            #except IndexError as ex:
+                #raise ValidationError(f'Invalid ondex={siger.ondex} '
+                                      #f'to expose digest.') from ex
+
+            #kdig = Diger(ser=siger.verfer.qb64b, code=diger.code).qb64
+            #if kdig == diger.qb64:
+                #odxs.append(siger.ondex)
+
+        #return odxs
+
+
+
     #def satisfies(self, tholder, indices, digers=None,  digs=None):
         #"""Given prior next digest list in .digers the provided tholder,
         #and indices with either provided digers or digs together constitute a
@@ -5503,76 +5547,76 @@ class Tholder:
 
 
 
-    @staticmethod
-    def _digest(keys):
-        """
-        Returns digs of keys using default digest Blake3
+    #@staticmethod
+    #def _digest(keys):
+        #"""
+        #Returns digs of keys using default digest Blake3
 
-        Parameters:
-            keys (list): public keys qb64 or qb64b
-        """
-        digs = [Diger(ser=key.encode("utf-8")
-                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+        #Parameters:
+            #keys (list): public keys qb64 or qb64b
+        #"""
+        #digs = [Diger(ser=key.encode("utf-8")
+                      #if hasattr(key, 'encode') else key).qb64 for key in keys]
 
-        return digs
+        #return digs
 
-    @staticmethod
-    def includes(keys, digs):
-        """
-        Returns True if list of Blake3 digests of keys are included as an ordered
-        (potentially non-contiguous) subset  of digs.
-        Each dugest of an element in the provided list keys must appear
-        in digs in the same order but not all elements in digs must appear as
-        a digest of of an element of keys, i.e returns True if the list of
-        digests of keys is an ordered subset of digs
+    #@staticmethod
+    #def includes(keys, digs):
+        #"""
+        #Returns True if list of Blake3 digests of keys are included as an ordered
+        #(potentially non-contiguous) subset  of digs.
+        #Each dugest of an element in the provided list keys must appear
+        #in digs in the same order but not all elements in digs must appear as
+        #a digest of of an element of keys, i.e returns True if the list of
+        #digests of keys is an ordered subset of digs
 
-        Parameters:
-            keys (list): public keys qb64
-            digs (list): digests qb64  (prior next digs)
-        """
-        kdigs = [Diger(ser=key.encode("utf-8")
-                      if hasattr(key, 'encode') else key).qb64 for key in keys]
+        #Parameters:
+            #keys (list): public keys qb64
+            #digs (list): digests qb64  (prior next digs)
+        #"""
+        #kdigs = [Diger(ser=key.encode("utf-8")
+                      #if hasattr(key, 'encode') else key).qb64 for key in keys]
 
-        if len(kdigs) == len(digs):
-            return kdigs == digs
+        #if len(kdigs) == len(digs):
+            #return kdigs == digs
 
-        elif len(kdigs) < len(digs):
-            pdigs = list(digs)  # make copy
-            finds = []
-            for kdig in kdigs:
-                while pdigs:
-                    pdig = pdigs.pop(0)
-                    if kdig == pdig:
-                        finds.append(kdig)
-                        break
+        #elif len(kdigs) < len(digs):
+            #pdigs = list(digs)  # make copy
+            #finds = []
+            #for kdig in kdigs:
+                #while pdigs:
+                    #pdig = pdigs.pop(0)
+                    #if kdig == pdig:
+                        #finds.append(kdig)
+                        #break
 
-                if not pdigs:
-                    break
+                #if not pdigs:
+                    #break
 
-            return kdigs == finds
+            #return kdigs == finds
 
-        else:
-            return False
+        #else:
+            #return False
 
-    @staticmethod
-    def matches(sigers, digs):
-        """Returns list of indices from list of sigers for each matching
-        Blake3 digest of each siger.verfer qb64 public key to an element of digs
+    #@staticmethod
+    #def matches(sigers, digs):
+        #"""Returns list of indices from list of sigers for each matching
+        #Blake3 digest of each siger.verfer qb64 public key to an element of digs
 
-        Parameters:
-            sigers (list): of indexed signatures
-            digs (list): digests qb64  (prior next digs)
-        """
-        idxs = []
-        for sig in sigers:
-            idig = Diger(ser=sig.verfer.qb64b).qb64  # default Blake3
-            try:
-                idxs.append(digs.index(idig))
-            except ValueError as ex:
-                raise ValidationError(f'indices into verfer unable to locate "'
-                                      f'"{idig} in {digs}') from ex
+        #Parameters:
+            #sigers (list): of indexed signatures
+            #digs (list): digests qb64  (prior next digs)
+        #"""
+        #idxs = []
+        #for siger in sigers:
+            #idig = Diger(ser=siger.verfer.qb64b).qb64  # default Blake3
+            #try:
+                #idxs.append(digs.index(idig))
+            #except ValueError as ex:
+                #raise ValidationError(f'indices into verfer unable to locate "'
+                                      #f'"{idig} in {digs}') from ex
 
-        return idxs
+        #return idxs
 
 
 class Dicter:
