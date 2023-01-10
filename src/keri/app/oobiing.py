@@ -250,14 +250,14 @@ class OobiResource(doing.DoDoer):
             rep.text = f"Unknown identifier {alias}"
             return
 
-        if hab.mhab is None:
+        if not hab.group:
             rep.status = falcon.HTTP_400
             rep.text = f"Identifer for {alias} is not a group hab, not supported"
             return
 
         oobis = body["oobis"]
         both = list(set(hab.smids + (hab.rmids or [])))
-        for mid in both: #hab.smids
+        for mid in both:  # hab.smids
             if mid == hab.mhab.pre:
                 continue
 

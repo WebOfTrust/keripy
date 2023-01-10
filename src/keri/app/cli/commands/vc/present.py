@@ -98,7 +98,7 @@ class PresentDoer(doing.DoDoer):
             credentialing.sendCredential(self.hby, hab=self.hab, reger=self.rgy.reger, postman=self.postman,
                                          creder=creder, recp=recp)
 
-        if self.hab.mhab:
+        if self.hab.group:
             senderHab = self.hab.mhab
         else:
             senderHab = self.hab

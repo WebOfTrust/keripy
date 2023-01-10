@@ -85,8 +85,10 @@ class Boatswain(doing.DoDoer):
                 srdr = coring.Serder(raw=evt)
                 del evt[:srdr.size]
 
-                if hab.mhab:
+                smids = []
+                if hab.group:
                     phab = hab.mhab
+                    smids = hab.smids
                 elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
                     phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
                     if phab.kever.wits:
@@ -109,8 +111,7 @@ class Boatswain(doing.DoDoer):
                     phab = self.hby.habByName(f"{alias}-proxy")
 
                 # Send exn message for notification purposes
-                # ToDo: NRR should this be fixed to include rmids as parameter?
-                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=hab.smids)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=smids)
                 # exn of /oobis of all multisig participants to rootgar
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)

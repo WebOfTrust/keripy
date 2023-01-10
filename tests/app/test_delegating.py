@@ -11,7 +11,6 @@ from keri import kering
 from keri.app import habbing, delegating, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
 from keri.db import dbing
-from keri.end import ending
 from keri.peer import exchanging
 
 

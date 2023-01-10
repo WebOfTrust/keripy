@@ -40,7 +40,7 @@ def printIdentifier(hby, pre, label="Identifier"):
                 print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
             print()
 
-        if hab.mhab:
+        if hab.group:
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:
@@ -60,7 +60,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("{}: {}".format(label, hab.pre))
         print("Seq No:\t{}".format(0))
 
-        if hab.mhab:
+        if hab.group:
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:

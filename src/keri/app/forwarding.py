@@ -127,7 +127,7 @@ class Postman(doing.DoDoer):
         ser = coring.Serder(raw=icp)
         del icp[:ser.size]
 
-        sender = hab.mhab.pre if hab.mhab is not None else hab.pre
+        sender = hab.mhab.pre if hab.group is not None else hab.pre
         self.send(src=sender, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:

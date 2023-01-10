@@ -89,7 +89,7 @@ class RequestDoer(doing.DoDoer):
         del evt[:srdr.size]
         delpre = hab.kever.delegator  # get the delegator identifier
 
-        if hab.mhab:
+        if hab.group:
             phab = hab.mhab
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
