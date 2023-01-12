@@ -805,7 +805,7 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            if self.hab.mhab:
+            if self.hab.group:
                 msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)

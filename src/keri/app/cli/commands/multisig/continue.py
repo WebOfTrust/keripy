@@ -62,7 +62,7 @@ class ContinueDoer(doing.DoDoer):
             raise ValueError(f"no escrowed events for {self.alias} ({hab.pre})")
 
         (seqner, saider) = esc[0]
-        src = hab.mhab.pre if hab.mhab else hab.pre
+        src = hab.mhab.pre if hab.group else hab.pre
         anchor = dict(i=hab.pre, s=seqner.snh, d=saider.qb64)
         self.witq.query(src=src, pre=hab.kever.delegator, anchor=anchor)
 

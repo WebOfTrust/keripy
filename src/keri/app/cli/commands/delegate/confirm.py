@@ -118,7 +118,7 @@ class ConfirmDoer(doing.DoDoer):
                     if not approve:
                         continue
 
-                    if hab.mhab:
+                    if hab.group:
                         aids = hab.smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)

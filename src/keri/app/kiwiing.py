@@ -235,7 +235,7 @@ class IdentifierEnd(doing.DoDoer):
             prefix=hab.pre,
         )
 
-        if hab.mhab:
+        if hab.group:
             data["group"] = dict(
                 pid=hab.mhab.pre,
                 aids=hab.smids,
@@ -690,7 +690,7 @@ class IdentifierEnd(doing.DoDoer):
             pre = cue["pre"]
             hab = self.hby.habs[pre]
 
-            if hab.mhab:  # Skip if group, they are handled elsewhere
+            if hab.group:  # Skip if group, they are handled elsewhere
                 yield self.tock
                 continue
 
@@ -809,7 +809,7 @@ class KeyStateEnd:
         evts = []
         if pre in self.hby.habs:
             hab = self.hby.habs[pre]
-            if hab.mhab:
+            if hab.group:
                 evts = self.counselor.pendingEvents(pre)
         res["pending"] = evts
 
@@ -2797,7 +2797,7 @@ class ChallengeEnd(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.mhab if hab.mhab else hab
+        senderHab = hab.mhab if hab.group else hab
         self.postman.send(src=senderHab.pre, dest=recpt, topic="challenge", serder=exn, attachment=ims)
 
         rep.status = falcon.HTTP_202

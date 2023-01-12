@@ -99,7 +99,7 @@ class ReadDoer(doing.DoDoer):
         print()
 
         q = dict(pre=hab.pre, topics=topics)
-        if hab.mhab:
+        if hab.group:
             msg = hab.mhab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
         else:
             msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
