@@ -3785,25 +3785,19 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified reply.")
 
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+        diger = coring.Diger(qb64=ked["d"])
 
         # Only accept key state if for last seen version of event at sn
-        if ldig is None:  # escrow because event does not yet exist in database
-            if self.escrowKeyStateNotice(pre=pre, aid=aid, serder=serder, saider=saider, dater=dater,
-                                         cigars=cigars, tsgs=tsgs):
-                self.cues.append(dict(kin="query", q=dict(pre=pre)))
+        if ldig is not None:  # escrow because event does not yet exist in database
+            ldig = bytes(ldig)
+            # retrieve last event itself of signer given sdig
+            sraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
 
-            raise kering.OutOfOrderKeyStateError("Out of order key state={}.".format(ked))
-
-        diger = coring.Diger(qb64=ked["d"])
-        ldig = bytes(ldig)
-        # retrieve last event itself of signer given sdig
-        sraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
-        # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = Serder(raw=bytes(sraw))
-
-        if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
-            raise ValidationError("Mismatch keystate at sn = {} with db."
-                                  "".format(ked["s"]))
+            if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
+                raise ValidationError("Mismatch keystate at sn = {} with db."
+                                      "".format(ked["s"]))
 
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
@@ -4036,7 +4030,16 @@ class Kevery:
                 raise QueryNotFoundError("Query not found error={}.".format(ked))
 
             kever = self.kevers[pre]
-            ksn = kever.state()
+
+            # get list of witness signatures to ensure we are presenting a fully witnessed event
+            wigs = self.db.getWigs(dgKey(pre, kever.serder.saidb))  # list of wigs
+            wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+
+            if len(wigers) < kever.toader.num:
+                self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
+                raise QueryNotFoundError("Query not found error={}.".format(ked))
+
+            ksn = reply(route=f"/ksn/{src}", data=kever.state().ked)
             self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=ksn, dest=source.qb64))
 
         elif route == "mbx":

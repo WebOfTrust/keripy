@@ -328,7 +328,7 @@ class Respondant(doing.DoDoer):
                         pre = match.pop()
                         hab = self.hby.habs[pre]
                         msg.extend(hab.endorse(serder))
-                        self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=msg)
 
                     else:
                         hab = self.hby.habs[src]

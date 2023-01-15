@@ -925,9 +925,13 @@ class HttpEnd:
             rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
         elif ilk in (Ilks.qry,):
-            rep.set_header('Content-Type', "text/event-stream")
-            rep.status = falcon.HTTP_200
-            rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
+            if serder.ked["r"] in ("mbx",):
+                rep.set_header('Content-Type', "text/event-stream")
+                rep.status = falcon.HTTP_200
+                rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
+            else:
+                rep.set_header('Content-Type', "application/json")
+                rep.status = falcon.HTTP_204
 
 
 class QryRpyMailboxIterable:

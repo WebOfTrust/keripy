@@ -2221,3 +2221,25 @@ class GroupHab(BaseHab):
 
         """
         raise ValueError("Attempt to witness by group hab ={self.pre}.")
+
+    def query(self, pre, src, query=None, **kwa):
+        """ Create, sign and return a `qry` message against the attester for the prefix
+
+        Parameters:
+            pre (str): qb64 identifier prefix being queried for
+            src (str): qb64 identifier prefix of attester being queried
+            query (dict): addition query modifiers to include in `q`
+            **kwa (dict): keyword arguments passed to eventing.query
+
+        Returns:
+            bytearray: signed query event
+
+        """
+
+        query = query if query is not None else dict()
+        query['i'] = pre
+        query["src"] = src
+        serder = eventing.query(query=query, **kwa)
+
+        return self.mhab.endorse(serder, last=True)
+
