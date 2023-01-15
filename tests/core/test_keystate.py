@@ -6,9 +6,8 @@ Test key state notification reply messages
 routes: /ksn
 
 """
-from keri.app import keeping, habbing
+from keri.app import habbing
 from keri.core import coring, eventing, parsing, routing
-from keri.db import basing
 
 
 def test_keystate(mockHelpingNowUTC):
@@ -106,8 +105,8 @@ def test_keystate(mockHelpingNowUTC):
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
-        assert cue["kin"] == "query"
-        assert cue["q"]["pre"] == bobHab.pre
+        assert cue["kin"] == "keyStateSaved"
+        assert cue["serder"].pre == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
@@ -176,8 +175,8 @@ def test_keystate(mockHelpingNowUTC):
 
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
-        assert cue["kin"] == "query"
-        assert cue["q"]["pre"] == bobHab.pre
+        assert cue["kin"] == "keyStateSaved"
+        assert cue["serder"].pre == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
@@ -297,5 +296,6 @@ def test_keystate(mockHelpingNowUTC):
 
     """End Test"""
 
+
 if __name__ == "__main__":
-    pass
+    test_keystate()

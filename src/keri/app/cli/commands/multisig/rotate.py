@@ -25,7 +25,11 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
+parser.add_argument("--smids", "-s", help="List of other participant qb64 identifiers with signing authority in "
+                                          "rotation event",
+                    action="append", required=False, default=None)
+parser.add_argument("--rmids", help="List of other participant qb64 identifiers with rotation authority in rotation "
+                                    "event",
                     action="append", required=False, default=None)
 
 rotating.addRotationArgs(parser)
@@ -46,8 +50,8 @@ def rotateGroupIdentifier(args):
 
     data = rotating.loadData(args)
 
-    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, aids=args.aids, bran=args.bran,
-                                  wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
+    rotDoer = GroupMultisigRotate(name=args.name, base=args.base, alias=args.alias, smids=args.smids, rmids=args.rmids,
+                                  bran=args.bran, wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                                   isith=args.isith, nsith=args.nsith, toad=args.toad, data=data)
 
     doers = [rotDoer]
@@ -62,20 +66,21 @@ class GroupMultisigRotate(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, alias, aids=None, isith=None, nsith=None,
+    def __init__(self, name, base, bran, alias, smids=None, rmids=None, isith=None, nsith=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
 
         self.alias = alias
         self.isith = isith
         self.nsith = nsith
         self.toad = toad
-        self.aids = aids
+        self.smids = smids
+        self.rmids = rmids
         self.data = data
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
-
+        
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
 
@@ -108,6 +113,12 @@ class GroupMultisigRotate(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
 
+        if self.smids is None:
+            self.smids = ghab.smids
+            
+        if self.rmids is None:
+            self.rmids = self.smids
+
         if self.wits:
             if self.adds or self.cuts:
                 raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
@@ -118,10 +129,8 @@ class GroupMultisigRotate(doing.DoDoer):
             self.adds = set(self.wits) - set(ewits)
 
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        rmids = None  # need to fix
-        nsith = None
-        self.counselor.rotate(ghab=ghab, smids=self.aids, rmids=rmids,
-                              isith=self.isith, nsith=nsith, toad=self.toad,
+        self.counselor.rotate(ghab=ghab, smids=self.smids, rmids=self.rmids,
+                              isith=self.isith, nsith=self.nsith, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds),
                               data=self.data)
 
