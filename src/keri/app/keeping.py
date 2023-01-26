@@ -1217,7 +1217,8 @@ class Manager:
         return (verfers, digers)
 
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None, ondices=None):
+    def sign(self, ser, pubs=None, verfers=None, indexed=True,
+             indices=None, ondices=None, pre=None, path=None):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars with
         .verfer assigned.
@@ -1273,6 +1274,25 @@ class Manager:
                 of the entry in ondices MUST be None.
                 When  ondices is not provided then all sigers .ondex is None.
 
+            pre (str | None): identity prefix (aid) of signer. Used for HDK salty
+                algo key lookup or re-creation. Look up key path state and algo
+                from local keystore .ks
+
+            path (tuple | None): HDX randy algo signing key path tuple part of form
+                (ridx, kidx) where ridx is the optional rotation index and kidx
+                is the required zeroth key index of the key list. The fully HDK
+                path is formed by looking up the stem and pidx using the pre
+                and when provided the ridx and then computing the pidxes for each
+                signing key. When indices is provided then the kidxes are computed
+                by adding the index offset to the zeroth kidx. When indices is not
+                provided then the kidxes are assumed to be all the keys in the key
+                list computed from the local keystore by subtracting the kidx
+                of the zeroth element of the following key list. When path is not
+                provided then the default is all the kidxs of the key list from
+                the current .new key info.
+
+
+
 
         if neither pubs or verfers provided then returns empty list of signatures
         If pubs then ignores verfers otherwise uses verferss
@@ -1286,7 +1306,22 @@ class Manager:
         signers = []
 
         if pubs is None and verfers is None:
-            raise ValueError("pubs or verfers required")
+            if pre is None:
+                raise ValueError("pubs or verfers or pre required")
+
+            # logic here to generate paths
+            # use pre to read .ks.prms and .ks.sits to get algo stem and pidx and
+            # sits .old an .new for pre
+            if path is None:  # use provided path tuple for .new or .nxt
+                pass
+                # defualt path is .new.ridx and .new.kidx
+
+            # compute paths
+            # if indices provided use indices to compute kidxes
+            # otherwise default is all the keys from the .new key list so use
+            # .nxt to comput number of keys to generate kidxes for paths
+            paths = []
+            # use paths to generate signers
 
         if pubs:
             for pub in pubs:
