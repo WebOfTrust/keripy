@@ -1,8 +1,3 @@
-import json
-
-from keri import kering
-
-
 def addRotationArgs(parser):
     parser.add_argument('--isith', '-i', help='signing threshold for the rotation event', default=None,
                         required=False)
@@ -19,27 +14,6 @@ def addRotationArgs(parser):
     parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=False)
 
 
-def loadData(args):
-    """ Load data flag from command line namespace
 
-    Parameters:
-        args (Namespace): argparse command line namespace
 
-    """
-    if args.data is not None:
-        try:
-            if args.data.startswith("@"):
-                f = open(args.data[1:], "r")
-                data = json.load(f)
-            else:
-                data = json.loads(args.data)
-        except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
 
-        if not isinstance(data, list):
-            data = [data]
-
-    else:
-        data = None
-
-    return data

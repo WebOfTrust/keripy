@@ -247,3 +247,48 @@ def test_standalone_kli_commands(helpers, capsys):
                           '  "broken-chain-escrow": [],\n'
                           '  "missing-schema-escrow": []\n'
                           '}\n')
+
+
+def test_incept_and_rotate_opts(helpers, capsys):
+    """
+    Tests using the command line arguments for incept and the file argument for rotate
+    """
+    helpers.remove_test_dirs("test-opts")
+    assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
+
+    parser = multicommand.create_parser(commands)
+    args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", habbing.SALT])
+    assert args.handler is not None
+    doers = args.handler(args)
+
+    directing.runController(doers=doers)
+
+    with existing.existingHby("test-opts") as hby:
+        assert os.path.isdir(hby.db.path) is True
+
+    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable", "True"])
+    assert args.handler is not None
+    # Attempt to incept without required arg isith
+    with pytest.raises(ValueError):
+        args.handler(args)
+
+    # Incept with command line arguments
+    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable", "True",
+                              "--isith", "1", "--icount", "1", "--nsith", "1", "--ncount", "1", "--toad", "0"])
+    assert args.handler is not None
+    doers = args.handler(args)
+
+    directing.runController(doers=doers)
+
+    # Rotate with file
+    args = parser.parse_args(["rotate", "--name", "test-opts", "--alias", "trans-args",
+                              "--file",
+                              os.path.join(TEST_DIR, "rotate-sample.json")])
+    assert args.handler is not None
+    doers = args.handler(args)
+
+    directing.runController(doers=doers)
+
+
+
+
