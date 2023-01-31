@@ -2512,7 +2512,7 @@ def test_counter():
     assert counter.qb2 == qscb2
     assert not ims
 
-    #test protocol genus with CESR version
+    # test protocol genus with CESR version
     # test with big codes index=1024
     verint = 0
     version = intToB64(verint, l=3)

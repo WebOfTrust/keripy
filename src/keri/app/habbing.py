@@ -402,7 +402,7 @@ class Habery:
 
         groups = []
         for name, habord in self.db.habs.getItemIter():
-            name, = name  # detupleize the database key name
+            name = ".".join(name)  # detupleize the database key name
             pre = habord.hid
 
             # create Hab instance and inject dependencies

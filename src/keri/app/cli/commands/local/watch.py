@@ -101,7 +101,12 @@ class WatchDoer(doing.DoDoer):
                 msg = hab.query(pre=hab.pre, src=wit, route="ksn")
                 witer.msgs.append(bytearray(msg))
 
+                start = time.perf_counter()
                 while not witer.idle:
+                    end = time.perf_counter()
+                    if end - start > 10:
+                        break
+
                     yield self.tock
 
                 self.remove([witer])
