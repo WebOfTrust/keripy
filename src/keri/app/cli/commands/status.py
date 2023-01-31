@@ -61,7 +61,7 @@ def status(tymth, tock=0.0, **opts):
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
                     srdr = coring.Serder(raw=msg)
-                    print(srdr.pretty())
+                    print(srdr.pretty(size=10000))
                     print()
 
     except ConfigurationError as e:

@@ -28,6 +28,9 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument("--oobi", "-o", help="out-of-band introduciton to load", required=True)
 parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolved from out-of-band introduciton",
                     required=False, default=None)
+parser.add_argument('--force', action="store_true", required=False,
+                    help='True means to resolve OOBI even if it has already been previously resolved')
+
 
 # Parameters for Manager access
 # passcode => bran
@@ -47,8 +50,9 @@ def resolve(args):
     bran = args.bran
     oobi = args.oobi
     oobiAlias = args.oobiAlias
+    force = args.force
 
-    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, oobiAlias=oobiAlias)
+    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, oobiAlias=oobiAlias, force=force)
 
     doers = [icpDoer]
     return doers
@@ -57,10 +61,11 @@ def resolve(args):
 class OobiDoer(doing.DoDoer):
     """ DoDoer for loading oobis and waiting for the results """
 
-    def __init__(self, name, oobi, oobiAlias, bran=None, base=None):
+    def __init__(self, name, oobi, oobiAlias, force=False, bran=None, base=None):
 
         self.processed = 0
         self.oobi = oobi
+        self.force = force
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
@@ -91,6 +96,9 @@ class OobiDoer(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
+
+        if self.force:  # if --force specified, remove previous record of OOBI resolution
+            self.hby.db.roobi.rem(keys=(self.oobi,))
 
         self.extend(self.obi.doers)
         self.extend(self.authn.doers)
