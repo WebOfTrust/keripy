@@ -157,6 +157,10 @@ class HabitatRecord:  # baser.habs
     mid: str | None = None  # group member identifier qb64 when hid is group
     smids: list | None = None  # group signing member ids when hid is group
     rmids: list | None = None  # group rotating member ids when hid is group
+    ipath: str | None = None
+    npath: str | None = None
+    tier: str | None = None
+    temp: bool = False
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 

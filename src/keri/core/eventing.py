@@ -586,7 +586,7 @@ def incept(keys,
            version=Version,
            kind=Serials.json,
            code=None,
-           intive = False,
+           intive=False,
            delpre=None,
            ):
     """

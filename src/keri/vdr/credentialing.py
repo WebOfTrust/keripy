@@ -761,7 +761,7 @@ class Credentialer(doing.DoDoer):
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(oset(smids + (rmids or [])))
-            #others = list(smids)
+
             others.remove(hab.mhab.pre)
 
             print(f"Sending signed credential to {others} other participants")

@@ -566,7 +566,7 @@ class Counselor(doing.DoDoer):
 
             rot = ghab.rotate(isith=isith, nsith=nsith,
                               toad=grec.toad, cuts=grec.cuts, adds=grec.adds, data=grec.data,
-                              merfers=merfers, migers=migers)
+                              verfers=merfers, digers=migers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]  # strip signatures from
 
@@ -587,65 +587,6 @@ class Counselor(doing.DoDoer):
                                              serder.saider))
 
 
-
-
-    def oldProcessPartialAidEscrow(self):
-        """
-        See new
-
-        """
-        # ignore saider because it is not relevant yet ???
-        # wait until the keys state relative to the vector clock element for each
-        # member of the group shows that they all have rotated their local member
-        # hab before calling a rotate on this local member's instance of the group
-        # hab
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial escrow
-            ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
-            gkever = ghab.kever  # group hab's Kever instance key state
-
-            merfers = []  # to be newly current verfers of group signing keys
-            migers = list(gkever.digers)  # to be newly next digers of rotation keys
-            indices = []  # local member's signers who have already rotated
-
-            for aid in rec.smids:
-                idx = ghab.smids.index(aid)  # find index into smids for aid
-                pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
-                    indices.append(idx)
-                    merfers.append(pkever.verfers[0])
-                    migers[idx] = pkever.digers[0]
-
-            if not gkever.ntholder.satisfy(indices):
-                continue
-
-            # if weighted and new weights not provided then use prior weight
-            if gkever.tholder.weighted and rec.isith is None:
-                isith = [gkever.ntholder.sith[idx] for idx in indices]
-            else:
-                isith = rec.isith  # use provided new isith
-
-            # use new nsith when provided otherwise default to prior nsith
-            nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
-
-
-            rot = ghab.rotate(isith=isith, nsith=nsith,
-                              toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              merfers=merfers, migers=migers)
-            serder = coring.Serder(raw=rot)
-            del rot[:serder.size]
-
-            others = list(oset(rec.smids + (rec.rmids or []))) # list(rec.smids)
-            others.remove(ghab.mhab.pre)
-            print(f"Sending rotation event to {len(others)} other participants")
-            for recpt in others:
-                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig",
-                                  serder=serder, attachment=rot)
-
-            self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
-            print("Waiting for other signatures...")
-            return self.hby.db.gpse.add(keys=(ghab.pre,),
-                                        val=(coring.Seqner(sn=serder.sn),
-                                             serder.saider))
 
     def processPartialSignedEscrow(self):
         """

@@ -534,6 +534,17 @@ class Habery:
 
         return hab
 
+    def makeSignifyHab(self, name, **kwa):
+        # create group Hab in this Habery
+        hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                              name=name, temp=self.temp)
+
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        self.habs[hab.pre] = hab
+
+        return hab
+
     def extractMerfersMigers(self, smids, rmids=None):
         """
         Extract the public key verfer and next digest diger from the current
@@ -686,7 +697,7 @@ class Signator:
             self.db.hbys.pin(name, self.pre)
         else:
             self.pre = spre
-            self._hab = Hab(name=name, db=db,  pre=self.pre, **kwa)
+            self._hab = Hab(name=name, db=db, pre=self.pre, **kwa)
 
     def sign(self, ser):
         """ Sign the data in ser with the Signator's private key using the Manager
@@ -853,7 +864,35 @@ class BaseHab:
         self.inited = False
         self.delpre = None  # assigned laster if delegated
 
-    def make(self, DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits):
+    def make(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith, digers, toad, wits):
+        """
+        Creates Serder of inception event for provided parameters.
+        Assumes injected dependencies were already setup.
+
+        Parameters:
+            isith (int | str | list | None): incepting signing threshold as
+                    int, str hex, or list weighted if any, otherwise compute
+                    default from verfers
+            code (str): prefix derivation code default Blake3
+            nsith (int, str, list | None ): next signing threshold as int,
+                str hex or list weighted if any, otherwise compute default from
+                digers
+            verfers (list[Verfer]): Verfer instances for initial signing keys
+            digers  (list[Diger] | None) Diger instances for next key digests
+            toad (int |str| None): int or str hex of witness threshold if
+                specified else compute default based on number of wits (backers)
+            wits (list | None): qb64 prefixes of witnesses if any
+            delpre (str | None): qb64 of delegator identifier prefix if any
+            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+                which means only establishment events allowed in KEL for this Hab
+                False (default) means allows non-est events and no trait is added.
+            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+                    means do not allow delegated identifiers from this identifier
+                    False (default) means do allow and no trait is added.
+
+            data (list | None): seal dicts
+
+        """
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
         if isith is None:  # compute default
@@ -877,7 +916,8 @@ class BaseHab:
                                       ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=wits,
-                                      cnfg=cnfg, )
+                                      cnfg=cnfg,
+                                      code=code)
         else:
             serder = eventing.incept(keys=keys,
                                      isith=cst,
@@ -1002,30 +1042,25 @@ class BaseHab:
         """Alias for .make """
         self.make(**kwa)
 
-    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
-               data=None, merfers=None, migers=None):
+    def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None, toad=None, cuts=None, adds=None,
+               data=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
 
         Parameters:
+            verfers (list | None): Verfer instances of public keys qb64
+            digers (list | None): Diger instances of public next key digests qb64
             isith (int |str | None): current signing threshold as int or str hex
                                      or list of str weights
                                      default is prior next sith
             nsith (int |str | None): next, next signing threshold as int
                                      or str hex or list of str weights
                                      default is based on isith when None
-            ncount (int | None): next number of signing keys
-                                 default is len of prior next digs
             toad (int | str | None): hex of witness threshold after cuts and adds
             cuts (list | None): of qb64 pre of witnesses to be removed from witness list
             adds (list | None): of qb64 pre of witnesses to be added to witness list
             data (list | None): of dicts of committed data such as seals
-            merfers (list | None): group member Verfer instances of public keys qb64,
-                one collected from each multisig group member
-            migers (list | None): group member Diger instances of public
-                next key digests qb64
-                one collected from each multisig group member
 
 
         """
@@ -1036,19 +1071,6 @@ class BaseHab:
             isith = kever.ntholder.sith  # use prior next sith as default
         if nsith is None:
             nsith = isith  # use new current as default
-        if ncount is None:
-            ncount = len(kever.digers)  # use len of prior next digers as default
-
-        if merfers:  # multisig group rotate so not from keystore
-            verfers = merfers
-            digers = migers
-        else:  # from keystore
-            try:
-                verfers, digers = self.mgr.replay(pre=self.pre)
-            except IndexError:  # old next is new current
-                verfers, digers = self.mgr.rotate(pre=self.pre,
-                                                  ncount=ncount,
-                                                  temp=self.temp)
 
         if isith is None:  # compute default from newly rotated verfers above
             isith = f"{max(1, ceil(len(verfers) / 2)):x}"
@@ -1864,6 +1886,7 @@ class Hab(BaseHab):
                           False otherwise
 
     """
+
     def __init__(self, **kwa):
         super(Hab, self).__init__(**kwa)
 
@@ -1931,7 +1954,17 @@ class Hab(BaseHab):
                                               transferable=transferable,
                                               temp=self.temp)
 
-        serder = super(Hab, self).make(DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits)
+        serder = super(Hab, self).make(isith=isith,
+                                       verfers=verfers,
+                                       nsith=nsith,
+                                       digers=digers,
+                                       code=code,
+                                       toad=toad,
+                                       wits=wits,
+                                       estOnly=estOnly,
+                                       DnD=DnD,
+                                       delpre=delpre,
+                                       data=data)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -1941,7 +1974,7 @@ class Hab(BaseHab):
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
         habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None,)
+                                      mid=None, )
 
         if not hidden:
             self.db.habs.put(keys=self.name,
@@ -1965,6 +1998,136 @@ class Hab(BaseHab):
         self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
+
+    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
+               data=None, **kwargs):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            isith (int |str | None): current signing threshold as int or str hex
+                                     or list of str weights
+                                     default is prior next sith
+            nsith (int |str | None): next, next signing threshold as int
+                                     or str hex or list of str weights
+                                     default is based on isith when None
+            ncount (int | None): next number of signing keys
+                                 default is len of prior next digs
+            toad (int | str | None): hex of witness threshold after cuts and adds
+            cuts (list | None): of qb64 pre of witnesses to be removed from witness list
+            adds (list | None): of qb64 pre of witnesses to be added to witness list
+            data (list | None): of dicts of committed data such as seals
+
+
+        """
+        # recall that kever.pre == self.pre
+        kever = self.kever  # before rotation kever is prior next
+
+        if ncount is None:
+            ncount = len(kever.digers)  # use len of prior next digers as default
+
+        try:
+            verfers, digers = self.mgr.replay(pre=self.pre)
+        except IndexError:  # old next is new current
+            verfers, digers = self.mgr.rotate(pre=self.pre,
+                                              ncount=ncount,
+                                              temp=self.temp)
+        return super(Hab, self).rotate(verfers=verfers, digers=digers,
+                                       isith=isith,
+                                       nsith=nsith,
+                                       toad=toad,
+                                       cuts=cuts,
+                                       adds=adds,
+                                       data=data)
+
+
+
+class SignifySaltyHab(BaseHab):
+    """
+
+    """
+
+    def __init__(self, **kwa):
+        super(SignifySaltyHab, self).__init__(**kwa)
+
+    def make(self, *, serder, sigers, ipath, npath, tier, temp, **kwargs):
+        self.pre = serder.ked["i"]  # new pre
+
+        habord = basing.HabitatRecord(hid=self.pre, ipath=ipath, npath=npath, tier=tier, temp=temp)
+
+        self.db.habs.put(keys=self.name, val=habord)
+        self.prefixes.add(self.pre)
+
+        # during delegation initialization of a habitat we ignore the MissingDelegationError and
+        # MissingSignatureError
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={} {}".format(self.pre, ex))
+
+        self.inited = True
+
+
+    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
+        raise kering.KeriError("remote hab does not support local signing")
+
+
+    def rotate(self, *, serder=None, sigers=None, npath=None, temp=False, **kwargs):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            serder (Serder): pre-created rotation event
+            sigers (list[Siger]): Siger instances on next rotation event
+            npath (str | None): salty path used to create next keys
+            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
+
+        """
+        # recall that kever.pre == self.pre
+        # update own key event verifier state
+        habord = self.db.habs.get(self.name)
+        habord.ipath = habord.npath
+        habord.npath = npath
+        habord.temp = temp
+
+        self.db.habs.pin(keys=(self.name,), val=habord)
+
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={self.pre}.") from ex
+
+        return msg
 
 
 class GroupHab(BaseHab):
@@ -2011,6 +2174,7 @@ class GroupHab(BaseHab):
                           False otherwise
 
     """
+
     def __init__(self, smids, mhab=None, rmids=None, **kwa):
         """
         Initialize instance.
@@ -2098,7 +2262,17 @@ class GroupHab(BaseHab):
         verfers = merfers
         digers = migers
 
-        serder = super(GroupHab, self).make(DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits)
+        serder = super(GroupHab, self).make(isith=isith,
+                                            verfers=verfers,
+                                            nsith=nsith,
+                                            digers=digers,
+                                            code=code,
+                                            toad=toad,
+                                            wits=wits,
+                                            estOnly=estOnly,
+                                            DnD=DnD,
+                                            delpre=delpre,
+                                            data=data)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -2130,6 +2304,7 @@ class GroupHab(BaseHab):
     def group(self):
         """ True means this is a group multisig Hab """
         return True
+
 
     def sign(self, ser, verfers=None, indexed=True, rotated=False, indices=None, ondices=None):
         """ Sign given serialization ser using appropriate keys.
@@ -2194,7 +2369,7 @@ class GroupHab(BaseHab):
             # then mhab participates as group prior next at index pni.
             # else pni is None which means mhab only participates as new key.
             # get nexter of .mhab's prior Next est event
-            migers = self.mhab.kever.fetchPriorDigers(sn=sn-1)
+            migers = self.mhab.kever.fetchPriorDigers(sn=sn - 1)
             if migers:  # not  None or not empty
                 mig = migers[0].qb64  # always use first prior dig of mhab
                 digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs
@@ -2243,4 +2418,3 @@ class GroupHab(BaseHab):
         serder = eventing.query(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True)
-
