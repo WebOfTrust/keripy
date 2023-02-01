@@ -9,6 +9,7 @@ from hio.base import doing
 
 from keri.app import habbing, forwarding, connecting
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.peer import exchanging
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
@@ -110,7 +111,7 @@ class RespondDoer(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.mhab if hab.group else hab
+        senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
         self.postman.send(src=senderHab.pre, dest=recp, topic="challenge", serder=exn, attachment=ims)
         while not self.postman.cues:
             yield self.tock

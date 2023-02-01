@@ -11,6 +11,7 @@ from hio.base import doing
 from hio.help import decking
 
 from . import agenting, forwarding
+from .habbing import GroupHab
 from ..core import coring
 from ..db import dbing
 from ..peer import exchanging
@@ -86,7 +87,7 @@ class Boatswain(doing.DoDoer):
                 del evt[:srdr.size]
 
                 smids = []
-                if hab.group:
+                if isinstance(hab, GroupHab):
                     phab = hab.mhab
                     smids = hab.smids
                 elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?

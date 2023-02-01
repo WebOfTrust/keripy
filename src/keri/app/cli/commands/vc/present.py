@@ -11,6 +11,7 @@ from hio.base import doing
 
 from keri.app import connecting, forwarding
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.vc import protocoling
 from keri.vdr import credentialing
@@ -98,7 +99,7 @@ class PresentDoer(doing.DoDoer):
             credentialing.sendCredential(self.hby, hab=self.hab, reger=self.rgy.reger, postman=self.postman,
                                          creder=creder, recp=recp)
 
-        if self.hab.group:
+        if isinstance(self.hab, GroupHab):
             senderHab = self.hab.mhab
         else:
             senderHab = self.hab

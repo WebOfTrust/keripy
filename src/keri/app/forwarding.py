@@ -12,6 +12,7 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import agenting
+from keri.app.habbing import GroupHab
 from keri.core import coring, eventing
 from keri.db import dbing
 from keri.peer import exchanging
@@ -127,7 +128,7 @@ class Postman(doing.DoDoer):
         ser = coring.Serder(raw=icp)
         del icp[:ser.size]
 
-        sender = hab.mhab.pre if hab.group is not None else hab.pre
+        sender = hab.mhab.pre if isinstance(hab, GroupHab) is not None else hab.pre
         self.send(src=sender, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:

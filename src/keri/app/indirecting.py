@@ -20,6 +20,7 @@ from hio.help import decking
 
 import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
+from .habbing import GroupHab
 from .. import help, kering
 from ..core import eventing, parsing, routing
 from ..core.coring import Ilks
@@ -805,7 +806,7 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            if self.hab.group:
+            if isinstance(self.hab, GroupHab):
                 msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)

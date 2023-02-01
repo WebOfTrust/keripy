@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.db import dbing
 
@@ -118,7 +119,7 @@ class ConfirmDoer(doing.DoDoer):
                     if not approve:
                         continue
 
-                    if hab.group:
+                    if isinstance(hab, GroupHab):
                         aids = hab.smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)

@@ -13,6 +13,7 @@ from hio import help
 from hio.base import doing
 from keri.app import agenting, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, terming
+from keri.app.habbing import GroupHab
 from keri.core import coring
 
 logger = help.ogler.getLogger()
@@ -148,7 +149,7 @@ class WatchDoer(doing.DoDoer):
 
             elif len(ahds) > 0:
                 # Only group habs can be behind their witnesses
-                if not hab.group:
+                if not isinstance(hab, GroupHab):
                     print("ERROR: Single sig AID behind witnesses, aborting for this AID")
                     continue
 

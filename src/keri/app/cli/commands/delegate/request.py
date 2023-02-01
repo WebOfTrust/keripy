@@ -12,6 +12,7 @@ from hio.base import doing
 from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.db import dbing
 
@@ -89,7 +90,7 @@ class RequestDoer(doing.DoDoer):
         del evt[:srdr.size]
         delpre = hab.kever.delegator  # get the delegator identifier
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             phab = hab.mhab
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")

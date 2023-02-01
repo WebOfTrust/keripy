@@ -5,18 +5,15 @@ keri.app.habbing module
 
 """
 import json
-import os
 from contextlib import contextmanager
 from urllib.parse import urlsplit
 from math import ceil
 
 from hio.base import doing
-from hio.core import wiring
-from hio.core.tcp import clienting, serving
 from hio.help import hicting
 from keri.peer import exchanging
 
-from . import keeping, configing, directing
+from . import keeping, configing
 from .. import help
 from .. import kering
 from ..core import coring, eventing, parsing, routing
@@ -108,80 +105,6 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, 
             hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', **kwa)
 
         yield hby, hab
-
-
-def setupHabery(name="who", base="main", temp=False, curls=None, remote="eve", iurls=None):
-    """
-    Setup and return doers list to run controller
-
-    Parameters:
-        name(str): is the name used for a specific habitat
-        base(str) is the name used for shared resources i.e. Baser and Keeper
-               The habitat specific config file will be in base/name
-        temp(bool): True creates Habery in temp directory
-        curls (list[str]): local controller's service endpoint urls
-        remote (str): name of remote direct mode target
-        iurls (list[str]):  oobi  urls
-
-    Load endpoint database with named target urls including http not just tcp
-
-
-    conf file json
-    {
-      dt: "isodatetime",
-      curls: ["tcp://localhost:5620/"],
-      iurls: ["tcp://localhost:5621/?name=eve"],
-    }
-    """
-
-    if not curls:
-        curls = ["ftp://localhost:5620/"]
-
-    if not iurls:  # blind oobi
-        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name={remote}"]
-
-    # setup databases  for dependency injection and config file
-    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db, reload=True)  # doer do reopens if not opened and closes
-    cf = configing.Configer(name=name, base=base, temp=temp)
-    cfDoer = configing.ConfigerDoer(configer=cf)
-    conf = cf.get()
-    if not conf:  # setup config file
-        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
-        cf.put(conf)
-
-    # setup habery
-    hby = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp)
-    hbyDoer = HaberyDoer(habery=hby)  # setup doer
-
-    # setup wirelog to create test vectors
-    path = os.path.dirname(__file__)
-    path = os.path.join(path, 'logs')
-    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
-                        reopen=True, headDirPath=path)
-    wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
-
-    localPort = 5620
-    remotePort = 5621
-    # setup local directmode tcp server
-    server = serving.Server(host="", port=localPort, wl=wl)
-    serverDoer = serving.ServerDoer(server=server)  # setup doer
-    directant = directing.Directant(hab=hby, server=server)
-    # Reactants created on demand by directant
-
-    # setup default remote direct mode client to remote party
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)  # setup doer
-    director = directing.Director(hab=hby, client=client, tock=0.125)
-    reactor = directing.Reactor(hab=hby, client=client)
-
-    logger.info("\nController resources at %s/%s\nListening on TCP port %s to "
-                "port %s.\n\n", hby.base, hby.name, localPort, remotePort)
-
-    return [ksDoer, dbDoer, cfDoer, hbyDoer, wireDoer, clientDoer, director, reactor,
-            serverDoer, directant]
 
 
 class Habery:
@@ -994,11 +917,6 @@ class BaseHab:
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
-
-    @property
-    def group(self):
-        """ True means this is a group multisig Hab """
-        return False
 
     @property
     def iserder(self):
@@ -2299,11 +2217,6 @@ class GroupHab(BaseHab):
                                             "pre={} {}".format(self.pre, ex))
 
         self.inited = True
-
-    @property
-    def group(self):
-        """ True means this is a group multisig Hab """
-        return True
 
 
     def sign(self, ser, verfers=None, indexed=True, rotated=False, indices=None, ondices=None):

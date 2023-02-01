@@ -16,6 +16,7 @@ from hio.help import decking
 
 import keri.app.oobiing
 from . import grouping, challenging, connecting, notifying, signaling, oobiing
+from .habbing import GroupHab
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating, booting
@@ -235,7 +236,7 @@ class IdentifierEnd(doing.DoDoer):
             prefix=hab.pre,
         )
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             data["group"] = dict(
                 pid=hab.mhab.pre,
                 aids=hab.smids,
@@ -690,7 +691,7 @@ class IdentifierEnd(doing.DoDoer):
             pre = cue["pre"]
             hab = self.hby.habs[pre]
 
-            if hab.group:  # Skip if group, they are handled elsewhere
+            if isinstance(hab, GroupHab):  # Skip if group, they are handled elsewhere
                 yield self.tock
                 continue
 
@@ -809,7 +810,7 @@ class KeyStateEnd:
         evts = []
         if pre in self.hby.habs:
             hab = self.hby.habs[pre]
-            if hab.group:
+            if isinstance(hab, GroupHab):
                 evts = self.counselor.pendingEvents(pre)
         res["pending"] = evts
 
@@ -2797,7 +2798,7 @@ class ChallengeEnd(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.mhab if hab.group else hab
+        senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
         self.postman.send(src=senderHab.pre, dest=recpt, topic="challenge", serder=exn, attachment=ims)
 
         rep.status = falcon.HTTP_202
