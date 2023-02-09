@@ -7,13 +7,10 @@ import datetime
 import time
 
 import falcon
-import pytest
 from falcon import testing
 from hio.base import doing, tyming
 
 from keri.app import signaling
-from keri.core import coring
-from keri.db import dbing
 from keri.help import helping
 
 

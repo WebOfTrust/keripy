@@ -45,7 +45,7 @@ parser.add_argument("--config-dir",
 
 parser.add_argument('-c', '--controller',
                     action='store',
-                    default="E59KmDbpjK0tRf9Rmc7OlueZVz7LB94DdD3cjQVvPcng",
+                    default="",
                     help="Identifier prefix to accept control messages from.")
 parser.add_argument("-I", '--insecure',
                     action='store_true',

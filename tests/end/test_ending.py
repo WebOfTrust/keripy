@@ -61,7 +61,8 @@ def test_signature_designature():
     with habbing.openHby(name=name, base=base) as hby:
         # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
         hab = hby.makeHab(name=name, icount=3)
-
+        print()
+        print([verfer.qb64 for verfer in hab.kever.verfers])
         # setup habitat
         # hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
         assert hab.pre == 'EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-'
