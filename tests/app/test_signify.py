@@ -36,6 +36,7 @@ def test_remote_salty_hab():
         skp1 = salter.signer(path="test11", temp=True, tier=tier)
         assert skp1.code == coring.MtrDex.Ed25519_Seed
         assert skp1.verfer.code == coring.MtrDex.Ed25519
+
         # compute nxt digest
         # transferable so nxt is not empty
         ndiger = coring.Diger(ser=skp1.verfer.qb64b)
