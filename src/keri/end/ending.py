@@ -264,7 +264,8 @@ def normalize(param):
     return param.strip()
 
 
-def siginput(hab, name, method, path, headers, fields, expires=None, nonce=None, alg=None, keyid=None, context=None):
+def siginput(name, method, path, headers, fields, hab=None, signers=None, expires=None, nonce=None, alg=None,
+             keyid=None, context=None):
     """ Create an HTTP Signature-Input Header
 
     Returns:
@@ -321,9 +322,15 @@ def siginput(hab, name, method, path, headers, fields, expires=None, nonce=None,
 
     items.append(f'"@signature-params: {params}"')
     ser = "\n".join(items).encode("utf-8")
-    sigers = hab.sign(ser=ser,
-                      verfers=hab.kever.verfers,
-                      indexed=False)
+
+    if hab:
+        sigers = hab.sign(ser=ser,
+                          verfers=hab.kever.verfers,
+                          indexed=False)
+    else:
+        sigers = []
+        for signer in signers:
+            sigers.append(signer.sign(ser))  # assigns .verfer to cigar
 
     return {'Signature-Input': f"{str(sid)}"}, sigers[0]  # join all signature input value strs
 

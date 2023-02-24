@@ -334,6 +334,11 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
+            elif habord.pidx is not None:
+                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=pre, temp=habord.temp, stem=habord.stem,
+                                      tier=habord.tier, pidx=habord.pidx)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -467,6 +472,18 @@ class Habery:
         self.habs[hab.pre] = hab
 
         return hab
+
+    def deleteHab(self, name):
+        hab = self.habByName(name)
+        if not hab:
+            return False
+
+        if not self.db.habs.rem(keys=self.name):
+            return False
+
+        del self.habs[hab.pre]
+        return True
+
 
     def extractMerfersMigers(self, smids, rmids=None):
         """
@@ -1762,7 +1779,7 @@ class BaseHab:
 
 class Hab(BaseHab):
     """
-        Hab class provides a given idetnifier controller's local resource environment
+    Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
     configuration file as well as Kevery and key store Manager..
 
@@ -1963,16 +1980,23 @@ class Hab(BaseHab):
 
 class SignifySaltyHab(BaseHab):
     """
-
+    Hab class provides a given idetnifier controller's local resource environment
+    i.e. hab or habitat. Includes dependency injection of database, keystore,
+    configuration file as well as Kevery and key store Manager..
     """
 
-    def __init__(self, **kwa):
+    def __init__(self, stem=None, pidx=None, tier=None, temp=False, **kwa):
+        self.stem = stem
+        self.pidx = pidx
+        self.tier = tier
+        self.temp = temp
+
         super(SignifySaltyHab, self).__init__(**kwa)
 
-    def make(self, *, serder, sigers, ipath, npath, tier, temp, **kwargs):
+    def make(self, *, serder, sigers, stem, pidx, tier, temp, **kwargs):
         self.pre = serder.ked["i"]  # new pre
 
-        habord = basing.HabitatRecord(hid=self.pre, ipath=ipath, npath=npath, tier=tier, temp=temp)
+        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
 
         self.db.habs.put(keys=self.name, val=habord)
         self.prefixes.add(self.pre)
@@ -1987,6 +2011,10 @@ class SignifySaltyHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
+        self.stem = stem
+        self.pidx = pidx
+        self.tier = tier
+        self.temp = temp
         self.inited = True
 
 
@@ -2014,7 +2042,7 @@ class SignifySaltyHab(BaseHab):
         raise kering.KeriError("remote hab does not support local signing")
 
 
-    def rotate(self, *, serder=None, sigers=None, npath=None, temp=False, **kwargs):
+    def rotate(self, *, serder=None, sigers=None, **kwargs):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -2026,24 +2054,29 @@ class SignifySaltyHab(BaseHab):
             temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
 
         """
-        # recall that kever.pre == self.pre
-        # update own key event verifier state
-        habord = self.db.habs.get(self.name)
-        habord.ipath = habord.npath
-        habord.npath = npath
-        habord.temp = temp
-
-        self.db.habs.pin(keys=(self.name,), val=habord)
-
         msg = eventing.messagize(serder, sigers=sigers)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError:
-            pass
         except Exception as ex:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={self.pre}.") from ex
+
+        return msg
+
+    def interact(self, serder, sigers):
+        """
+        Perform interaction operation. Register interaction in database.
+        Returns: bytearray interaction message with attached signatures.
+        """
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            # verify event, update kever state, and escrow if group
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except Exception:
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={}.".format(self.pre))
 
         return msg
 
@@ -2052,7 +2085,7 @@ class GroupHab(BaseHab):
     """
     Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
-    configuration file as well as Kevery and key store Manager..
+    configuration file as well as Kevery and key store Manager.
 
     Attributes: (Injected)
         ks (keeping.Keeper): lmdb key store

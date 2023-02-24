@@ -514,9 +514,8 @@ class SaltyCreator(Creator):
         if not codes:  # if not codes make list len count of same code
             codes = [code for i in range(count)]
 
-        stem = self.stem if self.stem else "{:x}".format(pidx)  # if not stem use pidx
         for i, code in enumerate(codes):
-            path = "{}{:x}{:x}".format(stem, ridx, kidx + i)
+            path = "{}{:x}{:x}{:x}".format(self.stem, pidx, ridx, kidx + i)
             signers.append(self.salter.signer(path=path,
                                               code=code,
                                               transferable=transferable,
