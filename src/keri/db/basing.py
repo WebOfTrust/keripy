@@ -939,6 +939,9 @@ class Baser(dbing.LMDBer):
         # Chunked image data for contact information for remote identfiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
+        self.witr = subing.CesrSuber(db=self, subkey='witr.', klas=coring.Dater)
+
+
         self.reload()
 
         return self.env

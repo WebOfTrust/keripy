@@ -935,6 +935,20 @@ class BaseHab:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
 
+    def makeWitnessMailboxes(self):
+        """ Utility to create mailbox end roles for each witness
+
+        Utility function to provide backward compatibility with AIDs created when witnesses as a mailbox
+        was the default.
+
+        """
+        msgs = bytearray()
+        for wit in self.kever.wits:
+            msgs.extend(self.makeEndRole(eid=wit,
+                                         role=kering.Roles.mailbox))
+        self.psr.parse(ims=msgs)
+
+
     @property
     def iserder(self):
         """
@@ -1507,6 +1521,37 @@ class BaseHab:
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
 
+    def loadEndRole(self, cid, eid, role=kering.Roles.controller):
+        msgs = bytearray()
+        end = self.db.ends.get(keys=(cid, role, eid))
+        if end and (end.enabled or end.allowed):
+            said = self.db.eans.get(keys=(cid, role, eid))
+            serder = self.db.rpys.get(keys=(said.qb64,))
+            cigars = self.db.scgs.get(keys=(said.qb64,))
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+
+            if len(cigars) == 1:
+                (verfer, cigar) = cigars[0]
+                cigar.verfer = verfer
+            else:
+                cigar = None
+
+            if len(tsgs) > 0:
+                (prefixer, seqner, diger, sigers) = tsgs[0]
+                seal = eventing.SealEvent(i=prefixer.qb64,
+                                          s=seqner.snh,
+                                          d=diger.qb64)
+            else:
+                sigers = None
+                seal = None
+
+            msgs.extend(eventing.messagize(serder=serder,
+                                           cigars=[cigar] if cigar else [],
+                                           sigers=sigers,
+                                           seal=seal,
+                                           pipelined=True))
+        return msgs
+
     def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
         """
         Returns:
@@ -1525,7 +1570,7 @@ class BaseHab:
         data = dict(eid=eid, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
 
-    def replyLocScheme(self, eid, scheme=None):
+    def replyLocScheme(self, eid, scheme=""):
         """
         Returns a reply message stream composed of entries authed by the given
         eid from the appropriate reply database including associated attachments
@@ -1555,18 +1600,31 @@ class BaseHab:
 
     def loadLocScheme(self, eid, scheme=None):
         msgs = bytearray()
-        keys = (eid, scheme)
+        keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
                 cigar.verfer = verfer
             else:
                 cigar = None
+
+            if len(tsgs) > 0:
+                (prefixer, seqner, diger, sigers) = tsgs[0]
+                seal = eventing.SealEvent(i=prefixer.qb64,
+                                          s=seqner.snh,
+                                          d=diger.qb64)
+            else:
+                sigers = None
+                seal = None
+
             msgs.extend(eventing.messagize(serder=serder,
-                                           cigars=[cigar],
+                                           cigars=[cigar] if cigar else [],
+                                           sigers=sigers,
+                                           seal=seal,
                                            pipelined=True))
         return msgs
 

@@ -77,8 +77,11 @@ class Boatswain(doing.DoDoer):
                 hab = self.hby.habs[pre]
                 alias = hab.name
                 delpre = hab.kever.delegator  # get the delegator identifier
-                dkever = hab.kevers[delpre]  # and the delegator's kever
+                if delpre not in hab.kevers:
+                    print(f"delegator {delpre} not found")
+                    continue
 
+                dkever = hab.kevers[delpre]  # and the delegator's kever
                 sn = msg["sn"] if "sn" in msg else hab.kever.sner.num
 
                 # load the event and signatures
@@ -95,7 +98,6 @@ class Boatswain(doing.DoDoer):
                     if phab.kever.wits:
                         witDoer = agenting.WitnessReceiptor(hby=self.hby)
                         self.extend([witDoer])
-
                         witDoer.msgs.append(dict(pre=phab.pre))
                         while not witDoer.cues:
                             _ = yield self.tock
@@ -113,7 +115,7 @@ class Boatswain(doing.DoDoer):
 
                 # Send exn message for notification purposes
                 exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=smids)
-                # exn of /oobis of all multisig participants to rootgar
+
                 self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
                 self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
@@ -164,6 +166,7 @@ class Boatswain(doing.DoDoer):
         )
 
         hab = self.hby.makeHab(palias, **kwargs)
+        hab.makeWitnessMailboxes()
         return hab
 
 

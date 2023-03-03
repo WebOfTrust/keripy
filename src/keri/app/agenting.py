@@ -106,9 +106,14 @@ class WitnessReceiptor(doing.DoDoer):
                         for dmsg in hab.db.cloneDelegation(hab.kever):
                             witer.msgs.append(bytearray(dmsg))
 
-                        if "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
+                        if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip) or \
+                                "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
                             for fmsg in hab.db.clonePreIter(pre=pre):
                                 witer.msgs.append(bytearray(fmsg))
+
+                            eps = self.endpoints(hab, pre)
+                            if eps:
+                                witer.msgs.append(bytearray(eps))
 
                         witer.msgs.append(bytearray(msg))  # make a copy
                         _ = (yield self.tock)
@@ -192,6 +197,16 @@ class WitnessReceiptor(doing.DoDoer):
                     msgs.extend(eventing.messagize(serder=serder,
                                                    cigars=[cigar],
                                                    pipelined=True))
+        return msgs
+
+    def endpoints(self, hab, cid):
+        msgs = bytearray()
+        for (_, erole, eid), end in self.hby.db.ends.getItemIter(keys=(cid,)):
+            if end.enabled or end.allowed:
+                msgs.extend(hab.replayAll(eid.encode("utf-8")))
+                msgs.extend(hab.loadLocScheme(eid=eid, scheme=kering.Schemes.http))
+                msgs.extend(hab.loadEndRole(cid=cid, eid=eid, role=erole))
+
         return msgs
 
 
@@ -550,7 +565,31 @@ class HttpWitnesser(doing.DoDoer):
         return len(self.msgs) == 0 and self.posted == len(self.sent)
 
 
+def agenter(hab, cid):
+    aid = None
+    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.agent)):
+        if end.allowed:
+            aid = eid
+            break
+
+    if aid is None:
+        return None
+
+    try:
+        return witnesser(hab, aid)
+    except kering.ConfigurationError as e:
+        return None
+
+
 def mailbox(hab, cid):
+    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
+        if end.allowed:
+            return eid
+
+    return None
+
+
+def mailboxOrWitness(hab, cid):
     for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
         if end.allowed:
             return eid

@@ -63,7 +63,7 @@ class Postman(doing.DoDoer):
                 hab = self.hby.habs[src]
 
                 # Get the kever of the recipient and choose a witness
-                wit = agenting.mailbox(hab, recp)
+                wit = agenting.mailboxOrWitness(hab, recp)
                 if not wit:
                     print(f"exiting because can't find wit for {recp}")
                     continue
@@ -128,7 +128,7 @@ class Postman(doing.DoDoer):
         ser = coring.Serder(raw=icp)
         del icp[:ser.size]
 
-        sender = hab.mhab.pre if isinstance(hab, GroupHab) is not None else hab.pre
+        sender = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
         self.send(src=sender, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:

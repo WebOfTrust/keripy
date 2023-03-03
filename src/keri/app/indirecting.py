@@ -6,6 +6,7 @@ keri.app.indirecting module
 simple indirect mode demo support classes
 """
 import datetime
+import itertools
 
 import falcon
 import time
@@ -22,9 +23,9 @@ import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .habbing import GroupHab
 from .. import help, kering
-from ..core import eventing, parsing, routing
+from ..core import eventing, parsing, routing, coring
 from ..core.coring import Ilks
-from ..db import basing
+from ..db import basing, dbing
 from ..end import ending
 from ..help import helping
 from ..peer import exchanging
@@ -60,6 +61,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
     oobiRes = oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
     rep = storing.Respondant(hby=hby, mbx=mbx)
+    cuer = WitnessCuer(hby=hby, mbx=mbx)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = eventing.Kevery(db=hby.db,
@@ -97,10 +99,10 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     witStart = WitnessStart(hab=hab, parser=parser, cues=cues,
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
-                            responses=rep.cues, queries=httpEnd.qrycues)
+                            responses=cuer.cues, queries=httpEnd.qrycues)
 
     doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, *oobiery.doers])
+    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, cuer, witStart, *oobiery.doers])
 
     return doers
 
@@ -247,6 +249,152 @@ class WitnessStart(doing.DoDoer):
                 self.replies.append(rep)
                 yield  # throttle just do one cue at a time
             yield
+
+
+class WitnessCuer(doing.DoDoer):
+
+    def __init__(self, hby, mbx, cues=None):
+        self.cues = cues if cues is not None else decking.Deck()
+
+        self.hby = hby
+        self.mbx = mbx if mbx is not None else storing.Mailboxer(name=self.hby.name)
+        self.postman = forwarding.Postman(hby=self.hby)
+        doers = [self.postman, doing.doify(self.cueDo), doing.doify(self.receiptDo)]
+
+        super(WitnessCuer, self).__init__(doers=doers)
+
+    def cueDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            Kevery and Tevery cues deque
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.cues:  # iteratively process each cue in cues
+                msg = bytearray()
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+
+                if cueKin in ("receipt",):  # cue to receipt a received event from other pre
+                    serder = cue["serder"]  # Serder of received event for other pre
+                    dater = coring.Dater(dts=helping.nowIso8601())
+                    self.hby.db.witr.put(keys=(serder.pre, serder.said), val=dater)
+
+                elif cueKin in ("replay",):
+                    src = cue["src"]
+                    dest = cue["dest"]
+                    msgs = cue["msgs"]
+                    hab = self.hby.habs[src]
+
+                    if dest not in self.hby.kevers:
+                        continue
+
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+
+                    if owits.intersection(self.hby.prefixes):
+                        bmsgs = bytearray(itertools.chain(*msgs))
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=bmsgs)
+                    elif (agenter := agenting.agenter(hab, dest)) is not None:
+                        for msg in msgs:
+                            yield from self.send(agenter, msg)
+                    else:
+                        for i, msg in enumerate(msgs):
+                            evt = coring.Serder(raw=msg)
+                            atc = msg[evt.size:]
+                            self.postman.send(src=src, dest=dest, topic="reply", serder=evt, attachment=atc)
+
+                elif cueKin in ("reply",):
+                    src = cue["src"]
+                    serder = cue["serder"]
+                    route = cue["route"]
+                    dest = cue["dest"]
+
+                    if dest not in self.hby.kevers:
+                        continue
+
+                    hab = self.hby.habs[src]
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+                    if match := owits.intersection(self.hby.prefixes):
+                        pre = match.pop()
+                        hab = self.hby.habs[pre]
+                        msg.extend(hab.endorse(serder))
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=msg)
+                    elif (agenter := agenting.agenter(hab, dest)) is not None:
+                        msg.extend(hab.endorse(serder))
+                        yield from self.send(agenter, msg)
+                    else:
+                        atc = hab.endorse(serder)
+                        del atc[:serder.size]
+                        self.postman.send(src=src, dest=dest, topic="reply", serder=serder, attachment=atc)
+
+            yield self.tock
+
+    def receiptDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            Kevery and Tevery cues deque
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+
+            for (pre, said), dater in self.hby.db.witr.getItemIter():
+                msg = bytearray()
+                dgkey = dbing.dgKey(pre, said)
+                eraw = self.hby.db.getEvt(dgkey)
+                if eraw is None:
+                    continue
+                serder = coring.Serder(raw=bytes(eraw))  # escrowed event
+
+                cuedKed = serder.ked
+                cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                if cuedPrefixer.qb64 not in self.hby.kevers:
+                    continue
+
+                kever = self.hby.kevers[cuedPrefixer.qb64]
+                owits = oset(kever.wits)
+                if len((match := owits.intersection(self.hby.prefixes))) == 0:
+                    continue
+
+                wit = match.pop()
+                hab = self.hby.habs[wit]
+                msg.extend(hab.receipt(serder))
+
+                if (agenter := agenting.agenter(hab, cuedPrefixer.qb64)) is not None:
+                    yield from self.send(agenter, msg)
+                elif (mailbox := agenting.mailbox(hab, cuedPrefixer.qb64)) is not None:
+                    self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
+                else:
+                    continue
+
+                rem = self.hby.db.witr.rem(keys=(pre, said))
+                yield self.tock
+
+            yield self.tock
+
+
+    def send(self, agenter, msg):
+        self.extend([agenter])
+        agenter.msgs.append(bytearray(msg))
+        while not agenter.idle:
+            yield 1.0
+
+        self.remove([agenter])
 
 
 class Indirector(doing.DoDoer):
@@ -465,9 +613,7 @@ class MailboxDirector(doing.DoDoer):
         .doers is list of Doers or Doer like generator functions
 
     Attributes:
-        hab (Habitat: local controller's context
-        client (serving.Client): hio TCP client instance.
-            Assumes operated by another doer.
+        hby (Habitat: local controller's context
 
     Properties:
         tyme (float): relative cycle time of associated Tymist, obtained
