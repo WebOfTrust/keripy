@@ -410,9 +410,9 @@ def generateSigners(salt=None, count=8, transferable=True):
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
                                       salt=salt,
-                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                      opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                      memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
 
         signers.append(Signer(raw=seed, transferable=transferable))
 
@@ -2353,18 +2353,18 @@ class Salter(Matter):
         tier = tier if tier is not None else self.tier
 
         if temp:
-            opslimit = pysodium.crypto_pwhash_OPSLIMIT_MIN
-            memlimit = pysodium.crypto_pwhash_MEMLIMIT_MIN
+            opslimit = 1  # pysodium.crypto_pwhash_OPSLIMIT_MIN
+            memlimit = 8192  # pysodium.crypto_pwhash_MEMLIMIT_MIN
         else:
             if tier == Tiers.low:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
+                opslimit = 2  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
+                memlimit = 67108864  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
             elif tier == Tiers.med:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_MODERATE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_MODERATE
+                opslimit = 3  # pysodium.crypto_pwhash_OPSLIMIT_MODERATE
+                memlimit = 268435456  # pysodium.crypto_pwhash_MEMLIMIT_MODERATE
             elif tier == Tiers.high:
-                opslimit = pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
-                memlimit = pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
+                opslimit = 4  # pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
+                memlimit = 1073741824  # pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
             else:
                 raise ValueError("Unsupported security tier = {}.".format(tier))
 
@@ -2374,7 +2374,7 @@ class Salter(Matter):
                                       salt=self.raw,
                                       opslimit=opslimit,
                                       memlimit=memlimit,
-                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                      alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
         return (seed)
 
     def signer(self, *, code=MtrDex.Ed25519_Seed, transferable=True, path="",

@@ -46,9 +46,9 @@ def test_pysodium():
     sigseed = pysodium.crypto_pwhash(outlen=32,
                                     passwd="",
                                     salt=salt,
-                                    opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                    memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                    alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+                                    opslimit=2,  # pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                    memlimit=67108864,  # pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                    alg=pysodium.crypto_pwhash_ALG_ARGON2ID13)
 
     assert len(sigseed) == 32
     #  seed = (b'\xa9p\x89\x7f+\x0e\xc4\x9c\xf2\x01r\xafTI\xc0\xfa\xac\xd5\x99\xf8O\x8f=\x843\xa2\xb6e\x9fO\xff\xd0')
