@@ -3,7 +3,6 @@
 keri.kli.commands module
 
 """
-import logging
 import multicommand
 from keri import help
 
