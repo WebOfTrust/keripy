@@ -63,7 +63,7 @@ class Postman(doing.DoDoer):
                 hab = self.hby.habs[src]
 
                 # Get the kever of the recipient and choose a witness
-                wit = agenting.mailboxOrWitness(hab, recp)
+                wit = agenting.mailbox(hab, recp)
                 if not wit:
                     print(f"exiting because can't find wit for {recp}")
                     continue

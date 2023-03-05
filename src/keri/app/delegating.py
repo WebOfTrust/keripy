@@ -166,7 +166,6 @@ class Boatswain(doing.DoDoer):
         )
 
         hab = self.hby.makeHab(palias, **kwargs)
-        hab.makeWitnessMailboxes()
         return hab
 
 

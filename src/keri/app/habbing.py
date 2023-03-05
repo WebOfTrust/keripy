@@ -935,20 +935,6 @@ class BaseHab:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
 
-    def makeWitnessMailboxes(self):
-        """ Utility to create mailbox end roles for each witness
-
-        Utility function to provide backward compatibility with AIDs created when witnesses as a mailbox
-        was the default.
-
-        """
-        msgs = bytearray()
-        for wit in self.kever.wits:
-            msgs.extend(self.makeEndRole(eid=wit,
-                                         role=kering.Roles.mailbox))
-        self.psr.parse(ims=msgs)
-
-
     @property
     def iserder(self):
         """

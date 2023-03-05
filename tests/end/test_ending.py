@@ -452,11 +452,11 @@ def test_siginput(mockHelpingNowUTC):
             ("Signify-Timestamp", "2022-09-24T00:05:48.196795+00:00"),
         ])
 
-        header, sig = ending.siginput(hab, "sig0", "POST", "/signify", headers,
+        header, sig = ending.siginput("sig0", "POST", "/signify", headers,
                                       fields=["Signify-Resource", "@method",
                                               "@path",
                                               "Signify-Timestamp"],
-                                      alg="ed25519", keyid=hab.pre)
+                                      alg="ed25519", keyid=hab.pre, hab=hab)
 
         headers.extend(header)
         signage = ending.Signage(markers=dict(sig0=sig), indexed=False, signer=None, ordinal=None, digest=None,

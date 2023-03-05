@@ -3,10 +3,12 @@
 keri.app.storing module
 
 """
+import itertools
 import random
 
 from hio.base import doing
 from hio.help import decking
+from ordered_set import OrderedSet as oset
 
 from . import httping, agenting, forwarding
 from .. import help
@@ -141,7 +143,7 @@ class Respondant(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, reps=None, mbx=None, **kwa):
+    def __init__(self, hby, reps=None, cues=None, mbx=None, **kwa):
         """
         Creates Respondant that uses local environment to find the destination KEL and stores
         peer to peer messages in mbx, the mailboxer
@@ -152,12 +154,13 @@ class Respondant(doing.DoDoer):
 
         """
         self.reps = reps if reps is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
 
         self.hby = hby
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
         self.postman = forwarding.Postman(hby=self.hby)
 
-        doers = [self.postman, doing.doify(self.responseDo)]
+        doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
     def responseDo(self, tymth=None, tock=0.0):
@@ -234,3 +237,103 @@ class Respondant(doing.DoDoer):
 
                 yield  # throttle just do one cue at a time
             yield
+
+    def cueDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            Kevery and Tevery cues deque
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.cues:  # iteratively process each cue in cues
+                msg = bytearray()
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+
+                if cueKin in ("receipt",):  # cue to receipt a received event from other pre
+                    serder = cue["serder"]  # Serder of received event for other pre
+                    cuedKed = serder.ked
+                    cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                    if cuedPrefixer.qb64 in self.hby.kevers:
+                        kever = self.hby.kevers[cuedPrefixer.qb64]
+                        owits = oset(kever.wits)
+                        if match := owits.intersection(self.hby.prefixes):
+                            pre = match.pop()
+                            hab = self.hby.habs[pre]
+                            msg.extend(hab.receipt(serder))
+                            self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
+
+                elif cueKin in ("replay",):
+                    src = cue["src"]
+                    dest = cue["dest"]
+                    msgs = cue["msgs"]
+                    hab = self.hby.habs[src]
+
+                    if dest not in self.hby.kevers:
+                        continue
+
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+
+                    if owits.intersection(self.hby.prefixes):
+                        bmsgs = bytearray(itertools.chain(*msgs))
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=bmsgs)
+
+                    else:
+                        events = list()
+                        atc = bytearray()
+                        for i, msg in enumerate(msgs):
+                            evt = coring.Serder(raw=msg)
+                            events.append(evt.ked)
+                            pather = coring.Pather(path=["a", i])
+                            btc = pather.qb64b + msg[evt.size:]
+                            atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                                      count=(len(btc) // 4)).qb64b)
+                            atc.extend(btc)
+
+                        fwd = exchanging.exchange(route='/fwd',
+                                                  modifiers=dict(pre=dest, topic="replay"), payload=events)
+                        msg = hab.endorse(fwd, last=True, pipelined=False)
+                        msg.extend(atc)
+                        wit = random.choice(kever.wits)
+                        client, clientDoer = agenting.httpClient(hab, wit)
+                        self.extend([clientDoer])
+
+                        httping.createCESRRequest(msg, client)
+
+                        while not client.responses:
+                            yield self.tock
+
+                        self.remove([clientDoer])
+
+                elif cueKin in ("reply",):
+                    src = cue["src"]
+                    serder = cue["serder"]
+                    route = cue["route"]
+                    dest = cue["dest"]
+
+                    if dest not in self.hby.kevers:
+                        continue
+
+                    kever = self.hby.kevers[dest]
+                    owits = oset(kever.wits)
+                    if match := owits.intersection(self.hby.prefixes):
+                        pre = match.pop()
+                        hab = self.hby.habs[pre]
+                        msg.extend(hab.endorse(serder))
+                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=msg)
+
+                    else:
+                        hab = self.hby.habs[src]
+                        atc = hab.endorse(serder)
+                        del atc[:serder.size]
+                        self.postman.send(src=src, dest=dest, topic="reply", serder=serder, attachment=atc)
+
+            yield self.tock

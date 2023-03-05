@@ -24,8 +24,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 parser.add_argument("--use-witness-mbx", help="Use mailboxes as witnesses by default.  Legacy mailbox support",
-                    dest="mailbox",
-                    action='store_false')
+                    dest="mailbox", action='store_false')
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
@@ -70,7 +69,7 @@ def handler(args):
 
     kwa = mergeArgsWithFile(args).__dict__
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config_dir, mailbox=args.mailbox, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, config=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
@@ -124,7 +123,7 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, mailbox=True, config=None, **kwa):
+    def __init__(self, name, base, alias, bran, config=None, **kwa):
 
         cf = None
         if config is not None:
@@ -136,7 +135,6 @@ class InceptDoer(doing.DoDoer):
                                     clear=False)
 
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
-        self.mailbox = mailbox
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.swain = delegating.Boatswain(hby=hby)
         self.postman = forwarding.Postman(hby=hby)
@@ -164,9 +162,6 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.makeHab(name=self.alias, **self.inits)
-        if self.mailbox:
-            hab.makeWitnessMailboxes()
-
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.extend([self.witDoer])
 
