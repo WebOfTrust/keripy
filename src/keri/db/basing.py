@@ -1158,6 +1158,13 @@ class Baser(dbing.LMDBer):
         return msg
 
     def cloneDelegation(self, kever):
+        """
+        Recursively clone delegation chain from AID of Kever if one exits.
+
+        Parameters:
+            kever (Kever): Kever from which to clone the delegator's AID.
+
+        """
         if kever.delegated:
             dkever = self.kevers[kever.delegator]
             yield from self.cloneDelegation(dkever)

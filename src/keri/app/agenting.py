@@ -16,9 +16,118 @@ from . import httping, forwarding
 from .. import help
 from .. import kering
 from ..core import eventing, parsing, coring
+from ..core.coring import CtrDex
 from ..db import dbing
 
 logger = help.ogler.getLogger()
+
+
+class Receiptor(doing.DoDoer):
+
+    def __init__(self, hby):
+
+        doers = [doing.doify(self.heartbeat)]
+        self.hby = hby
+
+        super(Receiptor, self).__init__(doers=doers)
+
+    def receipt(self, pre, sn=None):
+        """
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+
+        Returns:
+            list: identifiers of witnesses that returned receipts.
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+        sn = sn if sn is not None else hab.kever.sner.num
+        wits = hab.kever.wits
+
+        if len(wits) == 0:
+            return
+
+        msg = hab.makeOwnEvent(sn=sn)
+        ser = coring.Serder(raw=msg)
+
+        clients = dict()
+        doers = []
+        for wit in wits:
+            client, clientDoer = httpClient(hab, wit)
+            clients[wit] = client
+            doers.append(clientDoer)
+            self.extend([clientDoer])
+
+        rcts = dict()
+        for wit, client in clients.items():
+            httping.streamCESRRequests(client=client, ims=bytearray(msg), path="/receipts")
+            while not client.responses:
+                yield self.tock
+
+            rep = client.respond()
+            if rep.status == 200:
+                rct = bytearray(rep.body)
+                hab.psr.parseOne(bytearray(rct))
+                rserder = coring.Serder(raw=rct)
+                del rct[:rserder.size]
+                rcts[wit] = rct
+            else:
+                print(rep.status)
+                print(rep.body)
+
+        for wit in rcts.keys():
+            ewits = [w for w in rcts.keys() if w != wit]
+            wigs = [sig for w, sig in rcts.items() if w != wit]
+
+            msg = bytearray()
+            if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
+                msg.extend(schemes(self.hby.db, eids=ewits))
+            elif ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt) and \
+                    ("ba" in ser.ked and wit in ser.ked["ba"]):  # Newly added witness, introduce to all
+                msg.extend(schemes(self.hby.db, eids=ewits))
+
+            rserder = eventing.receipt(pre=hab.pre,
+                                       sn=sn,
+                                       said=ser.said)
+            msg.extend(rserder.raw)
+            msg.extend(coring.Counter(code=CtrDex.WitnessIdxSigs, count=len(wigs)).qb64b)
+            for wig in wigs:
+                msg.extend(wig)
+
+            client = clients[wit]
+
+            httping.streamCESRRequests(client=client, ims=bytearray(msg))
+            while not client.responses:
+                yield self.tock
+
+        self.remove(doers)
+
+        return rcts.keys()
+
+    def heartbeat(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatible generator method (doer dog)
+
+         Usage:
+             add result of doify on this method to doers list
+
+         Parameters:
+             tymth is injected function wrapper closure returned by .tymen() of
+                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
+             tock is injected initial tock value
+
+         """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            yield 10.0
 
 
 class WitnessReceiptor(doing.DoDoer):
@@ -145,10 +254,10 @@ class WitnessReceiptor(doing.DoDoer):
 
                     # Now that the witnesses have not met each other, send them each other's receipts
                     if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
-                        rctMsg.extend(self.replay(eids=ewits))
+                        rctMsg.extend(schemes(self.hby.db, eids=ewits))
                     elif ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt) and \
                             ("ba" in ser.ked and witer.wit in ser.ked["ba"]):  # Newly added witness, introduce to all
-                        rctMsg.extend(self.replay(eids=ewits))
+                        rctMsg.extend(schemes(self.hby.db, eids=ewits))
 
                     rserder = eventing.receipt(pre=ser.pre,
                                                sn=sn,
@@ -174,26 +283,6 @@ class WitnessReceiptor(doing.DoDoer):
                 yield self.tock
 
             yield self.tock
-
-    def replay(self, eids):
-        msgs = bytearray()
-        for eid in eids:
-            for scheme in kering.Schemes:
-                keys = (eid, scheme)
-                said = self.hby.db.lans.get(keys=keys)
-                if said is not None:
-                    serder = self.hby.db.rpys.get(keys=(said.qb64,))
-                    cigars = self.hby.db.scgs.get(keys=(said.qb64,))
-
-                    if len(cigars) == 1:
-                        (verfer, cigar) = cigars[0]
-                        cigar.verfer = verfer
-                    else:
-                        cigar = None
-                    msgs.extend(eventing.messagize(serder=serder,
-                                                   cigars=[cigar],
-                                                   pipelined=True))
-        return msgs
 
 
 class WitnessInquisitor(doing.DoDoer):
@@ -611,3 +700,24 @@ def httpClient(hab, wit):
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
+
+
+def schemes(db, eids):
+    msgs = bytearray()
+    for eid in eids:
+        for scheme in kering.Schemes:
+            keys = (eid, scheme)
+            said = db.lans.get(keys=keys)
+            if said is not None:
+                serder = db.rpys.get(keys=(said.qb64,))
+                cigars = db.scgs.get(keys=(said.qb64,))
+
+                if len(cigars) == 1:
+                    (verfer, cigar) = cigars[0]
+                    cigar.verfer = verfer
+                else:
+                    cigar = None
+                msgs.extend(eventing.messagize(serder=serder,
+                                               cigars=[cigar],
+                                               pipelined=True))
+    return msgs
