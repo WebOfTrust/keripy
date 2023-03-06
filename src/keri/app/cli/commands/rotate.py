@@ -32,10 +32,10 @@ class RotateOptions:
     Configurable options for a rotation performed at the command line.
     Each of the defaults is depended on by the option merge_args_with_file function.
     """
-    isith: int | str | list
-    ncount: int
+    isith: int | str | list | None
+    ncount: int | None
     nsith: int | str | list = '0'
-    toad: int = 0
+    toad: int = None
     wits: list = None
     witsCut: list = None
     witsAdd: list = None
