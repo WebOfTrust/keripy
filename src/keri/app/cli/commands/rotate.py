@@ -23,6 +23,8 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument('--file', '-f', help='file path of config options (JSON) for rotation', default="", required=False)
 parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).',
                     default=None, type=int, required=False)
+parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
+                    dest="endpoint", action='store_true')
 rotating.addRotationArgs(parser)
 
 
@@ -50,7 +52,7 @@ def rotate(args):
 
     """
     opts = mergeArgsWithFile(args)
-    rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias,
+    rotDoer = RotateDoer(name=args.name, base=args.base, alias=args.alias, endpoint=args.endpoint,
                          bran=args.bran, wits=opts.wits,
                          cuts=opts.witsCut, adds=opts.witsAdd,
                          isith=opts.isith, nsith=opts.nsith,
@@ -109,7 +111,7 @@ class RotateDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, isith=None, nsith=None, count=None,
+    def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
@@ -131,6 +133,7 @@ class RotateDoer(doing.DoDoer):
         self.count = count
         self.toad = toad
         self.data = data
+        self.endpoint = endpoint
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -159,6 +162,9 @@ class RotateDoer(doing.DoDoer):
         if hab is None:
             raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
 
+        receiptor = agenting.Receiptor(hby=self.hby)
+        self.extend([receiptor])
+
         if self.wits:
             if self.adds or self.cuts:
                 raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
@@ -167,6 +173,10 @@ class RotateDoer(doing.DoDoer):
             # wits= [a,b,c]  wits=[b, z]
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
+            if self.endpoint:
+                for wit in self.adds:
+                    print(f"catching up {wit}")
+                    yield from receiptor.catchup(hab.pre, wit)
 
         hab.rotate(isith=self.isith, nsith=self.nsith, ncount=self.count, toad=self.toad,
                    cuts=list(self.cuts), adds=list(self.adds),
@@ -183,9 +193,12 @@ class RotateDoer(doing.DoDoer):
         yield self.tock
 
         if hab.kever.wits:
-            witDoer.msgs.append(dict(pre=hab.pre))
-            while not witDoer.cues:
-                _ = yield self.tock
+            if self.endpoint:
+                yield from receiptor.receipt(hab.pre, sn=hab.kever.sn)
+            else:
+                witDoer.msgs.append(dict(pre=hab.pre))
+                while not witDoer.cues:
+                    _ = yield self.tock
 
         if hab.kever.delegator:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
@@ -195,7 +208,7 @@ class RotateDoer(doing.DoDoer):
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
 
-        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx, self.postman]
+        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx, self.postman, receiptor]
         self.remove(toRemove)
 
         return

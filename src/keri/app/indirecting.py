@@ -1052,14 +1052,12 @@ class ReceiptEnd(doing.DoDoer):
         self.psr.parseOne(ims=msg)
 
         if pre in self.hab.kevers:
-            if serder.sn > 0:
-                wits = self.hab.kvy.fetchWitnessState(pre, serder.sn)
-            else:
-                wits = serder.ked["b"]
+            kever = self.hab.kevers[pre]
+            wits = kever.wits
 
             if self.hab.pre not in wits:
                 raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
-                                                        f"{serder.sn}, {wits}")
+                                                        f"{serder.sn}: wits={wits}")
 
             rct = self.hab.receipt(serder)
 

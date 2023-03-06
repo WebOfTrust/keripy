@@ -26,6 +26,8 @@ function isSuccess() {
 isSuccess
 "${script_dir}/basic/demo-witness-script.sh"
 isSuccess
+"${script_dir}/basic/demo-witness-async-script.sh"
+isSuccess
 "${script_dir}/basic/multisig.sh"
 isSuccess
 "${script_dir}/basic/multisig-delegate-delegator.sh"

@@ -109,6 +109,30 @@ class Receiptor(doing.DoDoer):
 
         return rcts.keys()
 
+    def catchup(self, pre, wit):
+        """ When adding a new Witness, use this method to catch the witness up to the current state of the KEL
+
+        Parameters:
+            pre (str): qualified base64 AID of the KEL to send
+            wit (str): qualified base64 AID of the witness to send the KEL to
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+
+        client, clientDoer = httpClient(hab, wit)
+        self.extend([clientDoer])
+
+        for fmsg in hab.db.clonePreIter(pre=pre):
+            httping.streamCESRRequests(client=client, ims=bytearray(fmsg))
+            while not client.responses:
+                yield self.tock
+
+        self.remove([clientDoer])
+
+
     def heartbeat(self, tymth=None, tock=0.0):
         """
          Returns doifiable Doist compatible generator method (doer dog)
