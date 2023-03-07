@@ -21,7 +21,7 @@ Then you can run
 
 to get a version string similar to the following: 
 
-`0.6.7`
+`1.0.0`
 
 ### Local installation - Docker build
 Run `make build-keri` to build your docker image.
