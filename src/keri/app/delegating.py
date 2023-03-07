@@ -75,7 +75,6 @@ class Boatswain(doing.DoDoer):
 
                 # load the hab of the delegated identifier to anchor
                 hab = self.hby.habs[pre]
-                alias = hab.name
                 delpre = hab.kever.delegator  # get the delegator identifier
                 if delpre not in hab.kevers:
                     print(f"delegator {delpre} not found")
@@ -93,31 +92,19 @@ class Boatswain(doing.DoDoer):
                 if isinstance(hab, GroupHab):
                     phab = hab.mhab
                     smids = hab.smids
-                elif srdr.ked["t"] == coring.Ilks.dip:  # are we incepting a new event?
-                    phab = self.proxy(alias, hab.kever)  # create a proxy identifier for comms
-                    if phab.kever.wits:
-                        witDoer = agenting.WitnessReceiptor(hby=self.hby)
-                        self.extend([witDoer])
-                        witDoer.msgs.append(dict(pre=phab.pre))
-                        while not witDoer.cues:
-                            _ = yield self.tock
-
-                        self.remove([witDoer])
-
-                        icp = phab.db.cloneEvtMsg(pre=phab.pre, fn=0, dig=phab.kever.serder.saidb)
-                        ser = coring.Serder(raw=icp)
-                        del icp[:ser.size]
-
-                        self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=ser,
-                                          attachment=icp)
+                elif hab.kever.sn > 0:
+                    phab = hab
+                elif "proxy" in msg:
+                    phab = msg["proxy"]
                 else:
-                    phab = self.hby.habByName(f"{alias}-proxy")
+                    print("no proxy to send messages")
+                    continue
 
                 # Send exn message for notification purposes
                 exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=smids)
 
-                self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
-                self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
+                self.postman.send(hab=phab, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+                self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 yield from self.waitForAnchor(phab, hab, dkever, srdr)
 
@@ -128,7 +115,7 @@ class Boatswain(doing.DoDoer):
 
     def waitForAnchor(self, phab, hab, dkever, serder):
         anchor = dict(i=serder.said, s=serder.sn, d=serder.said)
-        self.witq.query(src=phab.pre, pre=dkever.prefixer.qb64, anchor=anchor)
+        self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=anchor)
 
         while True:
             if serder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
@@ -140,33 +127,6 @@ class Boatswain(doing.DoDoer):
             yield
 
         return True
-
-    def proxy(self, alias, kever):
-        """ Create a proxy identifier for forward and query messages
-
-        Uses witness and witness threshold configuration from delegated identifier to create
-        a proxy identifier that will be able to send forward exn messages and query messages.
-
-        Parameters:
-            alias (str): human readable name of identifier to create a proxy for
-            kever (Kever): key event representation of identitifer to create proxy for
-
-        Returns:
-
-        """
-        palias = f"{alias}-proxy"
-        kwargs = dict(
-            transferable=True,
-            wits=kever.wits,
-            icount=1,
-            isith='1',
-            ncount=0,
-            nsith='0',
-            toad=kever.toader.num,
-        )
-
-        hab = self.hby.makeHab(palias, **kwargs)
-        return hab
 
 
 def loadHandlers(hby, exc, notifier):
@@ -277,4 +237,3 @@ def delegateRequestExn(hab, delpre, ked, aids=None):
     del ims[:exn.size]
 
     return exn, ims
-

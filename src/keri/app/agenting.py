@@ -361,15 +361,18 @@ class WitnessInquisitor(doing.DoDoer):
             q = evt["q"]
             wits = evt["wits"]
 
-            hab = self.hby.habs[src] if src in self.hby.habs else None
-            if hab is None:
+            if "hab" in evt:
+                hab = evt["hab"]
+            elif src in self.hby.habs:
+                hab = self.hby.habs[src]
+            else:
                 continue
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
                 continue
 
-            wits = wits if wits is not None else hab.kevers[pre].wits
+            wits = wits if wits is not None else self.hby.kevers[pre].wits
             if len(wits) == 0:
                 logger.error("Must be used with an identifier that has witnesses")
                 continue
@@ -393,7 +396,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield self.tock
 
-    def query(self, src, pre, r="logs", sn=0, anchor=None, wits=None, **kwa):
+    def query(self, pre, r="logs", sn=0, src=None, hab=None, anchor=None, wits=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
         Parameters:
@@ -412,7 +415,11 @@ class WitnessInquisitor(doing.DoDoer):
         if anchor is not None:
             qry["a"] = anchor
 
-        self.msgs.append(dict(src=src, pre=pre, r=r, q=qry, wits=wits))
+        msg = dict(src=src, pre=pre, r=r, q=qry, wits=wits)
+        if hab is not None:
+            msg["hab"] = hab
+
+        self.msgs.append(msg)
 
     def telquery(self, src, ri, i=None, r="tels", **kwa):
         qry = dict(ri=ri)

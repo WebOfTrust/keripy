@@ -60,7 +60,10 @@ class Postman(doing.DoDoer):
                 srdr = evt["serder"]
 
                 # Get the hab of the sender
-                hab = self.hby.habs[src]
+                if "hab" in evt:
+                    hab = evt["hab"]
+                else:
+                    hab = self.hby.habs[src]
 
                 # Get the kever of the recipient and choose a witness
                 wit = agenting.mailbox(hab, recp)
@@ -101,7 +104,7 @@ class Postman(doing.DoDoer):
 
             yield self.tock
 
-    def send(self, src, dest, topic, serder, attachment=None):
+    def send(self, dest, topic, serder, src=None, hab=None, attachment=None):
         """
         Utility function to queue a msg on the Postman's buffer for
         enveloping and forwarding to a witness
@@ -118,6 +121,8 @@ class Postman(doing.DoDoer):
         evt = dict(src=src, dest=dest, topic=topic, serder=serder)
         if attachment is not None:
             evt["attachment"] = attachment
+        if hab is not None:
+            evt["hab"] = hab
 
         self.evts.append(evt)
 

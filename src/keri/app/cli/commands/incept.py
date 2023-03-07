@@ -24,6 +24,7 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument("--config", "-c", help="directory override for configuration data")
 parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness receipt endpoint for witness receipts.",
                     dest="endpoint", action='store_true')
+parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
 
@@ -66,10 +67,12 @@ def handler(args):
     alias = args.alias
     config_dir = args.config
     endpoint = args.endpoint
+    proxy = args.proxy
 
     kwa = mergeArgsWithFile(args).__dict__
 
-    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, endpoint=endpoint, cnfg=config_dir, **kwa)
+    icpDoer = InceptDoer(name=name, base=base, alias=alias, bran=bran, endpoint=endpoint, proxy=proxy,
+                         cnfg=config_dir, **kwa)
 
     doers = [icpDoer]
     return doers
@@ -123,7 +126,7 @@ class InceptDoer(doing.DoDoer):
     """ DoDoer for creating a new identifier prefix and Hab with an alias.
     """
 
-    def __init__(self, name, base, alias, bran, endpoint, cnfg=None, **kwa):
+    def __init__(self, name, base, alias, bran, endpoint, proxy=None, cnfg=None, **kwa):
 
         cf = None
         if config is not None:
@@ -134,6 +137,7 @@ class InceptDoer(doing.DoDoer):
                                     reopen=True,
                                     clear=False)
         self.endpoint = endpoint
+        self.proxy = proxy
         hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.swain = delegating.Boatswain(hby=hby)
@@ -166,7 +170,11 @@ class InceptDoer(doing.DoDoer):
         self.extend([witDoer, receiptor])
 
         if hab.kever.delegator:
-            self.swain.msgs.append(dict(alias=self.alias, pre=hab.pre, sn=0))
+            msg = dict(pre=hab.pre, sn=0)
+            if self.proxy is not None:
+                msg["proxy"] = self.hby.habByName(self.proxy)
+
+            self.swain.msgs.append(msg)
             print("Waiting for delegation approval...")
             while not self.swain.cues:
                 yield self.tock
