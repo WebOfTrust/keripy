@@ -160,7 +160,7 @@ class CredentialIssuer(doing.DoDoer):
                                                        rules=rules,
                                                        data=data,
                                                        private=private)
-                print(f"Writing credential {self.creder.said} to credential.json")
+                print(f"Writing credential {self.creder.said} to {out}")
                 f = open(out, mode="w")
                 json.dump(self.creder.crd, f)
                 f.close()
