@@ -911,30 +911,6 @@ class BaseHab:
                                                    stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
 
-    def recreate(self, serder, opre, verfers):
-        """ Recreate the Hab with new identifier prefix.
-
-        """
-
-        self.pre = serder.ked["i"]  # new pre
-        self.mgr.move(old=opre, new=self.pre)
-
-        habr = self.db.habs.get(self.name)
-        # may want db method that updates .habs. and .prefixes together
-        self.db.habs.pin(keys=self.name,
-                         val=basing.HabitatRecord(hid=self.pre,
-                                                  watchers=habr.watchers))
-        self.prefixes.add(self.pre)
-
-        # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
-        # create inception event
-        sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-        self.kvy.processEvent(serder=serder, sigers=sigers)
-        # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-        if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Improper Habitat inception for "
-                                            "pre={}.".format(self.pre))
-
     @property
     def iserder(self):
         """
@@ -1080,7 +1056,7 @@ class BaseHab:
         except MissingSignatureError:
             pass
         except Exception:
-            raise kering.ValidationError("Improper Habitat rotation for "
+            raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
 
         return msg
@@ -2119,7 +2095,7 @@ class SignifySaltyHab(BaseHab):
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except Exception:
-            raise kering.ValidationError("Improper Habitat rotation for "
+            raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
 
         return msg
