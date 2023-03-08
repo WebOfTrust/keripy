@@ -161,7 +161,7 @@ class Postman(doing.DoDoer):
 
     def sendDirect(self, hab, ends, serder, atc):
         ctrl, locs = random.choice(list(ends.items()))
-        witer = agenting.messengerFrom(hab=hab, wit=ctrl, urls=locs)
+        witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
 
         msg = bytearray(serder.raw)
         if atc is not None:
