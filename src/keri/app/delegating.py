@@ -121,6 +121,7 @@ class Boatswain(doing.DoDoer):
             if serder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
                 seqner = coring.Seqner(sn=serder.sn)
                 couple = seqner.qb64b + serder.saidb
+                print(f"Anchor found, {couple}")
                 dgkey = dbing.dgKey(hab.kever.prefixer.qb64b, hab.kever.serder.saidb)
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
                 break

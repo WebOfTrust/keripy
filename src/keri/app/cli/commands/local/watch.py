@@ -96,7 +96,7 @@ class WatchDoer(doing.DoDoer):
                     hab.db.ksns.rem((saider.qb64,))
                     hab.db.ksns.rem((saider.qb64,))
 
-                witer = agenting.witnesser(hab, wit)
+                witer = agenting.messenger(hab, wit)
                 self.extend([witer])
 
                 msg = hab.query(pre=hab.pre, src=wit, route="ksn")

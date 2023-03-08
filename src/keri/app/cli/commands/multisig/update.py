@@ -91,7 +91,7 @@ class UpdateDoer(doing.DoDoer):
             self.hab.db.ksns.rem((saider.qb64,))
             self.hab.db.ksns.rem((saider.qb64,))
 
-        witer = agenting.witnesser(self.hab, self.wit)
+        witer = agenting.messenger(self.hab, self.wit)
         self.extend([witer])
 
         msg = self.hab.query(pre=self.hab.pre, src=self.wit, route="ksn")

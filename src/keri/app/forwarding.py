@@ -5,7 +5,8 @@ keri.app.forwarding module
 
 module for enveloping and forwarding KERI message
 """
-
+import random
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 from hio.help import decking
@@ -15,6 +16,7 @@ from keri.app import agenting
 from keri.app.habbing import GroupHab
 from keri.core import coring, eventing
 from keri.db import dbing
+from keri.kering import Roles
 from keri.peer import exchanging
 
 
@@ -26,11 +28,12 @@ class Postman(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, evts=None, cues=None, klas=None, **kwa):
+    def __init__(self, hby, mbx=None, evts=None, cues=None, klas=None, **kwa):
         self.hby = hby
+        self.mbx = mbx
         self.evts = evts if evts is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.klas = klas if klas is not None else agenting.HttpWitnesser
+        self.klas = klas if klas is not None else agenting.HTTPMessenger
 
         doers = [doing.doify(self.deliverDo)]
         super(Postman, self).__init__(doers=doers, **kwa)
@@ -58,6 +61,7 @@ class Postman(doing.DoDoer):
                 recp = evt["dest"]
                 tpc = evt["topic"]
                 srdr = evt["serder"]
+                atc = evt["attachment"] if "attachment" in evt else None
 
                 # Get the hab of the sender
                 if "hab" in evt:
@@ -65,41 +69,23 @@ class Postman(doing.DoDoer):
                 else:
                     hab = self.hby.habs[src]
 
-                # Get the kever of the recipient and choose a witness
-                wit = agenting.mailbox(hab, recp)
-                if not wit:
-                    print(f"exiting because can't find wit for {recp}")
+                ends = self.endsFor(hab, recp)
+                try:
+                    if Roles.controller in ends:
+                        yield from self.sendDirect(hab, ends[Roles.controller], serder=srdr, atc=atc)
+                    elif Roles.agent in ends:
+                        yield from self.sendDirect(hab, ends[Roles.agent], serder=srdr, atc=atc)
+                    elif Roles.mailbox in ends:
+                        yield from self.forward(hab, ends[Roles.mailbox], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                    elif Roles.witness in ends:
+                        yield from self.forward(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                except kering.ConfigurationError as e:
+                    print(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue
-
-                msg = bytearray()
-                msg.extend(introduce(hab, wit))
-                # Transpose the signatures to point to the new location
-
-                # create the forward message with payload embedded at `a` field
-                fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=tpc),
-                                          payload=srdr.ked)
-                ims = hab.endorse(serder=fwd, last=True, pipelined=False)
-
-                if "attachment" in evt:
-                    atc = bytearray()
-                    attachment = evt["attachment"]
-                    pather = coring.Pather(path=["a"])
-                    atc.extend(pather.qb64b)
-                    atc.extend(attachment)
-                    ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                              count=(len(atc) // 4)).qb64b)
-                    ims.extend(atc)
-
-                witer = agenting.witnesser(hab=hab, wit=wit)
-
-                msg.extend(ims)
-                witer.msgs.append(bytearray(msg))  # make a copy
-                self.extend([witer])
-
-                while not witer.idle:
-                    _ = (yield self.tock)
+                # Get the kever of the recipient and choose a witness
 
                 self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
+
                 yield self.tock
 
             yield self.tock
@@ -111,6 +97,7 @@ class Postman(doing.DoDoer):
 
         Parameters:
             src (str): qb64 identifier prefix of sender
+            hab (Hab): Sender identifier habitat
             dest (str) is identifier prefix qb64 of the intended recipient
             topic (str): topic of message
             serder (Serder) KERI event message to envelope and forward:
@@ -143,6 +130,88 @@ class Postman(doing.DoDoer):
                 else:
                     self.cues.append(cue)
             yield self.tock
+
+    @staticmethod
+    def endsFor(hab, dest):
+        ends = dict()
+
+        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(dest,)):
+            locs = dict()
+            urls = hab.fetchUrls(eid=eid, scheme="")
+            for rscheme, url in urls.firsts():
+                locs[rscheme] = url
+
+            if erole not in ends:
+                ends[erole] = dict()
+
+            ends[erole][eid] = locs
+
+        ends[Roles.witness] = dict()
+        if kever := hab.kevers[dest] if dest in hab.kevers else None:
+            # latest key state for cid
+            for eid in kever.wits:
+                locs = dict()
+                urls = hab.fetchUrls(eid=eid, scheme="")
+                for rscheme, url in urls.firsts():
+                    locs[rscheme] = url
+
+                ends[Roles.witness][eid] = locs
+
+        return ends
+
+    def sendDirect(self, hab, ends, serder, atc):
+        ctrl, locs = random.choice(list(ends.items()))
+        witer = agenting.messengerFrom(hab=hab, wit=ctrl, urls=locs)
+
+        msg = bytearray(serder.raw)
+        if atc is not None:
+            msg.extend(atc)
+
+        witer.msgs.append(bytearray(msg))  # make a copy
+        self.extend([witer])
+
+        while not witer.idle:
+            _ = (yield self.tock)
+
+    def forward(self, hab, ends, recp, serder, atc, topic):
+        # If we are one of the mailboxes, just store locally in mailbox
+        owits = oset(ends.keys())
+        if self.mbx and owits.intersection(hab.prefixes):
+            msg = bytearray(serder.raw)
+            if atc is not None:
+                msg.extend(atc)
+            self.mbx.storeMsg(topic=f"{recp}/{topic}".encode("utf-8"), msg=msg)
+            return
+
+        # Its not us, randomly select a mailbox and forward it on
+        mbx, mailbox = random.choice(list(ends.items()))
+        msg = bytearray()
+        msg.extend(introduce(hab, mbx))
+
+        # create the forward message with payload embedded at `a` field
+        fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                                  payload=serder.ked)
+        ims = hab.endorse(serder=fwd, last=True, pipelined=False)
+
+        # Transpose the signatures to point to the new location
+        if atc is not None:
+            pathed = bytearray()
+            pather = coring.Pather(path=["a"])
+            pathed.extend(pather.qb64b)
+            pathed.extend(atc)
+            ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                      count=(len(pathed) // 4)).qb64b)
+            ims.extend(pathed)
+
+        witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
+
+        msg.extend(ims)
+        witer.msgs.append(bytearray(msg))  # make a copy
+        self.extend([witer])
+
+        while not witer.idle:
+            _ = (yield self.tock)
+
 
 
 class ForwardHandler(doing.Doer):
@@ -282,5 +351,5 @@ def introduce(hab, wit):
         for msg in hab.db.clonePreIter(pre=hab.pre):
             msgs.extend(msg)
 
-        msgs.extend(hab.replyEndRole(cid=hab.pre, role=kering.Roles.witness))
+        msgs.extend(hab.replyEndRole(cid=hab.pre))
     return msgs

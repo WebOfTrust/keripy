@@ -225,7 +225,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    witer = witnesser(hab, wit)
+                    witer = messenger(hab, wit)
                     witers.append(witer)
                     self.extend([witer])
 
@@ -333,7 +333,7 @@ class WitnessInquisitor(doing.DoDoer):
         """
         self.hby = hby
         self.reger = reger
-        self.klas = klas if klas is not None else HttpWitnesser
+        self.klas = klas if klas is not None else HTTPMessenger
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
 
@@ -378,7 +378,7 @@ class WitnessInquisitor(doing.DoDoer):
                 continue
 
             wit = random.choice(wits)
-            witer = witnesser(hab, wit)
+            witer = messenger(hab, wit)
             self.extend([witer])
 
             msg = hab.query(pre, src=wit, route=r, query=q)  # Query for remote pre Event
@@ -477,7 +477,7 @@ class WitnessPublisher(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    witer = witnesser(hab, wit)
+                    witer = messenger(hab, wit)
                     witers.append(witer)
                     witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
                     self.extend([witer])
@@ -499,7 +499,7 @@ class WitnessPublisher(doing.DoDoer):
             yield self.tock
 
 
-class TCPWitnesser(doing.DoDoer):
+class TCPMessenger(doing.DoDoer):
     """ Send events to witnesses for receipting using TCP direct connection
 
     """
@@ -526,7 +526,7 @@ class TCPWitnesser(doing.DoDoer):
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       **kwa)
 
-        super(TCPWitnesser, self).__init__(doers=doers)
+        super(TCPMessenger, self).__init__(doers=doers)
 
     def receiptDo(self, tymth=None, tock=0.0):
         """
@@ -593,9 +593,9 @@ class TCPWitnesser(doing.DoDoer):
         return len(self.sent) == self.posted
 
 
-class HttpWitnesser(doing.DoDoer):
+class HTTPMessenger(doing.DoDoer):
     """
-    Interacts with Witnesses on HTTP and SSE for sending events and receiving receipts
+    Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
 
     """
 
@@ -619,14 +619,14 @@ class HttpWitnesser(doing.DoDoer):
 
         up = urlparse(url)
         if up.scheme != kering.Schemes.http:
-            raise ValueError(f"invalid scheme {up.scheme} for HttpWitnesser")
+            raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
         self.client = http.clienting.Client(hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
 
-        super(HttpWitnesser, self).__init__(doers=doers, **kwa)
+        super(HTTPMessenger, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -687,25 +687,39 @@ def mailbox(hab, cid):
     return mbx
 
 
-def witnesser(hab, wit):
-    """ Create a Witnesser (tcp or http) based on available endpoints
+def messenger(hab, pre):
+    """ Create a Messenger (tcp or http) based on available endpoints
 
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
-        wit (str): qb64 identifier prefix of witness to create a witnesser for
+        pre (str): qb64 identifier prefix of recipient to create a messanger for
 
     Returns:
-        Optional(TcpWitnesser, HttpWitnesser): witnesser for ensuring full reciepts
+        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    urls = hab.fetchUrls(eid=wit)
+    urls = hab.fetchUrls(eid=pre)
+    return messengerFrom(hab, pre, urls)
+
+
+def messengerFrom(hab, pre, urls):
+    """ Create a Witnesser (tcp or http) based on provided endpoints
+
+    Parameters:
+        hab (Habitat): Environment to use to look up witness URLs
+        pre (str): qb64 identifier prefix of recipient to create a messanger for
+        urls (dict): map of schemes to urls of available endpoints
+
+    Returns:
+        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
+    """
     if kering.Schemes.http in urls:
         url = urls[kering.Schemes.http]
-        witer = HttpWitnesser(hab=hab, wit=wit, url=url)
+        witer = HTTPMessenger(hab=hab, wit=pre, url=url)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
-        witer = TCPWitnesser(hab=hab, wit=wit, url=url)
+        witer = TCPMessenger(hab=hab, wit=pre, url=url)
     else:
-        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
+        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 
     return witer
 

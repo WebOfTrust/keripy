@@ -175,6 +175,8 @@ class ConfirmDoer(doing.DoDoer):
                         self.toRemove.append(witDoer)
                         yield self.tock
 
+                        print(f"anchored with {[anchor]}")
+
                         if hab.kever.wits:
                             witDoer.msgs.append(dict(pre=hab.pre, sn=cur+1))
                             while not witDoer.cues:
