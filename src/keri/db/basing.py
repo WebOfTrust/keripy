@@ -584,6 +584,11 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
+        .nmsp is named subDB instance of Komer that maps habitat namespaces and names to habitat
+            application state. Includes habitat identifier prefix
+            key is habitat namespace + b'\x00' + name str
+            value is serialized HabitatRecord dataclass
+
         .sdts (sad date-time-stamp) named subDB instance of CesrSuber that
             that maps SAD SAID to Dater instance's CESR serialization of
             ISO-8601 datetime
@@ -735,6 +740,11 @@ class Baser(dbing.LMDBer):
         # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
+                                 schema=HabitatRecord, )
+
+        # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
+        self.nmsp = koming.Komer(db=self,
+                                 subkey='nmsp.',
                                  schema=HabitatRecord, )
 
         # SAD support datetime stamps and signatures indexed and not-indexed
@@ -965,6 +975,26 @@ class Baser(dbing.LMDBer):
 
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
+
+        # Load namespaced Habs
+        removes = []
+        for keys, data in self.nmsp.getItemIter():
+            if (state := self.states.get(keys=data.hid)) is not None:
+                try:
+                    kever = eventing.Kever(state=state, db=self,
+                                           prefixes=self.prefixes,
+                                           local=True)
+                except kering.MissingEntryError as ex:  # no kel event for keystate
+                    removes.append(keys)  # remove from .habs
+                    continue
+                self.kevers[kever.prefixer.qb64] = kever
+                self.prefixes.add(kever.prefixer.qb64)
+            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
+                removes.append(keys)  # no key state or KEL event for .hab record
+
+        for keys in removes:  # remove bare .habs records
+            self.nmsp.rem(keys=keys)
+
 
     def clean(self):
         """
