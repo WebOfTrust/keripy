@@ -96,7 +96,7 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
                             delpre=palHab.pre)
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
-    bts.msgs.append(dict(pre=delHab.pre, proxy=proxyHab))
+    bts.delegation(pre=delHab.pre, proxy=proxyHab)
 
     palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
     witDoer.msgs.append(dict(pre=palHab.pre))

@@ -183,22 +183,24 @@ class RotateDoer(doing.DoDoer):
                    data=self.data)
 
         if hab.kever.delegator:
-            self.swain.msgs.append(dict(alias=self.alias, pre=hab.pre, sn=hab.kever.sn))
+            self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
             print("Waiting for delegation approval...")
-            while not self.swain.cues:
+            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
 
-        witDoer = agenting.WitnessReceiptor(hby=self.hby)
-        self.extend(doers=[witDoer])
-        yield self.tock
-
-        if hab.kever.wits:
+        elif hab.kever.wits:
             if self.endpoint:
                 yield from receiptor.receipt(hab.pre, sn=hab.kever.sn)
             else:
+                witDoer = agenting.WitnessReceiptor(hby=self.hby)
+                self.extend(doers=[witDoer])
+                yield self.tock
+
                 witDoer.msgs.append(dict(pre=hab.pre))
                 while not witDoer.cues:
                     _ = yield self.tock
+
+                self.remove([witDoer])
 
         if hab.kever.delegator:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
@@ -208,7 +210,7 @@ class RotateDoer(doing.DoDoer):
         for idx, verfer in enumerate(hab.kever.verfers):
             print(f'\tPublic key {idx + 1}:  {verfer.qb64}')
 
-        toRemove = [self.hbyDoer, witDoer, self.swain, self.mbx, self.postman, receiptor]
+        toRemove = [self.hbyDoer, self.swain, self.mbx, self.postman, receiptor]
         self.remove(toRemove)
 
         return

@@ -949,6 +949,17 @@ class Baser(dbing.LMDBer):
         # Chunked image data for contact information for remote identfiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
+        # Delegation escrow dbs #
+        # delegated partial witness escrow
+        self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
+
+        # delegated unanchored escrow
+        self.dune = subing.SerderSuber(db=self, subkey='dune.')
+
+        # completed group multisig
+        self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
+                                     klas=coring.Saider)
+
         self.reload()
 
         return self.env

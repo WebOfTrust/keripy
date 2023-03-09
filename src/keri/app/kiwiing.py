@@ -699,12 +699,11 @@ class IdentifierEnd(doing.DoDoer):
                 dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
                 anchor = self.hby.db.getAes(dgkey)
                 if not anchor:
-                    self.swain.msgs.append(dict(alias=hab.name, pre=hab.pre, sn=hab.kever.sn))
+                    self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
                     print("Waiting for delegation approval...")
-                    while not self.swain.cues:
+                    while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                         yield self.tock
 
-                    self.swain.cues.popleft()
                     print("Delegation anchored")
 
             dgkey = dbing.dgKey(hab.kever.serder.preb, hab.kever.serder.saidb)

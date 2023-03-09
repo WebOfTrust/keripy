@@ -11,6 +11,7 @@ from hio.base import doing
 
 from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
 from keri.app.cli.common import existing, incepting, config
+from keri.core import coring
 
 logger = help.ogler.getLogger()
 
@@ -170,16 +171,12 @@ class InceptDoer(doing.DoDoer):
         self.extend([witDoer, receiptor])
 
         if hab.kever.delegator:
-            msg = dict(pre=hab.pre, sn=0)
-            if self.proxy is not None:
-                msg["proxy"] = self.hby.habByName(self.proxy)
-
-            self.swain.msgs.append(msg)
+            self.swain.delegation(pre=hab.pre, sn=0, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
-            while not self.swain.cues:
+            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                 yield self.tock
 
-        if hab.kever.wits:
+        elif hab.kever.wits:
             print("Waiting for witness receipts...")
             if self.endpoint:
                 yield from receiptor.receipt(hab.pre, sn=0)

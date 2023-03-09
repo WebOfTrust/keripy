@@ -619,7 +619,7 @@ class Counselor(doing.DoDoer):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witered:  # We are elected to perform delegation and witnessing messaging
                         print(f"We are the witnesser, sending {pre} to delegator")
-                        self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
+                        self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
