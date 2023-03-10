@@ -1103,13 +1103,13 @@ class ReceiptEnd(doing.DoDoer):
 
         serder = coring.Serder(raw=bytes(raw))
         if serder.sn > 0:
-            wits = self.hab.kvy.fetchWitnessState(pre, serder.sn)
+            wits = [wit.qb64 for wit in self.hab.kvy.fetchWitnessState(pre, serder.sn)]
         else:
             wits = serder.ked["b"]
 
         if self.hab.pre not in wits:
             raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
-                                                    f"{serder.sn}")
+                                                    f"{serder.sn}, {wits}")
         rserder = eventing.receipt(pre=pre,
                                    sn=sn,
                                    said=said.decode("utf-8"))

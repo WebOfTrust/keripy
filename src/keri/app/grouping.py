@@ -649,21 +649,26 @@ class Counselor(doing.DoDoer):
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
 
-            if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
-                aseq = coring.Seqner(sn=serder.sn)
-                couple = aseq.qb64b + serder.saidb
-                dgkey = dbing.dgKey(pre, saider.qb64b)
-                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                self.hby.db.gdee.rem(keys=(pre,))
-                print(f"Delegation approval for {pre} received.")
+            if witer:  # We are elected witnesser, We've already done out part in Boatswain, we are done.
+                if self.swain.complete(prefixer=kever.prefixer, seqner=coring.Seqner(sn=kever.sn)):
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    print(f"Delegation approval for {pre} received.")
 
-                if witer:  # We are elected witnesser, send off event to witnesses
-                    print(f"We are the witnesser, sending {pre} to witnesses")
-                    self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
+                    self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
-                # Move to escrow waiting for witness receipts
-                print(f"Waiting for witness receipts for {pre}")
-                self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+            else:  # Not witnesser, we need to look for the anchor and then wait for receipts
+                if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
+                    aseq = coring.Seqner(sn=serder.sn)
+                    couple = aseq.qb64b + serder.saidb
+                    dgkey = dbing.dgKey(pre, saider.qb64b)
+                    self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    print(f"Delegation approval for {pre} received.")
+
+                    # Move to escrow waiting for witness receipts
+                    print(f"Waiting for witness receipts for {pre}")
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processPartialWitnessEscrow(self):
         """

@@ -20,7 +20,7 @@ def test_boatswain(seeder):
             habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-        witDoer = agenting.WitnessReceiptor(hby=palHby)
+        witDoer = agenting.Receiptor(hby=palHby)
         bts = delegating.Boatswain(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
@@ -78,8 +78,8 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock
-    witDoer.cues.popleft()
 
+    witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
     kvy = eventing.Kevery(db=delHby.db, local=False)
     parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy)
@@ -97,7 +97,6 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.delegation(pre=delHab.pre, proxy=proxyHab)
-
     palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:

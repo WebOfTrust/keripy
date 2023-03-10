@@ -167,11 +167,9 @@ class Receiptor(doing.DoDoer):
         if rep.status == 200:
             rct = bytearray(rep.body)
             hab.psr.parseOne(bytearray(rct))
-        else:
-            return False
 
         self.clienter.remove(client)
-        return True
+        return rep.status == 200
 
     def catchup(self, pre, wit):
         """ When adding a new Witness, use this method to catch the witness up to the current state of the KEL
