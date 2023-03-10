@@ -32,7 +32,7 @@ class Counselor(doing.DoDoer):
         self.hby = hby
         self.postman = forwarding.Postman(hby=hby)
         self.swain = delegating.Boatswain(hby=self.hby)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
         doers = [self.postman, self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
@@ -678,10 +678,10 @@ class Counselor(doing.DoDoer):
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
+            ghab = self.hby.habs[pre]
+            keys = [verfer.qb64 for verfer in kever.verfers]
+            witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
             if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
-                ghab = self.hby.habs[pre]
-                keys = [verfer.qb64 for verfer in kever.verfers]
-                witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -692,6 +692,8 @@ class Counselor(doing.DoDoer):
                 print(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+            elif not witer:
+                self.witDoer.gets.append(dict(pre=pre, sn=seqner.sn))
 
     def pendingEvents(self, pre):
         """ Return information about any pending events for a given AID

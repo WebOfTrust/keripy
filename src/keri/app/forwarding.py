@@ -79,6 +79,9 @@ class Postman(doing.DoDoer):
                         yield from self.forward(hab, ends[Roles.mailbox], recp=recp, serder=srdr, atc=atc, topic=tpc)
                     elif Roles.witness in ends:
                         yield from self.forward(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                    else:
+                        print(f"No end roles for {recp} to send evt={serder.raw}")
+                        continue
                 except kering.ConfigurationError as e:
                     print(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue

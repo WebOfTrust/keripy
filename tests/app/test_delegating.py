@@ -24,8 +24,8 @@ def test_boatswain(seeder):
         bts = delegating.Boatswain(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
 
         opts = dict(
             wesHab=wesHab,

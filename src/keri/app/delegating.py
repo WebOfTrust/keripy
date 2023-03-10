@@ -44,7 +44,7 @@ class Boatswain(doing.DoDoer):
         self.hby = hby
         self.postman = forwarding.Postman(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witDoer = agenting.Receiptor(hby=self.hby)
 
         super(Boatswain, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                         **kwa)
@@ -157,7 +157,7 @@ class Boatswain(doing.DoDoer):
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)
                 self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                self.witDoer.msgs.append(dict(pre=pre, sn=kever.sn))
+                self.witDoer.msgs.append(dict(pre=pre, sn=serder.sn))
 
                 # Move to escrow waiting for witness receipts
                 print(f"Waiting for fully signed witness receipts for {serder.sn}")

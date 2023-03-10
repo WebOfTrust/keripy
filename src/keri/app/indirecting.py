@@ -1078,7 +1078,7 @@ class ReceiptEnd(doing.DoDoer):
 
         """
         pre = req.get_param("pre")
-        sn = req.get_param("sn")
+        sn = req.get_param_as_int("sn")
         said = req.get_param("said")
 
         if pre is None:
@@ -1089,10 +1089,14 @@ class ReceiptEnd(doing.DoDoer):
         if sn is None and said is None:
             raise falcon.HTTPBadRequest(description="either 'sn' or 'said' query param is required")
 
-        if sn:
+        if sn is not None:
             said = self.hab.db.getKeLast(key=dbing.snKey(pre=preb,
                                                          sn=sn))
 
+        if said is None:
+            raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
+
+        said = bytes(said)
         dgkey = dbing.dgKey(preb, said)  # get message
         if not (raw := self.hab.db.getEvt(key=dgkey)):
             raise falcon.HTTPNotFound(description="Missing event for dig={}.".format(said))
@@ -1101,12 +1105,21 @@ class ReceiptEnd(doing.DoDoer):
         if serder.sn > 0:
             wits = self.hab.kvy.fetchWitnessState(pre, serder.sn)
         else:
-            wits = serder.ked["bt"]
+            wits = serder.ked["b"]
 
         if self.hab.pre not in wits:
             raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                     f"{serder.sn}")
-        rct = self.hab.receipt(serder)
+        rserder = eventing.receipt(pre=pre,
+                                   sn=sn,
+                                   said=said.decode("utf-8"))
+        rct = bytearray(rserder.raw)
+        if wigs := self.hab.db.getWigs(key=dgkey):
+            rct.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                      count=len(wigs)).qb64b)
+            for wig in wigs:
+                rct.extend(wig)
+
         rep.set_header('Content-Type', "application/json+cesr")
         rep.status = falcon.HTTP_200
         rep.data = rct

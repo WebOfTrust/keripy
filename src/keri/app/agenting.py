@@ -5,7 +5,7 @@ keri.app.agenting module
 
 """
 import random
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from hio.base import doing
 from hio.core import http
@@ -24,15 +24,24 @@ logger = help.ogler.getLogger()
 
 class Receiptor(doing.DoDoer):
 
-    def __init__(self, hby):
+    def __init__(self, hby, msgs=None, gets=None, cues=None):
 
-        doers = [doing.doify(self.heartbeat)]
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.gets = gets if gets is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.clienter = httping.Clienter()
+
+        doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
         self.hby = hby
 
         super(Receiptor, self).__init__(doers=doers)
 
     def receipt(self, pre, sn=None):
-        """
+        """ Returns a generator for witness receipting
+        
+        The returns a generator that will submit the designated event to witnesses for receipts using 
+        the synchronous witness API, the propogate the receipts to each of the other witnesses.  
+
 
         Parameters:
             pre (str): qualified base64 identifier to gather receipts for
@@ -55,6 +64,13 @@ class Receiptor(doing.DoDoer):
         msg = hab.makeOwnEvent(sn=sn)
         ser = coring.Serder(raw=msg)
 
+        # If we are a rotation event, may need to catch new witnesses up to current key state
+        if ser.ked['t'] in (coring.Ilks.rot,):
+            adds = ser.ked["ba"]
+            for wit in adds:
+                print(f"catching up {wit}")
+                yield from self.catchup(ser.pre, wit)
+
         clients = dict()
         doers = []
         for wit in wits:
@@ -75,10 +91,12 @@ class Receiptor(doing.DoDoer):
                 hab.psr.parseOne(bytearray(rct))
                 rserder = coring.Serder(raw=rct)
                 del rct[:rserder.size]
+
+                # pull off the count code
+                coring.Counter(qb64b=rct, strip=True)
                 rcts[wit] = rct
             else:
-                print(rep.status)
-                print(rep.body)
+                raise kering.ValidationError(f"invalid response {rep.status} from witnesses {wit}")
 
         for wit in rcts.keys():
             ewits = [w for w in rcts.keys() if w != wit]
@@ -95,19 +113,65 @@ class Receiptor(doing.DoDoer):
                                        sn=sn,
                                        said=ser.said)
             msg.extend(rserder.raw)
-            msg.extend(coring.Counter(code=CtrDex.WitnessIdxSigs, count=len(wigs)).qb64b)
+            msg.extend(coring.Counter(code=CtrDex.NonTransReceiptCouples, count=len(wigs)).qb64b)
             for wig in wigs:
                 msg.extend(wig)
 
             client = clients[wit]
 
-            httping.streamCESRRequests(client=client, ims=bytearray(msg))
-            while not client.responses:
+            sent = httping.streamCESRRequests(client=client, ims=bytearray(msg))
+            while len(client.responses) < sent:
                 yield self.tock
 
         self.remove(doers)
 
         return rcts.keys()
+
+    def get(self, pre, sn=None):
+        """ Returns a generator for witness querying
+
+        The returns a generator that will request receipts for event identified by pre and sn
+
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+
+        Returns:
+            list: identifiers of witnesses that returned receipts.
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+        sn = sn if sn is not None else hab.kever.sner.num
+        wits = hab.kever.wits
+
+        if len(wits) == 0:
+            return
+
+        wit = random.choice(hab.kever.wits)
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[kering.Schemes.http]
+        url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
+
+        client = self.clienter.request("GET", url)
+        while not client.responses:
+            yield self.tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            rct = bytearray(rep.body)
+            hab.psr.parseOne(bytearray(rct))
+        else:
+            return False
+
+        self.clienter.remove(client)
+        return True
 
     def catchup(self, pre, wit):
         """ When adding a new Witness, use this method to catch the witness up to the current state of the KEL
@@ -132,26 +196,60 @@ class Receiptor(doing.DoDoer):
 
         self.remove([clientDoer])
 
-
-    def heartbeat(self, tymth=None, tock=0.0):
+    def witDo(self, tymth=None, tock=0.0):
         """
-         Returns doifiable Doist compatible generator method (doer dog)
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery and .tevery escrows.
 
-         Usage:
-             add result of doify on this method to doers list
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
 
-         Parameters:
-             tymth is injected function wrapper closure returned by .tymen() of
-                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-             tock is injected initial tock value
-
-         """
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
 
         while True:
-            yield 10.0
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pre = msg["pre"]
+                sn = msg["sn"] if "sn" in msg else None
+
+                yield from self.receipt(pre, sn)
+                self.cues.append(msg)
+
+            yield self.tock
+
+    def gitDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery and .tevery escrows.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.gets:
+                msg = self.gets.popleft()
+                pre = msg["pre"]
+                sn = msg["sn"] if "sn" in msg else None
+
+                yield from self.get(pre, sn)
+
+            yield self.tock
 
 
 class WitnessReceiptor(doing.DoDoer):

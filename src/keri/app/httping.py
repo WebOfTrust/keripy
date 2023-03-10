@@ -222,8 +222,8 @@ class Clienter(doing.DoDoer):
 
         client.request(
             method=method,
-            path=purl.path,
-            qargs=parse.parse_qs(purl.query),
+            path=f"{purl.path}?{purl.query}",
+            qargs=None,
         )
 
         clientDoer = http.clienting.ClientDoer(client=client)
