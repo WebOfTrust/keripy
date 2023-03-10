@@ -10,7 +10,7 @@ import logging
 
 from keri import __version__
 from keri import help
-from keri.app import directing, indirecting, habbing, keeping
+from keri.app import directing, indirecting, habbing, keeping, configing
 from keri.app.cli.common import existing
 
 d = "Runs KERI witness controller.\n"
@@ -38,6 +38,12 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument("--config-dir", "-c", dest="configDir", help="directory override for configuration data")
+parser.add_argument('--config-file',
+                    dest="configFile",
+                    action='store',
+                    default=None,
+                    help="configuration filename override")
 
 
 def launch(args):
@@ -54,13 +60,16 @@ def launch(args):
                alias=args.alias,
                bran=args.bran,
                tcp=int(args.tcp),
-               http=int(args.http))
+               http=int(args.http),
+               configDir=args.configDir,
+               configFile=args.configFile)
 
     logger.info("\n******* Ended Witness for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0):
+def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
+               configDir="", configFile=""):
     """
     Setup and run one witness
     """
@@ -72,10 +81,14 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
 
     aeid = ks.gbls.get('aeid')
 
+    cf = None
+    if configFile is not None:
+        cf = configing.Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
+
     if aeid is None:
-        hby = habbing.Habery(name=name, base=base, bran=bran)
+        hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf)
     else:
-        hby = existing.setupHby(name=name, base=base, bran=bran)
+        hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
 
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]
