@@ -9,7 +9,7 @@ import random
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
 from keri import kering
 from keri.app import agenting
@@ -18,6 +18,8 @@ from keri.core import coring, eventing
 from keri.db import dbing
 from keri.kering import Roles
 from keri.peer import exchanging
+
+logger = ogler.getLogger()
 
 
 class Postman(doing.DoDoer):
@@ -80,10 +82,10 @@ class Postman(doing.DoDoer):
                     elif Roles.witness in ends:
                         yield from self.forward(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
                     else:
-                        print(f"No end roles for {recp} to send evt={serder.raw}")
+                        logger.info(f"No end roles for {recp} to send evt={recp}")
                         continue
                 except kering.ConfigurationError as e:
-                    print(f"Error sending to {recp} with ends={ends}.  Err={e}")
+                    logger.error(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue
                 # Get the kever of the recipient and choose a witness
 

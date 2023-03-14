@@ -2090,11 +2090,6 @@ class SignifySaltyHab(BaseHab):
     def make(self, *, serder, sigers, stem, pidx, tier, temp, **kwargs):
         self.pre = serder.ked["i"]  # new pre
 
-        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
-
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
         # MissingSignatureError
         try:
@@ -2104,6 +2099,11 @@ class SignifySaltyHab(BaseHab):
         except Exception as ex:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
+
+        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
+
+        self.save(habord)
+        self.prefixes.add(self.pre)
 
         self.stem = stem
         self.pidx = pidx
@@ -2322,10 +2322,9 @@ class GroupHab(BaseHab):
         self.pre = serder.ked["i"]  # new pre
 
         habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None,
+                                      mid=self.mhab.pre,
                                       smids=self.smids,
                                       rmids=self.rmids)
-        habord.mid = self.mhab.pre
 
         self.save(habord)
         self.prefixes.add(self.pre)
