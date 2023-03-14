@@ -61,7 +61,7 @@ class PresentDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.org = connecting.Organizer(hby=self.hby)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         doers = [self.postman, doing.doify(self.presentDo)]
 

@@ -670,7 +670,7 @@ class Credentialer(doing.DoDoer):
         self.rgy = rgy
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         doers = [self.postman, doing.doify(self.escrowDo)]
 
         super(Credentialer, self).__init__(doers=doers)
@@ -897,7 +897,7 @@ class Credentialer(doing.DoDoer):
 
     def processCredentialSentEscrow(self):
         """
-        Process Postman cues to ensure that the last message (exn notification) has
+        Process Poster cues to ensure that the last message (exn notification) has
         been sent before declaring the credential complete
 
         """

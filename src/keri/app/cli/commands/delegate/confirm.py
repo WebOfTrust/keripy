@@ -57,7 +57,7 @@ class ConfirmDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.counselor = grouping.Counselor(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'])
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]

@@ -76,7 +76,7 @@ class RespondDoer(doing.DoDoer):
         self.recp = recp
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.org = connecting.Organizer(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.respondDo)]

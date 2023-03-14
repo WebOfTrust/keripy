@@ -69,7 +69,7 @@ class OobiResource(doing.DoDoer):
         """
         self.hby = hby
 
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(OobiResource, self).__init__(doers=doers)

@@ -158,7 +158,7 @@ class Respondant(doing.DoDoer):
 
         self.hby = hby
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
-        self.postman = forwarding.Postman(hby=self.hby, mbx=self.mbx)
+        self.postman = forwarding.Poster(hby=self.hby, mbx=self.mbx)
 
         doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)

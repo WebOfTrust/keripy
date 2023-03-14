@@ -51,7 +51,7 @@ class RequestDoer(doing.DoDoer):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.counselor = grouping.Counselor(hby=hby)
         doers = [self.hbyDoer, self.postman]
         self.toRemove = list(doers)

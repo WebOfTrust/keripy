@@ -59,7 +59,7 @@ class WatchDoer(doing.DoDoer):
         self.cues = help.decking.Deck()
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "reply"])
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.postman, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)

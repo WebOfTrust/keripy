@@ -22,7 +22,7 @@ from keri.peer import exchanging
 logger = ogler.getLogger()
 
 
-class Postman(doing.DoDoer):
+class Poster(doing.DoDoer):
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
     delivers them to one of the target recipient's witnesses for store and forward
@@ -38,7 +38,7 @@ class Postman(doing.DoDoer):
         self.klas = klas if klas is not None else agenting.HTTPMessenger
 
         doers = [doing.doify(self.deliverDo)]
-        super(Postman, self).__init__(doers=doers, **kwa)
+        super(Poster, self).__init__(doers=doers, **kwa)
 
     def deliverDo(self, tymth=None, tock=0.0):
         """
@@ -97,7 +97,7 @@ class Postman(doing.DoDoer):
 
     def send(self, dest, topic, serder, src=None, hab=None, attachment=None):
         """
-        Utility function to queue a msg on the Postman's buffer for
+        Utility function to queue a msg on the Poster's buffer for
         enveloping and forwarding to a witness
 
         Parameters:

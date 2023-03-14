@@ -10,6 +10,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import rotating, existing, config
+from keri.core import coring
 from ... import habbing, agenting, indirecting, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys')
@@ -142,7 +143,7 @@ class RotateDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.swain = delegating.Boatswain(hby=self.hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 

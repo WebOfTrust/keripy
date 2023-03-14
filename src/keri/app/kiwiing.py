@@ -80,7 +80,7 @@ class IdentifierEnd(doing.DoDoer):
     def __init__(self, hby, **kwa):
         self.hby = hby
 
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.swain = delegating.Boatswain(hby=hby)
         self.org = connecting.Organizer(hby=hby)
@@ -1016,7 +1016,7 @@ class CredentialEnd(doing.DoDoer):
         self.credentialer = credentialer
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.notifier = notifier
         self.evts = decking.Deck()
 
@@ -1727,7 +1727,7 @@ class PresentationEnd(doing.DoDoer):
         self.hby = hby
         self.reger = reger
         self.org = connecting.Organizer(hby=hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         super(PresentationEnd, self).__init__(doers=[self.postman])
 
@@ -1904,7 +1904,7 @@ class MultisigEndBase(doing.DoDoer):
         self.hby = hby
         self.notifier = notifier
         self.counselor = counselor
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
 
         self.evts = decking.Deck()
         doers.extend([self.postman, doing.doify(self.evtDo)])
@@ -1974,7 +1974,7 @@ class MultisigInceptEnd(MultisigEndBase):
         self.hby = hby
         self.counselor = counselor
         self.notifier = notifier
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier,
@@ -2260,7 +2260,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         self.hby = hby
         self.counselor = counselor
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(MultisigEventEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
@@ -2688,7 +2688,7 @@ class ChallengeEnd(doing.DoDoer):
 
         """
         self.hby = hby
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         super(ChallengeEnd, self).__init__(doers=[self.postman])
 

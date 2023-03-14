@@ -42,7 +42,7 @@ class Boatswain(doing.DoDoer):
 
         """
         self.hby = hby
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
 

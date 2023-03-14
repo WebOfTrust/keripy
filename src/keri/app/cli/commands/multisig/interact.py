@@ -73,7 +73,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
         self.counselor = grouping.Counselor(hby=self.hby)

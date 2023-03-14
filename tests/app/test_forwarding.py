@@ -43,7 +43,7 @@ def test_postman(seeder):
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        pman = forwarding.Postman(hby=hby)
+        pman = forwarding.Poster(hby=hby)
 
         exn = exchanging.exchange(route="/echo", payload=dict(msg="test"))
         atc = hab.endorse(exn)
@@ -178,7 +178,7 @@ def test_postman_endsfor():
         agentHab.psr.parse(ims=bytearray(msgs))
         hab.psr.parse(ims=bytearray(msgs))
 
-        ends = forwarding.Postman.endsFor(hab, hab.pre)
+        ends = forwarding.Poster.endsFor(hab, hab.pre)
         assert ends == {
             'agent': {
                 'EBErgFZoM3PBQNTpTuK9bax_U8HLJq1Re2RM1cdifaTJ': {'http': 'http://127.0.0.1:6666'}},
