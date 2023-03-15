@@ -16,6 +16,7 @@ from hio.help import decking
 from keri.core import coring
 
 from . import httping
+from .habbing import GroupHab
 from .. import help
 from .. import kering
 from ..app import forwarding, connecting
@@ -68,7 +69,7 @@ class OobiResource(doing.DoDoer):
         """
         self.hby = hby
 
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(OobiResource, self).__init__(doers=doers)
@@ -250,7 +251,7 @@ class OobiResource(doing.DoDoer):
             rep.text = f"Unknown identifier {alias}"
             return
 
-        if not hab.group:
+        if not isinstance(hab, GroupHab):
             rep.status = falcon.HTTP_400
             rep.text = f"Identifer for {alias} is not a group hab, not supported"
             return

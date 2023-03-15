@@ -157,6 +157,10 @@ class HabitatRecord:  # baser.habs
     mid: str | None = None  # group member identifier qb64 when hid is group
     smids: list | None = None  # group signing member ids when hid is group
     rmids: list | None = None  # group rotating member ids when hid is group
+    stem: str | None = None
+    pidx: int | None = None
+    tier: str | None = None
+    temp: bool = False
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
 
@@ -580,6 +584,11 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
+        .nmsp is named subDB instance of Komer that maps habitat namespaces and names to habitat
+            application state. Includes habitat identifier prefix
+            key is habitat namespace + b'\x00' + name str
+            value is serialized HabitatRecord dataclass
+
         .sdts (sad date-time-stamp) named subDB instance of CesrSuber that
             that maps SAD SAID to Dater instance's CESR serialization of
             ISO-8601 datetime
@@ -731,6 +740,11 @@ class Baser(dbing.LMDBer):
         # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
+                                 schema=HabitatRecord, )
+
+        # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
+        self.nmsp = koming.Komer(db=self,
+                                 subkey='nmsp.',
                                  schema=HabitatRecord, )
 
         # SAD support datetime stamps and signatures indexed and not-indexed
@@ -935,6 +949,17 @@ class Baser(dbing.LMDBer):
         # Chunked image data for contact information for remote identfiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
+        # Delegation escrow dbs #
+        # delegated partial witness escrow
+        self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
+
+        # delegated unanchored escrow
+        self.dune = subing.SerderSuber(db=self, subkey='dune.')
+
+        # completed group multisig
+        self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
+                                     klas=coring.Saider)
+
         self.reload()
 
         return self.env
@@ -961,6 +986,26 @@ class Baser(dbing.LMDBer):
 
         for keys in removes:  # remove bare .habs records
             self.habs.rem(keys=keys)
+
+        # Load namespaced Habs
+        removes = []
+        for keys, data in self.nmsp.getItemIter():
+            if (state := self.states.get(keys=data.hid)) is not None:
+                try:
+                    kever = eventing.Kever(state=state, db=self,
+                                           prefixes=self.prefixes,
+                                           local=True)
+                except kering.MissingEntryError as ex:  # no kel event for keystate
+                    removes.append(keys)  # remove from .habs
+                    continue
+                self.kevers[kever.prefixer.qb64] = kever
+                self.prefixes.add(kever.prefixer.qb64)
+            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
+                removes.append(keys)  # no key state or KEL event for .hab record
+
+        for keys in removes:  # remove bare .habs records
+            self.nmsp.rem(keys=keys)
+
 
     def clean(self):
         """
@@ -1154,6 +1199,13 @@ class Baser(dbing.LMDBer):
         return msg
 
     def cloneDelegation(self, kever):
+        """
+        Recursively clone delegation chain from AID of Kever if one exits.
+
+        Parameters:
+            kever (Kever): Kever from which to clone the delegator's AID.
+
+        """
         if kever.delegated:
             dkever = self.kevers[kever.delegator]
             yield from self.cloneDelegation(dkever)

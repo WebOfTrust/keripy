@@ -13,6 +13,7 @@ from hio import help
 from hio.base import doing
 from keri.app import agenting, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, terming
+from keri.app.habbing import GroupHab
 from keri.core import coring
 
 logger = help.ogler.getLogger()
@@ -58,7 +59,7 @@ class WatchDoer(doing.DoDoer):
         self.cues = help.decking.Deck()
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "reply"])
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.postman, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)
@@ -95,7 +96,7 @@ class WatchDoer(doing.DoDoer):
                     hab.db.ksns.rem((saider.qb64,))
                     hab.db.ksns.rem((saider.qb64,))
 
-                witer = agenting.witnesser(hab, wit)
+                witer = agenting.messenger(hab, wit)
                 self.extend([witer])
 
                 msg = hab.query(pre=hab.pre, src=wit, route="ksn")
@@ -148,7 +149,7 @@ class WatchDoer(doing.DoDoer):
 
             elif len(ahds) > 0:
                 # Only group habs can be behind their witnesses
-                if not hab.group:
+                if not isinstance(hab, GroupHab):
                     print("ERROR: Single sig AID behind witnesses, aborting for this AID")
                     continue
 

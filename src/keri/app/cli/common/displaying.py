@@ -6,6 +6,7 @@ keri.kli.common.displaying module
 import sys
 
 from keri.app.cli.common import terming
+from keri.app.habbing import GroupHab
 from keri.db import dbing
 
 
@@ -40,7 +41,7 @@ def printIdentifier(hby, pre, label="Identifier"):
                 print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
             print()
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:
@@ -60,7 +61,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("{}: {}".format(label, hab.pre))
         print("Seq No:\t{}".format(0))
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:

@@ -13,6 +13,7 @@ from hio.help import decking
 from keri.vdr import viring
 from .. import kering, help
 from ..app import agenting, signing, forwarding
+from ..app.habbing import GroupHab
 from ..core import parsing, coring, scheming
 from ..core.coring import Seqner, MtrDex, Serder
 from ..core.eventing import SealEvent, TraitDex
@@ -397,7 +398,7 @@ class Registrar(doing.DoDoer):
         rseq = coring.Seqner(sn=0)
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
-        if not hab.group:
+        if not isinstance(hab, GroupHab):
             if estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -448,7 +449,7 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if not hab.group:  # not a multisig group
+        if not isinstance(hab, GroupHab):  # not a multisig group
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -502,7 +503,7 @@ class Registrar(doing.DoDoer):
         rseal = SealEvent(vcid, rseq.snh, rserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if not hab.group:
+        if not isinstance(hab, GroupHab):
             if registry.estOnly:
                 hab.rotate(data=[rseal])
             else:
@@ -669,7 +670,7 @@ class Credentialer(doing.DoDoer):
         self.rgy = rgy
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         doers = [self.postman, doing.doify(self.escrowDo)]
 
         super(Credentialer, self).__init__(doers=doers)
@@ -747,7 +748,7 @@ class Credentialer(doing.DoDoer):
         regk = creder.crd["ri"]
         registry = self.rgy.regs[regk]
         hab = registry.hab
-        if hab.group:
+        if isinstance(hab, GroupHab):
             smids = smids if smids is not None else hab.smids
             rmids = rmids if rmids is not None else hab.rmids
 
@@ -757,11 +758,11 @@ class Credentialer(doing.DoDoer):
                                          dt=dt, smids=smids, rmids=rmids)
 
         rseq = coring.Seqner(sn=seq)
-        if hab.group:
+        if isinstance(hab, GroupHab):
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(oset(smids + (rmids or [])))
-            #others = list(smids)
+
             others.remove(hab.mhab.pre)
 
             print(f"Sending signed credential to {others} other participants")
@@ -816,7 +817,7 @@ class Credentialer(doing.DoDoer):
                 recp = creder.subject["i"]
 
                 hab = self.hby.habs[issr]
-                if hab.group:
+                if isinstance(hab, GroupHab):
                     sender = hab.mhab.pre
                 else:
                     sender = issr
@@ -896,7 +897,7 @@ class Credentialer(doing.DoDoer):
 
     def processCredentialSentEscrow(self):
         """
-        Process Postman cues to ensure that the last message (exn notification) has
+        Process Poster cues to ensure that the last message (exn notification) has
         been sent before declaring the credential complete
 
         """
@@ -968,7 +969,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     Returns:
 
     """
-    if hab.group:
+    if isinstance(hab, GroupHab):
         sender = hab.mhab.pre
     else:
         sender = hab.pre

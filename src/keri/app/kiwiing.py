@@ -16,6 +16,7 @@ from hio.help import decking
 
 import keri.app.oobiing
 from . import grouping, challenging, connecting, notifying, signaling, oobiing
+from .habbing import GroupHab
 from .. import help
 from .. import kering
 from ..app import specing, forwarding, agenting, storing, indirecting, httping, habbing, delegating, booting
@@ -79,7 +80,7 @@ class IdentifierEnd(doing.DoDoer):
     def __init__(self, hby, **kwa):
         self.hby = hby
 
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
         self.swain = delegating.Boatswain(hby=hby)
         self.org = connecting.Organizer(hby=hby)
@@ -235,7 +236,7 @@ class IdentifierEnd(doing.DoDoer):
             prefix=hab.pre,
         )
 
-        if hab.group:
+        if isinstance(hab, GroupHab):
             data["group"] = dict(
                 pid=hab.mhab.pre,
                 aids=hab.smids,
@@ -690,7 +691,7 @@ class IdentifierEnd(doing.DoDoer):
             pre = cue["pre"]
             hab = self.hby.habs[pre]
 
-            if hab.group:  # Skip if group, they are handled elsewhere
+            if isinstance(hab, GroupHab):  # Skip if group, they are handled elsewhere
                 yield self.tock
                 continue
 
@@ -698,12 +699,11 @@ class IdentifierEnd(doing.DoDoer):
                 dgkey = dgKey(pre=hab.kever.prefixer.qb64, dig=hab.kever.serder.saidb)
                 anchor = self.hby.db.getAes(dgkey)
                 if not anchor:
-                    self.swain.msgs.append(dict(alias=hab.name, pre=hab.pre, sn=hab.kever.sn))
+                    self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
                     print("Waiting for delegation approval...")
-                    while not self.swain.cues:
+                    while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
                         yield self.tock
 
-                    self.swain.cues.popleft()
                     print("Delegation anchored")
 
             dgkey = dbing.dgKey(hab.kever.serder.preb, hab.kever.serder.saidb)
@@ -809,7 +809,7 @@ class KeyStateEnd:
         evts = []
         if pre in self.hby.habs:
             hab = self.hby.habs[pre]
-            if hab.group:
+            if isinstance(hab, GroupHab):
                 evts = self.counselor.pendingEvents(pre)
         res["pending"] = evts
 
@@ -1016,7 +1016,7 @@ class CredentialEnd(doing.DoDoer):
         self.credentialer = credentialer
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         self.notifier = notifier
         self.evts = decking.Deck()
 
@@ -1727,7 +1727,7 @@ class PresentationEnd(doing.DoDoer):
         self.hby = hby
         self.reger = reger
         self.org = connecting.Organizer(hby=hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         super(PresentationEnd, self).__init__(doers=[self.postman])
 
@@ -1904,7 +1904,7 @@ class MultisigEndBase(doing.DoDoer):
         self.hby = hby
         self.notifier = notifier
         self.counselor = counselor
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
 
         self.evts = decking.Deck()
         doers.extend([self.postman, doing.doify(self.evtDo)])
@@ -1974,7 +1974,7 @@ class MultisigInceptEnd(MultisigEndBase):
         self.hby = hby
         self.counselor = counselor
         self.notifier = notifier
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(MultisigInceptEnd, self).__init__(hby=hby, notifier=notifier,
@@ -2260,7 +2260,7 @@ class MultisigEventEnd(MultisigEndBase):
 
         self.hby = hby
         self.counselor = counselor
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
         doers = [self.postman]
 
         super(MultisigEventEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
@@ -2688,7 +2688,7 @@ class ChallengeEnd(doing.DoDoer):
 
         """
         self.hby = hby
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         super(ChallengeEnd, self).__init__(doers=[self.postman])
 
@@ -2797,7 +2797,7 @@ class ChallengeEnd(doing.DoDoer):
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 
-        senderHab = hab.mhab if hab.group else hab
+        senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
         self.postman.send(src=senderHab.pre, dest=recpt, topic="challenge", serder=exn, attachment=ims)
 
         rep.status = falcon.HTTP_202

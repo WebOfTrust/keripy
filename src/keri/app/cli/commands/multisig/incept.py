@@ -89,7 +89,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics)
         self.counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
@@ -139,7 +139,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                                   aids=ghab.smids,
                                                   ked=serder.ked)
             others = list(oset(smids + (rmids or [])))
-            #others = list(smids)
+
             others.remove(ghab.mhab.pre)
 
             for recpt in others:  # this goes to other participants only as a signaling mechanism

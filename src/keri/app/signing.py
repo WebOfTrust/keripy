@@ -4,7 +4,8 @@ KERI
 keri.app.signing module
 
 """
-from keri.core import coring, eventing
+from ..app.habbing import GroupHab
+from ..core import coring, eventing
 
 
 def ratify(hab, serder, paths=None, pipelined=False):
@@ -109,7 +110,7 @@ def transSeal(hab):
     """
     # create SealEvent or SealLast for endorser's est evt whose keys are
     # used to sign
-    if not hab.group:  # not a group use own kever
+    if not isinstance(hab, GroupHab):  # not a group use own kever
         indices = None  # use default order
     else:  # group so use gid kever
         indices = [hab.smids.index(hab.mhab.pre)]  # use group order*

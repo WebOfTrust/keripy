@@ -11,7 +11,7 @@ from hio.core import http
 from hio.core.tcp import serving
 
 from keri import help
-from keri.app import directing, indirecting, watching, habbing, storing
+from keri.app import directing, indirecting, habbing, storing
 
 parser = argparse.ArgumentParser(description='Start watcher')
 parser.set_defaults(handler=lambda args: startWatcher(args))
@@ -64,8 +64,6 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
     mbx = storing.Mailboxer(name=name)
     rep = storing.Respondant(hby=hby, mbx=mbx)
 
-    kiwiServer = watching.KiwiServer(hab=hab, app=app, rep=rep, controller=controller)
-
     httpEnd = indirecting.HttpEnd(hab=hab, app=app, rep=rep, mbx=mbx)
     app.add_route("/", httpEnd)
 
@@ -77,6 +75,6 @@ def setupWatcher(name="watcher", controller=None, alias="watcher", base="", bran
 
     directant = directing.Directant(hab=hab, server=server)
 
-    doers.extend([directant, serverDoer, httpServerDoer, httpEnd, rep, kiwiServer])
+    doers.extend([directant, serverDoer, httpServerDoer, httpEnd, rep])
 
     return doers

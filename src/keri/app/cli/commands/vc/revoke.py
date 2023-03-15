@@ -54,7 +54,7 @@ class RevokeDoer(doing.DoDoer):
         self.counselor = grouping.Counselor(hby=self.hby)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
                                           verifier=self.verifier)

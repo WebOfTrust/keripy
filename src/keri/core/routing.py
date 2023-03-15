@@ -400,8 +400,6 @@ class Revery:
             sigers (list): of indexed sigs from trans endorser's key from est evt
 
         """
-        # if sigers is None:
-        # sigers = []
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent

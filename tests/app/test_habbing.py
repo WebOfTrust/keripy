@@ -783,6 +783,91 @@ def test_hab_exchange(mockHelpingNowUTC):
         assert serder.ked == exn.ked
 
 
+def test_namespaced_habs():
+    with habbing.openHby() as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        found = hby.habByName("test")
+        assert found.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        assert len(hby.habs) == 1
+        assert len(hby.prefixes) == 1
+
+        nshab = hby.makeHab(name="test2", ns="agent")
+        assert nshab.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
+
+        assert len(hby.habs) == 1
+        assert len(hby.namespaces) == 1
+        assert len(hby.prefixes) == 2
+
+        found = hby.habByName(name="test2")
+        assert found is None
+        found = hby.habByName(name="test2", ns="agent")
+        assert found.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
+        found = hby.habByName(name="test", ns="agent")
+        assert found is None
+
+        # Test a '.' in Hab name
+        nshab = hby.makeHab(name="test.3", ns="agent")
+        assert nshab.pre == "EG5FUOzW_KKVB8JGlNGoZAADDC8cZ6Jt079nLEaFnYcg"
+
+        assert len(hby.habs) == 1
+        assert len(hby.namespaces) == 1
+        assert len(hby.prefixes) == 3
+        ns = hby.namespaces['agent']
+        assert len(ns) == 2
+
+        # '.' characters not allowed in namespace names
+        with pytest.raises(kering.ConfigurationError):
+            hby.makeHab(name="test", ns="agent.5")
+
+    hby.close()
+
+    # Test Reload of Namespace habs
+    name = "ns-test"
+    with habbing.openHby(name=name, base="test", temp=False, clear=True) as hby:
+        hab = hby.makeHab(name=name, icount=1)
+        opre = hab.pre
+        hab = hby.makeHab(name="test.1", icount=1)
+        o2pre = hab.pre
+        nshab = hby.makeHab(name="test", ns="agent")
+        atpre = nshab.pre
+        nshab = hby.makeHab(name="test2", ns="agent")
+        at2pre = nshab.pre
+        nshab = hby.makeHab(name="test", ns="controller")
+        ctpre = nshab.pre
+
+
+    with habbing.openHby(name=name, base="test", temp=False) as hby:
+
+        for pre in [opre, o2pre, atpre, at2pre, ctpre]:
+            assert pre in hby.db.kevers  # read through cache
+            assert pre in hby.db.prefixes
+
+        assert len(hby.habs) == 2
+        assert len(hby.db.prefixes) == 5
+
+        agent = hby.namespaces["agent"]
+        assert len(agent) == 2
+        ctrl = hby.namespaces["controller"]
+        assert len(ctrl) == 1
+
+        found = hby.habByName(name=name)
+        assert found.pre == opre
+        found = hby.habByName(name="test.1")
+        assert found.pre == o2pre
+        found = hby.habByName(name="test", ns="agent")
+        assert found.pre == atpre
+        found = hby.habByName(name="test2", ns="agent")
+        assert found.pre == at2pre
+        found = hby.habByName(name="test", ns="controller")
+        assert found.pre == ctpre
+
+    hby.close(clear=True)
+    hby.cf.close(clear=True)
+
+
 def test_make_other_event():
     with habbing.openHby() as hby:
         hab = hby.makeHab(name="test")

@@ -20,9 +20,9 @@ SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox')
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror peer mailbox agent')
 Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
-               watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox")
+               watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent")
 
 class KeriError(Exception):
     """

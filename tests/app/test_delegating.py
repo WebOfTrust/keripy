@@ -20,12 +20,12 @@ def test_boatswain(seeder):
             habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-        witDoer = agenting.WitnessReceiptor(hby=palHby)
+        witDoer = agenting.Receiptor(hby=palHby)
         bts = delegating.Boatswain(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
 
         opts = dict(
             wesHab=wesHab,
@@ -78,8 +78,8 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock
-    witDoer.cues.popleft()
 
+    witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
     kvy = eventing.Kevery(db=delHby.db, local=False)
     parsing.Parser().parseOne(ims=bytearray(msg), kvy=kvy)
@@ -87,13 +87,16 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     while palHab.pre not in delHby.kevers:
         yield tock
 
+    proxyHab = delHby.makeHab(name="proxy", icount=1, isith='1', ncount=1, nsith='1',
+                              wits=[wesHab.pre])
+    assert proxyHab.pre == "EIQ9wnMWGxZHlontoBMp5-GPyVecLL99XrCVxmTCO22b"
+
     delHab = delHby.makeHab(name="del", icount=1, isith='1', ncount=1, nsith='1',
                             wits=[wesHab.pre],
                             delpre=palHab.pre)
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
-    bts.msgs.append(dict(pre=delHab.pre))
-
+    bts.delegation(pre=delHab.pre, proxy=proxyHab)
     palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
@@ -112,28 +115,6 @@ def boatswain_test_do(tymth=None, tock=0.0, **opts):
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
     while delHby.db.getAes(dgkey) != couple:
         yield tock
-
-
-def test_boatswain_proxy():
-    with habbing.openHby(name="deltest", temp=True) as eeHby, \
-            habbing.openHby(name="deltest", temp=True) as orHby:
-        orHab = orHby.makeHab("delegator", transferable=True)
-        assert orHab.pre == "EKL3to0Q059vtxKi7wWmaNFJ3NKE1nQsOPasRXqPzpjS"
-        eeHab = eeHby.makeHab("del", transferable=True, delpre=orHab.pre,
-                              wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                                    "BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                                    "BBoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
-
-                              )
-        assert eeHab.pre == 'EAszJpIhVoFsTw_fqOXT7N0yQbyPS-S1LV3FGvqUVcye'
-
-        boats = delegating.Boatswain(hby=eeHby)
-        phab = boats.proxy("deltest", eeHab.kever)
-
-        assert phab.pre == 'EJXiQ33u2yXCtkH7UImC4D-RverPqvshuTlJyaAybKi4'
-        assert phab.kever.wits == eeHab.kever.wits
-        assert phab.kever.toader.num == eeHab.kever.toader.num
-        assert phab.kever.tholder.sith == eeHab.kever.tholder.sith
 
 
 def test_delegation_request(mockHelpingNowUTC):

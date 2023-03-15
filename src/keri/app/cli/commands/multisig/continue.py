@@ -11,6 +11,7 @@ from hio.base import doing
 
 from keri.app import indirecting, grouping, agenting
 from keri.app.cli.common import existing, displaying
+from keri.app.habbing import GroupHab
 
 logger = help.ogler.getLogger()
 
@@ -62,7 +63,7 @@ class ContinueDoer(doing.DoDoer):
             raise ValueError(f"no escrowed events for {self.alias} ({hab.pre})")
 
         (seqner, saider) = esc[0]
-        src = hab.mhab.pre if hab.group else hab.pre
+        src = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
         anchor = dict(i=hab.pre, s=seqner.snh, d=saider.qb64)
         self.witq.query(src=src, pre=hab.kever.delegator, anchor=anchor)
 

@@ -30,9 +30,9 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, **kwa):
 
         self.hby = hby
-        self.postman = forwarding.Postman(hby=hby)
+        self.postman = forwarding.Poster(hby=hby)
         self.swain = delegating.Boatswain(hby=self.hby)
-        self.witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
         doers = [self.postman, self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
@@ -566,7 +566,7 @@ class Counselor(doing.DoDoer):
 
             rot = ghab.rotate(isith=isith, nsith=nsith,
                               toad=grec.toad, cuts=grec.cuts, adds=grec.adds, data=grec.data,
-                              merfers=merfers, migers=migers)
+                              verfers=merfers, digers=migers)
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]  # strip signatures from
 
@@ -587,65 +587,6 @@ class Counselor(doing.DoDoer):
                                              serder.saider))
 
 
-
-
-    def oldProcessPartialAidEscrow(self):
-        """
-        See new
-
-        """
-        # ignore saider because it is not relevant yet ???
-        # wait until the keys state relative to the vector clock element for each
-        # member of the group shows that they all have rotated their local member
-        # hab before calling a rotate on this local member's instance of the group
-        # hab
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial escrow
-            ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
-            gkever = ghab.kever  # group hab's Kever instance key state
-
-            merfers = []  # to be newly current verfers of group signing keys
-            migers = list(gkever.digers)  # to be newly next digers of rotation keys
-            indices = []  # local member's signers who have already rotated
-
-            for aid in rec.smids:
-                idx = ghab.smids.index(aid)  # find index into smids for aid
-                pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
-                    indices.append(idx)
-                    merfers.append(pkever.verfers[0])
-                    migers[idx] = pkever.digers[0]
-
-            if not gkever.ntholder.satisfy(indices):
-                continue
-
-            # if weighted and new weights not provided then use prior weight
-            if gkever.tholder.weighted and rec.isith is None:
-                isith = [gkever.ntholder.sith[idx] for idx in indices]
-            else:
-                isith = rec.isith  # use provided new isith
-
-            # use new nsith when provided otherwise default to prior nsith
-            nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
-
-
-            rot = ghab.rotate(isith=isith, nsith=nsith,
-                              toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              merfers=merfers, migers=migers)
-            serder = coring.Serder(raw=rot)
-            del rot[:serder.size]
-
-            others = list(oset(rec.smids + (rec.rmids or []))) # list(rec.smids)
-            others.remove(ghab.mhab.pre)
-            print(f"Sending rotation event to {len(others)} other participants")
-            for recpt in others:
-                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig",
-                                  serder=serder, attachment=rot)
-
-            self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
-            print("Waiting for other signatures...")
-            return self.hby.db.gpse.add(keys=(ghab.pre,),
-                                        val=(coring.Seqner(sn=serder.sn),
-                                             serder.saider))
 
     def processPartialSignedEscrow(self):
         """
@@ -678,7 +619,7 @@ class Counselor(doing.DoDoer):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witered:  # We are elected to perform delegation and witnessing messaging
                         print(f"We are the witnesser, sending {pre} to delegator")
-                        self.swain.msgs.append(dict(pre=pre, sn=seqner.sn))
+                        self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
                         self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
@@ -708,21 +649,26 @@ class Counselor(doing.DoDoer):
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
 
-            if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
-                aseq = coring.Seqner(sn=serder.sn)
-                couple = aseq.qb64b + serder.saidb
-                dgkey = dbing.dgKey(pre, saider.qb64b)
-                self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-                self.hby.db.gdee.rem(keys=(pre,))
-                print(f"Delegation approval for {pre} received.")
+            if witer:  # We are elected witnesser, We've already done out part in Boatswain, we are done.
+                if self.swain.complete(prefixer=kever.prefixer, seqner=coring.Seqner(sn=kever.sn)):
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    print(f"Delegation approval for {pre} received.")
 
-                if witer:  # We are elected witnesser, send off event to witnesses
-                    print(f"We are the witnesser, sending {pre} to witnesses")
-                    self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
+                    self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
-                # Move to escrow waiting for witness receipts
-                print(f"Waiting for witness receipts for {pre}")
-                self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+            else:  # Not witnesser, we need to look for the anchor and then wait for receipts
+                if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
+                    aseq = coring.Seqner(sn=serder.sn)
+                    couple = aseq.qb64b + serder.saidb
+                    dgkey = dbing.dgKey(pre, saider.qb64b)
+                    self.hby.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    print(f"Delegation approval for {pre} received.")
+
+                    # Move to escrow waiting for witness receipts
+                    print(f"Waiting for witness receipts for {pre}")
+                    self.hby.db.gdee.rem(keys=(pre,))
+                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
 
     def processPartialWitnessEscrow(self):
         """
@@ -737,10 +683,10 @@ class Counselor(doing.DoDoer):
 
             # Load all the witness receipts we have so far
             wigs = self.hby.db.getWigs(dgkey)
+            ghab = self.hby.habs[pre]
+            keys = [verfer.qb64 for verfer in kever.verfers]
+            witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
             if len(wigs) == len(kever.wits):  # We have all of them, this event is finished
-                ghab = self.hby.habs[pre]
-                keys = [verfer.qb64 for verfer in kever.verfers]
-                witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
@@ -751,6 +697,8 @@ class Counselor(doing.DoDoer):
                 print(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+            elif not witer:
+                self.witDoer.gets.append(dict(pre=pre, sn=seqner.sn))
 
     def pendingEvents(self, pre):
         """ Return information about any pending events for a given AID

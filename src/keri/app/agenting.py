@@ -5,7 +5,7 @@ keri.app.agenting module
 
 """
 import random
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from hio.base import doing
 from hio.core import http
@@ -16,9 +16,238 @@ from . import httping, forwarding
 from .. import help
 from .. import kering
 from ..core import eventing, parsing, coring
+from ..core.coring import CtrDex
 from ..db import dbing
 
 logger = help.ogler.getLogger()
+
+
+class Receiptor(doing.DoDoer):
+
+    def __init__(self, hby, msgs=None, gets=None, cues=None):
+
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.gets = gets if gets is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.clienter = httping.Clienter()
+
+        doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
+        self.hby = hby
+
+        super(Receiptor, self).__init__(doers=doers)
+
+    def receipt(self, pre, sn=None):
+        """ Returns a generator for witness receipting
+        
+        The returns a generator that will submit the designated event to witnesses for receipts using 
+        the synchronous witness API, the propogate the receipts to each of the other witnesses.  
+
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+
+        Returns:
+            list: identifiers of witnesses that returned receipts.
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+        sn = sn if sn is not None else hab.kever.sner.num
+        wits = hab.kever.wits
+
+        if len(wits) == 0:
+            return
+
+        msg = hab.makeOwnEvent(sn=sn)
+        ser = coring.Serder(raw=msg)
+
+        # If we are a rotation event, may need to catch new witnesses up to current key state
+        if ser.ked['t'] in (coring.Ilks.rot,):
+            adds = ser.ked["ba"]
+            for wit in adds:
+                print(f"catching up {wit}")
+                yield from self.catchup(ser.pre, wit)
+
+        clients = dict()
+        doers = []
+        for wit in wits:
+            client, clientDoer = httpClient(hab, wit)
+            clients[wit] = client
+            doers.append(clientDoer)
+            self.extend([clientDoer])
+
+        rcts = dict()
+        for wit, client in clients.items():
+            httping.streamCESRRequests(client=client, ims=bytearray(msg), path="/receipts")
+            while not client.responses:
+                yield self.tock
+
+            rep = client.respond()
+            if rep.status == 200:
+                rct = bytearray(rep.body)
+                hab.psr.parseOne(bytearray(rct))
+                rserder = coring.Serder(raw=rct)
+                del rct[:rserder.size]
+
+                # pull off the count code
+                coring.Counter(qb64b=rct, strip=True)
+                rcts[wit] = rct
+            else:
+                raise kering.ValidationError(f"invalid response {rep.status} from witnesses {wit}")
+
+        for wit in rcts.keys():
+            ewits = [w for w in rcts.keys() if w != wit]
+            wigs = [sig for w, sig in rcts.items() if w != wit]
+
+            msg = bytearray()
+            if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
+                msg.extend(schemes(self.hby.db, eids=ewits))
+            elif ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt) and \
+                    ("ba" in ser.ked and wit in ser.ked["ba"]):  # Newly added witness, introduce to all
+                msg.extend(schemes(self.hby.db, eids=ewits))
+
+            rserder = eventing.receipt(pre=hab.pre,
+                                       sn=sn,
+                                       said=ser.said)
+            msg.extend(rserder.raw)
+            msg.extend(coring.Counter(code=CtrDex.NonTransReceiptCouples, count=len(wigs)).qb64b)
+            for wig in wigs:
+                msg.extend(wig)
+
+            client = clients[wit]
+
+            sent = httping.streamCESRRequests(client=client, ims=bytearray(msg))
+            while len(client.responses) < sent:
+                yield self.tock
+
+        self.remove(doers)
+
+        return rcts.keys()
+
+    def get(self, pre, sn=None):
+        """ Returns a generator for witness querying
+
+        The returns a generator that will request receipts for event identified by pre and sn
+
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
+
+        Returns:
+            list: identifiers of witnesses that returned receipts.
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+        sn = sn if sn is not None else hab.kever.sner.num
+        wits = hab.kever.wits
+
+        if len(wits) == 0:
+            return
+
+        wit = random.choice(hab.kever.wits)
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[kering.Schemes.http]
+        url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
+
+        client = self.clienter.request("GET", url)
+        while not client.responses:
+            yield self.tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            rct = bytearray(rep.body)
+            hab.psr.parseOne(bytearray(rct))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def catchup(self, pre, wit):
+        """ When adding a new Witness, use this method to catch the witness up to the current state of the KEL
+
+        Parameters:
+            pre (str): qualified base64 AID of the KEL to send
+            wit (str): qualified base64 AID of the witness to send the KEL to
+
+        """
+        if pre not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[pre]
+
+        client, clientDoer = httpClient(hab, wit)
+        self.extend([clientDoer])
+
+        for fmsg in hab.db.clonePreIter(pre=pre):
+            httping.streamCESRRequests(client=client, ims=bytearray(fmsg))
+            while not client.responses:
+                yield self.tock
+
+        self.remove([clientDoer])
+
+    def witDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery and .tevery escrows.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pre = msg["pre"]
+                sn = msg["sn"] if "sn" in msg else None
+
+                yield from self.receipt(pre, sn)
+                self.cues.append(msg)
+
+            yield self.tock
+
+    def gitDo(self, tymth=None, tock=0.0):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery and .tevery escrows.
+
+        Parameters:
+            tymth (function): injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock (float): injected initial tock value
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.gets:
+                msg = self.gets.popleft()
+                pre = msg["pre"]
+                sn = msg["sn"] if "sn" in msg else None
+
+                yield from self.get(pre, sn)
+
+            yield self.tock
 
 
 class WitnessReceiptor(doing.DoDoer):
@@ -92,7 +321,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    witer = witnesser(hab, wit)
+                    witer = messenger(hab, wit)
                     witers.append(witer)
                     self.extend([witer])
 
@@ -106,7 +335,8 @@ class WitnessReceiptor(doing.DoDoer):
                         for dmsg in hab.db.cloneDelegation(hab.kever):
                             witer.msgs.append(bytearray(dmsg))
 
-                        if "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
+                        if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip) or \
+                                "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
                             for fmsg in hab.db.clonePreIter(pre=pre):
                                 witer.msgs.append(bytearray(fmsg))
 
@@ -144,10 +374,10 @@ class WitnessReceiptor(doing.DoDoer):
 
                     # Now that the witnesses have not met each other, send them each other's receipts
                     if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
-                        rctMsg.extend(self.replay(eids=ewits))
+                        rctMsg.extend(schemes(self.hby.db, eids=ewits))
                     elif ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt) and \
                             ("ba" in ser.ked and witer.wit in ser.ked["ba"]):  # Newly added witness, introduce to all
-                        rctMsg.extend(self.replay(eids=ewits))
+                        rctMsg.extend(schemes(self.hby.db, eids=ewits))
 
                     rserder = eventing.receipt(pre=ser.pre,
                                                sn=sn,
@@ -174,26 +404,6 @@ class WitnessReceiptor(doing.DoDoer):
 
             yield self.tock
 
-    def replay(self, eids):
-        msgs = bytearray()
-        for eid in eids:
-            for scheme in kering.Schemes:
-                keys = (eid, scheme)
-                said = self.hby.db.lans.get(keys=keys)
-                if said is not None:
-                    serder = self.hby.db.rpys.get(keys=(said.qb64,))
-                    cigars = self.hby.db.scgs.get(keys=(said.qb64,))
-
-                    if len(cigars) == 1:
-                        (verfer, cigar) = cigars[0]
-                        cigar.verfer = verfer
-                    else:
-                        cigar = None
-                    msgs.extend(eventing.messagize(serder=serder,
-                                                   cigars=[cigar],
-                                                   pipelined=True))
-        return msgs
-
 
 class WitnessInquisitor(doing.DoDoer):
     """
@@ -219,7 +429,7 @@ class WitnessInquisitor(doing.DoDoer):
         """
         self.hby = hby
         self.reger = reger
-        self.klas = klas if klas is not None else HttpWitnesser
+        self.klas = klas if klas is not None else HTTPMessenger
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
 
@@ -247,21 +457,24 @@ class WitnessInquisitor(doing.DoDoer):
             q = evt["q"]
             wits = evt["wits"]
 
-            hab = self.hby.habs[src] if src in self.hby.habs else None
-            if hab is None:
+            if "hab" in evt:
+                hab = evt["hab"]
+            elif src in self.hby.habs:
+                hab = self.hby.habs[src]
+            else:
                 continue
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
                 continue
 
-            wits = wits if wits is not None else hab.kevers[pre].wits
+            wits = wits if wits is not None else self.hby.kevers[pre].wits
             if len(wits) == 0:
                 logger.error("Must be used with an identifier that has witnesses")
                 continue
 
             wit = random.choice(wits)
-            witer = witnesser(hab, wit)
+            witer = messenger(hab, wit)
             self.extend([witer])
 
             msg = hab.query(pre, src=wit, route=r, query=q)  # Query for remote pre Event
@@ -279,7 +492,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield self.tock
 
-    def query(self, src, pre, r="logs", sn=0, anchor=None, wits=None, **kwa):
+    def query(self, pre, r="logs", sn=0, src=None, hab=None, anchor=None, wits=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
         Parameters:
@@ -298,7 +511,11 @@ class WitnessInquisitor(doing.DoDoer):
         if anchor is not None:
             qry["a"] = anchor
 
-        self.msgs.append(dict(src=src, pre=pre, r=r, q=qry, wits=wits))
+        msg = dict(src=src, pre=pre, r=r, q=qry, wits=wits)
+        if hab is not None:
+            msg["hab"] = hab
+
+        self.msgs.append(msg)
 
     def telquery(self, src, ri, i=None, r="tels", **kwa):
         qry = dict(ri=ri)
@@ -356,7 +573,7 @@ class WitnessPublisher(doing.DoDoer):
 
                 witers = []
                 for wit in wits:
-                    witer = witnesser(hab, wit)
+                    witer = messenger(hab, wit)
                     witers.append(witer)
                     witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
                     self.extend([witer])
@@ -378,7 +595,7 @@ class WitnessPublisher(doing.DoDoer):
             yield self.tock
 
 
-class TCPWitnesser(doing.DoDoer):
+class TCPMessenger(doing.DoDoer):
     """ Send events to witnesses for receipting using TCP direct connection
 
     """
@@ -405,7 +622,7 @@ class TCPWitnesser(doing.DoDoer):
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       **kwa)
 
-        super(TCPWitnesser, self).__init__(doers=doers)
+        super(TCPMessenger, self).__init__(doers=doers)
 
     def receiptDo(self, tymth=None, tock=0.0):
         """
@@ -472,9 +689,9 @@ class TCPWitnesser(doing.DoDoer):
         return len(self.sent) == self.posted
 
 
-class HttpWitnesser(doing.DoDoer):
+class HTTPMessenger(doing.DoDoer):
     """
-    Interacts with Witnesses on HTTP and SSE for sending events and receiving receipts
+    Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
 
     """
 
@@ -498,14 +715,14 @@ class HttpWitnesser(doing.DoDoer):
 
         up = urlparse(url)
         if up.scheme != kering.Schemes.http:
-            raise ValueError(f"invalid scheme {up.scheme} for HttpWitnesser")
+            raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
         self.client = http.clienting.Client(hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
 
-        super(HttpWitnesser, self).__init__(doers=doers, **kwa)
+        super(HTTPMessenger, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -566,25 +783,39 @@ def mailbox(hab, cid):
     return mbx
 
 
-def witnesser(hab, wit):
-    """ Create a Witnesser (tcp or http) based on available endpoints
+def messenger(hab, pre):
+    """ Create a Messenger (tcp or http) based on available endpoints
 
     Parameters:
         hab (Habitat): Environment to use to look up witness URLs
-        wit (str): qb64 identifier prefix of witness to create a witnesser for
+        pre (str): qb64 identifier prefix of recipient to create a messanger for
 
     Returns:
-        Optional(TcpWitnesser, HttpWitnesser): witnesser for ensuring full reciepts
+        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    urls = hab.fetchUrls(eid=wit)
+    urls = hab.fetchUrls(eid=pre)
+    return messengerFrom(hab, pre, urls)
+
+
+def messengerFrom(hab, pre, urls):
+    """ Create a Witnesser (tcp or http) based on provided endpoints
+
+    Parameters:
+        hab (Habitat): Environment to use to look up witness URLs
+        pre (str): qb64 identifier prefix of recipient to create a messanger for
+        urls (dict): map of schemes to urls of available endpoints
+
+    Returns:
+        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
+    """
     if kering.Schemes.http in urls:
         url = urls[kering.Schemes.http]
-        witer = HttpWitnesser(hab=hab, wit=wit, url=url)
+        witer = HTTPMessenger(hab=hab, wit=pre, url=url)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
-        witer = TCPWitnesser(hab=hab, wit=wit, url=url)
+        witer = TCPMessenger(hab=hab, wit=pre, url=url)
     else:
-        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {wit}")
+        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 
     return witer
 
@@ -610,3 +841,24 @@ def httpClient(hab, wit):
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
+
+
+def schemes(db, eids):
+    msgs = bytearray()
+    for eid in eids:
+        for scheme in kering.Schemes:
+            keys = (eid, scheme)
+            said = db.lans.get(keys=keys)
+            if said is not None:
+                serder = db.rpys.get(keys=(said.qb64,))
+                cigars = db.scgs.get(keys=(said.qb64,))
+
+                if len(cigars) == 1:
+                    (verfer, cigar) = cigars[0]
+                    cigar.verfer = verfer
+                else:
+                    cigar = None
+                msgs.extend(eventing.messagize(serder=serder,
+                                               cigars=[cigar],
+                                               pipelined=True))
+    return msgs

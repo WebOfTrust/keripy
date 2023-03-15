@@ -1002,7 +1002,8 @@ class Parser:
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
                 if not (cigars or wigers or tsgs):
                     raise kering.ValidationError("Missing attached signatures on receipt"
-                                                 "msg = {}.".format(serder.ked))
+                                                "msg = {}.".format(serder.ked))
+
                 try:
                     if cigars:
                         kvy.processReceipt(serder=serder, cigars=cigars)

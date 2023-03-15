@@ -158,7 +158,7 @@ class Respondant(doing.DoDoer):
 
         self.hby = hby
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby, mbx=self.mbx)
 
         doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
@@ -191,7 +191,6 @@ class Respondant(doing.DoDoer):
                 if recipient not in self.hby.kevers:
                     logger.error("unable to reply, dest {} not found".format(recipient))
                     continue
-                recpkev = self.hby.kevers[recipient]
 
                 senderHab = self.hby.habs[sender]
                 if senderHab.mhab:
@@ -199,44 +198,14 @@ class Respondant(doing.DoDoer):
                 else:
                     forwardHab = senderHab
 
-                if len(recpkev.wits) == 0:
-                    msg = senderHab.endorse(exn, last=True)
-                    self.mbx.storeMsg(topic=recipient, msg=msg)
-                else:
-                    wit = random.choice(recpkev.wits)
-                    client, clientDoer = agenting.httpClient(senderHab, wit)
+                # sign the exn to get the signature
+                eattach = senderHab.endorse(exn, last=True, pipelined=False)
+                del eattach[:exn.size]
+                self.postman.send(recipient, topic=topic, serder=exn, hab=forwardHab, attachment=eattach)
 
-                    self.extend([clientDoer])
+                yield self.tock  # throttle just do one cue at a time
 
-                    # sign the exn to get the signature
-                    eattach = senderHab.endorse(exn, last=True, pipelined=False)
-                    # TODO: switch to the following and test that outbound events are persisted:
-                    #    eattach = senderHab.exchange(exn, save=True)
-                    del eattach[:exn.size]
-
-                    # create and sign the forward exn that will contain the exn
-                    fwd = exchanging.exchange(route='/fwd',
-                                              modifiers=dict(pre=recipient, topic=topic), payload=exn.ked)
-                    ims = forwardHab.endorse(serder=fwd, last=True, pipelined=False)
-
-                    # Attach pathed exn signature to end of message
-                    atc = bytearray()
-                    pather = coring.Pather(path=["a"])
-                    atc.extend(pather.qb64b)
-                    atc.extend(eattach)
-                    ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                              count=(len(atc) // 4)).qb64b)
-                    ims.extend(atc)
-
-                    httping.createCESRRequest(ims, client)
-
-                    while not client.responses:
-                        yield self.tock
-
-                    self.remove([clientDoer])
-
-                yield  # throttle just do one cue at a time
-            yield
+            yield self.tock
 
     def cueDo(self, tymth=None, tock=0.0):
         """
@@ -253,7 +222,6 @@ class Respondant(doing.DoDoer):
 
         while True:
             while self.cues:  # iteratively process each cue in cues
-                msg = bytearray()
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
 
@@ -267,8 +235,10 @@ class Respondant(doing.DoDoer):
                         if match := owits.intersection(self.hby.prefixes):
                             pre = match.pop()
                             hab = self.hby.habs[pre]
-                            msg.extend(hab.receipt(serder))
-                            self.mbx.storeMsg(topic=serder.preb + b'/receipt', msg=msg)
+                            raw = hab.receipt(serder)
+                            rserder = coring.Serder(raw=raw)
+                            del raw[:rserder.size]
+                            self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
 
                 elif cueKin in ("replay",):
                     src = cue["src"]
@@ -279,61 +249,24 @@ class Respondant(doing.DoDoer):
                     if dest not in self.hby.kevers:
                         continue
 
-                    kever = self.hby.kevers[dest]
-                    owits = oset(kever.wits)
+                    for msg in msgs:
+                        raw = bytearray(msg)
+                        serder = coring.Serder(raw=raw)
+                        del raw[:serder.size]
+                        self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
 
-                    if owits.intersection(self.hby.prefixes):
-                        bmsgs = bytearray(itertools.chain(*msgs))
-                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=bmsgs)
-
-                    else:
-                        events = list()
-                        atc = bytearray()
-                        for i, msg in enumerate(msgs):
-                            evt = coring.Serder(raw=msg)
-                            events.append(evt.ked)
-                            pather = coring.Pather(path=["a", i])
-                            btc = pather.qb64b + msg[evt.size:]
-                            atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                                      count=(len(btc) // 4)).qb64b)
-                            atc.extend(btc)
-
-                        fwd = exchanging.exchange(route='/fwd',
-                                                  modifiers=dict(pre=dest, topic="replay"), payload=events)
-                        msg = hab.endorse(fwd, last=True, pipelined=False)
-                        msg.extend(atc)
-                        wit = random.choice(kever.wits)
-                        client, clientDoer = agenting.httpClient(hab, wit)
-                        self.extend([clientDoer])
-
-                        httping.createCESRRequest(msg, client)
-
-                        while not client.responses:
-                            yield self.tock
-
-                        self.remove([clientDoer])
 
                 elif cueKin in ("reply",):
                     src = cue["src"]
                     serder = cue["serder"]
-                    route = cue["route"]
                     dest = cue["dest"]
 
                     if dest not in self.hby.kevers:
                         continue
 
-                    kever = self.hby.kevers[dest]
-                    owits = oset(kever.wits)
-                    if match := owits.intersection(self.hby.prefixes):
-                        pre = match.pop()
-                        hab = self.hby.habs[pre]
-                        msg.extend(hab.endorse(serder))
-                        self.mbx.storeMsg(topic=kever.prefixer.qb64b + b'/receipt', msg=msg)
-
-                    else:
-                        hab = self.hby.habs[src]
-                        atc = hab.endorse(serder)
-                        del atc[:serder.size]
-                        self.postman.send(src=src, dest=dest, topic="reply", serder=serder, attachment=atc)
+                    hab = self.hby.habs[src]
+                    atc = hab.endorse(serder)
+                    del atc[:serder.size]
+                    self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
 
             yield self.tock

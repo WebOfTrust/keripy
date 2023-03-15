@@ -5,18 +5,15 @@ keri.app.habbing module
 
 """
 import json
-import os
 from contextlib import contextmanager
 from urllib.parse import urlsplit
 from math import ceil
 
 from hio.base import doing
-from hio.core import wiring
-from hio.core.tcp import clienting, serving
 from hio.help import hicting
 from keri.peer import exchanging
 
-from . import keeping, configing, directing
+from . import keeping, configing
 from .. import help
 from .. import kering
 from ..core import coring, eventing, parsing, routing
@@ -108,80 +105,6 @@ def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, cf=None, 
             hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', **kwa)
 
         yield hby, hab
-
-
-def setupHabery(name="who", base="main", temp=False, curls=None, remote="eve", iurls=None):
-    """
-    Setup and return doers list to run controller
-
-    Parameters:
-        name(str): is the name used for a specific habitat
-        base(str) is the name used for shared resources i.e. Baser and Keeper
-               The habitat specific config file will be in base/name
-        temp(bool): True creates Habery in temp directory
-        curls (list[str]): local controller's service endpoint urls
-        remote (str): name of remote direct mode target
-        iurls (list[str]):  oobi  urls
-
-    Load endpoint database with named target urls including http not just tcp
-
-
-    conf file json
-    {
-      dt: "isodatetime",
-      curls: ["tcp://localhost:5620/"],
-      iurls: ["tcp://localhost:5621/?name=eve"],
-    }
-    """
-
-    if not curls:
-        curls = ["ftp://localhost:5620/"]
-
-    if not iurls:  # blind oobi
-        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name={remote}"]
-
-    # setup databases  for dependency injection and config file
-    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db, reload=True)  # doer do reopens if not opened and closes
-    cf = configing.Configer(name=name, base=base, temp=temp)
-    cfDoer = configing.ConfigerDoer(configer=cf)
-    conf = cf.get()
-    if not conf:  # setup config file
-        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
-        cf.put(conf)
-
-    # setup habery
-    hby = Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp)
-    hbyDoer = HaberyDoer(habery=hby)  # setup doer
-
-    # setup wirelog to create test vectors
-    path = os.path.dirname(__file__)
-    path = os.path.join(path, 'logs')
-    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
-                        reopen=True, headDirPath=path)
-    wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
-
-    localPort = 5620
-    remotePort = 5621
-    # setup local directmode tcp server
-    server = serving.Server(host="", port=localPort, wl=wl)
-    serverDoer = serving.ServerDoer(server=server)  # setup doer
-    directant = directing.Directant(hab=hby, server=server)
-    # Reactants created on demand by directant
-
-    # setup default remote direct mode client to remote party
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)  # setup doer
-    director = directing.Director(hab=hby, client=client, tock=0.125)
-    reactor = directing.Reactor(hab=hby, client=client)
-
-    logger.info("\nController resources at %s/%s\nListening on TCP port %s to "
-                "port %s.\n\n", hby.base, hby.name, localPort, remotePort)
-
-    return [ksDoer, dbDoer, cfDoer, hbyDoer, wireDoer, clientDoer, director, reactor,
-            serverDoer, directant]
 
 
 class Habery:
@@ -303,6 +226,7 @@ class Habery:
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
         self.habs = {}  # empty .habs
+        self.namespaces = {}  # empty .namespaces
         self._signator = None
         self.inited = False
 
@@ -411,6 +335,11 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
+            elif habord.pidx is not None:
+                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=pre, temp=habord.temp, stem=habord.stem,
+                                      tier=habord.tier, pidx=habord.pidx)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -427,13 +356,48 @@ class Habery:
             hab.inited = True
             self.habs[hab.pre] = hab
 
+        for keys, habord in self.db.nmsp.getItemIter():
+            ns = keys[0]
+            name = ".".join(keys[1:])  # detupleize the database key name
+            pre = habord.hid
+
+            # create Hab instance and inject dependencies
+            if habord.mid:
+                hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                               name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
+                groups.append(habord)
+            elif habord.pidx is not None:
+                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, ns=ns,  pre=pre, temp=habord.temp, stem=habord.stem,
+                                      tier=habord.tier, pidx=habord.pidx)
+            else:
+                hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                          rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                          name=name, ns=ns, pre=pre, temp=self.temp)
+
+            # Rules for acceptance
+            #  if its delegated its accepted into its own local KEL even if the
+            #    delegator has not sealed it
+            if not hab.accepted and not habord.mid:
+                raise kering.ConfigurationError(f"Problem loading Hab pre="
+                                                f"{pre} name={name} from db.")
+
+            # read in config file and process any oobis or endpoints for hab
+            hab.inited = True
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+
         # Populate the participant hab after loading all habs
         for habord in groups:
             self.habs[habord.hid].mhab = self.habs[habord.mid]
 
         self.reconfigure()  # post hab load reconfiguration
 
-    def makeHab(self, name, **kwa):
+    def makeHab(self, name, ns=None, **kwa):
         """Make new Hab with name, pre is generated from **kwa
 
         Parameters: (Passthrough to hab.make)
@@ -453,16 +417,26 @@ class Habery:
                 events allowed in KEL for this Hab
             data (list | None): seal dicts
         """
+        if ns is not None and "." in ns:
+            raise kering.ConfigurationError("Hab namespace names are not allowed to contain the '.' character")
+
         hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                  name=name, temp=self.temp)
+                  name=name, ns=ns, temp=self.temp)
 
         hab.make(**kwa)
-        self.habs[hab.pre] = hab
+
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
 
         return hab
 
-    def makeGroupHab(self, group, mhab, smids, rmids=None, **kwa):
+    def makeGroupHab(self, group, mhab, smids, rmids=None, ns=None, **kwa):
         """Make new Group Hab using group has group hab name, with lhab as local
         participant.
 
@@ -527,12 +501,47 @@ class Habery:
         # create group Hab in this Habery
         hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                        rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                       name=group, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
+                       name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
-        self.habs[hab.pre] = hab
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
 
         return hab
+
+    def makeSignifyHab(self, name, ns=None, **kwa):
+        # create group Hab in this Habery
+        hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                              name=name, ns=ns, temp=self.temp)
+
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+        return hab
+
+    def deleteHab(self, name):
+        hab = self.habByName(name)
+        if not hab:
+            return False
+
+        if not self.db.habs.rem(keys=self.name):
+            return False
+
+        del self.habs[hab.pre]
+        self.db.prefixes.remove(hab.pre)
+
+        return True
+
 
     def extractMerfersMigers(self, smids, rmids=None):
         """
@@ -598,17 +607,24 @@ class Habery:
         """
         return self.db.prefixes
 
-    def habByName(self, name):
+    def habByName(self, name, ns=None):
         """
         Returns:
             hab (Hab): instance from .habs by name if any otherwise None
 
         Parameters:
            name (str): alias of Hab
+           ns (str): optional namespace of hab
 
         """
-        if (habord := self.db.habs.get(name)) is not None:
+        if ns is not None:
+            if (habord := self.db.nmsp.get(keys=(ns, name))) is not None:
+                habs = self.namespaces[ns]
+                return habs[habord.hid] if habord.hid in habs else None
+
+        elif (habord := self.db.habs.get(name)) is not None:
             return self.habs[habord.hid] if habord.hid in self.habs else None
+
         return None
 
     def reconfigure(self):
@@ -686,7 +702,7 @@ class Signator:
             self.db.hbys.pin(name, self.pre)
         else:
             self.pre = spre
-            self._hab = Hab(name=name, db=db,  pre=self.pre, **kwa)
+            self._hab = Hab(name=name, db=db, pre=self.pre, **kwa)
 
     def sign(self, ser):
         """ Sign the data in ser with the Signator's private key using the Manager
@@ -814,7 +830,7 @@ class BaseHab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', pre=None, temp=False):
+                 name='test', ns=None, pre=None, temp=False):
         """
         Initialize instance.
 
@@ -847,13 +863,42 @@ class BaseHab:
         self.psr = psr  # injected
 
         self.name = name
+        self.ns = ns
         self.pre = pre  # wait to setup until after db is known to be opened
         self.temp = True if temp else False
 
         self.inited = False
         self.delpre = None  # assigned laster if delegated
 
-    def make(self, DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits):
+    def make(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith, digers, toad, wits):
+        """
+        Creates Serder of inception event for provided parameters.
+        Assumes injected dependencies were already setup.
+
+        Parameters:
+            isith (int | str | list | None): incepting signing threshold as
+                    int, str hex, or list weighted if any, otherwise compute
+                    default from verfers
+            code (str): prefix derivation code default Blake3
+            nsith (int, str, list | None ): next signing threshold as int,
+                str hex or list weighted if any, otherwise compute default from
+                digers
+            verfers (list[Verfer]): Verfer instances for initial signing keys
+            digers  (list[Diger] | None) Diger instances for next key digests
+            toad (int |str| None): int or str hex of witness threshold if
+                specified else compute default based on number of wits (backers)
+            wits (list | None): qb64 prefixes of witnesses if any
+            delpre (str | None): qb64 of delegator identifier prefix if any
+            estOnly (bool | None): True means add trait eventing.TraitCodex.EstOnly
+                which means only establishment events allowed in KEL for this Hab
+                False (default) means allows non-est events and no trait is added.
+            DnD (bool): True means add trait of eventing.TraitCodex.DnD which
+                    means do not allow delegated identifiers from this identifier
+                    False (default) means do allow and no trait is added.
+
+            data (list | None): seal dicts
+
+        """
         icount = len(verfers)
         ncount = len(digers) if digers is not None else 0
         if isith is None:  # compute default
@@ -877,7 +922,8 @@ class BaseHab:
                                       ndigs=[diger.qb64 for diger in digers],
                                       toad=toad,
                                       wits=wits,
-                                      cnfg=cnfg, )
+                                      cnfg=cnfg,
+                                      code=code)
         else:
             serder = eventing.incept(keys=keys,
                                      isith=cst,
@@ -889,6 +935,15 @@ class BaseHab:
                                      code=code,
                                      data=data)
         return serder
+
+    def save(self, habord):
+        if self.ns is None:
+            self.db.habs.put(keys=self.name,
+                             val=habord)
+        else:
+            self.db.nmsp.put(keys=(self.ns, self.name),
+                             val=habord)
+
 
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
@@ -930,35 +985,6 @@ class BaseHab:
                                                    scheme=scheme,
                                                    stamp=help.toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
-
-    def recreate(self, serder, opre, verfers):
-        """ Recreate the Hab with new identifier prefix.
-
-        """
-
-        self.pre = serder.ked["i"]  # new pre
-        self.mgr.move(old=opre, new=self.pre)
-
-        habr = self.db.habs.get(self.name)
-        # may want db method that updates .habs. and .prefixes together
-        self.db.habs.pin(keys=self.name,
-                         val=basing.HabitatRecord(hid=self.pre,
-                                                  watchers=habr.watchers))
-        self.prefixes.add(self.pre)
-
-        # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
-        # create inception event
-        sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-        self.kvy.processEvent(serder=serder, sigers=sigers)
-        # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-        if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Improper Habitat inception for "
-                                            "pre={}.".format(self.pre))
-
-    @property
-    def group(self):
-        """ True means this is a group multisig Hab """
-        return False
 
     @property
     def iserder(self):
@@ -1002,30 +1028,25 @@ class BaseHab:
         """Alias for .make """
         self.make(**kwa)
 
-    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
-               data=None, merfers=None, migers=None):
+    def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None, toad=None, cuts=None, adds=None,
+               data=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
 
         Parameters:
+            verfers (list | None): Verfer instances of public keys qb64
+            digers (list | None): Diger instances of public next key digests qb64
             isith (int |str | None): current signing threshold as int or str hex
                                      or list of str weights
                                      default is prior next sith
             nsith (int |str | None): next, next signing threshold as int
                                      or str hex or list of str weights
                                      default is based on isith when None
-            ncount (int | None): next number of signing keys
-                                 default is len of prior next digs
             toad (int | str | None): hex of witness threshold after cuts and adds
             cuts (list | None): of qb64 pre of witnesses to be removed from witness list
             adds (list | None): of qb64 pre of witnesses to be added to witness list
             data (list | None): of dicts of committed data such as seals
-            merfers (list | None): group member Verfer instances of public keys qb64,
-                one collected from each multisig group member
-            migers (list | None): group member Diger instances of public
-                next key digests qb64
-                one collected from each multisig group member
 
 
         """
@@ -1036,19 +1057,6 @@ class BaseHab:
             isith = kever.ntholder.sith  # use prior next sith as default
         if nsith is None:
             nsith = isith  # use new current as default
-        if ncount is None:
-            ncount = len(kever.digers)  # use len of prior next digers as default
-
-        if merfers:  # multisig group rotate so not from keystore
-            verfers = merfers
-            digers = migers
-        else:  # from keystore
-            try:
-                verfers, digers = self.mgr.replay(pre=self.pre)
-            except IndexError:  # old next is new current
-                verfers, digers = self.mgr.rotate(pre=self.pre,
-                                                  ncount=ncount,
-                                                  temp=self.temp)
 
         if isith is None:  # compute default from newly rotated verfers above
             isith = f"{max(1, ceil(len(verfers) / 2)):x}"
@@ -1123,7 +1131,7 @@ class BaseHab:
         except MissingSignatureError:
             pass
         except Exception:
-            raise kering.ValidationError("Improper Habitat rotation for "
+            raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
 
         return msg
@@ -1550,6 +1558,37 @@ class BaseHab:
         route = "/end/role/add" if allow else "/end/role/cut"
         return self.reply(route=route, data=data, stamp=stamp)
 
+    def loadEndRole(self, cid, eid, role=kering.Roles.controller):
+        msgs = bytearray()
+        end = self.db.ends.get(keys=(cid, role, eid))
+        if end and (end.enabled or end.allowed):
+            said = self.db.eans.get(keys=(cid, role, eid))
+            serder = self.db.rpys.get(keys=(said.qb64,))
+            cigars = self.db.scgs.get(keys=(said.qb64,))
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+
+            if len(cigars) == 1:
+                (verfer, cigar) = cigars[0]
+                cigar.verfer = verfer
+            else:
+                cigar = None
+
+            if len(tsgs) > 0:
+                (prefixer, seqner, diger, sigers) = tsgs[0]
+                seal = eventing.SealEvent(i=prefixer.qb64,
+                                          s=seqner.snh,
+                                          d=diger.qb64)
+            else:
+                sigers = None
+                seal = None
+
+            msgs.extend(eventing.messagize(serder=serder,
+                                           cigars=[cigar] if cigar else [],
+                                           sigers=sigers,
+                                           seal=seal,
+                                           pipelined=True))
+        return msgs
+
     def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
         """
         Returns:
@@ -1568,7 +1607,7 @@ class BaseHab:
         data = dict(eid=eid, scheme=scheme, url=url)
         return self.reply(route="/loc/scheme", data=data, stamp=stamp)
 
-    def replyLocScheme(self, eid, scheme=None):
+    def replyLocScheme(self, eid, scheme=""):
         """
         Returns a reply message stream composed of entries authed by the given
         eid from the appropriate reply database including associated attachments
@@ -1598,18 +1637,31 @@ class BaseHab:
 
     def loadLocScheme(self, eid, scheme=None):
         msgs = bytearray()
-        keys = (eid, scheme)
+        keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
                 cigar.verfer = verfer
             else:
                 cigar = None
+
+            if len(tsgs) > 0:
+                (prefixer, seqner, diger, sigers) = tsgs[0]
+                seal = eventing.SealEvent(i=prefixer.qb64,
+                                          s=seqner.snh,
+                                          d=diger.qb64)
+            else:
+                sigers = None
+                seal = None
+
             msgs.extend(eventing.messagize(serder=serder,
-                                           cigars=[cigar],
+                                           cigars=[cigar] if cigar else [],
+                                           sigers=sigers,
+                                           seal=seal,
                                            pipelined=True))
         return msgs
 
@@ -1822,7 +1874,7 @@ class BaseHab:
 
 class Hab(BaseHab):
     """
-        Hab class provides a given idetnifier controller's local resource environment
+    Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
     configuration file as well as Kevery and key store Manager..
 
@@ -1864,6 +1916,7 @@ class Hab(BaseHab):
                           False otherwise
 
     """
+
     def __init__(self, **kwa):
         super(Hab, self).__init__(**kwa)
 
@@ -1915,11 +1968,12 @@ class Hab(BaseHab):
             nsith = '0'
             code = coring.MtrDex.Ed25519N
 
+        stem = self.name if self.ns is None else f"{self.ns}{self.name}"
         if secrecies:  # replay
             ipre, _ = self.mgr.ingest(secrecies,
                                       iridx=iridx,
                                       ncount=ncount,
-                                      stem=self.name,
+                                      stem=stem,
                                       transferable=transferable,
                                       temp=self.temp)
             verfers, digers = self.mgr.replay(pre=ipre, advance=False)
@@ -1927,11 +1981,21 @@ class Hab(BaseHab):
         else:  # use defaults
             verfers, digers = self.mgr.incept(icount=icount,
                                               ncount=ncount,
-                                              stem=self.name,
+                                              stem=stem,
                                               transferable=transferable,
                                               temp=self.temp)
 
-        serder = super(Hab, self).make(DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits)
+        serder = super(Hab, self).make(isith=isith,
+                                       verfers=verfers,
+                                       nsith=nsith,
+                                       digers=digers,
+                                       code=code,
+                                       toad=toad,
+                                       wits=wits,
+                                       estOnly=estOnly,
+                                       DnD=DnD,
+                                       delpre=delpre,
+                                       data=data)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -1941,11 +2005,10 @@ class Hab(BaseHab):
         # may want db method that updates .habs. and .prefixes together
         # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
         habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None,)
+                                      mid=None, )
 
         if not hidden:
-            self.db.habs.put(keys=self.name,
-                             val=habord)
+            self.save(habord)
             self.prefixes.add(self.pre)
 
         # sign handles group hab with .mhab case
@@ -1966,12 +2029,157 @@ class Hab(BaseHab):
 
         self.inited = True
 
+    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
+               data=None, **kwargs):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            isith (int |str | None): current signing threshold as int or str hex
+                                     or list of str weights
+                                     default is prior next sith
+            nsith (int |str | None): next, next signing threshold as int
+                                     or str hex or list of str weights
+                                     default is based on isith when None
+            ncount (int | None): next number of signing keys
+                                 default is len of prior next digs
+            toad (int | str | None): hex of witness threshold after cuts and adds
+            cuts (list | None): of qb64 pre of witnesses to be removed from witness list
+            adds (list | None): of qb64 pre of witnesses to be added to witness list
+            data (list | None): of dicts of committed data such as seals
+
+
+        """
+        # recall that kever.pre == self.pre
+        kever = self.kever  # before rotation kever is prior next
+
+        if ncount is None:
+            ncount = len(kever.digers)  # use len of prior next digers as default
+
+        try:
+            verfers, digers = self.mgr.replay(pre=self.pre)
+        except IndexError:  # old next is new current
+            verfers, digers = self.mgr.rotate(pre=self.pre,
+                                              ncount=ncount,
+                                              temp=self.temp)
+        return super(Hab, self).rotate(verfers=verfers, digers=digers,
+                                       isith=isith,
+                                       nsith=nsith,
+                                       toad=toad,
+                                       cuts=cuts,
+                                       adds=adds,
+                                       data=data)
+
+
+class SignifySaltyHab(BaseHab):
+    """
+    Hab class provides a given idetnifier controller's local resource environment
+    i.e. hab or habitat. Includes dependency injection of database, keystore,
+    configuration file as well as Kevery and key store Manager..
+    """
+
+    def __init__(self, stem=None, pidx=None, tier=None, temp=False, **kwa):
+        self.stem = stem
+        self.pidx = pidx
+        self.tier = tier
+        self.temp = temp
+
+        super(SignifySaltyHab, self).__init__(**kwa)
+
+    def make(self, *, serder, sigers, stem, pidx, tier, temp, **kwargs):
+        self.pre = serder.ked["i"]  # new pre
+
+        # during delegation initialization of a habitat we ignore the MissingDelegationError and
+        # MissingSignatureError
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={} {}".format(self.pre, ex))
+
+        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
+
+        self.save(habord)
+        self.prefixes.add(self.pre)
+
+        self.stem = stem
+        self.pidx = pidx
+        self.tier = tier
+        self.temp = temp
+        self.inited = True
+
+
+    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
+        raise kering.KeriError("remote hab does not support local signing")
+
+
+    def rotate(self, *, serder=None, sigers=None, **kwargs):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            serder (Serder): pre-created rotation event
+            sigers (list[Siger]): Siger instances on next rotation event
+            npath (str | None): salty path used to create next keys
+            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
+
+        """
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except Exception as ex:
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={self.pre}.") from ex
+
+        return msg
+
+    def interact(self, serder, sigers):
+        """
+        Perform interaction operation. Register interaction in database.
+        Returns: bytearray interaction message with attached signatures.
+        """
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            # verify event, update kever state, and escrow if group
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except Exception:
+            raise kering.ValidationError("Improper Habitat interaction for "
+                                         "pre={}.".format(self.pre))
+
+        return msg
+
 
 class GroupHab(BaseHab):
     """
     Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
-    configuration file as well as Kevery and key store Manager..
+    configuration file as well as Kevery and key store Manager.
 
     Attributes: (Injected)
         ks (keeping.Keeper): lmdb key store
@@ -2011,6 +2219,7 @@ class GroupHab(BaseHab):
                           False otherwise
 
     """
+
     def __init__(self, smids, mhab=None, rmids=None, **kwa):
         """
         Initialize instance.
@@ -2098,17 +2307,26 @@ class GroupHab(BaseHab):
         verfers = merfers
         digers = migers
 
-        serder = super(GroupHab, self).make(DnD, code, data, delpre, digers, estOnly, isith, nsith, toad, verfers, wits)
+        serder = super(GroupHab, self).make(isith=isith,
+                                            verfers=verfers,
+                                            nsith=nsith,
+                                            digers=digers,
+                                            code=code,
+                                            toad=toad,
+                                            wits=wits,
+                                            estOnly=estOnly,
+                                            DnD=DnD,
+                                            delpre=delpre,
+                                            data=data)
 
         self.pre = serder.ked["i"]  # new pre
 
         habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None,
+                                      mid=self.mhab.pre,
                                       smids=self.smids,
                                       rmids=self.rmids)
-        habord.mid = self.mhab.pre
-        self.db.habs.put(keys=self.name,
-                         val=habord)
+
+        self.save(habord)
         self.prefixes.add(self.pre)
 
         # sign handles group hab with .mhab case
@@ -2126,10 +2344,6 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    @property
-    def group(self):
-        """ True means this is a group multisig Hab """
-        return True
 
     def sign(self, ser, verfers=None, indexed=True, rotated=False, indices=None, ondices=None):
         """ Sign given serialization ser using appropriate keys.
@@ -2194,7 +2408,7 @@ class GroupHab(BaseHab):
             # then mhab participates as group prior next at index pni.
             # else pni is None which means mhab only participates as new key.
             # get nexter of .mhab's prior Next est event
-            migers = self.mhab.kever.fetchPriorDigers(sn=sn-1)
+            migers = self.mhab.kever.fetchPriorDigers(sn=sn - 1)
             if migers:  # not  None or not empty
                 mig = migers[0].qb64  # always use first prior dig of mhab
                 digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs
@@ -2243,4 +2457,3 @@ class GroupHab(BaseHab):
         serder = eventing.query(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True)
-

@@ -86,7 +86,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
         self.counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
 
         doers = [mbd, self.hbyDoer, self.counselor, self.postman]
         self.toRemove = list(doers)
