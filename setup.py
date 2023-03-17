@@ -81,11 +81,12 @@ setup(
                         'multicommand>=1.0.0',
                         'jsonschema>=4.17.0',
                         'falcon>=3.1.0',
-                        'daemonocle>=1.2.3',
                         'hjson>=3.0.2',
                         'PyYaml>=6.0',
                         'apispec>=6.0.0',
                         'mnemonic>=0.20',
+                        'PrettyTable>=3.5.0',
+                        'cryptography>=39.0.2'
                         'PrettyTable>=3.5.0',
                         'http_sfv>=0.9.8'
     ],

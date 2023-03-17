@@ -20,6 +20,11 @@ import pysodium
 import blake3
 import hashlib
 
+from cryptography import exceptions
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+
 from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       InvalidCodeSizeError, InvalidVarIndexError,
                       InvalidVarSizeError, InvalidVarRawSizeError,
@@ -73,6 +78,8 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # '00012c'
 VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
+DSS_SIG_MODE = "fips-186-3"
+ECDSA_256r1_SEEDBYTES = 32
 
 
 def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
@@ -479,6 +486,7 @@ class MatterCodex:
     Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
     X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
+    ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
     Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -487,14 +495,17 @@ class MatterCodex:
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
+    ECDSA_256r1_Sig:      str = "0I"  # ECDSA secp256r1 signature.
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
+    ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tern:                 str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
+    ECDSA_256r1N:         str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:          str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 Only Lead Size 0
@@ -726,6 +737,7 @@ class Matter:
         'N': Sizage(hs=1, ss=0, fs=12, ls=0),
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -734,6 +746,7 @@ class Matter:
         '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -742,6 +755,8 @@ class Matter:
         '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -2009,6 +2024,8 @@ class Verfer(Matter):
 
         if self.code in [MtrDex.Ed25519N, MtrDex.Ed25519]:
             self._verify = self._ed25519
+        elif self.code in [MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256r1]:
+            self._verify = self._secp256r1
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
@@ -2041,6 +2058,18 @@ class Verfer(Matter):
             return False
 
         return True
+
+    @staticmethod
+    def _secp256r1(sig, ser, key):
+        verkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key)
+        r = int.from_bytes(sig[:32], "big")
+        s = int.from_bytes(sig[32:], "big")
+        der = utils.encode_dss_signature(r, s)
+        try:
+            verkey.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+            return True
+        except exceptions.InvalidSignature:
+            return False
 
 
 class Cigar(Matter):
@@ -2172,6 +2201,10 @@ class Signer(Matter):
             if code == MtrDex.Ed25519_Seed:
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
+            elif code == MtrDex.ECDSA_256r1_Seed:
+                raw = pysodium.randombytes(ECDSA_256r1_SEEDBYTES)
+                super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
+
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
 
@@ -2181,6 +2214,14 @@ class Signer(Matter):
             verfer = Verfer(raw=verkey,
                             code=MtrDex.Ed25519 if transferable
                             else MtrDex.Ed25519N)
+        elif self.code == MtrDex.ECDSA_256r1_Seed:
+            self._sign = self._secp256r1
+            d = int.from_bytes(self.raw, byteorder="big")
+            sigkey = ec.derive_private_key(d, ec.SECP256R1())
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verfer = Verfer(raw=verkey,
+                            code=MtrDex.ECDSA_256r1 if transferable
+                            else MtrDex.ECDSA_256r1N)
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -2268,6 +2309,65 @@ class Signer(Matter):
                     code = IdrDex.Ed25519_Sig  # use  small both same
                 else:  # otherwise big or both not same so use big both
                     code = IdrDex.Ed25519_Big_Sig  # use use big both
+
+            return Siger(raw=sig,
+                         code=code,
+                         index=index,
+                         ondex=ondex,
+                         verfer=verfer,)
+
+    @staticmethod
+    def _secp256r1(ser, seed, verfer, index, only=False, ondex=None, **kwa):
+        """
+        Returns signature as either Cigar or Siger instance as appropriate for
+        Ed25519 digital signatures given index and ondex values
+
+        The seed's code determins the crypto key-pair algorithm and signing suite
+        The signature type, Cigar or Siger, and when indexed the Siger code
+        may be completely determined by the seed and index values (index, ondex)
+        by assuming that the index values are intentional.
+        Without the seed code its more difficult for Siger to
+        determine when for the Indexer code value should be changed from the
+        than the provided value with respect to provided but incompatible index
+        values versus error conditions.
+
+        Parameters:
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
+        """
+        # compute raw signature sig using seed on serialization ser
+        d = int.from_bytes(seed, byteorder="big")
+        sigkey = ec.derive_private_key(d, ec.SECP256R1())
+        der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+        (r, s) = utils.decode_dss_signature(der)
+        sig = bytearray(r.to_bytes(32, "big"))
+        sig.extend(s.to_bytes(32, "big"))
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
+            return Cigar(raw=sig, code=MtrDex.ECDSA_256r1_Sig, verfer=verfer)
+        else:  # Must be Siger i.e. indexed signature
+            # should add Indexer class method to get ms main index size for given code
+            if only:  # only main index ondex not used
+                ondex = None
+                if index <= 63: # (64 ** ms - 1) where ms is main index size
+                    code = IdrDex.ECDSA_256r1_Crt_Sig  # use small current only
+                else:
+                    code = IdrDex.ECDSA_256r1_Big_Crt_Sig  # use big current only
+            else:  # both
+                if ondex == None:
+                    ondex = index  # enable default to be same
+                if ondex == index and index <= 63:  # both same and small
+                    code = IdrDex.ECDSA_256r1_Sig  # use  small both same
+                else:  # otherwise big or both not same so use big both
+                    code = IdrDex.ECDSA_256r1_Big_Sig  # use use big both
 
             return Siger(raw=sig,
                          code=code,
@@ -3442,12 +3542,16 @@ class IndexerCodex:
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
     TBD0: str = '0z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code

@@ -17,6 +17,8 @@ import cbor2 as cbor
 import msgpack
 import pysodium
 import pytest
+from cryptography.hazmat.primitives._serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from keri.core import coring
 from keri.core import eventing
@@ -3827,13 +3829,76 @@ def test_signer():
     with pytest.raises(ValueError):  # use invalid code not SEED type code
         signer = Signer(raw=seed, code=MtrDex.Ed25519N)
 
+    # Test Secp256r1, default seed
+    signer = Signer(code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256r1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result is True
+
+    # Test non-default seed
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    # Test hardcoded seed
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR\xc9\xbd\x04\x9d\x85)~\x93')
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.qb64 == "QJ97qKeoQzmWJvqxmeuqIMQbRxHErlNBUsm9BJ2FKX6T"
+    assert signer.verfer.qb64 == "1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"
+
+    # Test vectors from CERSide
+    seed = (b'\x35\x86\xc9\xa0\x4d\x33\x67\x85\xd5\xe4\x6a\xda\x62\xf0\x54\xc5\xa5\xf4\x32\x3f\x46\xcb\x92\x23\x07'
+            b'\xe0\xe2\x79\xb7\xe5\xf5\x0a')
+    verkey = (b"\x03\x16\x99\xbc\xa0\x51\x8f\xa6\x6c\xb3\x5d\x6b\x0a\x92\xf6\x84\x96\x28\x7b\xb6\x64\xe8\xe8\x57\x69"
+              b"\x15\xb8\xea\x9a\x02\x06\x2a\xff")
+    sig = (b'\x8c\xfa\xb4\x40\x01\xd2\xab\x4a\xbc\xc5\x96\x8b\xa2\x65\x76\xcd\x51\x9d\x3b\x40\xc3\x35\x21\x73\x9a\x1b'
+           b'\xe8\x2f\xe1\x30\x28\xe1\x07\x90\x08\xa6\x42\xd7\x3f\x36\x8c\x96\x32\xff\x01\x64\x03\x18\x08\x85\xb8\xa4'
+           b'\x97\x76\xbe\x9c\xe4\xd7\xc5\xe7\x05\xda\x51\x23')
+
+    signerqb64 = "QDWGyaBNM2eF1eRq2mLwVMWl9DI_RsuSIwfg4nm35fUK"
+    verferqb64 = "1AAJAxaZvKBRj6Zss11rCpL2hJYoe7Zk6OhXaRW46poCBir_"
+    cigarqb64 = "0ICM-rRAAdKrSrzFlouiZXbNUZ07QMM1IXOaG-gv4TAo4QeQCKZC1z82jJYy_wFkAxgIhbikl3a-nOTXxecF2lEj"
+
+    ser = b'abc'
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)
+    cigar = signer.sign(ser)
+    assert signer.code == MtrDex.ECDSA_256r1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.qb64 == signerqb64
+
+    assert signer.verfer.code == MtrDex.ECDSA_256r1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.verfer.raw == verkey
+    assert signer.verfer.qb64 == verferqb64
+
+    assert cigar.code == MtrDex.ECDSA_256r1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    assert signer.verfer.verify(cigar.raw, ser)
+    assert signer.verfer.verify(sig, ser)
+
+    cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256r1_Sig)
+    assert cigar.qb64 == cigarqb64
 
     # test with only and ondex parameters
 
-
     """ Done Test """
-
 
 def test_cipher():
     """
