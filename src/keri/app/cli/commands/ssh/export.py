@@ -5,6 +5,8 @@ keri.kli.commands module
 
 """
 import argparse
+import os
+import stat
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519
@@ -66,6 +68,9 @@ def export(tymth, tock=0.0, **opts):
                 f = open(f"{filename}", "w")
                 for line in pem.splitlines(keepends=True):
                     f.write(line.decode("utf-8"))
+                f.close()
+                os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)
+
             else:
                 verkey = ed25519.Ed25519PublicKey.from_public_bytes(hab.kever.verfers[0].raw)
                 pem = verkey.public_bytes(encoding=serialization.Encoding.OpenSSH,
