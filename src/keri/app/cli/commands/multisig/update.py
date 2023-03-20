@@ -62,7 +62,7 @@ class UpdateDoer(doing.DoDoer):
         self.said = said
         self.cues = help.decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
+        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.witq])
 

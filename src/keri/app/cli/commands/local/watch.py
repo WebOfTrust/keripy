@@ -58,7 +58,7 @@ class WatchDoer(doing.DoDoer):
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.cues = help.decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "reply"])
+        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         self.postman = forwarding.Poster(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.postman, doing.doify(self.cueDo)])
 
