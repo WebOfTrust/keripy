@@ -32,7 +32,6 @@ def main():
         else:
             print(f"ERR: {ex}")
         return -1
-        # raise ex
 
 
 if __name__ == "__main__":
