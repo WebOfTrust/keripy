@@ -7,6 +7,7 @@ keri.kli.commands module
 import argparse
 import os
 import stat
+from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519
@@ -50,6 +51,7 @@ def export(tymth, tock=0.0, **opts):
     bran = args.bran
     private = args.private
     filename = args.username if args.username else alias
+    home = str(Path.home())
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
@@ -65,18 +67,18 @@ def export(tymth, tock=0.0, **opts):
                                            format=serialization.PrivateFormat.OpenSSH,
                                            encryption_algorithm=serialization.NoEncryption())
 
-                f = open(f"{filename}", "w")
+                f = open(os.path.join(home, ".ssh", filename), "w")
                 for line in pem.splitlines(keepends=True):
                     f.write(line.decode("utf-8"))
                 f.close()
-                os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)
+                os.chmod(os.path.join(home, ".ssh", filename), stat.S_IRUSR | stat.S_IWUSR)
 
             else:
                 verkey = ed25519.Ed25519PublicKey.from_public_bytes(hab.kever.verfers[0].raw)
                 pem = verkey.public_bytes(encoding=serialization.Encoding.OpenSSH,
                                           format=serialization.PublicFormat.OpenSSH)
 
-                f = open(f"{filename}.pub", "w")
+                f = open(os.path.join(home, ".ssh", f"{filename}.pub"), "w")
                 for line in pem.splitlines(keepends=True):
                     f.write(line.decode("utf-8"))
 
