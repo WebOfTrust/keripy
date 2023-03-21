@@ -128,15 +128,12 @@ class ConfirmDoer(doing.DoDoer):
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
-                            # self.counselor.rotate(ghab=hab, mids=self.aids, isith=self.isith, toad=self.toad,
-                            #                       cuts=list(self.cuts), adds=list(self.adds),
-                            #                       data=self.data)
 
                         serder = coring.Serder(raw=msg)
 
                         exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
                         others = list(oset(hab.smids + (hab.rmids or [])))
-                        #others = list(hab.smids)
+                        # others = list(hab.smids)
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
@@ -146,7 +143,7 @@ class ConfirmDoer(doing.DoDoer):
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         seqner = coring.Seqner(sn=serder.sn)
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
+                        self.counselor.start(smids=aids, ghab=hab, prefixer=prefixer, seqner=seqner,
                                              saider=saider)
 
                         while True:

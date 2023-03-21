@@ -223,7 +223,6 @@ class ConfirmDoer(doing.DoDoer):
         if approve:
             ixn = ghab.interact(data=data)
             serder = coring.Serder(raw=ixn)
-            print(serder.pretty())
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
@@ -236,7 +235,7 @@ class ConfirmDoer(doing.DoDoer):
 
     def startCounselor(self, smids, rmids, hab, prefixer, seqner, saider):
         self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             mid=hab.mhab.pre, smids=smids, rmids=rmids)
+                             ghab=hab, smids=smids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

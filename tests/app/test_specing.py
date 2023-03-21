@@ -29,8 +29,6 @@ def test_spec_resource():
         counselor = grouping.Counselor(hby=hby)
         multiIcpEnd = kiwiing.MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
         app.add_route("/groups/{alias}/icp", multiIcpEnd)
-        multiRotEnd = kiwiing.MultisigEventEnd(hby=hby, counselor=counselor, notifier=notifier)
-        app.add_route("/groups/{alias}/rot", multiRotEnd, suffix="rot")
 
         lockEnd = kiwiing.LockEnd(servery=booting.Servery(port=1234), bootConfig=dict())
         app.add_route("/lock", lockEnd)

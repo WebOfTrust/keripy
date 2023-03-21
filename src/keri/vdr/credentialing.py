@@ -418,7 +418,7 @@ class Registrar(doing.DoDoer):
             rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
+                                 ghab=hab, smids=smids, rmids=rmids)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
@@ -470,7 +470,7 @@ class Registrar(doing.DoDoer):
             rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
+                                 ghab=hab, smids=smids, rmids=rmids)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
@@ -523,7 +523,7 @@ class Registrar(doing.DoDoer):
             rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 mid=hab.mhab.pre, smids=smids, rmids=rmids)
+                                 ghab=hab, smids=smids, rmids=rmids)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))

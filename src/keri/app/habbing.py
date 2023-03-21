@@ -335,6 +335,11 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
+            elif habord.sid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=pre, temp=self.temp, smids=habord.smids)
+                groups.append(habord)
             elif habord.pidx is not None:
                 hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -366,6 +371,11 @@ class Habery:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
+                groups.append(habord)
+            elif habord.sid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
             elif habord.pidx is not None:
                 hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
@@ -1111,7 +1121,7 @@ class BaseHab:
 
         return msg
 
-    def interact(self, data=None):
+    def interact(self, *, data=None):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
@@ -1752,16 +1762,21 @@ class BaseHab:
         # not permiteed in .habs.oobis
         return self.replyEndRole(cid=aid, role=role, eids=eids)
 
-    def getOwnEvent(self, sn):
+    def getOwnEvent(self, sn, allowPartiallySigned=False):
         """
         Returns: message Serder and controller signatures of
                  own event at sequence number sn from retrieving event at sn
                  and associated signatures from database.
 
         Parameters:
-            sn is int sequence number of event
+            sn (int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        dig = self.db.getKeLast(dbing.snKey(self.pre, sn))
+        key = dbing.snKey(self.pre, sn)
+        dig = self.db.getKeLast(key)
+        if dig is None and allowPartiallySigned:
+            dig = self.db.getPseLast(key)
+
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
@@ -1778,17 +1793,20 @@ class BaseHab:
 
         return serder, sigs, couple
 
-    def makeOwnEvent(self, sn):
+    def makeOwnEvent(self, sn, allowPartiallySigned=False):
         """
         Returns: messagized bytearray message with attached signatures of
                  own event at sequence number sn from retrieving event at sn
                  and associated signatures from database.
 
         Parameters:
-            sn is int sequence number of event
+            sn(int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
+
         """
         msg = bytearray()
-        serder, sigs, couple = self.getOwnEvent(sn=sn)
+        serder, sigs, couple = self.getOwnEvent(sn=sn,
+                                                allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                   count=len(sigs)).qb64b)  # attach cnt
@@ -1802,13 +1820,13 @@ class BaseHab:
 
         return msg
 
-    def makeOwnInception(self):
+    def makeOwnInception(self, allowPartiallySigned=False):
         """
         Returns: messagized bytearray message with attached signatures of
                  own inception event by retrieving event and signatures
                  from database.
         """
-        return self.makeOwnEvent(sn=0)
+        return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned)
 
     def processCues(self, cues):
         """
@@ -2175,6 +2193,109 @@ class SignifySaltyHab(BaseHab):
         return msg
 
 
+class SignifyGroupHab(BaseHab):
+    """
+    Hab class provides a given idetnifier controller's local resource environment
+    i.e. hab or habitat. Includes dependency injection of database, keystore,
+    configuration file as well as Kevery and key store Manager..
+    """
+
+    def __init__(self, smids, mhab=None, rmids=None, **kwa):
+
+        if not isinstance(mhab, SignifySaltyHab):
+            raise kering.ConfigurationError(f"Improper Hab initialization, {mhab.pre} must be a SignifyHab")
+
+        self.mhab = mhab  # local participant Hab of this group hab
+        self.smids = smids  # group signing member aids in this group hab
+        self.rmids = rmids  # group rotating member aids in this group hab
+
+        super(SignifyGroupHab, self).__init__(**kwa)
+
+    def make(self, *, serder, sigers, **kwargs):
+        self.pre = serder.ked["i"]  # new pre
+
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={} {}".format(self.pre, ex))
+
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      sid=self.mhab.pre,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
+
+        self.save(habord)
+        self.prefixes.add(self.pre)
+
+        self.inited = True
+
+
+    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+            indexed (bool): When not mhab then
+                True means use use indexed signatures and return
+                list of Siger instances.
+                False means do not use indexed signatures and return
+                list of Cigar instances
+            indices (list[int] | None): indices (offsets)
+                when indexed == True. See Manager.sign
+            ondices (list[int | None] | None): other indices (offsets)
+                when indexed is True. See Manager.sign
+
+        """
+        raise kering.KeriError("remote hab does not support local signing")
+
+
+    def rotate(self, *, serder=None, sigers=None, **kwargs):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            serder (Serder): pre-created rotation event
+            sigers (list[Siger]): Siger instances on next rotation event
+            npath (str | None): salty path used to create next keys
+            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
+
+        """
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except Exception as ex:
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={self.pre}.") from ex
+
+        return msg
+
+    def interact(self, *, serder, sigers, **kwargs):
+        """
+        Perform interaction operation. Register interaction in database.
+        Returns: bytearray interaction message with attached signatures.
+        """
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            # verify event, update kever state, and escrow if group
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except Exception:
+            raise kering.ValidationError("Improper Habitat interaction for "
+                                         "pre={}.".format(self.pre))
+
+        return msg
+
+
 class GroupHab(BaseHab):
     """
     Hab class provides a given idetnifier controller's local resource environment
@@ -2321,14 +2442,6 @@ class GroupHab(BaseHab):
 
         self.pre = serder.ked["i"]  # new pre
 
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=self.mhab.pre,
-                                      smids=self.smids,
-                                      rmids=self.rmids)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
-
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
@@ -2341,6 +2454,14 @@ class GroupHab(BaseHab):
         except Exception as ex:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
+
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      mid=self.mhab.pre,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
+
+        self.save(habord)
+        self.prefixes.add(self.pre)
 
         self.inited = True
 

@@ -155,6 +155,7 @@ class HabitatRecord:  # baser.habs
     """
     hid: str  # hab own identifier prefix qb64
     mid: str | None = None  # group member identifier qb64 when hid is group
+    sid: str | None = None  # Signify group member identifier qb64 when hid is Signify group
     smids: list | None = None  # group signing member ids when hid is group
     rmids: list | None = None  # group rotating member ids when hid is group
     stem: str | None = None
@@ -800,10 +801,6 @@ class Baser(dbing.LMDBer):
 
         # group local witness escrow
         self.glwe = koming.Komer(db=self, subkey='glwe.',
-                                 schema=RotateRecord)
-
-        # group partial member aid escrow
-        self.gpae = koming.Komer(db=self, subkey='gpae.',
                                  schema=RotateRecord)
 
         # group partial signature escrow

@@ -50,7 +50,7 @@ def test_counselor():
 
         # Send to Counselor to post process through escrows
         counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                        mid=hab1.pre, smids=smids, rmids=rmids)
+                        ghab=ghab, smids=smids, rmids=rmids)
         assert len(counselor.postman.evts) == 2  # Send my event to other participants
         evt = counselor.postman.evts.popleft()
         assert evt["src"] == "EOzS8kvK5AM0O9Qwub8wDVAmuetGCtUYVOQC6vpqbLQa"
@@ -69,7 +69,7 @@ def test_counselor():
         # Sith 2 so create second signature to get past the first escrow
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
+        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
         assert evt == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ENuUR3YvSR2-dFoN1zBN2p8W'
                        b'9BvsySnrY6g2vDS1EVAS","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"0","kt":["1/2","1/2","1/2"],"k":["DEXdkHRR2Nspj5cz'
@@ -374,7 +374,7 @@ def test_the_seven():
 
         # Send to Counselor to post process through escrows
         counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                        mid=hab1.pre, smids=smids, rmids=rmids)
+                        ghab=ghab, smids=smids, rmids=rmids)
         raw = (b'{"v":"KERI10JSON0003af_","t":"icp","d":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z'
                b'8gRdICIU","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"0","kt":["'
                b'1/3","1/3","1/3","1/3","1/3","1/3","1/3"],"k":["DEXdkHRR2Nspj5czsFvKOa-ZnGzM'
@@ -400,7 +400,7 @@ def test_the_seven():
         # Get participation from everyone on inception
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab2.db, ghab2.pre, 0)
+        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBBAD108k4sWtYRv8jQaRbzX6kDebjdzFNVCh3N9cOAJqXV5IzmKdi60Cr0Eu'
                                    b'MaACskw0FCi73V2VX8BgFlxO8VIK')
@@ -409,7 +409,7 @@ def test_the_seven():
 
         ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab3.db, ghab3.pre, 0)
+        evt = ghab3.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBCD6V2UkAovhY07MrJUNb-ICddDoyLde9i0FWclxfs7jes01YUEihfgbGERF'
                                    b'dKDR4kSr4WF3AskrZOPvMuXipAgP')
@@ -418,7 +418,7 @@ def test_the_seven():
 
         ghab4 = hby4.makeGroupHab(group=f"{prefix}_group4", mhab=hab4,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab4.db, ghab4.pre, 0)
+        evt = ghab4.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBDBCZuZSFWy0tFshGny1pTR47GphDljd0SShmGRpUSpBX_BeHB1tdIObizaA'
                                    b'4GMoOcZ2sOWIe6muJPF_RaoKedYE')
@@ -427,7 +427,7 @@ def test_the_seven():
 
         ghab5 = hby5.makeGroupHab(group=f"{prefix}_group5", mhab=hab5,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab5.db, ghab5.pre, 0)
+        evt = ghab5.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBEBsR6_hPId3H8fFG8EfevQVji8MsLAC72MjkkRxJp3h9v1vyFS1hAGGGxno'
                                    b'F5xSHOnpBpPwjMJwOCurAa3VrNAD')
@@ -436,7 +436,7 @@ def test_the_seven():
 
         ghab6 = hby6.makeGroupHab(group=f"{prefix}_group6", mhab=hab6,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab6.db, ghab6.pre, 0)
+        evt = ghab6.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBFCi5hK6Ax4aBNsdoUkh7Q_CcSWJfpwkeF68aCO34J3BDN7k483lOxiyj6pl'
                                    b'8TQIQ7VJLBkoRscUMi_mls9jbpcD')
@@ -445,7 +445,7 @@ def test_the_seven():
 
         ghab7 = hby7.makeGroupHab(group=f"{prefix}_group7", mhab=hab7,
                                   smids=smids, rmids=rmids, **inits)
-        evt = grouping.getEscrowedEvent(hab7.db, ghab7.pre, 0)
+        evt = ghab7.makeOwnInception(allowPartiallySigned=True)
         serd = coring.Serder(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBGCtPvRj00vEfT5Po6eH50DWfBWwAcQgvBaJ7LlYT7kQswkl_r-K9Lsxi5tm'
                                    b'Pvsb2xFtcMJkFf-BxamGhFo9OOcD')
@@ -1034,60 +1034,3 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         doist.exit()
 
         assert len(notifier.signaler.signals) == 1
-
-
-def test_pending_events():
-    with habbing.openHab(name="test0", temp=True) as (hby, hab):
-        counselor = grouping.Counselor(hby=hby)
-
-        rec = basing.RotateRecord(
-            sn=0,
-            isith=["1/2, 1/2, 1/2"],
-            nsith=["1/2, 1/2, 1/2"],
-            toad=3,
-            cuts=[],
-            adds=[],
-            data=[dict(a=1)],
-            date="2021-06-09T17:35:54.169967+00:00",
-            smids=[hab.pre]
-        )
-        hby.db.gpae.put(keys=(hab.pre,), val=rec)
-
-        evts = counselor.pendingEvents(hab.pre)
-        assert len(evts) == 1
-        assert evts[0] == {'adds': [],
-                           'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
-                           'cuts': [],
-                           'data': [{'a': 1}],
-                           'isith': ['1/2, 1/2, 1/2'],
-                           'nsith': ['1/2, 1/2, 1/2'],
-                           'sn': 0,
-                           'timestamp': '2021-06-09T17:35:54.169967+00:00',
-                           'toad': 3}
-
-        rec = basing.RotateRecord(
-            sn=3,
-            isith=['1/2, 1/2, 1/2'],
-            nsith="1",
-            toad=1,
-            cuts=[],
-            adds=[],
-            data=[],
-            date="2021-06-09T17:35:54.169967+00:00",
-            smids=[hab.pre]
-        )
-        hby.db.glwe.put(keys=(hab.pre,), val=rec)
-        evts = counselor.pendingEvents(hab.pre)
-        assert len(evts) == 2
-        assert evts[1] == {'adds': [],
-                           'aids': ['EFPnKh_K7OrV7giJWjUVM7QIZftaCdPQnTQBOGIviMrj'],
-                           'cuts': [],
-                           'data': [],
-                           'isith': ['1/2, 1/2, 1/2'],
-                           'nsith': '1',
-                           'sn': 3,
-                           'timestamp': '2021-06-09T17:35:54.169967+00:00',
-                           'toad': 1}
-
-        evts = counselor.pendingEvents("ABC")
-        assert len(evts) == 0
