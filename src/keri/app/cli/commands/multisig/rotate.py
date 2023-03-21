@@ -5,6 +5,7 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -201,6 +202,23 @@ class GroupMultisigRotate(doing.DoDoer):
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
         rserder = coring.Serder(raw=rot)
+
+        # Create a notification EXN message to send to the other agents
+        exn, ims = grouping.multisigRotateExn(ghab=ghab,
+                                              smids=smids,
+                                              rmids=rmids,
+                                              ked=rserder.ked)
+        others = list(oset(smids + (rmids or [])))
+
+        others.remove(ghab.mhab.pre)
+
+        for recpt in others:  # this goes to other participants only as a signaling mechanism
+            self.postman.send(src=ghab.mhab.pre,
+                              dest=recpt,
+                              topic="multisig",
+                              serder=exn,
+                              attachment=bytearray(ims))
+
 
         self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=rserder.saider,
                              smids=smids, rmids=rmids, proxy=ghab.mhab.pre)

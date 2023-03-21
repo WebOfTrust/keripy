@@ -2133,10 +2133,10 @@ class MultisigInceptEnd(MultisigEndBase):
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(mhab, aids=ghab.smids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(mhab, smids=ghab.smids, rmids=ghab.rmids, ked=serder.ked)
 
         others = list(oset(ghab.smids + (ghab.rmids or [])))
-        #others = list(ghab.smids)
+
         others.remove(mhab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism

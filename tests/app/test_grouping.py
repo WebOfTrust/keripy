@@ -809,7 +809,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 def test_multisig_incept(mockHelpingNowUTC):
     with habbing.openHab(name="test", temp=True) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
+        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids, ked=hab.kever.serder.ked)
 
         assert exn.ked["r"] == '/multisig/icp'
         assert exn.saidb == b'EEl70ZAj2v8kR8X2IkKB2tuhhYa4lHSO1UqvA3_cZK7G'
@@ -823,8 +823,7 @@ def test_multisig_incept(mockHelpingNowUTC):
 
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, aids=ghab1.smids, isith='2', toad=0, cuts=[],
-                                              adds=[], data=[])
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, ked=dict())
 
         assert exn.ked["r"] == '/multisig/rot'
         assert exn.saidb == b'EEheekL5ct-RK_-4xx7Yj3Nxj0WZY3JyXGN8ZMD8IxmH'
@@ -892,7 +891,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
     with habbing.openHab(name="test0", temp=True) as (hby, hab):
 
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        exn, atc = grouping.multisigInceptExn(hab=hab, aids=aids, ked=hab.kever.serder.ked)
+        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids, ked=hab.kever.serder.ked)
 
         notifier = notifying.Notifier(hby=hby)
         exc = exchanging.Exchanger(db=hby.db, handlers=[])

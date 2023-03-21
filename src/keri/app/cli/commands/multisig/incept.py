@@ -136,7 +136,8 @@ class GroupMultisigIncept(doing.DoDoer):
 
             # Create a notification EXN message to send to the other agents
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
-                                                  aids=ghab.smids,
+                                                  smids=ghab.smids,
+                                                  rmids=ghab.rmids,
                                                   ked=serder.ked)
             others = list(oset(smids + (rmids or [])))
 

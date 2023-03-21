@@ -309,30 +309,30 @@ class MultisigInceptHandler(doing.DoDoer):
                     continue
 
                 pay = msg["payload"]
-                if "aids" not in pay or "ked" not in pay:
-                    logger.error(f"invalid incept payload, aids and ked are required.  payload: {pay}")
+                if "smids" not in pay or "ked" not in pay:
+                    logger.error(f"invalid incept payload, smids and ked are required.  payload: {pay}")
                     continue
 
                 src = prefixer.qb64
-                aids = pay["aids"]
+                smids = pay["smids"]
 
                 hab = None
-                for aid in aids:
+                for aid in smids:
                     if aid in self.hby.habs:
                         hab = self.hby.habs[aid]
 
                 if hab is None:
-                    logger.error(f"invalid incept message, no local event in aids: {pay}")
+                    logger.error(f"invalid incept message, no local event in smids: {pay}")
                     continue
 
-                if src not in pay["aids"] or src not in hab.kevers:
+                if src not in pay["smids"] or src not in hab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 
                 data = dict(
                     r='/multisig/icp/init',
                     src=src,
-                    aids=aids,
+                    smids=smids,
                     ked=pay["ked"]
                 )
                 self.notifier.add(attrs=data)
@@ -341,9 +341,10 @@ class MultisigInceptHandler(doing.DoDoer):
             yield
 
 
-def multisigInceptExn(hab, aids, ked, delegator=None):
+def multisigInceptExn(hab, smids, rmids, ked, delegator=None):
     data = dict(
-        aids=aids,
+        smids=smids,
+        rmids=rmids,
         ked=ked
     )
 
@@ -415,35 +416,26 @@ class MultisigRotateHandler(doing.DoDoer):
                     continue
 
                 pay = msg["payload"]
-                if "aids" not in pay or "gid" not in pay:
-                    logger.error(f"invalid rotation payload, aids and gid are required.  payload: {pay}")
+                if "smids" not in pay or "ked" not in pay or "rmids" not in pay:
+                    logger.error(f"invalid rotation payload, smids, rmids and ked are required.  payload: {pay}")
                     continue
 
                 src = prefixer.qb64
-                aids = pay["aids"]
-                gid = pay["gid"]
+                smids = pay["smids"]
+                rmids = pay["rmids"]
+                ked = pay["ked"]
 
-                ghab = self.hby.habs[gid]
-                if ghab is None:
-                    logger.error(f"invalid rotate message, not a local group: {pay}")
-                    continue
-
-                if src not in ghab.smids or src not in ghab.kevers:
-                    logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
+                if src not in self.hby.kevers:
+                    logger.error(f"invalid incept message, source not known.  Evt={msg}")
                     continue
 
                 data = dict(
                     r='/multisig/rot',
                     src=src,
-                    aids=aids,
+                    smids=smids,
+                    rmids=rmids,
+                    ked=ked
                 )
-                data["i"] = ghab.pre
-                data["toad"] = pay["toad"] if "toad" in pay else None
-                data["wits"] = pay["wits"] if "wits" in pay else []
-                data["adds"] = pay["adds"] if "adds" in pay else []
-                data["cuts"] = pay["cuts"] if "cuts" in pay else []
-                data["isith"] = pay["isith"] if "isith" in pay else None
-                data["data"] = pay["data"] if "data" in pay else None
 
                 self.notifier.add(attrs=data)
 
@@ -452,15 +444,12 @@ class MultisigRotateHandler(doing.DoDoer):
             yield
 
 
-def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
+def multisigRotateExn(ghab, smids, rmids, ked):
     exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
-                                           aids=aids,
-                                           isith=isith,
-                                           toad=toad,
-                                           cuts=list(cuts),
-                                           adds=list(adds),
-                                           data=data)
+                                           smids=smids,
+                                           rmids=rmids,
+                                           ked=ked)
                               )
     ims = ghab.mhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(ims[exn.size:])
