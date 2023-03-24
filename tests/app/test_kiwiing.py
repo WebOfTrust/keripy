@@ -220,17 +220,18 @@ def test_multisig_incept():
         assert srdr.ked['t'] == coring.Ilks.exn
         assert srdr.ked['r'] == '/multisig/icp'
         payload = json.dumps(srdr.ked["a"]).encode("utf-8")
-        assert payload == (b'{"aids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Mds'
-                           b'yXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs"'
-                           b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENaz23s9dl8TfUJ6drp'
-                           b'MO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS'
-                           b'", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo"'
-                           b', "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R9SGIgOaC-gpWHlJt'
-                           b'rwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8'
-                           b'Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", "EMDsRWscjCxnNsd'
-                           b'SUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
-                           b'cC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "BDoq6'
-                           b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
+        assert payload == (b'{"smids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Md'
+                           b'syXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs'
+                           b'"], "rmids": null, "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENa'
+                           b'z23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k'
+                           b'91DSGy8-Jl7mlaDS", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dbl'
+                           b'NbRN9ezjklDUaqo", "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R'
+                           b'9SGIgOaC-gpWHlJtrwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG'
+                           b'2A2ef6_g4m2865G8Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", '
+                           b'"EMDsRWscjCxnNsdSUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve'
+                           b'0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRK'
+                           b'vPfNqkw", "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}'
+                           b'}')
 
         evt = icpEnd.postman.evts.popleft()
         assert evt["src"] == hab1.pre

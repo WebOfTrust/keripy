@@ -3412,11 +3412,11 @@ def loadEnds(app, *,
 
     signalEnd = signaling.loadEnds(app, signals=signaler.signals)
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd, signalEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd, lockEnd, aeidEnd]
+                 presentationEnd, multiIcpEnd, chacha, contact, escrowEnd, lockEnd, aeidEnd]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, presentationEnd, lockEnd, chacha]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, credsEnd, presentationEnd, lockEnd, chacha]
 
 
 def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, staticPath="", **kwargs):
