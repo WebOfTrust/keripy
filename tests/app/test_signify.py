@@ -73,10 +73,7 @@ def test_remote_salty_hab():
 
         habord = remote.db.habs.get(name)
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
-        assert habord.stem == "test"
-        assert habord.pidx == 1
-        assert habord.tier == tier
-        assert habord.temp is True
+        assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
         lhab.rotate()
 
@@ -118,10 +115,7 @@ def test_remote_salty_hab():
 
         habord = remote.db.habs.get(name)
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
-        assert habord.stem == "test"
-        assert habord.pidx == 1
-        assert habord.tier == tier
-        assert habord.temp is True
+        assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
         with pytest.raises(kering.KeriError):
             hab.sign(ser=rot.raw)

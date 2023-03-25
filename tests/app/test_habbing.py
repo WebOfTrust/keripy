@@ -789,7 +789,7 @@ def test_namespaced_habs():
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         found = hby.habByName("test")
-        assert found.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        assert found.preSing == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         assert len(hby.habs) == 1
         assert len(hby.prefixes) == 1

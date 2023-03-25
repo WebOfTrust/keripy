@@ -335,16 +335,10 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=pre, temp=self.temp, smids=habord.smids)
-                groups.append(habord)
-            elif habord.pidx is not None:
-                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=pre, temp=habord.temp, stem=habord.stem,
-                                      tier=habord.tier, pidx=habord.pidx)
+            elif habord.sid is not None:
+                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                 name=name, pre=habord.sid)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -372,16 +366,10 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid:
-                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
-                groups.append(habord)
-            elif habord.pidx is not None:
-                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, ns=ns,  pre=pre, temp=habord.temp, stem=habord.stem,
-                                      tier=habord.tier, pidx=habord.pidx)
+            elif habord.sid is not None:
+                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                 name=name, ns=ns, pre=habord.sid)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -588,9 +576,9 @@ class Habery:
 
     def makeSignifyHab(self, name, ns=None, **kwa):
         # create group Hab in this Habery
-        hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, ns=ns, temp=self.temp)
+        hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                         name=name, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         if ns is None:
@@ -2093,9 +2081,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None, )
+        habord = basing.HabitatRecord(hid=self.pre)
 
         if not hidden:
             self.save(habord)
@@ -2162,22 +2148,17 @@ class Hab(BaseHab):
                                        data=data)
 
 
-class SignifySaltyHab(BaseHab):
+class SignifyHab(BaseHab):
     """
     Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
     configuration file as well as Kevery and key store Manager..
     """
 
-    def __init__(self, stem=None, pidx=None, tier=None, temp=False, **kwa):
-        self.stem = stem
-        self.pidx = pidx
-        self.tier = tier
-        self.temp = temp
+    def __init__(self, **kwa):
+        super(SignifyHab, self).__init__(**kwa)
 
-        super(SignifySaltyHab, self).__init__(**kwa)
-
-    def make(self, *, serder, sigers, stem, pidx, tier, temp, **kwargs):
+    def make(self, *, serder, sigers, **kwargs):
         self.pre = serder.ked["i"]  # new pre
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
@@ -2190,114 +2171,7 @@ class SignifySaltyHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
-        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
-
-        self.stem = stem
-        self.pidx = pidx
-        self.tier = tier
-        self.temp = temp
-        self.inited = True
-
-
-    def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
-        """Sign given serialization ser using appropriate keys.
-        Use provided verfers or .kever.verfers to lookup keys to sign.
-
-        Parameters:
-            ser (bytes): serialization to sign
-            verfers (list[Verfer] | None): Verfer instances to get pub verifier
-                keys to lookup private siging keys.
-                verfers None means use .kever.verfers. Assumes that when group
-                and verfers is not None then provided verfers must be .kever.verfers
-            indexed (bool): When not mhab then
-                True means use use indexed signatures and return
-                list of Siger instances.
-                False means do not use indexed signatures and return
-                list of Cigar instances
-            indices (list[int] | None): indices (offsets)
-                when indexed == True. See Manager.sign
-            ondices (list[int | None] | None): other indices (offsets)
-                when indexed is True. See Manager.sign
-
-        """
-        raise kering.KeriError("remote hab does not support local signing")
-
-
-    def rotate(self, *, serder=None, sigers=None, **kwargs):
-        """
-        Perform rotation operation. Register rotation in database.
-        Returns: bytearrayrotation message with attached signatures.
-
-        Parameters:
-            serder (Serder): pre-created rotation event
-            sigers (list[Siger]): Siger instances on next rotation event
-            npath (str | None): salty path used to create next keys
-            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
-
-        """
-        msg = eventing.messagize(serder, sigers=sigers)
-
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={self.pre}.") from ex
-
-        return msg
-
-    def interact(self, serder, sigers):
-        """
-        Perform interaction operation. Register interaction in database.
-        Returns: bytearray interaction message with attached signatures.
-        """
-        msg = eventing.messagize(serder, sigers=sigers)
-
-        try:
-            # verify event, update kever state, and escrow if group
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except Exception:
-            raise kering.ValidationError("Improper Habitat interaction for "
-                                         "pre={}.".format(self.pre))
-
-        return msg
-
-
-class SignifyGroupHab(BaseHab):
-    """
-    Hab class provides a given idetnifier controller's local resource environment
-    i.e. hab or habitat. Includes dependency injection of database, keystore,
-    configuration file as well as Kevery and key store Manager..
-    """
-
-    def __init__(self, smids, mhab=None, rmids=None, **kwa):
-
-        if not isinstance(mhab, SignifySaltyHab):
-            raise kering.ConfigurationError(f"Improper Hab initialization, {mhab.pre} must be a SignifyHab")
-
-        self.mhab = mhab  # local participant Hab of this group hab
-        self.smids = smids  # group signing member aids in this group hab
-        self.rmids = rmids  # group rotating member aids in this group hab
-
-        super(SignifyGroupHab, self).__init__(**kwa)
-
-    def make(self, *, serder, sigers, **kwargs):
-        self.pre = serder.ked["i"]  # new pre
-
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError:
-            pass
-        except Exception as ex:
-            raise kering.ConfigurationError("Improper Habitat inception for "
-                                            "pre={} {}".format(self.pre, ex))
-
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      sid=self.mhab.pre,
-                                      smids=self.smids,
-                                      rmids=self.rmids)
+        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
 
         self.save(habord)
         self.prefixes.add(self.pre)
@@ -2326,7 +2200,7 @@ class SignifyGroupHab(BaseHab):
                 when indexed is True. See Manager.sign
 
         """
-        raise kering.KeriError("remote hab does not support local signing")
+        raise kering.KeriError("Signify hab does not support local signing")
 
 
     def rotate(self, *, serder=None, sigers=None, **kwargs):
@@ -2337,8 +2211,6 @@ class SignifyGroupHab(BaseHab):
         Parameters:
             serder (Serder): pre-created rotation event
             sigers (list[Siger]): Siger instances on next rotation event
-            npath (str | None): salty path used to create next keys
-            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
 
         """
         msg = eventing.messagize(serder, sigers=sigers)
@@ -2351,7 +2223,7 @@ class SignifyGroupHab(BaseHab):
 
         return msg
 
-    def interact(self, *, serder, sigers, **kwargs):
+    def interact(self, *, serder=None, sigers=None, **kwargs):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
