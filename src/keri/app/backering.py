@@ -388,7 +388,7 @@ class MailboxIterable:
                     idx = idx + 1
                     self.start = time.perf_counter()
 
-                    if self.ledger:
+                    if self.ledger and topic == "/receipt":
                         try:
                             serder = coring.Serder(raw=msg)
                             event = eventing.loadEvent(self.hab.db, self.pre, serder.saidb)

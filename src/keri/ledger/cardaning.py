@@ -26,7 +26,7 @@ class Cardano:
     """
     Environment variables required:
         - BLOCKFROST_API_KEY = API KEY from Blockfrots  https://blockfrost.io
-        - FUNDING_ADDRESS_CBORHEX = Private Key of funding address as CBOR Hex. Must be an Enterprice address (no Staking part) as PaymentSigningKeyShelley_ed25519
+        - FUNDING_ADDRESS_CBORHEX = Optional, for testing purposes. Private Key of funding address as CBOR Hex. Must be an Enterprice address (no Staking part) as PaymentSigningKeyShelley_ed25519
     
     Additional libraries required:
         pip install pycardano blockfrost-python 
@@ -85,7 +85,7 @@ class Cardano:
             utxos = self.api.address_utxos(self.spending_addr.encode())
             kels_to_remove = []
             for key, value in self.pendingKEL.items():
-                # Check last KE in blockchain to avoid duplicates (for some reason mailbox may submit an event twice)                
+                # Check last KE in blockchain to avoid duplicates (for some reason (TBD) mailbox may submit an event twice)                
                 for t in txs:
                     meta = self.api.transaction_metadata(t.tx_hash, return_type='json')
                     for m in meta:
