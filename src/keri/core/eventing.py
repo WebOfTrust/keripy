@@ -1578,43 +1578,43 @@ class Kever:
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, seqner=None, saider=None, firner=None, dater=None,
-                 cues=None, prefixes=None, local=False,
-                 check=False):
+                 db=None, estOnly=None, seqner=None, saider=None, firner=None,
+                 dater=None, cues=None, prefixes=None, local=False, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
 
         Parameters:
-            state (Serder): instance of key state
-            serder is Serder instance of inception event
-            sigers is list of Siger instances of indexed controller signatures
-                of event. Index is offset into keys list of latest est event
-            wigers is list of Siger instances of indexed witness signatures of
-                event. Index is offset into wits list of latest est event
-            db is Baser instance of lmdb database
-            estOnly is boolean trait to indicate establish only event
-            seqner is Seqner instance of delegating event sequence number.
+            state (Serder | None): instance of key state notice 'ksn' message body
+            serder (Serder | None): instance of inception event
+            sigers (list | None): of Siger instances of indexed controller signatures
+                of event. Index is offset into keys list from latest est event
+            wigers (list | None): of Siger instances of indexed witness signatures of
+                event. Index is offset into wits list from latest est event
+            db (Baser | None): instance of lmdb database
+            estOnly (bool | None): True means establishment only events allowed 'EO'.
+                            False all events allowed.
+            seqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            Saider is Saider instance of of delegating event said.
+            saider (Saider | None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
-            firner is optional Seqner instance of cloned first seen ordinal
+            firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            dater (Dater | None): optional instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            kevers is reference Kevery.kevers dict when provided needed for
-                validation of delegation seal .doNotDelegate of delegator
-            cues is reference to Kevery.cues deque when provided i.e. notices of
-                events or requests to respond to
-            prefixes is list of own prefixes for own local habitats. May not be the
-                prefix of this Kever's event. Some restrictions if present
+            cues (Deck | None): reference to Kevery.cues Deck when provided
+                i.e. notices of events or requests to respond to
+            prefixes (list | None): own prefixes for own local habitats.
+                May not be include the prefix of this Kever's event.
+                Some restrictions if present
                 If empty then promiscuous mode
             local (bool): True means only process msgs for own controller's
-                events if .prefixes is not empty. False means only process msgs
-                for not own events if .prefixes is not empty
+                              events if .prefixes is not empty.
+                          False means only process msgs for not own events
+                              if .prefixes is not empty
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
