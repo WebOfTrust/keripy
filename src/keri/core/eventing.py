@@ -1541,8 +1541,6 @@ class Kever:
         verfers (list): of Verfer instances for current event state set of signing keys
         digers (list): of Diger instances for current event state set  of
             next (rotation) key digests
-        nexter (Nexter): instance that provides nexter.digers of next key digests
-            from .serder.nexter as well as inclusion/matching methods
         ntholder (Tholder): instance for next (rotation) threshold
             from serder.ntholder
         toader (Number): instance of TOAD (threshold of accountable duplicity)
@@ -1565,13 +1563,13 @@ class Kever:
         fn (int): first seen ordinal number property the returns .fner.num
         digs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
-        transferable (bool): True if nexter is not none and pre is transferable
+        transferable (bool): True if .digers is not empty and pre is transferable
 
     ToDo:
-       Add Class variable, instance variable and parse support for Registrar Backer config trait.
+       Add Registrar Backer support:
+        Class variable, instance variable and parse support config trait.
         raise error for now
-       Replace Nexter with Kever.digers and ntholder with new Tholder methods
-       to replace Nexter methods.
+
 
     """
     EstOnly = False
@@ -1813,7 +1811,6 @@ class Kever:
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
         self.digers = serder.digers
-        #self.nexter = serder.nexter
         self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
@@ -2140,11 +2137,6 @@ class Kever:
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
-
-        #if not self.nexter:  # prior next is empty so rotations not allowed
-            #raise ValidationError("Attempted rotation for nontransferable"
-                                  #" prefix = {} for evt = {}."
-                                  #"".format(self.prefixer.qb64, ked))
 
         tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         keys = ked["k"]  # current keys
