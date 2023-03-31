@@ -54,7 +54,8 @@ class Counselor(doing.DoDoer):
                 need to contribute current signing key
             rmids (list | None): group rotating member ids qb64 (multisig group)
                 need to contribute digest of next rotating key
-            proxy (str) communication qualified based 64 prefix
+            proxy (Hab) communication Hab
+            mpre (str) local member id qb64
 
         """
         evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)
@@ -65,12 +66,12 @@ class Counselor(doing.DoDoer):
 
         others.remove(ghab.mhab.pre)  # don't send to self
 
-        proxy = proxy if proxy is not None else ghab.mhab.pre
+        proxy = proxy if proxy is not None else ghab.mhab
         print(f"Sending multisig event to {len(others)} other participants")
         for recpt in others:
-            self.postman.send(src=proxy, dest=recpt, topic="multisig", serder=serder, attachment=evt)
+            self.postman.send(hab=proxy, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
-        print(f"Waiting for other signatures for {seqner.sn}...")
+        print(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
 

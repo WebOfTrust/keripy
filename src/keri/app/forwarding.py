@@ -178,6 +178,8 @@ class Poster(doing.DoDoer):
         while not witer.idle:
             _ = (yield self.tock)
 
+        self.remove([witer])
+
     def forward(self, hab, ends, recp, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())

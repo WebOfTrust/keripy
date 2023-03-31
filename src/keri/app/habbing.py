@@ -590,6 +590,22 @@ class Habery:
 
         return hab
 
+    def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
+        # create group Hab in this Habery
+        hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                         name=name, mhab=mhab, ns=ns, temp=self.temp)
+
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+        return hab
+
     def deleteHab(self, name):
         hab = self.habByName(name)
         if not hab:
@@ -1793,6 +1809,7 @@ class BaseHab:
 
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
+                msgs.extend(self.replay(eid))
                 msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.makeEndRole(eid=eid, role=erole))
 
@@ -2239,6 +2256,77 @@ class SignifyHab(BaseHab):
 
         return msg
 
+    def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+
+        """
+        Returns a reply message stream composed of entries authed by the given
+        cid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
+
+        cid and not role and not scheme then:
+            end authz for all eids in all roles and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and not role and scheme then:
+            end authz for all eid in all roles and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and not scheme then:
+            end authz for all eid in role and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and scheme then:
+            end authz for all eid in role and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
+        """
+        msgs = bytearray()
+
+        if eids is None:
+            eids = []
+
+        if role == kering.Roles.witness:
+            if kever := self.kevers[cid] if cid in self.kevers else None:
+                witness = self.pre in kever.wits  # see if we are cid's witness
+
+                # latest key state for cid
+                for eid in kever.wits:
+                    if not eids or eid in eids:
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                        if not witness:  # we are not witness, send auth records
+                            msgs.extend(self.makeEndRole(eid=eid, role=role))
+                if witness:  # we are witness, set KEL as authz
+                    msgs.extend(self.replay(cid))
+
+        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
+            if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
+                msgs.extend(self.replay(eid))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+
+        # introduce yourself, please
+        msgs.extend(self.replay(cid))
+
+
+        return msgs
+
+
+class SignifyGroupHab(SignifyHab):
+    def __init__(self, mhab, **kwa):
+        self.mhab = mhab
+        super(SignifyGroupHab, self).__init__(**kwa)
+
 
 class GroupHab(BaseHab):
     """
@@ -2409,7 +2497,11 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    def rotateX(self, serder):
+    def rotate(self, serder=None, **kwargs):
+
+        if serder is None:
+            return super(GroupHab, self).rotate(**kwargs)
+
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
