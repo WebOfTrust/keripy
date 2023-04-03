@@ -2877,21 +2877,21 @@ class Kevery:
 
         return []
 
-    def processEvents(self, evts=None):
-        """
-        Process event dicts in evts or if evts is None in .evts
-        Parameters:
-            evts (Deck): each entry is dict that matches call signature of
-                .processEvent
-        """
-        if evts is None:
-            evts = self.evts
+    #def processEvents(self, evts=None):
+        #"""
+        #Process event dicts in evts or if evts is None in .evts
+        #Parameters:
+            #evts (Deck): each entry is dict that matches call signature of
+                #.processEvent
+        #"""
+        #if evts is None:
+            #evts = self.evts
 
-        while evts:
-            self.processEvent(**evts.pull())
+        #while evts:
+            #self.processEvent(**evts.pull())
 
     def processEvent(self, serder, sigers, *, wigers=None,
-                     seqner=None, saider=None,
+                     delseqner=None, delsaider=None,
                      firner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
@@ -2945,8 +2945,8 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              seqner=seqner,
-                              saider=saider,
+                              seqner=delseqner,
+                              saider=delsaider,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
@@ -2962,7 +2962,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   seqner=seqner, saider=saider, wigers=wigers)
+                                   seqner=delseqner, saider=delsaider, wigers=wigers)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -3004,7 +3004,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       seqner=seqner, saider=saider, wigers=wigers)
+                                       seqner=delseqner, saider=delsaider, wigers=wigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
@@ -3013,7 +3013,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 seqner=seqner, saider=saider,
+                                 seqner=delseqner, saider=delsaider,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  check=self.check)
@@ -4600,7 +4600,7 @@ class Kevery:
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
                     self.processEvent(serder=eserder, sigers=sigers,
-                                      seqner=seqner, saider=saider)
+                                      delseqner=seqner, delsaider=saider)
 
                     # If process does NOT validate sigs or delegation seal (when delegated),
                     # but there is still one valid signature then process will
@@ -4763,7 +4763,7 @@ class Kevery:
                         seqner, saider = deSourceCouple(couple)
 
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      seqner=seqner, saider=saider)
+                                      delseqner=seqner, delsaider=saider)
 
                     # If process does NOT validate wigs then process will attempt
                     # to re-escrow and then raise MissingWitnessSignatureError

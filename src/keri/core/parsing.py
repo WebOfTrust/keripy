@@ -986,8 +986,8 @@ class Parser:
                     kvy.processEvent(serder=serder,
                                      sigers=sigers,
                                      wigers=wigers,
-                                     seqner=seqner,
-                                     saider=saider,
+                                     delseqner=seqner,
+                                     delsaider=saider,
                                      firner=firner,
                                      dater=dater)
 
