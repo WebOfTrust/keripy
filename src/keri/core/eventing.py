@@ -658,8 +658,6 @@ def incept(keys,
 
     data = data if data is not None else []
 
-    # see compact labels in KID0003.md
-
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",   # qb64 SAID
