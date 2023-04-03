@@ -4711,9 +4711,11 @@ class Sadder:
         """
         return sizeify(ked=ked, kind=kind)
 
+
     def compare(self, said=None):
         """
         Returns True  if said and either .saider.qb64 or .saider.qb64b match
+        via string equality ==
 
         Convenience method to allow comparison of own .saider digest self.raw
         with some other purported said of self.raw

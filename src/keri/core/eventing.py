@@ -1944,16 +1944,12 @@ class Kever:
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                if delseqner and delsaider:
+                if delseqner and delsaider:  # save in case not attached later
                     self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingSignatureError(f"Failure satisfying nsith="
                                             f"{self.ntholder.sith} on sigs="
                                             f"{[siger.qb64 for siger in sigers]}"
                                             f" for evt={serder.ked}.")
-
-
-
-
 
 
             if delegator != self.delegator:  #
@@ -2175,7 +2171,8 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
-                       wigers, toader, wits, delseqner=None, delsaider=None):
+                       wigers, toader, wits,
+                       delseqner=None, delsaider=None):
         """
         Returns triple (sigers, delegator, wigers) where:
         sigers is unique validated signature verified members of inputed sigers
@@ -2189,20 +2186,20 @@ class Kever:
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
-            serder is Serder instance of event
-            sigers is list of Siger instances of indexed controllers signatures.
+            serder (Serder): instance of event
+            sigers (list): of Siger instances of indexed controllers signatures.
                 Index is offset into verfers list from which public key may be derived.
-            verfers is list of Verfer instances of keys from latest est event
-            tholder is Tholder instance of sith threshold
-            wigers is list of Siger instances of indexed witness signatures.
+            verfers (list): of Verfer instances of keys from latest est event
+            tholder (Tholder): instance of sith threshold
+            wigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
             toader (Number): instance of backer witness threshold
-            wits is list of qb64 non-transferable prefixes of witnesses used to
+            wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            delseqner is Seqner instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsaider is Saider instance of of delegating event said.
+            delsaider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then saider is ignored
 
         """
@@ -2237,7 +2234,7 @@ class Kever:
                                                                 serder.ked))
 
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
-                                            seqner=delseqner, saider=delsaider)
+                                            delseqner=delseqner, delsaider=delsaider)
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
@@ -2312,24 +2309,26 @@ class Kever:
 
 
 
-    def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
+    def validateDelegation(self, serder, sigers, wigers=None,
+                           delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
         Assumes state setup
 
         Parameters:
-            serder is Serder instance of delegated event serder
-            sigers is list of Siger instances of indexed controller sigs of
+            serder (Serder): instance of delegated event serder
+            sigers (list): of Siger instances of indexed controller sigs of
                 delegated event. Assumes sigers is list of unique verified sigs
-            wigers is optional list of Siger instance of indexed witness sigs of
+            wigers (list | None): of optional Siger instance of indexed witness sigs of
                 delegated event. Assumes wigers is list of unique verified sigs
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider is Saider instance of of delegating event digest.
+            delsaider (Saider | None): instance of of delegating event digest.
                 If this event is not delegated then diger is ignored
+
         Returns:
-            str: qb64 delegator prefix
+            (str | None): qb64 delegator prefix or None if not delegated
 
         """
         if serder.ked['t'] not in (Ilks.dip, Ilks.drt):  # not delegated
@@ -2346,12 +2345,12 @@ class Kever:
             return delegator
 
         # during initial delegation we just escrow the delcept event
-        if seqner is None and saider is None and delegator is not None:
+        if delseqner is None and delsaider is None and delegator is not None:
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
-        ssn = validateSN(sn=seqner.snh, inceptive=False)
+        ssn = validateSN(sn=delseqner.snh, inceptive=False)
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)
@@ -2365,10 +2364,10 @@ class Kever:
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+            self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "
                                          "evt = {}.".format(delegator,
-                                                            saider.qb64,
+                                                            delsaider.qb64,
                                                             serder.ked))
 
         # get the delegating event from dig
@@ -2381,7 +2380,7 @@ class Kever:
 
         dserder = Serder(raw=bytes(raw))  # delegating event
         # compare digests to make sure they match here
-        if not dserder.compare(said=saider.qb64):
+        if not dserder.compare(said=delsaider.qb64):
             raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
                                   "".format(delegator, ddig, serder.ked))
 
@@ -2414,6 +2413,7 @@ class Kever:
         # when custody of disc is in question then trustable otherwise not
 
         return delegator  # return delegator prefix
+
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
