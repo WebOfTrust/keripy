@@ -656,7 +656,8 @@ class Parser:
 
         return True  # should never return
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False,
+                    kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
@@ -734,7 +735,7 @@ class Parser:
         # List of tuples from extracted first seen replay couples
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
-        sscs = []  # each converted couple is (seqner, diger) for delegating/issuing event
+        sscs = []  # each converted couple is (seqner, diger) for delegating or issuing event
         # List of tuples from extracted SAD path sig groups from transferable identifiers
         sadtsgs = []  # each converted group is tuple of (path, i, s, d) quad plus list of sigs
         # List of tuples from extracted SAD path sig groups from non-trans identifiers
@@ -977,7 +978,8 @@ class Parser:
 
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
-                seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
+                # when present assumes this is source seal of delegating event in delegator's KEL
+                delseqner, delsaider = sscs[-1] if sscs else (None, None)  # use last one if more than one
                 if not sigers:
                     raise kering.ValidationError("Missing attached signature(s) for evt "
                                                  "= {}.".format(serder.ked))
@@ -985,8 +987,8 @@ class Parser:
                     kvy.processEvent(serder=serder,
                                      sigers=sigers,
                                      wigers=wigers,
-                                     seqner=seqner,
-                                     saider=saider,
+                                     delseqner=delseqner,
+                                     delsaider=delsaider,
                                      firner=firner,
                                      dater=dater)
 
@@ -1092,6 +1094,7 @@ class Parser:
 
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
                 # TEL msg
+                # this transaction event seal in Issuer's KEL (controller of Issuer AID)
                 seqner, saider = sscs[-1] if sscs else (None, None)  # use last one if more than one
                 try:
                     tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
