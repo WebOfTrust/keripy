@@ -1543,7 +1543,7 @@ class Tevery:
         return self.reger.registries
 
     def processEvent(self, serder, seqner=None, saider=None, wigers=None):
-        """ Process one event serder with attached indexde signatures sigers
+        """ Process one event serder with attached indexed signatures sigers
 
         Validates event against current state of registry or credential, creating registry
         on inception events and processing change in state to credential or registry for

@@ -656,7 +656,8 @@ class Parser:
 
         return True  # should never return
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False,
+                    kvy=None, tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message

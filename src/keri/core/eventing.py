@@ -2900,9 +2900,9 @@ class Kevery:
             serder is Serder instance of event to process
             sigers is list of Siger instances of attached controller indexed sigs
             wigers is optional list of Siger instances of attached witness indexed sigs
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner is Seqner instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            sadier is Saider instance of of delegating event SAID.
+            delsaider is Saider instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -4762,7 +4762,8 @@ class Kevery:
                     if couple is not None:
                         seqner, saider = deSourceCouple(couple)
 
-                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, seqner=seqner, saider=saider)
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
+                                      seqner=seqner, saider=saider)
 
                     # If process does NOT validate wigs then process will attempt
                     # to re-escrow and then raise MissingWitnessSignatureError
