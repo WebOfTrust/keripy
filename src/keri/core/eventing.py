@@ -1574,7 +1574,7 @@ class Kever:
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, seqner=None, saider=None, firner=None,
+                 db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
                  dater=None, cues=None, prefixes=None, local=False, check=False):
         """
         Create incepting kever and state from inception serder
@@ -1590,9 +1590,9 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            seqner (Seqner | None): instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider (Saider | None): instance of of delegating event SAID.
+            delsaider (Saider | None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -1660,8 +1660,8 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
-                                                        seqner=seqner,
-                                                        saider=saider)
+                                                        seqner=delseqner,
+                                                        saider=delsaider)
 
         self.delegator = delegator
         if self.delegator is None:
@@ -1674,7 +1674,7 @@ class Kever:
         # all validated above so may add to KEL and FEL logs as first seen
         # returns fn == None if already logged fn log is non idempotent
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
-                                first=True if not check else False, seqner=seqner, saider=saider,
+                                first=True if not check else False, seqner=delseqner, saider=delsaider,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
@@ -2930,8 +2930,8 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              seqner=delseqner,
-                              saider=delsaider,
+                              delseqner=delseqner,
+                              delsaider=delsaider,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
