@@ -1660,8 +1660,8 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
-                                                        seqner=delseqner,
-                                                        saider=delsaider)
+                                                        delseqner=delseqner,
+                                                        delsaider=delsaider)
 
         self.delegator = delegator
         if self.delegator is None:
@@ -1865,7 +1865,7 @@ class Kever:
             self.doNotDelegate = True
 
 
-    def update(self, serder, sigers, wigers=None, seqner=None, saider=None,
+    def update(self, serder, sigers, wigers=None, delseqner=None, delsaider=None,
                firner=None, dater=None, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
@@ -1879,9 +1879,9 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            seqner (Seqner | None): instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider (Saider | None): instance of of delegating event said.
+            delsaider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -1935,37 +1935,17 @@ class Kever:
                                                             wigers=wigers,
                                                             toader=toader,
                                                             wits=wits,
-                                                            seqner=seqner,
-                                                            saider=saider)
+                                                            delseqner=delseqner,
+                                                            delsaider=delsaider)
 
-
-            # move this out of here to where ntholder threshold is verified
-            # verify newly current keys are subset of prior next digs
-            #keys = ked["k"]  # proposed new current keys
-            #digs = [diger.qb64 for diger in self.digers]  # prior next digs
-            ## new current keys must be subset of prior next digs
-            #if not self.ntholder.includes(keys=keys, digs=digs):
-                #raise ValidationError("Mismatch prior nxt digs = {} with rotation"
-                                      #"current keys = {} for evt = {}."
-                                      #"".format(digs, keys, ked))
-
-            #if not self.ntholder.satisfy(indices=self.ntholder.matches(sigers=sigers,
-                                                                               #digs=digs)):
-                #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                #if seqner and saider:
-                    #self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
-                #raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
-                                                    #" for evt = {}.".format(self.ntholder.sith,
-                                                                            #[siger.qb64 for siger in sigers],
-                                                                            #serder.ked))
 
 
             # current sigers and prior next digers in .digers
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                if seqner and saider:
-                    self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+                if delseqner and delsaider:
+                    self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingSignatureError(f"Failure satisfying nsith="
                                             f"{self.ntholder.sith} on sigs="
                                             f"{[siger.qb64 for siger in sigers]}"
@@ -1986,7 +1966,7 @@ class Kever:
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
-                                    first=True if not check else False, seqner=seqner, saider=saider,
+                                    first=True if not check else False, seqner=delseqner, saider=delsaider,
                                     firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
@@ -2195,7 +2175,7 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
-                       wigers, toader, wits, seqner=None, saider=None):
+                       wigers, toader, wits, delseqner=None, delsaider=None):
         """
         Returns triple (sigers, delegator, wigers) where:
         sigers is unique validated signature verified members of inputed sigers
@@ -2220,9 +2200,9 @@ class Kever:
             toader (Number): instance of backer witness threshold
             wits is list of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner is Seqner instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider is Saider instance of of delegating event said.
+            delsaider is Saider instance of of delegating event said.
                 If this event is not delegated then saider is ignored
 
         """
@@ -2249,15 +2229,15 @@ class Kever:
 
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            if seqner and saider:
-                self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+            if delseqner and delsaider:
+                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                         " for evt = {}.".format(tholder.sith,
                                                                 [siger.qb64 for siger in sigers],
                                                                 serder.ked))
 
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
-                                            seqner=seqner, saider=saider)
+                                            seqner=delseqner, saider=delsaider)
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
@@ -2275,7 +2255,7 @@ class Kever:
                         raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
 
                 if len(windices) < toader.num:  # not fully witnessed yet
-                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
+                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=delseqner, saider=delsaider):
                         self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
                     raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
                                                        f"on witness sigs="
@@ -2998,7 +2978,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 seqner=delseqner, saider=delsaider,
+                                 delseqner=delseqner, delsaider=delsaider,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  check=self.check)
