@@ -29,25 +29,14 @@ from ..kering import (MissingEntryError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
 from ..kering import Version
+from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      KSN_LABELS, RPY_LABELS)
 
 logger = help.ogler.getLogger()
 
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
-ICP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
-              "bt", "b", "c", "a"]
-DIP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
-              "bt", "b", "c", "a", "di"]
-ROT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
-              "bt", "br", "ba", "a"]
-DRT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
-              "bt", "br", "ba", "a"]
-IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 
-KSN_LABELS = ["v", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "n",
-              "bt", "b", "c", "ee", "di"]
-
-RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
 
 @dataclass(frozen=True)
@@ -668,7 +657,7 @@ def incept(keys,
                k=keys,  # list of qb64
                nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
-               n=ndigs,  # hash qual Base64
+               n=ndigs,  # list of hashes qb64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -1044,6 +1033,7 @@ def state(pre,
         "et": "rot",
         "kt": "1",
         "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "nt": "1",
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "bt": "1",
         "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
@@ -1794,6 +1784,10 @@ class Kever:
                                   "".format(ked["kt"],
                                             [verfer.qb64 for verfer in self.verfers],
                                             ked))
+
+        # Can't use usual serder.saider.verify(sad=ked) on inception since two
+        # field may need dummy replacement when AID is diger code so we use
+        # special verification of prefixer
 
         self.prefixer = Prefixer(qb64=serder.pre)
         if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
@@ -2960,7 +2954,7 @@ class Kevery:
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
-                kever.cues = self.cues
+                #kever.cues = self.cues This is injected when inception is accepted
                 sno = kever.sner.num + 1  # proper sn of new inorder event
 
                 if not serder.saider.verify(sad=serder.ked):

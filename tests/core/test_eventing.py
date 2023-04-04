@@ -1625,6 +1625,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=1,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=[],  # list of qual Base64 may be empty
@@ -1637,7 +1638,7 @@ def test_kever(mockHelpingNowUTC):
         assert aid0.code == MtrDex.Ed25519
         assert aid0.qb64 == skp0.verfer.qb64 == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
         _, ked0 = coring.Saider.saidify(sad=ked0)
-        assert ked0['d'] == 'EOm-FWMD-CxK0-FC6NUj35kptATRCztnY7Q0B3En7B8g'
+        assert ked0['d'] == 'EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM'
 
         # update ked with pre
         ked0["i"] = aid0.qb64
@@ -1671,11 +1672,11 @@ def test_kever(mockHelpingNowUTC):
         assert ([verfer.qb64 for verfer in serderK.verfers] ==
                 [verfer.qb64 for verfer in kever.verfers])
         assert serderK.raw == (b'{"v":"KERI10JSON0001b6_","i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e",'
-                            b'"s":"0","p":"","d":"EOm-FWMD-CxK0-FC6NUj35kptATRCztnY7Q0B3En7B8g","f":"0","d'
-                            b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hql'
-                            b'QKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"0","n":["EAKUR-LmLHWMwXTLWQ1QjxHrih'
-                            b'BmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EOm-FWMD-CxK0'
-                            b'-FC6NUj35kptATRCztnY7Q0B3En7B8g","br":[],"ba":[]},"di":""}')
+                        b'"s":"0","p":"","d":"EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM","f":"0","d'
+                        b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hql'
+                        b'QKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXTLWQ1QjxHrih'
+                        b'BmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EOf7EL5i19TNS'
+                        b'E-n9jgceVXUQKXUa7F5EZcndLHPWUmM","br":[],"ba":[]},"di":""}')
 
         # test exposeds
         raw = b"raw salt to test"
@@ -1771,6 +1772,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=1,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=[],  # list of qual Base64 may be empty
@@ -1815,6 +1817,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=0,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=[],  # list of qual Base64 may be empty
@@ -1873,6 +1876,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=0,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=baks,  # list of qual Base64 may be empty
@@ -1915,6 +1919,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=0,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=baks,  # list of qual Base64 may be empty
@@ -1956,6 +1961,7 @@ def test_kever(mockHelpingNowUTC):
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
+                    nt=0,
                     n=nxt,  # hash qual Base64
                     bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                     b=baks,  # list of qual Base64 may be empty
@@ -3975,10 +3981,11 @@ def test_process_nontransferable():
     # but when used with inception event must be compatible event
     sn = 0  # inception event so 0
     sith = 1  # one signer
-    nxt = ""  # non-transferable so nxt is empty
+    nxt = []  # non-transferable so nxt is empty
     toad = 0  # no witnesses
     nsigs = 1  # one attached signature unspecified index
 
+    #["v", "t", "d", "i", "s",  "kt", "k", "nt", "n","bt", "b", "c", "a"]
     ked0 = dict(v=versify(kind=Serials.json, size=0),
                 t=Ilks.icp,
                 d="",
@@ -3986,10 +3993,12 @@ def test_process_nontransferable():
                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                 k=[aid0.qb64],  # list of signing keys each qual Base64
+                nt=0,
                 n=nxt,  # hash qual Base64
-                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                w=[],  # list of qual Base64 may be empty
+                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                b=[],  # list of qual Base64 may be empty
                 c=[],  # list of config ordered mappings may be empty
+                a=[],
                 )
     _, ked0 = coring.Saider.saidify(sad=ked0)
 
@@ -4064,18 +4073,34 @@ def test_process_transferable():
     toad = 0  # no witnesses
     nsigs = 1  # one attached signature unspecified index
 
-    ked0 = dict(v=versify(kind=Serials.json, size=0),
-                t=Ilks.icp,
-                d="",
-                i="",  # qual base 64 prefix
-                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-                kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-                k=keys,  # list of signing keys each qual Base64
-                n=nxt,  # hash qual Base64
-                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                w=[],  # list of qual Base64 may be empty
-                c=[],
-                )
+    #ked0 = dict(v=versify(kind=Serials.json, size=0),
+                #t=Ilks.icp,
+                #d="",
+                #i="",  # qual base 64 prefix
+                #s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                #kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+                #k=keys,  # list of signing keys each qual Base64
+                #n=nxt,  # hash qual Base64
+                #wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                #w=[],  # list of qual Base64 may be empty
+                #c=[],
+                #)
+
+    ked0 = dict(v=versify(kind=Serials.json, size=0),  # version string
+               t=Ilks.icp,
+               d="",  # SAID
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               nt=1,
+               n=nxt,  # hash qual Base64
+               bt=0,  # hex string no leading zeros lowercase
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+
 
     # Derive AID from ked
     aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
@@ -4480,4 +4505,5 @@ def test_load_event(mockHelpingNowUTC):
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
     #test_process_manual()
-    test_keyeventsequence_0()
+    #test_keyeventsequence_0()
+    test_process_transferable()
