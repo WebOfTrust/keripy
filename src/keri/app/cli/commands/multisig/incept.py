@@ -131,12 +131,13 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
+            evt = ghab.makeOwnInception(allowPartiallySigned=True)
             serder = coring.Serder(raw=evt)
 
             # Create a notification EXN message to send to the other agents
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
-                                                  aids=ghab.smids,
+                                                  smids=ghab.smids,
+                                                  rmids=ghab.rmids,
                                                   ked=serder.ked)
             others = list(oset(smids + (rmids or [])))
 
@@ -154,7 +155,7 @@ class GroupMultisigIncept(doing.DoDoer):
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 mid=hab.pre, smids=smids, rmids=rmids)
+                                 ghab=ghab, smids=smids, rmids=rmids)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)

@@ -22,25 +22,19 @@ ked = json.loads(raw[:size].decode("utf-8"))
 raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
-import os
-import stat
-import json
 import math
-
-from typing import Union
-from dataclasses import dataclass, asdict, field
 from collections import namedtuple, deque
+from dataclasses import dataclass, asdict, field
 
 from hio.base import doing
 
 from .. import kering
-from ..help import helping
 from ..core import coring
 from ..db import dbing, subing, koming
+from ..help import helping
 
-
-Algoage = namedtuple("Algoage", 'randy salty')
-Algos = Algoage(randy='randy', salty='salty')  # randy is rerandomize, salty is use salt
+Algoage = namedtuple("Algoage", 'randy salty group extern')
+Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
 
 
 @dataclass()
@@ -217,7 +211,7 @@ class Keeper(dbing.LMDBer):
     TailDirPath = "keri/ks"
     AltTailDirPath = ".keri/ks"
     TempPrefix = "keri_ks_"
-    MaxNamedDBs = 8
+    MaxNamedDBs = 10
 
     def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -270,9 +264,21 @@ class Keeper(dbing.LMDBer):
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
+        self.prxs = subing.CesrSuber(db=self,
+                                     subkey='prxs.',
+                                     klas=coring.Cipher)
+        self.nxts = subing.CesrSuber(db=self,
+                                     subkey='nxts.',
+                                     klas=coring.Cipher)
+        self.smids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='smids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
+        self.rmids = subing.CatCesrIoSetSuber(db=self,
+                                              subkey='rmids.',
+                                              klas=(coring.Prefixer, coring.Seqner))
         self.pres = subing.CesrSuber(db=self,
-                                       subkey='pres.',
-                                       klas=coring.Prefixer)
+                                     subkey='pres.',
+                                     klas=coring.Prefixer)
         self.prms = koming.Komer(db=self,
                                  subkey='prms.',
                                  schema=PrePrm,)  # New Prefix Parameters

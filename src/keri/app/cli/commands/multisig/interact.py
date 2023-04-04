@@ -124,7 +124,7 @@ class GroupMultisigInteract(doing.DoDoer):
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
         self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
+                             ghab=ghab, smids=aids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

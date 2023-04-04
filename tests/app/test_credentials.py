@@ -191,30 +191,6 @@ class TestDoer(doing.DoDoer):
         while registry.regk not in self.rgy3.tevers:
             yield tock
 
-        # Let rotate our keys for good hygiene
-        rotd = dict(aids=[self.hab1.mhab.pre, self.hab2.mhab.pre, self.hab3.mhab.pre])
-        b = json.dumps(rotd).encode("utf-8")
-        response = client1.simulate_post(f"/groups/{self.hab1.name}/rot", body=b)
-        assert response.status == falcon.HTTP_202
-        response = client2.simulate_put(f"/groups/{self.hab2.name}/rot", body=b)
-        assert response.status == falcon.HTTP_202
-        response = client3.simulate_put(f"/groups/{self.hab3.name}/rot", body=b)
-        assert response.status == falcon.HTTP_202
-
-        prefixer = self.hab1.kever.prefixer
-        seqner = coring.Seqner(sn=2)
-        while self.hab1.db.cgms.get(keys=(prefixer.qb64, seqner.qb64)) is None:
-            yield tock
-        assert self.hab1.kever.ilk == coring.Ilks.rot
-
-        while self.hab2.db.cgms.get(keys=(prefixer.qb64, seqner.qb64)) is None:
-            yield tock
-        assert self.hab2.kever.ilk == coring.Ilks.rot
-
-        while self.hab2.db.cgms.get(keys=(prefixer.qb64, seqner.qb64)) is None:
-            yield tock
-        assert self.hab3.kever.ilk == coring.Ilks.rot
-
         issd = dict(credentialData=dict(LEI="5493001KJTIIGC8Y1R17"), recipient=self.recp.pre, registry="vLEI",
                     schema="EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs", source={})
         b = json.dumps(issd).encode("utf-8")
@@ -234,21 +210,19 @@ class TestDoer(doing.DoDoer):
         while not self.rgy1.reger.saved.get(creder.said):
             yield tock
 
+
         # Wait for the credential endpoint to notify the completion of the credential issuance
 
-        while len(self.notifier1.getNotes()) < 2 or len(self.notifier2.getNotes()) < 2 \
-                or len(self.notifier3.getNotes()) < 2:
+        while len(self.notifier1.getNotes()) < 1 or len(self.notifier2.getNotes()) < 1 \
+                or len(self.notifier3.getNotes()) < 1:
             yield tock
 
         notes1 = self.notifier1.getNotes()
-        assert notes1[0].pad['a']['r'] == "/multisig/rot/complete"
-        assert notes1[1].pad['a']['r'] == "/multisig/iss/complete"
+        assert notes1[0].pad['a']['r'] == "/multisig/iss/complete"
         notes2 = self.notifier2.getNotes()
-        assert notes2[0].pad['a']['r'] == "/multisig/rot/complete"
-        assert notes2[1].pad['a']['r'] == "/multisig/iss/complete"
+        assert notes2[0].pad['a']['r'] == "/multisig/iss/complete"
         notes3 = self.notifier3.getNotes()
-        assert notes3[0].pad['a']['r'] == "/multisig/rot/complete"
-        assert notes3[1].pad['a']['r'] == "/multisig/iss/complete"
+        assert notes3[0].pad['a']['r'] == "/multisig/iss/complete"
 
         self.remove(self.toRemove)
 

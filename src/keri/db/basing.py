@@ -157,47 +157,8 @@ class HabitatRecord:  # baser.habs
     mid: str | None = None  # group member identifier qb64 when hid is group
     smids: list | None = None  # group signing member ids when hid is group
     rmids: list | None = None  # group rotating member ids when hid is group
-    stem: str | None = None
-    pidx: int | None = None
-    tier: str | None = None
-    temp: bool = False
+    sid: str | None = None  # Signify identifier qb64 when hid is Signify
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
-
-
-@dataclass
-class RotateRecord:
-    """
-    Tracks requests to perform multisig rotation during lifecycle of a rotation
-    Provides psuedo event for which group consensus must be obtained prior to
-    committing group rotation event to group KEL in local db
-
-    Attributes:
-        date (str | None):  datetime of rotation
-        smids (list): group signing member identifiers qb64
-        smsns (list): of group signing member seq nums of last est evt as hex str
-        rmids (list): group rotating member identifiers qb64
-        rmsns (list): of group rotating member seq nums of last est evt as hex strs
-        sn (str | None ): at or after proposed seq num of group est event as hex str
-        isith (str | list | None):  current signing threshold
-        nsith (str | list | None):  next signing threshold
-        toad (int | None): threshold of accountable duplicity
-        cuts (list | None):  list of backers to remove qb64
-        adds (list | None):  list of backers to add qb64
-        data (list | None): seals in rotation event
-
-    """
-    date: str | None = None  # datetime of rotation
-    smids: list[str] = field(default_factory=list)  # group signing member ids qb64
-    smsns: list[str] = field(default_factory=list)  # group signing member last est evt sns hex str
-    rmids: list[str] = field(default_factory=list)  # group rotating member ids qb64
-    rmsns: list[str] = field(default_factory=list)  # group rotating member last est evt sns hex str
-    sn: str | None = None  # at or after proposed seq num of group est event as hex str
-    isith: str | list | None = None  # current signing threshold
-    nsith: str | list | None = None  # next signing threshold
-    toad: int | None = None  # threshold of accountable duplicity
-    cuts: list[str] | None = None  # list of backers to remove qb64
-    adds: list[str] | None = None # list of backers to add qb64
-    data: list | None = None # seals
 
 
 @dataclass
@@ -797,14 +758,6 @@ class Baser(dbing.LMDBer):
         self.tops = koming.Komer(db=self,
                                  subkey='witm.',
                                  schema=TopicsRecord, )
-
-        # group local witness escrow
-        self.glwe = koming.Komer(db=self, subkey='glwe.',
-                                 schema=RotateRecord)
-
-        # group partial member aid escrow
-        self.gpae = koming.Komer(db=self, subkey='gpae.',
-                                 schema=RotateRecord)
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',

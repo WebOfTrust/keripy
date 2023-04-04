@@ -204,7 +204,7 @@ class Suber(SuberBase):
         super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+    def put(self, keys: Union[str, Iterable], val: Union[bytes, str, any]):
         """
         Puts val at key made from keys. Does not overwrite
 

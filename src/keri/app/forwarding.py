@@ -109,6 +109,7 @@ class Poster(doing.DoDoer):
             attachment (bytes): attachment bytes
 
         """
+        src = src if src is not None else hab.pre
 
         evt = dict(src=src, dest=dest, topic=topic, serder=serder)
         if attachment is not None:
@@ -177,6 +178,8 @@ class Poster(doing.DoDoer):
 
         while not witer.idle:
             _ = (yield self.tock)
+
+        self.remove([witer])
 
     def forward(self, hab, ends, recp, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox

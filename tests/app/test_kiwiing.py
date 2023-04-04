@@ -15,14 +15,11 @@ import keri.app.oobiing
 from keri import kering
 from keri.app import (habbing, kiwiing, grouping, booting, notifying,
                       signing, connecting)
-from keri.app.kiwiing import MultisigEventEnd
 from keri.core import eventing, parsing, coring, scheming
 from keri.core.eventing import SealEvent
 from keri.db import basing, dbing
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
-
-from tests.app import openMultiSig
 
 
 def test_credential_handlers(mockHelpingNowUTC, seeder):
@@ -223,17 +220,18 @@ def test_multisig_incept():
         assert srdr.ked['t'] == coring.Ilks.exn
         assert srdr.ked['r'] == '/multisig/icp'
         payload = json.dumps(srdr.ked["a"]).encode("utf-8")
-        assert payload == (b'{"aids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Mds'
-                           b'yXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs"'
-                           b'], "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENaz23s9dl8TfUJ6drp'
-                           b'MO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS'
-                           b'", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dblNbRN9ezjklDUaqo"'
-                           b', "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R9SGIgOaC-gpWHlJt'
-                           b'rwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG2A2ef6_g4m2865G8'
-                           b'Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", "EMDsRWscjCxnNsd'
-                           b'SUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve0VSd8z_AmvhLg4lq'
-                           b'cC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw", "BDoq6'
-                           b'8HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}}')
+        assert payload == (b'{"smids": ["EL04UFX_N1fx9Vjg6GERitFpOymqiuxieTHvYal6iVEm", "EMXpkB-DXmcDP_Md'
+                           b'syXDvZjgU8jtuUqPcfXoYq4TFLAv", "EJTjsnvXUUTObBuz_jPKLUGVrq48E_AEg2ph69ZqmmUs'
+                           b'"], "rmids": null, "ked": {"v": "KERI10JSON000273_", "t": "icp", "d": "EDENa'
+                           b'z23s9dl8TfUJ6drpMO_Sr2k91DSGy8-Jl7mlaDS", "i": "EDENaz23s9dl8TfUJ6drpMO_Sr2k'
+                           b'91DSGy8-Jl7mlaDS", "s": "0", "kt": "2", "k": ["DGWoXud8dM4ubtwRBjxHZ2B3j2dbl'
+                           b'NbRN9ezjklDUaqo", "DFK7TqkMoxs_wpF5ID25RZUBb5ow93kP4r3Rkemz41Gl", "DP95wOs0R'
+                           b'9SGIgOaC-gpWHlJtrwPvgDeP-0-VLKZhamW"], "nt": "2", "n": ["EH-uz11Ky8NEGpL7kRG'
+                           b'2A2ef6_g4m2865G8Qbx1QCryT", "EHW59fWA4-YPCZNtau6dbm5u9v3_egguEucKgjzDu5Kr", '
+                           b'"EMDsRWscjCxnNsdSUlcDjWklmtgeNGcuI0PG1Uc5vfQP"], "bt": "2", "b": ["BGKVzj4ve'
+                           b'0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo", "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRK'
+                           b'vPfNqkw", "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"], "c": [], "a": []}'
+                           b'}')
 
         evt = icpEnd.postman.evts.popleft()
         assert evt["src"] == hab1.pre
@@ -296,172 +294,6 @@ def test_multisig_incept():
         result = client.simulate_post(path="/multisig/multisig/icp", body=b)
         assert result.status == falcon.HTTP_200
         assert len(icpEnd.postman.evts) == 2
-
-
-def test_multisig_rotation():
-    prefix = "test"
-    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
-        assert ghab1.pre == ghab2.pre == ghab3.pre == 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
-
-        app = falcon.App()
-
-        # Start with hby1 who will initiate the rotation with a POST
-        counselor = grouping.Counselor(hby=hby1)
-        notifier = notifying.Notifier(hby=hby1)
-        rotEnd = MultisigEventEnd(hby=hby1, counselor=counselor, notifier=notifier)
-        app.add_route("/multisig/{alias}/rot", rotEnd, suffix="rot")
-
-        client = testing.TestClient(app)
-
-        # aids is required
-        result = client.simulate_post(path="/multisig/test/rot", body=b'{}')
-        assert result.status == falcon.HTTP_400
-        assert result.text == "Invalid multisig group rotation request, 'aids' is required"
-
-        # aids must include a local identifier
-        body = dict(group="test", aids=[ghab2.pre, ghab3.pre])
-        b = json.dumps(body).encode("utf-8")
-
-        result = client.simulate_post(path="/multisig/test/rot", body=b)
-        assert result.status == falcon.HTTP_404
-        assert result.text == "Invalid multisig group rotation request alias {alias} not found"
-
-        body = dict(
-            aids=[ghab1.mhab.pre, ghab2.mhab.pre, ghab3.mhab.pre],
-            transferable=True,
-            wits=[
-                "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-                "BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-                "BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
-            ],
-            toad=2,
-            isith='2',
-            nsith='2'
-
-        )
-        b = json.dumps(body).encode("utf-8")
-
-        # initiate a multisig rotation with a POST
-        client = testing.TestClient(app)
-        result = client.simulate_post(path=f"/multisig/{prefix}_group1/rot", body=b)
-        assert result.status == falcon.HTTP_202
-
-        # escrow event for local witnessing
-        assert hby1.db.glwe.get(keys=(ghab1.pre,)) is not None
-
-        # sends local rotation event to other participants to start the rotation
-        assert len(rotEnd.postman.evts) == 2
-        evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab2.mhab.pre
-        assert evt["topic"] == "multisig"
-        evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab3.mhab.pre
-        assert evt["topic"] == "multisig"
-        payload = evt["serder"].ked["a"]
-        assert set(payload['adds']) == {'BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw',
-                                        'BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c',
-                                        'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo'}
-
-        assert payload['aids'] == ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
-                                   'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
-                                   'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv']
-        assert payload['cuts'] == []
-        assert payload['isith'] == '2'
-        assert payload['toad'] == 2
-        assert payload['data'] is None
-
-        app = falcon.App()
-        # Now join rotation with hby2 who will initiate the rotation with a POST
-        counselor = grouping.Counselor(hby=hby2)
-        notifier = notifying.Notifier(hby=hby2)
-        rotEnd = MultisigEventEnd(hby=hby2, counselor=counselor, notifier=notifier)
-        app.add_route("/multisig/{alias}/rot", rotEnd, suffix="rot")
-        client = testing.TestClient(app)
-        result = client.simulate_put(path=f"/multisig/{prefix}_group2/rot", body=b)
-        assert result.status == falcon.HTTP_202
-
-        # escrow event for local witnessing
-        glwe = hby2.db.glwe.get(keys=(ghab2.pre,))
-        assert glwe is not None
-        # no notifications set if joining
-        assert len(rotEnd.postman.evts) == 0
-
-
-def test_multisig_interaction():
-    prefix = "test"
-    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
-        assert ghab1.pre == ghab2.pre == ghab3.pre == 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy'
-
-        app = falcon.App()
-
-        # Start with hby1 who will initiate the rotation with a POST
-        counselor = grouping.Counselor(hby=hby1)
-        notifier = notifying.Notifier(hby=hby1)
-        evtEnd = MultisigEventEnd(hby=hby1, counselor=counselor, notifier=notifier)
-        app.add_route("/multisig/{alias}/ixn", evtEnd, suffix="ixn")
-
-        client = testing.TestClient(app)
-
-        # aids is required
-        result = client.simulate_post(path="/multisig/test/ixn", body=b'{}')
-        assert result.status == falcon.HTTP_400
-        assert result.text == "Invalid multisig group rotation request, 'aids' is required"
-
-        # aids must include a local identifier
-        body = dict(group="test", aids=[ghab2.pre, ghab3.pre])
-        b = json.dumps(body).encode("utf-8")
-
-        result = client.simulate_post(path="/multisig/test/ixn", body=b)
-        assert result.status == falcon.HTTP_404
-        assert result.text == "Invalid multisig group rotation request alias {alias} not found"
-
-        body = dict(
-            aids=[ghab1.mhab.pre, ghab2.mhab.pre, ghab3.mhab.pre],
-            data=dict(i=ghab3.mhab.pre, s=0)
-        )
-        b = json.dumps(body).encode("utf-8")
-
-        # initiate a multisig rotation with a POST
-        client = testing.TestClient(app)
-        result = client.simulate_post(path=f"/multisig/{prefix}_group1/ixn", body=b)
-        assert result.status == falcon.HTTP_202
-
-        # escrow event for all signatures
-        assert hby1.db.gpse.get(keys=(ghab1.pre,)) is not None
-
-        # sends local rotation event to other participants to start the rotation
-        assert len(evtEnd.postman.evts) == 2
-        evt = evtEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab2.mhab.pre
-        assert evt["topic"] == "multisig"
-        evt = evtEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab3.mhab.pre
-        assert evt["topic"] == "multisig"
-        payload = evt["serder"].ked["a"]
-        assert payload == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
-                           'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
-                                    'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
-                                    'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'],
-                           'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0}}
-
-        app = falcon.App()
-        # Now join rotation with hby2 who will initiate the rotation with a POST
-        counselor = grouping.Counselor(hby=hby1)
-        notifier = notifying.Notifier(hby=hby1)
-        evtEnd = MultisigEventEnd(hby=hby2, counselor=counselor, notifier=notifier)
-        app.add_route("/multisig/{alias}/ixn", evtEnd, suffix="ixn")
-        client = testing.TestClient(app)
-        result = client.simulate_put(path=f"/multisig/{prefix}_group2/ixn", body=b)
-        assert result.status == falcon.HTTP_202
-
-        # escrow event for all signatures
-        assert hby2.db.gpse.get(keys=(ghab2.pre,)) is not None
-        # no notifications set if joining
-        assert len(evtEnd.postman.evts) == 0
 
 
 def test_identifier_ends():

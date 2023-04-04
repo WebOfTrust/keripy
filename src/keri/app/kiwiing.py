@@ -805,14 +805,6 @@ class KeyStateEnd:
 
         res["kel"] = kel
 
-        # Check to see if we have any pending distributed multisig events
-        evts = []
-        if pre in self.hby.habs:
-            hab = self.hby.habs[pre]
-            if isinstance(hab, GroupHab):
-                evts = self.counselor.pendingEvents(pre)
-        res["pending"] = evts
-
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
@@ -2068,7 +2060,7 @@ class MultisigInceptEnd(MultisigEndBase):
         seqner = coring.Seqner(sn=0)
         saider = coring.Saider(qb64=prefixer.qb64)
         self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                              mid=hab.pre, smids=aids, rmids=rmids)
+                             ghab=ghab, smids=aids, rmids=rmids)
 
 
     def on_post(self, req, rep, alias):
@@ -2137,18 +2129,14 @@ class MultisigInceptEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        if not ghab.accepted:
-            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
-        else:
-            evt = ghab.makeOwnInception()
-
+        evt = ghab.makeOwnInception(allowPartiallySigned=True)
         serder = coring.Serder(raw=evt)
 
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigInceptExn(mhab, aids=ghab.smids, ked=serder.ked)
+        exn, ims = grouping.multisigInceptExn(mhab, smids=ghab.smids, rmids=ghab.rmids, ked=serder.ked)
 
         others = list(oset(ghab.smids + (ghab.rmids or [])))
-        #others = list(ghab.smids)
+
         others.remove(mhab.pre)
 
         for recpt in others:  # this goes to other participants only as a signalling mechanism
@@ -2231,12 +2219,7 @@ class MultisigInceptEnd(MultisigEndBase):
         if ghab is None:
             return
 
-        if not ghab.accepted:
-            # Create /multig/incept exn message with icp event and witness oobis as payload events
-            evt = grouping.getEscrowedEvent(db=self.hby.db, pre=ghab.pre, sn=0)
-        else:
-            evt = ghab.makeOwnInception()
-
+        evt = ghab.makeOwnInception(allowPartiallySigned=True)
         serder = coring.Serder(raw=evt)
 
         aids = body["aids"]
@@ -2248,433 +2231,6 @@ class MultisigInceptEnd(MultisigEndBase):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = serder.raw
-
-
-class MultisigEventEnd(MultisigEndBase):
-    """
-    ReST API for admin of distributed multisig group rotations
-
-    """
-
-    def __init__(self, hby, counselor, notifier):
-
-        self.hby = hby
-        self.counselor = counselor
-        self.postman = forwarding.Poster(hby=self.hby)
-        doers = [self.postman]
-
-        super(MultisigEventEnd, self).__init__(hby=hby, notifier=notifier, counselor=counselor, doers=doers)
-
-    def initialize(self, body, rep, alias):
-        if "aids" not in body:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group rotation request, 'aids' is required"
-            return None
-
-        ghab = self.hby.habByName(alias)
-        if ghab is None:
-            rep.status = falcon.HTTP_404
-            rep.text = "Invalid multisig group rotation request alias {alias} not found"
-            return None
-
-        aids = body["aids"]
-        if ghab.mhab.pre not in aids:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group rotation request, aid list must contain a local identifier"
-            return None
-
-        return ghab
-
-    def on_post_rot(self, req, rep, alias):
-        """  Multisig POST endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias (str): path parameter human readable name for identifier to rotate
-
-        ---
-        summary:  Initiate multisig group rotatation
-        description:  Initiate a multisig group rotation with the participants identified by the provided AIDs
-        tags:
-           - Groups
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   aids:
-                     type: array
-                     description: list of particiant identifiers for this rotation
-                     items:
-                        type: string
-                   wits:
-                     type: array
-                     description: list of witness identifiers
-                     items:
-                        type: string
-                   adds:
-                     type: array
-                     description: list of witness identifiers to add
-                     items:
-                        type: string
-                   cuts:
-                     type: array
-                     description: list of witness identifiers to remove
-                     items:
-                        type: string
-                   toad:
-                     type: integer
-                     description: withness threshold
-                     default: 1
-                   isith:
-                     type: string
-                     description: signing threshold
-                   count:
-                     type: integer
-                     description: count of next key commitment.
-                   data:
-                     type: array
-                     description: list of data objects to anchor to this rotation event
-                     items:
-                        type: object
-        responses:
-           200:
-              description: Rotation successful with KEL event returned
-           400:
-              description: Error creating rotation event
-
-        """
-        body = req.get_media()
-
-        ghab = self.initialize(body, rep, alias)
-        if ghab is None:
-            return
-
-        isith = None
-        if "isith" in body:
-            isith = body["isith"]
-            if isinstance(isith, str) and "," in isith:
-                isith = isith.split(",")
-
-        nsith = None
-        if "nsith" in body:
-            nsith = body["nsith"]
-            if isinstance(nsith, str) and "," in nsith:
-                nsith = nsith.split(",")
-
-        aids = body["aids"] if "aids" in body else ghab.smids
-        rmids = body["rmids"] if "rmids" in body else ghab.rmids
-        toad = body["toad"] if "toad" in body else None
-        wits = body["wits"] if "wits" in body else []
-        adds = body["adds"] if "adds" in body else []
-        cuts = body["cuts"] if "cuts" in body else []
-        data = body["data"] if "data" in body else None
-
-        if wits:
-            if cuts or adds:
-                rep.status = falcon.HTTP_400
-                rep.text = "you can only specify wits or cuts and add"
-                return
-
-            ewits = ghab.kever.wits
-
-            # wits= [a,b,c]  wits=[b, z]
-            cuts = set(ewits) - set(wits)
-            adds = set(wits) - set(ewits)
-
-        sn = ghab.kever.sn
-        # begin the rotation process
-        self.counselor.rotate(ghab=ghab, smids=aids, rmids=rmids,
-                              isith=isith, nsith=nsith,
-                              toad=toad, cuts=list(cuts), adds=list(adds),
-                              data=data)
-
-        # Create `exn` peer to peer message to notify other participants UI
-        exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(oset(ghab.smids + (ghab.rmids or [])))
-
-        others.remove(ghab.mhab.pre)
-
-        for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
-
-        # cue up an event to send notification when complete
-        self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
-
-        rep.status = falcon.HTTP_202
-
-    def on_put_rot(self, req, rep, alias):
-        """  Multisig PUT endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias (str): human readable name for new multisig identifier from path
-
-        ---
-        summary:  Participate in multisig group rotatation
-        description:  Participate in a multisig group rotation with the participants identified by the provided AIDs
-        tags:
-           - Groups
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   aids:
-                     type: array
-                     description: list of particiant identifiers for this rotation
-                     items:
-                        type: string
-                   wits:
-                     type: array
-                     description: list of witness identifiers
-                     items:
-                        type: string
-                   adds:
-                     type: array
-                     description: list of witness identifiers to add
-                     items:
-                        type: string
-                   cuts:
-                     type: array
-                     description: list of witness identifiers to remove
-                     items:
-                        type: string
-                   toad:
-                     type: integer
-                     description: withness threshold
-                     default: 1
-                   isith:
-                     type: string
-                     description: signing threshold
-                   count:
-                     type: integer
-                     description: count of next key commitment.
-                   data:
-                     type: array
-                     description: list of data objects to anchor to this rotation event
-                     items:
-                        type: object
-        responses:
-           200:
-              description: Rotation successful with KEL event returned
-           400:
-              description: Error creating rotation event
-
-        """
-        body = req.get_media()
-
-        ghab = self.initialize(body, rep, alias)
-        if ghab is None:
-            return
-
-        isith = None
-        if "isith" in body:
-            isith = body["isith"]
-            if isinstance(isith, str) and "," in isith:
-                isith = isith.split(",")
-
-        nsith = None
-        if "nsith" in body:
-            nsith = body["nsith"]
-            if isinstance(nsith, str) and "," in nsith:
-                nsith = nsith.split(",")
-
-        aids = body["aids"] if "aids" in body else ghab.smids
-        rmids = body["rmids"] if "rmids" in body else ghab.rmids
-        toad = body["toad"] if "toad" in body else None
-        wits = body["wits"] if "wits" in body else []
-        adds = body["adds"] if "adds" in body else []
-        cuts = body["cuts"] if "cuts" in body else []
-        data = body["data"] if "data" in body else None
-
-        if wits:
-            if adds or cuts:
-                rep.status = falcon.HTTP_400
-                rep.text = "you can only specify wits or cuts and add"
-                return
-
-            ewits = ghab.kever.wits
-
-            # wits= [a,b,c]  wits=[b, z]
-            cuts = set(ewits) - set(wits)
-            adds = set(wits) - set(ewits)
-
-        sn = ghab.kever.sn
-        self.counselor.rotate(ghab=ghab, smids=aids, rmids=rmids,
-                              isith=isith, nsith=nsith,
-                              toad=toad, cuts=list(cuts), adds=list(adds),
-                              data=data)
-
-        # cue up an event to send notification when complete
-        self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
-
-        rep.status = falcon.HTTP_202
-
-    def on_post_ixn(self, req, rep, alias):
-        """  Multisig Interaction POST endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias (str): human readable name for new multisig identifier from path
-
-        ---
-        summary:  Initiate multisig group interaction event
-        description:  Initiate a multisig group interaction event
-        tags:
-           - Groups
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   aids:
-                     type: array
-                     description: list of particiant identifiers for this rotation
-                     items:
-                        type: string
-                   data:
-                     type: array
-                     description: list of data objects to anchor to this rotation event
-                     items:
-                        type: object
-        responses:
-           200:
-              description: Interaction successful with KEL event returned
-           400:
-              description: Error creating rotation event
-        """
-        body = req.get_media()
-
-        ghab = self.initialize(body, rep, alias)
-        if ghab is None:
-            return
-
-        aids = body["aids"] if "aids" in body else ghab.smids
-        rmids = body["rmids"] if "rmids" in body else ghab.rmids
-        data = body["data"] if "data" in body else None
-
-        exn, atc = grouping.multisigInteractExn(ghab, aids, data)
-
-        others = list(oset(ghab.smids + (ghab.rmids or [])))
-        #others = list(ghab.smids)
-        others.remove(ghab.mhab.pre)
-
-        for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
-
-        serder = self.ixn(ghab=ghab, data=data, aids=aids)
-        # cue up an event to send notification when complete
-        self.evts.append(dict(r="/ixn/complete", i=serder.pre, s=serder.sn, d=serder.said))
-
-        rep.status = falcon.HTTP_202
-
-    def on_put_ixn(self, req, rep, alias):
-        """  Multisig Interaction PUT endpoint
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias (str): human readable name for new multisig identifier from path
-
-        ---
-        summary:  Participate in multisig group interaction event
-        description:  Participate in a multisig group interaction event
-        tags:
-           - Groups
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for the identifier to create
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   aids:
-                     type: array
-                     description: list of particiant identifiers for this rotation
-                     items:
-                        type: string
-                   data:
-                     type: array
-                     description: list of data objects to anchor to this rotation event
-                     items:
-                        type: object
-        responses:
-           200:
-              description: Interaction successful with KEL event returned
-           400:
-              description: Error creating rotation event
-        """
-        body = req.get_media()
-
-        ghab = self.initialize(body, rep, alias)
-        if ghab is None:
-            return
-
-        aids = body["aids"] if "aids" in body else ghab.smids
-        rmids = body["rmids"] if "rmids" in body else ghab.rmids
-
-        data = body["data"] if "data" in body else None
-
-        serder = self.ixn(ghab=ghab, data=data, aids=aids)
-        # cue up an event to send notification when complete
-        self.evts.append(dict(r="/ixn/complete", i=serder.pre, s=serder.sn, d=serder.said))
-
-        rep.status = falcon.HTTP_202
-
-
-    def ixn(self, ghab, data, aids, rmids=None):
-        """Todo Document this method
-
-        Parameters
-        """
-        ixn = ghab.interact(data=data)
-
-        serder = coring.Serder(raw=ixn)
-
-        prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=serder.sn)
-        saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             mid=ghab.mhab.pre, smids=aids, rmids=rmids)
-        return serder
 
 
 class ChallengeEnd(doing.DoDoer):
@@ -3810,9 +3366,6 @@ def loadEnds(app, *,
 
     multiIcpEnd = MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
     app.add_route("/groups/{alias}/icp", multiIcpEnd)
-    multiEvtEnd = MultisigEventEnd(hby=hby, counselor=counselor, notifier=notifier)
-    app.add_route("/groups/{alias}/rot", multiEvtEnd, suffix="rot")
-    app.add_route("/groups/{alias}/ixn", multiEvtEnd, suffix="ixn")
 
     credsEnd = CredentialEnd(hby=hby, rgy=rgy, verifier=verifier, registrar=registrar, credentialer=credentialer,
                              notifier=notifier)
@@ -3859,11 +3412,11 @@ def loadEnds(app, *,
 
     signalEnd = signaling.loadEnds(app, signals=signaler.signals)
     resources = [identifierEnd, MultisigInceptEnd, registryEnd, oobiEnd, credsEnd, keyEnd, signalEnd,
-                 presentationEnd, multiIcpEnd, multiEvtEnd, chacha, contact, escrowEnd, lockEnd, aeidEnd]
+                 presentationEnd, multiIcpEnd, chacha, contact, escrowEnd, lockEnd, aeidEnd]
 
     app.add_route("/spec.yaml", specing.SpecResource(app=app, title='KERI Interactive Web Interface API',
                                                      resources=resources))
-    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, multiEvtEnd, credsEnd, presentationEnd, lockEnd, chacha]
+    return [identifierEnd, registryEnd, oobiEnd, multiIcpEnd, credsEnd, presentationEnd, lockEnd, chacha]
 
 
 def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, staticPath="", **kwargs):

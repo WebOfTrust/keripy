@@ -12,10 +12,11 @@ from prettytable import PrettyTable
 
 from hio.base import doing
 
-from keri import help
+from keri import help, kering
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing
+from keri.db import dbing
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -98,6 +99,7 @@ class ConfirmDoer(doing.DoDoer):
             for keys, notice in self.notifier.noter.notes.getItemIter():
                 attrs = notice.attrs
                 route = attrs['r']
+                print(keys, notice)
 
                 if route == '/multisig/icp/init':
                     done = yield from self.incept(attrs)
@@ -112,7 +114,7 @@ class ConfirmDoer(doing.DoDoer):
                     self.remove(self.toRemove)
                     return True
 
-                if route == '/multisig/ixn':
+                elif route == '/multisig/ixn':
                     done = yield from self.interact(attrs)
                     if done:
                         self.notifier.noter.notes.rem(keys=keys)
@@ -125,17 +127,29 @@ class ConfirmDoer(doing.DoDoer):
                     self.remove(self.toRemove)
                     return True
 
-                yield self.tock
+                elif route == '/multisig/rot':
 
+                    done = yield from self.rotate(attrs)
+                    if done:
+                        self.notifier.noter.notes.rem(keys=keys)
+
+                    else:
+                        delete = input(f"\nDelete event [Y|n]? ")
+                        if delete:
+                            self.notifier.noter.notes.rem(keys=keys)
+
+                    self.remove(self.toRemove)
+                    return True
+
+                yield self.tock
             yield self.tock
 
-    def incept(self, attrs):
-        """Incept group multisig
 
-        ToDo: NRR
-        Add rmids
+    def incept(self, attrs):
+        """ Incept group multisig
+
         """
-        smids = attrs["aids"]  # change body mids for group member ids
+        smids = attrs["smids"]  # change body mids for group member ids
         rmids = attrs["rmids"] if "rmids" in attrs else None
         ked = attrs["ked"]
 
@@ -223,7 +237,6 @@ class ConfirmDoer(doing.DoDoer):
         if approve:
             ixn = ghab.interact(data=data)
             serder = coring.Serder(raw=ixn)
-            print(serder.pretty())
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
@@ -236,7 +249,7 @@ class ConfirmDoer(doing.DoDoer):
 
     def startCounselor(self, smids, rmids, hab, prefixer, seqner, saider):
         self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             mid=hab.mhab.pre, smids=smids, rmids=rmids)
+                             ghab=hab, smids=smids, rmids=rmids)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
@@ -250,7 +263,124 @@ class ConfirmDoer(doing.DoDoer):
         print("Participants:")
 
         thold = coring.Tholder(sith=ked["kt"])
+        self.printMemberTable(mids, hab, thold)
 
+        print()
+        print("Configuration:")
+
+        tab = PrettyTable()
+        tab.field_names = ["Name", "Value"]
+        tab.align["Name"] = "l"
+
+        if "di" in ked:
+            m = self.org.get(ked["di"])
+            alias = m['alias'] if m else "Unknown Delegator"
+            tab.add_row(["Delegator", f"{alias} ({ked['di']}))"])
+
+        if not thold.weighted:
+            tab.add_row(["Signature Threshold", thold.num])
+
+        tab.add_row(["Establishment Only", eventing.TraitCodex.EstOnly in ked["c"]])
+        tab.add_row(["Do Not Delegate", eventing.TraitCodex.DoNotDelegate in ked["c"]])
+        tab.add_row(["Witness Threshold", ked["bt"]])
+        tab.add_row(["Witnesses", "\n".join(ked["b"])])
+
+        print(tab)
+
+    def rotate(self, attrs):
+        """ Rotate group multisig
+
+        """
+        smids = attrs["smids"]
+        rmids = attrs["rmids"]
+        ked = attrs["ked"]
+
+        both = list(set(smids + (rmids or [])))
+
+        mhab = None
+        for mid in both:
+            if mid in self.hby.habs:
+                mhab = self.hby.habs[mid]
+                break
+
+        if mhab is None:
+            print("Invalid multisig group rotation request, signing member list must contain a local identifier'")
+            return False
+
+        print()
+        print("Group Multisig Rotation proposed:")
+        self.showRotation(mhab, smids, rmids, ked)
+        yn = input(f"\nJoin [Y|n]? ")
+        approve = yn in ('', 'y', 'Y')
+
+        if approve:
+            pre = ked['i']
+            if pre in self.hby.habs:
+                ghab = self.hby.habs[pre]
+            else:
+                while True:
+                    alias = input(f"\nEnter alias for new AID: ")
+                    if self.hby.habByName(alias) is not None:
+                        print(f"AID alias {alias} is already in use, please try again")
+                    else:
+                        break
+
+                ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
+
+            try:
+                serder = coring.Serder(ked=ked)
+                rot = ghab.rotate(serder=serder)
+            except ValueError as e:
+                print(f"{e.args[0]}")
+                return False
+
+            serder = coring.Serder(raw=rot)
+            prefixer = coring.Prefixer(qb64=ghab.pre)
+            seqner = coring.Seqner(sn=serder.sn)
+
+            yield from self.startCounselor(smids, rmids, ghab, prefixer, seqner, serder.saider)
+
+            print()
+            displaying.printIdentifier(self.hby, ghab.pre)
+
+            return True
+
+    def showRotation(self, hab, smids, rmids, ked):
+        print()
+        print("Signing Members")
+        thold = coring.Tholder(sith=ked["kt"])
+        self.printMemberTable(smids, hab, thold)
+
+        print()
+        print("Rotation Members")
+        nthold = coring.Tholder(sith=ked["nt"])
+        self.printMemberTable(rmids, hab, nthold)
+
+        print()
+        print("Configuration:")
+
+        tab = PrettyTable()
+        tab.field_names = ["Name", "Value"]
+        tab.align["Name"] = "l"
+
+        if "di" in ked:
+            m = self.org.get(ked["di"])
+            alias = m['alias'] if m else "Unknown Delegator"
+            tab.add_row(["Delegator", f"{alias} ({ked['di']}))"])
+
+        if not thold.weighted:
+            tab.add_row(["Signature Threshold", thold.num])
+
+        tab.add_row(["Witness Threshold", ked["bt"]])
+        if "ba" in ked and ked["ba"]:
+            tab.add_row(["Added Witnesses", "\n".join(ked["ba"])])
+        if "br" in ked and ked["br"]:
+            tab.add_row(["Removed Witnesses", "\n".join(ked["br"])])
+
+        print(tab)
+
+
+    def printMemberTable(self, mids, hab, thold):
         tab = PrettyTable()
         fields = ["Local", "Name", "AID"]
 
@@ -274,26 +404,5 @@ class ConfirmDoer(doing.DoDoer):
                 if thold.weighted:
                     row.append(thold.sith[idx])
                 tab.add_row(row)
-
-        print(tab)
-        print()
-        print("Configuration:")
-
-        tab = PrettyTable()
-        tab.field_names = ["Name", "Value"]
-        tab.align["Name"] = "l"
-
-        if "di" in ked:
-            m = self.org.get(ked["di"])
-            alias = m['alias'] if m else "Unknown Delegator"
-            tab.add_row(["Delegator", f"{alias} ({ked['di']}))"])
-
-        if not thold.weighted:
-            tab.add_row(["Signature Threshold", thold.num])
-
-        tab.add_row(["Establishment Only", eventing.TraitCodex.EstOnly in ked["c"]])
-        tab.add_row(["Do Not Delegate", eventing.TraitCodex.DoNotDelegate in ked["c"]])
-        tab.add_row(["Witness Threshold", ked["bt"]])
-        tab.add_row(["Witnesses", "\n".join(ked["b"])])
 
         print(tab)

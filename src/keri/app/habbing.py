@@ -335,11 +335,10 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.pidx is not None:
-                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, pre=pre, temp=habord.temp, stem=habord.stem,
-                                      tier=habord.tier, pidx=habord.pidx)
+            elif habord.sid is not None:
+                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                 name=name, pre=habord.sid)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -367,11 +366,10 @@ class Habery:
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.pidx is not None:
-                hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                                      name=name, ns=ns,  pre=pre, temp=habord.temp, stem=habord.stem,
-                                      tier=habord.tier, pidx=habord.pidx)
+            elif habord.sid is not None:
+                hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                 rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                 name=name, ns=ns, pre=habord.sid)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -513,11 +511,90 @@ class Habery:
 
         return hab
 
+    def joinGroupHab(self, pre, group, mhab, smids, rmids=None, ns=None):
+        """Make new Group Hab using group has group hab name, with lhab as local
+        participant.
+
+        Parameters: (non-pass-through):
+            pre (str): qb64 identifier prefix of group
+            group (str): human readable alias for group identifier
+            mhab (Hab): group member (local) hab
+            smids (list): group member signing ids (qb64) from which to extract
+                        inception event current signing keys
+            rmids (list | None): group member rotation ids (qb64) from which to extract
+                        inception event next key digests
+                        if rmids is None then use assign smids to rmids
+                        if rmids is empty then no next key digests
+                        which means group identifier is no longer transferable.
+
+
+        """
+
+        if mhab.pre not in smids and mhab.pre not in rmids:
+            raise kering.ConfigurationError(f"Local member identifier "
+                                            f"{mhab.pre} must be member of "
+                                            f"smids ={smids} and/or "
+                                            f"rmids={rmids}.")
+
+        for mid in smids:
+            if mid not in self.kevers:
+                raise kering.ConfigurationError(f"KEL missing for signing member "
+                                                f"identifier {mid} from group's "
+                                                f"current members ={smids}")
+
+        if rmids is not None:
+            for rmid in rmids:
+                if rmid not in self.kevers:
+                    raise kering.ConfigurationError(f"KEL missing for next member "
+                                                    f"identifier {rmid} in group's"
+                                                    f" next members ={rmids}")
+
+
+        # create group Hab in this Habery
+        hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                       name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
+
+        hab.pre = pre
+        habord = basing.HabitatRecord(hid=hab.pre,
+                                      mid=mhab.pre,
+                                      smids=smids,
+                                      rmids=rmids)
+
+        hab.save(habord)
+        hab.prefixes.add(pre)
+        hab.inited = True
+
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+        return hab
+
     def makeSignifyHab(self, name, ns=None, **kwa):
         # create group Hab in this Habery
-        hab = SignifySaltyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                              name=name, ns=ns, temp=self.temp)
+        hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                         name=name, ns=ns, temp=self.temp)
+
+        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+        return hab
+
+    def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
+        # create group Hab in this Habery
+        hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                         name=name, mhab=mhab, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         if ns is None:
@@ -1068,6 +1145,15 @@ class BaseHab:
 
         keys = [verfer.qb64 for verfer in verfers]
 
+        indices = []
+        for idx, diger in enumerate(kever.digers):
+            pdigs = [coring.Diger(ser=verfer.qb64b, code=diger.code).qb64 for verfer in verfers]
+            if diger.qb64 in pdigs:
+                indices.append(idx)
+
+        if not kever.ntholder.satisfy(indices):
+            raise kering.ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
+
         if kever.delegator is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
@@ -1111,7 +1197,7 @@ class BaseHab:
 
         return msg
 
-    def interact(self, data=None):
+    def interact(self, *, data=None):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
@@ -1752,16 +1838,21 @@ class BaseHab:
         # not permiteed in .habs.oobis
         return self.replyEndRole(cid=aid, role=role, eids=eids)
 
-    def getOwnEvent(self, sn):
+    def getOwnEvent(self, sn, allowPartiallySigned=False):
         """
         Returns: message Serder and controller signatures of
                  own event at sequence number sn from retrieving event at sn
                  and associated signatures from database.
 
         Parameters:
-            sn is int sequence number of event
+            sn (int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        dig = self.db.getKeLast(dbing.snKey(self.pre, sn))
+        key = dbing.snKey(self.pre, sn)
+        dig = self.db.getKeLast(key)
+        if dig is None and allowPartiallySigned:
+            dig = self.db.getPseLast(key)
+
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
@@ -1778,17 +1869,20 @@ class BaseHab:
 
         return serder, sigs, couple
 
-    def makeOwnEvent(self, sn):
+    def makeOwnEvent(self, sn, allowPartiallySigned=False):
         """
         Returns: messagized bytearray message with attached signatures of
                  own event at sequence number sn from retrieving event at sn
                  and associated signatures from database.
 
         Parameters:
-            sn is int sequence number of event
+            sn(int): is int sequence number of event
+            allowPartiallySigned(bool): True means attempt to load from partial signed escrow
+
         """
         msg = bytearray()
-        serder, sigs, couple = self.getOwnEvent(sn=sn)
+        serder, sigs, couple = self.getOwnEvent(sn=sn,
+                                                allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                   count=len(sigs)).qb64b)  # attach cnt
@@ -1802,13 +1896,13 @@ class BaseHab:
 
         return msg
 
-    def makeOwnInception(self):
+    def makeOwnInception(self, allowPartiallySigned=False):
         """
         Returns: messagized bytearray message with attached signatures of
                  own inception event by retrieving event and signatures
                  from database.
         """
-        return self.makeOwnEvent(sn=0)
+        return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned)
 
     def processCues(self, cues):
         """
@@ -2003,9 +2097,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        # ToDo: NRR add dual indices to HabitatRecord so know how to sign in future.
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=None, )
+        habord = basing.HabitatRecord(hid=self.pre)
 
         if not hidden:
             self.save(habord)
@@ -2072,22 +2164,17 @@ class Hab(BaseHab):
                                        data=data)
 
 
-class SignifySaltyHab(BaseHab):
+class SignifyHab(BaseHab):
     """
     Hab class provides a given idetnifier controller's local resource environment
     i.e. hab or habitat. Includes dependency injection of database, keystore,
     configuration file as well as Kevery and key store Manager..
     """
 
-    def __init__(self, stem=None, pidx=None, tier=None, temp=False, **kwa):
-        self.stem = stem
-        self.pidx = pidx
-        self.tier = tier
-        self.temp = temp
+    def __init__(self, **kwa):
+        super(SignifyHab, self).__init__(**kwa)
 
-        super(SignifySaltyHab, self).__init__(**kwa)
-
-    def make(self, *, serder, sigers, stem, pidx, tier, temp, **kwargs):
+    def make(self, *, serder, sigers, **kwargs):
         self.pre = serder.ked["i"]  # new pre
 
         # during delegation initialization of a habitat we ignore the MissingDelegationError and
@@ -2100,15 +2187,11 @@ class SignifySaltyHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
-        habord = basing.HabitatRecord(hid=self.pre, stem=stem, pidx=pidx, tier=tier, temp=temp)
+        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
 
         self.save(habord)
         self.prefixes.add(self.pre)
 
-        self.stem = stem
-        self.pidx = pidx
-        self.tier = tier
-        self.temp = temp
         self.inited = True
 
 
@@ -2133,7 +2216,7 @@ class SignifySaltyHab(BaseHab):
                 when indexed is True. See Manager.sign
 
         """
-        raise kering.KeriError("remote hab does not support local signing")
+        raise kering.KeriError("Signify hab does not support local signing")
 
 
     def rotate(self, *, serder=None, sigers=None, **kwargs):
@@ -2144,8 +2227,6 @@ class SignifySaltyHab(BaseHab):
         Parameters:
             serder (Serder): pre-created rotation event
             sigers (list[Siger]): Siger instances on next rotation event
-            npath (str | None): salty path used to create next keys
-            temp (boolean): True is temporary for testing. It modifies tier of salty algorithm
 
         """
         msg = eventing.messagize(serder, sigers=sigers)
@@ -2158,7 +2239,7 @@ class SignifySaltyHab(BaseHab):
 
         return msg
 
-    def interact(self, serder, sigers):
+    def interact(self, *, serder=None, sigers=None, **kwargs):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
@@ -2173,6 +2254,77 @@ class SignifySaltyHab(BaseHab):
                                          "pre={}.".format(self.pre))
 
         return msg
+
+    def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+
+        """
+        Returns a reply message stream composed of entries authed by the given
+        cid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
+
+        cid and not role and not scheme then:
+            end authz for all eids in all roles and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and not role and scheme then:
+            end authz for all eid in all roles and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and not scheme then:
+            end authz for all eid in role and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
+
+        cid and role and scheme then:
+            end authz for all eid in role and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
+
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
+        """
+        msgs = bytearray()
+
+        if eids is None:
+            eids = []
+
+        if role == kering.Roles.witness:
+            if kever := self.kevers[cid] if cid in self.kevers else None:
+                witness = self.pre in kever.wits  # see if we are cid's witness
+
+                # latest key state for cid
+                for eid in kever.wits:
+                    if not eids or eid in eids:
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                        if not witness:  # we are not witness, send auth records
+                            msgs.extend(self.makeEndRole(eid=eid, role=role))
+                if witness:  # we are witness, set KEL as authz
+                    msgs.extend(self.replay(cid))
+
+        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
+            if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
+                msgs.extend(self.replay(eid))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+
+        # introduce yourself, please
+        msgs.extend(self.replay(cid))
+
+
+        return msgs
+
+
+class SignifyGroupHab(SignifyHab):
+    def __init__(self, mhab, **kwa):
+        self.mhab = mhab
+        super(SignifyGroupHab, self).__init__(**kwa)
 
 
 class GroupHab(BaseHab):
@@ -2321,14 +2473,6 @@ class GroupHab(BaseHab):
 
         self.pre = serder.ked["i"]  # new pre
 
-        habord = basing.HabitatRecord(hid=self.pre,
-                                      mid=self.mhab.pre,
-                                      smids=self.smids,
-                                      rmids=self.rmids)
-
-        self.save(habord)
-        self.prefixes.add(self.pre)
-
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
@@ -2342,8 +2486,36 @@ class GroupHab(BaseHab):
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
+        habord = basing.HabitatRecord(hid=self.pre,
+                                      mid=self.mhab.pre,
+                                      smids=self.smids,
+                                      rmids=self.rmids)
+
+        self.save(habord)
+        self.prefixes.add(self.pre)
+
         self.inited = True
 
+    def rotate(self, serder=None, **kwargs):
+
+        if serder is None:
+            return super(GroupHab, self).rotate(**kwargs)
+
+        # sign handles group hab with .mhab case
+        sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
+
+        # update own key event verifier state
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        try:
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception as ex:
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={self.pre}.") from ex
+
+        return msg
 
     def sign(self, ser, verfers=None, indexed=True, rotated=False, indices=None, ondices=None):
         """ Sign given serialization ser using appropriate keys.

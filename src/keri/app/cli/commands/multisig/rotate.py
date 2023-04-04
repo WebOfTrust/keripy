@@ -5,6 +5,7 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -13,6 +14,7 @@ from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import rotating, existing, displaying, config
 from keri.core import coring
+from keri.db import dbing
 
 logger = help.ogler.getLogger()
 
@@ -128,11 +130,98 @@ class GroupMultisigRotate(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
+        smids = []
+        merfers = []
+        for smid in self.smids:
+            match smid.split(':'):
+                case [mid]:  # Only prefix provided, assume latest event
+                    if mid not in self.hby.kevers:
+                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+
+                    mkever = self.hby.kevers[mid]  # get key state for given member
+                    merfers.append(mkever.verfers[0])
+                    smids.append(mid)
+
+                case [mid, sn]:
+                    if mid not in self.hby.kevers:
+                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+
+                    dig = self.hby.db.getKeLast(dbing.snKey(mid, int(sn)))
+                    if dig is None:
+                        raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
+
+                    evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
+                    serder = coring.Serder(raw=bytes(evt))
+                    if not serder.est:
+                        raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
+
+                    merfers.append(serder.verfers[0])
+                    smids.append(mid)
+
+                case _:
+                    raise kering.ConfigurationError(f"invalid smid representation {smid}")
+
+        migers = []
+        rmids = []
+        for rmid in self.rmids:
+            match rmid.split(':'):
+                case [mid]:  # Only prefix provided, assume latest event
+                    if mid not in self.hby.kevers:
+                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+
+                    mkever = self.hby.kevers[mid]  # get key state for given member
+                    migers.append(mkever.digers[0])
+                    rmids.append(mid)
+
+                case [mid, sn]:
+                    if mid not in self.hby.kevers:
+                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+
+                    dig = self.hby.db.getKeLast(dbing.snKey(mid, int(sn)))
+                    if dig is None:
+                        raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
+
+                    evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
+                    serder = coring.Serder(raw=evt)
+                    if not serder.est:
+                        raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
+
+                    migers.append(serder.digers[0])
+                    rmids.append(mid)
+
+                case _:
+                    raise kering.ConfigurationError(f"invalid rmid representation {rmid}")
+
+
+        if ghab.mhab.pre not in smids:
+            raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
+
+        prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        self.counselor.rotate(ghab=ghab, smids=self.smids, rmids=self.rmids,
-                              isith=self.isith, nsith=self.nsith, toad=self.toad,
-                              cuts=list(self.cuts), adds=list(self.adds),
-                              data=self.data)
+        rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
+                          toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
+                          verfers=merfers, digers=migers)
+        rserder = coring.Serder(raw=rot)
+
+        # Create a notification EXN message to send to the other agents
+        exn, ims = grouping.multisigRotateExn(ghab=ghab,
+                                              smids=smids,
+                                              rmids=rmids,
+                                              ked=rserder.ked)
+        others = list(oset(smids + (rmids or [])))
+
+        others.remove(ghab.mhab.pre)
+
+        for recpt in others:  # this goes to other participants only as a signaling mechanism
+            self.postman.send(src=ghab.mhab.pre,
+                              dest=recpt,
+                              topic="multisig",
+                              serder=exn,
+                              attachment=bytearray(ims))
+
+
+        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=rserder.saider,
+                             smids=smids, rmids=rmids, proxy=ghab.mhab.pre)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))

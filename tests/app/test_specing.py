@@ -29,13 +29,11 @@ def test_spec_resource():
         counselor = grouping.Counselor(hby=hby)
         multiIcpEnd = kiwiing.MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
         app.add_route("/groups/{alias}/icp", multiIcpEnd)
-        multiRotEnd = kiwiing.MultisigEventEnd(hby=hby, counselor=counselor, notifier=notifier)
-        app.add_route("/groups/{alias}/rot", multiRotEnd, suffix="rot")
 
         lockEnd = kiwiing.LockEnd(servery=booting.Servery(port=1234), bootConfig=dict())
         app.add_route("/lock", lockEnd)
 
-        resources = [passcodeEnd, bootEnd, multiIcpEnd, multiRotEnd, lockEnd]
+        resources = [passcodeEnd, bootEnd, multiIcpEnd, lockEnd]
         specRes = specing.SpecResource(app=app, title='KERI Interactive Web Interface API', resources=resources)
 
         sd = specRes.spec.to_dict()
@@ -69,12 +67,6 @@ def test_spec_resource():
         assert len(icp) == 2
         assert "post" in icp
         assert "put" in icp
-
-        assert "/groups/{alias}/rot" in paths
-        rot = paths["/groups/{alias}/rot"]
-        assert len(rot) == 2
-        assert "post" in rot
-        assert "put" in rot
 
         # Assert on the entire JSON to ensure we are getting all the docs
         js = json.dumps(sd)
@@ -149,45 +141,6 @@ def test_spec_resource():
                       '"Next signing threshold for the new group identifier"}, "estOnly": {"type": '
                       '"boolean", "required": false, "description": "True means this identifier '
                       'will not allow interaction events."}}}}}}, "responses": {"200": '
-                      '{"description": "Multisig group AID inception initiated."}}}}, '
-                      '"/groups/{alias}/rot": {"post": {"summary": "Initiate multisig group '
-                      'rotatation", "description": "Initiate a multisig group rotation with the '
-                      'participants identified by the provided AIDs", "tags": ["Groups"], '
-                      '"parameters": [{"in": "path", "name": "alias", "schema": {"type": "string"}, '
-                      '"required": true, "description": "Human readable alias for the identifier to '
-                      'create"}], "requestBody": {"required": true, "content": {"application/json": '
-                      '{"schema": {"type": "object", "properties": {"aids": {"type": "array", '
-                      '"description": "list of particiant identifiers for this rotation", "items": '
-                      '{"type": "string"}}, "wits": {"type": "array", "description": "list of '
-                      'witness identifiers", "items": {"type": "string"}}, "adds": {"type": '
-                      '"array", "description": "list of witness identifiers to add", "items": '
-                      '{"type": "string"}}, "cuts": {"type": "array", "description": "list of '
-                      'witness identifiers to remove", "items": {"type": "string"}}, "toad": '
-                      '{"type": "integer", "description": "withness threshold", "default": 1}, '
-                      '"isith": {"type": "string", "description": "signing threshold"}, "count": '
-                      '{"type": "integer", "description": "count of next key commitment."}, "data": '
-                      '{"type": "array", "description": "list of data objects to anchor to this '
-                      'rotation event", "items": {"type": "object"}}}}}}}, "responses": {"200": '
-                      '{"description": "Rotation successful with KEL event returned"}, "400": '
-                      '{"description": "Error creating rotation event"}}}, "put": {"summary": '
-                      '"Participate in multisig group rotatation", "description": "Participate in a '
-                      'multisig group rotation with the participants identified by the provided '
-                      'AIDs", "tags": ["Groups"], "parameters": [{"in": "path", "name": "alias", '
-                      '"schema": {"type": "string"}, "required": true, "description": "Human '
-                      'readable alias for the identifier to create"}], "requestBody": {"required": '
-                      'true, "content": {"application/json": {"schema": {"type": "object", '
-                      '"properties": {"aids": {"type": "array", "description": "list of particiant '
-                      'identifiers for this rotation", "items": {"type": "string"}}, "wits": '
-                      '{"type": "array", "description": "list of witness identifiers", "items": '
-                      '{"type": "string"}}, "adds": {"type": "array", "description": "list of '
-                      'witness identifiers to add", "items": {"type": "string"}}, "cuts": {"type": '
-                      '"array", "description": "list of witness identifiers to remove", "items": '
-                      '{"type": "string"}}, "toad": {"type": "integer", "description": "withness '
-                      'threshold", "default": 1}, "isith": {"type": "string", "description": '
-                      '"signing threshold"}, "count": {"type": "integer", "description": "count of '
-                      'next key commitment."}, "data": {"type": "array", "description": "list of '
-                      'data objects to anchor to this rotation event", "items": {"type": '
-                      '"object"}}}}}}}, "responses": {"200": {"description": "Rotation successful '
-                      'with KEL event returned"}, "400": {"description": "Error creating rotation '
-                      'event"}}}}}, "info": {"title": "KERI Interactive Web Interface API", '
-                      '"version": "1.0.0"}, "openapi": "3.0.2"}')
+                      '{"description": "Multisig group AID inception initiated."}}}}}, "info": '
+                      '{"title": "KERI Interactive Web Interface API", "version": "1.0.0"}, '
+                      '"openapi": "3.0.2"}')
