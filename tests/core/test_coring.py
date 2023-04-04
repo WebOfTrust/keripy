@@ -20,7 +20,7 @@ import pytest
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import Ilkage, Ilks, Ids, Idents, Sadder
+from keri.core.coring import Ilkage, Ilks, Labels, Ids, Idents, Sadder
 from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
@@ -38,6 +38,10 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError)
 from keri.kering import Version, Versionage
+from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      KSN_LABELS, RPY_LABELS)
+from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
+                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 
 
 def test_ilks():
@@ -97,6 +101,46 @@ def test_ilks():
     assert Ilks.brv == 'brv'
 
     """End Test """
+
+def test_labels():
+    """
+    Test Ilkage namedtuple instance Labels
+    """
+    assert Labels == Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS,
+                            dip=DIP_LABELS, drt=DRT_LABELS,
+                            rct=[], ksn=KSN_LABELS, qry=[], rpy=RPY_LABELS,
+                            exn=[], pro=[], bar=[],
+                            vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS,
+                            rev=REV_LABELS, bis=BIS_LABELS, brv=BRV_LABELS)
+
+    assert isinstance(Labels, Ilkage)
+
+    for fld in Labels._fields:
+        assert isinstance(getattr(Labels, fld), list)
+
+    assert Labels.icp == ICP_LABELS
+    assert Labels.rot == ROT_LABELS
+    assert Labels.ixn == IXN_LABELS
+    assert Labels.dip == DIP_LABELS
+    assert Labels.drt == DRT_LABELS
+    assert Labels.rct == []
+    assert Labels.ksn == KSN_LABELS
+    assert Labels.qry == []
+    assert Labels.rpy == RPY_LABELS
+    assert Labels.exn == []
+    assert Labels.pro == []
+    assert Labels.bar == []
+
+    assert Labels.vcp == VCP_LABELS
+    assert Labels.vrt == VRT_LABELS
+    assert Labels.iss == ISS_LABELS
+    assert Labels.rev == REV_LABELS
+    assert Labels.bis == BIS_LABELS
+    assert Labels.brv == BRV_LABELS
+
+    """End Test """
+
+
 
 
 def test_b64_conversions():
@@ -4325,11 +4369,37 @@ def test_prefixer():
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
     assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
-    ked = dict(k=[prefixer.qb64], n="", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="",
+               n=[],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[prefixer.qb64], n="ABC", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == False
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4338,7 +4408,20 @@ def test_prefixer():
     assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
     assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
 
-    ked = dict(k=[prefixer.qb64], t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4349,55 +4432,89 @@ def test_prefixer():
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # Test basic derivation from ked
-    ked = dict(k=[verfer.qb64], n="", t="icp")
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[verfer.qb64],  # list of qb64
+               nt="",
+               n=0,  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
     prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[verfer.qb64], n="", t="icp")  # ked without prefix
-    with pytest.raises(EmptyMaterialError):  # no code and no pre in ked
-        prefixer = Prefixer(ked=ked)
-
-    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)  # verfer code not match pre code
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked)
+    badked = dict(ked)
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # no pre
+        prefixer = Prefixer(ked=badked)
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=pre)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    with pytest.raises(DerivationError):  # verfer code not match pre code
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
     with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code not match code
+        prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code not match code
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=pre)
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code but not pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code match code but not pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == False
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == False
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code and pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519N)  # verfer code match code and pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == True
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp", i=preN)
-    prefixer = Prefixer(ked=ked)  # verfer code match pre code
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked)  # verfer code match pre code
     assert prefixer.qb64 == verfer.qb64
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == True
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="", t="icp")
-    with pytest.raises(EmptyMaterialError):
-        prefixer = Prefixer(ked=ked)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # missing pre
+        prefixer = Prefixer(ked=badked)
 
-    ked = dict(k=[verfer.qb64], n="ABCD", t="icp")
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    with pytest.raises(ShortageError):  # empty pre
+        prefixer = Prefixer(ked=badked)
+
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["n"] = "ABCD"
+    with pytest.raises(DerivationError):  # wrong code for transferable
+        prefixer = Prefixer(ked=badked, code=MtrDex.Ed25519)
 
     # Test digest derivation from inception ked
     vs = versify(version=Version, kind=Serials.json, size=0)
@@ -4411,40 +4528,44 @@ def test_prefixer():
     cnfg = []
 
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
-               n=nxt,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               nt=0,
+               n=[],
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ELEjyRTtmfyp4VpTBTkv_b6KONMS1V8-EW-aGJ5P_QMo'
-    #'EREh4RHCZHUy5nPrY131A4h4RuDAOynRQdQY0PLJybEQ'
+    assert prefixer.qb64 == 'EEZn82xRQYFjfkPJ5ECrDNHJ6xSt_hjxybbt_WMpinEF'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with next digs
     ndigs = [Diger(ser=nxtfer.qb64b).qb64]
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EHZUmVPq9cXFvGwWP4ohwA27XlsWHBxxu4xFiXp8UOol'
-    #'EDve7ZqtIsIMrx6UVZRTcnLgEnYGGV2is_JI_Ps3hEnE'
+    assert prefixer.qb64 == 'EHB9-i6jOH6DbK_40vlGF0X78Mg__c3MSzu9AE9ZRrsC'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4471,39 +4592,47 @@ def test_prefixer():
     keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
     sith = [["1/2", "1/2", "1"]]
     ndigs = [Diger(ser=signers[3].verfer.qb64b).qb64]  # default limen/sith
+
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer1 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer1.qb64 == 'EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T'
+    assert prefixer1.qb64 == 'EOnpRzJpF1LNdCXl7aQ76BxF7qT94PChM7WGKARhZeKj'
     assert prefixer1.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # now test with different sith but same weights in two clauses
     sith = [["1/2", "1/2"], ["1"]]
+
     ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
                )
 
     prefixer2 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer2.qb64 == 'EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb'
+    assert prefixer2.qb64 == 'ECBv9o83MnNYRTdXhwTeR5zgwt8jTr5NIuJ8P00BKySW'
     assert prefixer2.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 != prefixer1.qb64  # semantic diff -> syntactic diff
@@ -4515,20 +4644,23 @@ def test_prefixer():
                 d='EB0_D51cTh_q6uOQ-byFiv5oNXZ-cxdqCqBAa4JmBLtb')
 
     ked = dict(v=vs,  # version string
+               t=Ilks.dip,
+               d="",  # SAID
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=Ilks.dip,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
+               nt=1,
                n=ndigs,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
-               da=seal
+               a=[seal],  # list of seal dicts
+               di='EBfPkd-A2CQfJmfpmtc1V-yuleSeCcyWBIrTAygUgQ_T',
                )
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
+    assert prefixer.qb64 == 'EEGithHj9A85F9hz1fxlF80U7wvpFoAPj6U4q4YWMehp'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -4539,7 +4671,7 @@ def test_prefixer():
 
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
                         allows=[MtrDex.Blake3_256, MtrDex.Ed25519])
-    assert prefixer.qb64 == 'EBabiu_JCkE0GbiglDXNB5C4NQq-hiGgxhHKXBxkiojg'
+    assert prefixer.qb64 == 'EEGithHj9A85F9hz1fxlF80U7wvpFoAPj6U4q4YWMehp'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -5936,4 +6068,7 @@ if __name__ == "__main__":
     #test_siger()
     #test_signer()
     #test_nexter()
-    test_tholder()
+    #test_tholder()
+    #test_ilks()
+    #test_labels()
+    test_prefixer()

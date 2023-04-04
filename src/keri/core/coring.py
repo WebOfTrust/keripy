@@ -29,6 +29,11 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
+from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      KSN_LABELS, RPY_LABELS)
+from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
+                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
+
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable
 
@@ -59,6 +64,12 @@ Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+
+Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
+                drt=DRT_LABELS, rct=[], ksn=KSN_LABELS, qry=[], rpy=RPY_LABELS,
+                exn=[], pro=[], bar=[],
+                vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS, rev=REV_LABELS,
+                bis=BIS_LABELS, brv=BRV_LABELS)
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -2952,7 +2963,7 @@ class Prefixer(Matter):
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
             # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self._derive(ked=ked)
+            raw, code = self.derive(ked=ked)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == MtrDex.Ed25519N:
@@ -2974,8 +2985,16 @@ class Prefixer(Matter):
             seed is only used for sig derivation it is the secret key/secret
 
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
+        ilk = ked["t"]
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
+
+        labels = getattr(Labels, ilk)
+        for k in labels:
+            if k not in ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, ilk, ked))
+
         return (self._derive(ked=ked))
 
     def verify(self, ked, prefixed=False):
@@ -2987,8 +3006,16 @@ class Prefixer(Matter):
         Parameters:
             ked is inception key event dict
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
+        ilk = ked["t"]
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ilk))
+
+        labels = getattr(Labels, ilk)
+        for k in labels:
+            if k not in ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, ilk, ked))
+
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 
     def _derive_ed25519N(self, ked):
@@ -3108,6 +3135,7 @@ class Prefixer(Matter):
 
         return True
 
+
     def _derive_blake3_256(self, ked):
         """
         Returns tuple (raw, code) of pre (qb64) as blake3 digest
@@ -3115,15 +3143,16 @@ class Prefixer(Matter):
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp):
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
-        ked["d"] = ked["i"]
+        ked["d"] = ked["i"]  # must be same dummy
         raw, ident, kind, ked, version = sizeify(ked=ked)
-        dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
-        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
+        dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
+        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
+
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):
         """
@@ -3142,6 +3171,9 @@ class Prefixer(Matter):
                 return False
 
             if prefixed and ked["i"] != pre:  # incoming 'i' must match pre
+                return False
+
+            if ked["i"] != ked["d"]:  # when digestive then SAID must match pre
                 return False
 
         except Exception as ex:
@@ -3368,6 +3400,7 @@ class Saider(Matter):
         """
         code = code if code is not None else self.code
         return self._derive(sad=sad, code=code, **kwa)
+
 
     def verify(self, sad, *, prefixed=False, versioned=True, code=None,
                kind=None, label=Ids.d, ignore=None, **kwa):
@@ -4711,9 +4744,11 @@ class Sadder:
         """
         return sizeify(ked=ked, kind=kind)
 
+
     def compare(self, said=None):
         """
         Returns True  if said and either .saider.qb64 or .saider.qb64b match
+        via string equality ==
 
         Convenience method to allow comparison of own .saider digest self.raw
         with some other purported said of self.raw

@@ -330,42 +330,48 @@ def test_prefixer():
         prefixer = Prefixer()
 
     # vcp, backers allowed no backers
+    # ["v", "d", "i", "s", "t", "bt", "b", "c"]
     ked = dict(v=vs,
-               i="",
+               d="",  # qb64 SAID
+               i="",  # qb64 pre
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=0,
+               b=[],
                c=[],
-               b=[]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ENJD01FI0RNNgoECWBacDCe50QDiJ4zSECcm4lGz8hBK'
+    assert prefixer.qb64 == 'EDj0Kq4tFBNGKxpdfX2nCfIvYJ-v1MJ24H1dsPfUqzmB'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
     # Invalid event type
+    #["v", "i", "s", "t", "ri", "dt"]
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
-               ii=pre,
                s="{:x}".format(0),
                t=Ilks.iss,
-               c=[],
-               b=[]
+               ri="",
+               dt="",
                )
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
+    #with pytest.raises(DerivationError):
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
 
     # vcp, no backers allowed
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=0,
+               b=[],
                c=[keventing.TraitDex.NoBackers],
-               b=[]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ENqkr-pqrRYGOTUSj2X4_bs8_nQYniBQjyGM2nW1eH7w'
+    assert prefixer.qb64 == 'EDz0QmMxf4Dk0C9uiP-y3okN-Bej2IAXSj8UwQgb3NsL'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
@@ -375,29 +381,33 @@ def test_prefixer():
 
     # vcp, one backer
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=1,
+               b=[bak1],
                c=[],
-               b=[bak1]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'EDscp4TbmnCWqylvH_JPBiv_MRgNz3kkeOIiFQ_PqcZk'
+    assert prefixer.qb64 == 'EIDRsRwJQNw2ujTeoztpEPxN6XRmBB2bnxWlOzJ9OQHk'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
     # vcp, many backers
     ked = dict(v=vs,
+               d="",  # qb64 SAID
                i="",
                ii=pre,
                s="{:x}".format(0),
                t=Ilks.vcp,
+               bt=2,
+               b=[bak1, bak2, bak3],
                c=[],
-               b=[bak1, bak2, bak3]
                )
     prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
-    assert prefixer.qb64 == 'ECpnvP-0OByIB9Xk7BhOpaNrzM-XVx5v1orUQYnm55rB'
+    assert prefixer.qb64 == 'EMsbtrSOa_lNwDMhpdXphmbItPBcaB0qSboopPo9Ub-s'
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
 
@@ -779,5 +789,6 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
 
 
 if __name__ == "__main__":
-    test_tever_escrow()
-    test_tevery_process_escrow()
+    #test_tever_escrow()
+    #test_tevery_process_escrow()
+    test_prefixer()
