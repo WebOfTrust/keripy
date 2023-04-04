@@ -109,6 +109,7 @@ class Poster(doing.DoDoer):
             attachment (bytes): attachment bytes
 
         """
+        src = src if src is not None else hab.pre
 
         evt = dict(src=src, dest=dest, topic=topic, serder=serder)
         if attachment is not None:
