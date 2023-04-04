@@ -671,11 +671,11 @@ def incept(keys,
 
 
     if delpre is None and code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # defaults to not self-addressing code
+        prefixer = Prefixer(qb64=keys[0])  # defaults to not digestive code
         if prefixer.digestive:
             raise ValueError("Invalid code, digestive={}, must be derived from"
                              " ked.".format(prefixer.code))
-    else:
+    else:  # digestive
         # raises derivation error if non-empty nxt but ephemeral code
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
@@ -1785,14 +1785,19 @@ class Kever:
                                             [verfer.qb64 for verfer in self.verfers],
                                             ked))
 
-        # Can't use usual serder.saider.verify(sad=ked) on inception since two
-        # field may need dummy replacement when AID is diger code so we use
-        # special verification of prefixer
+
 
         self.prefixer = Prefixer(qb64=serder.pre)
         if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
+
+        # Can't use usual serder.saider.verify(sad=ked) on inception when digestive
+        # since both 'd' and 'i' field are dummied so use prefixer verification
+        # otherwise use saider verification below
+        if not self.prefixer.digestive:
+            if not serder.saider.verify(sad=ked):
+                raise ValidationError("Invalid SAID {} for event {}".format(ked["d"], ked))
 
 
         self.serder = serder  # need whole serder for digest agility comparisons

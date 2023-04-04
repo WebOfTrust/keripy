@@ -1637,11 +1637,12 @@ def test_kever(mockHelpingNowUTC):
         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
         assert aid0.code == MtrDex.Ed25519
         assert aid0.qb64 == skp0.verfer.qb64 == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
-        _, ked0 = coring.Saider.saidify(sad=ked0)
-        assert ked0['d'] == 'EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM'
-
         # update ked with pre
         ked0["i"] = aid0.qb64
+        # since not digestive compute SAID
+        _, ked0 = coring.Saider.saidify(sad=ked0)
+        assert ked0['d'] == 'EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi'
+        #'EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM'
 
         # Serialize ked0
         tser0 = Serder(ked=ked0)
@@ -1672,11 +1673,11 @@ def test_kever(mockHelpingNowUTC):
         assert ([verfer.qb64 for verfer in serderK.verfers] ==
                 [verfer.qb64 for verfer in kever.verfers])
         assert serderK.raw == (b'{"v":"KERI10JSON0001b6_","i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e",'
-                        b'"s":"0","p":"","d":"EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM","f":"0","d'
-                        b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hql'
-                        b'QKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXTLWQ1QjxHrih'
-                        b'BmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EOf7EL5i19TNS'
-                        b'E-n9jgceVXUQKXUa7F5EZcndLHPWUmM","br":[],"ba":[]},"di":""}')
+                            b'"s":"0","p":"","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","f":"0","d'
+                            b't":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hql'
+                            b'QKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXTLWQ1QjxHrih'
+                            b'BmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EBTCANzIfUThx'
+                            b'mM1z1SFxQuwooGdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
 
         # test exposeds
         raw = b"raw salt to test"

@@ -3143,15 +3143,15 @@ class Prefixer(Matter):
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
-        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp):
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp, Ilks.iss):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
         ked["d"] = ked["i"]  # must be same dummy
         raw, ident, kind, ked, version = sizeify(ked=ked)
-        dig = blake3.blake3(raw).digest()  # digest with dummy 'i'
-        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
+        dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
+        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
 
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):

@@ -356,8 +356,8 @@ def test_prefixer():
                ri="",
                dt="",
                )
-    with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
+    #with pytest.raises(DerivationError):
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
 
     # vcp, no backers allowed
     ked = dict(v=vs,
