@@ -20,7 +20,7 @@ import pytest
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import Ilkage, Ilks, Labels, Ids, Idents, Sadder
+from keri.core.coring import Ilkage, Ilks, Labels, Saids, Idents, Sadder
 from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
@@ -4744,7 +4744,7 @@ def test_saider():
 
     code = MtrDex.Blake3_256
     kind = Serials.json
-    label = Ids.dollar
+    label = Saids.dollar
 
     # Test with valid said qb64
     said0 = 'EBG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA'
@@ -4860,11 +4860,11 @@ def test_saider():
     assert saider.verify(sad2, prefixed=True, label=label)  # kind default
 
     # test with default id field label Ids.d == 'd' and contains 'v' field
-    label = Ids.d
+    label = Saids.d
     code = MtrDex.Blake3_256  # back to default code
 
     # Load from vaccuous dict
-    label = Ids.d
+    label = Saids.d
     vs = versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(

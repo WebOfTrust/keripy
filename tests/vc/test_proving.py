@@ -203,7 +203,7 @@ def test_credential(mockHelpingNowIso8601):
         dict(qualifiedvLEIIssuervLEICredential="EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD")
     ]
 
-    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
     assert saider.qb64 == 'EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB'
     d["i"] = saider.qb64
 

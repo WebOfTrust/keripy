@@ -24,7 +24,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
             engagementContextRole="Project Manager",
         )
 
-        _, sad = coring.Saider.saidify(sad=personal, label=coring.Ids.d)
+        _, sad = coring.Saider.saidify(sad=personal, label=coring.Saids.d)
 
         d = dict(
             ri="EBmRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",

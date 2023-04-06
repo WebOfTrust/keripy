@@ -1246,7 +1246,7 @@ def reply(route="",
       }
     }
     """
-    label = coring.Ids.d
+    label = coring.Saids.d
     vs = versify(version=version, kind=kind, size=0)
     if data is None:
         data = {}
@@ -2877,14 +2877,14 @@ class Kevery:
                 When dater provided then use dater for first seen datetime
         """
         # fetch ked ilk  pre, sn, dig to see how to process
-        ked = serder.ked
-        try:  # see if code of pre is supported and matches size of pre
-            Prefixer(qb64b=serder.preb)
-        except Exception as ex:  # if unsupported code or bad size raises error
-            raise ValidationError("Invalid pre = {} for evt = {}."
-                                  "".format(serder.pre, ked))
         pre = serder.pre
         ked = serder.ked
+        try:  # see if code of pre is supported and matches size of pre
+            Prefixer(qb64=pre)
+        except Exception as ex:  # if unsupported code or bad size raises error
+            raise ValidationError("Invalid pre = {} for evt = {}."
+                                  "".format(pre, ked)) from ex
+
         sn = serder.sn
         ilk = ked["t"]
         said = serder.said

@@ -91,7 +91,7 @@ def credential(schema,
     if rules is not None:
         vc["r"] = rules
 
-    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Ids.d)
+    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Saids.d)
     vc["a"] = sad
 
     _, vc = coring.Saider.saidify(sad=vc)
