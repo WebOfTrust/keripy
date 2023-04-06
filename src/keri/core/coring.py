@@ -76,9 +76,9 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 # protocol name
-Identage = namedtuple("Identage", "keri acdc")
+Protocolage = namedtuple("Protocolage", "keri acdc")
 
-Idents = Identage(keri="KERI", acdc="ACDC")
+Protos = Protocolage(keri="KERI", acdc="ACDC")
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -87,11 +87,11 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
+def versify(ident=Protos.keri, version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
-    if ident not in Idents:
+    if ident not in Protos:
         raise ValueError("Invalid message identifier = {}".format(ident))
     if kind not in Serials:
         raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -112,7 +112,7 @@ def deversify(vs):
     """
     Returns tuple(ident, kind, version, size)
       Where:
-        ident is event type identifier one of Idents
+        proto is protocol type identifier one of Protos (Protocolage)
                    acdc='ACDC', keri='KERI'
         kind is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
@@ -135,7 +135,7 @@ def deversify(vs):
         ident = ident.decode("utf-8")
         kind = kind.decode("utf-8")
 
-        if ident not in Idents:
+        if ident not in Protos:
             raise ValueError("Invalid message identifier = {}".format(ident))
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -4657,7 +4657,7 @@ class Sadder:
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         version (Versionage): protocol version (Major, Minor)
-        ident (str): Identage value as protocol identifier such as KERI, ACDC
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
         label (str): Saidage value as said field label
         saider (Saider): of SAID of this SAD .ked['d'] if present
         said (str): SAID of .saider qb64
@@ -4671,7 +4671,7 @@ class Sadder:
           supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._version is Versionage instance of event version
-        ._ident (str):  Identage value as protocol type identifier
+        ._proto (str):  Protocolage value as protocol type identifier
         ._saider (Saider): instance for this Sadder's SAID
 
     Note:
@@ -4713,7 +4713,7 @@ class Sadder:
         self._kind = sad.kind
         self._size = sad.size
         self._version = sad.version
-        self._ident = sad.ident
+        self._ident = sad.proto
         self._saider = sad.saider
 
 
@@ -4853,12 +4853,12 @@ class Sadder:
 
 
     @property
-    def ident(self):
-        """ ident property getter
-        protocol identifer type instance of Identage such as KERI ACDC
+    def proto(self):
+        """ proto property getter
+        protocol identifer type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
-            (str): value of Identage
+            (str): Protocolage value as protocol type
         """
         return self._ident
 
@@ -4969,7 +4969,7 @@ class Serder(Sadder):
         """
         super(Serder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != Idents.keri:
+        if self._ident != Protos.keri:
             raise ValueError("Invalid ident {}, must be KERI".format(self._ident))
 
 

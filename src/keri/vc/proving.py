@@ -51,7 +51,7 @@ def credential(schema,
         Creder: credential instance
 
     """
-    vs = versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
+    vs = versify(ident=coring.Protos.acdc, version=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,
@@ -146,7 +146,7 @@ class Creder(coring.Sadder):
         """
         super(Creder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != coring.Idents.acdc:
+        if self._ident != coring.Protos.acdc:
             raise ValueError("Invalid ident {}, must be ACDC".format(self._ident))
 
     @property
