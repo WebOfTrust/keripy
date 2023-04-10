@@ -4911,7 +4911,7 @@ class Serder(Sadder):
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         version (Versionage): protocol version (Major, Minor)
-        ident (str): Identage value as protocol identifier such as KERI, ACDC
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
         label (str): Saidage value as said field label
         saider (Saider): of SAID of this SAD .ked['d'] if present
         said (str): SAID of .saider qb64
