@@ -414,11 +414,8 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 ghab=hab, smids=smids, rmids=rmids)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
@@ -466,11 +463,8 @@ class Registrar(doing.DoDoer):
             return vcid, rseq.sn
 
         else:  # multisig group hab
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 ghab=hab, smids=smids, rmids=rmids)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
@@ -519,11 +513,8 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 ghab=hab, smids=smids, rmids=rmids)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))

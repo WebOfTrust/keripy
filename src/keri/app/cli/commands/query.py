@@ -5,11 +5,12 @@ keri.kli.commands module
 """
 import argparse
 import datetime
-import sys
 
 from hio import help
 from hio.base import doing
-from keri.app import directing, agenting, indirecting, habbing
+from hio.help import decking
+
+from keri.app import indirecting, habbing, querying
 from keri.app.cli.common import displaying
 from keri.app.cli.common import existing
 from keri.help import helping
@@ -35,28 +36,30 @@ parser.add_argument('--aeid', help='qualified base64 of non-transferable identif
 def query(args):
     name = args.name
 
-    qryDoer = QueryDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix)
+    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix)
     return [qryDoer]
 
 
-class QueryDoer(doing.DoDoer):
+class LaunchDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, pre, **kwa):
         doers = []
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
+
         self.hab = hab
+        self.logs = decking.Deck()
 
         self.pre = pre
+        self.loaded = False
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt"])
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        doers.extend([self.hbyDoer, self.mbd, self.witq])
+        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.queryDo)])
-        super(QueryDoer, self).__init__(doers=doers, **kwa)
+        super(LaunchDoer, self).__init__(doers=doers, **kwa)
 
     def queryDo(self, tymth, tock=0.0, **opts):
         """
@@ -69,15 +72,17 @@ class QueryDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        self.witq.query(src=self.hab.pre, pre=self.pre)
-
         end = helping.nowUTC() + datetime.timedelta(seconds=5)
-        sys.stdout.write(f"Checking mailboxes for any events")
-        sys.stdout.flush()
+        print(f"Checking for updates...")
+        qryDo = querying.QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
+        self.extend([qryDo])
+
         while helping.nowUTC() < end:
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            if qryDo.done:
+                break
             yield 1.0
+
+        self.remove([qryDo])
         print("\n")
 
         displaying.printExternal(self.hby, self.pre)

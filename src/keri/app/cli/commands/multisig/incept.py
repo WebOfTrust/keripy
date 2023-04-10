@@ -133,6 +133,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
             evt = ghab.makeOwnInception(allowPartiallySigned=True)
             serder = coring.Serder(raw=evt)
+            del evt[:serder.size]
 
             # Create a notification EXN message to send to the other agents
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
@@ -144,6 +145,8 @@ class GroupMultisigIncept(doing.DoDoer):
             others.remove(ghab.mhab.pre)
 
             for recpt in others:  # this goes to other participants only as a signaling mechanism
+                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
+                                  attachment=bytearray(evt))
                 self.postman.send(src=ghab.mhab.pre,
                                   dest=recpt,
                                   topic="multisig",
@@ -155,7 +158,7 @@ class GroupMultisigIncept(doing.DoDoer):
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                                 ghab=ghab, smids=smids, rmids=rmids)
+                                 ghab=ghab)
 
         else:
             prefixer = coring.Prefixer(ghab.pre)

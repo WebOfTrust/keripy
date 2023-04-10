@@ -2451,6 +2451,11 @@ class Kever:
         if wits:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+        val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
+        for verfer in serder.verfers:
+            self.db.pubs.add(keys=(verfer.qb64,), val=val)
+        for diger in serder.digers:
+            self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
             if seqner and saider:  # authorized delegated or issued event
                 couple = seqner.qb64b + saider.qb64b

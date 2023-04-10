@@ -9,11 +9,13 @@ import os
 import lmdb
 import pytest
 from hio.base import doing
+
+from tests.app import openMultiSig
 from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
 from keri.core.coring import Serials, versify
-from keri.core.coring import Signer, Salter
+from keri.core.coring import Salter
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
@@ -2114,9 +2116,51 @@ def test_baserdoer():
     doist.do(doers=doers)
     assert doist.tyme == limit
     for doer in doers:
-        assert doer.baser.opened == False
-        assert doer.baser.env == None
+        assert doer.baser.opened is False
+        assert doer.baser.env is None
         assert not os.path.exists(doer.baser.path)
+
+    """End Test"""
+
+
+def test_group_members():
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        keys = hby1.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby2.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby3.db.signingMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby1.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby2.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
+        keys = hby3.db.rotationMembers(pre=ghab1.pre)
+        assert len(keys) == 3
+        assert ghab1.mhab.pre in keys
+        assert ghab2.mhab.pre in keys
+        assert ghab3.mhab.pre in keys
+
 
     """End Test"""
 

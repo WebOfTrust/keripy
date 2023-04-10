@@ -18,6 +18,7 @@ from .. import kering
 from ..core import eventing, parsing, coring
 from ..core.coring import CtrDex
 from ..db import dbing
+from ..kering import Roles
 
 logger = help.ogler.getLogger()
 
@@ -459,27 +460,41 @@ class WitnessInquisitor(doing.DoDoer):
 
             if "hab" in evt:
                 hab = evt["hab"]
-            elif src in self.hby.habs:
-                hab = self.hby.habs[src]
-            else:
+            elif (hab := self.hby.habByPre(src)) is None:
                 continue
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
                 continue
 
-            wits = wits if wits is not None else self.hby.kevers[pre].wits
-            if len(wits) == 0:
-                logger.error("Must be used with an identifier that has witnesses")
-                continue
+            if not wits:
+                ends = hab.endsFor(pre=pre)
+                if Roles.controller in ends:
+                    end = ends[Roles.controller]
+                elif Roles.agent in ends:
+                    end = ends[Roles.agent]
+                elif Roles.mailbox in ends:
+                    end = ends[Roles.mailbox]
+                elif Roles.witness in ends:
+                    end = ends[Roles.witness]
+                else:
+                    raise kering.ConfigurationError(f"unable to find a valid role for {pre}")
 
-            wit = random.choice(wits)
-            witer = messenger(hab, wit)
+                if len(end.items()) == 0:
+                    logger.error(f"must have endpoint to query for pre={pre}")
+                    continue
+
+                ctrl, locs = random.choice(list(end.items()))
+                witer = messengerFrom(hab=hab, pre=ctrl, urls=locs)
+            else:
+                wit = random.choice(wits)
+                witer = messenger(hab, wit)
+
             self.extend([witer])
 
-            msg = hab.query(pre, src=wit, route=r, query=q)  # Query for remote pre Event
+            msg = hab.query(pre, src=witer.wit, route=r, query=q)  # Query for remote pre Event
 
-            kel = forwarding.introduce(hab, wit)
+            kel = forwarding.introduce(hab, witer.wit)
             if kel:
                 witer.msgs.append(bytearray(kel))
 
@@ -497,6 +512,7 @@ class WitnessInquisitor(doing.DoDoer):
 
         Parameters:
             src (str): qb64 identifier prefix of source of query
+            hab (Hab): Hab to use instead of src if provided
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
             sn (int): optional specific sequence number to query for

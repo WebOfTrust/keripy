@@ -913,6 +913,11 @@ class Baser(dbing.LMDBer):
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
                                      klas=coring.Saider)
 
+        self.pubs = subing.CatCesrIoSetSuber(db=self, subkey="pubs.",
+                                             klas=(coring.Prefixer, coring.Seqner))
+        self.digs = subing.CatCesrIoSetSuber(db=self, subkey="digs.",
+                                             klas=(coring.Prefixer, coring.Seqner))
+
         self.reload()
 
         return self.env
@@ -1190,6 +1195,62 @@ class Baser(dbing.LMDBer):
                         return srdr
 
         return None
+
+    def signingMembers(self, pre: str):
+        """ Find signing members of a multisig group aid.
+
+        Using the pubs index to find members of a signing group
+
+        Parameters:
+            pre (str): qb64 identifier prefix to find members
+
+        Returns:
+            list: qb64 identifier prefixes of signing members for provided aid
+
+        """
+        members = []
+        if pre not in self.kevers:
+            return members
+
+        kever = self.kevers[pre]
+        for verfer in kever.verfers:
+            if (couples := self.pubs.get(keys=(verfer.qb64,))) is None:
+                continue
+
+            for couple in couples:
+                prefixer, seqner = couple
+                if prefixer.qb64 != pre:  # Rule out aid being queried
+                    members.append(prefixer.qb64)
+
+        return members
+
+
+    def rotationMembers(self, pre: str):
+        """ Find rotation members of a multisig group aid.
+
+        Using the digs index to lookup member pres of a group aid
+
+        Parameters:
+            pre (str): qb64 identifier prefix to find members
+
+        Returns:
+            list: qb64 identifier prefixes of rotation members for provided aid
+        """
+        members = []
+        if pre not in self.kevers:
+            return members
+
+        kever = self.kevers[pre]
+        for diger in kever.digers:
+            if (couples := self.digs.get(keys=(diger.qb64,))) is None:
+                continue
+
+            for couple in couples:
+                prefixer, seqner = couple
+                if prefixer.qb64 != pre:  # Rule out aid being queried
+                    members.append(prefixer.qb64)
+
+        return members
 
     def fullyWitnessed(self, serder):
         """ Verify the witness threshold on the event

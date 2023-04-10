@@ -19,7 +19,7 @@ from .. import kering
 from ..core import coring, eventing, parsing, routing
 from ..core.coring import Serder
 from ..db import dbing, basing
-from ..kering import MissingSignatureError
+from ..kering import MissingSignatureError, Roles
 
 logger = help.ogler.getLogger()
 
@@ -684,6 +684,27 @@ class Habery:
         """
         return self.db.prefixes
 
+    def habByPre(self, pre):
+        """
+        Returns the Hab from and namespace including the default namespace.
+
+        Args:
+            pre (str): qb64 aid of hab to find
+
+        Returns:
+            Hab: Hab instance for the aid pre or None
+        """
+        hab = None
+        if pre in self.habs:
+            hab = self.habs[pre]
+        else:
+            for nsp in self.namespaces.values():
+                if pre in nsp:
+                    hab = nsp[pre]
+
+        return hab
+
+
     def habByName(self, name, ns=None):
         """
         Returns:
@@ -1270,7 +1291,6 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = eventing.query(query=query, **kwa)
-
         return self.endorse(serder, last=True)
 
     def endorse(self, serder, last=False, pipelined=True):
@@ -1610,6 +1630,41 @@ class BaseHab:
                                    eids=eids,
                                    enabled=enabled,
                                    allowed=allowed))
+
+    def endsFor(self, pre):
+        """ Load Authroized endpoints for provided AID
+
+        Args:
+            pre (str): qb64 aid for which to load ends
+
+        Returns:
+            dict: nest dict of Roles -> eid -> Schemes -> endpoints
+
+        """
+        ends = dict()
+
+        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(pre,)):
+            locs = dict()
+            urls = self.fetchUrls(eid=eid, scheme="")
+            for rscheme, url in urls.firsts():
+                locs[rscheme] = url
+
+            if erole not in ends:
+                ends[erole] = dict()
+
+            ends[erole][eid] = locs
+
+        ends[Roles.witness] = dict()
+        if kever := self.kevers[pre] if pre in self.kevers else None:
+            for eid in kever.wits:
+                locs = dict()
+                urls = self.fetchUrls(eid=eid, scheme="")
+                for rscheme, url in urls.firsts():
+                    locs[rscheme] = url
+
+                ends[Roles.witness][eid] = locs
+
+        return ends
 
     def reply(self, **kwa):
         """
@@ -2177,16 +2232,7 @@ class SignifyHab(BaseHab):
     def make(self, *, serder, sigers, **kwargs):
         self.pre = serder.ked["i"]  # new pre
 
-        # during delegation initialization of a habitat we ignore the MissingDelegationError and
-        # MissingSignatureError
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except MissingSignatureError:
-            pass
-        except Exception as ex:
-            raise kering.ConfigurationError("Improper Habitat inception for "
-                                            "pre={} {}".format(self.pre, ex))
-
+        self.processEvent(serder, sigers)
         habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
 
         self.save(habord)
@@ -2230,13 +2276,7 @@ class SignifyHab(BaseHab):
 
         """
         msg = eventing.messagize(serder, sigers=sigers)
-
-        try:
-            self.kvy.processEvent(serder=serder, sigers=sigers)
-        except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
-                                         "pre={self.pre}.") from ex
-
+        self.processEvent(serder, sigers)
         return msg
 
     def interact(self, *, serder=None, sigers=None, **kwargs):
@@ -2245,15 +2285,26 @@ class SignifyHab(BaseHab):
         Returns: bytearray interaction message with attached signatures.
         """
         msg = eventing.messagize(serder, sigers=sigers)
+        self.processEvent(serder, sigers)
+        return msg
+
+    def processEvent(self, serder, sigers):
+        """ Process event with signatures raising any exception that occurs
+
+        Performs event processing using local Kevery allowing raising all exceptions
+
+        Args:
+            serder (Serder): event serder to process
+            sigers (list): list of Siger or Cigar instances representing signatures over serder.raw
+
+        """
 
         try:
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except Exception:
-            raise kering.ValidationError("Improper Habitat interaction for "
-                                         "pre={}.".format(self.pre))
-
-        return msg
+            raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
+                                         f"pre={self.pre}.")
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
 
@@ -2325,6 +2376,29 @@ class SignifyGroupHab(SignifyHab):
     def __init__(self, mhab, **kwa):
         self.mhab = mhab
         super(SignifyGroupHab, self).__init__(**kwa)
+
+    def processEvent(self, serder, sigers):
+        """ Process event with signatures ignoring missing signature exceptions
+
+        Performs event processing using local Kevery allowing missing signature exceptions to be ignored
+        so multisig events can be created with a single local signature
+
+        Args:
+            serder (Serder): event serder to process
+            sigers (list): list of Siger or Cigar instances representing signatures over serder.raw
+
+        """
+
+        try:
+            # verify event, update kever state, and escrow if group
+            self.kvy.processEvent(serder=serder, sigers=sigers)
+        except MissingSignatureError:
+            pass
+        except Exception:
+            raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
+                                         f"pre={self.pre}.")
+
+
 
 
 class GroupHab(BaseHab):

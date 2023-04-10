@@ -202,6 +202,8 @@ class GroupMultisigRotate(doing.DoDoer):
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
         rserder = coring.Serder(raw=rot)
+        del rot[:rserder.size]
+
 
         # Create a notification EXN message to send to the other agents
         exn, ims = grouping.multisigRotateExn(ghab=ghab,
@@ -212,7 +214,10 @@ class GroupMultisigRotate(doing.DoDoer):
 
         others.remove(ghab.mhab.pre)
 
-        for recpt in others:  # this goes to other participants only as a signaling mechanism
+        for recpt in others:  # Send event AND notification message to others
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=rserder,
+                              attachment=bytearray(rot))
+
             self.postman.send(src=ghab.mhab.pre,
                               dest=recpt,
                               topic="multisig",
@@ -220,8 +225,7 @@ class GroupMultisigRotate(doing.DoDoer):
                               attachment=bytearray(ims))
 
 
-        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=rserder.saider,
-                             smids=smids, rmids=rmids, proxy=ghab.mhab.pre)
+        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=rserder.saider)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
