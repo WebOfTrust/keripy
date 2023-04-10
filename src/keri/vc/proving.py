@@ -51,7 +51,7 @@ def credential(schema,
         Creder: credential instance
 
     """
-    vs = versify(ident=coring.Idents.acdc, version=version, kind=kind, size=0)
+    vs = versify(ident=coring.Protos.acdc, version=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,
@@ -91,7 +91,7 @@ def credential(schema,
     if rules is not None:
         vc["r"] = rules
 
-    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Ids.d)
+    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Saids.d)
     vc["a"] = sad
 
     _, vc = coring.Saider.saidify(sad=vc)
@@ -146,8 +146,8 @@ class Creder(coring.Sadder):
         """
         super(Creder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != coring.Idents.acdc:
-            raise ValueError("Invalid ident {}, must be ACDC".format(self._ident))
+        if self._proto != coring.Protos.acdc:
+            raise ValueError("Invalid protocol {}, must be ACDC".format(self._proto))
 
     @property
     def crd(self):

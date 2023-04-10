@@ -49,7 +49,7 @@ def loadSchema(db):
     filepath = os.path.join(TEST_DIR, "schema.json")
     with open(filepath) as f:
         sed = json.load(f)
-        _, sad = coring.Saider.saidify(sed, label=coring.Ids.dollar)
+        _, sad = coring.Saider.saidify(sed, label=coring.Saids.dollar)
 
         schemer = scheming.Schemer(sed=sed)
         assert schemer.said == 'EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs'

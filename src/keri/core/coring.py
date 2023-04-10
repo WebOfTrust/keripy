@@ -75,9 +75,10 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Identage = namedtuple("Identage", "keri acdc")
+# protocol name
+Protocolage = namedtuple("Protocolage", "keri acdc")
 
-Idents = Identage(keri="KERI", acdc="ACDC")
+Protos = Protocolage(keri="KERI", acdc="ACDC")
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -86,11 +87,11 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def versify(ident=Idents.keri, version=None, kind=Serials.json, size=0):
+def versify(ident=Protos.keri, version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
-    if ident not in Idents:
+    if ident not in Protos:
         raise ValueError("Invalid message identifier = {}".format(ident))
     if kind not in Serials:
         raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -111,7 +112,7 @@ def deversify(vs):
     """
     Returns tuple(ident, kind, version, size)
       Where:
-        ident is event type identifier one of Idents
+        proto is protocol type identifier one of Protos (Protocolage)
                    acdc='ACDC', keri='KERI'
         kind is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
@@ -134,7 +135,7 @@ def deversify(vs):
         ident = ident.decode("utf-8")
         kind = kind.decode("utf-8")
 
-        if ident not in Idents:
+        if ident not in Protos:
             raise ValueError("Invalid message identifier = {}".format(ident))
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
@@ -148,11 +149,12 @@ def sizeify(ked, kind=None):
     """
     ked is key event dict
     kind is serialization if given else use one given in ked
-    Returns tuple of (raw, kind, ked, version) where:
-        raw is serialized event as bytes of kind
-        kind is serialzation kind
-        ked is key event dict
-        version is Versionage instance
+    Returns tuple of (raw, proto, kind, ked, version) where:
+        raw (str): serialized event as bytes of kind
+        proto (str): protocol type as value of Protocolage
+        kind (str): serialzation kind as value of Serialage
+        ked (dict): key event dict
+        version (Versionage): instance
 
     Assumes only supports Version
     """
@@ -160,7 +162,7 @@ def sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    ident, knd, version, size = deversify(ked["v"])  # extract kind and version
+    proto, knd, version, size = deversify(ked["v"])  # extract kind and version
     if version != Version:
         raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                               version.minor))
@@ -180,14 +182,14 @@ def sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(ident=ident, version=version, kind=kind, size=size)
+    vs = versify(ident=proto, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
         raise ValueError("Malformed version string size = {}".format(vs))
     ked["v"] = vs  # update ked
 
-    return raw, ident, kind, ked, version
+    return raw, proto, kind, ked, version
 
 
 # Base64 utilities
@@ -3181,10 +3183,10 @@ class Prefixer(Matter):
 
         return True
 
+# SAID field labels
+Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
-Idage = namedtuple("Idage", "dollar at id_ i d")
-
-Ids = Idage(dollar="$id", at="@id", id_="id", i="i", d="d")
+Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
 # digest klas, digest size (not default), digest length
 # size and length are needed for some digest types as function parameters
@@ -3235,7 +3237,7 @@ class Saider(Matter):
     }
 
     def __init__(self, raw=None, *, code=None, sad=None,
-                 kind=None, label=Ids.d, ignore=None, **kwa):
+                 kind=None, label=Saids.d, ignore=None, **kwa):
         """
         See Matter.__init__ for inherited parameters
 
@@ -3244,7 +3246,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label, one of Ids
+            label (str): Saidage value as said field label
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3266,8 +3268,13 @@ class Saider(Matter):
             if code not in DigDex:  # need valid code
                 raise ValueError("Unsupported digest code = {}.".format(code))
 
-            # re-derive said raw bytes from sad and code, so code overrides label
-            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label, ignore=ignore)
+            # make copy of sad to derive said raw bytes and new sad
+            # need new sad because sets sad[label] and sad['v'] fields
+            raw, sad = self.derive(sad=dict(sad),
+                                   code=code,
+                                   kind=kind,
+                                   label=label,
+                                   ignore=ignore)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if not self.digestive:
@@ -3306,7 +3313,7 @@ class Saider(Matter):
                 *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d,
+                label: str = Saids.d,
                 ignore: list = None, **kwa):
         """
         Derives said from sad and injects it into copy of sad and said and
@@ -3324,7 +3331,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject said
+            label (str): Saidage value as said field label in which to inject said
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3335,11 +3342,12 @@ class Saider(Matter):
         sad[label] = saider.qb64
         return saider, sad
 
+
     @classmethod
     def _derive(clas, sad: dict, *,
                 code: str = MtrDex.Blake3_256,
                 kind: str = None,
-                label: str = Ids.d,
+                label: str = Saids.d,
                 ignore: list = None):
         """
         Derives raw said from sad with .Dummy filled sad[label]
@@ -3353,7 +3361,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value as said field label in which to inject dummy
             ignore (list): fields to ignore when generating SAID
 
         """
@@ -3384,6 +3392,7 @@ class Saider(Matter):
             dkwa.update(length=length)
         return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
 
+
     def derive(self, sad, code=None, **kwa):
         """
         Returns:
@@ -3396,14 +3405,14 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value of said field labelin which to inject dummy
         """
         code = code if code is not None else self.code
         return self._derive(sad=sad, code=code, **kwa)
 
 
     def verify(self, sad, *, prefixed=False, versioned=True, code=None,
-               kind=None, label=Ids.d, ignore=None, **kwa):
+               kind=None, label=Saids.d, ignore=None, **kwa):
         """
         Returns:
             result (bool): True means derivation from sad with dummy label
@@ -3425,7 +3434,7 @@ class Saider(Matter):
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
-            label (str): id field label from Ids in which to inject dummy
+            label (str): Saidage value of said field label in which to inject dummy
             ignore (list): fields to ignore when generating SAID
         """
         try:
@@ -4637,6 +4646,10 @@ class Sadder:
     """
     Sadder is self addressed data (SAD) serializer-deserializer class
 
+    Instance creation of a Sadder does not verifiy it .said property it merely
+    extracts it. In order to ensure Sadder instance has a verified .said then
+    must call .saider.verify(sad=self.ked)
+
     Has the following public properties:
 
     Properties:
@@ -4645,7 +4658,8 @@ class Sadder:
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         version (Versionage): protocol version (Major, Minor)
-        ident (Identage): protocol identifier such as KERI, ACDC
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+        label (str): Saidage value as said field label
         saider (Saider): of SAID of this SAD .ked['d'] if present
         said (str): SAID of .saider qb64
         saidb (bytes): SAID of .saider  qb64b
@@ -4658,7 +4672,7 @@ class Sadder:
           supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._version is Versionage instance of event version
-        ._ident (Identage):  protocol type identifier
+        ._proto (str):  Protocolage value as protocol type identifier
         ._saider (Saider): instance for this Sadder's SAID
 
     Note:
@@ -4689,7 +4703,7 @@ class Sadder:
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         elif sad:
-            self._clone(sad=sad)  # create saider of sad
+            self._clone(sad=sad)  # copy fields from sad
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
 
@@ -4700,7 +4714,7 @@ class Sadder:
         self._kind = sad.kind
         self._size = sad.size
         self._version = sad.version
-        self._ident = sad.ident
+        self._proto = sad.proto
         self._saider = sad.saider
 
 
@@ -4779,7 +4793,7 @@ class Sadder:
         ked, ident, kind, version, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
-        self._ident = ident
+        self._proto = ident
         self._kind = kind
         self._version = version
         self._size = size
@@ -4797,7 +4811,7 @@ class Sadder:
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
-        self._ident = ident
+        self._proto = ident
         self._kind = kind
         self._size = size
         self._version = version
@@ -4814,7 +4828,7 @@ class Sadder:
         raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
-        self._ident = ident
+        self._proto = ident
         self._ked = ked
         self._kind = kind
         self._size = size
@@ -4840,14 +4854,14 @@ class Sadder:
 
 
     @property
-    def ident(self):
-        """ ident property getter
-        protocol identifer type instance of Identage such as KERI ACDC
+    def proto(self):
+        """ proto property getter
+        protocol identifer type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
-            (Identage):
+            (str): Protocolage value as protocol type
         """
-        return self._ident
+        return self._proto
 
 
     @property
@@ -4898,7 +4912,8 @@ class Serder(Sadder):
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
         version (Versionage): protocol version (Major, Minor)
-        ident (Identage): protocol identifier such as KERI, ACDC
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+        label (str): Saidage value as said field label
         saider (Saider): of SAID of this SAD .ked['d'] if present
         said (str): SAID of .saider qb64
         saidb (bytes): SAID of .saider  qb64b
@@ -4921,15 +4936,15 @@ class Serder(Sadder):
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
 
-    Hidden Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
+    Inherited Hidden Attributes:
+        ._raw is bytes of serialized event only
+        ._ked is key event dict
+        ._kind is serialization kind string value (see namedtuple coring.Serials)
+          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+        ._size is int of number of bytes in serialed event only
+        ._version is Versionage instance of event version
+        ._proto (str):  Protocolage value as protocol type identifier
+        ._saider (Saider): instance for this Sadder's SAID
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -4955,8 +4970,8 @@ class Serder(Sadder):
         """
         super(Serder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != Idents.keri:
-            raise ValueError("Invalid ident {}, must be KERI".format(self._ident))
+        if self._proto != Protos.keri:
+            raise ValueError("Invalid protocol {}, must be KERI".format(self._proto))
 
 
     @property
@@ -5663,7 +5678,7 @@ class Dicter:
 
     """
 
-    def __init__(self, raw=b'', pad=None, sad=None, label=Ids.i):
+    def __init__(self, raw=b'', pad=None, sad=None, label=Saids.i):
         """ Create Dicter from either pad dict or raw bytes
 
         Parameters:

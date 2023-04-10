@@ -10,7 +10,7 @@ from collections import namedtuple
 from dataclasses import dataclass, astuple
 
 from .coring import (Ilks, CtrDex, Counter, Seqner, Siger, Cigar, IdxSigDex,
-                     Dater, Verfer, Prefixer, Serder, Saider, Pather, Idents,
+                     Dater, Verfer, Prefixer, Serder, Saider, Pather, Protos,
                      Sadder, )
 from .. import help
 from .. import kering
@@ -971,7 +971,7 @@ class Parser:
                                              "attachment group of size={}.".format(pags))
             raise  # no pipeline group so can't preflush, must flush stream
 
-        if sadder.ident == Idents.keri:
+        if sadder.proto == Protos.keri:
             serder = Serder(sad=sadder)
 
             ilk = serder.ked["t"]  # dispatch abased on ilk
@@ -1106,7 +1106,7 @@ class Parser:
                 raise kering.ValidationError("Unexpected message ilk = {} for evt ="
                                              " {}.".format(ilk, serder.pretty()))
 
-        elif sadder.ident == Idents.acdc:
+        elif sadder.proto == Protos.acdc:
             creder = Creder(sad=sadder)
             args = dict(creder=creder)
 
@@ -1124,6 +1124,6 @@ class Parser:
 
         else:
             raise kering.ValidationError("Unexpected message ident = {} for evt ="
-                                         " {}.".format(sadder.ident, sadder.pretty()))
+                                         " {}.".format(sadder.proto, sadder.pretty()))
 
         return True  # done state

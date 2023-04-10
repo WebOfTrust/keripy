@@ -56,7 +56,7 @@ def test_broker_nontrans():
         aid = "EBWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Ids.d)
+        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Saids.d)
         dater = coring.Dater(dts=dts)
 
         cigars = wesHab.sign(ser=serder.raw,
@@ -118,7 +118,7 @@ def test_broker_trans():
         aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = coring.Serder(ked=ked)
         tserder = coring.Serder(ked=ked["a"])
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Ids.d)
+        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Serials.json, label=coring.Saids.d)
         dater = coring.Dater(dts=dts)
 
         sigers = bobHab.sign(ser=serder.raw,

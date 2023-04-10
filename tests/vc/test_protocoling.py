@@ -81,7 +81,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
             dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,

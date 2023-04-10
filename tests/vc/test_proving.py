@@ -106,7 +106,7 @@ def test_credentialer():
         Creder()
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=coring.versify(ident=coring.Idents.acdc, kind=Serials.json, size=0),
+        v=coring.versify(ident=coring.Protos.acdc, kind=Serials.json, size=0),
         d="",
         s="abc",
         i="i",
@@ -142,7 +142,7 @@ def test_credentialer():
     assert creder.size == 168
 
     d2 = dict(d)
-    d2["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.cbor, size=0)
+    d2["v"] = coring.versify(ident=coring.Protos.acdc, kind=Serials.cbor, size=0)
     creder = Creder(ked=d2)
     assert creder.said == said  # shouldnt this be different here?
     assert creder.issuer == "i"
@@ -165,7 +165,7 @@ def test_credentialer():
     assert creder.crd == d2
 
     d3 = dict(d)
-    d3["v"] = coring.versify(ident=coring.Idents.acdc, kind=Serials.mgpk, size=0)
+    d3["v"] = coring.versify(ident=coring.Protos.acdc, kind=Serials.mgpk, size=0)
     creder = Creder(ked=d3)
 
     assert creder.said == said  # shouldn't this be different here
@@ -203,7 +203,7 @@ def test_credential(mockHelpingNowIso8601):
         dict(qualifiedvLEIIssuervLEICredential="EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD")
     ]
 
-    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
     assert saider.qb64 == 'EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB'
     d["i"] = saider.qb64
 
