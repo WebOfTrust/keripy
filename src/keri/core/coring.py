@@ -149,11 +149,12 @@ def sizeify(ked, kind=None):
     """
     ked is key event dict
     kind is serialization if given else use one given in ked
-    Returns tuple of (raw, kind, ked, version) where:
-        raw is serialized event as bytes of kind
-        kind is serialzation kind
-        ked is key event dict
-        version is Versionage instance
+    Returns tuple of (raw, proto, kind, ked, version) where:
+        raw (str): serialized event as bytes of kind
+        proto (str): protocol type as value of Protocolage
+        kind (str): serialzation kind as value of Serialage
+        ked (dict): key event dict
+        version (Versionage): instance
 
     Assumes only supports Version
     """
@@ -161,7 +162,7 @@ def sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    ident, knd, version, size = deversify(ked["v"])  # extract kind and version
+    proto, knd, version, size = deversify(ked["v"])  # extract kind and version
     if version != Version:
         raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                               version.minor))
@@ -181,14 +182,14 @@ def sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(ident=ident, version=version, kind=kind, size=size)
+    vs = versify(ident=proto, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
         raise ValueError("Malformed version string size = {}".format(vs))
     ked["v"] = vs  # update ked
 
-    return raw, ident, kind, ked, version
+    return raw, proto, kind, ked, version
 
 
 # Base64 utilities
