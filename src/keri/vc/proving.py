@@ -146,8 +146,8 @@ class Creder(coring.Sadder):
         """
         super(Creder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != coring.Protos.acdc:
-            raise ValueError("Invalid ident {}, must be ACDC".format(self._ident))
+        if self._proto != coring.Protos.acdc:
+            raise ValueError("Invalid protocol {}, must be ACDC".format(self._proto))
 
     @property
     def crd(self):

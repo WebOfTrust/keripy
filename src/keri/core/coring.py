@@ -4713,7 +4713,7 @@ class Sadder:
         self._kind = sad.kind
         self._size = sad.size
         self._version = sad.version
-        self._ident = sad.proto
+        self._proto = sad.proto
         self._saider = sad.saider
 
 
@@ -4792,7 +4792,7 @@ class Sadder:
         ked, ident, kind, version, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
-        self._ident = ident
+        self._proto = ident
         self._kind = kind
         self._version = version
         self._size = size
@@ -4810,7 +4810,7 @@ class Sadder:
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
-        self._ident = ident
+        self._proto = ident
         self._kind = kind
         self._size = size
         self._version = version
@@ -4827,7 +4827,7 @@ class Sadder:
         raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
-        self._ident = ident
+        self._proto = ident
         self._ked = ked
         self._kind = kind
         self._size = size
@@ -4860,7 +4860,7 @@ class Sadder:
         Returns:
             (str): Protocolage value as protocol type
         """
-        return self._ident
+        return self._proto
 
 
     @property
@@ -4935,15 +4935,15 @@ class Serder(Sadder):
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
 
-    Hidden Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
+    Inherited Hidden Attributes:
+        ._raw is bytes of serialized event only
+        ._ked is key event dict
+        ._kind is serialization kind string value (see namedtuple coring.Serials)
+          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+        ._size is int of number of bytes in serialed event only
+        ._version is Versionage instance of event version
+        ._proto (str):  Protocolage value as protocol type identifier
+        ._saider (Saider): instance for this Sadder's SAID
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -4969,8 +4969,8 @@ class Serder(Sadder):
         """
         super(Serder, self).__init__(raw=raw, ked=ked, kind=kind, sad=sad, code=code)
 
-        if self._ident != Protos.keri:
-            raise ValueError("Invalid ident {}, must be KERI".format(self._ident))
+        if self._proto != Protos.keri:
+            raise ValueError("Invalid protocol {}, must be KERI".format(self._proto))
 
 
     @property
