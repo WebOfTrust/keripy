@@ -6,17 +6,14 @@ keri.kli.commands.delegate module
 """
 import argparse
 import json
-from ordered_set import OrderedSet as oset
-
-from prettytable import PrettyTable
 
 from hio.base import doing
+from prettytable import PrettyTable
 
-from keri import help, kering
+from keri import help
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing
-from keri.db import dbing
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -240,16 +237,15 @@ class ConfirmDoer(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
-            yield from self.startCounselor(smids, rmids, ghab, prefixer, seqner, saider)
+            yield from self.startCounselor(ghab, prefixer, seqner, saider)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
 
             return True
 
-    def startCounselor(self, smids, rmids, hab, prefixer, seqner, saider):
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             ghab=hab, smids=smids, rmids=rmids)
+    def startCounselor(self, hab, prefixer, seqner, saider):
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

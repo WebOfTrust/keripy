@@ -8,13 +8,14 @@ import pytest
 import os
 import shutil
 
-from hio.base import doing, tyming
+from hio.base import doing
 
 from keri import kering
 from keri import help
 from keri.app import habbing, keeping, configing
 from keri.db import basing
 from keri.core import coring, eventing, parsing
+from keri.help import helping
 from keri.peer import exchanging
 
 
@@ -118,7 +119,7 @@ def test_habery():
     cf = configing.Configer(name=name, base=base, temp=temp)
     cfDoer = configing.ConfigerDoer(configer=cf)
     conf = cf.get()
-    if not conf: # setup config file
+    if not conf:  # setup config file
         curls = ["ftp://localhost:5620/"]
         iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name=Bob"]
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
@@ -126,7 +127,7 @@ def test_habery():
 
     # setup habery
     hby = habbing.Habery(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
-                         bran=bran )
+                         bran=bran)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     assert hby.name == "main"
@@ -140,9 +141,8 @@ def test_habery():
 
     # run components
     tock = 0.03125
-    limit =  1.0
+    limit = 1.0
     doist = doing.Doist(limit=limit, tock=tock, real=True)
-    tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
     # doist.do(doers=doers)
     deeds = doist.enter(doers=doers)
@@ -161,15 +161,9 @@ def test_habery():
     assert hby.rtr.routes
     assert hby.rvy.rtr == hby.rtr
     assert hby.kvy.rvy == hby.rvy
-    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.kvy == hby.kvy
     assert hby.psr.rvy == hby.rvy
 
-
-    #time.sleep(doist.tock)
-    #while not tymer.expired:
-        #doist.recur(deeds=deeds)
-        #time.sleep(doist.tock)
-    #assert doist.limit == limit  # already exited?
     doist.exit(deeds=deeds)
 
     assert not cf.opened
@@ -192,7 +186,7 @@ def test_habery():
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     conf = hby.cf.get()
-    if not conf: # setup config file
+    if not conf:  # setup config file
         curls = ["ftp://localhost:5620/"]
         iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name=Bob"]
         conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
@@ -210,9 +204,8 @@ def test_habery():
 
     # run components
     tock = 0.03125
-    limit =  1.0
+    limit = 1.0
     doist = doing.Doist(limit=limit, tock=tock, real=True)
-    tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
     # doist.do(doers=doers)
     deeds = doist.enter(doers=doers)
@@ -231,14 +224,9 @@ def test_habery():
     assert hby.rtr.routes
     assert hby.rvy.rtr == hby.rtr
     assert hby.kvy.rvy == hby.rvy
-    assert hby.psr.kvy ==  hby.kvy
+    assert hby.psr.kvy == hby.kvy
     assert hby.psr.rvy == hby.rvy
 
-    #time.sleep(doist.tock)
-    #while not tymer.expired:
-        #doist.recur(deeds=deeds)
-        #time.sleep(doist.tock)
-    #assert doist.limit == limit  # already exited?
     doist.exit(deeds=deeds)
 
     assert not hby.cf.opened
@@ -354,7 +342,7 @@ def test_make_load_hab_with_habery():
     Test creation methods for Hab instances with Habery
     """
     with pytest.raises(TypeError):  # missing required dependencies
-        hab = habbing.Hab()  # defaults
+        _ = habbing.Hab()  # defaults
 
     name = "sue"
     suePre = 'ELF1S0jZkyQx8YtHaPLu-qyFmrkcykAiEW8twS-KPSO1'  # with temp=True
@@ -622,17 +610,17 @@ def test_habery_reconfigure(mockHelpingNowUTC):
     """
     # use same salter but with different path from name for each
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    #raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    #salter = coring.Salter(raw=raw)
-    #salt = salter.qb64
-    #assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
+    # raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    # salter = coring.Salter(raw=raw)
+    # salt = salter.qb64
+    # assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
     salt = habbing.SALT
 
     cname = "tam"  # controller name
-    cbase = "main" # controller base shared
-    pname = "nel"  # peer name
-    pbase = "head" # peer base shared
+    cbase = "main"  # controller base shared
+    pname = "nel"   # peer name
+    pbase = "head"  # peer base shared
 
 
     with (habbing.openHby(name='wes', base=cbase, salt=salt) as wesHby,
@@ -647,19 +635,15 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
-        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        wesPrs = parsing.Parser(kvy=wesKvy)
 
         # setup Wok's habitat nontrans
         wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False)
         assert not wokHab.kever.prefixer.transferable
-        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
-        wokPrs = parsing.Parser(kvy=wokKvy)
 
         # setup Tam's config
         curls = ["tcp://localhost:5620/"]
         iurls = [f"tcp://localhost:5621/?role={kering.Roles.peer}&name={pname}"]
-        assert (conf := tamHby.cf.get()) == {}
+        assert tamHby.cf.get() == {}
         conf = dict(dt=help.nowIso8601(), tam=dict(dt=help.nowIso8601(), curls=curls), iurls=iurls)
         tamHby.cf.put(conf)
 
@@ -681,11 +665,8 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         assert tamHab.kever.wits == wits
         assert tamHab.kever.toader.num == 2
         assert tamHab.kever.sn == 0
-        assert tamHab.kever.tholder.thold == 1 == int(tsith,16)
+        assert tamHab.kever.tholder.thold == 1 == int(tsith, 16)
         # create non-local kevery for Tam to process non-local msgs
-        tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
-        # create non-local parer for Tam to process non-local msgs
-        tamPrs = parsing.Parser(kvy=tamKvy)
 
         # check tamHab.cf config setup
         ender = tamHab.db.ends.get(keys=(tamHab.pre, "controller", tamHab.pre))
@@ -697,12 +678,11 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         # setup Wat's habitat nontrans
         watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False,)
         assert not watHab.kever.prefixer.transferable
-        watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
 
         # setup Nel's config
         curls = ["tcp://localhost:5621/"]
         iurls = [f"tcp://localhost:5620/?role={kering.Roles.peer}&name={cname}"]
-        assert (conf := nelHby.cf.get()) == {}
+        assert nelHby.cf.get() == {}
         conf = dict(dt=help.nowIso8601(), nel=dict(dt=help.nowIso8601(), curls=curls), iurls=iurls)
         nelHby.cf.put(conf)
 
@@ -716,9 +696,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         # setup Nel's habitat nontrans
         nelHab = nelHby.makeHab(name=pname, isith=wsith, icount=1, transferable=False)
         assert not nelHab.kever.prefixer.transferable
-        nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False)
         # create non-local parer for Nel to process non-local msgs
-        nelPrs = parsing.Parser(kvy=nelKvy)
 
         assert nelHab.pre == 'BBWmLeVPY4obmPkyBGCsmysDmhbe017t6gS7v6B_ogV9'
         assert nelHab.kever.prefixer.code == coring.MtrDex.Ed25519N
@@ -895,9 +873,143 @@ def test_make_other_event():
                        b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
 
 
+def test_hab_by_pre():
+    with habbing.openHby() as hby:
+        # Create two habs in the default namespace
+        hab1 = hby.makeHab(name="test1")
+        hab2 = hby.makeHab(name="test2")
+
+        # Create two habs in namespace "one"
+        hab3 = hby.makeHab(name="test1", ns="one")
+        hab4 = hby.makeHab(name="test2", ns="one")
+
+        # Create two habs in namespace "two"
+        hab5 = hby.makeHab(name="test1", ns="two")
+        hab6 = hby.makeHab(name="test2", ns="two")
+
+        # Only habs in default namespace are in hby.habs
+        assert hab1.pre in hby.habs
+        assert hab2.pre in hby.habs
+        assert hab3.pre not in hby.habs
+        assert hab4.pre not in hby.habs
+        assert hab5.pre not in hby.habs
+        assert hab6.pre not in hby.habs
+
+        assert hby.habByPre("EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3") is None
+
+        assert hby.habByPre(pre=hab1.pre) == hab1
+        assert hby.habByPre(pre=hab2.pre) == hab2
+        assert hby.habByPre(pre=hab3.pre) == hab3
+        assert hby.habByPre(pre=hab4.pre) == hab4
+        assert hby.habByPre(pre=hab5.pre) == hab5
+        assert hby.habByPre(pre=hab6.pre) == hab6
+
+        assert "one" in hby.namespaces
+        assert hab3.pre in hby.namespaces["one"]
+        assert hab4.pre in hby.namespaces["one"]
+        assert hab1.pre not in hby.namespaces["one"]
+        assert hab2.pre not in hby.namespaces["one"]
+        assert "two" in hby.namespaces
+        assert hab5.pre in hby.namespaces["two"]
+        assert hab6.pre in hby.namespaces["two"]
+        assert hab1.pre not in hby.namespaces["two"]
+        assert hab2.pre not in hby.namespaces["two"]
+
+
+def test_postman_endsfor():
+    with habbing.openHby(name="test", temp=True) as hby, \
+            habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
+            habbing.openHab(name="agent", temp=True) as (agentHby, agentHab):
+
+        print()
+
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+
+        wits = [wesHab.pre]
+        hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, )
+        assert hab.kever.prefixer.transferable
+        assert len(hab.iserder.werfers) == len(wits)
+        for werfer in hab.iserder.werfers:
+            assert werfer.qb64 in wits
+        assert hab.kever.wits == wits
+        assert hab.kever.toader.num == 1
+        assert hab.kever.sn == 0
+
+        kvy = eventing.Kevery(db=hab.db, lax=False, local=False)
+        icpMsg = hab.makeOwnInception()
+        rctMsgs = []  # list of receipts from each witness
+        parsing.Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy)
+        assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
+        assert len(wesKvy.cues) == 1  # queued receipt cue
+        rctMsg = wesHab.processCues(wesKvy.cues)  # process cue returns rct msg
+        assert len(rctMsg) == 626
+        rctMsgs.append(rctMsg)
+
+        for msg in rctMsgs:  # process rct msgs from all witnesses
+            parsing.Parser().parse(ims=bytearray(msg), kvy=kvy)
+        assert wesHab.pre in kvy.kevers
+
+        agentIcpMsg = agentHab.makeOwnInception()
+        parsing.Parser().parse(ims=bytearray(agentIcpMsg), kvy=kvy)
+        assert agentHab.pre in kvy.kevers
+
+        msgs = bytearray()
+        msgs.extend(wesHab.makeEndRole(eid=wesHab.pre,
+                                       role=kering.Roles.controller,
+                                       stamp=helping.nowIso8601()))
+
+        msgs.extend(wesHab.makeLocScheme(url='http://127.0.0.1:8888',
+                                         scheme=kering.Schemes.http,
+                                         stamp=helping.nowIso8601()))
+        wesHab.psr.parse(ims=bytearray(msgs))
+
+        # Set up
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=kering.Roles.controller,
+                                    stamp=helping.nowIso8601()))
+
+        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:7777',
+                                      scheme=kering.Schemes.http,
+                                      stamp=helping.nowIso8601()))
+        hab.psr.parse(ims=msgs)
+
+        msgs = bytearray()
+        msgs.extend(agentHab.makeEndRole(eid=agentHab.pre,
+                                         role=kering.Roles.controller,
+                                         stamp=helping.nowIso8601()))
+
+        msgs.extend(agentHab.makeLocScheme(url='http://127.0.0.1:6666',
+                                           scheme=kering.Schemes.http,
+                                           stamp=helping.nowIso8601()))
+
+        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
+                                    role=kering.Roles.agent,
+                                    stamp=helping.nowIso8601()))
+
+        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
+                                    role=kering.Roles.mailbox,
+                                    stamp=helping.nowIso8601()))
+
+        agentHab.psr.parse(ims=bytearray(msgs))
+        hab.psr.parse(ims=bytearray(msgs))
+
+        ends = hab.endsFor(hab.pre)
+        assert ends == {
+            'agent': {
+                'EBErgFZoM3PBQNTpTuK9bax_U8HLJq1Re2RM1cdifaTJ': {'http': 'http://127.0.0.1:6666'}},
+            'controller': {
+                'EGadHcyW9IfVIPrFUAa_I0z4dF8QzQAvUvfaUTJk8Jre': {'http': 'http://127.0.0.1:7777'}},
+            'mailbox': {
+                'EBErgFZoM3PBQNTpTuK9bax_U8HLJq1Re2RM1cdifaTJ': {'http': 'http://127.0.0.1:6666'}},
+            'witness': {
+                'BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr': {'http': 'http://127.0.0.1:8888'}}
+        }
 
 
 if __name__ == "__main__":
     pass
     test_habery()
-    #pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])
+    # pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])

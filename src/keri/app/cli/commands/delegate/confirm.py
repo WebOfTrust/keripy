@@ -130,6 +130,7 @@ class ConfirmDoer(doing.DoDoer):
                             continue
 
                         serder = coring.Serder(raw=msg)
+                        del msg[:serder.size]
 
                         exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
                         others = list(oset(hab.smids + (hab.rmids or [])))
@@ -137,14 +138,15 @@ class ConfirmDoer(doing.DoDoer):
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
+                            self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
+                                              attachment=bytearray(msg))
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         seqner = coring.Seqner(sn=serder.sn)
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(smids=aids, ghab=hab, prefixer=prefixer, seqner=seqner,
-                                             saider=saider)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=seqner, saider=saider)
 
                         while True:
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

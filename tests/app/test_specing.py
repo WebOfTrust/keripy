@@ -24,16 +24,10 @@ def test_spec_resource():
         app.add_route("/boot", bootEnd)
         app.add_route("/boot/{name}", bootEnd, suffix="name")
 
-        notifier = notifying.Notifier(hby=hby)
-        # Add a few with no resolutions at the root (resource=None for /group)
-        counselor = grouping.Counselor(hby=hby)
-        multiIcpEnd = kiwiing.MultisigInceptEnd(hby=hby, counselor=counselor, notifier=notifier)
-        app.add_route("/groups/{alias}/icp", multiIcpEnd)
-
         lockEnd = kiwiing.LockEnd(servery=booting.Servery(port=1234), bootConfig=dict())
         app.add_route("/lock", lockEnd)
 
-        resources = [passcodeEnd, bootEnd, multiIcpEnd, lockEnd]
+        resources = [passcodeEnd, bootEnd, lockEnd]
         specRes = specing.SpecResource(app=app, title='KERI Interactive Web Interface API', resources=resources)
 
         sd = specRes.spec.to_dict()
@@ -61,12 +55,6 @@ def test_spec_resource():
         lock = paths["/lock"]
         assert len(lock) == 1
         assert "post" in lock
-
-        assert "/groups/{alias}/icp" in paths
-        icp = paths["/groups/{alias}/icp"]
-        assert len(icp) == 2
-        assert "post" in icp
-        assert "put" in icp
 
         # Assert on the entire JSON to ensure we are getting all the docs
         js = json.dumps(sd)
@@ -104,43 +92,6 @@ def test_spec_resource():
                       '["Boot"], "parameters": [{"in": "path", "name": "name", "schema": {"type": '
                       '"string"}, "required": true, "description": "predetermined name of keep '
                       'keystore", "example": "alice"}], "responses": {"202": {"description": '
-                      '"Keystore exists"}, "404": {"description": "No keystore exists"}}}}, '
-                      '"/groups/{alias}/icp": {"post": {"summary": "Initiate a multisig group '
-                      'inception", "description": "Initiate a multisig group inception with the '
-                      'participants identified by the  provided AIDs", "tags": ["Groups"], '
-                      '"parameters": [{"in": "path", "name": "alias", "schema": {"type": "string"}, '
-                      '"required": true, "description": "Human readable alias for the identifier to '
-                      'create"}], "requestBody": {"required": true, "content": {"application/json": '
-                      '{"schema": {"type": "object", "properties": {"aids": {"type": "array", '
-                      '"items": {"type": "string"}, "description": "List of qb64 AIDs of '
-                      'participants in multisig group"}, "notify": {"type": "boolean", "required": '
-                      'false, "description": "True means to send mutlsig incept exn message to '
-                      'other participants"}, "toad": {"type": "integer", "description": "Witness '
-                      'receipt threshold"}, "wits": {"type": "array", "items": {"type": "string"}, '
-                      '"description": "List of qb64 AIDs of witnesses to be used for the new group '
-                      'identfier"}, "isith": {"type": "string", "description": "Signing threshold '
-                      'for the new group identifier"}, "nsith": {"type": "string", "description": '
-                      '"Next signing threshold for the new group identifier"}, "estOnly": {"type": '
-                      '"boolean", "required": false, "description": "True means this identifier '
-                      'will not allow interaction events."}}}}}}, "responses": {"200": '
-                      '{"description": "Multisig group AID inception initiated."}}}, "put": '
-                      '{"summary": "Participate in a multisig group inception", "description": '
-                      '"Participate in a multisig group rotation", "tags": ["Groups"], '
-                      '"parameters": [{"in": "path", "name": "alias", "schema": {"type": "string"}, '
-                      '"required": true, "description": "Human readable alias for the identifier to '
-                      'create"}], "requestBody": {"required": true, "content": {"application/json": '
-                      '{"schema": {"type": "object", "properties": {"aids": {"type": "array", '
-                      '"items": {"type": "string"}, "description": "List of qb64 AIDs of '
-                      'participants in multisig group"}, "notify": {"type": "boolean", "required": '
-                      'false, "description": "True means to send mutlsig incept exn message to '
-                      'other participants"}, "toad": {"type": "integer", "description": "Witness '
-                      'receipt threshold"}, "wits": {"type": "array", "items": {"type": "string"}, '
-                      '"description": "List of qb64 AIDs of witnesses to be used for the new group '
-                      'identfier"}, "isith": {"type": "string", "description": "Signing threshold '
-                      'for the new group identifier"}, "nsith": {"type": "string", "description": '
-                      '"Next signing threshold for the new group identifier"}, "estOnly": {"type": '
-                      '"boolean", "required": false, "description": "True means this identifier '
-                      'will not allow interaction events."}}}}}}, "responses": {"200": '
-                      '{"description": "Multisig group AID inception initiated."}}}}}, "info": '
-                      '{"title": "KERI Interactive Web Interface API", "version": "1.0.0"}, '
+                      '"Keystore exists"}, "404": {"description": "No keystore exists"}}}}}, '
+                      '"info": {"title": "KERI Interactive Web Interface API", "version": "1.0.0"}, '
                       '"openapi": "3.0.2"}')

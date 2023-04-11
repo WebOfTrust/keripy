@@ -5,20 +5,16 @@ keri.app.grouping module
 
 module for enveloping and forwarding KERI message
 """
-import json
-from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
 from hio.help import decking
 
 from keri import kering
-from keri.app import forwarding, delegating, agenting
+from keri.app import delegating, agenting
 from keri.core import coring
-from keri.core.coring import Number
-from keri.db import dbing, basing
+from keri.db import dbing
 from keri.db.dbing import snKey
-from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import proving
 
@@ -30,16 +26,15 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, **kwa):
 
         self.hby = hby
-        self.postman = forwarding.Poster(hby=hby)
         self.swain = delegating.Boatswain(hby=self.hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
-        doers = [self.postman, self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
+        doers = [self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, ghab, prefixer, seqner, saider, smids, rmids=None, proxy=None):
+    def start(self, ghab, prefixer, seqner, saider):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -50,26 +45,11 @@ class Counselor(doing.DoDoer):
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of inception event of group identifier
             saider (Saider): saider of inception event of group identifier
-            smids (list): group signing member ids qb64 (multisig group)
-                need to contribute current signing key
-            rmids (list | None): group rotating member ids qb64 (multisig group)
-                need to contribute digest of next rotating key
-            proxy (Hab) communication Hab
-            mpre (str) local member id qb64
 
         """
         evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)
         serder = coring.Serder(raw=evt)
         del evt[:serder.size]
-
-        others = list(oset(smids + (rmids or [])))
-
-        others.remove(ghab.mhab.pre)  # don't send to self
-
-        proxy = proxy if proxy is not None else ghab.mhab
-        print(f"Sending multisig event to {len(others)} other participants")
-        for recpt in others:
-            self.postman.send(hab=proxy, dest=recpt, topic="multisig", serder=serder, attachment=evt)
 
         print(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))

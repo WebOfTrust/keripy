@@ -26,7 +26,7 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=True)
+parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=True)
 parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
                     action="append", required=False, default=None)
 
@@ -68,7 +68,7 @@ class GroupMultisigInteract(doing.DoDoer):
         self.base = base
         self.bran = bran
         self.alias = alias
-        self.aids=aids
+        self.aids = aids
         self.data = data
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
@@ -107,24 +107,24 @@ class GroupMultisigInteract(doing.DoDoer):
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
         aids = self.aids if self.aids is not None else ghab.smids
-        #rmids = self.aids if self.aids is not None else ghab.rmids
-        rmids = None  # need to fix
-        ixn = ghab.interact(data=self.data)
 
+        ixn = ghab.interact(data=self.data)
         serder = coring.Serder(raw=ixn)
+        del ixn[:serder.size]
+
         exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
-        #others = list(ghab.smids)
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
+                              attachment=bytearray(ixn))
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)
         saider = coring.Saider(qb64b=serder.saidb)
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
-                             ghab=ghab, smids=aids, rmids=rmids)
+        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=ghab)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
