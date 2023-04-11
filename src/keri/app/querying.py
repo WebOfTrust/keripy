@@ -5,117 +5,93 @@ keri.app.storing module
 """
 
 from hio.base import doing
-from hio.help import decking
-
 from keri.app import agenting
 
 
 class QueryDoer(doing.DoDoer):
 
     def __init__(self, hby, hab, kvy, pre, **kwa):
-        doers = []
-
         self.hby = hby
         self.hab = hab
         self.kvy = kvy
-        self.logs = decking.Deck()
-
         self.pre = pre
-        self.loaded = False
 
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        doers.extend([self.witq, doing.doify(self.keyStateCueDo), doing.doify(self.logsDo)])
-
-        self.toRemove = list(doers)
-        doers.extend([doing.doify(self.queryDo)])
+        doers = [KeyStateNoticer(hby=hby, hab=self.hab, pre=pre, cues=kvy.cues)]
         super(QueryDoer, self).__init__(doers=doers, **kwa)
 
-    def queryDo(self, tymth, tock=0.0, **opts):
-        """
-        Returns:  doifiable Doist compatible generator method
-        Usage:
-            add result of doify on this method to doers list
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
 
+class KeyStateNoticer(doing.DoDoer):
+
+    def __init__(self, hby, hab, pre, cues, **opts):
+        self.hby = hby
+        self.hab = hab
+        self.pre = pre
+        self.cues = cues
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+
+        super(KeyStateNoticer, self).__init__(doers=[self.witq], **opts)
+
+    def enter(self, doers=None):
         self.witq.query(src=self.hab.pre, pre=self.pre, r="ksn")
+        return super(KeyStateNoticer, self).enter(doers=doers)
 
-        while not self.loaded:
-            yield 1.0
+    def recur(self, tyme, deeds=None):
+        if self.pre in self.hby.kevers:
+            kever = self.hby.kevers[self.pre]
+        else:
+            return super(KeyStateNoticer, self).recur(tyme, deeds)
 
-        self.remove(self.toRemove)
+        if self.cues:
+            cue = self.cues.popleft()
+            match cue['kin']:
+                case "keyStateSaved":
+                    kcue = cue
+                    ksn = kcue['serder']
+                    match ksn.pre:
+                        case self.pre:
+                            if kever.sn < ksn.sn:
+                                # Add new doer here instead of cueing to a while loop
+                                print("New key events are available, loading now...")
+                                self.extend([LogQuerier(hby=self.hby, hab=self.hab, ksn=ksn)])
+                                self.remove([self.witq])
 
-        return
+                            else:
+                                return True
 
-    def keyStateCueDo(self, tymth, tock=0.0, **opts):
+                        case _:
+                            self.cues.append(cue)
+
+                case _:
+                    self.cues.append(cue)
+
+        return super(KeyStateNoticer, self).recur(tyme, deeds)
+
+
+class LogQuerier(doing.DoDoer):
+
+    def __init__(self, hby, hab, ksn, **opts):
+        self.hby = hby
+        self.hab = hab
+        self.ksn = ksn
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+
+        super(LogQuerier, self).__init__(doers=[self.witq], **opts)
+
+    def enter(self, doers=None):
+        self.witq.query(src=self.hab.pre, pre=self.ksn.pre)
+        return super(LogQuerier, self).enter(doers)
+
+    def recur(self, tyme, deeds=None):
         """
         Returns:  doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
 
-        while True:
-            if self.pre in self.hby.kevers:
-                kever = self.hab.kevers[self.pre]
-            else:
-                continue
+        kever = self.hab.kevers[self.ksn.pre]
+        if kever.sn >= self.ksn.sn:
+            self.remove([self.witq])
+            print("Key event log synced successfully")
+            return True
 
-            kcue = None
-            for cue in self.kvy.cues:
-                match cue['kin']:
-                    case "keyStateSaved":
-                        kcue = cue
-                        break
-           
-            if kcue is not None:
-                self.kvy.cues.remove(kcue)
-
-                ksn = kcue['serder']
-                match ksn.pre:
-                    case self.pre:
-                        if kever.sn < ksn.sn:
-                            print("New key events are available, loading now...")
-                            self.logs.append(ksn)
-                        else:
-                            self.loaded = True
-
-                        continue
-                    case _:
-                        continue
-
-            yield self.tock
-
-    def logsDo(self, tymth, tock=0.0, **opts):
-        """
-        Returns:  doifiable Doist compatible generator method
-        Usage:
-            add result of doify on this method to doers list
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.logs:
-                ksn = self.logs.popleft()
-                print(f"Querying for new events up to {ksn.sn}")
-                kever = self.hab.kevers[ksn.pre]
-
-                self.witq.query(src=self.hab.pre, pre=ksn.pre)
-
-                while kever.sn < ksn.sn:
-                    yield self.tock
-
-                print("Key event log synced successfully")
-                self.loaded = True
-                return
-
-            yield self.tock
+        return super(LogQuerier, self).recur(tyme, deeds)
