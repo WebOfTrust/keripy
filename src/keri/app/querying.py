@@ -28,12 +28,9 @@ class KeyStateNoticer(doing.DoDoer):
         self.pre = pre
         self.cues = cues
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq.query(src=self.hab.pre, pre=self.pre, r="ksn")
 
         super(KeyStateNoticer, self).__init__(doers=[self.witq], **opts)
-
-    def enter(self, doers=None):
-        self.witq.query(src=self.hab.pre, pre=self.pre, r="ksn")
-        return super(KeyStateNoticer, self).enter(doers=doers)
 
     def recur(self, tyme, deeds=None):
         if self.pre in self.hby.kevers:
@@ -74,12 +71,8 @@ class LogQuerier(doing.DoDoer):
         self.hab = hab
         self.ksn = ksn
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
-
-        super(LogQuerier, self).__init__(doers=[self.witq], **opts)
-
-    def enter(self, doers=None):
         self.witq.query(src=self.hab.pre, pre=self.ksn.pre)
-        return super(LogQuerier, self).enter(doers)
+        super(LogQuerier, self).__init__(doers=[self.witq], **opts)
 
     def recur(self, tyme, deeds=None):
         """
@@ -87,7 +80,6 @@ class LogQuerier(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-
         kever = self.hab.kevers[self.ksn.pre]
         if kever.sn >= self.ksn.sn:
             self.remove([self.witq])
