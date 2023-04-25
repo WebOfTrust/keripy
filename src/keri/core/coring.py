@@ -144,7 +144,7 @@ def deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 
-def sizeify(ked, kind=None):
+def sizeify(ked, kind=None, version=Version):
     """
     Compute serialized size of ked and update version field
     Returns tuple of associated values extracted and or changed by sizeify
@@ -160,6 +160,7 @@ def sizeify(ked, kind=None):
         ked (dict): key event dict
         kind (str): value of Serials is serialization type
             if not provided use that given in ked["v"]
+        version (Versionage): instance supported protocol version for message
 
 
     Assumes only supports Version
@@ -168,10 +169,10 @@ def sizeify(ked, kind=None):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    proto, knd, version, size = deversify(ked["v"])  # extract kind and version
-    if version != Version:
-        raise ValueError("Unsupported version = {}.{}".format(version.major,
-                                                              version.minor))
+    proto, knd, vrsn, size = deversify(ked["v"])  # extract kind and version
+    if vrsn != version:
+        raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
+                                                              vrsn.minor))
 
     if not kind:
         kind = knd
@@ -188,14 +189,14 @@ def sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(proto=proto, version=version, kind=kind, size=size)
+    vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
         raise ValueError("Malformed version string size = {}".format(vs))
     ked["v"] = vs  # update ked
 
-    return raw, proto, kind, ked, version
+    return raw, proto, kind, ked, vrsn
 
 
 # Base64 utilities
@@ -4687,29 +4688,33 @@ class Sadder:
 
     """
 
-    def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=MtrDex.Blake3_256):
+    def __init__(self, raw=b'', ked=None, sad=None, kind=None, saidify=False,
+                 code=MtrDex.Blake3_256):
         """
-        Deserialize if raw provided
-        Serialize if ked provided but not raw
+        Deserialize if raw provided does not verify assumes embedded said is valid
+        Serialize if ked provided but not raw verifies if verify is True?
         When serializing if kind provided then use kind instead of field in ked
 
         Parameters:
-          raw is bytes of serialized event plus any attached signatures
+          raw (bytes): serialized event
           ked is key event dict or None
             if None its deserialized from raw
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
-          code is .diger default digest code
+          saidify (bool): True means compute said for ked
+          code is .diger default digest code for computing said .saider
 
         """
         self._code = code  # need default code for .saider
         if raw:  # deserialize raw using property setter
             self.raw = raw  # raw property setter does the deserialization
         elif ked:  # serialize ked using property setter
+            #ToDo  when pass in ked and saidify True then compute said
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         elif sad:
+            # ToDo do we need this or should we be using ked above with saidify flag
             self._clone(sad=sad)  # copy fields from sad
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
@@ -4753,13 +4758,20 @@ class Sadder:
 
     def _exhale(self, ked, kind=None):
         """
-        ked is key event dict
-        kind is serialization if given else use one given in ked
-        Returns tuple of (raw, kind, ked, version) where:
-            raw is serialized event as bytes of kind
-            kind is serialzation kind
-            ked is key event dict
-            version is Versionage instance
+        Returns sizeify(ked, kind)
+
+        From sizeify
+        Returns tuple of (raw, proto, kind, ked, version) where:
+            raw (str): serialized event as bytes of kind
+            proto (str): protocol type as value of Protocolage
+            kind (str): serialzation kind as value of Serialage
+            ked (dict): key event dict or sad dict
+            version (Versionage): instance
+
+        Parameters:
+            ked (dict): key event dict or sad dict
+            kind (str): value of Serials serialization kind.
+                When not provided use
 
         Assumes only supports Version
         """
@@ -4787,6 +4799,54 @@ class Sadder:
 
         else:
             raise ValueError("Both said and saider may not be None.")
+
+
+    #def verify(self, prefixed=False, versioned=True, code=None,
+               #kind=None, label=Saids.d, ignore=None, **kwa):
+        #"""
+        #ToDo:  Make Sad verifiable against its own said field
+
+        #Returns:
+            #result (bool): True means derivation from sad with dummy label
+                #field value replacement for ._code matches .qb64. False otherwise
+                #If prefixed is True then also validates that label field of
+                #provided sad also matches .qb64. False otherwise
+                #If versioned is True and provided sad includes version field 'v'
+                #then also validates that version field 'v' of provided
+                #sad matches the version field of modified sad that results from
+                #the derivation process. The size chars in the version field
+                #are set to the size of the sad during derivation. False otherwise.
+
+        #Parameters:
+            #sad (dict): self addressed data to be serialized
+            #prefixed (bool): True means also verify if labeled field in
+                #sad matches own .qb64
+            #versioned (bool):
+            #code (str): digest type code from DigDex.
+            #kind (str): serialization algorithm of sad, one of Serials
+                        #used to override that given by 'v' field if any in sad
+                        #otherwise default is Serials.json
+            #label (str): Saidage value of said field label in which to inject dummy
+            #ignore (list): fields to ignore when generating SAID
+        #"""
+        #try:
+            ## override ensure code is self.code
+            #raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label, ignore=ignore)
+            #saider = Saider(raw=raw, code=self.code, ignore=ignore, **kwa)
+            #if self.qb64b != saider.qb64b:
+                #return False  # not match .qb64b
+
+            #if 'v' in sad and versioned:
+                #if sad['v'] != dsad['v']:
+                    #return False  # version fields not match
+
+            #if prefixed and sad[label] != self.qb64:  # check label field
+                #return False  # label id field not match .qb64
+
+        #except Exception as ex:
+            #return False
+
+        #return True
 
 
     @property
