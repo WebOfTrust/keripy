@@ -87,74 +87,80 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
 
-def versify(ident=Protos.keri, version=None, kind=Serials.json, size=0):
+def versify(proto=Protos.keri, version=None, kind=Serials.json, size=0):
     """
-    Return version string
+    Returns version string
     """
-    if ident not in Protos:
-        raise ValueError("Invalid message identifier = {}".format(ident))
+    if proto not in Protos:
+        raise ValueError("Invalid message identifier = {}".format(proto))
     if kind not in Serials:
         raise ValueError("Invalid serialization kind = {}".format(kind))
     version = version if version else Version
-    return VERFMT.format(ident, version[0], version[1], kind, size, VERRAWSIZE)
+    return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
 
 
 Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
                      mgpk=versify(kind=Serials.mgpk, size=0),
                      cbor=versify(kind=Serials.cbor, size=0))
 
-VEREX = b'(?P<ident>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+VEREX = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
 def deversify(vs):
     """
-    Returns tuple(ident, kind, version, size)
-      Where:
-        proto is protocol type identifier one of Protos (Protocolage)
+    Returns:  tuple(proto, kind, version, size) Where:
+        proto (str): value is protocol type identifier one of Protos (Protocolage)
                    acdc='ACDC', keri='KERI'
-        kind is serialization kind, one of Serials
+        kind (str): value is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
-        version is version tuple of type Version
-        size is int of raw size
+        version (tuple):  is version tuple of type Version
+        size  (int): raw size in bytes
 
     Parameters:
-      vs is version string str
+      vs (str): version string
 
     Uses regex match to extract:
-        event type identifier
+        protocol type
         serialization kind
         keri version
         serialization size
     """
     match = Rever.match(vs.encode("utf-8"))  # match takes bytes
     if match:
-        ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
+        proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
         version = Versionage(major=int(major, 16), minor=int(minor, 16))
-        ident = ident.decode("utf-8")
+        proto = proto.decode("utf-8")
         kind = kind.decode("utf-8")
 
-        if ident not in Protos:
-            raise ValueError("Invalid message identifier = {}".format(ident))
+        if proto not in Protos:
+            raise ValueError("Invalid message identifier = {}".format(proto))
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
-        return ident, kind, version, size
+        return proto, kind, version, size
 
     raise ValueError("Invalid version string = {}".format(vs))
 
 
 def sizeify(ked, kind=None):
     """
-    ked is key event dict
-    kind is serialization if given else use one given in ked
+    Compute serialized size of ked and update version field
+    Returns tuple of associated values extracted and or changed by sizeify
+
     Returns tuple of (raw, proto, kind, ked, version) where:
         raw (str): serialized event as bytes of kind
         proto (str): protocol type as value of Protocolage
         kind (str): serialzation kind as value of Serialage
         ked (dict): key event dict
         version (Versionage): instance
+
+    Parameters:
+        ked (dict): key event dict
+        kind (str): value of Serials is serialization type
+            if not provided use that given in ked["v"]
+
 
     Assumes only supports Version
     """
@@ -182,7 +188,7 @@ def sizeify(ked, kind=None):
 
     fore, back = match.span()  # full version string
     # update vs with latest kind version size
-    vs = versify(ident=proto, version=version, kind=kind, size=size)
+    vs = versify(proto=proto, version=version, kind=kind, size=size)
     # replace old version string in raw with new one
     raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
     if size != len(raw):  # substitution messed up
@@ -324,15 +330,15 @@ def sniff(raw):
     if not match or match.start() > 12:
         raise VersionError("Invalid version string in raw = {}".format(raw))
 
-    ident, major, minor, kind, size = match.group("ident", "major", "minor", "kind", "size")
+    proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
     version = Versionage(major=int(major, 16), minor=int(minor, 16))
     kind = kind.decode("utf-8")
-    ident = ident.decode("utf-8")
+    proto = proto.decode("utf-8")
     if kind not in Serials:
         raise DeserializationError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
 
-    return ident, kind, version, size
+    return proto, kind, version, size
 
 
 def dumps(ked, kind=Serials.json):
@@ -3151,7 +3157,8 @@ class Prefixer(Matter):
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Sizes[MtrDex.Blake3_256].fs
         ked["d"] = ked["i"]  # must be same dummy
-        raw, ident, kind, ked, version = sizeify(ked=ked)
+        #raw, proto, kind, ked, version = sizeify(ked=ked)
+        raw, _, _, _, _ = sizeify(ked=ked)
         dig = blake3.blake3(raw).digest()  # digest with dummy 'i' and 'd'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i' and 'd'
 
@@ -3372,7 +3379,7 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, ident, kind, sad, version = sizeify(ked=sad, kind=kind)
+            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
 
         ser = dict(sad)
         if ignore:
@@ -4732,7 +4739,7 @@ class Sadder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        ident, kind, version, size = sniff(raw)
+        proto, kind, version, size = sniff(raw)
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))
@@ -4741,7 +4748,7 @@ class Sadder:
 
         ked = loads(raw=raw, size=size, kind=kind)
 
-        return ked, ident, kind, version, size
+        return ked, proto, kind, version, size
 
 
     def _exhale(self, ked, kind=None):
@@ -4790,10 +4797,10 @@ class Sadder:
     @raw.setter
     def raw(self, raw):
         """ raw property setter """
-        ked, ident, kind, version, size = self._inhale(raw=raw)
+        ked, proto, kind, version, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
-        self._proto = ident
+        self._proto = proto
         self._kind = kind
         self._version = version
         self._size = size
@@ -4807,11 +4814,11 @@ class Sadder:
     @ked.setter
     def ked(self, ked):
         """ ked property setter  assumes ._kind """
-        raw, ident, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
+        raw, proto, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
-        self._proto = ident
+        self._proto = proto
         self._kind = kind
         self._size = size
         self._version = version
@@ -4825,10 +4832,10 @@ class Sadder:
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked. Serialization kind. """
-        raw, ident, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
+        raw, proto, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
-        self._proto = ident
+        self._proto = proto
         self._ked = ked
         self._kind = kind
         self._size = size

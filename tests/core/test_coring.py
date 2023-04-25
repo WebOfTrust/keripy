@@ -5113,8 +5113,8 @@ def test_versify():
     vs = versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 0
@@ -5122,17 +5122,17 @@ def test_versify():
     vs = versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
     assert size == 65
 
-    vs = versify(ident=Protos.acdc, kind=Serials.json, size=86)
+    vs = versify(proto=Protos.acdc, kind=Serials.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.acdc
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.acdc
     assert kind == Serials.json
     assert version == Version
     assert size == 86
@@ -5140,8 +5140,8 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 0
@@ -5149,8 +5149,8 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 65
@@ -5158,8 +5158,8 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 0
@@ -5167,8 +5167,8 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VERFULLSIZE
-    ident, kind, version, size = deversify(vs)
-    assert ident == Protos.keri
+    proto, kind, version, size = deversify(vs)
+    assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
     assert size == 65
@@ -5221,15 +5221,15 @@ def test_serder():
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     with pytest.raises(ShortageError):  # test too short
-        ident1, kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
+        protos1, kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
 
-    ident1, kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
-    assert ident1 == Protos.keri
+    protos1, kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
+    assert protos1 == Protos.keri
     assert kind1 == Serials.json
     assert size1 == 111
 
-    ident1, kind1, vers1, size1 = sniff(e1s)
-    assert ident1 == Protos.keri
+    protos1, kind1, vers1, size1 = sniff(e1s)
+    assert protos1 == Protos.keri
     assert kind1 == Serials.json
     assert size1 == 111
     e1ss = e1s + b'extra attached at the end.'
@@ -5270,7 +5270,7 @@ def test_serder():
     assert size2 == 92
 
     ident2, kind2, vers2, size2 = sniff(e2s)
-    assert ident1 == Protos.keri
+    assert ident2 == Protos.keri
     assert kind2 == Serials.mgpk
     assert size2 == 92
     e2ss = e2s + b'extra attached  at the end.'
@@ -5306,7 +5306,7 @@ def test_serder():
         ident3, kind3, vers3, size3 = sniff(e3s[:VERFULLSIZE])
 
     ident3, kind3, vers3, size3 = sniff(e3s[:MINSNIFFSIZE])
-    assert ident1 == Protos.keri
+    assert ident3 == Protos.keri
     assert kind3 == Serials.cbor
     assert size3 == 92
 
@@ -5332,7 +5332,7 @@ def test_serder():
     assert ked3 == e3
     assert vrs3 == vers3
 
-    e4 = dict(v=versify(ident=Protos.acdc, kind=Serials.json, size=0),
+    e4 = dict(v=versify(proto=Protos.acdc, kind=Serials.json, size=0),
               d="",
               i="ABCDEFG",
               s="0001",
@@ -5343,7 +5343,7 @@ def test_serder():
     e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",'
                    b'"i":"ABCDEFG","s":"0001","t":"rot"}')
-    vs = versify(ident=Protos.acdc, kind=Serials.json, size=len(e4s))  # use real length
+    vs = versify(proto=Protos.acdc, kind=Serials.json, size=len(e4s))  # use real length
     assert vs == 'ACDC10JSON00006f_'
     e4["v"] = vs  # has real length
     serder = Sadder(ked=e4)
@@ -5476,8 +5476,8 @@ def test_serder():
     assert evt2.kind == Serials.cbor
     evt2.kind = Serials.json
     assert evt2.kind == Serials.json
-    ident, knd, version, size = deversify(evt2.ked["v"])
-    assert ident == Protos.keri
+    proto, knd, version, size = deversify(evt2.ked["v"])
+    assert proto == Protos.keri
     assert knd == Serials.json
 
     #  Test diger code
