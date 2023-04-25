@@ -160,7 +160,7 @@ def sizeify(ked, kind=None, version=Version):
         ked (dict): key event dict
         kind (str): value of Serials is serialization type
             if not provided use that given in ked["v"]
-        version (Versionage): instance version of protocol for message
+        version (Versionage): instance supported protocol version for message
 
 
     Assumes only supports Version
