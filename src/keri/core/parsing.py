@@ -1123,7 +1123,7 @@ class Parser:
                                              "= {}.".format(creder.pretty()))
 
         else:
-            raise kering.ValidationError("Unexpected message ident = {} for evt ="
+            raise kering.ValidationError("Unexpected protocol type = {} for event message ="
                                          " {}.".format(sadder.proto, sadder.pretty()))
 
         return True  # done state

@@ -51,7 +51,7 @@ def credential(schema,
         Creder: credential instance
 
     """
-    vs = versify(ident=coring.Protos.acdc, version=version, kind=kind, size=0)
+    vs = versify(proto=coring.Protos.acdc, version=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,
