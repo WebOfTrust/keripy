@@ -252,6 +252,7 @@ signatures can be indexed into the proper list of backers at the time of issuanc
 |p| prior event digest | | 
 |ri| registry identifier from management TEL | |
 |ra| registry anchor to management TEL | |
+|n| nonce | |
 
 ### Simple Credential Issuance Event
 
@@ -263,6 +264,7 @@ signatures can be indexed into the proper list of backers at the time of issuanc
  "t" : "iss",
  "dt": "2021-05-27T19:16:50.750302+00:00",
  "ri": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A"
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAAAwELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
@@ -276,6 +278,8 @@ signatures can be indexed into the proper list of backers at the time of issuanc
  "t" : "rev",
  "dt": "2021-05-27T19:16:50.750302+00:00",
  "p" : "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
+ "ri": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A"
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABAELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
@@ -293,6 +297,7 @@ signatures can be indexed into the proper list of backers at the time of issuanc
     "s": "2",
     "d": "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"
   }
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAAAwELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
@@ -311,6 +316,7 @@ signatures can be indexed into the proper list of backers at the time of issuanc
     "s": "4",
     "d": "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"
   }
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABAELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
