@@ -30,9 +30,12 @@ def credential(schema,
                rules=None,
                version=Version,
                kind=Serials.json):
-    """ Returns Credentialer of new credential
+    """Utility function to create an ACDC. Creates dict SAD for credential from
+    parameters and Saidifyies it before creation.
 
-    Creates SAD for credential and Saidifyies it before creation.
+    Returns:
+        Creder: of new credential
+
 
     Parameters:
         schema (SAID): of schema for this credential
@@ -42,7 +45,7 @@ def credential(schema,
         data (dict): of the values being assigned to the subject of this credential
         private (bool): apply nonce used for privacy preserving ACDC
         salt (string): salt for nonce
-        source (Optional[dict,list]): of source credentials to which this credential is chained
+        source (dict | list): of source credentials to which this credential is chained
         rules (list): ACDC rules section for credential
         version (Version): version instance
         kind (Serials): serialization kind
