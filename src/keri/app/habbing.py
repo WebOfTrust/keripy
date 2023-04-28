@@ -2231,15 +2231,14 @@ class SignifyHab(BaseHab):
 
     def make(self, *, serder, sigers, **kwargs):
         self.pre = serder.ked["i"]  # new pre
-
-        self.processEvent(serder, sigers)
-        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
-
-        self.save(habord)
         self.prefixes.add(self.pre)
 
-        self.inited = True
+        self.processEvent(serder, sigers)
 
+        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre)
+        self.save(habord)
+
+        self.inited = True
 
     def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
         """Sign given serialization ser using appropriate keys.
@@ -2303,8 +2302,8 @@ class SignifyHab(BaseHab):
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except Exception:
-            raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
-                                         f"pre={self.pre}.")
+            raise kering.ConfigurationError(f"Improper Habitat event type={serder.ked['t']} for "
+                                            f"pre={self.pre}.")
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
 
@@ -2397,8 +2396,6 @@ class SignifyGroupHab(SignifyHab):
         except Exception:
             raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
                                          f"pre={self.pre}.")
-
-
 
 
 class GroupHab(BaseHab):
