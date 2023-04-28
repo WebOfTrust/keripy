@@ -132,14 +132,16 @@ class Creder(coring.Sadder):
     """
 
     def __init__(self, raw=b'', ked=None, kind=None, sad=None, code=coring.MtrDex.Blake3_256):
-        """ Creates a serializer/deserializer for a ACDC Verifiable Credential in CESR Proof Format
+        """ Creates a serializer/deserializer for a ACDC Verifiable Credential
+        in CESR Proof Format
 
-        Requires either raw or (crd and kind) to load credential from serialized form or in memory
+        Requires either raw or (crd and kind) to load credential from serialized
+        form or in memory
 
         Parameters:
-            raw (bytes): is raw credential
-            ked (dict): is populated credential
-            kind (is serialization kind
+            raw (bytes): raw credential
+            ked (dict): populated credential
+            kind (str): serialization kind
             sad (Sadder): is clonable base class
             code (MtrDex): is hashing codex
 
@@ -151,7 +153,7 @@ class Creder(coring.Sadder):
 
     @property
     def crd(self):
-        """ issuer property getter"""
+        """ crd property getter"""
         return self._ked
 
     @property
