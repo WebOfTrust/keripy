@@ -124,44 +124,6 @@ class TestDoer(doing.DoDoer):
         assert note.pad['a']['r'] == "/multisig/icp/complete"
         assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
 
-        rotd = dict(aids=[self.hab1.pre, self.hab2.pre],
-                    toad=0,
-                    isith='2',
-                    nsith='2'
-                    )
-
-        b = json.dumps(rotd).encode("utf-8")
-        response = client1.simulate_post("/groups/group1/rot", body=b)
-        assert response.status == falcon.HTTP_202
-
-        b = json.dumps(rotd).encode("utf-8")
-        response = client2.simulate_put("/groups/group2/rot", body=b)
-        assert response.status == falcon.HTTP_202
-
-        while not ghab1.kever.sn == 1:
-            yield self.tock
-
-        assert ghab1.kever.serder.ked["t"] == coring.Ilks.rot
-        assert ghab1.kever.serder.said == "EBz-CqguoY0_yfiygx0Due-5z2xp027eoRdVNKxRvs_O"
-
-        while not ghab2.kever.sn == 1:
-            yield self.tock
-
-        assert ghab2.kever.serder.ked["t"] == coring.Ilks.rot
-        assert ghab2.kever.serder.said == "EBz-CqguoY0_yfiygx0Due-5z2xp027eoRdVNKxRvs_O"
-
-        while len(self.notifier1.getNotes()) != 2 or len(self.notifier2.getNotes()) != 2:
-            yield self.tock
-
-        notes = self.notifier1.getNotes()
-        note = notes[1]
-        assert note.pad['a']['r'] == "/multisig/rot/complete"
-        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
-        notes = self.notifier2.getNotes()
-        note = notes[1]
-        assert note.pad['a']['r'] == "/multisig/rot/complete"
-        assert note.pad['a']['a'] == {'i': 'EDZc_n-rSd4uhiZJGozouT45PxSr2NTYo3JFdEWE4GIA', 's': 0}
-
         self.remove(self.toRemove)
         return True
 
@@ -198,12 +160,10 @@ def test_multisig_identifier_ends(seeder):
             habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
         testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
 
-        # Run all participants
-        directing.runController(doers=[testDoer], expire=30.0)
-
-        assert testDoer.done is True
+        # Neuter this test for now, it will be moved to KERIA
+        assert testDoer.done is None
 
 
 if __name__ == "__main__":
     pass
-    #test_multisig_identifier_ends(seeder)
+    # test_multisig_identifier_ends(seeder)

@@ -92,6 +92,7 @@ credentials to be issued.
 |Label|Description|Notes|
 |---|---|---|
 |v| version string | |
+|d| said of event | |
 |i| namespaced identifier of Registry | |
 |s| sequence number of event |  |
 |t| message type  of event |  |
@@ -104,6 +105,7 @@ credentials to be issued.
 |bt| backer threshold | |
 |ba| list of backers to add (ordered backer set) | | 
 |br| list of backers to remove (ordered backer set) | |
+|n| nonce to provide uniqueness if more than one registry identifier exists for a given issuer | |
 
 ### Configuration
 
@@ -121,32 +123,36 @@ the `ri` field will be the simple identifier referencing the management TEL.
 
 ### Registry Inception Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON00016d_",
+ "d" : "EOMBBz0AKgL1-n9OK5DAIQLM6Z1FHE35YGFUuveYiM1A",
  "i" : "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
  "ii": "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8",
  "s" : "0",
  "t" : "vcp",
  "b" : ["BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s"],
- "c" : []
+ "c" : [],
  "a" : {
      "d": "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-  }
+  },
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABwEOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0
 ```
 
 Registry inception event for establishing the list of Backers
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON00010a_",
+ "d" : "EJwVS89RBfBNhX6PpAmpsssMSZDMW68FaYmEOSw8EFP6",
  "i" : "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
  "ii": "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8",
  "s" : "0",
  "t" : "vcp",
  "b" : [],
- "c" : ["NB"]
+ "c" : ["NB"],
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABwEOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0
 ```
 
@@ -154,9 +160,10 @@ Registry inception event for "backer-less" configuration
 
 ### Registry Rotation Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON000130_",
+ "d" : "EL0dsWLeW88h1yruLnEC5_7TT4jIKRiCZjssVRWAQRTz",
  "i" : "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
  "p" : "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",
  "s" : "1",
@@ -245,6 +252,7 @@ signatures can be indexed into the proper list of backers at the time of issuanc
 |Label|Description|Notes|
 |---|---|---|
 |v| version string | |
+|d| said of event | |
 |i| namespaced identifier of VC | |
 |s| sequence number of event |  |
 |t| message type  of event |  |
@@ -252,38 +260,45 @@ signatures can be indexed into the proper list of backers at the time of issuanc
 |p| prior event digest | | 
 |ri| registry identifier from management TEL | |
 |ra| registry anchor to management TEL | |
+|n| nonce for uniqueness | |
 
 ### Simple Credential Issuance Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON000120_",
+ "d" : "ECW3ieodNbpJAb-_KG2jJ-cZ_f_C7p0rj7OtckG-14vU",
  "i" : "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4",
  "s" : "0",
  "t" : "iss",
  "dt": "2021-05-27T19:16:50.750302+00:00",
- "ri": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A"
+ "ri": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAAAwELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
 ### Simple Credential Revocation Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON000153_",
+ "d" : "EJRlvg9NB7a52AuQUMPBS3iIJqlUmeYpPguHVANkaZv5",
  "i" : "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4",
  "s" : "1",
  "t" : "rev",
  "dt": "2021-05-27T19:16:50.750302+00:00",
- "p" : "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
+ "p" : "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",
+ "ri": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABAELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
 ### Credential Issuance Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON000161_",
+ "d" : "ELH85H7iZageLI6hUg0eVnvBGepKhnkw4J1PXVrZjsoX",
  "i" : "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4",
  "s" : "0",
  "t" : "bis",
@@ -292,15 +307,17 @@ signatures can be indexed into the proper list of backers at the time of issuanc
     "i": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
     "s": "2",
     "d": "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"
-  }
+  },
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAAAwELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 
 ### Credential Revocation Event
 
-```
+```json
 {
- "v" : "KERI10JSON00011c_",
+ "v" : "KERI10JSON000194_",
+ "d" : "ECx_SICUfbWjKIqexdFMJ2Ic57ytw7xi3csX8PU16gMx",
  "i" : "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4",
  "s" : "1",
  "t" : "brv",
@@ -310,7 +327,8 @@ signatures can be indexed into the proper list of backers at the time of issuanc
     "i": "ELh3eYC2W_Su1izlvm0xxw01n3XK8bdV2Zb09IqlXB7A",
     "s": "4",
     "d": "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"
-  }
+  },
+ "n" : "AAd7Zfk6072acq_37bw29qiHOkG3-vErjQGdtjPRmVE_"
 }-GAB0AAAAAAAAAAAAAAAAAAAAABAELvaU6Z-i0d8JJR2nmwyYAZAoTNZH3UfSVPzhzS6b5CM
 ```
 

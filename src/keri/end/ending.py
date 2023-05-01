@@ -547,7 +547,6 @@ class OOBIEnd:
             eid: qb64 identifier prefix of participant in role
 
         """
-
         if aid is None:
             if self.default is None:
                 rep.status = falcon.HTTP_NOT_FOUND
@@ -561,6 +560,10 @@ class OOBIEnd:
             return
 
         kever = self.hby.kevers[aid]
+        if not self.hby.db.fullyWitnessed(kever.serder):
+            rep.status = falcon.HTTP_NOT_FOUND
+            return
+
         owits = oset(kever.wits)
         if kever.prefixer.qb64 in self.hby.prefixes:  # One of our identifiers
             hab = self.hby.habs[kever.prefixer.qb64]

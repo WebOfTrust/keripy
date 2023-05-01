@@ -3,19 +3,16 @@
 keri.app.storing module
 
 """
-import itertools
-import random
 
 from hio.base import doing
 from hio.help import decking
 from ordered_set import OrderedSet as oset
 
-from . import httping, agenting, forwarding
+from . import forwarding
 from .. import help
 from ..core import coring
 from ..core.coring import MtrDex
 from ..db import dbing, subing
-from ..peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -224,7 +221,6 @@ class Respondant(doing.DoDoer):
             while self.cues:  # iteratively process each cue in cues
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
-
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre
                     cuedKed = serder.ked
@@ -234,7 +230,10 @@ class Respondant(doing.DoDoer):
                         owits = oset(kever.wits)
                         if match := owits.intersection(self.hby.prefixes):
                             pre = match.pop()
-                            hab = self.hby.habs[pre]
+                            hab = self.hby.habByPre(pre)
+                            if hab is None:
+                                continue
+
                             raw = hab.receipt(serder)
                             rserder = coring.Serder(raw=raw)
                             del raw[:rserder.size]
@@ -244,7 +243,9 @@ class Respondant(doing.DoDoer):
                     src = cue["src"]
                     dest = cue["dest"]
                     msgs = cue["msgs"]
-                    hab = self.hby.habs[src]
+                    hab = self.hby.habByPre(src)
+                    if hab is None:
+                        continue
 
                     if dest not in self.hby.kevers:
                         continue
@@ -259,12 +260,16 @@ class Respondant(doing.DoDoer):
                 elif cueKin in ("reply",):
                     src = cue["src"]
                     serder = cue["serder"]
+
                     dest = cue["dest"]
 
                     if dest not in self.hby.kevers:
                         continue
 
-                    hab = self.hby.habs[src]
+                    hab = self.hby.habByPre(src)
+                    if hab is None:
+                        continue
+
                     atc = hab.endorse(serder)
                     del atc[:serder.size]
                     self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)

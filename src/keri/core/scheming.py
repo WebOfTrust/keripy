@@ -12,7 +12,7 @@ import jsonschema
 import msgpack
 
 from . import coring
-from .coring import MtrDex, Serials, Saider, Ids
+from .coring import MtrDex, Serials, Saider, Saids
 from .. import help, kering
 from ..kering import ValidationError, DeserializationError
 
@@ -86,7 +86,7 @@ class CacheResolver:
 class JSONSchema:
     """ JSON Schema support class
     """
-    id_ = Ids.dollar  # ID Field Label
+    id_ = Saids.dollar  # ID Field Label
 
     def __init__(self, resolver=None):
         """ Initialize instance
@@ -385,7 +385,7 @@ class Schemer:
         self._raw = raw
         self._sed = sed
         self._kind = kind
-        self._saider = Saider(raw=self._raw, code=self._code, label=Ids.dollar)
+        self._saider = Saider(raw=self._raw, code=self._code, label=Saids.dollar)
 
     @property
     def saider(self):

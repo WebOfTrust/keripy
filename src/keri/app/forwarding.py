@@ -71,7 +71,7 @@ class Poster(doing.DoDoer):
                 else:
                     hab = self.hby.habs[src]
 
-                ends = self.endsFor(hab, recp)
+                ends = hab.endsFor(recp)
                 try:
                     if Roles.controller in ends:
                         yield from self.sendDirect(hab, ends[Roles.controller], serder=srdr, atc=atc)
@@ -109,6 +109,7 @@ class Poster(doing.DoDoer):
             attachment (bytes): attachment bytes
 
         """
+        src = src if src is not None else hab.pre
 
         evt = dict(src=src, dest=dest, topic=topic, serder=serder)
         if attachment is not None:
@@ -136,34 +137,6 @@ class Poster(doing.DoDoer):
                     self.cues.append(cue)
             yield self.tock
 
-    @staticmethod
-    def endsFor(hab, dest):
-        ends = dict()
-
-        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(dest,)):
-            locs = dict()
-            urls = hab.fetchUrls(eid=eid, scheme="")
-            for rscheme, url in urls.firsts():
-                locs[rscheme] = url
-
-            if erole not in ends:
-                ends[erole] = dict()
-
-            ends[erole][eid] = locs
-
-        ends[Roles.witness] = dict()
-        if kever := hab.kevers[dest] if dest in hab.kevers else None:
-            # latest key state for cid
-            for eid in kever.wits:
-                locs = dict()
-                urls = hab.fetchUrls(eid=eid, scheme="")
-                for rscheme, url in urls.firsts():
-                    locs[rscheme] = url
-
-                ends[Roles.witness][eid] = locs
-
-        return ends
-
     def sendDirect(self, hab, ends, serder, atc):
         ctrl, locs = random.choice(list(ends.items()))
         witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
@@ -177,6 +150,8 @@ class Poster(doing.DoDoer):
 
         while not witer.idle:
             _ = (yield self.tock)
+
+        self.remove([witer])
 
     def forward(self, hab, ends, recp, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox
@@ -209,7 +184,6 @@ class Poster(doing.DoDoer):
             ims.extend(pathed)
 
         witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
-
         msg.extend(ims)
         witer.msgs.append(bytearray(msg))  # make a copy
         self.extend([witer])

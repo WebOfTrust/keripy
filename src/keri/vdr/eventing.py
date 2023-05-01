@@ -25,21 +25,12 @@ from ..db.dbing import dgKey, snKey
 from ..help import helping
 from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
+from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
+                      BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 from ..vdr.viring import Reger
 
 logger = help.ogler.getLogger()
 
-VCP_LABELS = ["v", "i", "s", "t", "bt", "b", "c"]
-VRT_LABELS = ["v", "i", "s", "t", "p", "bt", "b", "ba", "br"]
-
-ISS_LABELS = ["v", "i", "s", "t", "ri", "dt"]
-BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
-
-REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
-BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
-
-TSN_LABELS = ["v", "i", "s", "d", "ii", "a", "et", "bt", "b", "c", "br", "ba"]
-CRED_TSN_LABELS = ["v", "i", "s", "d", "ri", "a", "ra"]
 
 
 def incept(
@@ -939,6 +930,7 @@ class Tever:
             if self.noBackers is True:
                 raise ValidationError("invalid rotation evt {} against backerless registry {}".
                                       format(ked, self.regk))
+
             toad, baks, cuts, adds = self.rotate(serder, sn=sn)
 
             bigers = self.valAnchorBigs(serder=serder,
@@ -973,6 +965,7 @@ class Tever:
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
+
     def rotate(self, serder, sn):
         """ Process registry management TEL, non-inception events (vrt)
 
@@ -989,7 +982,15 @@ class Tever:
         """
 
         ked = serder.ked
+        ilk = ked["t"]
         dig = ked["p"]
+
+        # XXXX should there be validation of labels here
+        labels = VRT_LABELS  # assumes ilk == Ilks.vrt
+        #for k in labels:
+            #if k not in ked:
+                #raise ValidationError("Missing element = {} from {} event for "
+                                      #"evt = {}.".format(k, ilk, ked))
 
         if serder.pre != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
@@ -1543,7 +1544,7 @@ class Tevery:
         return self.reger.registries
 
     def processEvent(self, serder, seqner=None, saider=None, wigers=None):
-        """ Process one event serder with attached indexde signatures sigers
+        """ Process one event serder with attached indexed signatures sigers
 
         Validates event against current state of registry or credential, creating registry
         on inception events and processing change in state to credential or registry for

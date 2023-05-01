@@ -436,7 +436,6 @@ def test_get_oobi():
         assert serder.ked['a']['eid'] == hab.pre
         assert serder.ked['a']['scheme'] == kering.Schemes.http
         assert serder.ked['a']['url'] == "http://127.0.0.1:5555"
-        print(serder.pretty())
 
     """Done Test"""
 

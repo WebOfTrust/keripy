@@ -128,26 +128,25 @@ class ConfirmDoer(doing.DoDoer):
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
-                            # self.counselor.rotate(ghab=hab, mids=self.aids, isith=self.isith, toad=self.toad,
-                            #                       cuts=list(self.cuts), adds=list(self.adds),
-                            #                       data=self.data)
 
                         serder = coring.Serder(raw=msg)
+                        del msg[:serder.size]
 
                         exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
                         others = list(oset(hab.smids + (hab.rmids or [])))
-                        #others = list(hab.smids)
+                        # others = list(hab.smids)
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
+                            self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
+                                              attachment=bytearray(msg))
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         seqner = coring.Seqner(sn=serder.sn)
                         saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(smids=aids, mid=hab.mhab.pre, prefixer=prefixer, seqner=seqner,
-                                             saider=saider)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=seqner, saider=saider)
 
                         while True:
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))

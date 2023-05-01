@@ -29,25 +29,14 @@ from ..kering import (MissingEntryError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
 from ..kering import Version
+from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
+                      KSN_LABELS, RPY_LABELS)
 
 logger = help.ogler.getLogger()
 
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
-ICP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
-              "bt", "b", "c", "a"]
-DIP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
-              "bt", "b", "c", "a", "di"]
-ROT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
-              "bt", "br", "ba", "a"]
-DRT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
-              "bt", "br", "ba", "a"]
-IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 
-KSN_LABELS = ["v", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "n",
-              "bt", "b", "c", "ee", "di"]
-
-RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
 
 @dataclass(frozen=True)
@@ -658,8 +647,6 @@ def incept(keys,
 
     data = data if data is not None else []
 
-    # see compact labels in KID0003.md
-
     ked = dict(v=vs,  # version string
                t=ilk,
                d="",   # qb64 SAID
@@ -670,7 +657,7 @@ def incept(keys,
                k=keys,  # list of qb64
                nt=(ntholder.num if intive and ntholder.num is not None and
                     ntholder.num <= MaxIntThold else ntholder.sith),
-               n=ndigs,  # hash qual Base64
+               n=ndigs,  # list of hashes qb64
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
@@ -684,11 +671,11 @@ def incept(keys,
 
 
     if delpre is None and code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # defaults to not self-addressing code
+        prefixer = Prefixer(qb64=keys[0])  # defaults to not digestive code
         if prefixer.digestive:
             raise ValueError("Invalid code, digestive={}, must be derived from"
                              " ked.".format(prefixer.code))
-    else:
+    else:  # digestive
         # raises derivation error if non-empty nxt but ephemeral code
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
@@ -1046,6 +1033,7 @@ def state(pre,
         "et": "rot",
         "kt": "1",
         "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "nt": "1",
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "bt": "1",
         "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
@@ -1258,7 +1246,7 @@ def reply(route="",
       }
     }
     """
-    label = coring.Ids.d
+    label = coring.Saids.d
     vs = versify(version=version, kind=kind, size=0)
     if data is None:
         data = {}
@@ -1541,8 +1529,6 @@ class Kever:
         verfers (list): of Verfer instances for current event state set of signing keys
         digers (list): of Diger instances for current event state set  of
             next (rotation) key digests
-        nexter (Nexter): instance that provides nexter.digers of next key digests
-            from .serder.nexter as well as inclusion/matching methods
         ntholder (Tholder): instance for next (rotation) threshold
             from serder.ntholder
         toader (Number): instance of TOAD (threshold of accountable duplicity)
@@ -1565,56 +1551,56 @@ class Kever:
         fn (int): first seen ordinal number property the returns .fner.num
         digs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
-        transferable (bool): True if nexter is not none and pre is transferable
+        transferable (bool): True if .digers is not empty and pre is transferable
 
     ToDo:
-       Add Class variable, instance variable and parse support for Registrar Backer config trait.
+       Add Registrar Backer support:
+        Class variable, instance variable and parse support config trait.
         raise error for now
-       Replace Nexter with Kever.digers and ntholder with new Tholder methods
-       to replace Nexter methods.
+
 
     """
     EstOnly = False
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, seqner=None, saider=None, firner=None, dater=None,
-                 cues=None, prefixes=None, local=False,
-                 check=False):
+                 db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
+                 dater=None, cues=None, prefixes=None, local=False, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
 
         Parameters:
-            state (Serder): instance of key state
-            serder is Serder instance of inception event
-            sigers is list of Siger instances of indexed controller signatures
-                of event. Index is offset into keys list of latest est event
-            wigers is list of Siger instances of indexed witness signatures of
-                event. Index is offset into wits list of latest est event
-            db is Baser instance of lmdb database
-            estOnly is boolean trait to indicate establish only event
-            seqner is Seqner instance of delegating event sequence number.
+            state (Serder | None): instance of key state notice 'ksn' message body
+            serder (Serder | None): instance of inception event
+            sigers (list | None): of Siger instances of indexed controller signatures
+                of event. Index is offset into keys list from latest est event
+            wigers (list | None): of Siger instances of indexed witness signatures of
+                event. Index is offset into wits list from latest est event
+            db (Baser | None): instance of lmdb database
+            estOnly (bool | None): True means establishment only events allowed 'EO'.
+                            False all events allowed.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            Saider is Saider instance of of delegating event said.
+            delsaider (Saider | None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
-            firner is optional Seqner instance of cloned first seen ordinal
+            firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            dater (Dater | None): optional instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            kevers is reference Kevery.kevers dict when provided needed for
-                validation of delegation seal .doNotDelegate of delegator
-            cues is reference to Kevery.cues deque when provided i.e. notices of
-                events or requests to respond to
-            prefixes is list of own prefixes for own local habitats. May not be the
-                prefix of this Kever's event. Some restrictions if present
+            cues (Deck | None): reference to Kevery.cues Deck when provided
+                i.e. notices of events or requests to respond to
+            prefixes (list | None): own prefixes for own local habitats.
+                May not be include the prefix of this Kever's event.
+                Some restrictions if present
                 If empty then promiscuous mode
             local (bool): True means only process msgs for own controller's
-                events if .prefixes is not empty. False means only process msgs
-                for not own events if .prefixes is not empty
+                              events if .prefixes is not empty.
+                          False means only process msgs for not own events
+                              if .prefixes is not empty
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
@@ -1664,8 +1650,8 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
-                                                        seqner=seqner,
-                                                        saider=saider)
+                                                        delseqner=delseqner,
+                                                        delsaider=delsaider)
 
         self.delegator = delegator
         if self.delegator is None:
@@ -1678,7 +1664,7 @@ class Kever:
         # all validated above so may add to KEL and FEL logs as first seen
         # returns fn == None if already logged fn log is non idempotent
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
-                                first=True if not check else False, seqner=seqner, saider=saider,
+                                first=True if not check else False, seqner=delseqner, saider=delsaider,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
@@ -1799,10 +1785,19 @@ class Kever:
                                             [verfer.qb64 for verfer in self.verfers],
                                             ked))
 
+
+
         self.prefixer = Prefixer(qb64=serder.pre)
         if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
+
+        # Can't use usual serder.saider.verify(sad=ked) on inception when digestive
+        # since both 'd' and 'i' field are dummied so use prefixer verification
+        # otherwise use saider verification below
+        if not self.prefixer.digestive:
+            if not serder.saider.verify(sad=ked):
+                raise ValidationError("Invalid SAID {} for event {}".format(ked["d"], ked))
 
 
         self.serder = serder  # need whole serder for digest agility comparisons
@@ -1813,7 +1808,6 @@ class Kever:
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
         self.digers = serder.digers
-        #self.nexter = serder.nexter
         self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
@@ -1870,7 +1864,7 @@ class Kever:
             self.doNotDelegate = True
 
 
-    def update(self, serder, sigers, wigers=None, seqner=None, saider=None,
+    def update(self, serder, sigers, wigers=None, delseqner=None, delsaider=None,
                firner=None, dater=None, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
@@ -1884,9 +1878,9 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            seqner (Seqner | None): instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider (Saider | None): instance of of delegating event said.
+            delsaider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -1940,45 +1934,21 @@ class Kever:
                                                             wigers=wigers,
                                                             toader=toader,
                                                             wits=wits,
-                                                            seqner=seqner,
-                                                            saider=saider)
+                                                            delseqner=delseqner,
+                                                            delsaider=delsaider)
 
-
-            # move this out of here to where ntholder threshold is verified
-            # verify newly current keys are subset of prior next digs
-            #keys = ked["k"]  # proposed new current keys
-            #digs = [diger.qb64 for diger in self.digers]  # prior next digs
-            ## new current keys must be subset of prior next digs
-            #if not self.ntholder.includes(keys=keys, digs=digs):
-                #raise ValidationError("Mismatch prior nxt digs = {} with rotation"
-                                      #"current keys = {} for evt = {}."
-                                      #"".format(digs, keys, ked))
-
-            #if not self.ntholder.satisfy(indices=self.ntholder.matches(sigers=sigers,
-                                                                               #digs=digs)):
-                #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                #if seqner and saider:
-                    #self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
-                #raise MissingSignatureError("Failure satisfying nsith = {} on sigs for {}"
-                                                    #" for evt = {}.".format(self.ntholder.sith,
-                                                                            #[siger.qb64 for siger in sigers],
-                                                                            #serder.ked))
 
 
             # current sigers and prior next digers in .digers
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                if seqner and saider:
-                    self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+                if delseqner and delsaider:  # save in case not attached later
+                    self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingSignatureError(f"Failure satisfying nsith="
                                             f"{self.ntholder.sith} on sigs="
                                             f"{[siger.qb64 for siger in sigers]}"
                                             f" for evt={serder.ked}.")
-
-
-
-
 
 
             if delegator != self.delegator:  #
@@ -1991,7 +1961,7 @@ class Kever:
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers, wits=wits,
-                                    first=True if not check else False, seqner=seqner, saider=saider,
+                                    first=True if not check else False, seqner=delseqner, saider=delsaider,
                                     firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
@@ -2141,11 +2111,6 @@ class Kever:
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        #if not self.nexter:  # prior next is empty so rotations not allowed
-            #raise ValidationError("Attempted rotation for nontransferable"
-                                  #" prefix = {} for evt = {}."
-                                  #"".format(self.prefixer.qb64, ked))
-
         tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         keys = ked["k"]  # current keys
         if len(keys) < tholder.size:
@@ -2205,7 +2170,8 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
-                       wigers, toader, wits, seqner=None, saider=None):
+                       wigers, toader, wits,
+                       delseqner=None, delsaider=None):
         """
         Returns triple (sigers, delegator, wigers) where:
         sigers is unique validated signature verified members of inputed sigers
@@ -2219,20 +2185,20 @@ class Kever:
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
-            serder is Serder instance of event
-            sigers is list of Siger instances of indexed controllers signatures.
+            serder (Serder): instance of event
+            sigers (list): of Siger instances of indexed controllers signatures.
                 Index is offset into verfers list from which public key may be derived.
-            verfers is list of Verfer instances of keys from latest est event
-            tholder is Tholder instance of sith threshold
-            wigers is list of Siger instances of indexed witness signatures.
+            verfers (list): of Verfer instances of keys from latest est event
+            tholder (Tholder): instance of sith threshold
+            wigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
             toader (Number): instance of backer witness threshold
-            wits is list of qb64 non-transferable prefixes of witnesses used to
+            wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider is Saider instance of of delegating event said.
+            delsaider (Saider | None): instance of of delegating event said.
                 If this event is not delegated then saider is ignored
 
         """
@@ -2259,15 +2225,15 @@ class Kever:
 
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            if seqner and saider:
-                self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+            if delseqner and delsaider:
+                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                         " for evt = {}.".format(tholder.sith,
                                                                 [siger.qb64 for siger in sigers],
                                                                 serder.ked))
 
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
-                                            seqner=seqner, saider=saider)
+                                            delseqner=delseqner, delsaider=delsaider)
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
@@ -2285,7 +2251,7 @@ class Kever:
                         raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
 
                 if len(windices) < toader.num:  # not fully witnessed yet
-                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=seqner, saider=saider):
+                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=delseqner, saider=delsaider):
                         self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
                     raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
                                                        f"on witness sigs="
@@ -2342,24 +2308,26 @@ class Kever:
 
 
 
-    def validateDelegation(self, serder, sigers, wigers=None, seqner=None, saider=None):
+    def validateDelegation(self, serder, sigers, wigers=None,
+                           delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
         Assumes state setup
 
         Parameters:
-            serder is Serder instance of delegated event serder
-            sigers is list of Siger instances of indexed controller sigs of
+            serder (Serder): instance of delegated event serder
+            sigers (list): of Siger instances of indexed controller sigs of
                 delegated event. Assumes sigers is list of unique verified sigs
-            wigers is optional list of Siger instance of indexed witness sigs of
+            wigers (list | None): of optional Siger instance of indexed witness sigs of
                 delegated event. Assumes wigers is list of unique verified sigs
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            saider is Saider instance of of delegating event digest.
+            delsaider (Saider | None): instance of of delegating event digest.
                 If this event is not delegated then diger is ignored
+
         Returns:
-            str: qb64 delegator prefix
+            (str | None): qb64 delegator prefix or None if not delegated
 
         """
         if serder.ked['t'] not in (Ilks.dip, Ilks.drt):  # not delegated
@@ -2376,12 +2344,12 @@ class Kever:
             return delegator
 
         # during initial delegation we just escrow the delcept event
-        if seqner is None and saider is None and delegator is not None:
+        if delseqner is None and delsaider is None and delegator is not None:
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
-        ssn = validateSN(sn=seqner.snh, inceptive=False)
+        ssn = validateSN(sn=delseqner.snh, inceptive=False)
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)
@@ -2395,10 +2363,10 @@ class Kever:
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            self.escrowPACouple(serder=serder, seqner=seqner, saider=saider)
+            self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "
                                          "evt = {}.".format(delegator,
-                                                            saider.qb64,
+                                                            delsaider.qb64,
                                                             serder.ked))
 
         # get the delegating event from dig
@@ -2411,7 +2379,7 @@ class Kever:
 
         dserder = Serder(raw=bytes(raw))  # delegating event
         # compare digests to make sure they match here
-        if not dserder.compare(said=saider.qb64):
+        if not dserder.compare(said=delsaider.qb64):
             raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
                                   "".format(delegator, ddig, serder.ked))
 
@@ -2444,6 +2412,7 @@ class Kever:
         # when custody of disc is in question then trustable otherwise not
 
         return delegator  # return delegator prefix
+
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
@@ -2482,6 +2451,11 @@ class Kever:
         if wits:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+        val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
+        for verfer in serder.verfers:
+            self.db.pubs.add(keys=(verfer.qb64,), val=val)
+        for diger in serder.digers:
+            self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
             if seqner and saider:  # authorized delegated or issued event
                 couple = seqner.qb64b + saider.qb64b
@@ -2766,7 +2740,6 @@ class Kevery:
     Has the following public attributes and properties:
 
     Attributes:
-        evts (Deck): of Events i.e. events to process
         cues (Deck):  of Cues i.e. notices of events needing receipt or
                       requests needing response
 
@@ -2808,13 +2781,12 @@ class Kevery:
     TimeoutKSN = 3600  # seconds to timeout key state notice message escrows
     TimeoutQNF = 300   # seconds to timeout query not found escrows
 
-    def __init__(self, *, evts=None, cues=None, db=None, rvy=None,
+    def __init__(self, *, cues=None, db=None, rvy=None,
                  lax=True, local=False, cloned=False, direct=True, check=False):
         """
         Initialize instance:
 
         Parameters:
-            evts (Deck): derived from various messages to be processes
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
@@ -2833,7 +2805,6 @@ class Kevery:
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.
         """
-        self.evts = evts if evts is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
             db = basing.Baser(reopen=True)  # default name = "main"
@@ -2887,21 +2858,9 @@ class Kevery:
 
         return []
 
-    def processEvents(self, evts=None):
-        """
-        Process event dicts in evts or if evts is None in .evts
-        Parameters:
-            evts (Deck): each entry is dict that matches call signature of
-                .processEvent
-        """
-        if evts is None:
-            evts = self.evts
-
-        while evts:
-            self.processEvent(**evts.pull())
 
     def processEvent(self, serder, sigers, *, wigers=None,
-                     seqner=None, saider=None,
+                     delseqner=None, delsaider=None,
                      firner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
@@ -2910,9 +2869,9 @@ class Kevery:
             serder is Serder instance of event to process
             sigers is list of Siger instances of attached controller indexed sigs
             wigers is optional list of Siger instances of attached witness indexed sigs
-            seqner is Seqner instance of delegating event sequence number.
+            delseqner is Seqner instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            sadier is Saider instance of of delegating event SAID.
+            delsaider is Saider instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2923,14 +2882,14 @@ class Kevery:
                 When dater provided then use dater for first seen datetime
         """
         # fetch ked ilk  pre, sn, dig to see how to process
-        ked = serder.ked
-        try:  # see if code of pre is supported and matches size of pre
-            Prefixer(qb64b=serder.preb)
-        except Exception as ex:  # if unsupported code or bad size raises error
-            raise ValidationError("Invalid pre = {} for evt = {}."
-                                  "".format(serder.pre, ked))
         pre = serder.pre
         ked = serder.ked
+        try:  # see if code of pre is supported and matches size of pre
+            Prefixer(qb64=pre)
+        except Exception as ex:  # if unsupported code or bad size raises error
+            raise ValidationError("Invalid pre = {} for evt = {}."
+                                  "".format(pre, ked)) from ex
+
         sn = serder.sn
         ilk = ked["t"]
         said = serder.said
@@ -2955,8 +2914,8 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              seqner=seqner,
-                              saider=saider,
+                              delseqner=delseqner,
+                              delsaider=delsaider,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
@@ -2972,7 +2931,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   seqner=seqner, saider=saider, wigers=wigers)
+                                   seqner=delseqner, saider=delsaider, wigers=wigers)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -3005,7 +2964,7 @@ class Kevery:
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
-                kever.cues = self.cues
+                #kever.cues = self.cues This is injected when inception is accepted
                 sno = kever.sner.num + 1  # proper sn of new inorder event
 
                 if not serder.saider.verify(sad=serder.ked):
@@ -3014,7 +2973,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       seqner=seqner, saider=saider, wigers=wigers)
+                                       seqner=delseqner, saider=delsaider, wigers=wigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
@@ -3023,7 +2982,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 seqner=seqner, saider=saider,
+                                 delseqner=delseqner, delsaider=delsaider,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  check=self.check)
@@ -4589,10 +4548,10 @@ class Kevery:
                                               "dig = {}.".format(bytes(edig)))
 
                     # seal source (delegator issuer if any)
-                    seqner = saider = None
+                    delseqner = delsaider = None
                     couple = self.db.getPde(dgkey)
                     if couple is not None:
-                        seqner, saider = deSourceCouple(couple)
+                        delseqner, delsaider = deSourceCouple(couple)
                     elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
                         if eserder.pre in self.kevers:
                             delpre = self.kevers[eserder.pre].delegator
@@ -4602,15 +4561,15 @@ class Kevery:
                         anchor = dict(i=eserder.ked["i"], s=eserder.sn, d=eserder.said)
                         srdr = self.db.findAnchoringEvent(pre=delpre, anchor=anchor)
                         if srdr is not None:
-                            seqner = coring.Seqner(sn=srdr.sn)
-                            saider = srdr.saider
-                            couple = seqner.qb64b + saider.qb64b
+                            delseqner = coring.Seqner(sn=srdr.sn)
+                            delsaider = srdr.saider
+                            couple = delseqner.qb64b + delsaider.qb64b
                             self.db.putPde(dgkey, couple)
 
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
                     self.processEvent(serder=eserder, sigers=sigers,
-                                      seqner=seqner, saider=saider)
+                                      delseqner=delseqner, delsaider=delsaider)
 
                     # If process does NOT validate sigs or delegation seal (when delegated),
                     # but there is still one valid signature then process will
@@ -4767,12 +4726,13 @@ class Kevery:
                     wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
                     # seal source (delegator issuer if any)
-                    seqner = saider = None
+                    delseqner = delsaider = None
                     couple = self.db.getPde(dgKey(pre, bytes(edig)))
                     if couple is not None:
-                        seqner, saider = deSourceCouple(couple)
+                        delseqner, delsaider = deSourceCouple(couple)
 
-                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, seqner=seqner, saider=saider)
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
+                                      delseqner=delseqner, delsaider=delsaider)
 
                     # If process does NOT validate wigs then process will attempt
                     # to re-escrow and then raise MissingWitnessSignatureError

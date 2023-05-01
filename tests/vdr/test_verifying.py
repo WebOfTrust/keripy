@@ -57,7 +57,7 @@ def test_verifier(seeder):
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         creder = proving.credential(issuer=hab.pre,
                                     schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
@@ -328,7 +328,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             LEI="5493001KJTIIGC8Y1R12",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         creder = proving.credential(issuer=ron.pre,
                                     schema=qviSchema,
@@ -400,7 +400,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
+        _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         chain = dict(
             d=creder.said,
