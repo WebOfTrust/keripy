@@ -92,6 +92,7 @@ VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
+ECDSA_256k1_SEEDBYTES = 32
 
 
 def versify(proto=Protos.keri, version=None, kind=Serials.json, size=0):
@@ -601,6 +602,7 @@ class NonTransCodex:
     Ed25519N: str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
     ECDSA_256k1N: str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     Ed448N: str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    ECDSA_256r1N: str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -2046,6 +2048,8 @@ class Verfer(Matter):
             self._verify = self._ed25519
         elif self.code in [MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256r1]:
             self._verify = self._secp256r1
+        elif self.code in [MtrDex.ECDSA_256k1N, MtrDex.ECDSA_256k1]:
+            self._verify = self._secp256k1
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
@@ -2065,7 +2069,7 @@ class Verfer(Matter):
     def _ed25519(sig, ser, key):
         """
         Returns True if verified False otherwise
-        Verifiy ed25519 sig on ser using key
+        Verify Ed25519 sig on ser using key
 
         Parameters:
             sig is bytes signature
@@ -2081,7 +2085,37 @@ class Verfer(Matter):
 
     @staticmethod
     def _secp256r1(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verify secp256r1 sig on ser using key
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+            key is bytes public key
+        """
         verkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key)
+        r = int.from_bytes(sig[:32], "big")
+        s = int.from_bytes(sig[32:], "big")
+        der = utils.encode_dss_signature(r, s)
+        try:
+            verkey.verify(der, ser, ec.ECDSA(hashes.SHA256()))
+            return True
+        except exceptions.InvalidSignature:
+            return False
+        
+    @staticmethod
+    def _secp256k1(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verify secp256k1 sig on ser using key
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+            key is bytes public key
+        """
+        verkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), key)
         r = int.from_bytes(sig[:32], "big")
         s = int.from_bytes(sig[32:], "big")
         der = utils.encode_dss_signature(r, s)
@@ -2224,6 +2258,9 @@ class Signer(Matter):
             elif code == MtrDex.ECDSA_256r1_Seed:
                 raw = pysodium.randombytes(ECDSA_256r1_SEEDBYTES)
                 super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
+            elif code == MtrDex.ECDSA_256k1_Seed:
+                raw = pysodium.randombytes(ECDSA_256k1_SEEDBYTES)
+                super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
 
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
@@ -2242,6 +2279,14 @@ class Signer(Matter):
             verfer = Verfer(raw=verkey,
                             code=MtrDex.ECDSA_256r1 if transferable
                             else MtrDex.ECDSA_256r1N)
+        elif self.code == MtrDex.ECDSA_256k1_Seed:
+            self._sign = self._secp256k1
+            d = int.from_bytes(self.raw, byteorder="big")
+            sigkey = ec.derive_private_key(d, ec.SECP256K1())
+            verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+            verfer = Verfer(raw=verkey,
+                            code=MtrDex.ECDSA_256k1 if transferable
+                            else MtrDex.ECDSA_256k1N)
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -2395,6 +2440,110 @@ class Signer(Matter):
                          ondex=ondex,
                          verfer=verfer,)
 
+    @staticmethod
+    def _secp256k1(ser, seed, verfer, index, only=False, ondex=None, **kwa):
+        """
+        Returns signature as either Cigar or Siger instance as appropriate for
+        secp256k1 digital signatures given index and ondex values
+
+        The seed's code determins the crypto key-pair algorithm and signing suite
+        The signature type, Cigar or Siger, and when indexed the Siger code
+        may be completely determined by the seed and index values (index, ondex)
+        by assuming that the index values are intentional.
+        Without the seed code its more difficult for Siger to
+        determine when for the Indexer code value should be changed from the
+        than the provided value with respect to provided but incompatible index
+        values versus error conditions.
+
+        Parameters:
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            only (bool): True means main index only list, ondex ignored
+                          False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next
+        """
+        # compute raw signature sig using seed on serialization ser
+        d = int.from_bytes(seed, byteorder="big")
+        sigkey = ec.derive_private_key(d, ec.SECP256K1())
+        der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+        (r, s) = utils.decode_dss_signature(der)
+        sig = bytearray(r.to_bytes(32, "big"))
+        sig.extend(s.to_bytes(32, "big"))
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
+            return Cigar(raw=sig, code=MtrDex.ECDSA_256k1_Sig, verfer=verfer)
+        else:  # Must be Siger i.e. indexed signature
+            # should add Indexer class method to get ms main index size for given code
+            if only:  # only main index ondex not used
+                ondex = None
+                if index <= 63: # (64 ** ms - 1) where ms is main index size
+                    code = IdrDex.ECDSA_256k1_Crt_Sig  # use small current only
+                else:
+                    code = IdrDex.ECDSA_256k1_Big_Crt_Sig  # use big current only
+            else:  # both
+                if ondex == None:
+                    ondex = index  # enable default to be same
+                if ondex == index and index <= 63:  # both same and small
+                    code = IdrDex.ECDSA_256k1_Sig  # use  small both same
+                else:  # otherwise big or both not same so use big both
+                    code = IdrDex.ECDSA_256k1_Big_Sig  # use use big both
+
+            return Siger(raw=sig,
+                         code=code,
+                         index=index,
+                         ondex=ondex,
+                         verfer=verfer,)
+    
+    # def derive_index_code(code, index, only=False, ondex=None, **kwa):
+    #     # should add Indexer class method to get ms main index size for given code
+    #     if only:  # only main index ondex not used
+    #         ondex = None
+    #         if index <= 63: # (64 ** ms - 1) where ms is main index size,  use small current only
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Crt_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #         else:    # use big current only
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Big_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Crt_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Crt_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #     else:  # both
+    #         if ondex == None:
+    #             ondex = index  # enable default to be same
+    #         if ondex == index and index <= 63:  # both same and small so use small both same
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+    #         else:  # otherwise big or both not same so use big both                
+    #             if code == MtrDex.Ed25519_Seed:
+    #                 indxSigCode = IdrDex.Ed25519_Big_Sig
+    #             elif code == MtrDex.ECDSA_256r1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256r1_Big_Sig
+    #             elif code == MtrDex.ECDSA_256k1_Seed:
+    #                 indxSigCode = IdrDex.ECDSA_256k1_Big_Sig
+    #             else:
+    #                 raise ValueError("Unsupported signer code = {}.".format(code))
+
+    #     return (indxSigCode, ondex)
 
 class Salter(Matter):
     """
@@ -3625,12 +3774,16 @@ class IndexedSigCodex:
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both lists.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
@@ -3649,9 +3802,11 @@ class IndexedCurrentSigCodex:
     """
     Ed25519_Crt_Sig: str = 'B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Crt_Sig: str = 'D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Crt_Sig: str = "F"  # ECDSA secp256r1 sig appears in current list.
     Ed448_Crt_Sig: str = '0B'  # Ed448 signature appears in current list only.
     Ed25519_Big_Crt_Sig: str = '2B'  # Ed25519 sig appears in current list only.
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
+    ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
 
     def __iter__(self):
@@ -3670,9 +3825,11 @@ class IndexedBothSigCodex:
     """
     Ed25519_Sig: str = 'A'  # Ed25519 sig appears same in both lists if any.
     ECDSA_256k1_Sig: str = 'C'  # ECDSA secp256k1 sig appears same in both lists if any.
+    ECDSA_256r1_Sig: str = "E"  # ECDSA secp256r1 sig appears same in both lists if any.
     Ed448_Sig: str = '0A'  # Ed448 signature appears in both lists.
     Ed25519_Big_Sig: str = '2A'  # Ed25519 sig appears in both listsy.
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
+    ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
 
     def __iter__(self):
@@ -3737,12 +3894,16 @@ class Indexer:
         'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'E': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'F': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2E': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),

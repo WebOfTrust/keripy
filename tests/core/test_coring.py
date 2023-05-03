@@ -326,6 +326,7 @@ def test_matter():
         'Big': 'N',
         'X25519_Private': 'O',
         'X25519_Cipher_Seed': 'P',
+        'ECDSA_256r1_Seed': 'Q',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -334,6 +335,7 @@ def test_matter():
         'SHA3_512': '0F',
         'SHA2_512': '0G',
         'Long': '0H',
+        'ECDSA_256r1_Sig': '0I',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -342,6 +344,8 @@ def test_matter():
         'Tern': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
+        'ECDSA_256r1N': '1AAI',
+        'ECDSA_256r1': '1AAJ',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -390,6 +394,7 @@ def test_matter():
         'N': Sizage(hs=1, ss=0, fs=12, ls=0),
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
+        'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -398,6 +403,7 @@ def test_matter():
         '0F': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -406,6 +412,8 @@ def test_matter():
         '1AAF': Sizage(hs=4, ss=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
+        '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -1578,12 +1586,16 @@ def test_indexer():
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Sig': 'E',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Sig': '2A',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Sig': '2C',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Sig': '2E',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
         'TBD0': '0z',
@@ -1595,12 +1607,16 @@ def test_indexer():
     assert IdrDex.Ed25519_Crt_Sig == 'B'
     assert IdrDex.ECDSA_256k1_Sig == 'C'
     assert IdrDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdrDex.ECDSA_256r1_Sig == 'E'
+    assert IdrDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdrDex.Ed448_Sig == '0A'
     assert IdrDex.Ed448_Crt_Sig == '0B'
     assert IdrDex.Ed25519_Big_Sig == '2A'
     assert IdrDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdrDex.ECDSA_256k1_Big_Sig == '2C'
     assert IdrDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdrDex.ECDSA_256r1_Big_Sig == '2E'
+    assert IdrDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdrDex.Ed448_Big_Sig == '3A'
     assert IdrDex.Ed448_Big_Crt_Sig == '3B'
     assert IdrDex.TBD0 == '0z'
@@ -1612,12 +1628,16 @@ def test_indexer():
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Sig': 'C',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Sig': 'E',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Sig': '0A',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Sig': '2A',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Sig': '2C',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Sig': '2E',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
     }
@@ -1626,12 +1646,16 @@ def test_indexer():
     assert IdxSigDex.Ed25519_Crt_Sig == 'B'
     assert IdxSigDex.ECDSA_256k1_Sig == 'C'
     assert IdxSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxSigDex.ECDSA_256r1_Sig == 'E'
+    assert IdxSigDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdxSigDex.Ed448_Sig == '0A'
     assert IdxSigDex.Ed448_Crt_Sig == '0B'
     assert IdxSigDex.Ed25519_Big_Sig == '2A'
     assert IdxSigDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdxSigDex.ECDSA_256k1_Big_Sig == '2C'
     assert IdxSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxSigDex.ECDSA_256r1_Big_Sig == '2E'
+    assert IdxSigDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdxSigDex.Ed448_Big_Sig == '3A'
     assert IdxSigDex.Ed448_Big_Crt_Sig == '3B'
 
@@ -1639,34 +1663,42 @@ def test_indexer():
     assert dataclasses.asdict(IdxCrtSigDex) == {
         'Ed25519_Crt_Sig': 'B',
         'ECDSA_256k1_Crt_Sig': 'D',
+        'ECDSA_256r1_Crt_Sig': 'F',
         'Ed448_Crt_Sig': '0B',
         'Ed25519_Big_Crt_Sig': '2B',
         'ECDSA_256k1_Big_Crt_Sig': '2D',
+        'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Crt_Sig': '3B',
     }
 
     assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'
     assert IdxCrtSigDex.ECDSA_256k1_Crt_Sig == 'D'
+    assert IdxCrtSigDex.ECDSA_256r1_Crt_Sig == 'F'
     assert IdxCrtSigDex.Ed448_Crt_Sig == '0B'
     assert IdxCrtSigDex.Ed25519_Big_Crt_Sig == '2B'
     assert IdxCrtSigDex.ECDSA_256k1_Big_Crt_Sig == '2D'
+    assert IdxCrtSigDex.ECDSA_256r1_Big_Crt_Sig == '2F'
     assert IdxCrtSigDex.Ed448_Big_Crt_Sig == '3B'
 
 
     assert dataclasses.asdict(IdxBthSigDex) == {
         'Ed25519_Sig': 'A',
         'ECDSA_256k1_Sig': 'C',
+        'ECDSA_256r1_Sig': 'E',
         'Ed448_Sig': '0A',
         'Ed25519_Big_Sig': '2A',
         'ECDSA_256k1_Big_Sig': '2C',
+        'ECDSA_256r1_Big_Sig': '2E',
         'Ed448_Big_Sig': '3A',
     }
 
     assert IdxBthSigDex.Ed25519_Sig == 'A'
     assert IdxBthSigDex.ECDSA_256k1_Sig == 'C'
+    assert IdxBthSigDex.ECDSA_256r1_Sig == 'E'
     assert IdxBthSigDex.Ed448_Sig == '0A'
     assert IdxBthSigDex.Ed25519_Big_Sig == '2A'
     assert IdxBthSigDex.ECDSA_256k1_Big_Sig == '2C'
+    assert IdxBthSigDex.ECDSA_256r1_Big_Sig == '2E'
     assert IdxBthSigDex.Ed448_Big_Sig == '3A'
 
 
@@ -1687,12 +1719,16 @@ def test_indexer():
         'B': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'C': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         'D': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'E': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
+        'F': Xizage(hs=1, ss=1, os=0, fs=88, ls=0),
         '0A': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '0B': Xizage(hs=2, ss=2, os=1, fs=156, ls=0),
         '2A': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2B': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2C': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '2D': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2E': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
+        '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
@@ -3939,6 +3975,137 @@ def test_signer():
 
     cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256r1_Sig)
     assert cigar.qb64 == cigarqb64
+
+
+    # Test Secp256k1, default seed
+    signer = Signer(code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    # create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    cigar = signer.sign(ser)   
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result is True
+
+    index = 0
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # Non transferable
+    signer = Signer(code=MtrDex.ECDSA_256k1_Seed, transferable=False)  # ECDSA_256k1N verifier
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.ECDSA_256k1N
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result == True
+
+    siger = signer.sign(ser, index=0)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # Test non-default seed
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+
+    cigar = signer.sign(ser)
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    result = signer.verfer.verify(cigar.raw, ser)
+    assert result == True
+
+    index = 1
+    siger = signer.sign(ser, index=index)
+    assert siger.code == IdrDex.ECDSA_256k1_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == index
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(siger.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    # different both so Big
+    ondex = 3
+    siger = signer.sign(ser, index=index, ondex=ondex)
+    assert siger.code == IdrDex.ECDSA_256k1_Big_Sig
+    assert len(siger.raw) == Indexer._rawSize(siger.code)
+    assert siger.index == index
+    assert siger.ondex == ondex
+    result = signer.verfer.verify(siger.raw, ser)
+    assert result == True
+
+    # Test hardcoded seed from CERSide
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR\xc9\xbd\x04\x9d\x85)~\x93')
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.qb64 == "JJ97qKeoQzmWJvqxmeuqIMQbRxHErlNBUsm9BJ2FKX6T"
+    assert signer.verfer.qb64 == "1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"
+
+    # Test vectors from CERSide
+    seed = (b'\x7f\x98\x0a\x3b\xe4\x45\xd7\x8c\xc9\x79\xa1\xee\x26\x20\x9c\x17\x71\x16\xab\xa6\xd6\xf1\x6a\x01\xe7\xb3\xce\xfe\xe2\x6c\x06\x08')            
+    verkey = (b"\x02\xdb\x98\x33\x85\xa8\x0e\xbb\x7c\x15\x5d\xdd\xc6\x47\x6a\x24\x07\x9a\x7c\x96\x5f\x05\x0f\x62\xde\x2d\x47\x56\x9b\x54\x29\x16\x79")
+    sig = (b'\x5f\x80\xc0\x5a\xe4\x71\x32\x5d\xf7\xcb\xdb\x1b\xc2\xf4\x11\xc3\x05\xaf\xf4\xbe\x3b\x7e\xac\x3e\x8c\x15'
+           b'\x3a\x9f\xa5\x0a\x3d\x69\x75\x45\x93\x34\xc8\x96\x2b\xfe\x79\x8d\xd1\x4e\x9c\x1f\x6c\xa7\xc8\x12\xd6'
+           b'\x7a\x6c\xc5\x74\x9f\xef\x8d\xa7\x25\xa2\x95\x47\xcc')
+
+    signerqb64 = "JH-YCjvkRdeMyXmh7iYgnBdxFqum1vFqAeezzv7ibAYI"
+    verferqb64 = "1AABAtuYM4WoDrt8FV3dxkdqJAeafJZfBQ9i3i1HVptUKRZ5"
+    cigarqb64 = "0CBfgMBa5HEyXffL2xvC9BHDBa_0vjt-rD6MFTqfpQo9aXVFkzTIliv-eY3RTpwfbKfIEtZ6bMV0n--NpyWilUfM"
+
+    ser = b'abc'
+    signer = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)
+    cigar = signer.sign(ser)
+    assert signer.code == MtrDex.ECDSA_256k1_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.raw == seed
+    assert signer.qb64 == signerqb64
+
+    assert signer.verfer.code == MtrDex.ECDSA_256k1
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
+    assert signer.verfer.raw == verkey
+    assert signer.verfer.qb64 == verferqb64
+
+    assert cigar.code == MtrDex.ECDSA_256k1_Sig
+    assert len(cigar.raw) == Matter._rawSize(cigar.code)
+    assert signer.verfer.verify(cigar.raw, ser)
+    assert signer.verfer.verify(sig, ser)
+
+    cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256k1_Sig)
+    assert cigar.qb64 == cigarqb64
+    
 
     # test with only and ondex parameters
 
