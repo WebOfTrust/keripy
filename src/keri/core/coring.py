@@ -3211,10 +3211,10 @@ class Prefixer(Matter):
             if allows is not None and code not in allows:
                 raise ValueError("Unallowed code={} for prefixer.".format(code))
 
-            if code == MtrDex.Ed25519N:
-                self._derive = self._derive_ed25519N
-            elif code == MtrDex.Ed25519:
-                self._derive = self._derive_ed25519
+            if code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
+                self._derive = self._derive_non_transferable
+            elif code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
+                self._derive = self._derive_transferable
             elif code == MtrDex.Blake3_256:
                 self._derive = self._derive_blake3_256
             else:
@@ -3224,10 +3224,10 @@ class Prefixer(Matter):
             raw, code = self.derive(ked=ked)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
-        if self.code == MtrDex.Ed25519N:
-            self._verify = self._verify_ed25519N
-        elif self.code == MtrDex.Ed25519:
-            self._verify = self._verify_ed25519
+        if self.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
+            self._verify = self._verify_non_transferable
+        elif self.code in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
+            self._verify = self._verify_transferable
         elif self.code == MtrDex.Blake3_256:
             self._verify = self._verify_blake3_256
         else:
@@ -3276,7 +3276,7 @@ class Prefixer(Matter):
 
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 
-    def _derive_ed25519N(self, ked):
+    def _derive_non_transferable(self, ked):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -3292,22 +3292,22 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [MtrDex.Ed25519N]:
+        if verfer.code not in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N]:
             raise DerivationError("Mismatch derivation code = {}."
                                   "".format(verfer.code))
 
         try:
-            if verfer.code == MtrDex.Ed25519N and ked["n"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and ked["n"]:
                 raise DerivationError("Non-empty nxt = {} for non-transferable"
                                       " code = {}".format(ked["n"],
                                                           verfer.code))
 
-            if verfer.code == MtrDex.Ed25519N and "b" in ked and ked["b"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "b" in ked and ked["b"]:
                 raise DerivationError("Non-empty b = {} for non-transferable"
                                       " code = {}".format(ked["b"],
                                                           verfer.code))
 
-            if verfer.code == MtrDex.Ed25519N and "a" in ked and ked["a"]:
+            if verfer.code in [MtrDex.Ed25519N, MtrDex.ECDSA_256r1N, MtrDex.ECDSA_256k1N] and "a" in ked and ked["a"]:
                 raise DerivationError("Non-empty a = {} for non-transferable"
                                       " code = {}".format(ked["a"],
                                                           verfer.code))
@@ -3317,7 +3317,7 @@ class Prefixer(Matter):
 
         return (verfer.raw, verfer.code)
 
-    def _verify_ed25519N(self, ked, pre, prefixed=False):
+    def _verify_non_transferable(self, ked, pre, prefixed=False):
         """
         Returns True if verified  False otherwise
         Verify derivation of fully qualified Base64 pre from inception iked dict
@@ -3345,7 +3345,7 @@ class Prefixer(Matter):
 
         return True
 
-    def _derive_ed25519(self, ked):
+    def _derive_transferable(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -3361,13 +3361,13 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [MtrDex.Ed25519]:
+        if verfer.code not in [MtrDex.Ed25519, MtrDex.ECDSA_256r1, MtrDex.ECDSA_256k1]:
             raise DerivationError("Mismatch derivation code = {}"
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
 
-    def _verify_ed25519(self, ked, pre, prefixed=False):
+    def _verify_transferable(self, ked, pre, prefixed=False):
         """
         Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
