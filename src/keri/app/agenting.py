@@ -82,7 +82,7 @@ class Receiptor(doing.DoDoer):
 
         rcts = dict()
         for wit, client in clients.items():
-            httping.streamCESRRequests(client=client, ims=bytearray(msg), path="/receipts")
+            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts")
             while not client.responses:
                 yield self.tock
 
@@ -120,7 +120,7 @@ class Receiptor(doing.DoDoer):
 
             client = clients[wit]
 
-            sent = httping.streamCESRRequests(client=client, ims=bytearray(msg))
+            sent = httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg))
             while len(client.responses) < sent:
                 yield self.tock
 
@@ -189,7 +189,7 @@ class Receiptor(doing.DoDoer):
         self.extend([clientDoer])
 
         for fmsg in hab.db.clonePreIter(pre=pre):
-            httping.streamCESRRequests(client=client, ims=bytearray(fmsg))
+            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
             while not client.responses:
                 yield self.tock
 
@@ -756,7 +756,7 @@ class HTTPMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += httping.streamCESRRequests(client=self.client, ims=msg)
+            self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg)
             while self.client.requests:
                 yield self.tock
 

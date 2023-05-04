@@ -24,6 +24,7 @@ logger = help.ogler.getLogger()
 
 CESR_CONTENT_TYPE = "application/cesr+json"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
+CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
 
 class SignatureValidationComponent(object):
@@ -112,13 +113,15 @@ def parseCesrHttpRequest(req):
     return cr
 
 
-def createCESRRequest(msg, client, path=None):
+def createCESRRequest(msg, client, dest, path=None):
     """
     Turns a KERI message into a CESR http request against the provided hio http Client
 
     Parameters
        msg:  KERI message parsable as Serder.raw
+       dest (str): qb64 identifier prefix of destination controller
        client: hio http Client that will send the message as a CESR request
+       path (str): path to post to
 
     """
     path = path if path is not None else "/"
@@ -137,7 +140,8 @@ def createCESRRequest(msg, client, path=None):
         ("Content-Type", CESR_CONTENT_TYPE),
         ("Content-Length", len(body)),
         ("connection", "close"),
-        (CESR_ATTACHMENT_HEADER, attachments)
+        (CESR_ATTACHMENT_HEADER, attachments),
+        (CESR_DESTINATION_HEADER, dest)
     ])
 
     client.request(
@@ -148,13 +152,14 @@ def createCESRRequest(msg, client, path=None):
     )
 
 
-def streamCESRRequests(client, ims, path=None):
+def streamCESRRequests(client, ims, dest, path=None):
     """
     Turns a stream of KERI messages into CESR http requests against the provided hio http Client
 
     Parameters
-       ims (bytearray):  stream of KERI messages parsable as Serder.raw
        client (Client): hio http Client that will send the message as a CESR request
+       ims (bytearray):  stream of KERI messages parsable as Serder.raw
+       dest (str): qb64 identifier prefix of destination controller
        path (str): path to post to
 
     Returns
@@ -189,7 +194,8 @@ def streamCESRRequests(client, ims, path=None):
         headers = Hict([
             ("Content-Type", CESR_CONTENT_TYPE),
             ("Content-Length", len(body)),
-            (CESR_ATTACHMENT_HEADER, attachment)
+            (CESR_ATTACHMENT_HEADER, attachment),
+            (CESR_DESTINATION_HEADER, dest)
         ])
 
         client.request(
