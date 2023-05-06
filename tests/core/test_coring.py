@@ -57,6 +57,10 @@ def test_prodex():
         }
 
     assert '--AAA' in ProDex
+    assert ProDex.KERI == "--AAA"
+    assert ProDex.ACDC == "--AAA"
+    assert ProDex.KERI == ProDex.ACDC
+
     """End Test"""
 
 
