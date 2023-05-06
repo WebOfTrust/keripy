@@ -17,8 +17,10 @@ import cbor2 as cbor
 import msgpack
 import pysodium
 import pytest
-from cryptography.hazmat.primitives._serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives import hashes
+from cryptography import exceptions
 
 from keri.core import coring
 from keri.core import eventing
@@ -3725,6 +3727,99 @@ def test_verfer():
 
     with pytest.raises(ValueError):
         verfer = Verfer(raw=verkey, code=MtrDex.Blake3_256)
+
+    # secp256r1
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256R1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256r1
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
+    # secp256r1N
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256R1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verferN = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    assert verferN.raw == verkey
+    assert verferN.code == MtrDex.ECDSA_256r1N
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verferN.verify(sig, ser)
+    assert result == True
+
+    result = verferN.verify(der, b'ABC')
+    assert result == False
+
+    # secp256k1
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256K1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256k1
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
+    # secp256k1N
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    d = int.from_bytes(seed, byteorder="big")
+    sigkey = ec.derive_private_key(d, ec.SECP256K1())
+    verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1N)
+    assert verfer.raw == verkey
+    assert verfer.code == MtrDex.ECDSA_256k1N
+    
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    
+    der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
+    (r, s) = utils.decode_dss_signature(der)
+    sig = bytearray(r.to_bytes(32, "big"))
+    sig.extend(s.to_bytes(32, "big"))
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    result = verfer.verify(der, b'ABC')
+    assert result == False
+
     """ Done Test """
 
 
@@ -4906,6 +5001,116 @@ def test_prefixer():
     assert prefixer.qb64 == 'EEGithHj9A85F9hz1fxlF80U7wvpFoAPj6U4q4YWMehp'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    #  Secp256r1
+
+    preN = '1AAIA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+    # 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    pre = '1AAJA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+
+    # sigkey = ec.generate_private_key(ec.SECP256R1())
+    # verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
+    verkey = b'\x03\xe2\xb3\xc4%\xfcI\x94\xa5\xf9\xfaT\xde\xf77\xcf\xf3\x01\xb8}:a(I\x16\xe8\x8ct\t\xa8\xdf\xb4\xcc'
+    
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    assert verfer.qb64 == '1AAJA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
+
+    nxtkeyqb64 = [coring.Diger(ser=verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxtkeyqb64 == ['EPrVv1ppjxrtV48cS9Tm49n5xojMlZfhEzExg6Ye_ORN']
+
+    prefixer = Prefixer(raw=verkey, code=MtrDex.ECDSA_256r1)  # default code is None
+    assert prefixer.code == MtrDex.ECDSA_256r1
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Sizes[prefixer.code].fs
+
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[prefixer.qb64],  # list of qb64
+               nt="1",
+               n=["ABCD"],  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    prefixer = Prefixer(raw=verfer.raw, code=MtrDex.ECDSA_256r1N)
+    assert prefixer.code == MtrDex.ECDSA_256r1N
+    assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    # Test basic derivation from ked
+    ked = dict(v="",  # version string
+               t="icp",
+               d="",   # qb64 SAID
+               i="",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               kt=1,
+               k=[verfer.qb64],  # list of qb64
+               nt="",
+               n=0,  # hash qual Base64
+               bt=0,
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+    prefixer = Prefixer(ked=ked, code=MtrDex.ECDSA_256r1)
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
+
+    badked = dict(ked)
+    del badked["i"]
+    with pytest.raises(EmptyMaterialError):  # no pre
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    with pytest.raises(DerivationError):  # verfer code not match pre code
+        prefixer = Prefixer(ked=badked)
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code not match code
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=pre
+    prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code match code but not pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == False
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked, code=MtrDex.ECDSA_256r1N)  # verfer code match code and pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
+    badked = dict(ked)
+    badked["k"]=[verfer.qb64]
+    badked["i"]=preN
+    prefixer = Prefixer(ked=badked)  # verfer code match pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=badked) == True
+    assert prefixer.verify(ked=badked, prefixed=True) == True
 
     """ Done Test """
 
