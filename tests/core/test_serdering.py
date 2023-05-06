@@ -78,6 +78,11 @@ def test_serder():
     assert not serder.compare(said='EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8e')
 
 
+    # test cbor and msgpack versions of Serder
+    # make .verify() for real and test
+    # make .saidify for real and test
+    # make PreDex PrefixCodex of valid identifier prefix codes
+
 
     """End Test"""
 

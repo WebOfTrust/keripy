@@ -10,10 +10,8 @@ import cbor2 as cbor
 import msgpack
 
 from .. import kering
-from ..kering import (EmptyMaterialError, RawMaterialError, DerivationError,
-                         ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, )
-from ..kering import ValidationError, DeserializationError, VersionError
+from ..kering import (ValidationError, DeserializationError, VersionError,
+                      UnexpectedCodeError)
 
 from ..core import coring
 from .coring import Rever, Vstrings, versify, deversify, Version, Versionage
@@ -137,7 +135,9 @@ class Serder:
                 Assumes that raw is bytearray when strip is True.
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
+                Ignore when raw not provided and saidify is True
             saidify (bool): True means compute and replace said(s) for sad
+                when raw not provided
             dcode (str): default said digest code (DigDex value)
                 for computing said(s) and .saider
             pcode (str): default prefix code when message is inceptive
@@ -145,11 +145,15 @@ class Serder:
 
 
         """
-        self._dcode = dcode  # need default code saidifying and for .saider
-        self._pcode = dcode  # need default code for verifying saided prefix
+        if dcode not in DigDex:
+            raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
+        self._dcode = dcode  # need default code for saidify
+        if dcode not in MtrDex:
+            raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
+        self._pcode = dcode  # need default code for saidify when saided prefix
+
         if raw:  # deserialize raw using property setter
-            # raw setter also sets sad, proto, version, kind, and size from
-            # raw and version string from raw
+            # raw setter also sets sad, proto, version, kind, and size from raw
             self.raw = raw  # raw property setter does the deserialization
 
             if strip:  # assumes raw is bytearray
@@ -160,9 +164,20 @@ class Serder:
                     raise ValidationError(f"Invalid said(s) for sad = "
                                           f"{self.pretty(size=self.ErrorSize)}")
 
-        elif sad:  # serialize sad using property setter
-            self._kind = kind
+        elif sad:  # serialize sad into raw using sad property setter
+            self._kind = kind  # does not trigger .kind property setter.
             self.sad = sad  # sad property setter does the serialization
+            # sad setter also sets raw, proto, version, kind, and size from sad
+
+            if saidify:  # recompute said(s) and reset sad
+                # saidify resets sad, raw, proto, version, kind, and size
+                self.saidify()
+
+            elif verify:  # verify the said(s) provided in sad
+                if not self.verify():
+                    raise ValidationError(f"Invalid said(s) for sad = "
+                                          f"{self.pretty(size=self.ErrorSize)}")
+
         else:
             raise ValueError("Improper initialization need raw or sad.")
 
@@ -177,6 +192,25 @@ class Serder:
             verify (bool): True if said(s) verify. False otherwise
         """
         return True
+
+    def saidify(self, dcode=None, pcode=None):
+        """Saidify given .sad and resets raw, sad, proto, version, kind, and size
+        Override for protocol and ilk specific saidification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Parameters:
+            dcode (str): value of DigDex DigCodex for computed saids
+            pcode (str): value of MatDex MatterCodes for computed saidified prefix
+
+
+        """
+        if dcode is not None and dcode in DigDex:
+            self._decode = decode
+        if pcode is not None and pcode in MtrDex:
+            self._pcode = pcode
+
+        pass
 
 
     @classmethod
@@ -420,10 +454,10 @@ class Serder:
         """
         sad, proto, vrsn, kind, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-        self._sad = sad
+        self._sad = sad  # does not trigger .sad property setter
         self._proto = proto
         self._version = vrsn
-        self._kind = kind
+        self._kind = kind  # does not trigger kind setter
         self._size = size
         self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
 
@@ -443,14 +477,13 @@ class Serder:
         Forces update of other derived properties
         """
         raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad, kind=self.kind)
-        self._raw = raw[:size]
-        self._sad = sad
+        self._raw = raw  # does not trigger raw setter
+        self._sad = sad  # does not trigger sad setter
         self._proto = proto
         self._version = vrsn
-        self._kind = kind
+        self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=sad["d"], code=self._dcode)
-        # ToDo  check what happens with code above
+        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
 
 
     @property
@@ -463,18 +496,17 @@ class Serder:
 
     @kind.setter
     def kind(self, kind):
-        """kind property setter Assumes ._ked. Serialization kind.
+        """kind property setter Assumes ._sad. Serialization kind.
         Forces update of other derived properties
         """
         raw, sad, proto, vrsn, kind, size = self._exhale(sad=self.sad, kind=kind)
-        self._raw = raw[:size]
-        self._sad = sad
+        self._raw = raw  # does not trigger raw setter
+        self._sad = sad  # does not trigger sad setter
         self._proto = proto
         self._version = vrsn
-        self._kind = kind
+        self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=sad["d"], code=self._dcode)
-        # ToDo  check what happens with code above
+        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
 
 
     @property
