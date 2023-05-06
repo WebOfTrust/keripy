@@ -5986,4 +5986,5 @@ if __name__ == "__main__":
     #test_labels()
     #test_prefixer()
     #test_genera()
+    test_prodex()
 
