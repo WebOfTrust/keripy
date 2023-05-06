@@ -5196,7 +5196,7 @@ def test_serdery():
     Labelage = namedtuple("Labelage", "saids fields")  #values are lists of str
     # saids is list of saided field labels
     # fields is list of all field labels including saided ones
-    # Label = Labelage(saids=['d'], fields=['d'])  # minimum required
+    # Label = Labelage(saids=['d'], fields=['v','d'])  # minimum required
 
     class Serdery:
         """Serder factory class for generating serder instances from streams.
@@ -5275,7 +5275,7 @@ def test_serdery():
         # and all field labels
         # A key of None is default when no ilk required
         # Override in sub class that is protocol specific
-        Labels = {None: Labelage(saids=['d'], fields=['d'])}
+        Labels = {None: Labelage(saids=['d'], fields=['v','d'])}
 
 
         def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
@@ -5331,11 +5331,11 @@ def test_serdery():
             Parses serilized event ser of serialization kind and assigns to
             instance attributes and returns tuple of associated elements.
 
-            Returns: tuple (sad, proto, kind, vrsn, size) where:
+            Returns: tuple (sad, proto, vrsn, kind, size) where:
                sad (dict): serializable attribute dict of saidified data
                proto (str): value of Protos (Protocolage) protocol type
-               kind (str): value of Serials (Serialage) serialization kind
                vrsn (Versionage): tuple of (major, minor) version ints
+               kind (str): value of Serials (Serialage) serialization kind
 
             Parameters:
                raw (bytes): serialized sad message
@@ -5378,7 +5378,7 @@ def test_serdery():
 
             sad = cls.loads(raw=raw, size=size, kind=kind)
 
-            return sad, proto, kind, version, size
+            return sad, proto, version, kind, size
 
 
         @staticmethod
@@ -5423,6 +5423,7 @@ def test_serdery():
 
             return sad
 
+
         @classmethod
         def _exhale(cls, sad, kind=None, version=Version):
             """Serializes sad given kind and version
@@ -5446,9 +5447,8 @@ def test_serdery():
                 raise ValueError(f"Missing or empty version string in sad "
                                  "dict = {sad}")
 
-            proto, knd, vrsn, size = deversify(sad["v"])  # extract kind and version
+            proto, knd, vrsn, size = deversify(sad["v"])  # extract elements
 
-            proto = proto.decode("utf-8")
             if proto not in Protos:
                 raise ValueError(f"Invalid protocol type = {proto}.")
 
@@ -5457,7 +5457,7 @@ def test_serdery():
                                    f"{vrsn.major}.{vrsn.minor}.")
 
             if not kind:
-                kind = knd.decode("utf-8")
+                kind = knd
 
             if kind not in Serials:
                 raise ValueError(f"Invalid serialization kind = {kind}")
@@ -5465,7 +5465,7 @@ def test_serdery():
             raw = cls.dumps(sad, kind)
             size = len(raw)
 
-            # generate new version string with desired kind and correct size
+            # generate new version string with correct size and desired kind
             vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
 
             # find location of old version string inside raw
@@ -5480,7 +5480,7 @@ def test_serdery():
                 raise ValueError(f"Malformed size of raw in version string == {vs}")
             sad["v"] = vs  # update sad
 
-            return raw, proto, kind, sad, vrsn
+            return raw, sad, proto, vrsn, kind, size
 
 
         @staticmethod
@@ -5496,7 +5496,8 @@ def test_serdery():
                     "JSON", "MGPK", "CBOR"
             """
             if kind == Serials.json:
-                raw = json.dumps(sad, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                raw = json.dumps(sad, separators=(",", ":"),
+                                 ensure_ascii=False).encode("utf-8")
 
             elif kind == Serials.mgpk:
                 raw = msgpack.dumps(sad)
@@ -5558,19 +5559,22 @@ def test_serdery():
             """
             return self._raw
 
+
         @raw.setter
         def raw(self, raw):
             """raw property setter
             Forces update of other derived properties
             """
-            sad, proto, kind, version, size = self._inhale(raw=raw)
+            sad, proto, vrsn, kind, size = self._inhale(raw=raw)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
+            self._version = vrsn
             self._kind = kind
-            self._version = version
             self._size = size
             self._saider = Saider(qb64=sad["d"], code=self._dcode)
+            # ToDo  check what happens with code above
+
 
         @property
         def sad(self):
@@ -5580,20 +5584,22 @@ def test_serdery():
             """
             return self._sad
 
+
         @sad.setter
         def sad(self, sad):
             """sad property setter  assumes ._kind
             Forces update of other derived properties
             """
-            raw, proto, kind, sad, version = self._exhale(sad=sad, kind=self.kind)
-            size = len(raw)
+            raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad, kind=self.kind)
             self._raw = raw[:size]
             self._sad = sad
             self._proto = proto
+            self._version = vrsn
             self._kind = kind
             self._size = size
-            self._version = version
             self._saider = Saider(qb64=sad["d"], code=self._dcode)
+            # ToDo  check what happens with code above
+
 
         @property
         def kind(self):
@@ -5602,39 +5608,21 @@ def test_serdery():
                 kind (str): value of Serials (Serialage)"""
             return self._kind
 
+
         @kind.setter
         def kind(self, kind):
             """kind property setter Assumes ._ked. Serialization kind.
             Forces update of other derived properties
             """
-            raw, proto, kind, sad, version = self._exhale(sad=self.sad, kind=kind)
-            size = len(raw)
+            raw, sad, proto, vrsn, kind, size = self._exhale(sad=self.sad, kind=kind)
             self._raw = raw[:size]
-            self._proto = proto
             self._sad = sad
+            self._proto = proto
+            self._version = vrsn
             self._kind = kind
             self._size = size
-            self._version = version
             self._saider = Saider(qb64=sad["d"], code=self._dcode)
-
-
-        @property
-        def size(self):
-            """size property getter
-            Returns:
-                size (int): number of bytes in .raw
-            """
-            return self._size
-
-
-        @property
-        def version(self):
-            """version property getter
-
-            Returns:
-                version (Versionage): instance
-            """
-            return self._version
+            # ToDo  check what happens with code above
 
 
         @property
@@ -5649,12 +5637,32 @@ def test_serdery():
 
 
         @property
+        def version(self):
+            """version property getter
+
+            Returns:
+                version (Versionage): instance
+            """
+            return self._version
+
+
+        @property
+        def size(self):
+            """size property getter
+            Returns:
+                size (int): number of bytes in .raw
+            """
+            return self._size
+
+
+        @property
         def saider(self):
             """saider property getter
             Returns:
                 saider (Diger): instance of saidified digest self.raw
             """
             return self._saider
+
 
         @property
         def said(self):
@@ -5664,6 +5672,7 @@ def test_serdery():
             """
             return self.saider.qb64
 
+
         @property
         def saidb(self):
             """saidb property getter
@@ -5672,6 +5681,39 @@ def test_serdery():
             """
             return self.saider.qb64b
 
+
+    # Test Serder
+
+    with pytest.raises(ValueError):
+        serder = Serder()
+
+    sad = dict(v=Vstrings.json, #
+               d="")
+    saider, sad = coring.Saider.saidify(sad=sad)
+    assert sad == {'v': 'KERI10JSON00004c_',
+                   'd': 'EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d'}
+
+    assert saider.qb64 == sad["d"]
+
+    serder = Serder(sad=sad)
+    assert serder.raw == (b'{"v":"KERI10JSON00004c_",'
+                          b'"d":"EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"}')
+    assert serder.sad == sad
+    assert serder.proto == Protos.keri
+    assert serder.version == Versionage(major=1, minor=0)
+    assert serder.size == 76
+    assert serder.kind == Serials.json
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+
+    assert serder.pretty() == ('{\n'
+                                ' "v": "KERI10JSON00004c_",\n'
+                                ' "d": "EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"\n'
+                                '}')
+
+    assert serder.compare(said=saider.qb64)
+    assert serder.compare(said=saider.qb64b)
+    assert not serder.compare(said='EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8e')
 
 
 
