@@ -4236,16 +4236,19 @@ CtrDex = CounterCodex()
 
 @dataclass(frozen=True)
 class ProtocolGenusCodex:
-    """ProtocolGenusCodex is codex of protocol genera.
+    """ProtocolGenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI: str = '--AAA'  # KERI ACDC Protocol Stack
+    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
-        return iter(astuple(self))
+        return iter(astuple(self))  # enables inclusion test with "in"
+        # duplicate values above just result in multiple entries in tuple so
+        # in inclusion still works
 
 ProDex = ProtocolGenusCodex()  # Make instance
 

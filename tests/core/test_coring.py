@@ -11,6 +11,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from fractions import Fraction
 from builtins import OverflowError
 from math import ceil
+from collections import namedtuple
 
 import blake3
 import cbor2 as cbor
@@ -42,6 +43,21 @@ from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LAB
                       KSN_LABELS, RPY_LABELS)
 from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
+
+
+def test_prodex():
+    """
+    Test genera in ProDex as instance of ProtocolGenusCodex
+
+    """
+
+    assert dataclasses.asdict(ProDex) == {
+        'KERI': '--AAA', # KERI and ACDC Protocol Stacks share the same tables
+        'ACDC': '--AAA',
+        }
+
+    assert '--AAA' in ProDex
+    """End Test"""
 
 
 def test_ilks():
@@ -2616,15 +2632,7 @@ def test_counter():
 
     """ Done Test """
 
-def test_prodex():
-    """
-    Test ProtocolGenusCodex
-    """
-    assert dataclasses.asdict(ProDex) == {
-        'KERI': '--AAA',
-    }
 
-    """ Done Test """
 
 
 def test_seqner():
@@ -5181,6 +5189,11 @@ def test_serdery():
     Test Serdery, the Serder factory
     """
 
+    Labelage = namedtuple("Labelage", "saids fields")  #values are lists of str
+    # saids is list of saided field labels
+    # fields is list of all field labels including saided ones
+    # Label = Labelage(saids=['d'], fields=['d'])  # minimum required
+
     class Serdery:
         """Serder factory class for generating serder instances from streams.
         """
@@ -5215,6 +5228,13 @@ def test_serdery():
         Update the class variables that configure field label(s) for said
         generation and verification.
 
+        Class Attributes:
+            MaxVSOffset (int): Maximum Version String Offset in bytes/chars
+            InhaleSize (int): Minimum raw buffer size needed to inhale
+            Labels (dict): Protocol specific dict of field labels keyed by ilk
+                (packet type string value). None is default key when no ilk needed.
+                Each entry is a
+
         Properties:
             raw (bytes): of serialized event only
             ked (dict): self addressed data dict
@@ -5242,13 +5262,21 @@ def test_serdery():
             loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
+
         MaxVSOffset = 12
         InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
 
+        # Protocol specific field labels dict, keyed by ilk (packet type string).
+        # value of each entry is Labelage instance that provides saided field labels
+        # and all field labels
+        # A key of None is default when no ilk required
+        # Override in sub class that is protocol specific
+        Labels = {None: Labelage(saids=['d'], fields=['d'])}
 
-        def __init__(self, raw=b'', sad=None, kind=None,
-                     saidify=False, verify=False,
-                     code=MtrDex.Blake3_256, strip=False):
+
+        def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
+                     verify=False, saidify=False,
+                     dcode=MtrDex.Blake3_256, pcode=MtrDex.Blake3_256):
             """Deserialize raw if provided. Update properties from deserialized raw.
                 Verifies said(s) embedded in sad as given by labels.
                 When verify is True then verify said(s) in deserialized raw as
@@ -5259,21 +5287,27 @@ def test_serdery():
                 given by label(s) according to proto and ilk and code.
 
             Parameters:
-              raw (bytes): serialized event
-              sad (dict): deserialized saidified field map of message.
-                        None if it's to be deserialized from raw.
+                raw (bytes): serialized event
+                sad (dict): serializable saidified field map of message.
+                    Ignored if raw provided
+                kind is serialization kind string value or None (see namedtuple coring.Serials)
+                    supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                    if kind is None then its extracted from ked or raw
+                strip (bool): True means strip (delete) raw from input stream
+                    bytearray after parsing. False means do not strip.
+                    Assumes that raw is bytearray when strip is True.
+                verify (bool): True means verify said(s) of given raw or sad.
+                    Raises ValidationError if verification fails
+                saidify (bool): True means compute and replace said(s) for sad
+                dcode (str): default said digest code (DigDex value)
+                    for computing said(s) and .saider
+                pcode (str): default prefix code when message is inceptive
+                    if prefix is a said then pcode must be in DigDex.
 
-              kind is serialization kind string value or None (see namedtuple coring.Serials)
-                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                if kind is None then its extracted from ked or raw
-              saidify (bool): True means compute said for sad
-              code is .diger default digest code for computing said .saider
-              strip (bool): True means strip (delete) raw from input stream
-                bytearray after parsing. False means do not strip. When strip is
-                True assumes that raw is bytearray.
 
             """
-            self._code = code  # need default code for .saider
+            self._dcode = dcode  # need default code saidifying and for .saider
+            self._pcode = dcode  # need default code for verifying saided prefix
             if raw:  # deserialize raw using property setter
                 self.raw = raw  # raw property setter does the deserialization
                 # sets sad, kind, and code from raw
@@ -5532,7 +5566,7 @@ def test_serdery():
             self._kind = kind
             self._version = version
             self._size = size
-            self._saider = Saider(qb64=sad["d"], code=self._code)
+            self._saider = Saider(qb64=sad["d"], code=self._dcode)
 
         @property
         def sad(self):
@@ -5555,7 +5589,7 @@ def test_serdery():
             self._kind = kind
             self._size = size
             self._version = version
-            self._saider = Saider(qb64=sad["d"], code=self._code)
+            self._saider = Saider(qb64=sad["d"], code=self._dcode)
 
         @property
         def kind(self):
@@ -5577,7 +5611,7 @@ def test_serdery():
             self._kind = kind
             self._size = size
             self._version = version
-            self._saider = Saider(qb64=sad["d"], code=self._code)
+            self._saider = Saider(qb64=sad["d"], code=self._dcode)
 
 
         @property
@@ -6436,4 +6470,5 @@ if __name__ == "__main__":
     #test_ilks()
     #test_labels()
     #test_prefixer()
+    #test_genera()
     test_serdery()
