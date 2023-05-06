@@ -49,15 +49,12 @@ class Serder:
     may have dynamically injected ilk specific properties (as descriptors)
     if any.
 
-    To support a new protocol, add a protocol specific subclass and update
-    the superclass supervised injection of ilk specific property descriptors.
-    Define the  class variables that configure field label(s) for said
-    generation and verification.
-
-    To support a new ilk for a given protocol, update the class variables for
-    label validation and define ilk specific property descriptors for injection.
-    Update the class variables that configure field label(s) for said
-    generation and verification.
+    To support a new protocol with its ilks, add a protocol specific subclass,
+    override the Labels class attribute, and if necessary the .verify and
+    .saidify methods and define any protocol specific properties. If necessary
+    define ilk specific subclasses of a given protocol (ilk is packet type).
+    The .Labels class attributes configures the field label(s) for said
+    generation and verification in addition to the required fields.
 
     Class Attributes:
         MaxVSOffset (int): Maximum Version String Offset in bytes/chars
