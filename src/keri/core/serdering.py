@@ -9,6 +9,7 @@ from collections import namedtuple
 import cbor2 as cbor
 import msgpack
 
+from .. import kering
 from ..kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError, )
@@ -57,6 +58,16 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
+        ErrorSize (int): maximum size of exception msg so work with syslog
+            Protects against syslog error when exceeding UDP MTU (max trans unit)
+            for syslogging exceptions.
+            Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
+            Most broadband routers have an UDP MTU set to 1454.
+            Must include not just payload but UDP/IP header in
+            MTU calculation. So must leave room for either UDP/IpV4 or
+            the bigger UDP/IPv6 header.
+            Except for old IoT hardware, modern implementations all
+            support IPv6 so 1024 is usually a safe value for payload.
         MaxVSOffset (int): Maximum Version String Offset in bytes/chars
         InhaleSize (int): Minimum raw buffer size needed to inhale
         Labels (dict): Protocol specific dict of field labels keyed by ilk
@@ -90,7 +101,7 @@ class Serder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
-
+    ErrorSize = 1024  # maximum size of exception msg so work with syslog
     MaxVSOffset = 12
     InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
 
@@ -137,16 +148,35 @@ class Serder:
         self._dcode = dcode  # need default code saidifying and for .saider
         self._pcode = dcode  # need default code for verifying saided prefix
         if raw:  # deserialize raw using property setter
+            # raw setter also sets sad, proto, version, kind, and size from
+            # raw and version string from raw
             self.raw = raw  # raw property setter does the deserialization
-            # sets sad, kind, and code from raw
-            # verifies said
+
             if strip:  # assumes raw is bytearray
                 del raw[:self.size]
+
+            if verify:  # verify the said(s) provided in raw
+                if not self.verify():
+                    raise ValidationError(f"Invalid said(s) for sad = "
+                                          f"{self.pretty(size=self.ErrorSize)}")
+
         elif sad:  # serialize sad using property setter
             self._kind = kind
             self.sad = sad  # sad property setter does the serialization
         else:
             raise ValueError("Improper initialization need raw or sad.")
+
+
+    def verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Returns:
+            verify (bool): True if said(s) verify. False otherwise
+        """
+        return True
 
 
     @classmethod
@@ -224,26 +254,25 @@ class Serder:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {}"
-                                           "".format(raw[:size].decode("utf-8")))
+                raise DeserializationError(f"Error deserializing JSON: "
+                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
 
         elif kind == Serials.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {}"
-                                           "".format(raw[:size]))
+                raise DeserializationError(f"Error deserializing MGPK: "
+                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
 
         elif kind == Serials.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {}"
-                                           "".format(raw[:size]))
+                raise DeserializationError(f"Error deserializing CBOR: "
+                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
 
         else:
-            raise DeserializationError("Invalid deserialization kind: {}"
-                                       "".format(kind))
+            raise DeserializationError(f"Invalid deserialization kind: {kind}")
 
         return sad
 
@@ -329,7 +358,7 @@ class Serder:
         elif kind == Serials.cbor:
             raw = cbor.dumps(sad)
         else:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
+            raise ValueError(f"Invalid serialization kind = {kind}")
 
         return raw
 
@@ -396,8 +425,7 @@ class Serder:
         self._version = vrsn
         self._kind = kind
         self._size = size
-        self._saider = Saider(qb64=sad["d"], code=self._dcode)
-        # ToDo  check what happens with code above
+        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
 
 
     @property
