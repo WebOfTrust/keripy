@@ -6,6 +6,9 @@ keri.core.serdering module
 import json
 from collections import namedtuple
 
+import cbor2 as cbor
+import msgpack
+
 from ..kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
                          InvalidValueError, )
