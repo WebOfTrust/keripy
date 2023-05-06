@@ -89,7 +89,7 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
 VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
-VERFULLSIZE = 17  # number of characters in full versions string
+VERFULLSIZE = 17  # number of characters in full version string
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
@@ -4501,16 +4501,19 @@ CtrDex = CounterCodex()
 
 @dataclass(frozen=True)
 class ProtocolGenusCodex:
-    """ProtocolGenusCodex is codex of protocol genera.
+    """ProtocolGenusCodex is codex of protocol genera for code table.
 
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    KERI: str = '--AAA'  # KERI ACDC Protocol Stack
+    KERI: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
+    ACDC: str = '--AAA'  # KERI and ACDC Protocol Stacks share the same tables
 
 
     def __iter__(self):
-        return iter(astuple(self))
+        return iter(astuple(self))  # enables inclusion test with "in"
+        # duplicate values above just result in multiple entries in tuple so
+        # in inclusion still works
 
 ProDex = ProtocolGenusCodex()  # Make instance
 
@@ -4984,6 +4987,7 @@ class Sadder:
         else:
             raise ValueError("Improper initialization need sad, raw or ked.")
 
+
     def _clone(self, sad):
         """ copy hidden attributes from sad """
         self._raw = sad.raw
@@ -5064,54 +5068,6 @@ class Sadder:
 
         else:
             raise ValueError("Both said and saider may not be None.")
-
-
-    #def verify(self, prefixed=False, versioned=True, code=None,
-               #kind=None, label=Saids.d, ignore=None, **kwa):
-        #"""
-        #ToDo:  Make Sad verifiable against its own said field
-
-        #Returns:
-            #result (bool): True means derivation from sad with dummy label
-                #field value replacement for ._code matches .qb64. False otherwise
-                #If prefixed is True then also validates that label field of
-                #provided sad also matches .qb64. False otherwise
-                #If versioned is True and provided sad includes version field 'v'
-                #then also validates that version field 'v' of provided
-                #sad matches the version field of modified sad that results from
-                #the derivation process. The size chars in the version field
-                #are set to the size of the sad during derivation. False otherwise.
-
-        #Parameters:
-            #sad (dict): self addressed data to be serialized
-            #prefixed (bool): True means also verify if labeled field in
-                #sad matches own .qb64
-            #versioned (bool):
-            #code (str): digest type code from DigDex.
-            #kind (str): serialization algorithm of sad, one of Serials
-                        #used to override that given by 'v' field if any in sad
-                        #otherwise default is Serials.json
-            #label (str): Saidage value of said field label in which to inject dummy
-            #ignore (list): fields to ignore when generating SAID
-        #"""
-        #try:
-            ## override ensure code is self.code
-            #raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label, ignore=ignore)
-            #saider = Saider(raw=raw, code=self.code, ignore=ignore, **kwa)
-            #if self.qb64b != saider.qb64b:
-                #return False  # not match .qb64b
-
-            #if 'v' in sad and versioned:
-                #if sad['v'] != dsad['v']:
-                    #return False  # version fields not match
-
-            #if prefixed and sad[label] != self.qb64:  # check label field
-                #return False  # label id field not match .qb64
-
-        #except Exception as ex:
-            #return False
-
-        #return True
 
 
     @property

@@ -6,7 +6,7 @@ import sys
 from collections import namedtuple
 
 
-FALSY = (False, 0, "?0", "no", "false", "False", "off")
+FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
 TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 
 Versionage = namedtuple("Versionage", "major minor")

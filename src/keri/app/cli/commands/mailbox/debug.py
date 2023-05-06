@@ -105,7 +105,7 @@ class ReadDoer(doing.DoDoer):
         else:
             msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
 
-        httping.createCESRRequest(msg, client)
+        httping.createCESRRequest(msg, client, dest=self.witness)
 
         while client.requests:
             yield self.tock

@@ -811,7 +811,7 @@ class Poller(doing.DoDoer):
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
-            httping.createCESRRequest(msg, client)
+            httping.createCESRRequest(msg, client, dest=self.witness)
 
             while client.requests:
                 yield self.tock
