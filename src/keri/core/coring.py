@@ -2894,6 +2894,32 @@ class Diger(Matter):
 
 
 
+@dataclass(frozen=True)
+class PreCodex:
+    """
+    PreCodex is codex all identifier prefix derivation codes.
+    This is needed to verify valid inception events.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:    str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    Ed25519:     str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256:  str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:    str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:    str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512:  str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:    str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:    str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PreDex = PreCodex()  # Make instance
+
 
 class Prefixer(Matter):
     """

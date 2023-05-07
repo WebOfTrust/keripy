@@ -12,9 +12,8 @@ import msgpack
 
 import pytest
 
-from keri.core.serdering import Serder, Serdery
-
 from keri.core import coring
+from keri.core.serdering import Serder, Serdery
 
 
 
@@ -47,6 +46,8 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
+    assert serder._dcode == coring.DigDex.Blake3_256
+    assert serder._pcode == coring.DigDex.Blake3_256
 
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'
@@ -69,6 +70,8 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
+    assert serder._dcode == coring.DigDex.Blake3_256
+    assert serder._pcode == coring.DigDex.Blake3_256
 
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'

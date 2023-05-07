@@ -11,11 +11,11 @@ import msgpack
 
 from .. import kering
 from ..kering import (ValidationError, DeserializationError, VersionError,
-                      UnexpectedCodeError)
+                      UnexpectedCodeError, ShortageError)
 
 from ..core import coring
-from .coring import Rever, Vstrings, versify, deversify, Version, Versionage
-from .coring import Protos, Serials, MtrDex, DigDex
+from .coring import Rever, versify, deversify, Version, Versionage
+from .coring import Protos, Serials, MtrDex, DigDex, PreDex
 from .coring import Saider
 
 
@@ -93,6 +93,13 @@ class Serder:
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
+    ToDo:
+        verify
+            add fields check for required fields
+        saidify
+
+        Errors for extraction versus verification
+
     """
 
     MaxVSOffset = 12
@@ -108,7 +115,7 @@ class Serder:
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
                  verify=False, saidify=False,
-                 dcode=MtrDex.Blake3_256, pcode=MtrDex.Blake3_256):
+                 dcode=MtrDex.Blake3_256, pcode=PreDex.Blake3_256):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -143,9 +150,9 @@ class Serder:
         if dcode not in DigDex:
             raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
         self._dcode = dcode  # need default code for saidify
-        if dcode not in MtrDex:
+        if pcode not in PreDex:
             raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
-        self._pcode = dcode  # need default code for saidify when saided prefix
+        self._pcode = pcode  # need default code for saidify when saided prefix
 
         if raw:  # deserialize raw using property setter
             # raw setter also sets sad, proto, version, kind, and size from raw
@@ -188,6 +195,7 @@ class Serder:
         """
         return True
 
+
     def saidify(self, dcode=None, pcode=None):
         """Saidify given .sad and resets raw, sad, proto, version, kind, and size
         Override for protocol and ilk specific saidification behavior. Especially
@@ -201,7 +209,7 @@ class Serder:
 
         """
         if dcode is not None and dcode in DigDex:
-            self._decode = decode
+            self._dcode = dcode
         if pcode is not None and pcode in MtrDex:
             self._pcode = pcode
 
