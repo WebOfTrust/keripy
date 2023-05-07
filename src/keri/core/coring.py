@@ -26,7 +26,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
                       EmptyListError,
-                      ShortageError, UnexpectedCodeError, DeserializationError,
+                      ShortageError, UnexpectedCodeError, SerDesError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
@@ -336,7 +336,7 @@ def sniff(raw):
     kind = kind.decode("utf-8")
     proto = proto.decode("utf-8")
     if kind not in Serials:
-        raise DeserializationError("Invalid serialization kind = {}".format(kind))
+        raise SerDesError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
 
     return proto, kind, version, size
@@ -384,25 +384,25 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
-            raise DeserializationError("Error deserializing JSON: {}"
+            raise SerDesError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
     elif kind == Serials.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing MGPK: {}"
+            raise SerDesError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
     elif kind == Serials.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing CBOR: {}"
+            raise SerDesError("Error deserializing CBOR: {}"
                                        "".format(raw[:size]))
 
     else:
-        raise DeserializationError("Invalid deserialization kind: {}"
+        raise SerDesError("Invalid deserialization kind: {}"
                                    "".format(kind))
 
     return ked

@@ -10,7 +10,7 @@ import cbor2 as cbor
 import msgpack
 
 from .. import kering
-from ..kering import (ValidationError, DeserializationError, MissingFieldError,
+from ..kering import (ValidationError, SerDesError, MissingElementError,
                       VersionError, UnexpectedCodeError, ShortageError, )
 
 from ..core import coring
@@ -252,7 +252,7 @@ class Serder:
 
         proto = proto.decode("utf-8")
         if proto not in Protos:
-            raise DeserializationError(f"Invalid protocol type = {proto}.")
+            raise SerDesError(f"Invalid protocol type = {proto}.")
 
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if vrsn != version:
@@ -261,7 +261,7 @@ class Serder:
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
-            raise DeserializationError(f"Invalid serialization kind = {kind}.")
+            raise SerDesError(f"Invalid serialization kind = {kind}.")
 
         size = int(size, 16)
         if len(raw) < size:
@@ -270,7 +270,7 @@ class Serder:
         sad = cls.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:
-            raise MissingFieldError(f"Missing version string field in {sad}.")
+            raise SerDesError(f"Missing version string field in {sad}.")
 
         return sad, proto, version, kind, size
 
@@ -294,25 +294,25 @@ class Serder:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError(f"Error deserializing JSON: "
+                raise SerDesError(f"Error deserializing JSON: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
-                raise DeserializationError(f"Error deserializing MGPK: "
+                raise SerDesError(f"Error deserializing MGPK: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
-                raise DeserializationError(f"Error deserializing CBOR: "
+                raise SerDesError(f"Error deserializing CBOR: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         else:
-            raise DeserializationError(f"Invalid deserialization kind: {kind}")
+            raise SerDesError(f"Invalid deserialization kind: {kind}")
 
         return sad
 
@@ -337,7 +337,7 @@ class Serder:
 
         """
         if "v" not in sad:
-            raise MissingFieldError(f"Missing version string field in {sad}.")
+            raise SerDesError(f"Missing version string field in {sad}.")
 
         proto, knd, vrsn, size = deversify(sad["v"])  # extract elements
 
@@ -467,7 +467,7 @@ class Serder:
         self._size = size
         label = self.Labels[self.ilk].saids[0]  # primary said field label
         if label not in self._sad:
-            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+            raise SerDesError(f"Missing primary said field in {self._sad}.")
         self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 
@@ -495,7 +495,7 @@ class Serder:
         self._size = size
         label = self.Labels[self.ilk].saids[0]  # primary said field label
         if label not in self._sad:
-            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+            raise SerDesError(f"Missing primary said field in {self._sad}.")
         self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 
@@ -522,7 +522,7 @@ class Serder:
         self._size = size
         label = self.Labels[self.ilk].saids[0]  # primary said field label
         if label not in self._sad:
-            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+            raise SerDesError(f"Missing primary said field in {self._sad}.")
         self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 

@@ -228,6 +228,13 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+class MissingElementError(ValidationError):
+    """
+    Missing a required element or field of message
+    Usage:
+        raise MissingElementError("error message")
+    """
+
 
 class MissingSignatureError(ValidationError):
     """
@@ -465,20 +472,14 @@ class UnexpectedOpCodeError(DerivationCodeError):
 
 
 
-class DeserializationError(ExtractionError):
+class SerDesError(ExtractionError):
     """
-    Error deserializing message
+    Error serializing or deserializing message
     Usage:
-        raise DeserializationError("error message")
+        raise SerDesError("error message")
     """
 
-class MissingFieldError(DeserializationError):
-    """
-    Field required to process extraction is missing from deserialized dict
 
-    Usage:
-        raise MissingFieldError("error message")
-    """
 
 
 # Other errors
