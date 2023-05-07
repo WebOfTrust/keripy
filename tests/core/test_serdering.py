@@ -46,6 +46,7 @@ def test_serder():
     assert serder.kind == coring.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
 
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'
@@ -67,6 +68,7 @@ def test_serder():
     assert serder.kind == coring.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
 
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'

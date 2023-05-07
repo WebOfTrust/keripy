@@ -64,26 +64,31 @@ class Serder:
 
     Properties:
         raw (bytes): of serialized event only
-        ked (dict): self addressed data dict
+        sad (dict): self addressed data dict
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+        version (Versionage): protocol version (Major, Minor)
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
-        version (Versionage): protocol version (Major, Minor)
-        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
-        label (str): Saidage value as said field label
-        saider (Saider): of SAID of this SAD .ked['d'] if present
+        saider (Saider): of SAID of this SAD as given by .Labels for this ilk
         said (str): SAID of .saider qb64
         saidb (bytes): SAID of .saider  qb64b
-        pretty (str): Pretty JSON of this SAD
+        ilk (str | None): packet type for this Serder if any (may be None)
+
 
     Hidden Attributes:
         ._raw is bytes of serialized event only
-        ._ked is key event dict
+        ._sad is key event dict
+        ._proto (str):  Protocolage value as protocol type identifier
+        ._version is Versionage instance of event version
         ._kind is serialization kind string value (see namedtuple coring.Serials)
           supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
-        ._version is Versionage instance of event version
-        ._proto (str):  Protocolage value as protocol type identifier
         ._saider (Saider): instance for this Sadder's SAID
+        ._dcode (str): digest derivation code value of DigDex
+        ._pcode (str): prefix derivation code value of MtrDex
+
+    Methods:
+        pretty(size: int | None ) -> str: Prettified JSON of this SAD
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -555,3 +560,13 @@ class Serder:
             saidb (bytes): qb64b of said  of .saider
         """
         return self.saider.qb64b
+
+
+    @property
+    def ilk(self):
+        """ilk property getter
+        Returns:
+            ilk (str): pracket type given by sad['t'] if any
+        """
+        return self.sad.get('t')  # returns None if 't' not in sad
+
