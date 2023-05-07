@@ -27,6 +27,10 @@ def test_serder():
     assert Serder.Labels[None].saids == ['d']
     assert Serder.Labels[None].fields == ['v', 'd']
 
+    # said field labels must be subset of all field labels
+    assert set(Serder.Labels[None].saids) <= set(Serder.Labels[None].fields)
+
+
     with pytest.raises(ValueError):
         serder = Serder()
 

@@ -196,6 +196,10 @@ class Serder:
         for label in self.Labels[self.ilk].fields:
             if label not in self.sad:
                 return False
+        for label in self.Labels[self.ilk].saids:
+            if label not in self.sad:
+                return False
+
         return True
 
 
