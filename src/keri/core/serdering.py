@@ -193,12 +193,19 @@ class Serder:
         Returns:
             verify (bool): True if said(s) verify. False otherwise
         """
-        for label in self.Labels[self.ilk].fields:
-            if label not in self.sad:
-                return False
-        for label in self.Labels[self.ilk].saids:
-            if label not in self.sad:
-                return False
+        labels = self.Labels[self.ilk].fields  # all field labels
+        keys = list(self.sad)  # get list of keys of self.sad
+        for key in list(keys):  # make copy to mutate
+            if key not in labels:
+                del keys[key]  # remove non required fields
+
+        if labels != keys:  # forces ordered appearance of labels in .sad
+            return False
+
+        # said field labels are not order dependent but field labels are
+        if not (set(self.Labels[self.ilk].saids) <= set(labels)):
+            return False
+
 
         return True
 
