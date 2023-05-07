@@ -423,14 +423,6 @@ class VersionError(ExtractionError):
     """
 
 
-class DeserializationError(ExtractionError):
-    """
-    Error deserializing message
-    Usage:
-        raise DeserializationError("error message")
-    """
-
-
 class ConversionError(ExtractionError):
     """
     Problem with Base64 to Binary conversion
@@ -470,6 +462,24 @@ class UnexpectedOpCodeError(DerivationCodeError):
     Usage:
         raise DerivationCodeError("error message")
     """
+
+
+
+class DeserializationError(ExtractionError):
+    """
+    Error deserializing message
+    Usage:
+        raise DeserializationError("error message")
+    """
+
+class MissingFieldError(DeserializationError):
+    """
+    Field required to process extraction is missing from deserialized dict
+
+    Usage:
+        raise MissingFieldError("error message")
+    """
+
 
 # Other errors
 

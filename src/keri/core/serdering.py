@@ -10,8 +10,8 @@ import cbor2 as cbor
 import msgpack
 
 from .. import kering
-from ..kering import (ValidationError, DeserializationError, VersionError,
-                      UnexpectedCodeError, ShortageError)
+from ..kering import (ValidationError, DeserializationError, MissingFieldError,
+                      VersionError, UnexpectedCodeError, ShortageError, )
 
 from ..core import coring
 from .coring import Rever, versify, deversify, Version, Versionage
@@ -270,8 +270,7 @@ class Serder:
         sad = cls.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:
-            raise ValueError(f"Missing or empty version string in sad "
-                             "dict = {sad}")
+            raise MissingFieldError(f"Missing version string field in {sad}.")
 
         return sad, proto, version, kind, size
 
@@ -338,8 +337,7 @@ class Serder:
 
         """
         if "v" not in sad:
-            raise ValueError(f"Missing or empty version string in sad "
-                             "dict = {sad}")
+            raise MissingFieldError(f"Missing version string field in {sad}.")
 
         proto, knd, vrsn, size = deversify(sad["v"])  # extract elements
 
@@ -467,7 +465,10 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        if label not in self._sad:
+            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+        self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 
 
@@ -492,7 +493,10 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        if label not in self._sad:
+            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+        self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 
 
@@ -516,7 +520,10 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        if label not in self._sad:
+            raise MissingFieldError(f"Missing primary said field in {self._sad}.")
+        self._saider = Saider(qb64=self._sad[label])
         # ._saider is not yet verified
 
 
