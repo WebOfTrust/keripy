@@ -193,6 +193,9 @@ class Serder:
         Returns:
             verify (bool): True if said(s) verify. False otherwise
         """
+        for label in self.Labels[self.ilk].fields:
+            if label not in self.sad:
+                return False
         return True
 
 
