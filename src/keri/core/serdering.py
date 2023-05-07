@@ -216,6 +216,10 @@ class Serder:
         if pcode is not None and pcode in PreDex:
             self._pcode = pcode
 
+        for label in self.Labels[self.ilk].saids:
+            if label not in self.sad:
+                return False
+
         pass
 
 
