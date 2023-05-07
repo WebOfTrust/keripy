@@ -115,7 +115,7 @@ class Serder:
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
                  verify=False, saidify=False,
-                 dcode=MtrDex.Blake3_256, pcode=PreDex.Blake3_256):
+                 dcode=DigDex.Blake3_256, pcode=PreDex.Blake3_256):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -210,7 +210,7 @@ class Serder:
         """
         if dcode is not None and dcode in DigDex:
             self._dcode = dcode
-        if pcode is not None and pcode in MtrDex:
+        if pcode is not None and pcode in PreDex:
             self._pcode = pcode
 
         pass
