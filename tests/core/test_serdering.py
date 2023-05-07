@@ -24,6 +24,8 @@ def test_serder():
 
     # Test Serder
 
+    assert Serder.Labels[None].saids[0] == 'd'
+
     with pytest.raises(ValueError):
         serder = Serder()
 

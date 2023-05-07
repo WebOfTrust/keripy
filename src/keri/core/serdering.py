@@ -269,6 +269,10 @@ class Serder:
 
         sad = cls.loads(raw=raw, size=size, kind=kind)
 
+        if "v" not in sad:
+            raise ValueError(f"Missing or empty version string in sad "
+                             "dict = {sad}")
+
         return sad, proto, version, kind, size
 
 
@@ -463,7 +467,8 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
+        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        # ._saider is not yet verified
 
 
     @property
@@ -487,7 +492,8 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
+        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        # ._saider is not yet verified
 
 
     @property
@@ -510,7 +516,8 @@ class Serder:
         self._version = vrsn
         self._kind = kind  # does not trigger kind setter
         self._size = size
-        self._saider = Saider(qb64=self._sad["d"])  # ._saider is not yet verified
+        self._saider = Saider(qb64=self._sad[self.Labels[self.ilk].saids[0]])
+        # ._saider is not yet verified
 
 
     @property
