@@ -56,16 +56,6 @@ class Serder:
     generation and verification in addition to the required fields.
 
     Class Attributes:
-        ErrorSize (int): maximum size of exception msg so work with syslog
-            Protects against syslog error when exceeding UDP MTU (max trans unit)
-            for syslogging exceptions.
-            Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
-            Most broadband routers have an UDP MTU set to 1454.
-            Must include not just payload but UDP/IP header in
-            MTU calculation. So must leave room for either UDP/IpV4 or
-            the bigger UDP/IPv6 header.
-            Except for old IoT hardware, modern implementations all
-            support IPv6 so 1024 is usually a safe value for payload.
         MaxVSOffset (int): Maximum Version String Offset in bytes/chars
         InhaleSize (int): Minimum raw buffer size needed to inhale
         Labels (dict): Protocol specific dict of field labels keyed by ilk
@@ -99,7 +89,7 @@ class Serder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
-    ErrorSize = 1024  # maximum size of exception msg so work with syslog
+
     MaxVSOffset = 12
     InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
 
@@ -162,7 +152,7 @@ class Serder:
             if verify:  # verify the said(s) provided in raw
                 if not self.verify():
                     raise ValidationError(f"Invalid said(s) for sad = "
-                                          f"{self.pretty(size=self.ErrorSize)}")
+                                          f"{self.pretty()}")
 
         elif sad:  # serialize sad into raw using sad property setter
             self._kind = kind  # does not trigger .kind property setter.
@@ -176,7 +166,7 @@ class Serder:
             elif verify:  # verify the said(s) provided in sad
                 if not self.verify():
                     raise ValidationError(f"Invalid said(s) for sad = "
-                                          f"{self.pretty(size=self.ErrorSize)}")
+                                          f"{self.pretty()}")
 
         else:
             raise ValueError("Improper initialization need raw or sad.")
@@ -289,21 +279,21 @@ class Serder:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializationError(f"Error deserializing JSON: "
-                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
+                    f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializationError(f"Error deserializing MGPK: "
-                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
+                    f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
                 raise DeserializationError(f"Error deserializing CBOR: "
-                    f"{raw[:min(size, self.ErrorSize)].decode('utf-8')}") from ex
+                    f"{raw[:size].decode('utf-8')}") from ex
 
         else:
             raise DeserializationError(f"Invalid deserialization kind: {kind}")
@@ -397,13 +387,14 @@ class Serder:
         return raw
 
 
-    def pretty(self, *, size=1024):
+    def pretty(self, *, size=None):
         """Utility method to pretty print .sad as JSON str.
         Returns:
             pretty (str):  JSON of .sad with pretty formatting
 
         Pararmeters:
-            size (int): size limit. Default protects against error when
+            size (int | None): size limit. None means not limit.
+                Enables protection against syslog error when
                 exceeding UDP MTU (max trans unit) for syslog applications.
                 Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
                 Most broadband routers have an UDP MTU set to 1454.
@@ -413,7 +404,7 @@ class Serder:
                 Except for old IoT hardware, modern implementations all
                 support IPv6 so 1024 is usually a safe value for payload.
         """
-        return json.dumps(self.sad, indent=1)[:size if size is not None else None]
+        return json.dumps(self.sad, indent=1)[:size]
 
 
     def compare(self, said=None):
