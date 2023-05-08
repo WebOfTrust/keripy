@@ -700,6 +700,7 @@ class Matter:
         qb2  (bytes): binary with derivation code + crypto material
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
 
     Hidden:
         _code (str): value for .code property
@@ -1004,6 +1005,17 @@ class Matter:
                 False otherwise
         """
         return (self.code in DigDex)
+
+
+    @property
+    def prefixive(self):
+        """
+        Property prefixive:
+        Returns True if identifier has prefix derivation code,
+                False otherwise
+        """
+        return (self.code in PreDex)
+
 
     def _infil(self):
         """
@@ -3222,7 +3234,7 @@ Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
 Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
-# digest klas, digest size (not default), digest length
+# digest algorithm  klas, digest size (not default), digest length
 # size and length are needed for some digest types as function parameters
 Digestage = namedtuple("Digestage", "klas size length")
 

@@ -19,8 +19,12 @@ from ..kering import (ValidationError, SerDesError, MissingElementError,
 from ..core import coring
 from .coring import Rever, versify, deversify, Version, Versionage
 from .coring import Protos, Serials, MtrDex, DigDex, PreDex
-from .coring import Saider, Digestage
+from .coring import Matter, Saider, Digestage
 
+from .. import help
+
+
+logger = help.ogler.getLogger()
 
 Labelage = namedtuple("Labelage", "saids fields")  #values are lists of str
 # saids is list of saided field labels
@@ -183,9 +187,13 @@ class Serder:
                 del raw[:self.size]
 
             if verify:  # verify the said(s) provided in raw
-                if not self.verify():
-                    raise ValidationError(f"Invalid said(s) for sad = "
-                                          f"{self.pretty()}")
+                try:
+                    self._verify()  # raises exception when not verify
+                except Exception as ex:
+                    logger.error("Invalid raw for Serder %s\n%s",
+                                 self.pretty(), ex.args[0])
+                    raise ValidationError(f"Invalid raw for Serder"
+                                          f"\n{self.pretty()}\n.") from ex
 
         elif sad:  # serialize sad into raw using sad property setter
             self._kind = kind  # does not trigger .kind property setter.
@@ -205,6 +213,73 @@ class Serder:
             raise ValueError("Improper initialization need raw or sad.")
 
 
+
+
+    def _derive(self, dcode=DigDex.Blake3_256, pcode=PreDex.Blake3_256):
+        """
+        Returns:
+            result (tuple): (raw, sad) raw said as derived from serialized dict
+                            and modified sad during derivation.
+
+        Parameters:
+            sad (dict): self addressed data to be serialized
+            code (str): digest type code from DigDex.
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): Saidage value of said field labelin which to inject dummy
+
+
+        Derives raw said from sad with .Dummy filled sad[label]
+
+        Returns:
+            raw (bytes): raw said from sad with dummy filled label id field
+
+        Parameters:
+            sad (dict): self addressed data to be injected with dummy and serialized
+            code (str): digest type code from DigDex
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): Saidage value as said field label in which to inject dummy
+            ignore (list): fields to ignore when generating SAID
+
+        """
+        # wrap call .derive to catch this exception
+        if dcode not in self.Digests:
+            raise ValueError(f"Unsupported digest code = {dcode}.")
+        if pcode is not None and pcode in PreDex:  # may be used in subclass
+            raise ValueError(f"Unsupported prefix code = {pcode}.")
+
+
+        sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
+        # fill id field denoted by label with dummy chars to get size correct
+        sad[label] = self.Dummy * Matter.Sizes[dcode].fs
+
+
+
+        if 'v' in sad:  # if versioned then need to set size in version string
+            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
+
+        ser = dict(sad)
+        if ignore:
+            for f in ignore:
+                del ser[f]
+
+        # string now has
+        # correct size
+        klas, size, length = clas.Digests[code]
+        # sad as 'v' verision string then use its kind otherwise passed in kind
+        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
+        ckwa = dict()  # class keyword args
+        if size:
+            ckwa.update(digest_size=size)  # optional digest_size
+        dkwa = dict()  # digest keyword args
+        if length:
+            dkwa.update(length=length)
+        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
+
+
     def verify(self):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
@@ -214,6 +289,26 @@ class Serder:
         Returns:
             verify (bool): True if said(s) verify. False otherwise
         """
+        try:
+            self._verify()
+        except Exception as ex:              # log validation error here
+            logger.error("Invalid Serder: %s\n for %s\n",
+                         ex.args[0], self.pretty())
+
+            return False
+
+        return True
+
+    def _verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        # ensure required fields are in sad
         labels = self.Labels[self.ilk].fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
@@ -221,32 +316,73 @@ class Serder:
                 del keys[key]  # remove non required fields
 
         if labels != keys:  # forces ordered appearance of labels in .sad
-            return False
+            raise MissingElementError(f"Missing required fields = {labels}"
+                                      f" in sad = \n{self.pretty()}")
 
-        # said field labels are not order dependent but field labels are
-        if not (set(self.Labels[self.ilk].saids) <= set(labels)):
-            return False
+        # said field labels are not order dependent with respect to all fields
+        # in sad so use set() to test inclusion
+        saids = self.Labels[self.ilk].saids
+        if not (set(saids) <= set(labels)):
+            raise MissingElementError(f"Missing required said fields = {saids}"
+                                      f" in sad = \n{self.pretty()}")
+
+        sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
+        saves = []
+        for label in saids:
+            value = sad[label]
+            try:
+                matter = Matter(qb64=value)
+            except Exception as ex:
+                raise ValidationError(f"Invalid said field {label} value {value}"
+                                      f" in sad = \n{self.pretty()}") from ex
+            if matter.digestive:
+                sad[label] = self.Dummy * len(value)  # replace value with dummy
+
+            saves.append((label, value, matter.code))  # save for later
+            # override in subclass when said field value may not be a said such
+            # as incept with none digestive
+
+        raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
+
+        for label, value, code in saves:
+            if code in DigDex:  # subclass override if non digestive allowed
+                klas, size, length = self.Digests[code]  # digest algo size & length
+                ikwa = dict()  # digest algo class initi keyword args
+                if size:
+                    ikwa.update(digest_size=size)  # optional digest_size
+                dkwa = dict()  # digest method keyword args
+                if length:
+                    dkwa.update(length=length)
+                dig = klas(raw, **ikwa).digest(**dkwa)
+                if dig != self.sad[label]:
+                    #raise
+                    pass
+                sad[label] = dig
+
+        raw = self.dumps(sad, kind=self.kind)
+        if raw != self.raw:
+            #raise
+            pass
 
 
-        return True
 
 
-    def saidify(self, dcode=None, pcode=None):
+    def saidify(self, codes=None):
         """Saidify given .sad and resets raw, sad, proto, version, kind, and size
         Override for protocol and ilk specific saidification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
         identifier prefix.
 
         Parameters:
-            dcode (str): value of DigDex DigCodex for computed saids
-            pcode (str): value of MatDex MatterCodes for computed saidified prefix
+            codes (list): elements are derivation codes, one for each said
+                in .Labels[ilk].saids
 
 
         """
-        if dcode is not None and dcode in self.Digests:
-            self._dcode = dcode
-        if pcode is not None and pcode in PreDex:
-            self._pcode = pcode
+        #if dcode is not None and dcode in self.Digests:
+            #self._dcode = dcode
+        #if pcode is not None and pcode in PreDex:
+            #self._pcode = pcode
 
         for label in self.Labels[self.ilk].saids:
             if label not in self.sad:
@@ -629,73 +765,3 @@ class Serder:
         """
         return self.sad.get('t')  # returns None if 't' not in sad
 
-
-
-    def derive(self, sad, code=None, **kwa):
-        """
-        Returns:
-            result (tuple): (raw, sad) raw said as derived from serialized dict
-                            and modified sad during derivation.
-
-        Parameters:
-            sad (dict): self addressed data to be serialized
-            code (str): digest type code from DigDex.
-            kind (str): serialization algorithm of sad, one of Serials
-                        used to override that given by 'v' field if any in sad
-                        otherwise default is Serials.json
-            label (str): Saidage value of said field labelin which to inject dummy
-        """
-        code = code if code is not None else self.code
-        return self._derive(sad=sad, code=code, **kwa)
-
-
-
-
-    @classmethod
-    def _derive(clas, sad: dict, *,
-                code: str = MtrDex.Blake3_256,
-                kind: str = None,
-                labels: str = None,
-                ignore: list = None):
-        """
-        Derives raw said from sad with .Dummy filled sad[label]
-
-        Returns:
-            raw (bytes): raw said from sad with dummy filled label id field
-
-        Parameters:
-            sad (dict): self addressed data to be injected with dummy and serialized
-            code (str): digest type code from DigDex
-            kind (str): serialization algorithm of sad, one of Serials
-                        used to override that given by 'v' field if any in sad
-                        otherwise default is Serials.json
-            label (str): Saidage value as said field label in which to inject dummy
-            ignore (list): fields to ignore when generating SAID
-
-        """
-        if code not in DigDex or code not in clas.Digests:
-            raise ValueError("Unsupported digest code = {}.".format(code))
-
-        sad = dict(sad)  # make shallow copy so don't clobber original sad
-        # fill id field denoted by label with dummy chars to get size correct
-        sad[label] = clas.Dummy * Matter.Sizes[code].fs
-        if 'v' in sad:  # if versioned then need to set size in version string
-            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
-
-        ser = dict(sad)
-        if ignore:
-            for f in ignore:
-                del ser[f]
-
-        # string now has
-        # correct size
-        klas, size, length = clas.Digests[code]
-        # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        ckwa = dict()  # class keyword args
-        if size:
-            ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict()  # digest keyword args
-        if length:
-            dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
