@@ -395,9 +395,10 @@ class Verifier:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)
-        iss = self.reger.subjs.get(keys=creder.subject['i'])
-        if iss is None:
-            return None
+        if 'i' in creder.subject:
+            iss = self.reger.subjs.get(keys=creder.subject['i'])
+            if iss is None:
+                return None
 
         if creder.status not in self.tevers:
             return None
