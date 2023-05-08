@@ -597,7 +597,7 @@ class NonTransCodex:
 
 NonTransDex = NonTransCodex()  # Make instance
 
-
+# When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
     """

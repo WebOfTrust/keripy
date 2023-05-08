@@ -8,6 +8,9 @@ from collections import namedtuple
 
 import cbor2 as cbor
 import msgpack
+import pysodium
+import blake3
+import hashlib
 
 from .. import kering
 from ..kering import (ValidationError, SerDesError, MissingElementError,
@@ -16,7 +19,7 @@ from ..kering import (ValidationError, SerDesError, MissingElementError,
 from ..core import coring
 from .coring import Rever, versify, deversify, Version, Versionage
 from .coring import Protos, Serials, MtrDex, DigDex, PreDex
-from .coring import Saider
+from .coring import Saider, Digestage
 
 
 Labelage = namedtuple("Labelage", "saids fields")  #values are lists of str
@@ -105,12 +108,30 @@ class Serder:
     MaxVSOffset = 12
     InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
 
+    Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
+
+    # should be same set of codes as in coring.DigestCodex coring.DigDex so
+    # .digestive property works. Use unit tests to ensure codex sets match
+    Digests = {
+        DigDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
+        DigDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
+        DigDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
+        DigDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
+        DigDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
+        DigDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
+        DigDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
+        DigDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
+        DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
+    }
+
     # Protocol specific field labels dict, keyed by ilk (packet type string).
     # value of each entry is Labelage instance that provides saided field labels
     # and all field labels
     # A key of None is default when no ilk required
     # Override in sub class that is protocol specific
     Labels = {None: Labelage(saids=['d'], fields=['v','d'])}
+
+
 
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
@@ -147,7 +168,7 @@ class Serder:
 
 
         """
-        if dcode not in DigDex:
+        if dcode not in self.Digests:
             raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
         self._dcode = dcode  # need default code for saidify
         if pcode not in PreDex:
@@ -222,7 +243,7 @@ class Serder:
 
 
         """
-        if dcode is not None and dcode in DigDex:
+        if dcode is not None and dcode in self.Digests:
             self._dcode = dcode
         if pcode is not None and pcode in PreDex:
             self._pcode = pcode
@@ -234,8 +255,7 @@ class Serder:
         pass
 
 
-    @classmethod
-    def _inhale(cls, raw, version=Version):
+    def _inhale(self, raw, version=Version):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -255,11 +275,11 @@ class Serder:
           Assumes only supports Version
 
         """
-        if len(raw) < cls.InhaleSize:
+        if len(raw) < self.InhaleSize:
             raise ShortageError(f"Need more raw bytes for Serder to inhale.")
 
         match = Rever.search(raw)  # Rever's regex takes bytes
-        if not match or match.start() > cls.MaxVSOffset:
+        if not match or match.start() > self.MaxVSOffset:
             raise VersionError(f"Invalid version string in raw = {raw}.")
 
         proto, major, minor, kind, size = match.group("proto",
@@ -285,7 +305,7 @@ class Serder:
         if len(raw) < size:
             raise ShortageError(f"Need more bytes.")
 
-        sad = cls.loads(raw=raw, size=size, kind=kind)
+        sad = self.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:
             raise SerDesError(f"Missing version string field in {sad}.")
@@ -335,8 +355,7 @@ class Serder:
         return sad
 
 
-    @classmethod
-    def _exhale(cls, sad, kind=None, version=Version):
+    def _exhale(self, sad, kind=None, version=Version):
         """Serializes sad given kind and version
 
         Returns tuple of (raw, proto, kind, sad, vrsn) where:
@@ -372,7 +391,7 @@ class Serder:
         if kind not in Serials:
             raise ValueError(f"Invalid serialization kind = {kind}")
 
-        raw = cls.dumps(sad, kind)
+        raw = self.dumps(sad, kind)
         size = len(raw)
 
         # generate new version string with correct size and desired kind
@@ -610,3 +629,73 @@ class Serder:
         """
         return self.sad.get('t')  # returns None if 't' not in sad
 
+
+
+    def derive(self, sad, code=None, **kwa):
+        """
+        Returns:
+            result (tuple): (raw, sad) raw said as derived from serialized dict
+                            and modified sad during derivation.
+
+        Parameters:
+            sad (dict): self addressed data to be serialized
+            code (str): digest type code from DigDex.
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): Saidage value of said field labelin which to inject dummy
+        """
+        code = code if code is not None else self.code
+        return self._derive(sad=sad, code=code, **kwa)
+
+
+
+
+    @classmethod
+    def _derive(clas, sad: dict, *,
+                code: str = MtrDex.Blake3_256,
+                kind: str = None,
+                labels: str = None,
+                ignore: list = None):
+        """
+        Derives raw said from sad with .Dummy filled sad[label]
+
+        Returns:
+            raw (bytes): raw said from sad with dummy filled label id field
+
+        Parameters:
+            sad (dict): self addressed data to be injected with dummy and serialized
+            code (str): digest type code from DigDex
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): Saidage value as said field label in which to inject dummy
+            ignore (list): fields to ignore when generating SAID
+
+        """
+        if code not in DigDex or code not in clas.Digests:
+            raise ValueError("Unsupported digest code = {}.".format(code))
+
+        sad = dict(sad)  # make shallow copy so don't clobber original sad
+        # fill id field denoted by label with dummy chars to get size correct
+        sad[label] = clas.Dummy * Matter.Sizes[code].fs
+        if 'v' in sad:  # if versioned then need to set size in version string
+            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
+
+        ser = dict(sad)
+        if ignore:
+            for f in ignore:
+                del ser[f]
+
+        # string now has
+        # correct size
+        klas, size, length = clas.Digests[code]
+        # sad as 'v' verision string then use its kind otherwise passed in kind
+        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
+        ckwa = dict()  # class keyword args
+        if size:
+            ckwa.update(digest_size=size)  # optional digest_size
+        dkwa = dict()  # digest keyword args
+        if length:
+            dkwa.update(length=length)
+        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
