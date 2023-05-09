@@ -401,6 +401,9 @@ class Verifier:
             op = 'I2I' if 'i' in creder.subject else 'NI2I'
 
         if op != 'NI2I':
+            if 'i' not in creder.subject:
+                return None
+
             iss = self.reger.subjs.get(keys=creder.subject['i'])
             if iss is None:
                 return None

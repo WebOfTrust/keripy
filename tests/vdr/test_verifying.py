@@ -491,7 +491,6 @@ def test_verifier_chained_credential(seeder):
         assert saider[0].qb64 == vLeiCreder.said
 
         # test operators
-        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
         untargetedSubject = dict(
             d="",
@@ -524,11 +523,10 @@ def test_verifier_chained_credential(seeder):
             missing = True
 
         assert missing is True
-        assert len(ianverfer.cues) == 1
+        assert len(ianverfer.cues) == 3
         cue = ianverfer.cues.popleft()
-        assert cue["kin"] == "telquery"
-        q = cue["q"]
-        assert q["ri"] == ianiss.regk
+        assert cue["kin"] == "saved"
+        cue["creder"] = untargetedCreder.raw
 
         iss = ianiss.issue(said=untargetedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -565,12 +563,30 @@ def test_verifier_chained_credential(seeder):
 
         chainedSadsigers, chainedSadcigars = signing.signPaths(hab=ian, serder=chainedCreder, paths=[[]])
 
+        missing = False
         try:
             ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
-        except KeyError:
-            # this verifies that the operator I2I is respected for chains
-            pass
+        except kering.MissingRegistryError:
+            missing = True
 
+        assert missing is True
+        assert len(ianverfer.cues) == 4
+        cue = ianverfer.cues.popleft()
+        assert cue["kin"] == "saved"
+        cue["creder"] = chainedCreder.raw
+
+        iss = ianiss.issue(said=chainedCreder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ian.kever.sn)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ian.kever.serder.saider)
+        ianreg.processEscrows()
+
+        # Now that the credential has been issued, process escrows and it will find the TEL event
+        try:
+            ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
+        except kering.MissingChainError:
+            pass
 
         # Now lets get Ron's credential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
