@@ -171,10 +171,15 @@ class Serder:
 
 
         """
-        if dcode not in self.Digests:
-            raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
-        if pcode not in PreDex:
-            raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
+        # init hidden attributes so code linter always sees them
+        self._raw = None
+        self._sad = None
+        self._proto = None
+        self._kind = None
+        self._version = None
+        self._kind = None
+        self._size = None
+        self._saider = None
 
         if raw:  # deserialize raw using property setter
             # raw setter also sets sad, proto, version, kind, and size from raw
@@ -376,6 +381,11 @@ class Serder:
         #if pcode is not None and pcode in PreDex:
             #self._pcode = pcode
 
+        #if dcode not in self.Digests:
+            #raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
+        #if pcode not in PreDex:
+            #raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
+
         for label in self.Labels[self.ilk].saids:
             if label not in self.sad:
                 return False
@@ -383,10 +393,15 @@ class Serder:
         pass
 
 
-    def _inhale(self, raw, version=Version):
+    @classmethod
+    def _inhale(clas, raw, version=Version):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
+
+        As classmethod enables testing parsing raw serder values. This can be
+        called on self as well because it only ever accesses clas attributes
+        not instance attributes.
 
         Returns: tuple (sad, proto, vrsn, kind, size) where:
            sad (dict): serializable attribute dict of saidified data
@@ -403,11 +418,11 @@ class Serder:
           Assumes only supports Version
 
         """
-        if len(raw) < self.InhaleSize:
+        if len(raw) < clas.InhaleSize:
             raise ShortageError(f"Need more raw bytes for Serder to inhale.")
 
         match = Rever.search(raw)  # Rever's regex takes bytes
-        if not match or match.start() > self.MaxVSOffset:
+        if not match or match.start() > clas.MaxVSOffset:
             raise VersionError(f"Invalid version string in raw = {raw}.")
 
         proto, major, minor, kind, size = match.group("proto",
@@ -433,7 +448,7 @@ class Serder:
         if len(raw) < size:
             raise ShortageError(f"Need more bytes.")
 
-        sad = self.loads(raw=raw, size=size, kind=kind)
+        sad = clas.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:
             raise SerDesError(f"Missing version string field in {sad}.")
@@ -483,8 +498,13 @@ class Serder:
         return sad
 
 
-    def _exhale(self, sad, kind=None, version=Version):
+    @classmethod
+    def _exhale(clas, sad, kind=None, version=Version):
         """Serializes sad given kind and version
+
+        As classmethod enables bootstrap of valid sad dict that has correct size
+        in version string. This obviates sizeify. This can be called on self as
+        well because it only ever accesses clas attributes not instance attributes.
 
         Returns tuple of (raw, proto, kind, sad, vrsn) where:
             raw (str): serialized event as bytes of kind
@@ -519,7 +539,7 @@ class Serder:
         if kind not in Serials:
             raise ValueError(f"Invalid serialization kind = {kind}")
 
-        raw = self.dumps(sad, kind)
+        raw = clas.dumps(sad, kind)
         size = len(raw)
 
         # generate new version string with correct size and desired kind
@@ -651,6 +671,7 @@ class Serder:
         """sad property setter  assumes ._kind
         Forces update of other derived properties
         """
+        # self._exhale works because it only access class attributes
         raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad, kind=self.kind)
         self._raw = raw  # does not trigger raw setter
         self._sad = sad  # does not trigger sad setter
@@ -678,6 +699,7 @@ class Serder:
         """kind property setter Assumes ._sad. Serialization kind.
         Forces update of other derived properties
         """
+        # self._exhale works because it only access class attributes
         raw, sad, proto, vrsn, kind, size = self._exhale(sad=self.sad, kind=kind)
         self._raw = raw  # does not trigger raw setter
         self._sad = sad  # does not trigger sad setter
