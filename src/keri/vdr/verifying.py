@@ -398,10 +398,7 @@ class Verifier:
         creder = self.reger.creds.get(keys=nodeSaid)
 
         if op not in ['I2I', 'DI2I', 'NI2I']:
-            if 'i' in creder.subject:
-                op = 'I2I'
-            else:
-                op = 'NI2I'
+            op = 'I2I' if 'i' in creder.subject else 'NI2I'
 
         if op != 'NI2I':
             iss = self.reger.subjs.get(keys=creder.subject['i'])
