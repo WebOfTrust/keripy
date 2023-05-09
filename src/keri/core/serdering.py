@@ -19,7 +19,7 @@ from ..kering import (ValidationError, SerDesError, MissingElementError,
 from ..core import coring
 from .coring import Rever, versify, deversify, Version, Versionage
 from .coring import Protos, Serials, MtrDex, DigDex, PreDex
-from .coring import Matter, Saider, Digestage
+from .coring import Matter, Diger, Saider, Digestage
 
 from .. import help
 
@@ -309,42 +309,38 @@ class Serder:
 
         """
         # ensure required fields are in sad
-        labels = self.Labels[self.ilk].fields  # all field labels
+        fields = self.Labels[self.ilk].fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
-            if key not in labels:
+            if key not in fields:
                 del keys[key]  # remove non required fields
 
-        if labels != keys:  # forces ordered appearance of labels in .sad
-            raise MissingElementError(f"Missing required fields = {labels}"
+        if fields != keys:  # forces ordered appearance of labels in .sad
+            raise MissingElementError(f"Missing required fields = {fields}"
                                       f" in sad = \n{self.pretty()}")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = self.Labels[self.ilk].saids
-        if not (set(saids) <= set(labels)):
+        if not (set(saids) <= set(fields)):
             raise MissingElementError(f"Missing required said fields = {saids}"
                                       f" in sad = \n{self.pretty()}")
 
         sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
-        saves = []
+        codes = {}
         for label in saids:
             value = sad[label]
-            try:
-                matter = Matter(qb64=value)
-            except Exception as ex:
-                raise ValidationError(f"Invalid said field {label} value {value}"
-                                      f" in sad = \n{self.pretty()}") from ex
+            matter = Matter(qb64=value)  # inhaleable raw means must be Matter
             if matter.digestive:
                 sad[label] = self.Dummy * len(value)  # replace value with dummy
 
-            saves.append((label, value, matter.code))  # save for later
+            codes[label] = matter.code  # save for later
             # override in subclass when said field value may not be a said such
             # as incept with none digestive
 
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
 
-        for label, value, code in saves:
+        for label, code in codes.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 klas, size, length = self.Digests[code]  # digest algo size & length
                 ikwa = dict()  # digest algo class initi keyword args
@@ -353,18 +349,17 @@ class Serder:
                 dkwa = dict()  # digest method keyword args
                 if length:
                     dkwa.update(length=length)
-                dig = klas(raw, **ikwa).digest(**dkwa)
-                if dig != self.sad[label]:
-                    #raise
-                    pass
+                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
+                if dig != self.sad[label]:  # compare to original
+                    raise ValidationError(f"Invalid said field '{label}' in sad"
+                                          f" = \n{self.pretty()}")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)
         if raw != self.raw:
-            #raise
-            pass
-
-
+            raise ValidationError(f"Invalid round trip of = sad = \n"
+                                  f"{self.pretty()}")
+        # verified successfully since no exception
 
 
     def saidify(self, codes=None):

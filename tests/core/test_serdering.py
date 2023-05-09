@@ -12,6 +12,7 @@ import msgpack
 
 import pytest
 
+from keri import kering
 from keri.core import coring
 from keri.core.serdering import Serder, Serdery
 
@@ -129,6 +130,15 @@ def test_serder():
     assert serder.ilk == None
     assert serder._dcode == coring.DigDex.Blake3_256
     assert serder._pcode == coring.DigDex.Blake3_256
+
+    # test verify bad digest value
+    badraw = (b'{"v":"KERI10JSON00004c_",'
+                          b'"d":"EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8g"}')
+    with pytest.raises(kering.ValidationError):
+        serder = Serder(raw=badraw, verify=True)
+
+    # ToDo: create malicious raw values to test verify more thouroughly
+
 
     # test cbor and msgpack versions of Serder
     # make .verify() for real and test
