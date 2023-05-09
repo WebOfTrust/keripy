@@ -91,8 +91,7 @@ class Serder:
           supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._saider (Saider): instance for this Sadder's SAID
-        ._dcode (str): digest derivation code value of DigDex
-        ._pcode (str): prefix derivation code value of MtrDex
+
 
     Methods:
         pretty(size: int | None ) -> str: Prettified JSON of this SAD
@@ -174,10 +173,8 @@ class Serder:
         """
         if dcode not in self.Digests:
             raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
-        self._dcode = dcode  # need default code for saidify
         if pcode not in PreDex:
             raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
-        self._pcode = pcode  # need default code for saidify when saided prefix
 
         if raw:  # deserialize raw using property setter
             # raw setter also sets sad, proto, version, kind, and size from raw

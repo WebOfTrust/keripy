@@ -54,9 +54,6 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
-    assert serder._dcode == coring.DigDex.Blake3_256
-    assert serder._pcode == coring.DigDex.Blake3_256
-
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'
                                 ' "d": "EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"\n'
@@ -79,9 +76,6 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
-    assert serder._dcode == coring.DigDex.Blake3_256
-    assert serder._pcode == coring.DigDex.Blake3_256
-
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'
                                 ' "d": "EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"\n'
@@ -104,9 +98,6 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
-    assert serder._dcode == coring.DigDex.Blake3_256
-    assert serder._pcode == coring.DigDex.Blake3_256
-
     assert serder.pretty() == ('{\n'
                                 ' "v": "KERI10JSON00004c_",\n'
                                 ' "d": "EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"\n'
@@ -128,8 +119,6 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
-    assert serder._dcode == coring.DigDex.Blake3_256
-    assert serder._pcode == coring.DigDex.Blake3_256
 
     # test verify bad digest value
     badraw = (b'{"v":"KERI10JSON00004c_",'
@@ -137,13 +126,63 @@ def test_serder():
     with pytest.raises(kering.ValidationError):
         serder = Serder(raw=badraw, verify=True)
 
+    # Test CBOR
+    sad = dict(v=coring.Vstrings.cbor, #
+               d="")
+    saider, sad = coring.Saider.saidify(sad=sad)
+    assert sad == {'v': 'KERI10CBOR000045_',
+                   'd': 'EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa'}
+
+    assert saider.qb64 == sad["d"]
+
+    serder = Serder(sad=sad)
+    assert serder.raw == b'\xa2avqKERI10CBOR000045_adx,EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa'
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.cbor
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
+    assert serder.pretty() == ('{\n'
+                                ' "v": "KERI10CBOR000045_",\n'
+                                ' "d": "EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa"\n'
+                                '}')
+    assert serder.compare(said=saider.qb64)
+    assert serder.compare(said=saider.qb64b)
+    assert not serder.compare(said='EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8e')
+
+    raw = serder.raw  # save for later tests
+
+    serder = Serder(sad=sad, saidify=True)  # test saidify
+    assert serder.raw ==  b'\xa2avqKERI10CBOR000045_adx,EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa'
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.cbor
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
+    assert serder.pretty() == ('{\n'
+                                ' "v": "KERI10CBOR000045_",\n'
+                                ' "d": "EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa"\n'
+                                '}')
+
+    assert serder.compare(said=saider.qb64)
+    assert serder.compare(said=saider.qb64b)
+    assert not serder.compare(said='EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8e')
+
+
+    # ToDo
+    # test cbor and msgpack versions of Serder
+
+    # make .saidify for real and test
     # ToDo: create malicious raw values to test verify more thouroughly
 
 
-    # test cbor and msgpack versions of Serder
-    # make .verify() for real and test
-    # make .saidify for real and test
-    # make PreDex PrefixCodex of valid identifier prefix codes
+
 
 
     """End Test"""
