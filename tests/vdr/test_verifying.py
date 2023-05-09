@@ -582,7 +582,7 @@ def test_verifier_chained_credential(seeder):
         ianiss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ian.kever.serder.saider)
         ianreg.processEscrows()
 
-        # Now that the credential has been issued, process escrows and it will find the TEL event
+        # Ensure that when specifying I2I it is enforced
         try:
             ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
         except kering.MissingChainError:
