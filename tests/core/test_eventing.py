@@ -996,6 +996,476 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
     assert serderR.said == 'EMBBBkaLV7i6wNgfz3giib2ItrHsr548mtIflW0Hrbuv'
 
+
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
+            b'\xc9\xbd\x04\x9d\x85)~\x93')
+
+    #  Secp256r1 Inception: Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair non transferable
+    assert signer0.code == MtrDex.ECDSA_256r1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256r1N
+    keys0 = [signer0.verfer.qb64]    
+    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"ELIz2CFNp4vCTJkCKYzqkv1tJeqaPiwhHkNuWA0tKfxo",'
+                          b'"i":"1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
+                          b'"k":["1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+    saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
+    assert saider.verify(serder.ked) is True
+
+    with pytest.raises(DerivationError):
+        # non-empty nxt with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"])
+
+    with pytest.raises(DerivationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"])
+
+    with pytest.raises(DerivationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}])
+
+    # Inception: Transferable Case but abandoned in incept so equivalent
+    signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair transferable default
+    assert signer0.code == MtrDex.ECDSA_256r1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256r1
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder.ked["n"] == []    
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EPqQeDE6eoawHEwQjyB4kwLTwZ2VV6jDz_TXWFV7sE8T",'
+                          b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
+                          b'"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
+    assert saider.verify(serder.ked) is True
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == '0'  # hex str
+
+    assert serder0.raw == (b'{"v":"KERI10JSON00012f_","t":"icp","d":"EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd",'
+                          b'"i":"EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd","s":"0",'
+                          b'"kt":"1","k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                          b'"nt":"1","n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == pre == 'EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0
+    assert serder0.raw == (b'{"v":"KERI10JSON000129_","t":"icp","d":"EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0",'
+                           b'"i":"EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0","s":"0",'
+                           b'"kt":1,"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":1,"n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty, Intive True
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0  # int not hex str    
+    assert serder0.raw == (b'{"v":"KERI10JSON00012d_","t":"icp","d":"ECMsDN8WUWcKGe7X0GNrecOgtrTkuHTfoo7YoQ4TIOLS",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
+                           b'"kt":1,"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":1,"n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1)    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == "0"  # hex str    
+    assert serder0.raw == (b'{"v":"KERI10JSON000133_","t":"icp","d":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
+                           b'"kt":"1","k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":"1","n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
+    assert saider.qb64 == serder0.said
+
+    saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
+    assert saider.qb64 == serder0.said
+
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256r1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256r1
+    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    print(f'evnt {serder1.raw}')
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == "1"
+    assert serder1.ked["nt"] == "1"
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == '0'  # hex str    
+    assert serder1.raw == (b'{"v":"KERI10JSON000168_","t":"rot","d":"ENsyn8FRcmd9N3Dhi_kRdWcnI_AIa7yhDNsHXycclSXQ",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"1","p":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
+                           b'"kt":"1","k":["1AAJAtrK9Q8IqgO3B4IKY4m8Dl7dp1fC77dNCsHP2aWctria"],'
+                           b'"nt":"1","n":["EIkmr0Ne3wbNvTKRU-A9NLmCL-RYgu2SZuzIb3n-9xFH"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
+    assert serder1.said == saider.qb64
+
+
+    #  Secp256k1 Inception: Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair non transferable
+    assert signer0.code == MtrDex.ECDSA_256k1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256k1N
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EGEP0h6tTUUOeIK4ApGlnLl2lwD0lbaQGBfL9'
+                         b'pM2v0J0","i":"1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1"'
+                         b',"k":["1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+    saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
+    assert saider.verify(serder.ked) is True
+
+    # Inception: Transferable Case but abandoned in incept so equivalent
+    signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair transferable default
+    assert signer0.code == MtrDex.ECDSA_256k1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256k1
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EO3M4d4pvQu2SXFLaXEy05ey80d71gbEakA2TgCTnJtN",'
+                          b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1",'
+                          b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
+    assert saider.verify(serder.ked) is True
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == '0'  # hex str 
+    assert serder0.raw == (b'{"v":"KERI10JSON00012f_","t":"icp","d":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u",'
+                           b'"i":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u","s":"0","kt":"1",'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == pre == 'ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0
+    assert serder0.raw == (b'{"v":"KERI10JSON000129_","t":"icp","d":"ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z",'
+                           b'"i":"ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z","s":"0","kt":1,'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":1,"n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty, Intive True
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true    
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0  # int not hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON00012d_","t":"icp","d":"EJR4ywPEpo08A10s8Eq8MGIRtmQx_D6szqYKGOl7jSpY",'
+                          b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":1,'
+                          b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                          b'"nt":1,"n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                          b'"bt":0,"b":[],"c":[],"a":[]}')
+    
+
+    # Inception: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1)
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == "0"  # hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON000133_","t":"icp","d":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1",'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
+    assert saider.qb64 == serder0.said
+
+    saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
+    assert saider.qb64 == serder0.said
+
+
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256k1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256k1
+    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)    
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == "1"
+    assert serder1.ked["nt"] == "1"
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == '0'  # hex str
+    assert serder1.raw == (b'{"v":"KERI10JSON000168_","t":"rot","d":"EKpAPAgfGLxzXuusVQJ4uTuSOzt1mm3a8K1VPRnJOufJ",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"1","p":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+    
+    saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
+    assert serder1.said == saider.qb64
+
+
+    # Rotation: Transferable not abandoned i.e. next not empty  Intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256k1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256k1
+    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive    
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == 1
+    assert serder1.ked["nt"] == 1
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == 0
+    assert serder1.raw == (b'{"v":"KERI10JSON000162_","t":"rot","d":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"1","p":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"kt":1,"k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":1,"n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":0,"br":[],"ba":[],"a":[]}')
+
+    saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
+    assert serder1.said == saider.qb64
+
+    # Interaction:
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    assert serder2.ked["t"] == Ilks.ixn
+    assert serder2.ked["i"] == pre
+    assert serder2.ked["s"] == '2'
+    assert serder2.ked["p"] == serder1.said
+    assert serder2.raw == (b'{"v":"KERI10JSON0000cf_","t":"ixn","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2","p":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe","a":[]}')
+
+    # Receipt
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said)
+    assert serder3.ked["i"] == pre
+    assert serder3.ked["s"] == "0"
+    assert serder3.ked["t"] == Ilks.rct
+    assert serder3.ked["d"] == serder2.said
+    assert serder3.raw == (b'{"v":"KERI10JSON000095_","t":"rct","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
+
+
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said)    
+    assert serder4.ked["i"] == pre
+    assert serder4.ked["s"] == "2"
+    assert serder4.ked["t"] == Ilks.rct
+    assert serder4.ked["d"] == serder2.said
+    assert serder4.raw == (b'{"v":"KERI10JSON000095_","t":"rct","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2"}')    
+
+
+    # Delegated Inception:
+    # Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signerD.code == MtrDex.ECDSA_256k1_Seed
+    assert signerD.verfer.code == MtrDex.ECDSA_256k1
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nxtD = [Diger(ser=key.encode("utf-8")).qb64 for key in keysD]  # default sith is 1
+    # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD    
+    assert serderD.raw == (b'{"v":"KERI10JSON000163_","t":"dip","d":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj",'
+                           b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"0",'
+                           b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[],"di":"EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
+
+    assert serderD.said == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
+
+    # Delegated Rotation:
+    # Transferable not abandoned i.e. next not empty
+    seedR = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signerR = Signer(raw=seedR, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signerR.code == MtrDex.ECDSA_256k1_Seed
+    assert signerR.verfer.code == MtrDex.ECDSA_256k1
+    keysR = [signerR.verfer.qb64]
+    # compute nxt digest
+    # default sith is 1
+    nxtR = [Diger(ser=signerR.verfer.qb64b).qb64]  # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderR = deltate(pre=pre,
+                      keys=keysR,
+                      dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                      sn=4,
+                      ndigs=nxtR)
+    
+    assert serderR.ked["i"] == pre
+    assert serderR.ked["s"] == '4'
+    assert serderR.ked["t"] == Ilks.drt
+    assert serderR.ked["n"] == nxtR    
+    assert serderR.raw == (b'{"v":"KERI10JSON000164_","t":"drt","d":"EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO",'
+                           b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"4","p":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30",'
+                           b'"kt":"1","k":["1AABAh-zxZOUdAZwXBhbtZQgzD3LLPMYxF7HgsPbd2mILaPc"],'
+                           b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+
+    assert serderR.said == 'EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO'
+
     """ Done Test """
 
 
