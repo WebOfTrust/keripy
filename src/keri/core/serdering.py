@@ -138,7 +138,7 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
-                 verify=False, saidify=False,
+                 verify=True, saidify=False,
                  dcode=DigDex.Blake3_256, pcode=PreDex.Blake3_256):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -161,7 +161,7 @@ class Serder:
                 Assumes that raw is bytearray when strip is True.
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
-                Ignore when raw not provided and saidify is True
+                Ignore when raw not provided or when raw and saidify is True
             saidify (bool): True means compute and replace said(s) for sad
                 when raw not provided
             dcode (str): default said digest code (DigDex value)
