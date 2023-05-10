@@ -408,9 +408,8 @@ class Verifier:
             if iss is None:
                 return None
 
-            if op == 'I2I':
-                if issuer != creder.subject['i'] or nodeSaid not in [i.qb64 for i in iss]:
-                    return None
+            if op == 'I2I' and issuer != creder.subject['i']:
+                return None
 
             if op == "DI2I":
                 raise NotImplementedError()
