@@ -182,7 +182,7 @@ class Serder:
         self._saider = None
 
         if raw:  # deserialize raw using property setter
-            # raw setter also sets sad, proto, version, kind, and size from raw
+            # self._inhale works because it only references class attributes
             sad, proto, vrsn, kind, size = self._inhale(raw=raw)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad  # does not trigger .sad property setter
@@ -210,18 +210,33 @@ class Serder:
                                           f"\n{self.pretty()}\n.") from ex
 
         elif sad:  # serialize sad into raw using sad property setter
-            self._kind = kind  # does not trigger .kind property setter.
-            self.sad = sad  # sad property setter does the serialization
-            # sad setter also sets raw, proto, version, kind, and size from sad
+            # self._exhale works because it only access class attributes
+            raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad, kind=kind)
+            self._raw = raw  # does not trigger raw setter
+            self._sad = sad  # does not trigger sad setter
+            self._proto = proto
+            self._version = vrsn
+            self._kind = kind  # does not trigger kind setter
+            self._size = size
+            label = self.Labels[self.ilk].saids[0]  # primary said field label
+            if label not in self._sad:
+                raise SerDesError(f"Missing primary said field in {self._sad}.")
+            self._saider = Saider(qb64=self._sad[label])
+            # ._saider is not yet verified
+
 
             if saidify:  # recompute said(s) and reset sad
                 # saidify resets sad, raw, proto, version, kind, and size
                 self.saidify()
 
             elif verify:  # verify the said(s) provided in sad
-                if not self.verify():
-                    raise ValidationError(f"Invalid said(s) for sad = "
-                                          f"{self.pretty()}")
+                try:
+                    self._verify()  # raises exception when not verify
+                except Exception as ex:
+                    logger.error("Invalid sad for Serder %s\n%s",
+                                 self.pretty(), ex.args[0])
+                    raise ValidationError(f"Invalid raw for Serder"
+                                          f"\n{self.pretty()}\n.") from ex
 
         else:
             raise ValueError("Improper initialization need raw or sad.")
@@ -659,25 +674,6 @@ class Serder:
         return self._sad
 
 
-    @sad.setter
-    def sad(self, sad):
-        """sad property setter  assumes ._kind
-        Forces update of other derived properties
-        """
-        # self._exhale works because it only access class attributes
-        raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad, kind=self.kind)
-        self._raw = raw  # does not trigger raw setter
-        self._sad = sad  # does not trigger sad setter
-        self._proto = proto
-        self._version = vrsn
-        self._kind = kind  # does not trigger kind setter
-        self._size = size
-        label = self.Labels[self.ilk].saids[0]  # primary said field label
-        if label not in self._sad:
-            raise SerDesError(f"Missing primary said field in {self._sad}.")
-        self._saider = Saider(qb64=self._sad[label])
-        # ._saider is not yet verified
-
 
     @property
     def kind(self):
@@ -685,26 +681,6 @@ class Serder:
         Returns:
             kind (str): value of Serials (Serialage)"""
         return self._kind
-
-
-    @kind.setter
-    def kind(self, kind):
-        """kind property setter Assumes ._sad. Serialization kind.
-        Forces update of other derived properties
-        """
-        # self._exhale works because it only access class attributes
-        raw, sad, proto, vrsn, kind, size = self._exhale(sad=self.sad, kind=kind)
-        self._raw = raw  # does not trigger raw setter
-        self._sad = sad  # does not trigger sad setter
-        self._proto = proto
-        self._version = vrsn
-        self._kind = kind  # does not trigger kind setter
-        self._size = size
-        label = self.Labels[self.ilk].saids[0]  # primary said field label
-        if label not in self._sad:
-            raise SerDesError(f"Missing primary said field in {self._sad}.")
-        self._saider = Saider(qb64=self._sad[label])
-        # ._saider is not yet verified
 
 
     @property

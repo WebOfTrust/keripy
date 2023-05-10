@@ -78,6 +78,17 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
+    serder = Serder(sad=sad, verify=False)  # test not verify
+    assert serder.raw == rawJSON
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 76
+    assert serder.kind == coring.Serials.json
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
+
     serder = Serder(raw=rawJSON)
     assert serder.raw == rawJSON
     assert serder.sad == sad
@@ -137,6 +148,17 @@ def test_serder():
     assert rawCBOR == b'\xa2avqKERI10CBOR000045_adx,EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa'
 
     serder = Serder(sad=sad, saidify=True)  # test saidify
+    assert serder.raw == rawCBOR
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.cbor
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
+
+    serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawCBOR
     assert serder.sad == sad
     assert serder.proto == coring.Protos.keri
@@ -213,6 +235,17 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
+    serder = Serder(sad=sad, verify=False)  # test not verify
+    assert serder.raw == rawMGPK
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.mgpk
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
+
     serder = Serder(raw=rawMGPK)
     assert serder.raw == rawMGPK
     assert serder.sad == sad
@@ -237,13 +270,8 @@ def test_serder():
 
     # ToDo
     # test cbor and msgpack versions of Serder
-    # test raw setter on existing Serder
-    # test sad setter on existing Serder
-    # Test kind setter on existing Serder
-    # Test .verify after each setter above
-
     # make .saidify for real and test
-    # ToDo: create malicious raw values to test verify more thouroughly
+    # ToDo: create malicious raw values to test verify more thoroughly
 
 
 
