@@ -183,7 +183,19 @@ class Serder:
 
         if raw:  # deserialize raw using property setter
             # raw setter also sets sad, proto, version, kind, and size from raw
-            self.raw = raw  # raw property setter does the deserialization
+            sad, proto, vrsn, kind, size = self._inhale(raw=raw)
+            self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
+            self._sad = sad  # does not trigger .sad property setter
+            self._proto = proto
+            self._version = vrsn
+            self._kind = kind  # does not trigger kind setter
+            self._size = size
+            label = self.Labels[self.ilk].saids[0]  # primary said field label
+            if label not in self._sad:
+                raise SerDesError(f"Missing primary said field in {self._sad}.")
+            self._saider = Saider(qb64=self._sad[label])
+            # ._saider is not yet verified
+
 
             if strip:  # assumes raw is bytearray
                 del raw[:self.size]
@@ -636,25 +648,6 @@ class Serder:
             raw (bytes):  serialized version
         """
         return self._raw
-
-
-    @raw.setter
-    def raw(self, raw):
-        """raw property setter
-        Forces update of other derived properties
-        """
-        sad, proto, vrsn, kind, size = self._inhale(raw=raw)
-        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-        self._sad = sad  # does not trigger .sad property setter
-        self._proto = proto
-        self._version = vrsn
-        self._kind = kind  # does not trigger kind setter
-        self._size = size
-        label = self.Labels[self.ilk].saids[0]  # primary said field label
-        if label not in self._sad:
-            raise SerDesError(f"Missing primary said field in {self._sad}.")
-        self._saider = Saider(qb64=self._sad[label])
-        # ._saider is not yet verified
 
 
     @property
