@@ -31,7 +31,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
                       EmptyListError,
-                      ShortageError, UnexpectedCodeError, DeserializationError,
+                      ShortageError, UnexpectedCodeError, SerDesError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
@@ -344,7 +344,7 @@ def sniff(raw):
     kind = kind.decode("utf-8")
     proto = proto.decode("utf-8")
     if kind not in Serials:
-        raise DeserializationError("Invalid serialization kind = {}".format(kind))
+        raise SerDesError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
 
     return proto, kind, version, size
@@ -392,25 +392,25 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
-            raise DeserializationError("Error deserializing JSON: {}"
+            raise SerDesError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
     elif kind == Serials.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing MGPK: {}"
+            raise SerDesError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
     elif kind == Serials.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
-            raise DeserializationError("Error deserializing CBOR: {}"
+            raise SerDesError("Error deserializing CBOR: {}"
                                        "".format(raw[:size]))
 
     else:
-        raise DeserializationError("Invalid deserialization kind: {}"
+        raise SerDesError("Invalid deserialization kind: {}"
                                    "".format(kind))
 
     return ked
@@ -610,7 +610,7 @@ class NonTransCodex:
 
 NonTransDex = NonTransCodex()  # Make instance
 
-
+# When add new to DigCodes update Saider.Digests and Serder.Digests class attr
 @dataclass(frozen=True)
 class DigCodex:
     """
@@ -713,6 +713,7 @@ class Matter:
         qb2  (bytes): binary with derivation code + crypto material
         transferable (bool): True means transferable derivation code False otherwise
         digestive (bool): True means digest derivation code False otherwise
+        prefixive (bool): True means identifier prefix derivation code False otherwise
 
     Hidden:
         _code (str): value for .code property
@@ -1021,6 +1022,17 @@ class Matter:
                 False otherwise
         """
         return (self.code in DigDex)
+
+
+    @property
+    def prefixive(self):
+        """
+        Property prefixive:
+        Returns True if identifier has prefix derivation code,
+                False otherwise
+        """
+        return (self.code in PreDex)
+
 
     def _infil(self):
         """
@@ -3143,6 +3155,32 @@ class Diger(Matter):
 
 
 
+@dataclass(frozen=True)
+class PreCodex:
+    """
+    PreCodex is codex all identifier prefix derivation codes.
+    This is needed to verify valid inception events.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:    str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    Ed25519:     str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256:  str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256: str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256: str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:    str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:    str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    Blake3_512:  str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512: str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:    str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:    str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+PreDex = PreCodex()  # Make instance
+
 
 class Prefixer(Matter):
     """
@@ -3445,7 +3483,7 @@ Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
 Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
-# digest klas, digest size (not default), digest length
+# digest algorithm  klas, digest size (not default), digest length
 # size and length are needed for some digest types as function parameters
 Digestage = namedtuple("Digestage", "klas size length")
 

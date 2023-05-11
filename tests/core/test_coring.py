@@ -41,7 +41,7 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, DeserializationError)
+                         InvalidValueError, SerDesError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
@@ -512,6 +512,8 @@ def test_matter():
     assert matter.raw == verkey
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
+
     # test round trip
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -612,6 +614,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     # test nongreedy prefixb on full identifier
     both = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
@@ -622,6 +625,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     # Test ._bexfil
     matter = Matter(qb64=prefix)  #
@@ -655,6 +659,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
 
     ims = bytearray(prefixb)  # strip from ims qb64b
     matter = Matter(qb64b=ims, strip=True)
@@ -666,6 +671,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert not ims  # stripped
 
     ims = bytearray(prebin)
@@ -678,6 +684,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert not ims  # stripped
 
     # test strip with extra q64b
@@ -692,6 +699,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert ims == extra  # stripped not include extra
 
     # test strip with extra qb2
@@ -706,6 +714,7 @@ def test_matter():
     assert matter.qb2 == prebin
     assert matter.transferable == False
     assert matter.digestive == False
+    assert matter.prefixive == True
     assert ims == extra  # stripped not include extra
 
     # test fix sized with leader 1
@@ -727,6 +736,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -775,6 +785,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad pad or lead
     badqb64 = '2AAA_2Fi'  # '2AAA' + encodeB64(b'\xffab').decode("utf-8")
@@ -807,6 +818,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -842,6 +854,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad pad or lead
     badqb64 = '3AAA__96'  # '3AAA' + encodeB64(b'\xff\xffz').decode("utf-8")
@@ -874,6 +887,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable is True
     assert matter.digestive is False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -920,6 +934,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test strip
     matter = Matter(qb2=bytearray(qb2), strip=True)
@@ -959,6 +974,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 1 with code replacement
     code2 = MtrDex.Bytes_L2  # use leader 0 code but with lead size 1 raw
@@ -980,6 +996,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -996,6 +1013,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 2
     code = MtrDex.Bytes_L2
@@ -1016,6 +1034,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -1053,6 +1072,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test with bad lead 2
     # 4 bytes with lead 2 = two triplets = b'\xff\xffabcd'
@@ -1087,6 +1107,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 2 with code replacement
     code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 2 raw
@@ -1108,6 +1129,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -1124,6 +1146,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0
     code = MtrDex.Bytes_L0
@@ -1144,6 +1167,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -1179,6 +1203,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Bytes_L1  # use leader 1 code but with lead size 0 raw
@@ -1200,6 +1225,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test variable sized with leader 0 with code replacement
     code1 = MtrDex.Bytes_L2  # use leader 2 code but with lead size 0 raw
@@ -1221,6 +1247,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test rize parameter to extract portion of raw passed in
     raw = b'abcdefghijk'  # extra bytes in raw
@@ -1237,6 +1264,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # text big code substitution for size bigger than 4095  4k
     code0 = MtrDex.Bytes_L0
@@ -1314,6 +1342,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qsig64b)
     assert matter.raw == sig
@@ -1323,6 +1352,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qsig64)
     assert matter.raw == sig
@@ -1332,6 +1362,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qsigB2)
     assert matter.raw == sig
@@ -1341,6 +1372,7 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test short
     val = int("F77F", 16)
@@ -1372,6 +1404,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1383,6 +1416,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1394,6 +1428,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1405,6 +1440,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test long
     val = int("F7F33F7F", 16)
@@ -1436,6 +1472,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1447,6 +1484,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1458,6 +1496,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1469,6 +1508,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test Tern as number
     val = int("F89CFF", 16)
@@ -1500,6 +1540,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1511,6 +1552,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1522,6 +1564,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1533,6 +1576,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     # test Tern as chars
     txt = b'icp_'
@@ -1562,6 +1606,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
@@ -1573,6 +1618,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
@@ -1582,6 +1628,7 @@ def test_matter():
     assert matter.qb2 == qb2
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
@@ -1593,6 +1640,7 @@ def test_matter():
     assert matter.qb2[bs:] == matter.raw
     assert matter.transferable == True
     assert matter.digestive == False
+    assert matter.prefixive == False
 
     """ Done Test """
 

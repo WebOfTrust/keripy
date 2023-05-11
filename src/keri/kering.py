@@ -228,6 +228,13 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+class MissingElementError(ValidationError):
+    """
+    Missing a required element or field of message
+    Usage:
+        raise MissingElementError("error message")
+    """
+
 
 class MissingSignatureError(ValidationError):
     """
@@ -423,14 +430,6 @@ class VersionError(ExtractionError):
     """
 
 
-class DeserializationError(ExtractionError):
-    """
-    Error deserializing message
-    Usage:
-        raise DeserializationError("error message")
-    """
-
-
 class ConversionError(ExtractionError):
     """
     Problem with Base64 to Binary conversion
@@ -470,6 +469,18 @@ class UnexpectedOpCodeError(DerivationCodeError):
     Usage:
         raise DerivationCodeError("error message")
     """
+
+
+
+class SerDesError(ExtractionError):
+    """
+    Error serializing or deserializing message
+    Usage:
+        raise SerDesError("error message")
+    """
+
+
+
 
 # Other errors
 

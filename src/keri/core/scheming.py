@@ -14,7 +14,7 @@ import msgpack
 from . import coring
 from .coring import MtrDex, Serials, Saider, Saids
 from .. import help, kering
-from ..kering import ValidationError, DeserializationError
+from ..kering import ValidationError, SerDesError
 
 logger = help.ogler.getLogger()
 
@@ -126,21 +126,21 @@ class JSONSchema:
             try:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {} {}"
+                raise SerDesError("Error deserializing JSON: {} {}"
                                            "".format(raw.decode("utf-8"), ex))
 
         elif kind == Serials.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {} {}"
+                raise SerDesError("Error deserializing MGPK: {} {}"
                                            "".format(raw, ex))
 
         elif kind == Serials.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {} {}"
+                raise SerDesError("Error deserializing CBOR: {} {}"
                                            "".format(raw, ex))
         else:
             raise ValueError("Invalid serialization kind = {}".format(kind))
