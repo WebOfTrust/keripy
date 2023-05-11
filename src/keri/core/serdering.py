@@ -134,7 +134,9 @@ class Serder:
     # Override in sub class that is protocol specific
     Labels = {None: Labelage(saids=['d'], fields=['v','d'])}
 
-
+    # add list of codes to Labelage so makify can use those as the defaults
+    # passed in list to .makify will override. None is passed in list means use
+    # the default
 
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
