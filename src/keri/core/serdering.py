@@ -221,7 +221,8 @@ class Serder:
         elif sad:  # serialize sad into raw using sad property setter
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
-                self.makify()
+                self.makify(sad=sad, version=version, proto=proto, vrsn=vrsn,
+                            kind=kind, codes=codes)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -385,32 +386,32 @@ class Serder:
             raise ValueError(f"Unsupported prefix code = {pcode}.")
 
 
-        sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
-        # fill id field denoted by label with dummy chars to get size correct
-        sad[label] = self.Dummy * Matter.Sizes[dcode].fs
+        #sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
+        ## fill id field denoted by label with dummy chars to get size correct
+        #sad[label] = self.Dummy * Matter.Sizes[dcode].fs
 
 
 
-        if 'v' in sad:  # if versioned then need to set size in version string
-            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
+        #if 'v' in sad:  # if versioned then need to set size in version string
+            #raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
 
-        ser = dict(sad)
-        if ignore:
-            for f in ignore:
-                del ser[f]
+        #ser = dict(sad)
+        #if ignore:
+            #for f in ignore:
+                #del ser[f]
 
-        # string now has
-        # correct size
-        klas, size, length = clas.Digests[code]
-        # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        ckwa = dict()  # class keyword args
-        if size:
-            ckwa.update(digest_size=size)  # optional digest_size
-        dkwa = dict()  # digest keyword args
-        if length:
-            dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
+        ## string now has
+        ## correct size
+        #klas, size, length = clas.Digests[code]
+        ## sad as 'v' verision string then use its kind otherwise passed in kind
+        #cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
+        #ckwa = dict()  # class keyword args
+        #if size:
+            #ckwa.update(digest_size=size)  # optional digest_size
+        #dkwa = dict()  # digest keyword args
+        #if length:
+            #dkwa.update(length=length)
+        #return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
 
 
 
@@ -524,7 +525,8 @@ class Serder:
 
     @classmethod
     def _exhale(clas, sad, version=Version):
-        """Serializes sad given kind and version
+        """Serializes sad given kind and version and sets the serialized size
+        in the version string.
 
         As classmethod enables bootstrap of valid sad dict that has correct size
         in version string. This obviates sizeify. This can be called on self as
