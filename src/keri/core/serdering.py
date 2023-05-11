@@ -153,8 +153,8 @@ class Serder:
     # the default
 
 
-    def __init__(self, *, raw=b'', sad=None, strip=False,
-                 version=Version, verify=True,
+    def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
+                 verify=True,
                  makify=False, proto=None, vrsn=None, kind=None, codes=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -178,9 +178,15 @@ class Serder:
                 Ignore when raw not provided or when raw and saidify is True
             makify (bool): True means compute fields for sad including size and
                 saids.
-            kind is serialization kind string value or None (see namedtuple coring.Serials)
+            proto (str | None): desired protocol type str value of Protos
+                If None then its extracted from raw or sad or uses default .Proto
+            vrsn (Versionage | None): instance desired protocol version
+                If None then its extracted from raw or sad or uses default .Vrsn
+            kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                if kind is None then its extracted from ked or raw
+                If None then its extracted from raw or sad or uses default .Kind
+            codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
+                one for each said in same order of .Labels[ilk].saids
 
 
         """
@@ -330,15 +336,31 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, codes=None):
-        """Saidify given .sad and resets raw, sad, proto, version, kind, and size
+    def makify(self, sad, *, version=Version,
+               proto=None, vrsn=None, kind=None, codes=None):
+        """Makify given sad dict makes the versions string and computes the said
+        field values and sets associated properties:
+        raw, sad, proto, version, kind, size
+
         Override for protocol and ilk specific saidification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
         identifier prefix.
 
+
         Parameters:
-            codes (list): elements are derivation codes, one for each said
-                in .Labels[ilk].saids
+            sad (dict): serializable saidified field map of message.
+                Ignored if raw provided
+            version (Versionage): instance supported protocol version
+            proto (str | None): desired protocol type str value of Protos
+                If None then its extracted from raw or sad or uses default .Proto
+            vrsn (Versionage | None): instance desired protocol version
+                If None then its extracted from raw or sad or uses default .Vrsn
+            kind (str None): serialization kind string value of Serials
+                supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+                If None then its extracted from raw or sad or uses default .Kind
+            codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
+                one for each said in same order of .Labels[ilk].saids
+
 
 
         """
