@@ -26,10 +26,18 @@ from .. import help
 
 logger = help.ogler.getLogger()
 
-Labelage = namedtuple("Labelage", "saids fields")  #values are lists of str
-# saids is list of saided field labels
-# fields is list of all field labels including saided ones
-# Label = Labelage(saids=['d'], fields=['v','d'])  # minimum required
+"""
+Labelage
+    saids (list[str]): saidive field labels
+    codes (list[str]): saidive field codes
+    fields (list[str]): all field labels including saidive ones
+
+Example:
+    Label = Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])
+"""
+Labelage = namedtuple("Labelage", "saids codes fields")  #values are lists of str
+
+
 
 class Serdery:
     """Serder factory class for generating serder instances from streams.
@@ -128,11 +136,17 @@ class Serder:
     }
 
     # Protocol specific field labels dict, keyed by ilk (packet type string).
-    # value of each entry is Labelage instance that provides saided field labels
-    # and all field labels
+    # value of each entry is Labelage instance that provides saidive field labels,
+    # codes, and all field labels
     # A key of None is default when no ilk required
     # Override in sub class that is protocol specific
-    Labels = {None: Labelage(saids=['d'], fields=['v','d'])}
+    Labels = {None: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])}
+
+    Proto = Protos.keri  # default protocol type
+    Vrsn = Version  # default protocol version for protocol type
+    Kind = Serials.json  # default serialization kind
+    Code = DigDex.Blake3_256  # default said field code
+
 
     # add list of codes to Labelage so makify can use those as the defaults
     # passed in list to .makify will override. None is passed in list means use
