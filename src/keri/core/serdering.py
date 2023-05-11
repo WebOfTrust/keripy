@@ -365,31 +365,27 @@ class Serder:
 
 
         """
-        #if dcode is not None and dcode in self.Digests:
-            #self._dcode = dcode
-        #if pcode is not None and pcode in PreDex:
-            #self._pcode = pcode
 
-        #if dcode not in self.Digests:
-            #raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
-        #if pcode not in PreDex:
-            #raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
 
         for label in self.Labels[self.ilk].saids:
             if label not in self.sad:
                 return False
-
-        # wrap call .derive to catch this exception
-        if dcode not in self.Digests:
-            raise ValueError(f"Unsupported digest code = {dcode}.")
-        if pcode is not None and pcode in PreDex:  # may be used in subclass
-            raise ValueError(f"Unsupported prefix code = {pcode}.")
 
 
         #sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
         ## fill id field denoted by label with dummy chars to get size correct
         #sad[label] = self.Dummy * Matter.Sizes[dcode].fs
 
+
+        #if dcode is not None and dcode in self.Digests:
+        #self._dcode = dcode
+        #if pcode is not None and pcode in PreDex:
+        #self._pcode = pcode
+
+        #if dcode not in self.Digests:
+        #raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
+        #if pcode not in PreDex:
+        #raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
 
 
         #if 'v' in sad:  # if versioned then need to set size in version string
