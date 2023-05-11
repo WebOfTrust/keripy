@@ -196,7 +196,7 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op)
+                state = self.verifyChain(nodeSaid, op, creder.issuer)
                 if state is None:
                     self.escrowMCE(creder, sadsigers, sadcigars)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -380,7 +380,7 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True)
 
-    def verifyChain(self, nodeSaid, op):
+    def verifyChain(self, nodeSaid, op, issuer):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
@@ -408,7 +408,7 @@ class Verifier:
             if iss is None:
                 return None
 
-            if op == 'I2I' and nodeSaid not in [i.qb64 for i in iss]:
+            if op == 'I2I' and issuer != creder.subject['i']:
                 return None
 
             if op == "DI2I":
