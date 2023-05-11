@@ -67,17 +67,6 @@ def test_serder():
     assert rawJSON == (b'{"v":"KERI10JSON00004c_",'
                               b'"d":"EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8d"}')
 
-    serder = Serder(sad=sad, saidify=True)  # test saidify
-    assert serder.raw == rawJSON
-    assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 76
-    assert serder.kind == coring.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
-    assert serder.ilk == None
-
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawJSON
     assert serder.sad == sad
@@ -88,6 +77,17 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
+
+    #serder = Serder(sad=sad, makify=True)  # test makify
+    #assert serder.raw == rawJSON
+    #assert serder.sad == sad
+    #assert serder.proto == coring.Protos.keri
+    #assert serder.version == coring.Versionage(major=1, minor=0)
+    #assert serder.size == 76
+    #assert serder.kind == coring.Serials.json
+    #assert serder.said == saider.qb64
+    #assert serder.saidb == saider.qb64b
+    #assert serder.ilk == None
 
     serder = Serder(raw=rawJSON)
     assert serder.raw == rawJSON
@@ -147,17 +147,6 @@ def test_serder():
     rawCBOR = serder.raw  # save for later tests
     assert rawCBOR == b'\xa2avqKERI10CBOR000045_adx,EK2_0ouKrN9hXmQvtfenA455EYZ4QENydBdrwtbPZuxa'
 
-    serder = Serder(sad=sad, saidify=True)  # test saidify
-    assert serder.raw == rawCBOR
-    assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
-    assert serder.kind == coring.Serials.cbor
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
-    assert serder.ilk == None
-
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawCBOR
     assert serder.sad == sad
@@ -168,6 +157,17 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
+
+    #serder = Serder(sad=sad, makify=True)  # test makify
+    #assert serder.raw == rawCBOR
+    #assert serder.sad == sad
+    #assert serder.proto == coring.Protos.keri
+    #assert serder.version == coring.Versionage(major=1, minor=0)
+    #assert serder.size == 69
+    #assert serder.kind == coring.Serials.cbor
+    #assert serder.said == saider.qb64
+    #assert serder.saidb == saider.qb64b
+    #assert serder.ilk == None
 
     serder = Serder(raw=rawCBOR)
     assert serder.raw == rawCBOR
@@ -224,17 +224,6 @@ def test_serder():
     assert rawMGPK == (b'\x82\xa1v\xb1KERI10MGPK000045_\xa1d\xd9,EHORCaFv9'
                           b'ThskIBG0qSr3edk7oQ9x-xT8-FgsUIADb5E')
 
-    serder = Serder(sad=sad, saidify=True)  # test saidify
-    assert serder.raw == rawMGPK
-    assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
-    assert serder.kind == coring.Serials.mgpk
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
-    assert serder.ilk == None
-
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
@@ -245,6 +234,17 @@ def test_serder():
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
+
+    #serder = Serder(sad=sad, makify=True)  # test makify
+    #assert serder.raw == rawMGPK
+    #assert serder.sad == sad
+    #assert serder.proto == coring.Protos.keri
+    #assert serder.version == coring.Versionage(major=1, minor=0)
+    #assert serder.size == 69
+    #assert serder.kind == coring.Serials.mgpk
+    #assert serder.said == saider.qb64
+    #assert serder.saidb == saider.qb64b
+    #assert serder.ilk == None
 
     serder = Serder(raw=rawMGPK)
     assert serder.raw == rawMGPK

@@ -138,7 +138,7 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, kind=None, strip=False,
-                 verify=True, saidify=False,
+                 verify=True, makify=False,
                  dcode=DigDex.Blake3_256, pcode=PreDex.Blake3_256):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -162,8 +162,8 @@ class Serder:
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
                 Ignore when raw not provided or when raw and saidify is True
-            saidify (bool): True means compute and replace said(s) for sad
-                when raw not provided
+            makify (bool): True means compute fields for sad including size and
+                saids.
             dcode (str): default said digest code (DigDex value)
                 for computing said(s) and .saider
             pcode (str): default prefix code when message is inceptive
@@ -171,15 +171,6 @@ class Serder:
 
 
         """
-        # init hidden attributes so code linter always sees them
-        self._raw = None
-        self._sad = None
-        self._proto = None
-        self._kind = None
-        self._version = None
-        self._kind = None
-        self._size = None
-        self._saider = None
 
         if raw:  # deserialize raw using property setter
             # self._inhale works because it only references class attributes
@@ -196,9 +187,8 @@ class Serder:
             self._saider = Saider(qb64=self._sad[label])
             # ._saider is not yet verified
 
-
             if strip:  # assumes raw is bytearray
-                del raw[:self.size]
+                del raw[:self._size]
 
             if verify:  # verify the said(s) provided in raw
                 try:
@@ -225,9 +215,9 @@ class Serder:
             # ._saider is not yet verified
 
 
-            if saidify:  # recompute said(s) and reset sad
+            if makify:  # recompute said(s) and reset sad
                 # saidify resets sad, raw, proto, version, kind, and size
-                self.saidify()
+                self.makify()
 
             elif verify:  # verify the said(s) provided in sad
                 try:
@@ -391,7 +381,7 @@ class Serder:
         # verified successfully since no exception
 
 
-    def saidify(self, codes=None):
+    def makify(self, codes=None):
         """Saidify given .sad and resets raw, sad, proto, version, kind, and size
         Override for protocol and ilk specific saidification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
