@@ -295,6 +295,7 @@ def test_verifier(seeder):
 def test_verifier_chained_credential(seeder):
     qviSchema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
     vLeiSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
     with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
             habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
@@ -488,6 +489,104 @@ def test_verifier_chained_credential(seeder):
         assert saider[0].qb64 == vLeiCreder.said
         saider = ianreg.reger.schms.get(vLeiSchema)
         assert saider[0].qb64 == vLeiCreder.said
+
+        # test operators
+
+        untargetedSubject = dict(
+            d="",
+            dt=helping.nowIso8601(),
+            claim="An outrageous claim.",
+        )
+        _, d = scheming.Saider.saidify(sad=untargetedSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+
+        chainSad = dict(
+            d='',
+            targetedEdge=dict(
+                n=vLeiCreder.said,
+            ),
+        )
+        _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+
+        untargetedCreder = proving.credential(issuer=ian.pre,
+                                        schema=optionalIssueeSchema,
+                                        data=d,
+                                        status=ianiss.regk,
+                                        source=chain,
+                                        rules={})
+
+        untargetedSadsigers, untargetedSadcigars = signing.signPaths(hab=ian, serder=untargetedCreder, paths=[[]])
+
+        missing = False
+        try:
+            ianverfer.processCredential(untargetedCreder, sadsigers=untargetedSadsigers, sadcigars=untargetedSadcigars)
+        except kering.MissingRegistryError:
+            missing = True
+
+        assert missing is True
+        assert len(ianverfer.cues) == 3
+        cue = ianverfer.cues.popleft()
+        assert cue["kin"] == "saved"
+        cue["creder"] = untargetedCreder.raw
+
+        iss = ianiss.issue(said=untargetedCreder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ian.kever.sn)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ian.kever.serder.saider)
+        ianreg.processEscrows()
+
+        # Now that the credential has been issued, process escrows and it will find the TEL event
+        ianverfer.processEscrows()
+
+        chainedSubject = dict(
+            d="",
+            dt=helping.nowIso8601(),
+            claim="An outrageous claim.",
+        )
+        _, d = scheming.Saider.saidify(sad=chainedSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+
+        chainSad = dict(
+            d='',
+            untargetedButI2I=dict(
+                n=untargetedCreder.said,
+                o="I2I"
+            ),
+        )
+        _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+
+        chainedCreder = proving.credential(issuer=ian.pre,
+                                        schema=optionalIssueeSchema,
+                                        data=d,
+                                        status=ianiss.regk,
+                                        source=chain,
+                                        rules={})
+
+        chainedSadsigers, chainedSadcigars = signing.signPaths(hab=ian, serder=chainedCreder, paths=[[]])
+
+        missing = False
+        try:
+            ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
+        except kering.MissingRegistryError:
+            missing = True
+
+        assert missing is True
+        assert len(ianverfer.cues) == 4
+        cue = ianverfer.cues.popleft()
+        assert cue["kin"] == "saved"
+        cue["creder"] = chainedCreder.raw
+
+        iss = ianiss.issue(said=chainedCreder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal])
+        seqner = coring.Seqner(sn=ian.kever.sn)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=ian.kever.serder.saider)
+        ianreg.processEscrows()
+
+        # Ensure that when specifying I2I it is enforced
+        try:
+            ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
+        except kering.MissingChainError:
+            pass
 
         # Now lets get Ron's credential into Vic's Tevers and Database
         vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
