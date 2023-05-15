@@ -154,8 +154,8 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
-                 verify=True,
-                 makify=False, proto=None, vrsn=None, kind=None, codes=None):
+                 verify=True, makify=False,
+                 proto=None, vrsn=None, kind=None, codes=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -172,7 +172,8 @@ class Serder:
             strip (bool): True means strip (delete) raw from input stream
                 bytearray after parsing. False means do not strip.
                 Assumes that raw is bytearray when strip is True.
-            version (Versionage): instance supported protocol version
+            version (Versionage | None): instance supported protocol version
+                None means do not enforce a supported version
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
                 Ignore when raw not provided or when raw and saidify is True
@@ -221,8 +222,8 @@ class Serder:
         elif sad:  # serialize sad into raw using sad property setter
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
-                self.makify(sad=sad, version=version, proto=proto, vrsn=vrsn,
-                            kind=kind, codes=codes)
+                self.makify(sad=sad, version=version,
+                            proto=proto, vrsn=vrsn, kind=kind, codes=codes)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -337,7 +338,7 @@ class Serder:
         # verified successfully since no exception
 
 
-    def makify(self, sad, *, version=Version,
+    def makify(self, sad, *, version=None,
                proto=None, vrsn=None, kind=None, codes=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
@@ -347,11 +348,17 @@ class Serder:
         for inceptive ilks that have more than one said field like a said derived
         identifier prefix.
 
+        Default prioritization.
+           Use method parameter if not None
+           Else use provided version string if valid
+           Otherwise use class attribute
+
 
         Parameters:
             sad (dict): serializable saidified field map of message.
                 Ignored if raw provided
             version (Versionage): instance supported protocol version
+                None means do not enforce version
             proto (str | None): desired protocol type str value of Protos
                 If None then its extracted from raw or sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
@@ -365,49 +372,39 @@ class Serder:
 
 
         """
+        # ensuring all fields present includes version string field
+        for label in self.Labels[self.ilk].fields:
+            if label not in self.sad:
+                raise ValueError(f"Missing field '{label}' in {sad}.")
+
+
+        try:  # extract vs elements as defaults if provided
+            sproto, skind, svrsn, _ = deversify(sad["v"], version=version)
+        except ValueError as ex:
+            sproto = self.Proto
+            svrsn = self.Vrsn
+            skind = self.Kind
+
+        proto = proto if proto is not None else sproto
+        vrsn = vrsn if vrsn is not None else svrsn
+        kind = kind if kind is not None else skind
+
+        if proto not in Protos:
+            raise ValueError(f"Invalid protocol type = {proto}.")
+
+        if version is not None and vrsn != version:
+            raise ValueError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
+
+        if kind not in Serials:
+            raise ValueError(f"Invalid serialization kind = {kind}")
+
 
 
         for label in self.Labels[self.ilk].saids:
             if label not in self.sad:
-                return False
+                pass
 
-
-        #sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
-        ## fill id field denoted by label with dummy chars to get size correct
-        #sad[label] = self.Dummy * Matter.Sizes[dcode].fs
-
-
-        #if dcode is not None and dcode in self.Digests:
-        #self._dcode = dcode
-        #if pcode is not None and pcode in PreDex:
-        #self._pcode = pcode
-
-        #if dcode not in self.Digests:
-        #raise UnexpectedCodeError(f"Invalid digest code = {dcode}.")
-        #if pcode not in PreDex:
-        #raise UnexpectedCodeError(f"Invalid prefix code = {pcode}.")
-
-
-        #if 'v' in sad:  # if versioned then need to set size in version string
-            #raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
-
-        #ser = dict(sad)
-        #if ignore:
-            #for f in ignore:
-                #del ser[f]
-
-        ## string now has
-        ## correct size
-        #klas, size, length = clas.Digests[code]
-        ## sad as 'v' verision string then use its kind otherwise passed in kind
-        #cpa = [clas._serialize(ser, kind=kind)]  # raw pos arg class
-        #ckwa = dict()  # class keyword args
-        #if size:
-            #ckwa.update(digest_size=size)  # optional digest_size
-        #dkwa = dict()  # digest keyword args
-        #if length:
-            #dkwa.update(length=length)
-        #return klas(*cpa, **ckwa).digest(**dkwa), sad  # raw digest and sad
 
 
 
@@ -425,18 +422,19 @@ class Serder:
         not instance attributes.
 
         Returns: tuple (sad, proto, vrsn, kind, size) where:
-           sad (dict): serializable attribute dict of saidified data
-           proto (str): value of Protos (Protocolage) protocol type
-           vrsn (Versionage): tuple of (major, minor) version ints
-           kind (str): value of Serials (Serialage) serialization kind
+            sad (dict): serializable attribute dict of saidified data
+            proto (str): value of Protos (Protocolage) protocol type
+            vrsn (Versionage | None): tuple of (major, minor) version ints
+                None means do not enforce version
+            kind (str): value of Serials (Serialage) serialization kind
 
         Parameters:
-           raw (bytes): serialized sad message
-           version (Versionage): instance supported protocol version
+            raw (bytes): serialized sad message
+            version (Versionage): instance supported protocol version
 
         Note:
-          loads and jumps of json use str whereas cbor and msgpack use bytes
-          Assumes only supports Version
+            loads and jumps of json use str whereas cbor and msgpack use bytes
+            Assumes only supports Version
 
         """
         if len(raw) < clas.InhaleSize:
@@ -457,7 +455,7 @@ class Serder:
             raise SerDesError(f"Invalid protocol type = {proto}.")
 
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        if vrsn != version:
+        if version is not None and vrsn != version:
             raise VersionError(f"Expected version = {version}, got "
                                f"{vrsn.major}.{vrsn.minor}.")
 
@@ -520,7 +518,7 @@ class Serder:
 
 
     @classmethod
-    def _exhale(clas, sad, version=Version):
+    def _exhale(clas, sad, version=None):
         """Serializes sad given kind and version and sets the serialized size
         in the version string.
 
@@ -537,29 +535,21 @@ class Serder:
 
         Parameters:
             sad (dict): serializable attribute dict of saidified data
-            version (Versionage): instance supported protocol version for message
+            version (Versionage | None): supported protocol version for message
+                None means do not enforce a supported version
 
 
         """
         if "v" not in sad:
             raise SerDesError(f"Missing version string field in {sad}.")
 
-        proto, kind, vrsn, size = deversify(sad["v"])  # extract elements
-
-        if proto not in Protos:
-            raise ValueError(f"Invalid protocol type = {proto}.")
-
-        if vrsn != version:
-            raise VersionError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
-
-        if kind not in Serials:
-            raise ValueError(f"Invalid serialization kind = {kind}")
+        # extract elements so can replace size element but keep others
+        proto, kind, vrsn, size = deversify(sad["v"], version=version)
 
         raw = clas.dumps(sad, kind)
         size = len(raw)
 
-        # generate new version string with correct size and desired kind
+        # generate new version string with correct size
         vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
 
         # find location of old version string inside raw

@@ -95,15 +95,16 @@ ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
 
-def versify(proto=Protos.keri, version=None, kind=Serials.json, size=0):
+def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
     """
     Returns version string
     """
     if proto not in Protos:
         raise ValueError("Invalid message identifier = {}".format(proto))
+    #version = version if version else Version
     if kind not in Serials:
         raise ValueError("Invalid serialization kind = {}".format(kind))
-    version = version if version else Version
+
     return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
 
 
@@ -116,38 +117,47 @@ Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
-def deversify(vs):
+def deversify(vs, version=None):
     """
     Returns:  tuple(proto, kind, version, size) Where:
         proto (str): value is protocol type identifier one of Protos (Protocolage)
                    acdc='ACDC', keri='KERI'
         kind (str): value is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
-        version (tuple):  is version tuple of type Version
+        vrsn (tuple):  version tuple of type Versionage
         size  (int): raw size in bytes
 
     Parameters:
-      vs (str): version string
+      vs (str): version string to extract from
+      version (Versionage | None): supported version. None means do not check
+            for supported version.
 
     Uses regex match to extract:
         protocol type
+        protocol version tuple
         serialization kind
-        keri version
         serialization size
     """
     match = Rever.match(vs.encode("utf-8"))  # match takes bytes
     if match:
-        proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        proto, major, minor, kind, size = match.group("proto",
+                                                      "major",
+                                                      "minor",
+                                                      "kind",
+                                                      "size")
         proto = proto.decode("utf-8")
+        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
 
         if proto not in Protos:
             raise ValueError("Invalid message identifier = {}".format(proto))
+        if version is not None and vrsn != version:
+            raise ValueError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
-        return proto, kind, version, size
+        return proto, kind, vrsn, size
 
     raise ValueError("Invalid version string = {}".format(vs))
 
@@ -2115,7 +2125,7 @@ class Verfer(Matter):
             return True
         except exceptions.InvalidSignature:
             return False
-        
+
     @staticmethod
     def _secp256k1(sig, ser, key):
         """
@@ -2510,7 +2520,7 @@ class Signer(Matter):
                          index=index,
                          ondex=ondex,
                          verfer=verfer,)
-    
+
     # def derive_index_code(code, index, only=False, ondex=None, **kwa):
     #     # should add Indexer class method to get ms main index size for given code
     #     if only:  # only main index ondex not used
@@ -2545,7 +2555,7 @@ class Signer(Matter):
     #                 indxSigCode = IdrDex.ECDSA_256k1_Sig
     #             else:
     #                 raise ValueError("Unsupported signer code = {}.".format(code))
-    #         else:  # otherwise big or both not same so use big both                
+    #         else:  # otherwise big or both not same so use big both
     #             if code == MtrDex.Ed25519_Seed:
     #                 indxSigCode = IdrDex.Ed25519_Big_Sig
     #             elif code == MtrDex.ECDSA_256r1_Seed:
