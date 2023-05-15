@@ -379,7 +379,7 @@ class Serder:
 
 
         try:  # extract vs elements as defaults if provided
-            sproto, skind, svrsn, _ = deversify(sad["v"], version=version)
+            sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
         except ValueError as ex:
             sproto = self.Proto
             svrsn = self.Vrsn
@@ -544,7 +544,7 @@ class Serder:
             raise SerDesError(f"Missing version string field in {sad}.")
 
         # extract elements so can replace size element but keep others
-        proto, kind, vrsn, size = deversify(sad["v"], version=version)
+        proto, vrsn, kind, size = deversify(sad["v"], version=version)
 
         raw = clas.dumps(sad, kind)
         size = len(raw)

@@ -157,7 +157,7 @@ def deversify(vs, version=None):
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
-        return proto, kind, vrsn, size
+        return proto, vrsn, kind, size
 
     raise ValueError("Invalid version string = {}".format(vs))
 
@@ -187,7 +187,7 @@ def sizeify(ked, kind=None, version=Version):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    proto, knd, vrsn, size = deversify(ked["v"])  # extract kind and version
+    proto, vrsn, knd, size = deversify(ked["v"])  # extract kind and version
     if vrsn != version:
         raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
                                                               vrsn.minor))
@@ -3605,7 +3605,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, knd, _, _ = deversify(sad['v'])
+            _, _, knd, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd
