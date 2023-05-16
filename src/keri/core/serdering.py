@@ -196,16 +196,15 @@ class Serder:
             # self._inhale works because it only references class attributes
             sad, proto, vrsn, kind, size = self._inhale(raw=raw, version=version)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
-            self._sad = sad  # does not trigger .sad property setter
+            self._sad = sad
             self._proto = proto
             self._version = vrsn
-            self._kind = kind  # does not trigger kind setter
+            self._kind = kind
             self._size = size
             label = self.Labels[self.ilk].saids[0]  # primary said field label
             if label not in self._sad:
                 raise SerDesError(f"Missing primary said field in {self._sad}.")
-            self._saider = Saider(qb64=self._sad[label])
-            # ._saider is not yet verified
+            self._saider = Saider(qb64=self._sad[label]) # saider not verified
 
             if strip:  # assumes raw is bytearray
                 del raw[:self._size]
@@ -229,18 +228,16 @@ class Serder:
                 # self._exhale works because it only access class attributes
                 raw, sad, proto, vrsn, kind, size = self._exhale(sad=sad,
                                                                  version=version)
-                self._raw = raw  # does not trigger raw setter
-                self._sad = sad  # does not trigger sad setter
+                self._raw = raw
+                self._sad = sad
                 self._proto = proto
                 self._version = vrsn
-                self._kind = kind  # does not trigger kind setter
+                self._kind = kind
                 self._size = size
                 label = self.Labels[self.ilk].saids[0]  # primary said field label
                 if label not in self._sad:
                     raise SerDesError(f"Missing primary said field in {self._sad}.")
-                self._saider = Saider(qb64=self._sad[label])
-                # ._saider is not yet verified
-
+                self._saider = Saider(qb64=self._sad[label]) # saider not verified
 
                 if verify:  # verify the said(s) provided in sad
                     try:
@@ -303,20 +300,23 @@ class Serder:
                                       f" in sad = \n{self.pretty()}")
 
         sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
-        codes = {}
+        labCodes = {}  # dict of codes keyed by label
         for label in saids:
             value = sad[label]
-            matter = Matter(qb64=value)  # inhaleable raw means must be Matter
-            if matter.digestive:
-                sad[label] = self.Dummy * len(value)  # replace value with dummy
+            try:
+                code = Matter(qb64=value).code
+            except Exception as ex:
+                raise ValidationError(f"Invalid said field '{label}' in sad\n"
+                                  f" =  {self.pretty()}") from ex
 
-            codes[label] = matter.code  # save for later
-            # override in subclass when said field value may not be a said such
-            # as incept with none digestive
+            if code in DigDex:  # if digestive then fill with dummy
+                sad[label] = self.Dummy * len(value)
+
+            labCodes[label] = code
 
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
 
-        for label, code in codes.items():
+        for label, code in labCodes.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 klas, size, length = self.Digests[code]  # digest algo size & length
                 ikwa = dict()  # digest algo class initi keyword args
@@ -368,7 +368,12 @@ class Serder:
                 If None then its extracted from raw or sad or uses default .Kind
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
-                If empty list then use default .Code for each one.
+                If empty list then use defaults
+                If entry is None then use default
+                Code assignment for each said field in desending priority:
+                   the code provided in codes when not None
+                   the code extracted from sad[said label] when valid CESR
+                   self.Code
 
 
 
@@ -391,35 +396,26 @@ class Serder:
             raise ValueError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = \n{self.pretty()}")
 
-        codes = {}
-        for label in saids:
-            value = sad[label]
-            matter = Matter(qb64=value)  # inhaleable raw means must be Matter
-            if matter.digestive:
-                sad[label] = self.Dummy * len(value)  # replace value with dummy
+        labCodes = {}  # compute mapping of said labeled fields to codes
+        for i, label in enumerate(saids):
+            try:
+                code = codes[i]
+            except IndexError:
+                code = None
 
-            codes[label] = matter.code  # save for later
-            # override in subclass when said field value may not be a said such
-            # as incept with none digestive
+            if code is None:
+                value = sad[label]
+                try:
+                    code = Matter(qb64=value).code
+                except Exception:
+                    code = self.Code
+                    # This code assumes that any non-digestive saidive fields
+                    # in sad must have valid CESR. Otherwise override in subclass
 
-        raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
+            if code in DigDex:  # if digestive then fill with dummy
+                sad[label] = self.Dummy * len(value)
 
-        for label, code in codes.items():
-            if code in DigDex:  # subclass override if non digestive allowed
-                klas, size, length = self.Digests[code]  # digest algo size & length
-                ikwa = dict()  # digest algo class initi keyword args
-                if size:
-                    ikwa.update(digest_size=size)  # optional digest_size
-                dkwa = dict()  # digest method keyword args
-                if length:
-                    dkwa.update(length=length)
-                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                if dig != self.sad[label]:  # compare to original
-                    raise ValidationError(f"Invalid said field '{label}' in sad"
-                                              f" = \n{self.pretty()}")
-                sad[label] = dig
-
-
+            labCodes[label] = code
 
 
         try:  # extract version string elements as defaults if provided
@@ -445,10 +441,7 @@ class Serder:
 
         sad['v'] = self.Dummy * len(coring.VERFULLSIZE)  # ensure size of vs
 
-
-
-
-        raw = self.dumps(sad, kind)
+        raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
 
         # generate new version string with correct size
@@ -465,6 +458,36 @@ class Serder:
         if size != len(raw):  # substitution messed up
             raise ValueError(f"Malformed size of raw in version string == {vs}")
         sad["v"] = vs  # update sad
+
+        # now have correctly sized version string in sad
+        # now compute saidive digestive field values using sized dummied sad
+        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+
+        for label, code in labCodes.items():
+            if code in DigDex:  # subclass override if non digestive allowed
+                klas, size, length = self.Digests[code]  # digest algo size & length
+                ikwa = dict()  # digest algo class initi keyword args
+                if size:
+                    ikwa.update(digest_size=size)  # optional digest_size
+                dkwa = dict()  # digest method keyword args
+                if length:
+                    dkwa.update(length=length)
+                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
+                if dig != self.sad[label]:  # compare to original
+                    raise ValueError(f"Invalid said field '{label}' in sad"
+                                         f" = \n{self.pretty()}")
+                sad[label] = dig
+
+        raw = self.dumps(sad, kind=self.kind)  # compute final raw
+
+        self._raw = raw
+        self._sad = sad
+        self._proto = proto
+        self._version = vrsn
+        self._kind = kind
+        self._size = size
+        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        self._saider = Saider(qb64=self._sad[label]) # implicitly verified
 
 
     @classmethod
