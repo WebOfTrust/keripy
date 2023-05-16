@@ -136,6 +136,11 @@ class Serder:
         DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
     }
 
+    Proto = Protos.keri  # default protocol type
+    Vrsn = Version  # default protocol version for protocol type
+    Kind = Serials.json  # default serialization kind
+    Code = DigDex.Blake3_256  # default said field code
+
     # Protocol specific field labels dict, keyed by ilk (packet type string).
     # value of each entry is Labelage instance that provides saidive field labels,
     # codes, and all field labels
@@ -143,15 +148,7 @@ class Serder:
     # Override in sub class that is protocol specific
     Labels = {None: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])}
 
-    Proto = Protos.keri  # default protocol type
-    Vrsn = Version  # default protocol version for protocol type
-    Kind = Serials.json  # default serialization kind
-    Code = DigDex.Blake3_256  # default said field code
 
-
-    # add list of codes to Labelage so makify can use those as the defaults
-    # passed in list to .makify will override. None is passed in list means use
-    # the default
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -414,7 +411,7 @@ class Serder:
                     # in sad must have valid CESR. Otherwise override in subclass
 
             if code in DigDex:  # if digestive then fill with dummy
-                sad[label] = self.Dummy * len(value)
+                sad[label] = self.Dummy * Matter.Sizes[code].fs
 
             labCodes[label] = code
 
