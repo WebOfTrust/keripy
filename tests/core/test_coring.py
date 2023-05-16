@@ -41,7 +41,7 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, SerDesError)
+                         InvalidValueError, DeserializeError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
@@ -3797,9 +3797,9 @@ def test_verfer():
     verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
     assert verfer.raw == verkey
     assert verfer.code == MtrDex.ECDSA_256r1
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    
+
     der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
     (r, s) = utils.decode_dss_signature(der)
     sig = bytearray(r.to_bytes(32, "big"))
@@ -3820,9 +3820,9 @@ def test_verfer():
     verferN = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1N)
     assert verferN.raw == verkey
     assert verferN.code == MtrDex.ECDSA_256r1N
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    
+
     der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
     (r, s) = utils.decode_dss_signature(der)
     sig = bytearray(r.to_bytes(32, "big"))
@@ -3843,9 +3843,9 @@ def test_verfer():
     verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1)
     assert verfer.raw == verkey
     assert verfer.code == MtrDex.ECDSA_256k1
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    
+
     der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
     (r, s) = utils.decode_dss_signature(der)
     sig = bytearray(r.to_bytes(32, "big"))
@@ -3866,9 +3866,9 @@ def test_verfer():
     verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256k1N)
     assert verfer.raw == verkey
     assert verfer.code == MtrDex.ECDSA_256k1N
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    
+
     der = sigkey.sign(ser, ec.ECDSA(hashes.SHA256()))
     (r, s) = utils.decode_dss_signature(der)
     sig = bytearray(r.to_bytes(32, "big"))
@@ -4142,7 +4142,7 @@ def test_signer():
     # create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
-    cigar = signer.sign(ser)   
+    cigar = signer.sign(ser)
     assert cigar.code == MtrDex.ECDSA_256k1_Sig
     assert len(cigar.raw) == Matter._rawSize(cigar.code)
     result = signer.verfer.verify(cigar.raw, ser)
@@ -4230,7 +4230,7 @@ def test_signer():
     assert signer.verfer.qb64 == "1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"
 
     # Test vectors from CERSide
-    seed = (b'\x7f\x98\x0a\x3b\xe4\x45\xd7\x8c\xc9\x79\xa1\xee\x26\x20\x9c\x17\x71\x16\xab\xa6\xd6\xf1\x6a\x01\xe7\xb3\xce\xfe\xe2\x6c\x06\x08')            
+    seed = (b'\x7f\x98\x0a\x3b\xe4\x45\xd7\x8c\xc9\x79\xa1\xee\x26\x20\x9c\x17\x71\x16\xab\xa6\xd6\xf1\x6a\x01\xe7\xb3\xce\xfe\xe2\x6c\x06\x08')
     verkey = (b"\x02\xdb\x98\x33\x85\xa8\x0e\xbb\x7c\x15\x5d\xdd\xc6\x47\x6a\x24\x07\x9a\x7c\x96\x5f\x05\x0f\x62\xde\x2d\x47\x56\x9b\x54\x29\x16\x79")
     sig = (b'\x5f\x80\xc0\x5a\xe4\x71\x32\x5d\xf7\xcb\xdb\x1b\xc2\xf4\x11\xc3\x05\xaf\xf4\xbe\x3b\x7e\xac\x3e\x8c\x15'
            b'\x3a\x9f\xa5\x0a\x3d\x69\x75\x45\x93\x34\xc8\x96\x2b\xfe\x79\x8d\xd1\x4e\x9c\x1f\x6c\xa7\xc8\x12\xd6'
@@ -4260,7 +4260,7 @@ def test_signer():
 
     cigar = Cigar(raw=sig, code=MtrDex.ECDSA_256k1_Sig)
     assert cigar.qb64 == cigarqb64
-    
+
 
     # test with only and ondex parameters
 
@@ -5071,7 +5071,7 @@ def test_prefixer():
     # sigkey = ec.generate_private_key(ec.SECP256R1())
     # verkey = sigkey.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.CompressedPoint)
     verkey = b'\x03\xe2\xb3\xc4%\xfcI\x94\xa5\xf9\xfaT\xde\xf77\xcf\xf3\x01\xb8}:a(I\x16\xe8\x8ct\t\xa8\xdf\xb4\xcc'
-    
+
     verfer = Verfer(raw=verkey, code=MtrDex.ECDSA_256r1)
     assert verfer.qb64 == '1AAJA-KzxCX8SZSl-fpU3vc3z_MBuH06YShJFuiMdAmo37TM'
 
@@ -5610,7 +5610,7 @@ def test_versify():
     vs = versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
@@ -5619,7 +5619,7 @@ def test_versify():
     vs = versify(kind=Serials.json, size=65)
     assert vs == "KERI10JSON000041_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.json
     assert version == Version
@@ -5628,7 +5628,7 @@ def test_versify():
     vs = versify(proto=Protos.acdc, kind=Serials.json, size=86)
     assert vs == "ACDC10JSON000056_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.acdc
     assert kind == Serials.json
     assert version == Version
@@ -5637,7 +5637,7 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=0)
     assert vs == "KERI10MGPK000000_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
@@ -5646,7 +5646,7 @@ def test_versify():
     vs = versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.mgpk
     assert version == Version
@@ -5655,7 +5655,7 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=0)
     assert vs == "KERI10CBOR000000_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
@@ -5664,7 +5664,7 @@ def test_versify():
     vs = versify(kind=Serials.cbor, size=65)
     assert vs == "KERI10CBOR000041_"
     assert len(vs) == VERFULLSIZE
-    proto, kind, version, size = deversify(vs)
+    proto, version, kind, size = deversify(vs)
     assert proto == Protos.keri
     assert kind == Serials.cbor
     assert version == Version
@@ -5974,7 +5974,7 @@ def test_serder():
     assert evt2.kind == Serials.cbor
     evt2.kind = Serials.json
     assert evt2.kind == Serials.json
-    proto, knd, version, size = deversify(evt2.ked["v"])
+    proto, version, knd, size = deversify(evt2.ked["v"])
     assert proto == Protos.keri
     assert knd == Serials.json
 

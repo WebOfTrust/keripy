@@ -31,7 +31,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       ConversionError, InvalidValueError, InvalidTypeError,
                       ValidationError, VersionError, DerivationError,
                       EmptyListError,
-                      ShortageError, UnexpectedCodeError, SerDesError,
+                      ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
@@ -95,15 +95,16 @@ ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
 
 
-def versify(proto=Protos.keri, version=None, kind=Serials.json, size=0):
+def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
     """
     Returns version string
     """
     if proto not in Protos:
         raise ValueError("Invalid message identifier = {}".format(proto))
+    #version = version if version else Version
     if kind not in Serials:
         raise ValueError("Invalid serialization kind = {}".format(kind))
-    version = version if version else Version
+
     return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
 
 
@@ -116,38 +117,47 @@ Rever = re.compile(VEREX)  # compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 
-def deversify(vs):
+def deversify(vs, version=None):
     """
     Returns:  tuple(proto, kind, version, size) Where:
         proto (str): value is protocol type identifier one of Protos (Protocolage)
                    acdc='ACDC', keri='KERI'
         kind (str): value is serialization kind, one of Serials
                    json='JSON', mgpk='MGPK', cbor='CBOR'
-        version (tuple):  is version tuple of type Version
+        vrsn (tuple):  version tuple of type Versionage
         size  (int): raw size in bytes
 
     Parameters:
-      vs (str): version string
+      vs (str): version string to extract from
+      version (Versionage | None): supported version. None means do not check
+            for supported version.
 
     Uses regex match to extract:
         protocol type
+        protocol version tuple
         serialization kind
-        keri version
         serialization size
     """
     match = Rever.match(vs.encode("utf-8"))  # match takes bytes
     if match:
-        proto, major, minor, kind, size = match.group("proto", "major", "minor", "kind", "size")
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        proto, major, minor, kind, size = match.group("proto",
+                                                      "major",
+                                                      "minor",
+                                                      "kind",
+                                                      "size")
         proto = proto.decode("utf-8")
+        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
 
         if proto not in Protos:
             raise ValueError("Invalid message identifier = {}".format(proto))
+        if version is not None and vrsn != version:
+            raise ValueError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
-        return proto, kind, version, size
+        return proto, vrsn, kind, size
 
     raise ValueError("Invalid version string = {}".format(vs))
 
@@ -177,7 +187,7 @@ def sizeify(ked, kind=None, version=Version):
         raise ValueError("Missing or empty version string in key event "
                          "dict = {}".format(ked))
 
-    proto, knd, vrsn, size = deversify(ked["v"])  # extract kind and version
+    proto, vrsn, knd, size = deversify(ked["v"])  # extract kind and version
     if vrsn != version:
         raise ValueError("Unsupported version = {}.{}".format(vrsn.major,
                                                               vrsn.minor))
@@ -344,7 +354,7 @@ def sniff(raw):
     kind = kind.decode("utf-8")
     proto = proto.decode("utf-8")
     if kind not in Serials:
-        raise SerDesError("Invalid serialization kind = {}".format(kind))
+        raise DeserializeError("Invalid serialization kind = {}".format(kind))
     size = int(size, 16)
 
     return proto, kind, version, size
@@ -392,25 +402,25 @@ def loads(raw, size=None, kind=Serials.json):
         try:
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
-            raise SerDesError("Error deserializing JSON: {}"
+            raise DeserializeError("Error deserializing JSON: {}"
                                        "".format(raw[:size].decode("utf-8")))
 
     elif kind == Serials.mgpk:
         try:
             ked = msgpack.loads(raw[:size])
         except Exception as ex:
-            raise SerDesError("Error deserializing MGPK: {}"
+            raise DeserializeError("Error deserializing MGPK: {}"
                                        "".format(raw[:size]))
 
     elif kind == Serials.cbor:
         try:
             ked = cbor.loads(raw[:size])
         except Exception as ex:
-            raise SerDesError("Error deserializing CBOR: {}"
+            raise DeserializeError("Error deserializing CBOR: {}"
                                        "".format(raw[:size]))
 
     else:
-        raise SerDesError("Invalid deserialization kind: {}"
+        raise DeserializeError("Invalid deserialization kind: {}"
                                    "".format(kind))
 
     return ked
@@ -2115,7 +2125,7 @@ class Verfer(Matter):
             return True
         except exceptions.InvalidSignature:
             return False
-        
+
     @staticmethod
     def _secp256k1(sig, ser, key):
         """
@@ -2510,7 +2520,7 @@ class Signer(Matter):
                          index=index,
                          ondex=ondex,
                          verfer=verfer,)
-    
+
     # def derive_index_code(code, index, only=False, ondex=None, **kwa):
     #     # should add Indexer class method to get ms main index size for given code
     #     if only:  # only main index ondex not used
@@ -2545,7 +2555,7 @@ class Signer(Matter):
     #                 indxSigCode = IdrDex.ECDSA_256k1_Sig
     #             else:
     #                 raise ValueError("Unsupported signer code = {}.".format(code))
-    #         else:  # otherwise big or both not same so use big both                
+    #         else:  # otherwise big or both not same so use big both
     #             if code == MtrDex.Ed25519_Seed:
     #                 indxSigCode = IdrDex.Ed25519_Big_Sig
     #             elif code == MtrDex.ECDSA_256r1_Seed:
@@ -3595,7 +3605,7 @@ class Saider(Matter):
         """
         knd = Serials.json
         if 'v' in sad:  # versioned sad
-            _, knd, _, _ = deversify(sad['v'])
+            _, _, knd, _ = deversify(sad['v'])
 
         if not kind:  # match logic of Serder for kind
             kind = knd

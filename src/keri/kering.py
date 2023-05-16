@@ -217,6 +217,15 @@ class InvalidVarRawSizeError(InvalidSizeError):
         raise InvalidRawSizeError("error message")
     """
 
+# Errors serializing messages
+
+class SerializeError(KeriError):
+    """
+    Message creation and serialization errors
+
+    Usage:
+        raise MessageError("error message")
+    """
 
 
 
@@ -228,7 +237,7 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
-class MissingElementError(ValidationError):
+class MissingFieldError(ValidationError):
     """
     Missing a required element or field of message
     Usage:
@@ -429,6 +438,22 @@ class VersionError(ExtractionError):
         raise VersionError("error message")
     """
 
+class ProtocolError(ExtractionError):
+    """
+    Bad or Unsupported Protocol type
+
+    Usage:
+        raise ProtocolError("error message")
+    """
+
+class KindError(ExtractionError):
+    """
+    Bad or Unsupported Serialization Kind
+
+    Usage:
+        raise KindError("error message")
+    """
+
 
 class ConversionError(ExtractionError):
     """
@@ -436,12 +461,36 @@ class ConversionError(ExtractionError):
 
     Usage:
         raise ConversionError("error message")
+
+    """
+
+class DeserializeError(ExtractionError):
+    """
+    Error deserializing message
+    Usage:
+        raise DeserializeError("error message")
+    """
+
+
+class FieldError(DeserializeError):
+    """
+    Deserialized field error
+    Usage:
+        raise FieldError("error message")
+
+    """
+
+class ElementError(DeserializeError):
+    """
+    Deserialized element error
+    Usage:
+        raise ElementError("error message")
     """
 
 
 class DerivationCodeError(ExtractionError):
     """
-    Derivation Code cryppto material conversion errors
+    Derivation Code crypto material conversion errors
     Usage:
         raise DerivationCodeError("error message")
     """
@@ -468,15 +517,6 @@ class UnexpectedOpCodeError(DerivationCodeError):
     Encountered opcode code start char "_" unexpectantly
     Usage:
         raise DerivationCodeError("error message")
-    """
-
-
-
-class SerDesError(ExtractionError):
-    """
-    Error serializing or deserializing message
-    Usage:
-        raise SerDesError("error message")
     """
 
 
