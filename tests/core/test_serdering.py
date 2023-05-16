@@ -158,16 +158,16 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
-    #serder = Serder(sad=sad, makify=True)  # test makify
-    #assert serder.raw == rawCBOR
-    #assert serder.sad == sad
-    #assert serder.proto == coring.Protos.keri
-    #assert serder.version == coring.Versionage(major=1, minor=0)
-    #assert serder.size == 69
-    #assert serder.kind == coring.Serials.cbor
-    #assert serder.said == saider.qb64
-    #assert serder.saidb == saider.qb64b
-    #assert serder.ilk == None
+    serder = Serder(sad=sad, makify=True)  # test makify
+    assert serder.raw == rawCBOR
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.cbor
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
 
     serder = Serder(raw=rawCBOR)
     assert serder.raw == rawCBOR
@@ -235,16 +235,16 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
-    #serder = Serder(sad=sad, makify=True)  # test makify
-    #assert serder.raw == rawMGPK
-    #assert serder.sad == sad
-    #assert serder.proto == coring.Protos.keri
-    #assert serder.version == coring.Versionage(major=1, minor=0)
-    #assert serder.size == 69
-    #assert serder.kind == coring.Serials.mgpk
-    #assert serder.said == saider.qb64
-    #assert serder.saidb == saider.qb64b
-    #assert serder.ilk == None
+    serder = Serder(sad=sad, makify=True)  # test makify
+    assert serder.raw == rawMGPK
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 69
+    assert serder.kind == coring.Serials.mgpk
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
 
     serder = Serder(raw=rawMGPK)
     assert serder.raw == rawMGPK
@@ -268,10 +268,11 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
-    # ToDo
-    # test cbor and msgpack versions of Serder
-    # make .saidify for real and test
+
     # ToDo: create malicious raw values to test verify more thoroughly
+    # ToDo: create bad sad values to test makify more thoroughly
+    # unhappy paths
+
 
 
 

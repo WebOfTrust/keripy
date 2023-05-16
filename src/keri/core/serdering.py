@@ -13,8 +13,9 @@ import blake3
 import hashlib
 
 from .. import kering
-from ..kering import (ValidationError, SerDesError, MissingElementError,
-                      VersionError, UnexpectedCodeError, ShortageError, )
+from ..kering import (ValidationError,  MissingFieldError, InvalidValueError,
+                      ShortageError, VersionError, ProtocolError, KindError,
+                      DeserializeError, FieldError, SerializeError)
 
 from ..core import coring
 from .coring import Rever, versify, deversify, Version, Versionage
@@ -203,7 +204,7 @@ class Serder:
             self._size = size
             label = self.Labels[self.ilk].saids[0]  # primary said field label
             if label not in self._sad:
-                raise SerDesError(f"Missing primary said field in {self._sad}.")
+                raise FieldError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # saider not verified
 
             if strip:  # assumes raw is bytearray
@@ -236,7 +237,7 @@ class Serder:
                 self._size = size
                 label = self.Labels[self.ilk].saids[0]  # primary said field label
                 if label not in self._sad:
-                    raise SerDesError(f"Missing primary said field in {self._sad}.")
+                    raise DeserializeError(f"Missing primary said field in {self._sad}.")
                 self._saider = Saider(qb64=self._sad[label]) # saider not verified
 
                 if verify:  # verify the said(s) provided in sad
@@ -289,14 +290,14 @@ class Serder:
                 del keys[key]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
-            raise MissingElementError(f"Missing required fields = {fields}"
+            raise MissingFieldError(f"Missing required fields = {fields}"
                                       f" in sad = \n{self.pretty()}")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = self.Labels[self.ilk].saids
         if not (set(saids) <= set(fields)):
-            raise MissingElementError(f"Missing required said fields = {saids}"
+            raise MissingFieldError(f"Missing required said fields = {saids}"
                                       f" in sad = \n{self.pretty()}")
 
         sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
@@ -386,14 +387,14 @@ class Serder:
                 del keys[key]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
-            raise ValueError(f"Missing one or more required fields = {fields}"
+            raise SerializeError(f"Missing one or more required fields = {fields}"
                                           f" in sad = \n{self.pretty()}")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = self.Labels[sad.get('t')].saids
         if not (set(saids) <= set(fields)):
-            raise ValueError(f"Missing one or more required said fields = {saids}"
+            raise SerializeError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = \n{self.pretty()}")
 
         labCodes = {}  # compute mapping of said labeled fields to codes
@@ -430,14 +431,14 @@ class Serder:
         kind = kind if kind is not None else skind
 
         if proto not in Protos:
-            raise ValueError(f"Invalid protocol type = {proto}.")
+            raise SerializeError(f"Invalid protocol type = {proto}.")
 
         if version is not None and vrsn != version:
-            raise ValueError(f"Expected version = {version}, got "
+            raise SerializeError(f"Expected version = {version}, got "
                                f"{vrsn.major}.{vrsn.minor}.")
 
         if kind not in Serials:
-            raise ValueError(f"Invalid serialization kind = {kind}")
+            raise SerializeError(f"Invalid serialization kind = {kind}")
 
         sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
@@ -517,7 +518,7 @@ class Serder:
 
         proto = proto.decode("utf-8")
         if proto not in Protos:
-            raise SerDesError(f"Invalid protocol type = {proto}.")
+            raise ProtocolError(f"Invalid protocol type = {proto}.")
 
         vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
         if version is not None and vrsn != version:
@@ -526,7 +527,7 @@ class Serder:
 
         kind = kind.decode("utf-8")
         if kind not in Serials:
-            raise SerDesError(f"Invalid serialization kind = {kind}.")
+            raise KindError(f"Invalid serialization kind = {kind}.")
 
         size = int(size, 16)
         if len(raw) < size:
@@ -535,7 +536,7 @@ class Serder:
         sad = clas.loads(raw=raw, size=size, kind=kind)
 
         if "v" not in sad:
-            raise SerDesError(f"Missing version string field in {sad}.")
+            raise FieldError(f"Missing version string field in {sad}.")
 
         return sad, proto, version, kind, size
 
@@ -559,25 +560,25 @@ class Serder:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
-                raise SerDesError(f"Error deserializing JSON: "
+                raise DeserializeError(f"Error deserializing JSON: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
-                raise SerDesError(f"Error deserializing MGPK: "
+                raise DeserializeError(f"Error deserializing MGPK: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         elif kind == Serials.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
-                raise SerDesError(f"Error deserializing CBOR: "
+                raise DeserializeError(f"Error deserializing CBOR: "
                     f"{raw[:size].decode('utf-8')}") from ex
 
         else:
-            raise SerDesError(f"Invalid deserialization kind: {kind}")
+            raise DeserializeError(f"Invalid deserialization kind: {kind}")
 
         return sad
 
@@ -606,7 +607,7 @@ class Serder:
 
         """
         if "v" not in sad:
-            raise SerDesError(f"Missing version string field in {sad}.")
+            raise SerializeError(f"Missing version string field in {sad}.")
 
         # extract elements so can replace size element but keep others
         proto, vrsn, kind, size = deversify(sad["v"], version=version)
@@ -620,13 +621,13 @@ class Serder:
         # find location of old version string inside raw
         match = Rever.search(raw)  # Rever's regex takes bytes
         if not match or match.start() > 12:
-            raise ValueError(f"Invalid version string in raw = {raw}.")
+            raise SerializeError(f"Invalid version string in raw = {raw}.")
         fore, back = match.span()  # start and end positions of version string
 
         # replace old version string in raw with new one
         raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
         if size != len(raw):  # substitution messed up
-            raise ValueError(f"Malformed size of raw in version string == {vs}")
+            raise SerializeError(f"Malformed size of raw in version string == {vs}")
         sad["v"] = vs  # update sad
 
         return raw, sad, proto, vrsn, kind, size
@@ -654,7 +655,7 @@ class Serder:
         elif kind == Serials.cbor:
             raw = cbor.dumps(sad)
         else:
-            raise ValueError(f"Invalid serialization kind = {kind}")
+            raise SerializeError(f"Invalid serialization kind = {kind}")
 
         return raw
 
@@ -698,7 +699,7 @@ class Serder:
             return said == self.saidb  # str match bool
 
         else:
-            raise ValueError(f"Uncomparable saids.")
+            raise ValidationError(f"Uncomparable saids.")
 
 
     @property

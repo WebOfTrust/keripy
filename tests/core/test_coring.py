@@ -41,7 +41,7 @@ from keri.core.coring import (intToB64, intToB64b, b64ToInt, codeB64ToB2, codeB2
 from keri.help import helping
 from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          ShortageError, InvalidCodeSizeError, InvalidVarIndexError,
-                         InvalidValueError, SerDesError)
+                         InvalidValueError, DeserializeError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
