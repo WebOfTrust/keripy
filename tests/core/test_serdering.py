@@ -78,16 +78,16 @@ def test_serder():
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
-    #serder = Serder(sad=sad, makify=True)  # test makify
-    #assert serder.raw == rawJSON
-    #assert serder.sad == sad
-    #assert serder.proto == coring.Protos.keri
-    #assert serder.version == coring.Versionage(major=1, minor=0)
-    #assert serder.size == 76
-    #assert serder.kind == coring.Serials.json
-    #assert serder.said == saider.qb64
-    #assert serder.saidb == saider.qb64b
-    #assert serder.ilk == None
+    serder = Serder(sad=sad, makify=True)  # test makify
+    assert serder.raw == rawJSON
+    assert serder.sad == sad
+    assert serder.proto == coring.Protos.keri
+    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.size == 76
+    assert serder.kind == coring.Serials.json
+    assert serder.said == saider.qb64
+    assert serder.saidb == saider.qb64b
+    assert serder.ilk == None
 
     serder = Serder(raw=rawJSON)
     assert serder.raw == rawJSON

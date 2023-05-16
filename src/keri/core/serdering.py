@@ -379,7 +379,7 @@ class Serder:
 
         """
         # ensure required fields are in sad
-        fields = self.Labels[self.ilk].fields  # all field labels
+        fields = self.Labels[sad.get('t')].fields  # all field labels
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -391,7 +391,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[self.ilk].saids
+        saids = self.Labels[sad.get('t')].saids
         if not (set(saids) <= set(fields)):
             raise ValueError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = \n{self.pretty()}")
@@ -400,7 +400,7 @@ class Serder:
         for i, label in enumerate(saids):
             try:
                 code = codes[i]
-            except IndexError:
+            except (IndexError, TypeError):
                 code = None
 
             if code is None:
@@ -439,46 +439,32 @@ class Serder:
         if kind not in Serials:
             raise ValueError(f"Invalid serialization kind = {kind}")
 
-        sad['v'] = self.Dummy * len(coring.VERFULLSIZE)  # ensure size of vs
+        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
 
         # generate new version string with correct size
         vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
-
-        # find location of old version string inside raw
-        match = Rever.search(raw)  # Rever's regex takes bytes
-        if not match or match.start() > 12:
-            raise ValueError(f"Invalid version string in raw = {raw}.")
-        fore, back = match.span()  # start and end positions of version string
-
-        # replace old version string in raw with new one
-        raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
-        if size != len(raw):  # substitution messed up
-            raise ValueError(f"Malformed size of raw in version string == {vs}")
         sad["v"] = vs  # update sad
 
         # now have correctly sized version string in sad
         # now compute saidive digestive field values using sized dummied sad
-        raw = self.dumps(sad, kind=self.kind)  # serialize sized dummied sad
+        raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
 
         for label, code in labCodes.items():
             if code in DigDex:  # subclass override if non digestive allowed
-                klas, size, length = self.Digests[code]  # digest algo size & length
+                klas, dsize, dlen = self.Digests[code]  # digest algo size & length
                 ikwa = dict()  # digest algo class initi keyword args
-                if size:
-                    ikwa.update(digest_size=size)  # optional digest_size
+                if dsize:
+                    ikwa.update(digest_size=dsize)  # optional digest_size
                 dkwa = dict()  # digest method keyword args
-                if length:
-                    dkwa.update(length=length)
+                if dlen:
+                    dkwa.update(length=dlen)
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                if dig != self.sad[label]:  # compare to original
-                    raise ValueError(f"Invalid said field '{label}' in sad"
-                                         f" = \n{self.pretty()}")
                 sad[label] = dig
 
-        raw = self.dumps(sad, kind=self.kind)  # compute final raw
+        raw = self.dumps(sad, kind=kind)  # compute final raw
 
         self._raw = raw
         self._sad = sad
