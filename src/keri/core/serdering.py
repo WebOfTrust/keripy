@@ -13,12 +13,12 @@ import blake3
 import hashlib
 
 from .. import kering
-from ..kering import (ValidationError,  MissingFieldError, InvalidValueError,
+from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
 
 from ..core import coring
-from .coring import Rever, versify, deversify, Version, Versionage
+from .coring import Rever, versify, deversify, Version, Versionage, Ilks
 from .coring import Protos, Serials, MtrDex, DigDex, PreDex
 from .coring import Matter, Diger, Saider, Digestage
 
@@ -97,23 +97,27 @@ class Serder:
         ._proto (str):  Protocolage value as protocol type identifier
         ._version is Versionage instance of event version
         ._kind is serialization kind string value (see namedtuple coring.Serials)
-          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._saider (Saider): instance for this Sadder's SAID
 
-
     Methods:
+        verify()
+        _verify()
+        makify()
+        compare()
         pretty(size: int | None ) -> str: Prettified JSON of this SAD
+
+    ClassMethods:
+        _inhale()
+        _exhale()
+
+    StaticMethods:
+        loads()
+        dumps()
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
-
-    ToDo:
-        verify
-            add fields check for required fields
-        saidify
-
-        Errors for extraction versus verification
 
     """
 
@@ -146,7 +150,9 @@ class Serder:
     # codes, and all field labels
     # A key of None is default when no ilk required
     # Override in sub class that is protocol specific
-    Labels = {None: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])}
+    Labels = {None: Labelage(saids=['d'],
+                             codes=[DigDex.Blake3_256],
+                             fields=['v','d'])}
 
 
 
@@ -657,26 +663,6 @@ class Serder:
         return raw
 
 
-    def pretty(self, *, size=None):
-        """Utility method to pretty print .sad as JSON str.
-        Returns:
-            pretty (str):  JSON of .sad with pretty formatting
-
-        Pararmeters:
-            size (int | None): size limit. None means not limit.
-                Enables protection against syslog error when
-                exceeding UDP MTU (max trans unit) for syslog applications.
-                Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
-                Most broadband routers have an UDP MTU set to 1454.
-                Must include not just payload but UDP/IP header in
-                MTU calculation. So must leave room for either UDP/IpV4 or
-                the bigger UDP/IPv6 header.
-                Except for old IoT hardware, modern implementations all
-                support IPv6 so 1024 is usually a safe value for payload.
-        """
-        return json.dumps(self.sad, indent=1)[:size]
-
-
     def compare(self, said=None):
         """Utility method to allow comparison of own .said digest of .raw
         with some other purported said of .raw
@@ -697,6 +683,27 @@ class Serder:
 
         else:
             raise ValidationError(f"Uncomparable saids.")
+
+
+
+    def pretty(self, *, size=None):
+        """Utility method to pretty print .sad as JSON str.
+        Returns:
+            pretty (str):  JSON of .sad with pretty formatting
+
+        Pararmeters:
+            size (int | None): size limit. None means not limit.
+                Enables protection against syslog error when
+                exceeding UDP MTU (max trans unit) for syslog applications.
+                Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
+                Most broadband routers have an UDP MTU set to 1454.
+                Must include not just payload but UDP/IP header in
+                MTU calculation. So must leave room for either UDP/IpV4 or
+                the bigger UDP/IPv6 header.
+                Except for old IoT hardware, modern implementations all
+                support IPv6 so 1024 is usually a safe value for payload.
+        """
+        return json.dumps(self.sad, indent=1)[:size]
 
 
     @property
@@ -791,3 +798,18 @@ class Serder:
         """
         return self.sad.get('t')  # returns None if 't' not in sad
 
+
+
+class SerderKERI(Serder):
+    """SerderKERI is Serder subclass with Labels for KERI packet types (ilks) and
+       properties for exposing field values of KERI messages
+
+       See docs for Serder
+    """
+
+    # Protocol specific field labels dict, keyed by ilk (packet type string).
+    # value of each entry is Labelage instance that provides saidive field labels,
+    # codes, and all field labels
+    # A key of None is default when no ilk required
+    Labels = {Ilks.icp: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d']),
+             }
