@@ -368,17 +368,61 @@ class Serder:
                 If None then its extracted from raw or sad or uses default .Kind
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
+                If empty list then use default .Code for each one.
 
 
 
         """
-        # ensuring all fields present includes version string field
-        for label in self.Labels[self.ilk].fields:
-            if label not in self.sad:
-                raise ValueError(f"Missing field '{label}' in {sad}.")
+        # ensure required fields are in sad
+        fields = self.Labels[self.ilk].fields  # all field labels
+        keys = list(sad)  # get list of keys of self.sad
+        for key in list(keys):  # make copy to mutate
+            if key not in fields:
+                del keys[key]  # remove non required fields
+
+        if fields != keys:  # forces ordered appearance of labels in .sad
+            raise ValueError(f"Missing one or more required fields = {fields}"
+                                          f" in sad = \n{self.pretty()}")
+
+        # said field labels are not order dependent with respect to all fields
+        # in sad so use set() to test inclusion
+        saids = self.Labels[self.ilk].saids
+        if not (set(saids) <= set(fields)):
+            raise ValueError(f"Missing one or more required said fields = {saids}"
+                                          f" in sad = \n{self.pretty()}")
+
+        codes = {}
+        for label in saids:
+            value = sad[label]
+            matter = Matter(qb64=value)  # inhaleable raw means must be Matter
+            if matter.digestive:
+                sad[label] = self.Dummy * len(value)  # replace value with dummy
+
+            codes[label] = matter.code  # save for later
+            # override in subclass when said field value may not be a said such
+            # as incept with none digestive
+
+        raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
+
+        for label, code in codes.items():
+            if code in DigDex:  # subclass override if non digestive allowed
+                klas, size, length = self.Digests[code]  # digest algo size & length
+                ikwa = dict()  # digest algo class initi keyword args
+                if size:
+                    ikwa.update(digest_size=size)  # optional digest_size
+                dkwa = dict()  # digest method keyword args
+                if length:
+                    dkwa.update(length=length)
+                dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
+                if dig != self.sad[label]:  # compare to original
+                    raise ValidationError(f"Invalid said field '{label}' in sad"
+                                              f" = \n{self.pretty()}")
+                sad[label] = dig
 
 
-        try:  # extract vs elements as defaults if provided
+
+
+        try:  # extract version string elements as defaults if provided
             sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
         except ValueError as ex:
             sproto = self.Proto
@@ -399,16 +443,28 @@ class Serder:
         if kind not in Serials:
             raise ValueError(f"Invalid serialization kind = {kind}")
 
-
-
-        for label in self.Labels[self.ilk].saids:
-            if label not in self.sad:
-                pass
+        sad['v'] = self.Dummy * len(coring.VERFULLSIZE)  # ensure size of vs
 
 
 
 
+        raw = self.dumps(sad, kind)
+        size = len(raw)
 
+        # generate new version string with correct size
+        vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
+
+        # find location of old version string inside raw
+        match = Rever.search(raw)  # Rever's regex takes bytes
+        if not match or match.start() > 12:
+            raise ValueError(f"Invalid version string in raw = {raw}.")
+        fore, back = match.span()  # start and end positions of version string
+
+        # replace old version string in raw with new one
+        raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
+        if size != len(raw):  # substitution messed up
+            raise ValueError(f"Malformed size of raw in version string == {vs}")
+        sad["v"] = vs  # update sad
 
 
     @classmethod
