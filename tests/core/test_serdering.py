@@ -235,40 +235,44 @@ def test_serder():
                i="",
                s="")
     saider, sad = coring.Saider.saidify(sad=sad)
-    assert sad == {'v': 'KERI10MGPK000045_',
-                   'd': 'EHORCaFv9ThskIBG0qSr3edk7oQ9x-xT8-FgsUIADb5E'}
+    assert sad == {'v': 'ACDC10MGPK00004b_',
+                    'd': 'EGV5wdF1nRbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC',
+                    'i': '',
+                    's': ''}
 
     assert saider.qb64 == sad["d"]
 
     serder = Serder(sad=sad)
-    assert serder.raw == (b'\x82\xa1v\xb1KERI10MGPK000045_\xa1d\xd9,EHORCaFv9'
-                          b'ThskIBG0qSr3edk7oQ9x-xT8-FgsUIADb5E')
+    assert serder.raw == (b'\x84\xa1v\xb1ACDC10MGPK00004b_\xa1d\xd9,EGV5wdF1n'
+                          b'RbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC\xa1i\xa0\xa1s\xa0')
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
+    assert serder.proto == coring.Protos.acdc
     assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
+    assert serder.size == 75
     assert serder.kind == coring.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
     assert serder.pretty() == ('{\n'
-                               ' "v": "KERI10MGPK000045_",\n'
-                               ' "d": "EHORCaFv9ThskIBG0qSr3edk7oQ9x-xT8-FgsUIADb5E"\n'
-                               '}')
+                                ' "v": "ACDC10MGPK00004b_",\n'
+                                ' "d": "EGV5wdF1nRbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC",\n'
+                                ' "i": "",\n'
+                                ' "s": ""\n'
+                                '}')
     assert serder.compare(said=saider.qb64)
     assert serder.compare(said=saider.qb64b)
     assert not serder.compare(said='EN5gqodYDGPSYQvdixCjfD2leqb6zhPoDYcB21hfqu8e')
 
     rawMGPK = serder.raw  # save for later tests
-    assert rawMGPK == (b'\x82\xa1v\xb1KERI10MGPK000045_\xa1d\xd9,EHORCaFv9'
-                          b'ThskIBG0qSr3edk7oQ9x-xT8-FgsUIADb5E')
+    assert rawMGPK == (b'\x84\xa1v\xb1ACDC10MGPK00004b_\xa1d\xd9,EGV5wdF1n'
+                          b'RbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC\xa1i\xa0\xa1s\xa0')
 
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
+    assert serder.proto == coring.Protos.acdc
     assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
+    assert serder.size == 75
     assert serder.kind == coring.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
@@ -277,9 +281,9 @@ def test_serder():
     serder = Serder(sad=sad, makify=True)  # test makify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
+    assert serder.proto == coring.Protos.acdc
     assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
+    assert serder.size == 75
     assert serder.kind == coring.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
@@ -288,9 +292,9 @@ def test_serder():
     serder = Serder(raw=rawMGPK)
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
+    assert serder.proto == coring.Protos.acdc
     assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
+    assert serder.size == 75
     assert serder.kind == coring.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
@@ -299,9 +303,9 @@ def test_serder():
     serder = Serder(raw=rawMGPK, verify=False)  # test not verify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
+    assert serder.proto == coring.Protos.acdc
     assert serder.version == coring.Versionage(major=1, minor=0)
-    assert serder.size == 69
+    assert serder.size == 75
     assert serder.kind == coring.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
