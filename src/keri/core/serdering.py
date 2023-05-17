@@ -148,6 +148,7 @@ class Serder:
     Kind = Serials.json  # default serialization kind
     Code = DigDex.Blake3_256  # default said field code
 
+
     # Nested dict keyed by protocol.
     # Each protocol value is a dict keyed by ilk.
     # Each ilk value is a Labelage named tuple with saids, codes and fields
@@ -168,12 +169,15 @@ class Serder:
                 },
             }
 
-
+    # default ilk for each protocol is zeroth ilk in dict
+    Ilks = dict()
+    for key, val in Labels.items():
+        Ilks[key] = list(val.keys())[0]
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
                  verify=True, makify=False,
-                 proto=None, vrsn=None, kind=None, codes=None):
+                 proto=None, vrsn=None, kind=None, ilk=None, codes=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -198,12 +202,14 @@ class Serder:
             makify (bool): True means compute fields for sad including size and
                 saids.
             proto (str | None): desired protocol type str value of Protos
-                If None then its extracted from raw or sad or uses default .Proto
+                If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
-                If None then its extracted from raw or sad or uses default .Vrsn
+                If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                If None then its extracted from raw or sad or uses default .Kind
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
 
@@ -236,11 +242,11 @@ class Serder:
                     raise ValidationError(f"Invalid raw for Serder = "
                                           f"{self.sad}.") from ex
 
-        elif sad:  # serialize sad into raw using sad property setter
+        elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
                 self.makify(sad=sad, version=version,
-                            proto=proto, vrsn=vrsn, kind=kind, codes=codes)
+                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, codes=codes)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -267,7 +273,7 @@ class Serder:
                                               f"{self.sad}.") from ex
 
         else:
-            raise ValueError("Improper initialization need raw or sad.")
+            raise ValueError("Improper initialization need raw or sad or makify.")
 
 
 
@@ -370,7 +376,7 @@ class Serder:
 
 
     def makify(self, sad, *, version=None,
-               proto=None, vrsn=None, kind=None, codes=None):
+               proto=None, vrsn=None, kind=None, ilk=None, codes=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -391,12 +397,14 @@ class Serder:
             version (Versionage): instance supported protocol version
                 None means do not enforce version
             proto (str | None): desired protocol type str value of Protos
-                If None then its extracted from raw or sad or uses default .Proto
+                If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
-                If None then its extracted from raw or sad or uses default .Vrsn
+                If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                If None then its extracted from raw or sad or uses default .Kind
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
                 If empty list then use defaults
@@ -409,20 +417,33 @@ class Serder:
 
 
         """
-        if 'v' not in sad:
-            raise SerializeError(f"missing version string field 'v'. in sad = "
+        sproto = self.Proto  # default proto
+        silk = self.Ilks[sproto]  # default ilk for given proto
+        svrsn = self.Vrsn  # default version
+        skind = self.Kind  # default kind
+
+        if sad:  # not None or not empty dict
+            if 'v' not in sad:
+                raise SerializeError(f"missing version string field 'v'. in sad = "
                                   f"{sad}.")
 
-        try:  # extract version string elements as defaults if provided
-            sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
-        except ValueError as ex:
-            sproto = self.Proto
-            svrsn = self.Vrsn
-            skind = self.Kind
+            try:  # extract version string elements as defaults if provided
+                sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
+            except ValueError as ex:
+                pass
+            else:
+                silk = sad.get('t')  # if not in get returns None which may be valid
 
-        proto = proto if proto is not None else sproto
+
+        if proto is not None:
+            proto = proto
+            ilk = ilk if ilk is not None else self.Ilks[proto]
+        else:
+            proto = sproto
+            ilk = ilk if ilk is not None else silk
         vrsn = vrsn if vrsn is not None else svrsn
         kind = kind if kind is not None else skind
+
 
         if self.Protocol and proto != self.Protocol:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
@@ -443,12 +464,17 @@ class Serder:
         if kind not in Serials:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
-        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
-        ilk = sad.get('t')
         if ilk not in self.Labels[proto]:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
+
+        if not sad:  # empty or None so create
+            sad = {label: "" for label in self.Labels[proto][ilk].fields}
+            if 't' in sad:  # packet type (ilk) requried so set value to ilk
+                sad['t'] = ilk
+
+
 
         # ensure required fields are in sad
         fields = self.Labels[proto][ilk].fields  # all field labels
@@ -489,13 +515,18 @@ class Serder:
 
             labCodes[label] = code
 
+        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
+            raise SerializeError(f"Missing requires version string field 'v'"
+                                          f" in sad = {sad}.")
+
+        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
 
         # generate new version string with correct size
         vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
-        sad["v"] = vs  # update sad
+        sad["v"] = vs  # update version string in sad
 
         # now have correctly sized version string in sad
         # now compute saidive digestive field values using sized dummied sad
