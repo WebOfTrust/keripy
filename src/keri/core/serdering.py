@@ -276,6 +276,7 @@ class Serder:
 
         return True
 
+
     def _verify(self):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
@@ -285,6 +286,10 @@ class Serder:
         Raises a ValidationError (or subclass) if any verification fails
 
         """
+        if self.ilk not in self.Labels:
+            raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
+                                  f"protocol = {self.proto}.")
+
         # ensure required fields are in sad
         fields = self.Labels[self.ilk].fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
@@ -298,7 +303,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[self.ilk].saids
+        saids = self.Labels[self.ilk].saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
                                       f" in sad = \n{self.pretty()}")
@@ -382,8 +387,39 @@ class Serder:
 
 
         """
+        if 'v' not in sad:
+            raise SerializeError(f"missing version string field 'v'. in sad = "
+                                  f"\n{self.pretty()}.")
+
+        try:  # extract version string elements as defaults if provided
+            sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
+        except ValueError as ex:
+            sproto = self.Proto
+            svrsn = self.Vrsn
+            skind = self.Kind
+
+        proto = proto if proto is not None else sproto
+        vrsn = vrsn if vrsn is not None else svrsn
+        kind = kind if kind is not None else skind
+
+        if proto not in Protos:
+            raise SerializeError(f"Invalid protocol type = {proto}.")
+
+        if version is not None and vrsn != version:
+            raise SerializeError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
+
+        if kind not in Serials:
+            raise SerializeError(f"Invalid serialization kind = {kind}")
+
+        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
+
+        ilk = sad.get('t')
+        if ilk not in self.Labels:
+            raise SerializeError(f"No field labels for packet type (ilk) = "
+                                  f"{ilk} .")
         # ensure required fields are in sad
-        fields = self.Labels[sad.get('t')].fields  # all field labels
+        fields = self.Labels[ilk].fields  # all field labels
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -395,7 +431,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[sad.get('t')].saids
+        saids = self.Labels[ilk].saids
         if not (set(saids) <= set(fields)):
             raise SerializeError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = \n{self.pretty()}")
@@ -421,29 +457,6 @@ class Serder:
 
             labCodes[label] = code
 
-
-        try:  # extract version string elements as defaults if provided
-            sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
-        except ValueError as ex:
-            sproto = self.Proto
-            svrsn = self.Vrsn
-            skind = self.Kind
-
-        proto = proto if proto is not None else sproto
-        vrsn = vrsn if vrsn is not None else svrsn
-        kind = kind if kind is not None else skind
-
-        if proto not in Protos:
-            raise SerializeError(f"Invalid protocol type = {proto}.")
-
-        if version is not None and vrsn != version:
-            raise SerializeError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
-
-        if kind not in Serials:
-            raise SerializeError(f"Invalid serialization kind = {kind}")
-
-        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
