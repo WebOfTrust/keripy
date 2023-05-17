@@ -148,14 +148,25 @@ class Serder:
     Kind = Serials.json  # default serialization kind
     Code = DigDex.Blake3_256  # default said field code
 
-    # Protocol specific field labels dict, keyed by ilk (packet type string).
-    # value of each entry is Labelage instance that provides saidive field labels,
-    # codes, and all field labels
-    # A key of None is default when no ilk required
-    # Override in sub class that is protocol specific
-    Labels = {None: Labelage(saids=['d'],
-                             codes=[DigDex.Blake3_256],
-                             fields=['v','d'])}
+    # Nested dict keyed by protocol.
+    # Each protocol value is a dict keyed by ilk.
+    # Each ilk value is a Labelage named tuple with saids, codes and fields
+    # ilk value of None is default for protocols that support ilkless packets
+    Labels = {
+                Protos.keri:
+                {
+                    Ilks.icp: Labelage(saids=['d', 'i'],
+                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'c', 'a']),
+                },
+                Protos.acdc:
+                {
+                    None: Labelage(saids=['d'],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v','d', 'i', 's']),
+                },
+            }
 
 
 
@@ -208,7 +219,7 @@ class Serder:
             self._version = vrsn
             self._kind = kind
             self._size = size
-            label = self.Labels[self.ilk].saids[0]  # primary said field label
+            label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
             if label not in self._sad:
                 raise FieldError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -222,8 +233,8 @@ class Serder:
                 except Exception as ex:
                     logger.error("Invalid raw for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
-                    raise ValidationError(f"Invalid raw for Serder"
-                                          f"\n{self.pretty()}\n.") from ex
+                    raise ValidationError(f"Invalid raw for Serder = "
+                                          f"{self.sad}.") from ex
 
         elif sad:  # serialize sad into raw using sad property setter
             if makify:  # recompute properties and said(s) and reset sad
@@ -241,7 +252,7 @@ class Serder:
                 self._version = vrsn
                 self._kind = kind
                 self._size = size
-                label = self.Labels[self.ilk].saids[0]  # primary said field label
+                label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
                 self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -252,8 +263,8 @@ class Serder:
                     except Exception as ex:
                         logger.error("Invalid sad for Serder %s\n%s",
                                      self.pretty(), ex.args[0])
-                        raise ValidationError(f"Invalid raw for Serder"
-                                              f"\n{self.pretty()}\n.") from ex
+                        raise ValidationError(f"Invalid raw for Serder ="
+                                              f"{self.sad}.") from ex
 
         else:
             raise ValueError("Improper initialization need raw or sad.")
@@ -289,16 +300,20 @@ class Serder:
         Raises a ValidationError (or subclass) if any verification fails
 
         """
-        if self.ilk not in self.Labels:
+        if self.Protocol and self.proto != self.Protocol:
+            raise ValidationError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{self.proto} instead.")
+
+        if self.proto not in self.Labels:
+            raise ValidationError(f"Invalid protocol type = {self.proto}.")
+
+        if self.ilk not in self.Labels[self.proto]:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
-        if self.Protocol and self.proto != self.Protocol:
-            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
-                                 f"{self.proto} instead.")
 
         # ensure required fields are in sad
-        fields = self.Labels[self.ilk].fields  # all field labels
+        fields = self.Labels[self.proto][self.ilk].fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -306,14 +321,14 @@ class Serder:
 
         if fields != keys:  # forces ordered appearance of labels in .sad
             raise MissingFieldError(f"Missing required fields = {fields}"
-                                      f" in sad = \n{self.pretty()}")
+                                    f" in sad = {self.sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[self.ilk].saids  # saidive field labels
+        saids = self.Labels[self.proto][self.ilk].saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
-                                      f" in sad = \n{self.pretty()}")
+                                    f" in sad = {self.sad}.")
 
         sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
         labCodes = {}  # dict of codes keyed by label
@@ -323,7 +338,7 @@ class Serder:
                 code = Matter(qb64=value).code
             except Exception as ex:
                 raise ValidationError(f"Invalid said field '{label}' in sad\n"
-                                  f" =  {self.pretty()}") from ex
+                                      f" = {self.sad}.") from ex
 
             if code in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * len(value)
@@ -344,13 +359,13 @@ class Serder:
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
                 if dig != self.sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = \n{self.pretty()}")
+                                          f" = {self.sad}.")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)
         if raw != self.raw:
-            raise ValidationError(f"Invalid round trip of = sad = \n"
-                                  f"{self.pretty()}")
+            raise ValidationError(f"Invalid round trip of {sad} != \n"
+                                  f"{self.sad}.")
         # verified successfully since no exception
 
 
@@ -396,7 +411,7 @@ class Serder:
         """
         if 'v' not in sad:
             raise SerializeError(f"missing version string field 'v'. in sad = "
-                                  f"\n{self.pretty()}.")
+                                  f"{sad}.")
 
         try:  # extract version string elements as defaults if provided
             sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
@@ -409,8 +424,13 @@ class Serder:
         vrsn = vrsn if vrsn is not None else svrsn
         kind = kind if kind is not None else skind
 
-        if proto not in Protos:
+        if self.Protocol and proto != self.Protocol:
+            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{proto} instead.")
+
+        if proto not in self.Labels:
             raise SerializeError(f"Invalid protocol type = {proto}.")
+
 
         if self.Protocol and proto != self.Protocol:
             raise SerializeError(f"Expected protocol = {self.Protocol}, got "
@@ -426,11 +446,12 @@ class Serder:
         sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
 
         ilk = sad.get('t')
-        if ilk not in self.Labels:
-            raise SerializeError(f"No field labels for packet type (ilk) = "
-                                  f"{ilk} .")
+        if ilk not in self.Labels[proto]:
+            raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
+                                  f"protocol = {proto}.")
+
         # ensure required fields are in sad
-        fields = self.Labels[ilk].fields  # all field labels
+        fields = self.Labels[proto][ilk].fields  # all field labels
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -438,14 +459,14 @@ class Serder:
 
         if fields != keys:  # forces ordered appearance of labels in .sad
             raise SerializeError(f"Missing one or more required fields = {fields}"
-                                          f" in sad = \n{self.pretty()}")
+                                          f" in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[ilk].saids
+        saids = self.Labels[proto][ilk].saids
         if not (set(saids) <= set(fields)):
             raise SerializeError(f"Missing one or more required said fields = {saids}"
-                                          f" in sad = \n{self.pretty()}")
+                                          f" in sad = {sad}.")
 
         labCodes = {}  # compute mapping of said labeled fields to codes
         for i, label in enumerate(saids):
@@ -500,7 +521,7 @@ class Serder:
         self._version = vrsn
         self._kind = kind
         self._size = size
-        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
         self._saider = Saider(qb64=self._sad[label]) # implicitly verified
 
 
@@ -834,9 +855,3 @@ class SerderKERI(Serder):
     Protocol = Protos.keri  # required protocol, None means any in Protos is ok
     Proto = Protos.keri  # default protocol type
 
-    # Protocol specific field labels dict, keyed by ilk (packet type string).
-    # value of each entry is Labelage instance that provides saidive field labels,
-    # codes, and all field labels
-    # A key of None is default when no ilk required
-    Labels = {Ilks.icp: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d']),
-             }
