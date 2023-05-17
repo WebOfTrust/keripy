@@ -140,6 +140,9 @@ class Serder:
         DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
     }
 
+    #override in subclass to enforce specific protocol
+    Protocol = None  # required protocol, None means any in Protos is ok
+
     Proto = Protos.keri  # default protocol type
     Vrsn = Version  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
@@ -290,6 +293,10 @@ class Serder:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
+        if self.Protocol and self.proto != self.Protocol:
+            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{self.proto} instead.")
+
         # ensure required fields are in sad
         fields = self.Labels[self.ilk].fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
@@ -404,6 +411,10 @@ class Serder:
 
         if proto not in Protos:
             raise SerializeError(f"Invalid protocol type = {proto}.")
+
+        if self.Protocol and proto != self.Protocol:
+            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{proto} instead.")
 
         if version is not None and vrsn != version:
             raise SerializeError(f"Expected version = {version}, got "
@@ -819,6 +830,9 @@ class SerderKERI(Serder):
 
        See docs for Serder
     """
+    #override in subclass to enforce specific protocol
+    Protocol = Protos.keri  # required protocol, None means any in Protos is ok
+    Proto = Protos.keri  # default protocol type
 
     # Protocol specific field labels dict, keyed by ilk (packet type string).
     # value of each entry is Labelage instance that provides saidive field labels,
