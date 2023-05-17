@@ -48,7 +48,6 @@ class KeyStateNoticer(doing.DoDoer):
                         case self.pre:
                             if kever.sn < ksn.sn:
                                 # Add new doer here instead of cueing to a while loop
-                                print("New key events are available, loading now...")
                                 self.extend([LogQuerier(hby=self.hby, hab=self.hab, ksn=ksn)])
                                 self.remove([self.witq])
 
@@ -83,7 +82,6 @@ class LogQuerier(doing.DoDoer):
         kever = self.hab.kevers[self.ksn.pre]
         if kever.sn >= self.ksn.sn:
             self.remove([self.witq])
-            print("Key event log synced successfully")
             return True
 
         return super(LogQuerier, self).recur(tyme, deeds)

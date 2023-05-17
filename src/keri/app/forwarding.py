@@ -167,7 +167,6 @@ class Poster(doing.DoDoer):
         mbx, mailbox = random.choice(list(ends.items()))
         msg = bytearray()
         msg.extend(introduce(hab, mbx))
-
         # create the forward message with payload embedded at `a` field
         fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
                                   payload=serder.ked)
@@ -329,6 +328,7 @@ def introduce(hab, wit):
         # no vrcs or rct of own icp from remote so send own inception
         for msg in hab.db.clonePreIter(pre=hab.pre):
             msgs.extend(msg)
-
+        for msg in hab.db.cloneDelegation(hab.kever):
+            msgs.extend(msg)
         msgs.extend(hab.replyEndRole(cid=hab.pre))
     return msgs
