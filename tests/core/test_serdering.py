@@ -411,7 +411,8 @@ def test_serder():
     assert serder.said == said
     assert serder.ilk == coring.Ilks.icp
 
-    serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])  # test makify
+    # Test with non-digestive code for 'i' saidive field no sad
+    serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])
     assert serder.sad == {'v': 'KERI10JSON00009f_',
                         't': 'icp',
                         'd': 'EFmPBVkCqAbAOO8JHr4WJDvR-lcb14SzW1tQ5C53S3-T',
@@ -426,7 +427,39 @@ def test_serder():
                         'c': '',
                         'a': ''}
 
+    # test makify with preloaded non-digestive 'i' value in sad
+    pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    sad = {
+            'v': '',
+            't': 'icp',
+            'd': '',
+            'i': pre,
+            's': '',
+            'kt': '',
+            'k': [],
+            'nt': '',
+            'n': [],
+            'bt': '',
+            'b': [],
+            'c': [],
+            'a': []
+          }
 
+    serder = Serder(sad=sad, makify=True)
+    assert serder.sad == {'v': 'KERI10JSON0000cb_',
+                        't': 'icp',
+                        'd': 'EF0LlW8szMeZNqCJJUrDhSxQQkGnBHkuvbNa0ar2C4hJ',
+                        'i': 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx',
+                        's': '',
+                        'kt': '',
+                        'k': [],
+                        'nt': '',
+                        'n': [],
+                        'bt': '',
+                        'b': [],
+                        'c': [],
+                        'a': []}
+    assert serder.sad['i'] == pre
 
 
     # ToDo: create malicious raw values to test verify more thoroughly
