@@ -16,10 +16,10 @@ from .. import kering
 from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
-
+from ..kering import Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE
+from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
-from .coring import Rever, versify, deversify, Version, Versionage, Ilks
-from .coring import Protos, Serials, MtrDex, DigDex, PreDex
+from .coring import MtrDex, DigDex, PreDex
 from .coring import Matter, Diger, Saider, Digestage
 
 from .. import help
@@ -122,7 +122,7 @@ class Serder:
     """
 
     MaxVSOffset = 12
-    InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
+    InhaleSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
 
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
 
@@ -523,7 +523,7 @@ class Serder:
             raise SerializeError(f"Missing requires version string field 'v'"
                                           f" in sad = {sad}.")
 
-        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
+        sad['v'] = self.Dummy * VERFULLSIZE  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)

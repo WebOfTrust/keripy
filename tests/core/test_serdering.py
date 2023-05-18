@@ -37,22 +37,22 @@ def test_serder():
 
     assert Serder.Ilks == {'KERI': 'icp', 'ACDC': None}
 
-    assert Serder.Labels[coring.Protos.acdc][None].saids == ['d']
-    assert Serder.Labels[coring.Protos.acdc][None].codes == [coring.DigDex.Blake3_256]
-    assert Serder.Labels[coring.Protos.acdc][None].fields == ['v', 'd', 'i', 's']
+    assert Serder.Labels[kering.Protos.acdc][None].saids == ['d']
+    assert Serder.Labels[kering.Protos.acdc][None].codes == [coring.DigDex.Blake3_256]
+    assert Serder.Labels[kering.Protos.acdc][None].fields == ['v', 'd', 'i', 's']
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Labels[coring.Protos.acdc][None].saids) <=
-            set(Serder.Labels[coring.Protos.acdc][None].fields))
+    assert (set(Serder.Labels[kering.Protos.acdc][None].saids) <=
+            set(Serder.Labels[kering.Protos.acdc][None].fields))
 
 
     with pytest.raises(ValueError):
         serder = Serder()
 
     # Test ACDC JSON bootstrap with Saider.saidify
-    sad = dict(v=coring.versify(proto=coring.Protos.acdc,
-                                version=coring.Version,
-                                kind=coring.Serials.json),
+    sad = dict(v=kering.versify(proto=kering.Protos.acdc,
+                                version=kering.Version,
+                                kind=kering.Serials.json),
                d="",
                i="",
                s="")
@@ -70,10 +70,10 @@ def test_serder():
                           b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT",'
                           b'"i":"","s":""}')
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -96,10 +96,10 @@ def test_serder():
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawJSON
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -107,10 +107,10 @@ def test_serder():
     serder = Serder(sad=sad, makify=True)  # test makify
     assert serder.raw == rawJSON
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -118,10 +118,10 @@ def test_serder():
     serder = Serder(sad=sad, makify=True, codes=[coring.DigDex.Blake3_256])  # test makify
     assert serder.raw == rawJSON
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -129,10 +129,10 @@ def test_serder():
     serder = Serder(raw=rawJSON)
     assert serder.raw == rawJSON
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -140,10 +140,10 @@ def test_serder():
     serder = Serder(raw=rawJSON, verify=False)  # test without verify
     assert serder.raw == rawJSON
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -156,9 +156,9 @@ def test_serder():
         serder = Serder(raw=badraw, verify=True)
 
     # Test ACDC CBOR bootstrap with Saider.saidify
-    sad = dict(v=coring.versify(proto=coring.Protos.acdc,
-                                version=coring.Version,
-                                kind=coring.Serials.cbor),
+    sad = dict(v=kering.versify(proto=kering.Protos.acdc,
+                                version=kering.Version,
+                                kind=kering.Serials.cbor),
                d="",
                i="",
                s="")
@@ -174,10 +174,10 @@ def test_serder():
     assert serder.raw == (b'\xa4avqACDC10CBOR00004b_adx,EGahYhEMb_Sz0L1UwhrUv'
                           b'byxyzoi_G85-pD9jRjhnqgUai`as`')
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.cbor
+    assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -198,10 +198,10 @@ def test_serder():
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawCBOR
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.cbor
+    assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -209,10 +209,10 @@ def test_serder():
     serder = Serder(sad=sad, makify=True)  # test makify
     assert serder.raw == rawCBOR
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.cbor
+    assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -220,10 +220,10 @@ def test_serder():
     serder = Serder(raw=rawCBOR)
     assert serder.raw == rawCBOR
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.cbor
+    assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -231,19 +231,19 @@ def test_serder():
     serder = Serder(raw=rawCBOR, verify=False)  # test without verify
     assert serder.raw == rawCBOR
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.cbor
+    assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
 
     # Test ACDC MGPK bootstrap with Saider.saidify
-    sad = dict(v=coring.versify(proto=coring.Protos.acdc,
-                                version=coring.Version,
-                                kind=coring.Serials.mgpk),
+    sad = dict(v=kering.versify(proto=kering.Protos.acdc,
+                                version=kering.Version,
+                                kind=kering.Serials.mgpk),
                d="",
                i="",
                s="")
@@ -259,10 +259,10 @@ def test_serder():
     assert serder.raw == (b'\x84\xa1v\xb1ACDC10MGPK00004b_\xa1d\xd9,EGV5wdF1n'
                           b'RbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC\xa1i\xa0\xa1s\xa0')
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.mgpk
+    assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -283,10 +283,10 @@ def test_serder():
     serder = Serder(sad=sad, verify=False)  # test not verify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.mgpk
+    assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -294,10 +294,10 @@ def test_serder():
     serder = Serder(sad=sad, makify=True)  # test makify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.mgpk
+    assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -305,10 +305,10 @@ def test_serder():
     serder = Serder(raw=rawMGPK)
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.mgpk
+    assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
@@ -316,25 +316,25 @@ def test_serder():
     serder = Serder(raw=rawMGPK, verify=False)  # test not verify
     assert serder.raw == rawMGPK
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 75
-    assert serder.kind == coring.Serials.mgpk
+    assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
     assert serder.saidb == saider.qb64b
     assert serder.ilk == None
 
     # test ACDC JSON with makify defaults for self bootstrap of ACDC
-    serder = Serder(makify=True, proto=coring.Protos.acdc)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                           'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                           'i': '',
                           's': ''}
     assert serder.raw == rawJSON
-    assert serder.proto == coring.Protos.acdc
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.acdc
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 90
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == saidAcdcJson
     assert serder.ilk == None
 
@@ -358,13 +358,13 @@ def test_serder():
     assert serder.raw == (b'{"v":"KERI10JSON0000cb_","t":"icp","d":"EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KG'
                           b'f87Bc70J","i":"EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J","s":"","kt":"",'
                           b'"k":"","nt":"","n":"","bt":"","b":"","c":"","a":""}')
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.keri
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == 203
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == 'EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J'
     assert serder.sad['i'] == serder.said
-    assert serder.ilk == coring.Ilks.icp
+    assert serder.ilk == kering.Ilks.icp
     assert serder.pretty() == ('{\n'
                         ' "v": "KERI10JSON0000cb_",\n'
                         ' "t": "icp",\n'
@@ -392,24 +392,24 @@ def test_serder():
     serder = Serder(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.keri
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == size
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == said
-    assert serder.ilk == coring.Ilks.icp
+    assert serder.ilk == kering.Ilks.icp
 
 
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.proto == coring.Protos.keri
-    assert serder.version == coring.Versionage(major=1, minor=0)
+    assert serder.proto == kering.Protos.keri
+    assert serder.version == kering.Versionage(major=1, minor=0)
     assert serder.size == size
-    assert serder.kind == coring.Serials.json
+    assert serder.kind == kering.Serials.json
     assert serder.said == said
-    assert serder.ilk == coring.Ilks.icp
+    assert serder.ilk == kering.Ilks.icp
 
     # Test with non-digestive code for 'i' saidive field no sad
     serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])
@@ -460,6 +460,13 @@ def test_serder():
                         'c': [],
                         'a': []}
     assert serder.sad['i'] == pre
+
+    sad = serder.sad  # save for later
+
+    serder = Serder(sad=sad)  # test verify
+    assert serder.sad == sad
+
+
 
 
     # ToDo: create malicious raw values to test verify more thoroughly

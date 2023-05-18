@@ -33,7 +33,9 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       EmptyListError,
                       ShortageError, UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import Versionage, Version
+from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
+                      versify, deversify, Rever)
+from ..kering import Serials, Serialage, Protos, Ilkage, Ilks
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
 from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
@@ -42,33 +44,6 @@ from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS
 from ..help import helping
 from ..help.helping import sceil, nonStringIterable
 
-"""
-ilk is short for message type
-icp = incept, inception
-rot = rotate, rotation
-ixn = interact, interaction
-dip = delcept, delegated inception
-drt = deltate, delegated rotation
-rct = receipt
-ksn = state, key state notice
-qry = query
-rpy = reply
-exn = exchange
-exp = expose, sealed data exposition
-vcp = vdr incept, verifiable data registry inception
-vrt = vdr rotate, verifiable data registry rotation
-iss = vc issue, verifiable credential issuance
-rev = vc revoke, verifiable credential revocation
-bis = backed vc issue, registry-backed transaction event log credential issuance
-brv = backed vc revoke, registry-backed transaction event log credential revocation
-"""
-
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
-                               'pro bar vcp vrt iss rev bis brv '))
-
-Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
-              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
                 drt=DRT_LABELS, rct=[], ksn=KSN_LABELS, qry=[], rpy=RPY_LABELS,
@@ -76,90 +51,16 @@ Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
                 vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS, rev=REV_LABELS,
                 bis=BIS_LABELS, brv=BRV_LABELS)
 
-Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
-Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
-
-# protocol name
-Protocolage = namedtuple("Protocolage", "keri acdc")
-
-Protos = Protocolage(keri="KERI", acdc="ACDC")
-
-VERRAWSIZE = 6  # hex characters in raw serialization size in version string
-# "{:0{}x}".format(300, 6)  # make num char in hex a variable
-# '00012c'
-VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
-VERFULLSIZE = 17  # number of characters in full version string
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
-
-
-def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
-    """
-    Returns version string
-    """
-    if proto not in Protos:
-        raise ValueError("Invalid message identifier = {}".format(proto))
-    #version = version if version else Version
-    if kind not in Serials:
-        raise ValueError("Invalid serialization kind = {}".format(kind))
-
-    return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
 
 
 Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
                      mgpk=versify(kind=Serials.mgpk, size=0),
                      cbor=versify(kind=Serials.cbor, size=0))
 
-VEREX = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
-Rever = re.compile(VEREX)  # compile is faster
-MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
-
-
-def deversify(vs, version=None):
-    """
-    Returns:  tuple(proto, kind, version, size) Where:
-        proto (str): value is protocol type identifier one of Protos (Protocolage)
-                   acdc='ACDC', keri='KERI'
-        kind (str): value is serialization kind, one of Serials
-                   json='JSON', mgpk='MGPK', cbor='CBOR'
-        vrsn (tuple):  version tuple of type Versionage
-        size  (int): raw size in bytes
-
-    Parameters:
-      vs (str): version string to extract from
-      version (Versionage | None): supported version. None means do not check
-            for supported version.
-
-    Uses regex match to extract:
-        protocol type
-        protocol version tuple
-        serialization kind
-        serialization size
-    """
-    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
-    if match:
-        proto, major, minor, kind, size = match.group("proto",
-                                                      "major",
-                                                      "minor",
-                                                      "kind",
-                                                      "size")
-        proto = proto.decode("utf-8")
-        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
-        kind = kind.decode("utf-8")
-
-        if proto not in Protos:
-            raise ValueError("Invalid message identifier = {}".format(proto))
-        if version is not None and vrsn != version:
-            raise ValueError(f"Expected version = {version}, got "
-                               f"{vrsn.major}.{vrsn.minor}.")
-        if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-        size = int(size, 16)
-        return proto, vrsn, kind, size
-
-    raise ValueError("Invalid version string = {}".format(vs))
 
 
 def sizeify(ked, kind=None, version=Version):
@@ -332,6 +233,7 @@ def nabSextets(b, l):
     i <<= p  # pad with empty bits
     return (i.to_bytes(n, 'big'))
 
+MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 def sniff(raw):
     """
