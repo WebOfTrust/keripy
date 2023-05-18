@@ -316,9 +316,9 @@ class Serder:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
-
+        labels = self.Labels[self.proto][self.ilk]  # get labelage
         # ensure required fields are in sad
-        fields = self.Labels[self.proto][self.ilk].fields  # all field labels
+        fields = labels.fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -330,7 +330,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[self.proto][self.ilk].saids  # saidive field labels
+        saids = labels.saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
                                     f" in sad = {self.sad}.")
@@ -468,15 +468,17 @@ class Serder:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
+        labels = self.Labels[proto][ilk]  # get Labelage
+
         if not sad:  # empty or None so create
-            sad = {label: "" for label in self.Labels[proto][ilk].fields}
+            sad = {label: "" for label in labels.fields}
             if 't' in sad:  # packet type (ilk) requried so set value to ilk
                 sad['t'] = ilk
 
 
 
         # ensure required fields are in sad
-        fields = self.Labels[proto][ilk].fields  # all field labels
+        fields = labels.fields  # all field labels
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -488,7 +490,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[proto][ilk].saids
+        saids = labels.saids
         if not (set(saids) <= set(fields)):
             raise SerializeError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = {sad}.")
@@ -509,7 +511,7 @@ class Serder:
                     code = None
 
             if code is None:  # default from .Labels
-                code = self.Labels[proto][ilk].codes[i]
+                code = labels.codes[i]
 
             labCodes[label] = code
 

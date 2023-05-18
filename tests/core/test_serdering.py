@@ -411,7 +411,7 @@ def test_serder():
     assert serder.said == said
     assert serder.ilk == coring.Ilks.icp
 
-    #serder = Serder(sad=sad, makify=True, codes=[coring.DigDex.Blake3_256])  # test makify
+    #serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])  # test makify
     #assert serder.raw == rawJSON
     #assert serder.sad == sad
     #assert serder.proto == coring.Protos.acdc
