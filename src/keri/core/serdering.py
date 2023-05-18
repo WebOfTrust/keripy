@@ -146,7 +146,6 @@ class Serder:
     Proto = Protos.keri  # default protocol type
     Vrsn = Version  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
-    Code = DigDex.Blake3_256  # default said field code
 
 
     # Nested dict keyed by protocol.
@@ -345,11 +344,11 @@ class Serder:
             except Exception as ex:
                 raise ValidationError(f"Invalid said field '{label}' in sad\n"
                                       f" = {self.sad}.") from ex
+            labCodes[label] = code
 
             if code in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * len(value)
 
-            labCodes[label] = code
 
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
 
@@ -494,26 +493,29 @@ class Serder:
             raise SerializeError(f"Missing one or more required said fields = {saids}"
                                           f" in sad = {sad}.")
 
-        labCodes = {}  # compute mapping of said labeled fields to codes
+        # compute mapping of said labeled fields to codes
+        labCodes = {}
         for i, label in enumerate(saids):
-            try:
+            try:  # codes parameter
                 code = codes[i]
             except (IndexError, TypeError):
                 code = None
 
-            if code is None:
+            if code is None:  # saidive field value code
                 value = sad[label]
                 try:
                     code = Matter(qb64=value).code
                 except Exception:
-                    code = self.Code
-                    # This code assumes that any non-digestive saidive fields
-                    # in sad must have valid CESR. Otherwise override in subclass
+                    code = None
+
+            if code is None:  # default from .Labels
+                code = self.Labels[proto][ilk].codes[i]
+
+            labCodes[label] = code
 
             if code in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * Matter.Sizes[code].fs
 
-            labCodes[label] = code
 
         if 'v' not in sad:  # ensures that 'v' is always required by .Labels
             raise SerializeError(f"Missing requires version string field 'v'"
