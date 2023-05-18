@@ -13,7 +13,9 @@ import msgpack
 import pytest
 
 from keri import kering
+
 from keri.core import coring
+
 from keri.core.serdering import Labelage, Serder, Serdery
 
 
@@ -25,25 +27,38 @@ def test_serder():
 
     # Test Serder
 
-    assert Serder.Labels == {'KERI':
-                             {'icp': Labelage(saids=['d', 'i'],
-                                              codes=['E', 'E'],
-                                              fields=['v', 't', 'd', 'i', 's',
-                                                      'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'a'])},
+    assert Serder.Labels == {
+                            'KERI':
+                            {
+                                kering.Vrsn_1_0:
+                                {
+                                    'icp': Labelage(saids=['d', 'i'],
+                                        codes=['E', 'E'],
+                                        fields=['v', 't', 'd', 'i', 's', 'kt',
+                                                'k', 'nt', 'n', 'bt', 'b', 'c', 'a']),
+                                },
+                            },
                             'ACDC':
-                              {None: Labelage(saids=['d'],
-                                              codes=['E'],
-                                              fields=['v', 'd', 'i', 's'])}}
+                            {
+                                kering.Vrsn_1_0:
+                                {
+                                    None: Labelage(saids=['d'],
+                                        codes=['E'],
+                                        fields=['v', 'd', 'i', 's']),
+                                },
+                            },
+                            }
+
 
     assert Serder.Ilks == {'KERI': 'icp', 'ACDC': None}
 
-    assert Serder.Labels[kering.Protos.acdc][None].saids == ['d']
-    assert Serder.Labels[kering.Protos.acdc][None].codes == [coring.DigDex.Blake3_256]
-    assert Serder.Labels[kering.Protos.acdc][None].fields == ['v', 'd', 'i', 's']
+    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == ['d']
+    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].codes == [coring.DigDex.Blake3_256]
+    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].fields == ['v', 'd', 'i', 's']
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Labels[kering.Protos.acdc][None].saids) <=
-            set(Serder.Labels[kering.Protos.acdc][None].fields))
+    assert (set(Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].saids) <=
+            set(Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].fields))
 
 
     with pytest.raises(ValueError):
@@ -71,7 +86,7 @@ def test_serder():
                           b'"i":"","s":""}')
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -97,7 +112,7 @@ def test_serder():
     assert serder.raw == rawJSON
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -108,7 +123,7 @@ def test_serder():
     assert serder.raw == rawJSON
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -119,7 +134,7 @@ def test_serder():
     assert serder.raw == rawJSON
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -130,7 +145,7 @@ def test_serder():
     assert serder.raw == rawJSON
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -141,7 +156,7 @@ def test_serder():
     assert serder.raw == rawJSON
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saider.qb64
@@ -175,7 +190,7 @@ def test_serder():
                           b'byxyzoi_G85-pD9jRjhnqgUai`as`')
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
@@ -199,7 +214,7 @@ def test_serder():
     assert serder.raw == rawCBOR
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
@@ -210,7 +225,7 @@ def test_serder():
     assert serder.raw == rawCBOR
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
@@ -221,7 +236,7 @@ def test_serder():
     assert serder.raw == rawCBOR
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
@@ -232,7 +247,7 @@ def test_serder():
     assert serder.raw == rawCBOR
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.cbor
     assert serder.said == saider.qb64
@@ -260,7 +275,7 @@ def test_serder():
                           b'RbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC\xa1i\xa0\xa1s\xa0')
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
@@ -284,7 +299,7 @@ def test_serder():
     assert serder.raw == rawMGPK
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
@@ -295,7 +310,7 @@ def test_serder():
     assert serder.raw == rawMGPK
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
@@ -306,7 +321,7 @@ def test_serder():
     assert serder.raw == rawMGPK
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
@@ -317,7 +332,7 @@ def test_serder():
     assert serder.raw == rawMGPK
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 75
     assert serder.kind == kering.Serials.mgpk
     assert serder.said == saider.qb64
@@ -332,7 +347,7 @@ def test_serder():
                           's': ''}
     assert serder.raw == rawJSON
     assert serder.proto == kering.Protos.acdc
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 90
     assert serder.kind == kering.Serials.json
     assert serder.said == saidAcdcJson
@@ -359,7 +374,7 @@ def test_serder():
                           b'f87Bc70J","i":"EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J","s":"","kt":"",'
                           b'"k":"","nt":"","n":"","bt":"","b":"","c":"","a":""}')
     assert serder.proto == kering.Protos.keri
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == 203
     assert serder.kind == kering.Serials.json
     assert serder.said == 'EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J'
@@ -393,7 +408,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == kering.Protos.keri
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Serials.json
     assert serder.said == said
@@ -405,7 +420,7 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == kering.Protos.keri
-    assert serder.version == kering.Versionage(major=1, minor=0)
+    assert serder.vrsn == kering.Vrsn_1_0
     assert serder.size == size
     assert serder.kind == kering.Serials.json
     assert serder.said == said

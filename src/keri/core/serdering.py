@@ -16,7 +16,8 @@ from .. import kering
 from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
-from ..kering import Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE
+from ..kering import (Versionage, Version, Vrsn_1_0,
+                      VERRAWSIZE, VERFMT, VERFULLSIZE)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex
@@ -144,7 +145,7 @@ class Serder:
     Protocol = None  # required protocol, None means any in Protos is ok
 
     Proto = Protos.keri  # default protocol type
-    Vrsn = Version  # default protocol version for protocol type
+    Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
 
 
@@ -155,23 +156,29 @@ class Serder:
     Labels = {
                 Protos.keri:
                 {
-                    Ilks.icp: Labelage(saids=['d', 'i'],
+                    Vrsn_1_0:
+                    {
+                        Ilks.icp: Labelage(saids=['d', 'i'],
                                    codes=[DigDex.Blake3_256, DigDex.Blake3_256],
                                    fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
                                            'nt', 'n', 'bt', 'b', 'c', 'a']),
+                    },
                 },
                 Protos.acdc:
                 {
-                    None: Labelage(saids=['d'],
+                    Vrsn_1_0:
+                    {
+                        None: Labelage(saids=['d'],
                                    codes=[DigDex.Blake3_256],
                                    fields=['v','d', 'i', 's']),
+                    }
                 },
             }
 
-    # default ilk for each protocol is zeroth ilk in dict
+    # default ilk for each protocol at default version is zeroth ilk in dict
     Ilks = dict()
     for key, val in Labels.items():
-        Ilks[key] = list(val.keys())[0]
+        Ilks[key] = list(val[Vrsn].keys())[0]
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -221,10 +228,11 @@ class Serder:
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
-            self._version = vrsn
+            self._vrsn = vrsn
             self._kind = kind
             self._size = size
-            label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
+            # primary said field label
+            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
             if label not in self._sad:
                 raise FieldError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -254,10 +262,11 @@ class Serder:
                 self._raw = raw
                 self._sad = sad
                 self._proto = proto
-                self._version = vrsn
+                self._vrsn = vrsn
                 self._kind = kind
                 self._size = size
-                label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
+                # primary said field label
+                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
                 self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -312,11 +321,11 @@ class Serder:
         if self.proto not in self.Labels:
             raise ValidationError(f"Invalid protocol type = {self.proto}.")
 
-        if self.ilk not in self.Labels[self.proto]:
+        if self.ilk not in self.Labels[self.proto][self.vrsn]:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
-        labels = self.Labels[self.proto][self.ilk]  # get labelage
+        labels = self.Labels[self.proto][self.vrsn][self.ilk]  # get labelage
         # ensure required fields are in sad
         fields = labels.fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
@@ -417,8 +426,8 @@ class Serder:
 
         """
         sproto = self.Proto  # default proto
-        silk = self.Ilks[sproto]  # default ilk for given proto
         svrsn = self.Vrsn  # default version
+        silk = self.Ilks[sproto]  # default ilk for given proto
         skind = self.Kind  # default kind
 
         if sad:  # not None or not empty dict
@@ -464,11 +473,11 @@ class Serder:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
 
-        if ilk not in self.Labels[proto]:
+        if ilk not in self.Labels[proto][vrsn]:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-        labels = self.Labels[proto][ilk]  # get Labelage
+        labels = self.Labels[proto][vrsn][ilk]  # get Labelage
 
         if not sad:  # empty or None so create
             sad = {label: "" for label in labels.fields}
@@ -553,10 +562,11 @@ class Serder:
         self._raw = raw
         self._sad = sad
         self._proto = proto
-        self._version = vrsn
+        self._vrsn = vrsn
         self._kind = kind
         self._size = size
-        label = self.Labels[self.proto][self.ilk].saids[0]  # primary said field label
+        # primary said field label
+        label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
         self._saider = Saider(qb64=self._sad[label]) # implicitly verified
 
 
@@ -825,13 +835,22 @@ class Serder:
 
 
     @property
-    def version(self):
-        """version property getter
+    def vrsn(self):
+        """vrsn (version) property getter
 
         Returns:
-            version (Versionage): instance
+            vrsn (Versionage): instance of protocol version for this Serder
         """
-        return self._version
+        return self._vrsn
+
+    #@property
+    #def version(self):
+        #"""version property getter
+
+        #Returns:
+            #version (Versionage): instance
+        #"""
+        #return self._vrsn
 
 
     @property
