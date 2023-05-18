@@ -411,16 +411,21 @@ def test_serder():
     assert serder.said == said
     assert serder.ilk == coring.Ilks.icp
 
-    #serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])  # test makify
-    #assert serder.raw == rawJSON
-    #assert serder.sad == sad
-    #assert serder.proto == coring.Protos.acdc
-    #assert serder.version == coring.Versionage(major=1, minor=0)
-    #assert serder.size == 90
-    #assert serder.kind == coring.Serials.json
-    #assert serder.said == saider.qb64
-    #assert serder.saidb == saider.qb64b
-    #assert serder.ilk == None
+    serder = Serder(makify=True, codes=[None, coring.PreDex.Ed25519])  # test makify
+    assert serder.sad == {'v': 'KERI10JSON00009f_',
+                        't': 'icp',
+                        'd': 'EFmPBVkCqAbAOO8JHr4WJDvR-lcb14SzW1tQ5C53S3-T',
+                        'i': '',
+                        's': '',
+                        'kt': '',
+                        'k': '',
+                        'nt': '',
+                        'n': '',
+                        'bt': '',
+                        'b': '',
+                        'c': '',
+                        'a': ''}
+
 
 
 
