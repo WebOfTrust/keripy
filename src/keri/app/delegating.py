@@ -49,7 +49,6 @@ class Boatswain(doing.DoDoer):
         super(Boatswain, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                         **kwa)
 
-
     def delegation(self, pre, sn=None, proxy=None):
         if pre not in self.hby.habs:
             raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
@@ -163,8 +162,6 @@ class Boatswain(doing.DoDoer):
                 print(f"Waiting for fully signed witness receipts for {serder.sn}")
                 self.hby.db.dpwe.pin(keys=(pre, said), val=serder)
                 self.hby.db.dune.rem(keys=(pre, said))
-
-
 
     def processPartialWitnessEscrow(self):
         """

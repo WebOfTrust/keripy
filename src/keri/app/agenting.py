@@ -478,7 +478,8 @@ class WitnessInquisitor(doing.DoDoer):
                 elif Roles.witness in ends:
                     end = ends[Roles.witness]
                 else:
-                    raise kering.ConfigurationError(f"unable to find a valid role for {pre}")
+                    logger.error(f"unable query: can not find a valid role for {pre}")
+                    continue
 
                 if len(end.items()) == 0:
                     logger.error(f"must have endpoint to query for pre={pre}")

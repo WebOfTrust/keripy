@@ -1654,7 +1654,7 @@ class BaseHab:
 
             ends[erole][eid] = locs
 
-        ends[Roles.witness] = dict()
+        witrolls = dict()
         if kever := self.kevers[pre] if pre in self.kevers else None:
             for eid in kever.wits:
                 locs = dict()
@@ -1662,7 +1662,10 @@ class BaseHab:
                 for rscheme, url in urls.firsts():
                     locs[rscheme] = url
 
-                ends[Roles.witness][eid] = locs
+                witrolls[eid] = locs
+
+        if len(witrolls) > 0:
+            ends[Roles.witness] = witrolls
 
         return ends
 
