@@ -27,27 +27,15 @@ def test_serder():
 
     # Test Serder
 
-    assert Serder.Labels == {
-                            'KERI':
-                            {
-                                kering.Vrsn_1_0:
-                                {
-                                    'icp': Labelage(saids=['d', 'i'],
-                                        codes=['E', 'E'],
-                                        fields=['v', 't', 'd', 'i', 's', 'kt',
-                                                'k', 'nt', 'n', 'bt', 'b', 'c', 'a']),
-                                },
-                            },
-                            'ACDC':
-                            {
-                                kering.Vrsn_1_0:
-                                {
-                                    None: Labelage(saids=['d'],
-                                        codes=['E'],
-                                        fields=['v', 'd', 'i', 's']),
-                                },
-                            },
-                            }
+    assert Serder.Labels == {'KERI': {kering.Vrsn_1_0: {'icp': Labelage(saids=['d', 'i'], codes=['E', 'E'], fields=['v', 't', 'd', 'i', 's', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'a']),
+                                         'rot': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
+                                         'ixn': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
+                                         'dip': Labelage(saids=['d', 'i'], codes=['E', 'E'], fields=['v', 't', 'd', 'i', 's', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
+                                         'drt': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
+                                         'rct': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's']),
+                                         'qry': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'r', 'rr', 'q']),
+                                         'rpy': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'a'])}},
+                            'ACDC': {kering.Vrsn_1_0: {None: Labelage(saids=['d'], codes=['E'], fields=['v', 'd', 'i', 's'])}}}
 
 
     assert Serder.Ilks == {'KERI': 'icp', 'ACDC': None}

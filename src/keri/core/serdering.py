@@ -20,7 +20,7 @@ from ..kering import (Versionage, Version, Vrsn_1_0,
                       VERRAWSIZE, VERFMT, VERFULLSIZE)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
-from .coring import MtrDex, DigDex, PreDex
+from .coring import MtrDex, DigDex, PreDex, Saids
 from .coring import Matter, Diger, Saider, Digestage
 
 from .. import help
@@ -158,17 +158,44 @@ class Serder:
                 {
                     Vrsn_1_0:
                     {
-                        Ilks.icp: Labelage(saids=['d', 'i'],
+                        Ilks.icp: Labelage(saids=[Saids.d, Saids.i],
                                    codes=[DigDex.Blake3_256, DigDex.Blake3_256],
                                    fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
                                            'nt', 'n', 'bt', 'b', 'c', 'a']),
+                        Ilks.rot: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
+                        Ilks.ixn: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
+                        Ilks.dip: Labelage(saids=[Saids.d, Saids.i],
+                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
+                        Ilks.drt: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
+                                     'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
+                        Ilks.rct: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's']),
+                        Ilks.rct: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's']),
+                        Ilks.qry: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'r', 'rr', 'q']),
+                        Ilks.rpy: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'a']),
                     },
                 },
                 Protos.acdc:
                 {
                     Vrsn_1_0:
                     {
-                        None: Labelage(saids=['d'],
+                        None: Labelage(saids=[Saids.d],
                                    codes=[DigDex.Blake3_256],
                                    fields=['v','d', 'i', 's']),
                     }
