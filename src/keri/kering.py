@@ -3,15 +3,122 @@
 Generic Constants and Classes
 """
 import sys
+import re
 from collections import namedtuple
 
 
 FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
 TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 
-Versionage = namedtuple("Versionage", "major minor")
+# Serialization Kinds
+Serialage = namedtuple("Serialage", 'json mgpk cbor')
+Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
+# Protocol Types
+Protocolage = namedtuple("Protocolage", "keri acdc")
+Protos = Protocolage(keri="KERI", acdc="ACDC")
+
+Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
+Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
+
+VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+# "{:0{}x}".format(300, 6)  # make num char in hex a variable
+# '00012c'
+VERFMT = "{}{:x}{:x}{}{:0{}x}_"  # version format string
+VERFULLSIZE = 17  # number of characters in full version string
+
+VEREX = b'(?P<proto>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
+Rever = re.compile(VEREX)  # compile is faster
+
+
+def versify(proto=Protos.keri, version=Version, kind=Serials.json, size=0):
+    """
+    Returns version string
+    """
+    if proto not in Protos:
+        raise ValueError("Invalid message identifier = {}".format(proto))
+    #version = version if version else Version
+    if kind not in Serials:
+        raise ValueError("Invalid serialization kind = {}".format(kind))
+
+    return VERFMT.format(proto, version[0], version[1], kind, size, VERRAWSIZE)
+
+
+def deversify(vs, version=None):
+    """
+    Returns:  tuple(proto, kind, version, size) Where:
+        proto (str): value is protocol type identifier one of Protos (Protocolage)
+                   acdc='ACDC', keri='KERI'
+        kind (str): value is serialization kind, one of Serials
+                   json='JSON', mgpk='MGPK', cbor='CBOR'
+        vrsn (tuple):  version tuple of type Versionage
+        size  (int): raw size in bytes
+
+    Parameters:
+      vs (str): version string to extract from
+      version (Versionage | None): supported version. None means do not check
+            for supported version.
+
+    Uses regex match to extract:
+        protocol type
+        protocol version tuple
+        serialization kind
+        serialization size
+    """
+    match = Rever.match(vs.encode("utf-8"))  # match takes bytes
+    if match:
+        proto, major, minor, kind, size = match.group("proto",
+                                                      "major",
+                                                      "minor",
+                                                      "kind",
+                                                      "size")
+        proto = proto.decode("utf-8")
+        vrsn = Versionage(major=int(major, 16), minor=int(minor, 16))
+        kind = kind.decode("utf-8")
+
+        if proto not in Protos:
+            raise ValueError("Invalid message identifier = {}".format(proto))
+        if version is not None and vrsn != version:
+            raise ValueError(f"Expected version = {version}, got "
+                               f"{vrsn.major}.{vrsn.minor}.")
+        if kind not in Serials:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+        size = int(size, 16)
+        return proto, vrsn, kind, size
+
+    raise ValueError("Invalid version string = {}".format(vs))
+
+"""
+ilk is short for packet or message type for a given protocol
+    icp = incept, inception
+    rot = rotate, rotation
+    ixn = interact, interaction
+    dip = delcept, delegated inception
+    drt = deltate, delegated rotation
+    rct = receipt
+    ksn = state, key state notice
+    qry = query
+    rpy = reply
+    exn = exchange
+    exp = expose, sealed data exposition
+    vcp = vdr incept, verifiable data registry inception
+    vrt = vdr rotate, verifiable data registry rotation
+    iss = vc issue, verifiable credential issuance
+    rev = vc revoke, verifiable credential revocation
+    bis = backed vc issue, registry-backed transaction event log credential issuance
+    brv = backed vc revoke, registry-backed transaction event log credential revocation
+"""
+
+# KERI protocol packet (message) types
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
+                               'pro bar vcp vrt iss rev bis brv '))
+
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
+              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
+              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+
+
 
 SEPARATOR = "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")

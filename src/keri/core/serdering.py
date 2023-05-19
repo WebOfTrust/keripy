@@ -13,13 +13,14 @@ import blake3
 import hashlib
 
 from .. import kering
-from ..kering import (ValidationError,  MissingFieldError, InvalidValueError,
+from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
-
+from ..kering import (Versionage, Version, Vrsn_1_0,
+                      VERRAWSIZE, VERFMT, VERFULLSIZE)
+from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
-from .coring import Rever, versify, deversify, Version, Versionage
-from .coring import Protos, Serials, MtrDex, DigDex, PreDex
+from .coring import MtrDex, DigDex, PreDex
 from .coring import Matter, Diger, Saider, Digestage
 
 from .. import help
@@ -97,28 +98,32 @@ class Serder:
         ._proto (str):  Protocolage value as protocol type identifier
         ._version is Versionage instance of event version
         ._kind is serialization kind string value (see namedtuple coring.Serials)
-          supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
         ._saider (Saider): instance for this Sadder's SAID
 
-
     Methods:
+        verify()
+        _verify()
+        makify()
+        compare()
         pretty(size: int | None ) -> str: Prettified JSON of this SAD
+
+    ClassMethods:
+        _inhale()
+        _exhale()
+
+    StaticMethods:
+        loads()
+        dumps()
 
     Note:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
-    ToDo:
-        verify
-            add fields check for required fields
-        saidify
-
-        Errors for extraction versus verification
-
     """
 
     MaxVSOffset = 12
-    InhaleSize = MaxVSOffset + coring.VERFULLSIZE  # min buffer size to inhale
+    InhaleSize = MaxVSOffset + VERFULLSIZE  # min buffer size to inhale
 
     Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
 
@@ -136,27 +141,49 @@ class Serder:
         DigDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
     }
 
-    # Protocol specific field labels dict, keyed by ilk (packet type string).
-    # value of each entry is Labelage instance that provides saidive field labels,
-    # codes, and all field labels
-    # A key of None is default when no ilk required
-    # Override in sub class that is protocol specific
-    Labels = {None: Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])}
+    #override in subclass to enforce specific protocol
+    Protocol = None  # required protocol, None means any in Protos is ok
 
     Proto = Protos.keri  # default protocol type
-    Vrsn = Version  # default protocol version for protocol type
+    Vrsn = Vrsn_1_0  # default protocol version for protocol type
     Kind = Serials.json  # default serialization kind
-    Code = DigDex.Blake3_256  # default said field code
 
 
-    # add list of codes to Labelage so makify can use those as the defaults
-    # passed in list to .makify will override. None is passed in list means use
-    # the default
+    # Nested dict keyed by protocol.
+    # Each protocol value is a dict keyed by ilk.
+    # Each ilk value is a Labelage named tuple with saids, codes and fields
+    # ilk value of None is default for protocols that support ilkless packets
+    Labels = {
+                Protos.keri:
+                {
+                    Vrsn_1_0:
+                    {
+                        Ilks.icp: Labelage(saids=['d', 'i'],
+                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'c', 'a']),
+                    },
+                },
+                Protos.acdc:
+                {
+                    Vrsn_1_0:
+                    {
+                        None: Labelage(saids=['d'],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v','d', 'i', 's']),
+                    }
+                },
+            }
+
+    # default ilk for each protocol at default version is zeroth ilk in dict
+    Ilks = dict()
+    for key, val in Labels.items():
+        Ilks[key] = list(val[Vrsn].keys())[0]
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
                  verify=True, makify=False,
-                 proto=None, vrsn=None, kind=None, codes=None):
+                 proto=None, vrsn=None, kind=None, ilk=None, codes=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -181,12 +208,14 @@ class Serder:
             makify (bool): True means compute fields for sad including size and
                 saids.
             proto (str | None): desired protocol type str value of Protos
-                If None then its extracted from raw or sad or uses default .Proto
+                If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
-                If None then its extracted from raw or sad or uses default .Vrsn
+                If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                If None then its extracted from raw or sad or uses default .Kind
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
 
@@ -199,10 +228,11 @@ class Serder:
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
-            self._version = vrsn
+            self._vrsn = vrsn
             self._kind = kind
             self._size = size
-            label = self.Labels[self.ilk].saids[0]  # primary said field label
+            # primary said field label
+            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
             if label not in self._sad:
                 raise FieldError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -216,14 +246,14 @@ class Serder:
                 except Exception as ex:
                     logger.error("Invalid raw for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
-                    raise ValidationError(f"Invalid raw for Serder"
-                                          f"\n{self.pretty()}\n.") from ex
+                    raise ValidationError(f"Invalid raw for Serder = "
+                                          f"{self.sad}.") from ex
 
-        elif sad:  # serialize sad into raw using sad property setter
+        elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
                 self.makify(sad=sad, version=version,
-                            proto=proto, vrsn=vrsn, kind=kind, codes=codes)
+                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, codes=codes)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -232,10 +262,11 @@ class Serder:
                 self._raw = raw
                 self._sad = sad
                 self._proto = proto
-                self._version = vrsn
+                self._vrsn = vrsn
                 self._kind = kind
                 self._size = size
-                label = self.Labels[self.ilk].saids[0]  # primary said field label
+                # primary said field label
+                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
                 if label not in self._sad:
                     raise DeserializeError(f"Missing primary said field in {self._sad}.")
                 self._saider = Saider(qb64=self._sad[label]) # saider not verified
@@ -246,11 +277,11 @@ class Serder:
                     except Exception as ex:
                         logger.error("Invalid sad for Serder %s\n%s",
                                      self.pretty(), ex.args[0])
-                        raise ValidationError(f"Invalid raw for Serder"
-                                              f"\n{self.pretty()}\n.") from ex
+                        raise ValidationError(f"Invalid raw for Serder ="
+                                              f"{self.sad}.") from ex
 
         else:
-            raise ValueError("Improper initialization need raw or sad.")
+            raise ValueError("Improper initialization need raw or sad or makify.")
 
 
 
@@ -273,6 +304,7 @@ class Serder:
 
         return True
 
+
     def _verify(self):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
@@ -282,8 +314,20 @@ class Serder:
         Raises a ValidationError (or subclass) if any verification fails
 
         """
+        if self.Protocol and self.proto != self.Protocol:
+            raise ValidationError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{self.proto} instead.")
+
+        if self.proto not in self.Labels:
+            raise ValidationError(f"Invalid protocol type = {self.proto}.")
+
+        if self.ilk not in self.Labels[self.proto][self.vrsn]:
+            raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
+                                  f"protocol = {self.proto}.")
+
+        labels = self.Labels[self.proto][self.vrsn][self.ilk]  # get labelage
         # ensure required fields are in sad
-        fields = self.Labels[self.ilk].fields  # all field labels
+        fields = labels.fields  # all field labels
         keys = list(self.sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
@@ -291,14 +335,14 @@ class Serder:
 
         if fields != keys:  # forces ordered appearance of labels in .sad
             raise MissingFieldError(f"Missing required fields = {fields}"
-                                      f" in sad = \n{self.pretty()}")
+                                    f" in sad = {self.sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = self.Labels[self.ilk].saids
+        saids = labels.saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
-                                      f" in sad = \n{self.pretty()}")
+                                    f" in sad = {self.sad}.")
 
         sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
         labCodes = {}  # dict of codes keyed by label
@@ -308,12 +352,12 @@ class Serder:
                 code = Matter(qb64=value).code
             except Exception as ex:
                 raise ValidationError(f"Invalid said field '{label}' in sad\n"
-                                  f" =  {self.pretty()}") from ex
+                                      f" = {self.sad}.") from ex
+            labCodes[label] = code
 
             if code in DigDex:  # if digestive then fill with dummy
                 sad[label] = self.Dummy * len(value)
 
-            labCodes[label] = code
 
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
 
@@ -329,18 +373,18 @@ class Serder:
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
                 if dig != self.sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = \n{self.pretty()}")
+                                          f" = {self.sad}.")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)
         if raw != self.raw:
-            raise ValidationError(f"Invalid round trip of = sad = \n"
-                                  f"{self.pretty()}")
+            raise ValidationError(f"Invalid round trip of {sad} != \n"
+                                  f"{self.sad}.")
         # verified successfully since no exception
 
 
     def makify(self, sad, *, version=None,
-               proto=None, vrsn=None, kind=None, codes=None):
+               proto=None, vrsn=None, kind=None, ilk=None, codes=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -361,12 +405,14 @@ class Serder:
             version (Versionage): instance supported protocol version
                 None means do not enforce version
             proto (str | None): desired protocol type str value of Protos
-                If None then its extracted from raw or sad or uses default .Proto
+                If None then its extracted from sad or uses default .Proto
             vrsn (Versionage | None): instance desired protocol version
-                If None then its extracted from raw or sad or uses default .Vrsn
+                If None then its extracted from sad or uses default .Vrsn
             kind (str None): serialization kind string value of Serials
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                If None then its extracted from raw or sad or uses default .Kind
+                If None then its extracted from sad or uses default .Kind
+            ilk (str | None): desired ilk packet type str value of Ilks
+                If None then its extracted from sad or uses default .Ilk
             codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
                 one for each said in same order of .Labels[ilk].saids
                 If empty list then use defaults
@@ -379,59 +425,45 @@ class Serder:
 
 
         """
-        # ensure required fields are in sad
-        fields = self.Labels[sad.get('t')].fields  # all field labels
-        keys = list(sad)  # get list of keys of self.sad
-        for key in list(keys):  # make copy to mutate
-            if key not in fields:
-                del keys[key]  # remove non required fields
+        sproto = self.Proto  # default proto
+        svrsn = self.Vrsn  # default version
+        silk = self.Ilks[sproto]  # default ilk for given proto
+        skind = self.Kind  # default kind
 
-        if fields != keys:  # forces ordered appearance of labels in .sad
-            raise SerializeError(f"Missing one or more required fields = {fields}"
-                                          f" in sad = \n{self.pretty()}")
+        if sad:  # not None or not empty dict
+            if 'v' not in sad:
+                raise SerializeError(f"missing version string field 'v'. in sad = "
+                                  f"{sad}.")
 
-        # said field labels are not order dependent with respect to all fields
-        # in sad so use set() to test inclusion
-        saids = self.Labels[sad.get('t')].saids
-        if not (set(saids) <= set(fields)):
-            raise SerializeError(f"Missing one or more required said fields = {saids}"
-                                          f" in sad = \n{self.pretty()}")
-
-        labCodes = {}  # compute mapping of said labeled fields to codes
-        for i, label in enumerate(saids):
-            try:
-                code = codes[i]
-            except (IndexError, TypeError):
-                code = None
-
-            if code is None:
-                value = sad[label]
-                try:
-                    code = Matter(qb64=value).code
-                except Exception:
-                    code = self.Code
-                    # This code assumes that any non-digestive saidive fields
-                    # in sad must have valid CESR. Otherwise override in subclass
-
-            if code in DigDex:  # if digestive then fill with dummy
-                sad[label] = self.Dummy * len(value)
-
-            labCodes[label] = code
+            try:  # extract version string elements as defaults if provided
+                sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
+            except ValueError as ex:
+                pass
+            else:
+                silk = sad.get('t')  # if not in get returns None which may be valid
 
 
-        try:  # extract version string elements as defaults if provided
-            sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
-        except ValueError as ex:
-            sproto = self.Proto
-            svrsn = self.Vrsn
-            skind = self.Kind
-
-        proto = proto if proto is not None else sproto
+        if proto is not None:
+            proto = proto
+            ilk = ilk if ilk is not None else self.Ilks[proto]
+        else:
+            proto = sproto
+            ilk = ilk if ilk is not None else silk
         vrsn = vrsn if vrsn is not None else svrsn
         kind = kind if kind is not None else skind
 
-        if proto not in Protos:
+
+        if self.Protocol and proto != self.Protocol:
+            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{proto} instead.")
+
+        if proto not in self.Labels:
             raise SerializeError(f"Invalid protocol type = {proto}.")
+
+
+        if self.Protocol and proto != self.Protocol:
+            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
+                                 f"{proto} instead.")
 
         if version is not None and vrsn != version:
             raise SerializeError(f"Expected version = {version}, got "
@@ -440,14 +472,74 @@ class Serder:
         if kind not in Serials:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
-        sad['v'] = self.Dummy * coring.VERFULLSIZE  # ensure size of vs
+
+        if ilk not in self.Labels[proto][vrsn]:
+            raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
+                                  f"protocol = {proto}.")
+
+        labels = self.Labels[proto][vrsn][ilk]  # get Labelage
+
+        if not sad:  # empty or None so create
+            sad = {label: "" for label in labels.fields}
+            if 't' in sad:  # packet type (ilk) requried so set value to ilk
+                sad['t'] = ilk
+
+
+
+        # ensure required fields are in sad
+        fields = labels.fields  # all field labels
+        keys = list(sad)  # get list of keys of self.sad
+        for key in list(keys):  # make copy to mutate
+            if key not in fields:
+                del keys[key]  # remove non required fields
+
+        if fields != keys:  # forces ordered appearance of labels in .sad
+            raise SerializeError(f"Missing one or more required fields = {fields}"
+                                          f" in sad = {sad}.")
+
+        # said field labels are not order dependent with respect to all fields
+        # in sad so use set() to test inclusion
+        saids = labels.saids
+        if not (set(saids) <= set(fields)):
+            raise SerializeError(f"Missing one or more required said fields = {saids}"
+                                          f" in sad = {sad}.")
+
+        # compute mapping of said labeled fields to codes
+        labCodes = {}
+        for i, label in enumerate(saids):
+            try:  # codes parameter
+                code = codes[i]
+            except (IndexError, TypeError):
+                code = None
+
+            if code is None:  # saidive field value code
+                value = sad[label]
+                try:
+                    code = Matter(qb64=value).code
+                except Exception:
+                    code = None
+
+            if code is None:  # default from .Labels
+                code = labels.codes[i]
+
+            labCodes[label] = code
+
+            if code in DigDex:  # if digestive then fill with dummy
+                sad[label] = self.Dummy * Matter.Sizes[code].fs
+
+
+        if 'v' not in sad:  # ensures that 'v' is always required by .Labels
+            raise SerializeError(f"Missing requires version string field 'v'"
+                                          f" in sad = {sad}.")
+
+        sad['v'] = self.Dummy * VERFULLSIZE  # ensure size of vs
 
         raw = self.dumps(sad, kind)  # get size of fully dummied sad
         size = len(raw)
 
         # generate new version string with correct size
         vs = versify(proto=proto, version=vrsn, kind=kind, size=size)
-        sad["v"] = vs  # update sad
+        sad["v"] = vs  # update version string in sad
 
         # now have correctly sized version string in sad
         # now compute saidive digestive field values using sized dummied sad
@@ -470,10 +562,11 @@ class Serder:
         self._raw = raw
         self._sad = sad
         self._proto = proto
-        self._version = vrsn
+        self._vrsn = vrsn
         self._kind = kind
         self._size = size
-        label = self.Labels[self.ilk].saids[0]  # primary said field label
+        # primary said field label
+        label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
         self._saider = Saider(qb64=self._sad[label]) # implicitly verified
 
 
@@ -660,26 +753,6 @@ class Serder:
         return raw
 
 
-    def pretty(self, *, size=None):
-        """Utility method to pretty print .sad as JSON str.
-        Returns:
-            pretty (str):  JSON of .sad with pretty formatting
-
-        Pararmeters:
-            size (int | None): size limit. None means not limit.
-                Enables protection against syslog error when
-                exceeding UDP MTU (max trans unit) for syslog applications.
-                Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
-                Most broadband routers have an UDP MTU set to 1454.
-                Must include not just payload but UDP/IP header in
-                MTU calculation. So must leave room for either UDP/IpV4 or
-                the bigger UDP/IPv6 header.
-                Except for old IoT hardware, modern implementations all
-                support IPv6 so 1024 is usually a safe value for payload.
-        """
-        return json.dumps(self.sad, indent=1)[:size]
-
-
     def compare(self, said=None):
         """Utility method to allow comparison of own .said digest of .raw
         with some other purported said of .raw
@@ -700,6 +773,27 @@ class Serder:
 
         else:
             raise ValidationError(f"Uncomparable saids.")
+
+
+
+    def pretty(self, *, size=None):
+        """Utility method to pretty print .sad as JSON str.
+        Returns:
+            pretty (str):  JSON of .sad with pretty formatting
+
+        Pararmeters:
+            size (int | None): size limit. None means not limit.
+                Enables protection against syslog error when
+                exceeding UDP MTU (max trans unit) for syslog applications.
+                Guaranteed IPv4 MTU is 576, and IPv6 MTU is 1280.
+                Most broadband routers have an UDP MTU set to 1454.
+                Must include not just payload but UDP/IP header in
+                MTU calculation. So must leave room for either UDP/IpV4 or
+                the bigger UDP/IPv6 header.
+                Except for old IoT hardware, modern implementations all
+                support IPv6 so 1024 is usually a safe value for payload.
+        """
+        return json.dumps(self.sad, indent=1)[:size]
 
 
     @property
@@ -741,13 +835,22 @@ class Serder:
 
 
     @property
-    def version(self):
-        """version property getter
+    def vrsn(self):
+        """vrsn (version) property getter
 
         Returns:
-            version (Versionage): instance
+            vrsn (Versionage): instance of protocol version for this Serder
         """
-        return self._version
+        return self._vrsn
+
+    #@property
+    #def version(self):
+        #"""version property getter
+
+        #Returns:
+            #version (Versionage): instance
+        #"""
+        #return self._vrsn
 
 
     @property
@@ -793,4 +896,16 @@ class Serder:
             ilk (str): pracket type given by sad['t'] if any
         """
         return self.sad.get('t')  # returns None if 't' not in sad
+
+
+
+class SerderKERI(Serder):
+    """SerderKERI is Serder subclass with Labels for KERI packet types (ilks) and
+       properties for exposing field values of KERI messages
+
+       See docs for Serder
+    """
+    #override in subclass to enforce specific protocol
+    Protocol = Protos.keri  # required protocol, None means any in Protos is ok
+    Proto = Protos.keri  # default protocol type
 
