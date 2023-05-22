@@ -6,11 +6,11 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
-from hio.help import decking
 
 from keri import kering
 from keri.app import indirecting, habbing, grouping, forwarding, connecting
 from keri.app.cli.common import existing
+from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.vdr import credentialing, verifying
 
@@ -27,14 +27,14 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument('--said', help='is SAID vc content qb64')
 parser.add_argument('--send', help='alias of contact to send the revocation events to (can be repeated)',
                     required=False, action="append")
+parser.add_argument("--time", help="timestamp for the revocation", required=False, default=None)
 
 
 def revokeCredential(args):
     name = args.name
 
     revokeDoer = RevokeDoer(name=name, alias=args.alias, said=args.said, base=args.base, bran=args.bran,
-                            registryName=args.registry_name,
-                            send=args.send)
+                            registryName=args.registry_name, timestamp=args.time, send=args.send)
 
     doers = [revokeDoer]
     return doers
@@ -42,9 +42,10 @@ def revokeCredential(args):
 
 class RevokeDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, said, base, bran, registryName, send, **kwa):
+    def __init__(self, name, alias, said, base, bran, registryName, send, timestamp, **kwa):
         self.said = said
         self.send = send
+        self.timestamp = timestamp
         self.registryName = registryName
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -88,7 +89,11 @@ class RevokeDoer(doing.DoDoer):
                 print(f"invalid credential SAID {self.said}")
                 return
 
-            self.registrar.revoke(regk=registry.regk, said=creder.said)
+            kwargs = dict()
+            if self.timestamp is not None:
+                kwargs['dt'] = self.timestamp
+
+            self.registrar.revoke(regk=registry.regk, said=creder.said, **kwargs)
 
             while not self.registrar.complete(creder.said, sn=1):
                 yield self.tock
@@ -96,6 +101,8 @@ class RevokeDoer(doing.DoDoer):
             recps = [creder.subject['i']] if 'i' in creder.subject else []
             if self.send is not None:
                 recps.extend(self.send)
+
+            senderHab = self.hab.mhab if isinstance(self.hab, GroupHab) else self.hab
 
             if len(recps) > 0:
                 msgs = []
@@ -118,8 +125,7 @@ class RevokeDoer(doing.DoDoer):
                             raise ValueError(f"invalid recipient {send}")
                         recp = recp[0]['id']
                     for (serder, atc) in msgs:
-                        self.postman.send(src=self.hab.pre, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
+                        self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder, attachment=atc)
                         sent += 1
 
                 while not len(self.postman.cues) == sent:
