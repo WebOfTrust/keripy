@@ -1182,17 +1182,17 @@ class SerderACDC(Serder):
         super(SerderACDC, self)._verify()
 
         try:
-            code = Matter(qb64=self.issuer).code
+            code = Matter(qb64=self.isr).code
         except Exception as ex:
             raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
+                                  f"{self.isr}.") from ex
 
         if code not in PreDex:
             raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
     @property
-    def issuer(self):
+    def isr(self):
         """
         Returns:
            issuer (str): qb64  of .sad["i"] issuer AID property getter
@@ -1201,11 +1201,11 @@ class SerderACDC(Serder):
 
 
     @property
-    def issuerb(self):
+    def isrb(self):
         """
         Returns:
         issuerb (bytes): qb64b  of .issuer property getter as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.isr.encode("utf-8") if self.isr is not None else None
 
     # ToDo Schemer property getter. Schemer object

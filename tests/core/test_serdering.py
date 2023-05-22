@@ -17,7 +17,8 @@ from keri.kering import Versionage
 
 from keri.core import coring
 
-from keri.core.serdering import Labelage, Serdery, Serder, SerderKERI
+from keri.core.serdering import (Labelage, Serdery, Serder,
+                                 SerderKERI, SerderACDC, )
 
 
 
@@ -1357,6 +1358,32 @@ def test_serderkeri():
 
 def test_serderacdc():
     """Test SerderACDC"""
+
+    serder = SerderACDC(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON00005a_',
+                          'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
+                          'i': '',
+                          's': ''}
+    assert serder.raw == (b'{"v":"ACDC10JSON00005a_","d":"EMk7BvrqO_2sYjpI_'
+                          b'-BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
+
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 90
+    assert serder.kind == kering.Serials.json
+    assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
+    assert serder.ilk == None
+
+    assert serder.isr == serder.sad['i'] == ''
+    assert serder.isrb == serder.isr.encode("utf-8")
+
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+
+
+
 
 
     """End Test"""
