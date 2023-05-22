@@ -863,7 +863,6 @@ class Serder:
         return dict(self._sad)  # return copy
 
 
-
     @property
     def kind(self):
         """kind property getter
@@ -891,15 +890,6 @@ class Serder:
             vrsn (Versionage): instance of protocol version for this Serder
         """
         return self._vrsn
-
-    #@property
-    #def version(self):
-        #"""version property getter
-
-        #Returns:
-            #version (Versionage): instance
-        #"""
-        #return self._vrsn
 
 
     @property
@@ -1029,9 +1019,30 @@ class SerderKERI(Serder):
         """
         sn (sequence number) property getter
         Returns:
-            sn (int): of .sner.num from .ked["s"]
+            sn (int): of .sner.num from .sad["s"]
         """
         return (self.sner.num)
+
+    @property
+    def seals(self):
+        """
+        seals property getter
+        Returns:
+            seals (list): from ._sad["a"]
+        """
+        return self._sad["a"]
+
+    #Properties of inceptive Serders ilks in (icp, dip)
+
+    @property
+    def traits(self):
+        """
+        traits property getter  (config traits)
+        Returns:
+            traits (list): from ._sad["c"]
+        """
+        return self._sad.get("c")
+
 
     #Properties of estive Serders ilks in  (icp, rot, dip, drt)
     @property
@@ -1050,12 +1061,8 @@ class SerderKERI(Serder):
         One for each key.
         verfers property getter
         """
-        if "k" in self._sad:  # establishment event
-            keys = self.ked["k"]
-        else:  # non-establishment event
-            keys = []
-
-        return [Verfer(qb64=key) for key in keys]
+        keys = self._sad.get("k")
+        return [Verfer(qb64=key) for key in keys] if keys is not None else None
 
 
     @property
@@ -1074,12 +1081,8 @@ class SerderKERI(Serder):
         One for each next key digests.
         ndigers property getter
         """
-        if "n" in self._sad:
-            digs = self._sad["n"]
-        else:
-            digs = []
-
-        return [Diger(qb64=dig) for dig in digs]
+        digs = self._sad.get("n")
+        return [Diger(qb64=dig) for dig in digs] if digs is not None else None
 
 
     @property
@@ -1110,12 +1113,8 @@ class SerderKERI(Serder):
         One for each backer (witness).
         berfers property getter
         """
-        if "b" in self._sad:  # inception establishment event
-            backer = self._sad["b"]
-        else:  # non-establishment event
-            backer = []
-
-        return [Verfer(qb64=backer) for backer in backer]
+        backs = self._sad.get("b")
+        return [Verfer(qb64=back) for back in backs] if backs is not None else None
 
 
     #Properties for delegated Serders ilks in (dip, drt)
@@ -1125,7 +1124,7 @@ class SerderKERI(Serder):
         Returns:
            delpre (str): qb64  of .sad["di"] delegator ID prefix property getter
         """
-        return self._sad["di"] if "di" in self._sad else None
+        return self._sad.get("di")
 
 
     @property
