@@ -1158,3 +1158,54 @@ class SerderKERI(Serder):
         return self.fner.num if self.fner is not None else None
 
 
+class SerderACDC(Serder):
+    """SerderACDC is Serder subclass with Labels for ACDC packet types (ilks) and
+       properties for exposing field values of ACDC messages
+
+       See docs for Serder
+    """
+    #override in subclass to enforce specific protocol
+    Protocol = Protos.acdc  # required protocol, None means any in Protos is ok
+    Proto = Protos.acdc  # default protocol type
+
+
+
+    def _verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        super(SerderACDC, self)._verify()
+
+        try:
+            code = Matter(qb64=self.issuer).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid issuer AID = "
+                                  f"{self.issuer}.") from ex
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid issuer AID code = {code}.")
+
+
+    @property
+    def issuer(self):
+        """
+        Returns:
+           issuer (str): qb64  of .sad["i"] issuer AID property getter
+        """
+        return self._sad.get('i')
+
+
+    @property
+    def issuerb(self):
+        """
+        Returns:
+        issuerb (bytes): qb64b  of .issuer property getter as bytes
+        """
+        return self.issuer.encode("utf-8") if self.issuer is not None else None
+
+    # ToDo Schemer property getter. Schemer object
