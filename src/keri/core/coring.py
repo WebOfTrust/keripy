@@ -5459,6 +5459,9 @@ class Tholder:
             self._processLimen(limen=limen, **kwa)  # kwa for strip
 
         elif sith is not None:
+            if isinstance(sith, str) and not sith:  # empty str
+                raise EmptyMaterialError("Empty threshold expression.")
+
             self._processSith(sith=sith)
 
         else:

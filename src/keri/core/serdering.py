@@ -21,7 +21,7 @@ from ..kering import (Versionage, Version, Vrsn_1_0,
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
 from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
-from .coring import Matter, Saider, Verfer, Diger, Number
+from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
 
 from .. import help
 
@@ -327,7 +327,7 @@ class Serder:
                     except Exception as ex:
                         logger.error("Invalid sad for Serder %s\n%s",
                                      self.pretty(), ex.args[0])
-                        raise ValidationError(f"Invalid raw for Serder ="
+                        raise ValidationError(f"Invalid sad for Serder ="
                                               f"{self._sad}.") from ex
 
         else:
@@ -971,10 +971,29 @@ class SerderKERI(Serder):
         """
         super(SerderKERI, self)._verify()
 
-        code = Matter(qb64=self.pre).code
+        try:
+            code = Matter(qb64=self.pre).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid identifier prefix = "
+                                  f"{self.pre}.") from ex
 
         if code not in PreDex:
             raise ValidationError(f"Invalid identifier prefix code = {code}.")
+
+
+    @property
+    def estive(self):  # establishative
+        """ Returns True if Serder represents an establishment event """
+        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
+
+    @property
+    def ked(self):
+        """
+        Returns:
+            ked (dict): key event dict property getter. Alias for .sad
+        """
+        return self.sad
 
 
     @property
@@ -994,78 +1013,6 @@ class SerderKERI(Serder):
         """
         return self.pre.encode("utf-8")
 
-    @property
-    def ked(self):
-        """
-        Returns
-        ked (dict): key event dict property getter. Alias for .sad
-        """
-        return self.sad
-
-
-    @property
-    def estive(self):  # establishative
-        """ Returns True if Serder represents an establishment event """
-        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
-
-
-    @property
-    def verfers(self):
-        """
-        Returns list of Verfer instances as converted from ._sad['k'].
-        One for each key.
-        verfers property getter
-        """
-        if "k" in self._sad:  # establishment event
-            keys = self.ked["k"]
-        else:  # non-establishment event
-            keys = []
-
-        return [Verfer(qb64=key) for key in keys]
-
-    @property
-    def digers(self):
-        """
-        Returns list of Diger instances as converted from ._sad['n'].
-        One for each next key digests.
-        digers property getter
-        """
-        if "n" in self._sad:
-            digs = self._sad["n"]
-        else:
-            digs = []
-
-        return [Diger(qb64=dig) for dig in digs]
-
-    @property
-    def werfers(self):
-        """
-        Returns list of Verfer instances as converted from ._sad['b'].
-        One for each backer (witness).
-        werfers property getter
-        """
-        if "b" in self._sad:  # inception establishment event
-            wits = self._sad["b"]
-        else:  # non-establishment event
-            wits = []
-
-        return [Verfer(qb64=wit) for wit in wits]
-
-    @property
-    def tholder(self):
-        """
-        Returns Tholder instance as converted from ._sad['kt'] or None if missing.
-
-        """
-        return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
-
-    @property
-    def ntholder(self):
-        """
-        Returns Tholder instance as converted from ._sad['nt'] or None if missing.
-
-        """
-        return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
 
     @property
     def sner(self):
@@ -1086,7 +1033,111 @@ class SerderKERI(Serder):
         """
         return (self.sner.num)
 
+    #Properties of estive Serders ilks in  (icp, rot, dip, drt)
+    @property
+    def tholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['kt'] or None if missing.
 
+        """
+        return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
+
+
+    @property
+    def verfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['k'].
+        One for each key.
+        verfers property getter
+        """
+        if "k" in self._sad:  # establishment event
+            keys = self.ked["k"]
+        else:  # non-establishment event
+            keys = []
+
+        return [Verfer(qb64=key) for key in keys]
+
+
+    @property
+    def ntholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['nt'] or None if missing.
+
+        """
+        return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
+
+
+    @property
+    def ndigers(self):
+        """
+        Returns list of Diger instances as converted from ._sad['n'].
+        One for each next key digests.
+        ndigers property getter
+        """
+        if "n" in self._sad:
+            digs = self._sad["n"]
+        else:
+            digs = []
+
+        return [Diger(qb64=dig) for dig in digs]
+
+
+    @property
+    def bner(self):
+        """
+        bner (Number of backer TOAD threshold of accountable duplicity property getter
+        Returns:
+            (Number): of ._sad["bt"] hex number str converted. Auto converts
+            hex num str to int
+        """
+        return Number(num=self._sad["bt"]) if 'bt' in self._sad else None
+
+
+    @property
+    def bn(self):
+        """
+        bn (backer TOAD number) property getter
+        Returns:
+            bn (int): of .bner.num from .ked["bt"]
+        """
+        return self.bner.num if self.bner is not None else None
+
+
+    @property
+    def berfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['b'].
+        One for each backer (witness).
+        berfers property getter
+        """
+        if "b" in self._sad:  # inception establishment event
+            backer = self._sad["b"]
+        else:  # non-establishment event
+            backer = []
+
+        return [Verfer(qb64=backer) for backer in backer]
+
+
+    #Properties for delegated Serders ilks in (dip, drt)
+    @property
+    def delpre(self):
+        """
+        Returns:
+           delpre (str): qb64  of .sad["di"] delegator ID prefix property getter
+        """
+        return self._sad["di"] if "di" in self._sad else None
+
+
+    @property
+    def delpreb(self):
+        """
+        Returns:
+        delpreb (bytes): qb64b  of .delpre property getter as bytes
+        """
+        return self.delpre.encode("utf-8") if self.delpre is not None else None
+
+
+    #Properties for state Serder ilk is None
     @property
     def fner(self):
         """
@@ -1095,7 +1146,7 @@ class SerderKERI(Serder):
             (Number): of ._sad["f"] hex number str converted  (state message)
         """
         # auto converts hex num str to int
-        return Number(num=self._sad["f"])  if "f" in self._sad else None
+        return Number(num=self._sad["f"]) if "f" in self._sad else None
 
 
     @property
@@ -1105,6 +1156,6 @@ class SerderKERI(Serder):
         Returns:
             fn (int): of .fner.num from ._sad["f"]
         """
-        return (self.fner.num)
+        return self.fner.num if self.fner is not None else None
 
 

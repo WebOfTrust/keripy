@@ -595,7 +595,8 @@ def incept(keys,
         kind (str): serialization kind from Serials
         code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
-            not hex str when numeric threshold
+            not hex str when numeric threshold. Most compact JSON representation
+            when Numbers are small because no quotes. Number accepts both.
         delpre (str | None): delegator identifier prefix qb64. When not None
             makes this a msg type "dip", delegated inception event.
     """
