@@ -1049,7 +1049,6 @@ def state(pre,
     }
 
     "di": "" when not delegated
-    "r": ""  when no route
     """
     vs = versify(version=version, kind=kind, size=0)
 
@@ -1752,9 +1751,8 @@ class Kever:
         """
         for k in KSN_LABELS:
             if k not in state.ked:
-                raise ValidationError("Missing element = {} from {} event."
-                                      " evt = {}.".format(k, Ilks.ksn,
-                                                          state.pretty()))
+                raise ValidationError(f"Missing element = {k} from state."
+                                      f" = {state}.")
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
@@ -3785,6 +3783,7 @@ class Kevery:
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
         self.cues.append(dict(kin="keyStateSaved", serder=kserder))
+
 
     def updateEnd(self, keys, saider, allowed=None):
         """

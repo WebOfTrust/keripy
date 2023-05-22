@@ -20,8 +20,8 @@ from ..kering import (Versionage, Version, Vrsn_1_0,
                       VERRAWSIZE, VERFMT, VERFULLSIZE)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
-from .coring import MtrDex, DigDex, PreDex, Saids
-from .coring import Matter, Diger, Saider, Digestage
+from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
+from .coring import Matter, Saider, Verfer, Diger, Number
 
 from .. import help
 
@@ -158,6 +158,11 @@ class Serder:
                 {
                     Vrsn_1_0:
                     {
+                        None: Labelage(saids=[],
+                                   codes=[],
+                                   fields=['v', 'i', 's', 'p', 'd', 'f','dt',
+                                           'et', 'kt', 'k', 'nt', 'n', 'bt', 'b',
+                                           'c', 'ee', 'di']),
                         Ilks.icp: Labelage(saids=[Saids.d, Saids.i],
                                    codes=[DigDex.Blake3_256, DigDex.Blake3_256],
                                    fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
@@ -273,8 +278,11 @@ class Serder:
                 raise FieldError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # saider not verified
 
-            if strip:  # assumes raw is bytearray
-                del raw[:self._size]
+            if strip:  #only when raw is bytearray
+                try:
+                    del raw[:self._size]
+                except TypeError:
+                    pass  # ignore if bytes
 
             if verify:  # verify the said(s) provided in raw
                 try:
@@ -283,7 +291,7 @@ class Serder:
                     logger.error("Invalid raw for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
                     raise ValidationError(f"Invalid raw for Serder = "
-                                          f"{self.sad}.") from ex
+                                          f"{self._sad}.") from ex
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
@@ -314,7 +322,7 @@ class Serder:
                         logger.error("Invalid sad for Serder %s\n%s",
                                      self.pretty(), ex.args[0])
                         raise ValidationError(f"Invalid raw for Serder ="
-                                              f"{self.sad}.") from ex
+                                              f"{self._sad}.") from ex
 
         else:
             raise ValueError("Improper initialization need raw or sad or makify.")
@@ -363,24 +371,24 @@ class Serder:
 
         labels = self.Labels[self.proto][self.vrsn][self.ilk]  # get labelage
         # ensure required fields are in sad
-        fields = labels.fields  # all field labels
-        keys = list(self.sad)  # get list of keys of self.sad
+        fields = labels.fields  # all required field labels
+        keys = list(self._sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
-                del keys[key]  # remove non required fields
+                del keys[keys.index(key)]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
             raise MissingFieldError(f"Missing required fields = {fields}"
-                                    f" in sad = {self.sad}.")
+                                    f" in sad = {self._sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = labels.saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
-                                    f" in sad = {self.sad}.")
+                                    f" in sad = {self._sad}.")
 
-        sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
+        sad = self.sad  # make shallow copy so don't clobber original .sad
         labCodes = {}  # dict of codes keyed by label
         for label in saids:
             value = sad[label]
@@ -388,7 +396,7 @@ class Serder:
                 code = Matter(qb64=value).code
             except Exception as ex:
                 raise ValidationError(f"Invalid said field '{label}' in sad\n"
-                                      f" = {self.sad}.") from ex
+                                      f" = {self._sad}.") from ex
             labCodes[label] = code
 
             if code in DigDex:  # if digestive then fill with dummy
@@ -407,9 +415,9 @@ class Serder:
                 if length:
                     dkwa.update(length=length)
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                if dig != self.sad[label]:  # compare to original
+                if dig != self._sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = {self.sad}.")
+                                          f" = {self._sad}.")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)
@@ -461,16 +469,8 @@ class Serder:
 
 
         """
-        sproto = self.Proto  # default proto
-        svrsn = self.Vrsn  # default version
-        silk = self.Ilks[sproto]  # default ilk for given proto
-        skind = self.Kind  # default kind
-
-        if sad:  # not None or not empty dict
-            if 'v' not in sad:
-                raise SerializeError(f"missing version string field 'v'. in sad = "
-                                  f"{sad}.")
-
+        sproto = svrsn = skind = silk = None
+        if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
                 sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
             except ValueError as ex:
@@ -478,20 +478,18 @@ class Serder:
             else:
                 silk = sad.get('t')  # if not in get returns None which may be valid
 
+        if proto is None:
+            proto = sproto if sproto is not None else self.Proto
 
-        if proto is not None:
-            proto = proto
-            ilk = ilk if ilk is not None else self.Ilks[proto]
-        else:
-            proto = sproto
-            ilk = ilk if ilk is not None else silk
-        vrsn = vrsn if vrsn is not None else svrsn
-        kind = kind if kind is not None else skind
+        if vrsn is None:
+            vrsn = svrsn if svrsn is not None else self.Vrsn
 
+        if kind is None:
+            kind = skind if skind is not None else self.Kind
 
-        if self.Protocol and proto != self.Protocol:
-            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
-                                 f"{proto} instead.")
+        if ilk is None:
+            ilk = silk if silk is not None else self.Ilks[proto]
+
 
         if proto not in self.Labels:
             raise SerializeError(f"Invalid protocol type = {proto}.")
@@ -524,13 +522,16 @@ class Serder:
 
         # ensure required fields are in sad
         fields = labels.fields  # all field labels
+        for label in fields:  # ensure provided sad as all required fields
+            if label not in sad:
+                sad[label] = ''
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
-                del keys[key]  # remove non required fields
+                del keys[keys.index(key)]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
-            raise SerializeError(f"Missing one or more required fields = {fields}"
+            raise SerializeError(f"Mismatch required fields = {fields}"
                                           f" in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
@@ -602,8 +603,12 @@ class Serder:
         self._kind = kind
         self._size = size
         # primary said field label
-        label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-        self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+        try:
+            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+            self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+        except Exception:
+            self._saider = None  # no saidive field
+
 
 
     @classmethod
@@ -829,7 +834,7 @@ class Serder:
                 Except for old IoT hardware, modern implementations all
                 support IPv6 so 1024 is usually a safe value for payload.
         """
-        return json.dumps(self.sad, indent=1)[:size]
+        return json.dumps(self._sad, indent=1)[:size]
 
 
     @property
@@ -847,7 +852,7 @@ class Serder:
         Returns:
             sad (dict): serializable attribute dict (saidified data)
         """
-        return self._sad
+        return dict(self._sad)  # return copy
 
 
 
@@ -913,7 +918,7 @@ class Serder:
         Returns:
            said (str): qb64 said of .saider
         """
-        return self.saider.qb64
+        return self.saider.qb64 if self.saider else None
 
 
     @property
@@ -922,7 +927,7 @@ class Serder:
         Returns:
             saidb (bytes): qb64b of said  of .saider
         """
-        return self.saider.qb64b
+        return self.saider.qb64b if self.saider else None
 
 
     @property
@@ -931,7 +936,7 @@ class Serder:
         Returns:
             ilk (str): pracket type given by sad['t'] if any
         """
-        return self.sad.get('t')  # returns None if 't' not in sad
+        return self._sad.get('t')  # returns None if 't' not in sad
 
 
 
@@ -944,4 +949,154 @@ class SerderKERI(Serder):
     #override in subclass to enforce specific protocol
     Protocol = Protos.keri  # required protocol, None means any in Protos is ok
     Proto = Protos.keri  # default protocol type
+
+
+
+    def _verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        super(SerderKERI, self)._verify()
+
+        code = Matter(qb64=self.pre).code
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid identifier prefix code = {code}.")
+
+
+    @property
+    def pre(self):
+        """
+        Returns:
+           pre (str): qb64  of .sad["i"] identifier prefix property getter
+        """
+        return self._sad["i"]
+
+
+    @property
+    def preb(self):
+        """
+        Returns:
+        preb (bytes): qb64b  of .pre identifier prefix property getter as bytes
+        """
+        return self.pre.encode("utf-8")
+
+    @property
+    def ked(self):
+        """
+        Returns
+        ked (dict): key event dict property getter. Alias for .sad
+        """
+        return self.sad
+
+
+    @property
+    def estive(self):  # establishative
+        """ Returns True if Serder represents an establishment event """
+        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
+
+    @property
+    def verfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['k'].
+        One for each key.
+        verfers property getter
+        """
+        if "k" in self._sad:  # establishment event
+            keys = self.ked["k"]
+        else:  # non-establishment event
+            keys = []
+
+        return [Verfer(qb64=key) for key in keys]
+
+    @property
+    def digers(self):
+        """
+        Returns list of Diger instances as converted from ._sad['n'].
+        One for each next key digests.
+        digers property getter
+        """
+        if "n" in self._sad:
+            digs = self._sad["n"]
+        else:
+            digs = []
+
+        return [Diger(qb64=dig) for dig in digs]
+
+    @property
+    def werfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['b'].
+        One for each backer (witness).
+        werfers property getter
+        """
+        if "b" in self._sad:  # inception establishment event
+            wits = self._sad["b"]
+        else:  # non-establishment event
+            wits = []
+
+        return [Verfer(qb64=wit) for wit in wits]
+
+    @property
+    def tholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['kt'] or None if missing.
+
+        """
+        return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
+
+    @property
+    def ntholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['nt'] or None if missing.
+
+        """
+        return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
+
+    @property
+    def sner(self):
+        """
+        sner (Number of sequence number) property getter
+        Returns:
+            (Number): of ._sad["s"] hex number str converted
+        """
+        return Number(num=self._sad["s"])  # auto converts hex num str to int
+
+
+    @property
+    def sn(self):
+        """
+        sn (sequence number) property getter
+        Returns:
+            sn (int): of .sner.num from .ked["s"]
+        """
+        return (self.sner.num)
+
+
+    @property
+    def fner(self):
+        """
+        fner (Number of first seen ordinal) property getter
+        Returns:
+            (Number): of ._sad["f"] hex number str converted  (state message)
+        """
+        # auto converts hex num str to int
+        return Number(num=self._sad["f"])  if "f" in self._sad else None
+
+
+    @property
+    def fn(self):
+        """
+        fn (first seen ordinal number) property getter
+        Returns:
+            fn (int): of .fner.num from ._sad["f"]
+        """
+        return (self.fner.num)
+
 
