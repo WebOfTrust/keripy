@@ -1355,6 +1355,13 @@ def test_serderkeri():
 
     """End Test"""
 
+def test_serderacdc():
+    """Test SerderACDC"""
+
+
+    """End Test"""
+
 if __name__ == "__main__":
     test_serder()
     test_serderkeri()
+    test_serderacdc()
