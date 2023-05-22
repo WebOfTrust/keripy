@@ -20,8 +20,8 @@ from ..kering import (Versionage, Version, Vrsn_1_0,
                       VERRAWSIZE, VERFMT, VERFULLSIZE)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
-from .coring import MtrDex, DigDex, PreDex
-from .coring import Matter, Diger, Saider, Digestage
+from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
+from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
 
 from .. import help
 
@@ -158,17 +158,58 @@ class Serder:
                 {
                     Vrsn_1_0:
                     {
-                        Ilks.icp: Labelage(saids=['d', 'i'],
+                        None: Labelage(saids=[],
+                                   codes=[],
+                                   fields=['v', 'i', 's', 'p', 'd', 'f','dt',
+                                           'et', 'kt', 'k', 'nt', 'n', 'bt', 'b',
+                                           'c', 'ee', 'di']),
+                        Ilks.icp: Labelage(saids=[Saids.d, Saids.i],
                                    codes=[DigDex.Blake3_256, DigDex.Blake3_256],
                                    fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
                                            'nt', 'n', 'bt', 'b', 'c', 'a']),
+                        Ilks.rot: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
+                        Ilks.ixn: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
+                        Ilks.dip: Labelage(saids=[Saids.d, Saids.i],
+                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
+                                           'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
+                        Ilks.drt: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
+                                     'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
+                        Ilks.rct: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's']),
+                        Ilks.rct: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'i', 's']),
+                        Ilks.qry: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
+                        Ilks.rpy: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'a']),
+                        Ilks.pro: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
+                        Ilks.bar: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'a']),
+                        Ilks.exn: Labelage(saids=[Saids.d],
+                                   codes=[DigDex.Blake3_256],
+                                   fields=['v', 't', 'd', 'dt', 'r', 'q', 'a']),
                     },
                 },
                 Protos.acdc:
                 {
                     Vrsn_1_0:
                     {
-                        None: Labelage(saids=['d'],
+                        None: Labelage(saids=[Saids.d],
                                    codes=[DigDex.Blake3_256],
                                    fields=['v','d', 'i', 's']),
                     }
@@ -232,13 +273,19 @@ class Serder:
             self._kind = kind
             self._size = size
             # primary said field label
-            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-            if label not in self._sad:
-                raise FieldError(f"Missing primary said field in {self._sad}.")
-            self._saider = Saider(qb64=self._sad[label]) # saider not verified
+            try:
+                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                if label not in self._sad:
+                    raise FieldError(f"Missing primary said field in {self._sad}.")
+                self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+            except Exception:
+                self._saider = None  # no saidive field
 
-            if strip:  # assumes raw is bytearray
-                del raw[:self._size]
+            if strip:  #only when raw is bytearray
+                try:
+                    del raw[:self._size]
+                except TypeError:
+                    pass  # ignore if bytes
 
             if verify:  # verify the said(s) provided in raw
                 try:
@@ -247,7 +294,7 @@ class Serder:
                     logger.error("Invalid raw for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
                     raise ValidationError(f"Invalid raw for Serder = "
-                                          f"{self.sad}.") from ex
+                                          f"{self._sad}.") from ex
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
@@ -266,10 +313,13 @@ class Serder:
                 self._kind = kind
                 self._size = size
                 # primary said field label
-                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-                if label not in self._sad:
-                    raise DeserializeError(f"Missing primary said field in {self._sad}.")
-                self._saider = Saider(qb64=self._sad[label]) # saider not verified
+                try:
+                    label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                    if label not in self._sad:
+                        raise DeserializeError(f"Missing primary said field in {self._sad}.")
+                    self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                except Exception:
+                    self._saider = None  # no saidive field
 
                 if verify:  # verify the said(s) provided in sad
                     try:
@@ -277,8 +327,8 @@ class Serder:
                     except Exception as ex:
                         logger.error("Invalid sad for Serder %s\n%s",
                                      self.pretty(), ex.args[0])
-                        raise ValidationError(f"Invalid raw for Serder ="
-                                              f"{self.sad}.") from ex
+                        raise ValidationError(f"Invalid sad for Serder ="
+                                              f"{self._sad}.") from ex
 
         else:
             raise ValueError("Improper initialization need raw or sad or makify.")
@@ -327,24 +377,24 @@ class Serder:
 
         labels = self.Labels[self.proto][self.vrsn][self.ilk]  # get labelage
         # ensure required fields are in sad
-        fields = labels.fields  # all field labels
-        keys = list(self.sad)  # get list of keys of self.sad
+        fields = labels.fields  # all required field labels
+        keys = list(self._sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
-                del keys[key]  # remove non required fields
+                del keys[keys.index(key)]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
             raise MissingFieldError(f"Missing required fields = {fields}"
-                                    f" in sad = {self.sad}.")
+                                    f" in sad = {self._sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
         saids = labels.saids  # saidive field labels
         if not (set(saids) <= set(fields)):
             raise MissingFieldError(f"Missing required said fields = {saids}"
-                                    f" in sad = {self.sad}.")
+                                    f" in sad = {self._sad}.")
 
-        sad = dict(self.sad)  # make shallow copy so don't clobber original .sad
+        sad = self.sad  # make shallow copy so don't clobber original .sad
         labCodes = {}  # dict of codes keyed by label
         for label in saids:
             value = sad[label]
@@ -352,7 +402,7 @@ class Serder:
                 code = Matter(qb64=value).code
             except Exception as ex:
                 raise ValidationError(f"Invalid said field '{label}' in sad\n"
-                                      f" = {self.sad}.") from ex
+                                      f" = {self._sad}.") from ex
             labCodes[label] = code
 
             if code in DigDex:  # if digestive then fill with dummy
@@ -371,9 +421,9 @@ class Serder:
                 if length:
                     dkwa.update(length=length)
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
-                if dig != self.sad[label]:  # compare to original
+                if dig != self._sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = {self.sad}.")
+                                          f" = {self._sad}.")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)
@@ -425,16 +475,8 @@ class Serder:
 
 
         """
-        sproto = self.Proto  # default proto
-        svrsn = self.Vrsn  # default version
-        silk = self.Ilks[sproto]  # default ilk for given proto
-        skind = self.Kind  # default kind
-
-        if sad:  # not None or not empty dict
-            if 'v' not in sad:
-                raise SerializeError(f"missing version string field 'v'. in sad = "
-                                  f"{sad}.")
-
+        sproto = svrsn = skind = silk = None
+        if sad and 'v' in sad:  # attempt to get from vs in sad
             try:  # extract version string elements as defaults if provided
                 sproto, svrsn, skind, _ = deversify(sad["v"], version=version)
             except ValueError as ex:
@@ -442,20 +484,18 @@ class Serder:
             else:
                 silk = sad.get('t')  # if not in get returns None which may be valid
 
+        if proto is None:
+            proto = sproto if sproto is not None else self.Proto
 
-        if proto is not None:
-            proto = proto
-            ilk = ilk if ilk is not None else self.Ilks[proto]
-        else:
-            proto = sproto
-            ilk = ilk if ilk is not None else silk
-        vrsn = vrsn if vrsn is not None else svrsn
-        kind = kind if kind is not None else skind
+        if vrsn is None:
+            vrsn = svrsn if svrsn is not None else self.Vrsn
 
+        if kind is None:
+            kind = skind if skind is not None else self.Kind
 
-        if self.Protocol and proto != self.Protocol:
-            raise SerializeError(f"Expected protocol = {self.Protocol}, got "
-                                 f"{proto} instead.")
+        if ilk is None:
+            ilk = silk if silk is not None else self.Ilks[proto]
+
 
         if proto not in self.Labels:
             raise SerializeError(f"Invalid protocol type = {proto}.")
@@ -488,13 +528,16 @@ class Serder:
 
         # ensure required fields are in sad
         fields = labels.fields  # all field labels
+        for label in fields:  # ensure provided sad as all required fields
+            if label not in sad:
+                sad[label] = ''
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in fields:
-                del keys[key]  # remove non required fields
+                del keys[keys.index(key)]  # remove non required fields
 
         if fields != keys:  # forces ordered appearance of labels in .sad
-            raise SerializeError(f"Missing one or more required fields = {fields}"
+            raise SerializeError(f"Mismatch required fields = {fields}"
                                           f" in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
@@ -566,8 +609,14 @@ class Serder:
         self._kind = kind
         self._size = size
         # primary said field label
-        label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-        self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+        try:
+            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+            if label not in self._sad:
+                raise SerializeError(f"Missing primary said field in {self._sad}.")
+            self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+        except Exception:
+            self._saider = None  # no saidive field
+
 
 
     @classmethod
@@ -793,7 +842,7 @@ class Serder:
                 Except for old IoT hardware, modern implementations all
                 support IPv6 so 1024 is usually a safe value for payload.
         """
-        return json.dumps(self.sad, indent=1)[:size]
+        return json.dumps(self._sad, indent=1)[:size]
 
 
     @property
@@ -811,8 +860,7 @@ class Serder:
         Returns:
             sad (dict): serializable attribute dict (saidified data)
         """
-        return self._sad
-
+        return dict(self._sad)  # return copy
 
 
     @property
@@ -843,15 +891,6 @@ class Serder:
         """
         return self._vrsn
 
-    #@property
-    #def version(self):
-        #"""version property getter
-
-        #Returns:
-            #version (Versionage): instance
-        #"""
-        #return self._vrsn
-
 
     @property
     def size(self):
@@ -877,7 +916,7 @@ class Serder:
         Returns:
            said (str): qb64 said of .saider
         """
-        return self.saider.qb64
+        return self.saider.qb64 if self.saider else None
 
 
     @property
@@ -886,7 +925,7 @@ class Serder:
         Returns:
             saidb (bytes): qb64b of said  of .saider
         """
-        return self.saider.qb64b
+        return self.saider.qb64b if self.saider else None
 
 
     @property
@@ -895,7 +934,7 @@ class Serder:
         Returns:
             ilk (str): pracket type given by sad['t'] if any
         """
-        return self.sad.get('t')  # returns None if 't' not in sad
+        return self._sad.get('t')  # returns None if 't' not in sad
 
 
 
@@ -909,3 +948,264 @@ class SerderKERI(Serder):
     Protocol = Protos.keri  # required protocol, None means any in Protos is ok
     Proto = Protos.keri  # default protocol type
 
+
+
+    def _verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        super(SerderKERI, self)._verify()
+
+        try:
+            code = Matter(qb64=self.pre).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid identifier prefix = "
+                                  f"{self.pre}.") from ex
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid identifier prefix code = {code}.")
+
+
+    @property
+    def estive(self):  # establishative
+        """ Returns True if Serder represents an establishment event """
+        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+
+
+    @property
+    def ked(self):
+        """
+        Returns:
+            ked (dict): key event dict property getter. Alias for .sad
+        """
+        return self.sad
+
+
+    @property
+    def pre(self):
+        """
+        Returns:
+           pre (str): qb64  of .sad["i"] identifier prefix property getter
+        """
+        return self._sad["i"]
+
+
+    @property
+    def preb(self):
+        """
+        Returns:
+        preb (bytes): qb64b  of .pre identifier prefix property getter as bytes
+        """
+        return self.pre.encode("utf-8")
+
+
+    @property
+    def sner(self):
+        """
+        sner (Number of sequence number) property getter
+        Returns:
+            (Number): of ._sad["s"] hex number str converted
+        """
+        return Number(num=self._sad["s"])  # auto converts hex num str to int
+
+
+    @property
+    def sn(self):
+        """
+        sn (sequence number) property getter
+        Returns:
+            sn (int): of .sner.num from .sad["s"]
+        """
+        return (self.sner.num)
+
+    @property
+    def seals(self):
+        """
+        seals property getter
+        Returns:
+            seals (list): from ._sad["a"]
+        """
+        return self._sad["a"]
+
+    #Properties of inceptive Serders ilks in (icp, dip)
+
+    @property
+    def traits(self):
+        """
+        traits property getter  (config traits)
+        Returns:
+            traits (list): from ._sad["c"]
+        """
+        return self._sad.get("c")
+
+
+    #Properties of estive Serders ilks in  (icp, rot, dip, drt)
+    @property
+    def tholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['kt'] or None if missing.
+
+        """
+        return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
+
+
+    @property
+    def verfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['k'].
+        One for each key.
+        verfers property getter
+        """
+        keys = self._sad.get("k")
+        return [Verfer(qb64=key) for key in keys] if keys is not None else None
+
+
+    @property
+    def ntholder(self):
+        """
+        Returns Tholder instance as converted from ._sad['nt'] or None if missing.
+
+        """
+        return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
+
+
+    @property
+    def ndigers(self):
+        """
+        Returns list of Diger instances as converted from ._sad['n'].
+        One for each next key digests.
+        ndigers property getter
+        """
+        digs = self._sad.get("n")
+        return [Diger(qb64=dig) for dig in digs] if digs is not None else None
+
+
+    @property
+    def bner(self):
+        """
+        bner (Number of backer TOAD threshold of accountable duplicity property getter
+        Returns:
+            (Number): of ._sad["bt"] hex number str converted. Auto converts
+            hex num str to int
+        """
+        return Number(num=self._sad["bt"]) if 'bt' in self._sad else None
+
+
+    @property
+    def bn(self):
+        """
+        bn (backer TOAD number) property getter
+        Returns:
+            bn (int): of .bner.num from .ked["bt"]
+        """
+        return self.bner.num if self.bner is not None else None
+
+
+    @property
+    def berfers(self):
+        """
+        Returns list of Verfer instances as converted from ._sad['b'].
+        One for each backer (witness).
+        berfers property getter
+        """
+        backs = self._sad.get("b")
+        return [Verfer(qb64=back) for back in backs] if backs is not None else None
+
+
+    #Properties for delegated Serders ilks in (dip, drt)
+    @property
+    def delpre(self):
+        """
+        Returns:
+           delpre (str): qb64  of .sad["di"] delegator ID prefix property getter
+        """
+        return self._sad.get("di")
+
+
+    @property
+    def delpreb(self):
+        """
+        Returns:
+        delpreb (bytes): qb64b  of .delpre property getter as bytes
+        """
+        return self.delpre.encode("utf-8") if self.delpre is not None else None
+
+
+    #Properties for state Serder ilk is None
+    @property
+    def fner(self):
+        """
+        fner (Number of first seen ordinal) property getter
+        Returns:
+            (Number): of ._sad["f"] hex number str converted  (state message)
+        """
+        # auto converts hex num str to int
+        return Number(num=self._sad["f"]) if "f" in self._sad else None
+
+
+    @property
+    def fn(self):
+        """
+        fn (first seen ordinal number) property getter
+        Returns:
+            fn (int): of .fner.num from ._sad["f"]
+        """
+        return self.fner.num if self.fner is not None else None
+
+
+class SerderACDC(Serder):
+    """SerderACDC is Serder subclass with Labels for ACDC packet types (ilks) and
+       properties for exposing field values of ACDC messages
+
+       See docs for Serder
+    """
+    #override in subclass to enforce specific protocol
+    Protocol = Protos.acdc  # required protocol, None means any in Protos is ok
+    Proto = Protos.acdc  # default protocol type
+
+
+
+    def _verify(self):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        super(SerderACDC, self)._verify()
+
+        try:
+            code = Matter(qb64=self.issuer).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid issuer AID = "
+                                  f"{self.issuer}.") from ex
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid issuer AID code = {code}.")
+
+
+    @property
+    def issuer(self):
+        """
+        Returns:
+           issuer (str): qb64  of .sad["i"] issuer AID property getter
+        """
+        return self._sad.get('i')
+
+
+    @property
+    def issuerb(self):
+        """
+        Returns:
+        issuerb (bytes): qb64b  of .issuer property getter as bytes
+        """
+        return self.issuer.encode("utf-8") if self.issuer is not None else None
+
+    # ToDo Schemer property getter. Schemer object

@@ -61,7 +61,10 @@ Vstrings = Serialage(json=versify(kind=Serials.json, size=0),
                      mgpk=versify(kind=Serials.mgpk, size=0),
                      cbor=versify(kind=Serials.cbor, size=0))
 
+# SAID field labels
+Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
+Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
 def sizeify(ked, kind=None, version=Version):
     """
@@ -3394,10 +3397,7 @@ class Prefixer(Matter):
 
         return True
 
-# SAID field labels
-Saidage = namedtuple("Saidage", "dollar at id_ i d")
 
-Saids = Saidage(dollar="$id", at="@id", id_="id", i="i", d="d")
 
 # digest algorithm  klas, digest size (not default), digest length
 # size and length are needed for some digest types as function parameters
@@ -5459,6 +5459,9 @@ class Tholder:
             self._processLimen(limen=limen, **kwa)  # kwa for strip
 
         elif sith is not None:
+            if isinstance(sith, str) and not sith:  # empty str
+                raise EmptyMaterialError("Empty threshold expression.")
+
             self._processSith(sith=sith)
 
         else:

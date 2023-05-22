@@ -95,8 +95,6 @@ def test_ilks():
     assert Ilks.drt == 'drt'
     assert 'rct' in Ilks
     assert Ilks.rct == 'rct'
-    assert 'ksn' in Ilks
-    assert Ilks.ksn == 'ksn'
     assert 'qry' in Ilks
     assert Ilks.qry == 'qry'
     assert 'rpy' in Ilks

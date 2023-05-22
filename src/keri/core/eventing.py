@@ -595,7 +595,8 @@ def incept(keys,
         kind (str): serialization kind from Serials
         code (str | None): derivation code for computed prefix
         intive (bool): True means sith, nsith, and toad are serialized as ints
-            not hex str when numeric threshold
+            not hex str when numeric threshold. Most compact JSON representation
+            when Numbers are small because no quotes. Number accepts both.
         delpre (str | None): delegator identifier prefix qb64. When not None
             makes this a msg type "dip", delegated inception event.
     """
@@ -1049,7 +1050,6 @@ def state(pre,
     }
 
     "di": "" when not delegated
-    "r": ""  when no route
     """
     vs = versify(version=version, kind=kind, size=0)
 
@@ -1184,6 +1184,7 @@ def query(route="",
     {
       "v" : "KERI10JSON00011c_",
       "t" : "qry",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "dt": "2020-08-22T17:50:12.988921+00:00",
       "r" : "logs",
       "rr": "log/processor",
@@ -1270,20 +1271,44 @@ def reply(route="",
 
 
 def prod(route="",
-         replyRoute="",
-         pre=None,
-         digs=None,
-         version=Version,
-         kind=Serials.json          ):
+          replyRoute="",
+          query=None,
+          stamp=None,
+          version=Version,
+          kind=Serials.json):
     """
     Returns serder of prod, 'pro', msg to request disclosure via bare, 'bar' msg
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
     by all SAIDs given in digs list.
-    TBD
 
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "pro",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "data",
+      "rr": "data/processor",
+      "q":
+      {
+        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+      }
+    }
 
     """
-    pass
+    vs = versify(version=version, kind=kind, size=0)
+    ilk = Ilks.pro
+
+    ked = dict(v=vs,  # version string
+               t=ilk,
+               d="",
+               dt=stamp if stamp is not None else helping.nowIso8601(),
+               r=route,  # resource type for single item request
+               rr=replyRoute,
+               q=query,
+               )
+    _, ked = coring.Saider.saidify(sad=ked)
+
+    return Serder(ked=ked)  # return serialized ked
 
 def bare(route="",
            data=None,
@@ -1294,8 +1319,8 @@ def bare(route="",
     Utility function to automate creation of unhiding (bareing) messages for
     disclosure of sealed data associated with anchored seals in a KEL.
     Reference to anchoring seal is provided as an attachment to bare message.
-    Bare 'bar' message is a SAD item with an associated derived SAID in its
-    'd' field.
+    Bare 'bar' message is a SAD item with an associated derived SAID in a 'd'
+    field in side its 'a' block.
 
      Parameters:
         route is route path string that indicates data flow handler (behavior)
@@ -1309,7 +1334,6 @@ def bare(route="",
       "t" : "bar",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "r" : "sealed/processor",
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
       "a" :
         {
           "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
@@ -1728,9 +1752,8 @@ class Kever:
         """
         for k in KSN_LABELS:
             if k not in state.ked:
-                raise ValidationError("Missing element = {} from {} event."
-                                      " evt = {}.".format(k, Ilks.ksn,
-                                                          state.pretty()))
+                raise ValidationError(f"Missing element = {k} from state."
+                                      f" = {state}.")
 
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
@@ -3761,6 +3784,7 @@ class Kevery:
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
         self.cues.append(dict(kin="keyStateSaved", serder=kserder))
+
 
     def updateEnd(self, keys, saider, allowed=None):
         """
