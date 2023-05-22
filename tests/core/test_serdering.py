@@ -648,6 +648,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == ""
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -686,6 +687,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == ""
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -718,6 +720,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == ""
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -808,6 +811,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -844,6 +848,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -877,6 +882,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     with pytest.raises(kering.EmptyMaterialError):
         assert serder.tholder.sith == ''
     assert [verfer.qb64 for verfer in serder.verfers] == []
@@ -926,6 +932,7 @@ def test_serderkeri():
     assert serder.sner.num == 1
     assert serder.sn == 1
     assert serder.seals == []
+    assert serder.traits == None
     assert serder.tholder.sith == '1'
     assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '1'
@@ -954,6 +961,7 @@ def test_serderkeri():
     assert serder.sner.num == 1
     assert serder.sn == 1
     assert serder.seals == []
+    assert serder.traits == None
     assert serder.tholder.sith == '1'
     assert [verfer.qb64 for verfer in serder.verfers] == ['DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx']
     assert serder.ntholder.sith == '1'
@@ -993,6 +1001,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     assert serder.tholder == None
     assert serder.verfers == None
     assert serder.ntholder == None
@@ -1029,6 +1038,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     assert serder.tholder == None
     assert serder.verfers == None
     assert serder.ntholder == None
@@ -1061,6 +1071,7 @@ def test_serderkeri():
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == ""
+    assert serder.traits == None
     assert serder.tholder == None
     assert serder.verfers == None
     assert serder.ntholder == None
@@ -1104,6 +1115,7 @@ def test_serderkeri():
     assert serder.sner.num == 2
     assert serder.sn == 2
     assert serder.seals == []
+    assert serder.traits == None
     assert serder.tholder == None
     assert serder.verfers == None
     assert serder.ntholder == None
@@ -1132,6 +1144,7 @@ def test_serderkeri():
     assert serder.sner.num == 2
     assert serder.sn == 2
     assert serder.seals == []
+    assert serder.traits == None
     assert serder.tholder == None
     assert serder.verfers == None
     assert serder.ntholder == None
