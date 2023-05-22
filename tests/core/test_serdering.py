@@ -537,6 +537,53 @@ def test_serder():
     assert serder.sad == sad
 
 
+    # Test KERI JSON with makify defaults for self bootstrap with ilk icp
+    serder = Serder(makify=True, ilk=kering.Ilks.rot)  # make with defaults
+    assert serder.sad == {'v': 'KERI10JSON0000af_',
+                            't': 'rot',
+                            'd': 'EIg9cWt662gJKnn4FRuKAvxOOKAATCt_THBF9TuM2smx',
+                            'i': '',
+                            's': '',
+                            'p': '',
+                            'kt': '',
+                            'k': '',
+                            'nt': '',
+                            'n': '',
+                            'bt': '',
+                            'b': '',
+                            'br': '',
+                            'ba': '',
+                            'a': ''}
+    assert serder.raw == (b'{"v":"KERI10JSON0000af_","t":"rot","d":"EIg9cWt662gJKnn4FRuKAvxOOKAATCt_THBF'
+                          b'9TuM2smx","i":"","s":"","p":"","kt":"","k":"","nt":"","n":"","bt":"","b":"",'
+                          b'"br":"","ba":"","a":""}')
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 175
+    assert serder.kind == kering.Serials.json
+    assert serder.said == 'EIg9cWt662gJKnn4FRuKAvxOOKAATCt_THBF9TuM2smx'
+    assert serder.ilk == kering.Ilks.rot
+
+    sad = serder.sad
+    raw = serder.raw
+
+    serder = Serder(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 175
+    assert serder.kind == kering.Serials.json
+    assert serder.said == 'EIg9cWt662gJKnn4FRuKAvxOOKAATCt_THBF9TuM2smx'
+    assert serder.ilk == kering.Ilks.rot
+
+    serder = Serder(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 175
+    assert serder.kind == kering.Serials.json
+    assert serder.said == 'EIg9cWt662gJKnn4FRuKAvxOOKAATCt_THBF9TuM2smx'
+    assert serder.ilk == kering.Ilks.rot
 
 
     # ToDo: create malicious raw values to test verify more thoroughly
