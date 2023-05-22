@@ -392,7 +392,35 @@ def test_serder():
                         'c': '',
                         'ee': '',
                         'di': ''}
+    assert serder.raw == (b'{"v":"KERI10JSON000090_","i":"","s":"","p":"","d":"","f":"","dt":"","et":"",'
+                          b'"kt":"","k":"","nt":"","n":"","bt":"","b":"","c":"","ee":"","di":""}')
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 144
+    assert serder.kind == kering.Serials.json
+    assert serder.said == None
+    assert serder.ilk == None
 
+    sad = serder.sad
+    raw = serder.raw
+
+    serder = Serder(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 144
+    assert serder.kind == kering.Serials.json
+    assert serder.said == None
+    assert serder.ilk == None
+
+    serder = Serder(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == 144
+    assert serder.kind == kering.Serials.json
+    assert serder.said == None
+    assert serder.ilk == None
 
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp

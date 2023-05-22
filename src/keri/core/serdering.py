@@ -273,10 +273,13 @@ class Serder:
             self._kind = kind
             self._size = size
             # primary said field label
-            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-            if label not in self._sad:
-                raise FieldError(f"Missing primary said field in {self._sad}.")
-            self._saider = Saider(qb64=self._sad[label]) # saider not verified
+            try:
+                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                if label not in self._sad:
+                    raise FieldError(f"Missing primary said field in {self._sad}.")
+                self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+            except Exception:
+                self._saider = None  # no saidive field
 
             if strip:  #only when raw is bytearray
                 try:
@@ -310,10 +313,13 @@ class Serder:
                 self._kind = kind
                 self._size = size
                 # primary said field label
-                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
-                if label not in self._sad:
-                    raise DeserializeError(f"Missing primary said field in {self._sad}.")
-                self._saider = Saider(qb64=self._sad[label]) # saider not verified
+                try:
+                    label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                    if label not in self._sad:
+                        raise DeserializeError(f"Missing primary said field in {self._sad}.")
+                    self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                except Exception:
+                    self._saider = None  # no saidive field
 
                 if verify:  # verify the said(s) provided in sad
                     try:
@@ -605,6 +611,8 @@ class Serder:
         # primary said field label
         try:
             label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+            if label not in self._sad:
+                raise SerializeError(f"Missing primary said field in {self._sad}.")
             self._saider = Saider(qb64=self._sad[label]) # implicitly verified
         except Exception:
             self._saider = None  # no saidive field
