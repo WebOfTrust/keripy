@@ -40,10 +40,56 @@ Example:
 Labelage = namedtuple("Labelage", "saids codes fields")  #values are lists of str
 
 
+"""
+Reapage
+    proto (str): protocol type value of Protos examples 'KERI', 'ACDC'
+    major (str): single char hex string of major version number
+    minor (str): single char hex string of minor version number
+    kind (str): serialization value of Serials examples 'JSON', 'CBOR', 'MGPK'
+
+"""
+Reapage = namedtuple("Reapage", "proto major minor kind size")
+
 
 class Serdery:
-    """Serder factory class for generating serder instances from streams.
+    """Serder factory class for generating serder instances by protocol type
+    from an incoming message stream.
+
+
     """
+
+    def reap(self, ims, *, version=Version):
+        """Extract and return Serder subclass based on protocol type reaped from
+        version string inside serialized raw of Serder.
+
+        Returns:
+            serder (Serder): instance of Serder subclass where subclass is
+                determined by the protocol type of its version string.
+
+        Parameters:
+            ims (bytearray) of serialized incoming message stream. Assumes start
+                of stream is raw Serder.
+            version (Versionage | None): instance supported protocol version
+                None means do not enforce a supported version
+        """
+        if len(ims) < Serder.InhaleSize:
+            raise ShortageError(f"Need more raw bytes for Serdery to reap.")
+
+        match = Rever.search(ims)  # Rever regex takes bytes/bytearray not str
+        if not match or match.start() > Serder.MaxVSOffset:
+            raise VersionError(f"Invalid version string for Serder raw = "
+                               f"{ims[: Serder.InhaleSize]}.")
+
+        reaped = Reapage(*match.group("proto", "major", "minor", "kind", "size"))
+
+        if reaped.proto == Protos.keri.encode("utf-8"):
+            return SerderKERI(raw=ims, strip=True, version=version, reaped=reaped)
+        elif reaped.proto == Protos.acdc.encode("utf-8"):
+            return SerderACDC(raw=ims, strip=True, version=version, reaped=reaped)
+        else:
+            raise ProtocolError(f"Unsupported protocol type = {reaped.proto}.")
+
+
 
 
 class Serder:
@@ -223,7 +269,7 @@ class Serder:
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
-                 verify=True, makify=False,
+                 reaped=None, verify=True, makify=False,
                  proto=None, vrsn=None, kind=None, ilk=None, codes=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
@@ -243,6 +289,10 @@ class Serder:
                 Assumes that raw is bytearray when strip is True.
             version (Versionage | None): instance supported protocol version
                 None means do not enforce a supported version
+            reaped (Reapage | None): instance of deconstructed version string
+                elements. If none or empty ignore otherwise assume that raw
+                already had its version string extracted (reaped) into the
+                elements of reaped.
             verify (bool): True means verify said(s) of given raw or sad.
                 Raises ValidationError if verification fails
                 Ignore when raw not provided or when raw and saidify is True
@@ -265,7 +315,9 @@ class Serder:
 
         if raw:  # deserialize raw using property setter
             # self._inhale works because it only references class attributes
-            sad, proto, vrsn, kind, size = self._inhale(raw=raw, version=version)
+            sad, proto, vrsn, kind, size = self._inhale(raw=raw,
+                                                        version=version,
+                                                        reaped=reaped)
             self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
             self._sad = sad
             self._proto = proto
@@ -620,7 +672,7 @@ class Serder:
 
 
     @classmethod
-    def _inhale(clas, raw, version=Version):
+    def _inhale(clas, raw, version=Version, reaped=None):
         """Deserializes raw.
         Parses serilized event ser of serialization kind and assigns to
         instance attributes and returns tuple of associated elements.
@@ -639,24 +691,32 @@ class Serder:
         Parameters:
             raw (bytes): serialized sad message
             version (Versionage): instance supported protocol version
+            reaped (Reapage | None): instance of deconstructed version string
+                elements. If none or empty ignore otherwise assume that raw
+                already had its version string extracted (reaped) into the
+                elements of reaped.
 
         Note:
             loads and jumps of json use str whereas cbor and msgpack use bytes
             Assumes only supports Version
 
         """
-        if len(raw) < clas.InhaleSize:
-            raise ShortageError(f"Need more raw bytes for Serder to inhale.")
+        if reaped:
+            proto, major, minor, kind, size = reaped  # tuple unpack
+        else:
+            if len(raw) < clas.InhaleSize:
+                raise ShortageError(f"Need more raw bytes for Serder to inhale.")
 
-        match = Rever.search(raw)  # Rever's regex takes bytes
-        if not match or match.start() > clas.MaxVSOffset:
-            raise VersionError(f"Invalid version string in raw = {raw}.")
+            match = Rever.search(raw)  # Rever regex takes bytes/bytearray not str
+            if not match or match.start() > clas.MaxVSOffset:
+                raise VersionError(f"Invalid version string in raw = "
+                                   f"{raw[:clas.InhaleSize]}.")
 
-        proto, major, minor, kind, size = match.group("proto",
-                                                      "major",
-                                                      "minor",
-                                                      "kind",
-                                                      "size")
+            proto, major, minor, kind, size = match.group("proto",
+                                                          "major",
+                                                          "minor",
+                                                          "kind",
+                                                          "size")
 
         proto = proto.decode("utf-8")
         if proto not in Protos:
@@ -950,7 +1010,7 @@ class SerderKERI(Serder):
 
 
 
-    def _verify(self):
+    def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
@@ -959,7 +1019,7 @@ class SerderKERI(Serder):
         Raises a ValidationError (or subclass) if any verification fails
 
         """
-        super(SerderKERI, self)._verify()
+        super(SerderKERI, self)._verify(**kwa)
 
         try:
             code = Matter(qb64=self.pre).code
@@ -1170,7 +1230,7 @@ class SerderACDC(Serder):
 
 
 
-    def _verify(self):
+    def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
@@ -1179,20 +1239,20 @@ class SerderACDC(Serder):
         Raises a ValidationError (or subclass) if any verification fails
 
         """
-        super(SerderACDC, self)._verify()
+        super(SerderACDC, self)._verify(**kwa)
 
         try:
-            code = Matter(qb64=self.issuer).code
+            code = Matter(qb64=self.isr).code
         except Exception as ex:
             raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.issuer}.") from ex
+                                  f"{self.isr}.") from ex
 
         if code not in PreDex:
             raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
     @property
-    def issuer(self):
+    def isr(self):
         """
         Returns:
            issuer (str): qb64  of .sad["i"] issuer AID property getter
@@ -1201,11 +1261,11 @@ class SerderACDC(Serder):
 
 
     @property
-    def issuerb(self):
+    def isrb(self):
         """
         Returns:
         issuerb (bytes): qb64b  of .issuer property getter as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.isr.encode("utf-8") if self.isr is not None else None
 
     # ToDo Schemer property getter. Schemer object
