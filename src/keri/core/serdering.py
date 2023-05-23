@@ -950,7 +950,7 @@ class SerderKERI(Serder):
 
 
 
-    def _verify(self):
+    def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
@@ -959,7 +959,7 @@ class SerderKERI(Serder):
         Raises a ValidationError (or subclass) if any verification fails
 
         """
-        super(SerderKERI, self)._verify()
+        super(SerderKERI, self)._verify(**kwa)
 
         try:
             code = Matter(qb64=self.pre).code
@@ -1170,7 +1170,7 @@ class SerderACDC(Serder):
 
 
 
-    def _verify(self):
+    def _verify(self, **kwa):
         """Verifies said(s) in sad against raw
         Override for protocol and ilk specific verification behavior. Especially
         for inceptive ilks that have more than one said field like a said derived
@@ -1179,7 +1179,7 @@ class SerderACDC(Serder):
         Raises a ValidationError (or subclass) if any verification fails
 
         """
-        super(SerderACDC, self)._verify()
+        super(SerderACDC, self)._verify(**kwa)
 
         try:
             code = Matter(qb64=self.isr).code

@@ -1379,10 +1379,44 @@ def test_serderacdc():
 
     sad = serder.sad
     raw = serder.raw
+
+    with pytest.raises(kering.ValidationError):
+        serder = SerderACDC(sad=sad)
+
+    with pytest.raises(kering.ValidationError):
+        serder = SerderACDC(sad=sad)
+
+    isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
+    sad['i'] = isr
+
+    serder = SerderACDC(sad=sad, makify=True)
+    sad = serder.sad
+    raw = serder.raw
     said = serder.said
     size = serder.size
 
 
+    serder = SerderACDC(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == None
+    assert serder.isr ==  isr
+
+    serder = SerderACDC(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == None
+    assert serder.isr ==  isr
 
 
 
