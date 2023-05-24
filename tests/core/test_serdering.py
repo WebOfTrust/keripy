@@ -17,7 +17,7 @@ from keri.kering import Versionage
 
 from keri.core import coring
 
-from keri.core.serdering import (Labelage, Serdery, Serder,
+from keri.core.serdering import (Fieldage, Serdery, Serder,
                                  SerderKERI, SerderACDC, )
 
 
@@ -29,29 +29,36 @@ def test_serder():
 
     # Test Serder
 
-    assert Serder.Labels == {'KERI': {Versionage(major=1, minor=0): {None: Labelage(saids=[], codes=[], fields=['v', 'i', 's', 'p', 'd', 'f', 'dt', 'et', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'ee', 'di']),
-                                         'icp': Labelage(saids=['d', 'i'], codes=['E', 'E'], fields=['v', 't', 'd', 'i', 's', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'a']),
-                                         'rot': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
-                                         'ixn': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
-                                         'dip': Labelage(saids=['d', 'i'], codes=['E', 'E'], fields=['v', 't', 'd', 'i', 's', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
-                                         'drt': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k', 'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
-                                         'rct': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'i', 's']),
-                                         'qry': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                                         'rpy': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                                         'pro': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                                         'bar': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                                         'exn': Labelage(saids=['d'], codes=['E'], fields=['v', 't', 'd', 'dt', 'r', 'q', 'a'])}},
-                             'ACDC': {Versionage(major=1, minor=0): {None: Labelage(saids=['d'], codes=['E'], fields=['v', 'd', 'i', 's'])}}}
+    assert Serder.Fields == {'KERI': {Versionage(major=1, minor=0):
+                                        {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '1', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
+                                         'icp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'kt': '1', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'a': []}),
+                                         'rot': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'kt': '1', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'br': [], 'ba': [], 'a': []}),
+                                         'ixn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'a': []}),
+                                         'dip': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'kt': '1', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'a': [], 'di': ''}),
+                                         'drt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'kt': '1', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'br': [], 'ba': [], 'a': [], 'di': ''}),
+                                         'rct': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0'}),
+                                         'qry': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
+                                         'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
+                                         'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
+                                         'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': []})}},
+                             'ACDC': {Versionage(major=1, minor=0):
+                                        {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
 
     assert Serder.Ilks == {'KERI': None, 'ACDC': None}
 
-    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == ['d']
-    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].codes == [coring.DigDex.Blake3_256]
-    assert Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].fields == ['v', 'd', 'i', 's']
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
+    assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].saids) <=
-            set(Serder.Labels[kering.Protos.acdc][kering.Vrsn_1_0][None].fields))
+    assert (set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids.keys()) <=
+            set(Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls.keys()))
+
+
+    for proto, vrsns in Serder.Fields.items():
+        for vrsn, ilks in vrsns.items():
+            for ilk, fields in ilks.items():
+                assert set(fields.saids.keys()) <= set(fields.alls.keys())
 
 
     with pytest.raises(ValueError):
