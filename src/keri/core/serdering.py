@@ -91,65 +91,6 @@ class Serdery:
         else:
             raise ProtocolError(f"Unsupported protocol type = {reaped.proto}.")
 
-#OldLabels = {
-            #Protos.keri:
-            #{
-                #Vrsn_1_0:
-                #{
-                    #None: Labelage(saids=[],
-                               #codes=[],
-                               #fields=['v', 'i', 's', 'p', 'd', 'f','dt',
-                                       #'et', 'kt', 'k', 'nt', 'n', 'bt', 'b',
-                                       #'c', 'ee', 'di']),
-                    #Ilks.icp: Labelage(saids=[Saids.d, Saids.i],
-                               #codes=[DigDex.Blake3_256, DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
-                                       #'nt', 'n', 'bt', 'b', 'c', 'a']),
-                    #Ilks.rot: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
-                                       #'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
-                    #Ilks.ixn: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
-                    #Ilks.dip: Labelage(saids=[Saids.d, Saids.i],
-                               #codes=[DigDex.Blake3_256, DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
-                                       #'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
-                    #Ilks.drt: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
-                                 #'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
-                    #Ilks.rct: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'i', 's']),
-                    #Ilks.qry: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                    #Ilks.rpy: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                    #Ilks.pro: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                    #Ilks.bar: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                    #Ilks.exn: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 't', 'd', 'dt', 'r', 'q', 'a']),
-                #},
-            #},
-            #Protos.acdc:
-            #{
-                #Vrsn_1_0:
-                #{
-                    #None: Labelage(saids=[Saids.d],
-                               #codes=[DigDex.Blake3_256],
-                               #fields=['v', 'd', 'i', 's']),
-                #}
-            #},
-        #}
 
 
 class Serder:
@@ -192,9 +133,8 @@ class Serder:
         version (Versionage): protocol version (Major, Minor)
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
-        saider (Saider): of SAID of this SAD as given by .Labels for this ilk
-        said (str): SAID of .saider qb64
-        saidb (bytes): SAID of .saider  qb64b
+        said (str): qb64 said of .raw given by appropriate field
+        saidb (bytes): qb64b of .said
         ilk (str | None): packet type for this Serder if any (may be None)
 
 
@@ -206,7 +146,7 @@ class Serder:
         ._kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
-        ._saider (Saider): instance for this Sadder's SAID
+        ._said (str): qb64 given by appropriate saidive field
 
     Methods:
         verify()
@@ -266,26 +206,26 @@ class Serder:
                     {
                         None: Fieldage(saids={},
                             alls=dict(v='', i='',s='0' , p='', d='', f='0',
-                                dt='',et='', kt='1', k=[], nt='0', n=[],
+                                dt='',et='', kt='0', k=[], nt='0', n=[],
                                 bt='0', b=[], c=[], ee={}, di='')),
                         Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
-                            alls=dict(v='', t='',d='', i='', s='0', kt='1',
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
                                 k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
                         Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', i='', s='0', p='',
-                                kt='1',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
                                 ba=[], a=[])),
                         Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
                         Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
-                            alls=dict(v='', t='',d='', i='', s='0', kt='1',
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
                                 k=[], nt='0', n=[], bt='0', b=[], c=[], a=[],
                                 di='')),
                         Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', i='', s='0', p='',
-                                kt='1',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
                                 ba=[], a=[], di='')),
                         Ilks.rct: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', i='', s='0')),
@@ -386,9 +326,9 @@ class Serder:
                 label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
                 if label not in self._sad:
                     raise FieldError(f"Missing primary said field in {self._sad}.")
-                self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                self._said = self._sad[label]  # not verified
             except Exception:
-                self._saider = None  # no saidive field
+                self._said = None  # no saidive field
 
             if strip:  #only when raw is bytearray
                 try:
@@ -426,9 +366,9 @@ class Serder:
                     label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
                     if label not in self._sad:
                         raise DeserializeError(f"Missing primary said field in {self._sad}.")
-                    self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                    self._said = self._sad[label]  # not verified
                 except Exception:
-                    self._saider = None  # no saidive field
+                    self._said = None  # no saidive field
 
                 if verify:  # verify the said(s) provided in sad
                     try:
@@ -499,7 +439,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = fields.saids  # dict of saidive field labels and defaults values
+        saids = copy.copy(fields.saids)  # get copy of saidive field labels and defaults values
         if not (set(saids.keys()) <= set(alls.keys())):
             raise MissingFieldError(f"Missing one or more required said fields"
                                     f" from {list(saids.keys())} in sad = "
@@ -510,7 +450,8 @@ class Serder:
             try:  # replace default code with code of value from sad
                 saids[label] = Matter(qb64=sad[label]).code
             except Exception as ex:
-                raise ValidationError(f"Invalid said field '{label}' in sad\n"
+                if saids[label] in DigDex:  # digestive but invalid
+                    raise ValidationError(f"Invalid said field '{label}' in sad\n"
                                       f" = {self._sad}.") from ex
 
             if saids[label] in DigDex:  # if digestive then replace with dummy
@@ -652,7 +593,7 @@ class Serder:
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        _saids = fields.saids  # get defaults
+        _saids = copy.copy(fields.saids)  # get copy of defaults
         if not (set(_saids.keys()) <= set(alls.keys())):
             raise SerializeError(f"Missing one or more required said fields "
                                  f"from {list(_saids.keys())} in sad = {sad}.")
@@ -713,9 +654,9 @@ class Serder:
             label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
             if label not in self._sad:
                 raise SerializeError(f"Missing primary said field in {self._sad}.")
-            self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+            self._said = self._sad[label]  # implicitly verified
         except Exception:
-            self._saider = None  # no saidive field
+            self._said = None  # no saidive field
 
 
 
@@ -1010,21 +951,12 @@ class Serder:
 
 
     @property
-    def saider(self):
-        """saider property getter
-        Returns:
-            saider (Diger): instance of saidified digest self.raw
-        """
-        return self._saider
-
-
-    @property
     def said(self):
         """said property getter
         Returns:
-           said (str): qb64 said of .saider
+           said (str): qb64
         """
-        return self.saider.qb64 if self.saider else None
+        return self._said
 
 
     @property
@@ -1033,7 +965,7 @@ class Serder:
         Returns:
             saidb (bytes): qb64b of said  of .saider
         """
-        return self.saider.qb64b if self.saider else None
+        return self._said.encode("utf-8") if self._said is not None else None
 
 
     @property
@@ -1088,7 +1020,8 @@ class SerderKERI(Serder):
     @property
     def estive(self):  # establishative
         """ Returns True if Serder represents an establishment event """
-        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+        return (self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+                     if "t" in self._sad else False)
 
 
     @property
@@ -1144,7 +1077,7 @@ class SerderKERI(Serder):
         Returns:
             seals (list): from ._sad["a"]
         """
-        return self._sad["a"]
+        return self._sad.get("a")
 
     #Properties of inceptive Serders ilks in (icp, dip)
 
