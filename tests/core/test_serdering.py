@@ -64,131 +64,115 @@ def test_serder():
     with pytest.raises(ValueError):
         serder = Serder()
 
-    # Test ACDC JSON bootstrap with Saider.saidify
-    sad = dict(v=kering.versify(proto=kering.Protos.acdc,
-                                version=kering.Version,
-                                kind=kering.Serials.json),
-               d="",
-               i="",
-               s="")
-    saider, sad = coring.Saider.saidify(sad=sad)
-    assert sad == {'v': 'ACDC10JSON00005a_',
-                   'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
-                   'i': '',
-                   's': ''}
-
-    assert saider.qb64 == sad["d"]
-    saidAcdcJson = sad["d"]  # save for later
+    #Test Serder bare makify bootstrap for ACDC JSON
+    serder = Serder(makify=True, proto=kering.Protos.acdc)  # make defaults for ACDC
+    assert serder.sad == {'v': 'ACDC10JSON00005a_',
+                            'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
+                            'i': '',
+                            's': ''}
+    assert serder.raw == (b'{"v":"ACDC10JSON00005a_","d":"EMk7BvrqO_2sYjpI_-'
+                          b'BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
+    assert serder.verify()
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
 
     serder = Serder(sad=sad)
-    assert serder.raw == (b'{"v":"ACDC10JSON00005a_",'
-                          b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT",'
-                          b'"i":"","s":""}')
+    assert serder.raw == raw
+    assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
     assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
+    assert serder.size == size
     assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
-    assert serder.pretty() == ('{\n'
-                               ' "v": "ACDC10JSON00005a_",\n'
-                               ' "d": "EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT",\n'
-                               ' "i": "",\n'
-                               ' "s": ""\n'
-                               '}')
-
-    assert serder.compare(said=saider.qb64)
-    assert serder.compare(said=saider.qb64b)
+    assert serder.compare(said=said)
+    assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')
+    assert serder.pretty() == ('{\n'
+                                ' "v": "ACDC10JSON00005a_",\n'
+                                ' "d": "EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT",\n'
+                                ' "i": "",\n'
+                                ' "s": ""\n'
+                                '}')
 
-    rawJSON = serder.raw  # save for later tests
-    assert rawJSON == (b'{"v":"ACDC10JSON00005a_",'
-                       b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT",'
-                       b'"i":"","s":""}')
+    serder = Serder(raw=raw)
+    assert serder.raw == raw
+    assert isinstance(serder.raw, bytes)
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.acdc
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
+    assert serder.ilk == None
+    assert serder.compare(said=said)
+    assert serder.compare(said=said.encode("utf-8"))
 
     serder = Serder(sad=sad, verify=False)  # test not verify
-    assert serder.raw == rawJSON
-    assert isinstance(serder.raw, bytes)
+    assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
     assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
+    assert serder.size == size
     assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.compare(said=said)
 
-    serder = Serder(sad=sad, makify=True)  # test makify
-    assert serder.raw == rawJSON
-    assert isinstance(serder.raw, bytes)
+    serder = Serder(raw=raw, verify=False)  # test not verify
+    assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
     assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
+    assert serder.size == size
     assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.compare(said=said)
 
-    serder = Serder(sad=sad, makify=True, codes=[coring.DigDex.Blake3_256])  # test makify
-    assert serder.raw == rawJSON
+    serder = Serder(sad=sad, makify=True)  # test makify with sad
+    assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
     assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
+    assert serder.size == size
     assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
+    assert serder.said == said
+    assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
+    assert serder.compare(said=said)
 
-    serder = Serder(raw=rawJSON)
-    assert serder.raw == rawJSON
-    assert isinstance(serder.raw, bytes)
-    assert serder.sad == sad
-    assert serder.proto == kering.Protos.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
-    assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
-    assert serder.ilk == None
 
-    serder = Serder(raw=rawJSON, verify=False)  # test without verify
-    assert serder.raw == rawJSON
-    assert isinstance(serder.raw, bytes)
-    assert serder.sad == sad
-    assert serder.proto == kering.Protos.acdc
-    assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
-    assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
-    assert serder.ilk == None
 
     # Test ignores strip if raw is bytes not bytearray
-    serder = Serder(raw=rawJSON, strip=True)
-    assert serder.raw == rawJSON
+    serder = Serder(raw=raw, strip=True)
+    assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
+
     # Test strip of bytearray
     extra = bytearray(b'Not a serder.')
-    stream = bytearray(rawJSON) + extra
+    stream = bytearray(raw) + extra
     assert stream == bytearray(b'{"v":"ACDC10JSON00005a_","d":"EMk7BvrqO_2sYjp'
                                b'I_-BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}'
                                b'Not a serder.')
     serder = Serder(raw=stream, strip=True)
-    assert serder.raw == rawJSON
+    assert serder.raw == raw
     assert isinstance(serder.raw, bytes)
     assert stream == extra
     assert serder.sad == sad
     assert serder.proto == kering.Protos.acdc
     assert serder.vrsn == kering.Vrsn_1_0
-    assert serder.size == 90
+    assert serder.size == size
     assert serder.kind == kering.Serials.json
-    assert serder.said == saider.qb64
-    assert serder.saidb == saider.qb64b
+    assert serder.said == said
     assert serder.ilk == None
 
     # test verify bad digest value
@@ -198,7 +182,7 @@ def test_serder():
     with pytest.raises(kering.ValidationError):
         serder = Serder(raw=badraw, verify=True)
 
-    # Test ACDC CBOR bootstrap with Saider.saidify
+    # Test makify bootstrap with ACDC CBOR
     sad = dict(v=kering.versify(proto=kering.Protos.acdc,
                                 version=kering.Version,
                                 kind=kering.Serials.cbor),

@@ -3,6 +3,7 @@
 keri.core.serdering module
 
 """
+import copy
 import json
 from collections import namedtuple
 
@@ -24,7 +25,7 @@ from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
 
 from .. import help
-
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
@@ -321,7 +322,7 @@ class Serder:
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
                  reaped=None, verify=True, makify=False,
-                 proto=None, vrsn=None, kind=None, ilk=None, codes=None):
+                 proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -358,8 +359,13 @@ class Serder:
                 If None then its extracted from sad or uses default .Kind
             ilk (str | None): desired ilk packet type str value of Ilks
                 If None then its extracted from sad or uses default .Ilk
-            codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
-                one for each said in same order of .Labels[ilk].saids
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
 
 
         """
@@ -403,7 +409,7 @@ class Serder:
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
                 self.makify(sad=sad, version=version,
-                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, codes=codes)
+                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, saids=saids)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -617,22 +623,30 @@ class Serder:
 
         fields = self.Fields[proto][vrsn][ilk]  # get Fieldage of fields
 
-        if not sad:  # empty or None so create
-            sad = {label: "" for label in fields.fields}
+        if not sad:  # empty or None so create from defaults
+            sad = {}
+            for label, value in fields.alls.items():
+                if helping.nonStringIterable(value):  # copy iterable defaults
+                    value = copy.copy(value)
+                sad[label] = value
+
             if 't' in sad:  # packet type (ilk) requried so set value to ilk
                 sad['t'] = ilk
 
         # ensure all required fields in alls are in sad
         alls = fields.alls  # all field labels
-        for label in alls:  # ensure provided sad as all required fields
-            if label not in sad:
-                sad[label] = ''
+        for label, value in alls.items():  # ensure provided sad as all required fields
+            if label not in sad:  # supply default
+                if helping.nonStringIterable(value):  # copy iterable defaults
+                    value = copy.copy(value)
+                sad[label] = value
+
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
             if key not in alls:
                 del keys[keys.index(key)]  # remove non required fields
 
-        if list(alls.keys()) != keys:  # forces ordered appearance of alls in .sad
+        if list(alls.keys()) != keys:  # ensure ordering of fields matches alls
             raise SerializeError(f"Mismatch one or more of all required fields "
                                  f" = {list(alls.keys())} in sad = {sad}.")
 
@@ -645,7 +659,7 @@ class Serder:
 
         # override saidive defaults
         for label in _saids:
-            if label in saids:  # use parameter override
+            if saids and label in saids:  # use parameter override
                 _saids[label] = saids[label]
             else:
                 try:  # use sad field override
@@ -1054,6 +1068,12 @@ class SerderKERI(Serder):
 
         """
         super(SerderKERI, self)._verify(**kwa)
+
+        allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls.keys())
+        keys = list(self.sad.keys())
+        if allkeys != keys:
+            raise ValidationError(f"Invalid top level field list. Expected "
+                                  f"{allkeys} got {keys}.")
 
         try:
             code = Matter(qb64=self.pre).code
