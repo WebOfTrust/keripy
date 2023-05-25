@@ -3,6 +3,7 @@
 keri.core.serdering module
 
 """
+import copy
 import json
 from collections import namedtuple
 
@@ -24,20 +25,21 @@ from .coring import MtrDex, DigDex, PreDex, Saids,  Digestage
 from .coring import Matter, Saider, Verfer, Diger, Number, Tholder
 
 from .. import help
-
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
 """
-Labelage
-    saids (list[str]): saidive field labels
-    codes (list[str]): saidive field codes
-    fields (list[str]): all field labels including saidive ones
+Fieldage
+    saids (dict): keyed by saidive field labels with values as default codes
+    alls (dict): keyed by all field labels including saidive ones
+                   with values as default codes
 
 Example:
-    Label = Labelage(saids=['d'], codes=[DigDex.Blake3_256], fields=['v','d'])
+    Fields = Labelage(saids={'d': DigDex.Blake3_256},
+                      alls={'v': '','d':''})
 """
-Labelage = namedtuple("Labelage", "saids codes fields")  #values are lists of str
+Fieldage = namedtuple("Fieldage", "saids alls")  #values are dicts
 
 
 """
@@ -91,7 +93,6 @@ class Serdery:
 
 
 
-
 class Serder:
     """Serder is serializer-deserializer class for saidified  over-the-wire
     messages that deserializes to a field map (label value pairs) from
@@ -132,9 +133,8 @@ class Serder:
         version (Versionage): protocol version (Major, Minor)
         kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
         size (int): number of bytes in serialization
-        saider (Saider): of SAID of this SAD as given by .Labels for this ilk
-        said (str): SAID of .saider qb64
-        saidb (bytes): SAID of .saider  qb64b
+        said (str): qb64 said of .raw given by appropriate field
+        saidb (bytes): qb64b of .said
         ilk (str | None): packet type for this Serder if any (may be None)
 
 
@@ -146,7 +146,7 @@ class Serder:
         ._kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
         ._size is int of number of bytes in serialed event only
-        ._saider (Saider): instance for this Sadder's SAID
+        ._said (str): qb64 given by appropriate saidive field
 
     Methods:
         verify()
@@ -199,78 +199,70 @@ class Serder:
     # Each protocol value is a dict keyed by ilk.
     # Each ilk value is a Labelage named tuple with saids, codes and fields
     # ilk value of None is default for protocols that support ilkless packets
-    Labels = {
+    Fields = {
                 Protos.keri:
                 {
                     Vrsn_1_0:
                     {
-                        None: Labelage(saids=[],
-                                   codes=[],
-                                   fields=['v', 'i', 's', 'p', 'd', 'f','dt',
-                                           'et', 'kt', 'k', 'nt', 'n', 'bt', 'b',
-                                           'c', 'ee', 'di']),
-                        Ilks.icp: Labelage(saids=[Saids.d, Saids.i],
-                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
-                                           'nt', 'n', 'bt', 'b', 'c', 'a']),
-                        Ilks.rot: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
-                                           'nt', 'n', 'bt', 'b', 'br', 'ba', 'a']),
-                        Ilks.ixn: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's', 'p', 'a']),
-                        Ilks.dip: Labelage(saids=[Saids.d, Saids.i],
-                                   codes=[DigDex.Blake3_256, DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's', 'kt', 'k',
-                                           'nt', 'n', 'bt', 'b', 'c', 'a', 'di']),
-                        Ilks.drt: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's', 'p', 'kt', 'k',
-                                     'nt', 'n', 'bt', 'b', 'br', 'ba', 'a', 'di']),
-                        Ilks.rct: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's']),
-                        Ilks.rct: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'i', 's']),
-                        Ilks.qry: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                        Ilks.rpy: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                        Ilks.pro: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'dt', 'r', 'rr', 'q']),
-                        Ilks.bar: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'dt', 'r', 'a']),
-                        Ilks.exn: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v', 't', 'd', 'dt', 'r', 'q', 'a']),
+                        None: Fieldage(saids={},
+                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
+                                dt='',et='', kt='0', k=[], nt='0', n=[],
+                                bt='0', b=[], c=[], ee={}, di='')),
+                        Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
+                                k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
+                        Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='',
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                ba=[], a=[])),
+                        Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
+                        Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
+                                k=[], nt='0', n=[], bt='0', b=[], c=[], a=[],
+                                di='')),
+                        Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='',
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                ba=[], a=[], di='')),
+                        Ilks.rct: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0')),
+                        Ilks.qry: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', dt='', r='', rr='',
+                                        q={})),
+                        Ilks.rpy: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', dt='', r='',a=[])),
+                        Ilks.pro: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', dt='', r='', rr='',
+                                        q={})),
+                        Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', dt='', r='',a=[])),
+                        Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', dt='', r='',q={},
+                                        a=[])),
                     },
                 },
                 Protos.acdc:
                 {
                     Vrsn_1_0:
                     {
-                        None: Labelage(saids=[Saids.d],
-                                   codes=[DigDex.Blake3_256],
-                                   fields=['v','d', 'i', 's']),
+                        None: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                                       alls=dict(v='', d='', i='', s='')),
                     }
                 },
             }
 
     # default ilk for each protocol at default version is zeroth ilk in dict
     Ilks = dict()
-    for key, val in Labels.items():
+    for key, val in Fields.items():
         Ilks[key] = list(val[Vrsn].keys())[0]
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
                  reaped=None, verify=True, makify=False,
-                 proto=None, vrsn=None, kind=None, ilk=None, codes=None):
+                 proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Deserialize raw if provided. Update properties from deserialized raw.
             Verifies said(s) embedded in sad as given by labels.
             When verify is True then verify said(s) in deserialized raw as
@@ -307,8 +299,13 @@ class Serder:
                 If None then its extracted from sad or uses default .Kind
             ilk (str | None): desired ilk packet type str value of Ilks
                 If None then its extracted from sad or uses default .Ilk
-            codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
-                one for each said in same order of .Labels[ilk].saids
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
 
 
         """
@@ -326,12 +323,12 @@ class Serder:
             self._size = size
             # primary said field label
             try:
-                label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
                 if label not in self._sad:
                     raise FieldError(f"Missing primary said field in {self._sad}.")
-                self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                self._said = self._sad[label]  # not verified
             except Exception:
-                self._saider = None  # no saidive field
+                self._said = None  # no saidive field
 
             if strip:  #only when raw is bytearray
                 try:
@@ -352,7 +349,7 @@ class Serder:
             if makify:  # recompute properties and said(s) and reset sad
                 # makify resets sad, raw, proto, version, kind, and size
                 self.makify(sad=sad, version=version,
-                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, codes=codes)
+                        proto=proto, vrsn=vrsn, kind=kind, ilk=ilk, saids=saids)
 
             else:
                 # self._exhale works because it only access class attributes
@@ -366,12 +363,12 @@ class Serder:
                 self._size = size
                 # primary said field label
                 try:
-                    label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+                    label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
                     if label not in self._sad:
                         raise DeserializeError(f"Missing primary said field in {self._sad}.")
-                    self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+                    self._said = self._sad[label]  # not verified
                 except Exception:
-                    self._saider = None  # no saidive field
+                    self._said = None  # no saidive field
 
                 if verify:  # verify the said(s) provided in sad
                     try:
@@ -420,50 +417,50 @@ class Serder:
             raise ValidationError(f"Expected protocol = {self.Protocol}, got "
                                  f"{self.proto} instead.")
 
-        if self.proto not in self.Labels:
+        if self.proto not in self.Fields:
             raise ValidationError(f"Invalid protocol type = {self.proto}.")
 
-        if self.ilk not in self.Labels[self.proto][self.vrsn]:
+        if self.ilk not in self.Fields[self.proto][self.vrsn]:
             raise ValidationError(f"Invalid packet type (ilk) = {self.ilk} for"
                                   f"protocol = {self.proto}.")
 
-        labels = self.Labels[self.proto][self.vrsn][self.ilk]  # get labelage
-        # ensure required fields are in sad
-        fields = labels.fields  # all required field labels
+        fields = self.Fields[self.proto][self.vrsn][self.ilk]  # get labelage
+        # ensure all required fields in alls are in sad
+        alls = fields.alls  # dict of all field labels with default values
         keys = list(self._sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
-            if key not in fields:
+            if key not in alls:
                 del keys[keys.index(key)]  # remove non required fields
 
-        if fields != keys:  # forces ordered appearance of labels in .sad
-            raise MissingFieldError(f"Missing required fields = {fields}"
-                                    f" in sad = {self._sad}.")
+        if list(alls.keys()) != keys:  # forces ordering of labels in .sad
+            raise MissingFieldError(f"Missing one or more required fields from"
+                                    f"= {list(alls.keys())} in sad = "
+                                    f"{self._sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = labels.saids  # saidive field labels
-        if not (set(saids) <= set(fields)):
-            raise MissingFieldError(f"Missing required said fields = {saids}"
-                                    f" in sad = {self._sad}.")
+        saids = copy.copy(fields.saids)  # get copy of saidive field labels and defaults values
+        if not (set(saids.keys()) <= set(alls.keys())):
+            raise MissingFieldError(f"Missing one or more required said fields"
+                                    f" from {list(saids.keys())} in sad = "
+                                    f"{self._sad}.")
 
         sad = self.sad  # make shallow copy so don't clobber original .sad
-        labCodes = {}  # dict of codes keyed by label
-        for label in saids:
-            value = sad[label]
-            try:
-                code = Matter(qb64=value).code
+        for label in saids.keys():
+            try:  # replace default code with code of value from sad
+                saids[label] = Matter(qb64=sad[label]).code
             except Exception as ex:
-                raise ValidationError(f"Invalid said field '{label}' in sad\n"
+                if saids[label] in DigDex:  # digestive but invalid
+                    raise ValidationError(f"Invalid said field '{label}' in sad\n"
                                       f" = {self._sad}.") from ex
-            labCodes[label] = code
 
-            if code in DigDex:  # if digestive then fill with dummy
-                sad[label] = self.Dummy * len(value)
+            if saids[label] in DigDex:  # if digestive then replace with dummy
+                sad[label] = self.Dummy * len(sad[label])
 
 
         raw = self.dumps(sad, kind=self.kind)  # serialize dummied sad copy
 
-        for label, code in labCodes.items():
+        for label, code in saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 klas, size, length = self.Digests[code]  # digest algo size & length
                 ikwa = dict()  # digest algo class initi keyword args
@@ -486,7 +483,7 @@ class Serder:
 
 
     def makify(self, sad, *, version=None,
-               proto=None, vrsn=None, kind=None, ilk=None, codes=None):
+               proto=None, vrsn=None, kind=None, ilk=None, saids=None):
         """Makify given sad dict makes the versions string and computes the said
         field values and sets associated properties:
         raw, sad, proto, version, kind, size
@@ -515,17 +512,13 @@ class Serder:
                 If None then its extracted from sad or uses default .Kind
             ilk (str | None): desired ilk packet type str value of Ilks
                 If None then its extracted from sad or uses default .Ilk
-            codes (list[str]): of codes for saidive fields in .Labels[ilk].saids
-                one for each said in same order of .Labels[ilk].saids
-                If empty list then use defaults
-                If entry is None then use default
-                Code assignment for each said field in desending priority:
-                   the code provided in codes when not None
-                   the code extracted from sad[said label] when valid CESR
-                   self.Code
-
-
-
+            saids (dict): of keyed by label of codes for saidive fields to
+                override defaults given in .Fields for a given ilk.
+                If None then use defaults
+                Code assignment for each saidive field in desending priority:
+                   - the code provided in saids when not None
+                   - the code extracted from sad[said label] when valid CESR
+                   - the code provided in .Fields...saids
         """
         sproto = svrsn = skind = silk = None
         if sad and 'v' in sad:  # attempt to get from vs in sad
@@ -549,7 +542,7 @@ class Serder:
             ilk = silk if silk is not None else self.Ilks[proto]
 
 
-        if proto not in self.Labels:
+        if proto not in self.Fields:
             raise SerializeError(f"Invalid protocol type = {proto}.")
 
 
@@ -565,62 +558,58 @@ class Serder:
             raise SerializeError(f"Invalid serialization kind = {kind}")
 
 
-        if ilk not in self.Labels[proto][vrsn]:
+        if ilk not in self.Fields[proto][vrsn]:
             raise SerializeError(f"Invalid packet type (ilk) = {ilk} for"
                                   f"protocol = {proto}.")
 
-        labels = self.Labels[proto][vrsn][ilk]  # get Labelage
+        fields = self.Fields[proto][vrsn][ilk]  # get Fieldage of fields
 
-        if not sad:  # empty or None so create
-            sad = {label: "" for label in labels.fields}
+        if not sad:  # empty or None so create from defaults
+            sad = {}
+            for label, value in fields.alls.items():
+                if helping.nonStringIterable(value):  # copy iterable defaults
+                    value = copy.copy(value)
+                sad[label] = value
+
             if 't' in sad:  # packet type (ilk) requried so set value to ilk
                 sad['t'] = ilk
 
+        # ensure all required fields in alls are in sad
+        alls = fields.alls  # all field labels
+        for label, value in alls.items():  # ensure provided sad as all required fields
+            if label not in sad:  # supply default
+                if helping.nonStringIterable(value):  # copy iterable defaults
+                    value = copy.copy(value)
+                sad[label] = value
 
-
-        # ensure required fields are in sad
-        fields = labels.fields  # all field labels
-        for label in fields:  # ensure provided sad as all required fields
-            if label not in sad:
-                sad[label] = ''
         keys = list(sad)  # get list of keys of self.sad
         for key in list(keys):  # make copy to mutate
-            if key not in fields:
+            if key not in alls:
                 del keys[keys.index(key)]  # remove non required fields
 
-        if fields != keys:  # forces ordered appearance of labels in .sad
-            raise SerializeError(f"Mismatch required fields = {fields}"
-                                          f" in sad = {sad}.")
+        if list(alls.keys()) != keys:  # ensure ordering of fields matches alls
+            raise SerializeError(f"Mismatch one or more of all required fields "
+                                 f" = {list(alls.keys())} in sad = {sad}.")
 
         # said field labels are not order dependent with respect to all fields
         # in sad so use set() to test inclusion
-        saids = labels.saids
-        if not (set(saids) <= set(fields)):
-            raise SerializeError(f"Missing one or more required said fields = {saids}"
-                                          f" in sad = {sad}.")
+        _saids = copy.copy(fields.saids)  # get copy of defaults
+        if not (set(_saids.keys()) <= set(alls.keys())):
+            raise SerializeError(f"Missing one or more required said fields "
+                                 f"from {list(_saids.keys())} in sad = {sad}.")
 
-        # compute mapping of said labeled fields to codes
-        labCodes = {}
-        for i, label in enumerate(saids):
-            try:  # codes parameter
-                code = codes[i]
-            except (IndexError, TypeError):
-                code = None
-
-            if code is None:  # saidive field value code
-                value = sad[label]
-                try:
-                    code = Matter(qb64=value).code
+        # override saidive defaults
+        for label in _saids:
+            if saids and label in saids:  # use parameter override
+                _saids[label] = saids[label]
+            else:
+                try:  # use sad field override
+                    _saids[label] = Matter(qb64=sad[label]).code
                 except Exception:
-                    code = None
+                    pass  # no override
 
-            if code is None:  # default from .Labels
-                code = labels.codes[i]
-
-            labCodes[label] = code
-
-            if code in DigDex:  # if digestive then fill with dummy
-                sad[label] = self.Dummy * Matter.Sizes[code].fs
+            if _saids[label] in DigDex:  # if digestive then fill with dummy
+                sad[label] = self.Dummy * Matter.Sizes[_saids[label]].fs
 
 
         if 'v' not in sad:  # ensures that 'v' is always required by .Labels
@@ -640,7 +629,7 @@ class Serder:
         # now compute saidive digestive field values using sized dummied sad
         raw = self.dumps(sad, kind=kind)  # serialize sized dummied sad
 
-        for label, code in labCodes.items():
+        for label, code in _saids.items():
             if code in DigDex:  # subclass override if non digestive allowed
                 klas, dsize, dlen = self.Digests[code]  # digest algo size & length
                 ikwa = dict()  # digest algo class initi keyword args
@@ -662,12 +651,12 @@ class Serder:
         self._size = size
         # primary said field label
         try:
-            label = self.Labels[self.proto][self.vrsn][self.ilk].saids[0]
+            label = list(self.Fields[self.proto][self.vrsn][self.ilk].saids.keys())[0]
             if label not in self._sad:
                 raise SerializeError(f"Missing primary said field in {self._sad}.")
-            self._saider = Saider(qb64=self._sad[label]) # implicitly verified
+            self._said = self._sad[label]  # implicitly verified
         except Exception:
-            self._saider = None  # no saidive field
+            self._said = None  # no saidive field
 
 
 
@@ -962,21 +951,12 @@ class Serder:
 
 
     @property
-    def saider(self):
-        """saider property getter
-        Returns:
-            saider (Diger): instance of saidified digest self.raw
-        """
-        return self._saider
-
-
-    @property
     def said(self):
         """said property getter
         Returns:
-           said (str): qb64 said of .saider
+           said (str): qb64
         """
-        return self.saider.qb64 if self.saider else None
+        return self._said
 
 
     @property
@@ -985,7 +965,7 @@ class Serder:
         Returns:
             saidb (bytes): qb64b of said  of .saider
         """
-        return self.saider.qb64b if self.saider else None
+        return self._said.encode("utf-8") if self._said is not None else None
 
 
     @property
@@ -1021,6 +1001,12 @@ class SerderKERI(Serder):
         """
         super(SerderKERI, self)._verify(**kwa)
 
+        allkeys = list(self.Fields[self.proto][self.vrsn][self.ilk].alls.keys())
+        keys = list(self.sad.keys())
+        if allkeys != keys:
+            raise ValidationError(f"Invalid top level field list. Expected "
+                                  f"{allkeys} got {keys}.")
+
         try:
             code = Matter(qb64=self.pre).code
         except Exception as ex:
@@ -1034,7 +1020,8 @@ class SerderKERI(Serder):
     @property
     def estive(self):  # establishative
         """ Returns True if Serder represents an establishment event """
-        return self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+        return (self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
+                     if "t" in self._sad else False)
 
 
     @property
@@ -1090,7 +1077,7 @@ class SerderKERI(Serder):
         Returns:
             seals (list): from ._sad["a"]
         """
-        return self._sad["a"]
+        return self._sad.get("a")
 
     #Properties of inceptive Serders ilks in (icp, dip)
 
