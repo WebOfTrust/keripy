@@ -261,9 +261,13 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
         assert exn.ked['r'] == "/presentation"
-        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADqyvceNUq0'
-                                b'utmXQ6fFtE6juYK9B9lszFHgtM09FX5VCc5aESYM5lqgwHqOgaBjU11qfSMkIQ9K'
-                                b'OrBRPNu_PMIP')
+        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADLme3QTaP_'
+                                b'SXsHiPGUisJt6uEgy5MAJUk2ZcYGIcpUPGIy8zBU21APfrfQUoz19APsln589JLj'
+                                b'FPvi4pJJyk8J')
+
+        #bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADqyvceNUq0'
+                                #b'utmXQ6fFtE6juYK9B9lszFHgtM09FX5VCc5aESYM5lqgwHqOgaBjU11qfSMkIQ9K'
+                                #b'OrBRPNu_PMIP')
 
         msg = bytearray(exn.raw)
         msg.extend(atc)

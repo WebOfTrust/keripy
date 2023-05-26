@@ -253,12 +253,12 @@ def exchange(route, payload, date=None, modifiers=None, version=coring.Version, 
                d="",
                dt=dt,
                r=route,
-               q=modifiers,
+               q=modifiers if modifiers is not None else {},  # q field required
                a=payload
                )
     _, ked = coring.Saider.saidify(sad=ked)
 
-    if modifiers is None:
-        del ked["q"]
+    #if modifiers is None:
+        #del ked["q"]
 
     return eventing.Serder(ked=ked)  # return serialized ked
