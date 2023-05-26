@@ -242,6 +242,10 @@ class Serder:
                         Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', dt='', r='',q={},
                                         a=[])),
+                        Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
+                                        bt='0', b=[], n='')),
                     },
                 },
                 Protos.acdc:

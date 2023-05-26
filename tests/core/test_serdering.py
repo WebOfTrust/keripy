@@ -40,9 +40,9 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': []})}},
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
+                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''})}},
                              'ACDC': {Versionage(major=1, minor=0): {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
-
 
     assert Serder.Ilks == {'KERI': None, 'ACDC': None}
 
@@ -555,9 +555,10 @@ def test_serder():
     """End Test"""
 
 def test_serderkeri():
-    """Test SerderKERI"""
+    """Test SerderKERI default"""
 
-    # Test KERI JSON with makify defaults for self bootstrap which is state msg
+    # Test KERI JSON with makify defaults for bootstrap which is state (ksn) msg
+    # ksn msg has no ilk field for itself because is is embedded in exn or other
     serder = SerderKERI(makify=True)  # make with all defaults is state message
     assert serder.sad == {'v': 'KERI10JSON000095_',
                             'i': '',
@@ -659,6 +660,11 @@ def test_serderkeri():
     assert serder.delpreb == b''
     assert serder.fner.num == 0
     assert serder.fn == 0
+
+
+def test_serderkeri_icp():
+    """Test SerderKERI icp msg"""
+
 
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
@@ -877,6 +883,11 @@ def test_serderkeri():
     assert serder.fner == None
     assert serder.fn == None
 
+    """End Test"""
+
+def test_serderkeri_rot():
+    """Test SerderKERI rot msg"""
+
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
     serder = SerderKERI(makify=True, ilk=kering.Ilks.rot)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000b3_',
@@ -983,6 +994,10 @@ def test_serderkeri():
     assert serder.fner == None
     assert serder.fn == None
 
+    """End Test"""
+
+def test_serderkeri_ixn():
+    """Test SerderKERI ixn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
     serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn)  # make with defaults
@@ -1079,7 +1094,10 @@ def test_serderkeri():
     assert serder.delpreb == None
     assert serder.fner == None
     assert serder.fn == None
+    """End Test"""
 
+def test_serderkeri_dip():
+    """Test SerderKERI dip msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk dip
     serder = SerderKERI(makify=True, ilk=kering.Ilks.dip)  # make with defaults
@@ -1300,8 +1318,23 @@ def test_serderkeri():
     assert serder.fner == None
     assert serder.fn == None
 
+    """End Test"""
+
+def test_serderkeri_drt():
+    """Test SerderKERI drt msg"""
 
     """End Test"""
+
+def test_serderkeri_exn():
+    """Test SerderKERI exn msg"""
+
+    """End Test"""
+
+def test_serderkeri_vct():
+    """Test SerderKERI vct msg"""
+
+    """End Test"""
+
 
 def test_serderacdc():
     """Test SerderACDC"""
@@ -1426,5 +1459,12 @@ def test_serdery():
 if __name__ == "__main__":
     test_serder()
     test_serderkeri()
+    test_serderkeri_icp()
+    test_serderkeri_rot()
+    test_serderkeri_ixn()
+    test_serderkeri_dip()
+    test_serderkeri_drt()
+    test_serderkeri_exn()
+    test_serderkeri_vct()
     test_serderacdc()
     test_serdery()
