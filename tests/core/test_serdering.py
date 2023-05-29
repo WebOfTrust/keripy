@@ -40,7 +40,7 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
                                          'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''})}},
                              'ACDC': {Versionage(major=1, minor=0): {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
 
@@ -1322,11 +1322,219 @@ def test_serderkeri_dip():
 
 def test_serderkeri_drt():
     """Test SerderKERI drt msg"""
+    # Test KERI JSON with makify defaults for self bootstrap with ilk drt
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.drt)  # make with defaults
+    assert serder.sad == {'v': 'KERI10JSON0000bb_',
+                            't': 'drt',
+                            'd': 'EDp6AP5kiW4uvXYcypQlcssahJt83eyul8XQaK2KhQV1',
+                            'i': '',
+                            's': '0',
+                            'p': '',
+                            'kt': '0',
+                            'k': [],
+                            'nt': '0',
+                            'n': [],
+                            'bt': '0',
+                            'b': [],
+                            'br': [],
+                            'ba': [],
+                            'a': [],
+                            'di': ''}
+
+    assert serder.raw == (b'{"v":"KERI10JSON0000bb_","t":"drt","d":"EDp6AP5kiW4uvXYcypQlcssahJt83eyul8XQ'
+                        b'aK2KhQV1","i":"","s":"0","p":"","kt":"0","k":[],"nt":"0","n":[],"bt":"0","b"'
+                        b':[],"br":[],"ba":[],"a":[],"di":""}')
+
+
+    assert not serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.drt
+    assert serder.pre == '' != serder.said  # prefix is not saidive
+
+    sad = serder.sad
+
+    # test makify with preloaded non-digestive 'i' value in sad
+    pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    sad['i'] = pre
+
+    serder = SerderKERI(sad=sad, makify=True)
+
+    assert serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.drt
+    assert serder.pre == pre != serder.said  # prefix is not saidive
+
+
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+    ilk = serder.ilk
+
+    serder = SerderKERI(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == []
+    assert serder.traits == None
+    assert serder.tholder.sith == '0'
+    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.ntholder.sith == '0'
+    assert [diger.qb64 for diger in serder.ndigers] == []
+    assert serder.bner.num == 0
+    assert serder.bn == 0
+    assert [verfer.qb64 for verfer in serder.berfers] == []
+    assert serder.delpre == ''
+    assert serder.delpreb == b''
+    assert serder.fner == None
+    assert serder.fn == None
+
+    serder = SerderKERI(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == []
+    assert serder.traits == None
+    assert serder.tholder.sith == '0'
+    assert [verfer.qb64 for verfer in serder.verfers] == []
+    assert serder.ntholder.sith == '0'
+    assert [diger.qb64 for diger in serder.ndigers] == []
+    assert serder.bner.num == 0
+    assert serder.bn == 0
+    assert [verfer.qb64 for verfer in serder.berfers] == []
+    assert serder.delpre == ''
+    assert serder.delpreb == b''
+    assert serder.fner == None
+    assert serder.fn == None
 
     """End Test"""
 
 def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
+
+    # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.exn)  # make with defaults
+    assert serder.sad == {'v': 'KERI10JSON00007a_',
+                        't': 'exn',
+                        'd': 'EOLeqMJ7KoZJOzQLKFcUEuSYHS_r7YybgiOCQbOyiEvK',
+                        'i': '',
+                        'dt': '',
+                        'r': '',
+                        'q': {},
+                        'a': []}
+
+    assert serder.raw == (b'{"v":"KERI10JSON00007a_","t":"exn","d":"EOLeqMJ7KoZJOzQLKFcUEuSYHS_r7YybgiOC'
+                          b'QbOyiEvK","i":"","dt":"","r":"","q":{},"a":[]}')
+
+
+    assert not serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.exn
+    assert serder.pre == '' != serder.said  # prefix is not saidive
+
+    sad = serder.sad
+
+    # test makify with preloaded non-digestive 'i' value in sad
+    pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    sad['i'] = pre
+
+    serder = SerderKERI(sad=sad, makify=True)
+
+    assert serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.exn
+
+    # need to fix this, since exn does not include prefix field which should be
+    # required
+    assert serder.pre == pre != serder.said  # prefix is not saidive
+
+
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+    ilk = serder.ilk
+
+    serder = SerderKERI(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner == None
+    assert serder.sn == None
+    assert serder.seals == []
+    assert serder.traits == None
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner == None
+    assert serder.bn == None
+    assert serder.berfers == None
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+
+    serder = SerderKERI(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner == None
+    assert serder.sn == None
+    assert serder.seals == []
+    assert serder.traits == None
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner == None
+    assert serder.bn == None
+    assert serder.berfers == None
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+
 
     """End Test"""
 

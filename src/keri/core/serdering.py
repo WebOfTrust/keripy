@@ -240,7 +240,7 @@ class Serder:
                         Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', dt='', r='',a=[])),
                         Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                            alls=dict(v='', t='',d='', dt='', r='',q={},
+                            alls=dict(v='', t='',d='', i='', dt='', r='',q={},
                                         a=[])),
                         Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
@@ -1062,7 +1062,8 @@ class SerderKERI(Serder):
         Returns:
             (Number): of ._sad["s"] hex number str converted
         """
-        return Number(num=self._sad["s"])  # auto converts hex num str to int
+        # auto converts hex num str to int
+        return Number(num=self._sad["s"]) if 's' in self._sad else None
 
 
     @property
@@ -1072,7 +1073,7 @@ class SerderKERI(Serder):
         Returns:
             sn (int): of .sner.num from .sad["s"]
         """
-        return (self.sner.num)
+        return self.sner.num if self.sner is not None else None
 
     @property
     def seals(self):
