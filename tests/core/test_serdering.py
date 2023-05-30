@@ -1429,6 +1429,19 @@ def test_serderkeri_drt():
 
     """End Test"""
 
+def test_serderkeri_qry():
+    """Test SerderKERI qry query msg"""
+
+    """End Test"""
+
+
+def test_serderkeri_rpy():
+    """Test SerderKERI rpy reply msg"""
+
+    """End Test"""
+
+
+
 def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
 
@@ -1762,6 +1775,8 @@ if __name__ == "__main__":
     test_serderkeri_ixn()
     test_serderkeri_dip()
     test_serderkeri_drt()
+    test_serderkeri_qry()
+    test_serderkeri_rpy()
     test_serderkeri_exn()
     test_serderkeri_vcp()
     test_serderacdc()
