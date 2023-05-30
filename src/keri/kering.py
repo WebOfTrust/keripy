@@ -118,6 +118,8 @@ Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
+# note ksn is not actual standalone message but is embedded in exn msg when sent
+# over the wire. But keep ilk for legacy reasons.
 
 
 SEPARATOR = "\r\n\r\n"

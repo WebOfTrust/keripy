@@ -240,8 +240,12 @@ class Serder:
                         Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', dt='', r='',a=[])),
                         Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                            alls=dict(v='', t='',d='', dt='', r='',q={},
+                            alls=dict(v='', t='',d='', i='', dt='', r='',q={},
                                         a=[])),
+                        Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
+                                        bt='0', b=[], u='')),
                     },
                 },
                 Protos.acdc:
@@ -1058,7 +1062,8 @@ class SerderKERI(Serder):
         Returns:
             (Number): of ._sad["s"] hex number str converted
         """
-        return Number(num=self._sad["s"])  # auto converts hex num str to int
+        # auto converts hex num str to int
+        return Number(num=self._sad["s"]) if 's' in self._sad else None
 
 
     @property
@@ -1068,7 +1073,7 @@ class SerderKERI(Serder):
         Returns:
             sn (int): of .sner.num from .sad["s"]
         """
-        return (self.sner.num)
+        return self.sner.num if self.sner is not None else None
 
     @property
     def seals(self):
@@ -1160,8 +1165,8 @@ class SerderKERI(Serder):
         One for each backer (witness).
         berfers property getter
         """
-        backs = self._sad.get("b")
-        return [Verfer(qb64=back) for back in backs] if backs is not None else None
+        baks = self._sad.get("b")
+        return [Verfer(qb64=bak) for bak in baks] if baks is not None else None
 
 
     #Properties for delegated Serders ilks in (dip, drt)
@@ -1181,6 +1186,7 @@ class SerderKERI(Serder):
         delpreb (bytes): qb64b  of .delpre property getter as bytes
         """
         return self.delpre.encode("utf-8") if self.delpre is not None else None
+
 
 
     #Properties for state Serder ilk is None
@@ -1203,6 +1209,28 @@ class SerderKERI(Serder):
             fn (int): of .fner.num from ._sad["f"]
         """
         return self.fner.num if self.fner is not None else None
+
+
+    #Properties for exn  exchange
+
+
+    #Properties for vcp  (registry  inception event)
+    @property
+    def uuid(self):
+        """
+        Returns:
+           uuid (str): qb64  of .sad["u"] salty nonce
+        """
+        return self._sad.get("u")
+
+    @property
+    def nonce(self):
+        """
+        Returns:
+           nonce (str): alias for .uuid property
+        """
+        return self.uuid
+
 
 
 class SerderACDC(Serder):
