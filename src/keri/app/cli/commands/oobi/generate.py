@@ -62,7 +62,7 @@ def generate(tymth, tock=0.0, **opts):
         hab = hby.habByName(name=alias)
         if role in (kering.Roles.witness,):
             if not hab.kever.wits:
-                print(f"{alias} identfier {hab.pre} does not have any witnesses.")
+                print(f"{alias} identifier {hab.pre} does not have any witnesses.")
                 sys.exit(-1)
 
             for wit in hab.kever.wits:

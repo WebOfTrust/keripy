@@ -69,7 +69,7 @@ def generate(tymth, tock=0.0, **opts):
 
         elif role in (kering.Roles.witness,):
             if not hab.kever.wits:
-                print(f"{alias} identfier {hab.pre} does not have any witnesses.")
+                print(f"{alias} identifier {hab.pre} does not have any witnesses.")
                 sys.exit(-1)
 
             wit  = random.choice(hab.kever.wits)

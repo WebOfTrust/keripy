@@ -22,13 +22,13 @@ def loadHandlers(db, signaler, exc):
 
 
 class ChallengeHandler(doing.Doer):
-    """  Handle challange response peer to peer `exn` message """
+    """  Handle challenge response peer to peer `exn` message """
 
     resource = "/challenge/response"
     persist = True
 
     def __init__(self, db, signaler):
-        """ Initialize peer to peer challange response messsage """
+        """ Initialize peer to peer challenge response messsage """
 
         self.db = db
         self.msgs = decking.Deck()

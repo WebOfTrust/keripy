@@ -127,7 +127,7 @@ class SadPathSigGroup:
     """ Transposable group of signatures
 
     Supports transposing groups of signatures from transferable or non-transferable
-    identfiers
+    identifiers
 
     """
 

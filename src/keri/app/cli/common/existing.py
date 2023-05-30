@@ -85,7 +85,7 @@ def existingHab(name, alias, base="", bran=None):
 
     Parameters:
         name(str): name of habitat to create
-        alias(str): alias for the identfier required
+        alias(str): alias for the identifier required
         base(str): optional base directory prefix
         bran(str): optional passcode if the Habery was created encrypted
     """
