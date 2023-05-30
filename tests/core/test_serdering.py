@@ -41,7 +41,7 @@ def test_serder():
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
-                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''})}},
+                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'u': ''})}},
                              'ACDC': {Versionage(major=1, minor=0): {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
 
     assert Serder.Ilks == {'KERI': None, 'ACDC': None}
@@ -664,8 +664,6 @@ def test_serderkeri():
 
 def test_serderkeri_icp():
     """Test SerderKERI icp msg"""
-
-
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
     serder = SerderKERI(makify=True, ilk=kering.Ilks.icp)  # make with defaults
@@ -1538,8 +1536,100 @@ def test_serderkeri_exn():
 
     """End Test"""
 
-def test_serderkeri_vct():
-    """Test SerderKERI vct msg"""
+def test_serderkeri_vcp():
+    """Test SerderKERI vcp msg"""
+
+    # Test KERI JSON with makify defaults for self bootstrap with ilk vcp
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.vcp)  # make with defaults
+    assert serder.sad == {'v': 'KERI10JSON0000b7_',
+                        't': 'vcp',
+                        'd': 'EAdK69pyrMFcDPLoQASHLvTF_6Ns6PFsm7I6EkPmYcJW',
+                        'i': 'EAdK69pyrMFcDPLoQASHLvTF_6Ns6PFsm7I6EkPmYcJW',
+                        'ii': '',
+                        's': '0',
+                        'c': [],
+                        'bt': '0',
+                        'b': [],
+                        'u': ''}
+
+
+    assert serder.raw == (b'{"v":"KERI10JSON0000b7_","t":"vcp","d":"EAdK69pyrMFcDPLoQASHLvTF_6Ns6PFsm7I6'
+                          b'EkPmYcJW","i":"EAdK69pyrMFcDPLoQASHLvTF_6Ns6PFsm7I6EkPmYcJW","ii":"","s":"0"'
+                          b',"c":[],"bt":"0","b":[],"u":""}')
+
+    assert serder.verify()
+    assert serder.ilk == kering.Ilks.vcp
+    assert serder.pre == serder.said  # default prefix is saidive
+
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+    ilk = serder.ilk
+    pre = serder.pre
+
+    serder = SerderKERI(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == None
+    assert serder.traits == []
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner.num == 0
+    assert serder.bn == 0
+    assert serder.berfers == []
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+    assert serder.uuid == '' == serder.nonce
+
+    serder = SerderKERI(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == None
+    assert serder.traits == []
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner.num == 0
+    assert serder.bn == 0
+    assert serder.berfers == []
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+    assert serder.uuid == '' == serder.nonce
+
 
     """End Test"""
 
@@ -1673,6 +1763,6 @@ if __name__ == "__main__":
     test_serderkeri_dip()
     test_serderkeri_drt()
     test_serderkeri_exn()
-    test_serderkeri_vct()
+    test_serderkeri_vcp()
     test_serderacdc()
     test_serdery()

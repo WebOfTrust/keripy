@@ -231,12 +231,13 @@ class Exchanger(doing.DoDoer):
         self.db.exns.put(keys=(dig,), val=serder)
 
 
-def exchange(route, payload, date=None, modifiers=None, version=coring.Version, kind=coring.Serials.json):
+def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
+             kind=coring.Serials.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
         route (str): to destination route of the message
-        payload (Optional(dict, list)): body of message to deliver to route
+        payload (list | dict): body of message to deliver to route
         date (str): Iso8601 formatted date string to use for this request
         modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload

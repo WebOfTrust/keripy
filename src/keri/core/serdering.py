@@ -245,7 +245,7 @@ class Serder:
                         Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
                             alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
-                                        bt='0', b=[], n='')),
+                                        bt='0', b=[], u='')),
                     },
                 },
                 Protos.acdc:
@@ -1165,8 +1165,8 @@ class SerderKERI(Serder):
         One for each backer (witness).
         berfers property getter
         """
-        backs = self._sad.get("b")
-        return [Verfer(qb64=back) for back in backs] if backs is not None else None
+        baks = self._sad.get("b")
+        return [Verfer(qb64=bak) for bak in baks] if baks is not None else None
 
 
     #Properties for delegated Serders ilks in (dip, drt)
@@ -1186,6 +1186,7 @@ class SerderKERI(Serder):
         delpreb (bytes): qb64b  of .delpre property getter as bytes
         """
         return self.delpre.encode("utf-8") if self.delpre is not None else None
+
 
 
     #Properties for state Serder ilk is None
@@ -1208,6 +1209,28 @@ class SerderKERI(Serder):
             fn (int): of .fner.num from ._sad["f"]
         """
         return self.fner.num if self.fner is not None else None
+
+
+    #Properties for exn  exchange
+
+
+    #Properties for vcp  (registry  inception event)
+    @property
+    def uuid(self):
+        """
+        Returns:
+           uuid (str): qb64  of .sad["u"] salty nonce
+        """
+        return self._sad.get("u")
+
+    @property
+    def nonce(self):
+        """
+        Returns:
+           nonce (str): alias for .uuid property
+        """
+        return self.uuid
+
 
 
 class SerderACDC(Serder):
