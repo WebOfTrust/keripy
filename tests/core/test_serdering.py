@@ -1429,6 +1429,104 @@ def test_serderkeri_drt():
 
     """End Test"""
 
+def test_serderkeri_rct():
+    """Test SerderKERI rct msg"""
+
+    # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
+    serder = SerderKERI(makify=True, ilk=kering.Ilks.rct)  # make with defaults
+    assert serder.sad == {'v': 'KERI10JSON000065_',
+                        't': 'rct',
+                        'd': 'EPR1Cjv18iM6-mkzH4LE0ycL7PkveQ9apIMbVQ4In9gJ',
+                        'i': '',
+                        's': '0'}
+
+    assert serder.raw == (b'{"v":"KERI10JSON000065_","t":"rct","d":"EPR1Cjv18iM6-mkzH4LE0ycL7PkveQ9apIMb'
+                          b'VQ4In9gJ","i":"","s":"0"}')
+
+    assert not serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.rct
+    assert serder.pre == '' != serder.said  # prefix is not saidive
+
+    sad = serder.sad
+
+    # test makify with preloaded non-digestive 'i' value in sad
+    pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
+    sad['i'] = pre
+
+    serder = SerderKERI(sad=sad, makify=True)
+
+    assert serder.verify()  # because pre is empty
+    assert serder.ilk == kering.Ilks.rct
+    assert serder.pre == pre != serder.said  # prefix is not saidive
+
+
+    sad = serder.sad
+    raw = serder.raw
+    said = serder.said
+    size = serder.size
+    ilk = serder.ilk
+
+    serder = SerderKERI(sad=sad)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == None
+    assert serder.traits == None
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner == None
+    assert serder.bn == None
+    assert serder.berfers == None
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+
+    serder = SerderKERI(raw=raw)
+    assert serder.raw == raw
+    assert serder.sad == sad
+    assert serder.proto == kering.Protos.keri
+    assert serder.vrsn == kering.Vrsn_1_0
+    assert serder.size == size
+    assert serder.kind == kering.Serials.json
+    assert serder.said == said
+    assert serder.ilk == ilk
+
+    assert not serder.estive
+    assert serder.ked == serder.sad
+    assert serder.pre == serder.sad['i'] == pre
+    assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.sner.num == 0
+    assert serder.sn == 0
+    assert serder.seals == None
+    assert serder.traits == None
+    assert serder.tholder == None
+    assert serder.verfers == None
+    assert serder.ntholder == None
+    assert serder.ndigers == None
+    assert serder.bner == None
+    assert serder.bn == None
+    assert serder.berfers == None
+    assert serder.delpre == None
+    assert serder.delpreb == None
+    assert serder.fner == None
+    assert serder.fn == None
+    """End Test"""
+
 def test_serderkeri_qry():
     """Test SerderKERI qry query msg"""
 
@@ -1775,6 +1873,7 @@ if __name__ == "__main__":
     test_serderkeri_ixn()
     test_serderkeri_dip()
     test_serderkeri_drt()
+    test_serderkeri_rct()
     test_serderkeri_qry()
     test_serderkeri_rpy()
     test_serderkeri_exn()
