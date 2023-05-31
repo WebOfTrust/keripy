@@ -15,12 +15,13 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 # Protocol Types
-Protocolage = namedtuple("Protocolage", "keri acdc")
-Protos = Protocolage(keri="KERI", acdc="ACDC")
+Protocolage = namedtuple("Protocolage", "keri crel acdc")
+Protos = Protocolage(keri="KERI", crel="CREL", acdc="ACDC", )
 
 Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
+Vrsn_1_1 = Versionage(major=1, minor=1)  # KERI Protocol Version Specific
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable

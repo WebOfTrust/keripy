@@ -25,9 +25,9 @@ from cryptography import exceptions
 
 from keri.core import coring
 from keri.core import eventing
-from keri.core.coring import Ilkage, Ilks, Labels, Saids, Protos, Sadder
-from keri.core.coring import Seqner, NumDex, Number, Siger, Dater, Bexter
-from keri.core.coring import Serder, Tholder
+from keri.core.coring import (Ilkage, Ilks, Labels, Saids, Protos, Protocolage,
+                              Sadder, Serder, Tholder, Seqner,
+                              NumDex, Number, Siger, Dater, Bexter)
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
                               IdxCrtSigDex, IdxBthSigDex, Indexer,
@@ -48,6 +48,24 @@ from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LAB
 from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 
+
+
+def test_protos():
+    """
+    Test protocols namedtuple instance Protos
+    """
+
+    assert isinstance(Protos, Protocolage)
+
+    assert Protos.keri == 'KERI'
+    assert Protos.crel == 'CREL'
+    assert Protos.acdc == 'ACDC'
+
+    assert 'KERI' in Protos
+    assert 'CREL' in Protos
+    assert 'ACDC' in Protos
+
+    """End Test"""
 
 def test_prodex():
     """

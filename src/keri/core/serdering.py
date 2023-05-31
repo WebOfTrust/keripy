@@ -17,7 +17,7 @@ from .. import kering
 from ..kering import (ValidationError,  MissingFieldError,
                       ShortageError, VersionError, ProtocolError, KindError,
                       DeserializeError, FieldError, SerializeError)
-from ..kering import (Versionage, Version, Vrsn_1_0,
+from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_1_1,
                       VERRAWSIZE, VERFMT, VERFULLSIZE)
 from ..kering import Protos, Serials, Rever, versify, deversify, Ilks
 from ..core import coring
@@ -240,12 +240,97 @@ class Serder:
                         Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                             alls=dict(v='', t='',d='', dt='', r='',a=[])),
                         Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                            alls=dict(v='', t='',d='', i='', dt='', r='',q={},
+                            alls=dict(v='', t='',d='', dt='', r='',q={},
                                         a=[])),
                         Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
                             alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
+                                        bt='0', b=[], n='')),
+                        Ilks.vrt: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', p='', s='0',
+                                        bt='0', br=[], ba=[])),
+                        Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', ri='',
+                                      dt='')),
+                        Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', ri='',
+                                      p='', dt='')),
+                        Ilks.bis: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', ii='', s='0', ra={},
+                                      dt='')),
+                        Ilks.brv: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', p='', ra={},
+                                      dt='')),
+                    },
+                    Vrsn_1_1:
+                    {
+                        None: Fieldage(saids={},
+                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
+                                dt='',et='', kt='0', k=[], nt='0', n=[],
+                                bt='0', b=[], c=[], ee={}, di='')),
+                        Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
+                                k=[], nt='0', n=[], bt='0', b=[], c=[], a=[])),
+                        Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='',
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                ba=[], a=[])),
+                        Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
+                        Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', kt='0',
+                                k=[], nt='0', n=[], bt='0', b=[], c=[], a=[],
+                                di='')),
+                        Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0', p='',
+                                kt='0',k=[], nt='0', n=[], bt='0', b=[], br=[],
+                                ba=[], a=[], di='')),
+                        Ilks.rct: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', s='0')),
+                        Ilks.qry: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', dt='', r='', rr='',
+                                        q={})),
+                        Ilks.rpy: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', dt='', r='',a=[])),
+                        Ilks.pro: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', dt='', r='', rr='',
+                                        q={})),
+                        Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', dt='', r='',a=[])),
+                        Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
+                            alls=dict(v='', t='',d='', i='', dt='', r='',q={},
+                                        a=[])),
+                    },
+                },
+                Protos.crel:
+                {
+                    Vrsn_1_1:
+                    {
+                        None: Fieldage(saids={},
+                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
+                                dt='',et='', kt='0', k=[], nt='0', n=[],
+                                bt='0', b=[], c=[], ee={}, di='')),
+                        Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
+                                                  Saids.i: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
                                         bt='0', b=[], u='')),
+                        Ilks.vrt: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', p='', s='0',
+                                        bt='0', br=[], ba=[])),
+                        Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', ri='',
+                                      dt='')),
+                        Ilks.iss: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', ri='',
+                                      p='', dt='')),
+                        Ilks.bis: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', ii='', s='0', ra={},
+                                      dt='')),
+                        Ilks.brv: Fieldage(saids={Saids.d: DigDex.Blake3_256,},
+                            alls=dict(v='', t='',d='', i='', s='0', p='', ra={},
+                                      dt='')),
                     },
                 },
                 Protos.acdc:
@@ -261,7 +346,7 @@ class Serder:
     # default ilk for each protocol at default version is zeroth ilk in dict
     Ilks = dict()
     for key, val in Fields.items():
-        Ilks[key] = list(val[Vrsn].keys())[0]
+        Ilks[key] = list(list(val.values())[0].keys())[0]
 
 
     def __init__(self, *, raw=b'', sad=None, strip=False, version=Version,
@@ -1011,14 +1096,20 @@ class SerderKERI(Serder):
             raise ValidationError(f"Invalid top level field list. Expected "
                                   f"{allkeys} got {keys}.")
 
-        try:
-            code = Matter(qb64=self.pre).code
-        except Exception as ex:
-            raise ValidationError(f"Invalid identifier prefix = "
-                                  f"{self.pre}.") from ex
+        if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
+            self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
+                pass
+        else:
+            try:
+                code = Matter(qb64=self.pre).code
+            except Exception as ex:
+                raise ValidationError(f"Invalid identifier prefix = "
+                                      f"{self.pre}.") from ex
 
-        if code not in PreDex:
-            raise ValidationError(f"Invalid identifier prefix code = {code}.")
+            if code not in PreDex:
+                raise ValidationError(f"Invalid identifier prefix code = {code}.")
+
+
 
 
     @property
@@ -1043,7 +1134,7 @@ class SerderKERI(Serder):
         Returns:
            pre (str): qb64  of .sad["i"] identifier prefix property getter
         """
-        return self._sad["i"]
+        return self._sad.get("i")
 
 
     @property
@@ -1052,7 +1143,7 @@ class SerderKERI(Serder):
         Returns:
         preb (bytes): qb64b  of .pre identifier prefix property getter as bytes
         """
-        return self.pre.encode("utf-8")
+        return self.pre.encode("utf-8") if self.pre is not None else None
 
 
     @property
@@ -1133,6 +1224,9 @@ class SerderKERI(Serder):
         One for each next key digests.
         ndigers property getter
         """
+        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+            return None
+
         digs = self._sad.get("n")
         return [Diger(qb64=dig) for dig in digs] if digs is not None else None
 
@@ -1229,8 +1323,63 @@ class SerderKERI(Serder):
         Returns:
            nonce (str): alias for .uuid property
         """
-        return self.uuid
+        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+            return self._sad.get("n")
+        else:
+            return self.uuid
 
+
+class SerderCREL(Serder):
+    """SerderCREL is Serder subclass with Labels for CREL packet types (ilks) and
+       properties for exposing field values of CREL messages
+       Container Registry Event Log for issuance, revocation, etc registries of
+       ACDC
+
+       See docs for Serder
+    """
+    #override in subclass to enforce specific protocol
+    Protocol = Protos.crel  # required protocol, None means any in Protos is ok
+    Proto = Protos.crel  # default protocol type
+    Vrsn = Vrsn_1_1  # default protocol version for protocol type
+
+
+    def _verify(self, **kwa):
+        """Verifies said(s) in sad against raw
+        Override for protocol and ilk specific verification behavior. Especially
+        for inceptive ilks that have more than one said field like a said derived
+        identifier prefix.
+
+        Raises a ValidationError (or subclass) if any verification fails
+
+        """
+        super(SerderCREL, self)._verify(**kwa)
+
+        try:
+            code = Matter(qb64=self.isr).code
+        except Exception as ex:
+            raise ValidationError(f"Invalid issuer AID = "
+                                  f"{self.isr}.") from ex
+
+        if code not in PreDex:
+            raise ValidationError(f"Invalid issuer AID code = {code}.")
+
+
+    @property
+    def isr(self):
+        """
+        Returns:
+           issuer (str): qb64  of .sad["i"] issuer AID property getter
+        """
+        return self._sad.get('i')
+
+
+    @property
+    def isrb(self):
+        """
+        Returns:
+        issuerb (bytes): qb64b  of .issuer property getter as bytes
+        """
+        return self.isr.encode("utf-8") if self.isr is not None else None
 
 
 class SerderACDC(Serder):
