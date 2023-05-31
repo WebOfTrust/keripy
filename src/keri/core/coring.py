@@ -35,7 +35,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
                       versify, deversify, Rever)
-from ..kering import Serials, Serialage, Protos, Ilkage, Ilks
+from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
 from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,

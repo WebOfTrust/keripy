@@ -29,7 +29,7 @@ def test_serder():
 
     # Test Serder
 
-    {'KERI': {Versionage(major=1, minor=0): {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
+    assert Serder.Fields == {'KERI': {Versionage(major=1, minor=0): {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
                                          'icp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'a': []}),
                                          'rot': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'br': [], 'ba': [], 'a': []}),
                                          'ixn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'a': []}),
@@ -41,23 +41,32 @@ def test_serder():
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
-                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''})},
-              Versionage(major=1, minor=1): {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
+                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''}),
+                                         'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
+                                         'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'p': '', 'dt': ''}),
+                                         'bis': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'ra': {}, 'dt': ''}),
+                                         'brv': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'ra': {}, 'dt': ''})},
+                                      Versionage(major=1, minor=1): {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
                                          'icp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'a': []}),
                                          'rot': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'br': [], 'ba': [], 'a': []}),
                                          'ixn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'a': []}),
                                          'dip': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'a': [], 'di': ''}),
                                          'drt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'br': [], 'ba': [], 'a': [], 'di': ''}),
                                          'rct': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0'}),
-                                         'qry': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
-                                         'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
-                                         'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'q': {}, 'a': []}),
-                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'u': ''})}},
-     'ACDC': {Versionage(major=1, minor=0): {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
+                                         'qry': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
+                                         'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
+                                         'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
+                                         'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'q': {}, 'a': []})}},
+                             'CREL': {Versionage(major=1, minor=1): {None: Fieldage(saids={}, alls={'v': '', 'i': '', 's': '0', 'p': '', 'd': '', 'f': '0', 'dt': '', 'et': '', 'kt': '0', 'k': [], 'nt': '0', 'n': [], 'bt': '0', 'b': [], 'c': [], 'ee': {}, 'di': ''}),
+                                         'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'u': ''}),
+                                         'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
+                                         'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'p': '', 'dt': ''}),
+                                         'bis': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'ra': {}, 'dt': ''}),
+                                         'brv': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'p': '', 'ra': {}, 'dt': ''})}},
+                             'ACDC': {Versionage(major=1, minor=0): {None: Fieldage(saids={'d': 'E'}, alls={'v': '', 'd': '', 'i': '', 's': ''})}}}
 
-    assert Serder.Ilks == {'KERI': None, 'ACDC': None}
+    assert Serder.Ilks == {'KERI': None, 'CREL': None, 'ACDC': None}
 
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
     assert Serder.Fields[kering.Protos.acdc][kering.Vrsn_1_0][None].alls == {'v': '', 'd': '', 'i': '', 's': ''}
