@@ -87,6 +87,14 @@ SealEvent = namedtuple("SealEvent", 'i s d')
 # used to indicate to get the latest keys available from KEL for 'i'
 SealLast = namedtuple("SealLast", 'i')
 
+# Establishment Event for Source of Message: duple (s, d)
+# s = sn of event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64 of event
+# the pre is provided in the 'i' field of the message itself which is the qb64
+# of identifier prefix of KEL from which to get  est, event given by 's d'
+# use SealSourceCouples count code for attachment
+SealEst = namedtuple("SealEst", 's d')
+
 # State (latest current) Event: triple (s, t, d)
 # s = sn of latest event as lowercase hex string  no leading zeros,
 # t = message type of latest event (ilk)
