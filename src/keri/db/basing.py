@@ -83,6 +83,88 @@ class dbdict(dict):
         else:
             return self.__getitem__(k)
 
+@dataclass
+class KeyStateRecord:  # baser.state
+    """
+    Key State information keyed by Identifier Prefix of associated KEL.
+    For local AIDs that correspond to Habs this is the Hab AID.
+    (see baser.state at 'stts')
+
+    Attributes:
+        i (str): identifier prefix qb64
+        s (str): sequence number of latest event in KEL as hex str
+        p (str): prior event digest qb64
+        d (str): latest event digest qb64
+        f (str): first seen ordinal number of latest event in KEL as hex str
+
+
+    """
+    i: str =''  # identifier prefix qb64
+    s: str ='0'  # sequence number of latest event in KEL as hex str
+    p: str =''  # prior event digest qb64
+    d: str =''  # latest event digest qb64
+    f: str ='0'  # first seen ordinal number of latest event in KEL as hex str
+    dt: str = ''  # datetime of creation of state
+    et: str = ''  # latest est evt packet type (ilk)
+    kt: str = '0'  # signing threshold sith
+    k: list = field(default_factory=list)  # signing key list qb64
+    nt: str =  '0'  # next rotation threshold nsith
+    n: list =  field(default_factory=list) #  next rotation key digest list qb64
+    bt: str = '0'  # backer threshold hex num str
+    b: list = field(default_factory=list)  # backer AID list qb64
+    c: list[str] =  field(default_factory=list)  # config trait list
+    ee: dict = field(default_factory=dict) # latest est event details
+        # asdict of StateEstEvent
+            # s = sn of latest est event as lowercase hex string  no leading zeros,
+            # d = SAID digest qb64  of latest establishment event
+            # br = backer (witness) remove list (cuts) from latest est event
+            # ba = backer (witness) add list (adds) from latest est event
+    di: str = '' # delegator aid qb64 if any otherwise empty '' str
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+
+
+@dataclass
+class HabitatRecord:  # baser.habs
+    """
+    Habitat application state information keyed by habitat name (baser.habs)
+
+    Attributes:
+        hid (str): identifier prefix of hab qb64
+        mid (str | None): group member identifier qb64 when hid is group
+        smids (list | None): group signing member identifiers qb64 when hid is group
+        rmids (list | None): group signing member identifiers qb64 when hid is group
+        watchers: (list[str]) = list of id prefixes qb64 of watchers
+
+    ToDo: NRR
+        May need to save midxs for interact event signing by .mhab because
+        merfers and migers and mindices are not provided. Reserve members of
+        group do not participate in signing so must either ignore or raise error
+        if asked to sign interaction event.
+
+        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
+
+    """
+    hid: str  # hab own identifier prefix qb64
+    mid: str | None = None  # group member identifier qb64 when hid is group
+    smids: list | None = None  # group signing member ids when hid is group
+    rmids: list | None = None  # group rotating member ids when hid is group
+    sid: str | None = None  # Signify identifier qb64 when hid is Signify
+    watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
+
+
+@dataclass
+class TopicsRecord:  # baser.tops
+    """
+    Tracks the last message topic index retrieved from the witness mailbox
+    Database Key is the identifier prefix of the witness that is storing
+    events in a mailbox. (baser.tops)
+    """
+    topics: dict
+
 
 @dataclass
 class OobiQueryRecord:  # information for responding to OOBI query
@@ -131,44 +213,6 @@ class OobiRecord:
     state: str = None
     urls: list = None
 
-
-@dataclass
-class HabitatRecord:  # baser.habs
-    """
-    Habitat application state information keyed by habitat name (baser.habs)
-
-    Attributes:
-        hid (str): identifier prefix of hab qb64
-        mid (str | None): group member identifier qb64 when hid is group
-        smids (list | None): group signing member identifiers qb64 when hid is group
-        rmids (list | None): group signing member identifiers qb64 when hid is group
-        watchers: (list[str]) = list of id prefixes qb64 of watchers
-
-    ToDo: NRR
-        May need to save midxs for interact event signing by .mhab because
-        merfers and migers and mindices are not provided. Reserve members of
-        group do not participate in signing so must either ignore or raise error
-        if asked to sign interaction event.
-
-        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
-
-    """
-    hid: str  # hab own identifier prefix qb64
-    mid: str | None = None  # group member identifier qb64 when hid is group
-    smids: list | None = None  # group signing member ids when hid is group
-    rmids: list | None = None  # group rotating member ids when hid is group
-    sid: str | None = None  # Signify identifier qb64 when hid is Signify
-    watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
-
-
-@dataclass
-class TopicsRecord:  # baser.tops
-    """
-    Tracks the last message topic index retrieved from the witness mailbox
-    Database Key is the identifier prefix of the witness that is storing
-    events in a mailbox. (baser.tops)
-    """
-    topics: dict
 
 
 @dataclass
