@@ -267,6 +267,19 @@ def normalize(param):
 def siginput(name, method, path, headers, fields, hab=None, signers=None, expires=None, nonce=None, alg=None,
              keyid=None, context=None):
     """ Create an HTTP Signature-Input Header
+   Parameters:
+        context (str): Optional implementation specific context for the signature
+        keyid (str): Optional key identifier used to sign the request
+        alg (str): Algorithm used when generating the signature
+        nonce (str): Uniqque salty nonce for signing the request
+        expires (str): iso8601 formated date string indicating exiration of header signature
+        signers (list): Optional signer objects used to sign the values
+        hab (Hab): Optional Hab used to sign the values.  One of signers or Hab is required
+        fields (str): Fields in request to sign.  Includes special fields as well as Header fields
+        headers (dict): HTTP request headers
+        path (str): HTTP request path
+        method (str): HTTP request method (POST, GET, PUT, etc)
+        name (str): name of item
 
     Returns:
         header (dict): {'Signature-Input': 'value'} where value is RFC8941 compliant
