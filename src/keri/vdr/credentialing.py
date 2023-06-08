@@ -87,6 +87,19 @@ class Regery:
 
         return reg
 
+    def makeSignifyRegistry(self, name, prefix, regser):
+        hab = self.hby.habs[prefix]
+        if hab is None:
+            raise kering.ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
+
+        reg = SignifyRegistry(hab=hab, name=name, reger=self.reger, tvy=self.tvy, psr=self.psr, cues=self.cues)
+
+        reg.make(regser=regser)
+
+        self.regs[reg.regk] = reg
+
+        return reg
+
     def registryByName(self, name):
         if regrec := self.reger.regs.get(name):
             return self.regs[regrec.registryKey] if regrec.registryKey in self.regs else None
@@ -138,7 +151,7 @@ class RegeryDoer(doing.Doer):
             yield self.tock
 
 
-class Registry:
+class BaseRegistry:
     """
     Issuer provides encapsulation of creating a Verifiable Credential Registry with issuance
     and revocation of VCs against that registry.
@@ -171,47 +184,6 @@ class Registry:
         self.cnfg = []
 
         self.inited = False
-
-    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False):
-        """ Delayed initialization of Issuer.
-
-        Actual initialization of Issuer from properties or loaded from .reger.  Should
-        only be called after .hab is initied.
-
-        Parameters:
-            nonce (str) qb64 random seed for credential registries
-            noBackers (boolean): True to allow specification of TEL specific backers
-            baks (list): initial list of backer prefixes qb64 for VCs in the Registry
-            toad (str): hex of witness threshold
-            estOnly (boolean): True for forcing rotation events for every TEL event.
-
-        """
-        baks = baks if baks is not None else []
-
-        self.cnfg = [TraitDex.NoBackers] if noBackers else []
-        if estOnly:
-            self.cnfg.append(TraitDex.EstOnly)
-
-        pre = self.hab.pre
-
-        regser = eventing.incept(pre,
-                                 baks=baks,
-                                 toad=toad,
-                                 nonce=nonce,
-                                 cnfg=self.cnfg,
-                                 code=MtrDex.Blake3_256)
-        self.regk = regser.pre
-        self.regd = regser.said
-        self.registries.add(self.regk)
-        self.reger.regs.put(keys=self.name,
-                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
-
-        try:
-            self.tvy.processEvent(serder=regser)
-        except kering.MissingAnchorError:
-            logger.info("Credential registry missing anchor for inception = {}".format(regser.ked))
-
-        self.inited = True
 
     @property
     def tevers(self):
@@ -250,6 +222,81 @@ class Registry:
     def registries(self):
         return self.reger.registries
 
+    def processEvent(self, serder):
+        """ Process registry events
+
+        Parameters:
+            serder (Serder): Registry TEL event to process
+
+        """
+
+        try:
+            self.tvy.processEvent(serder=serder)
+        except kering.MissingAnchorError:
+            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
+
+    def anchorMsg(self, pre, regd, seqner, saider):
+        """  Create key event with seal to serder anchored as data.
+
+        Performs a rotation or interaction event for single sig or multiple sig identifier
+        to anchor the provide registry event.  Inserts outbound cues for external processing
+        of resulting events or multisig handling.
+
+        Parameters:
+            pre (str): registry event identifier
+            regd (str): registry event SAID
+            seqner (Seqner): sequence number of anchoring event
+            saider (Saider): SAID of the anchoring event
+
+        """
+
+        key = dgKey(pre, regd)
+        sealet = seqner.qb64b + saider.qb64b
+        self.reger.putAnc(key, sealet)
+
+
+class Registry(BaseRegistry):
+    """
+
+    """
+
+    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False):
+        """ Delayed initialization of Issuer.
+
+        Actual initialization of Issuer from properties or loaded from .reger.  Should
+        only be called after .hab is initied.
+
+        Parameters:
+            nonce (str) qb64 random seed for credential registries
+            noBackers (boolean): True to allow specification of TEL specific backers
+            baks (list): initial list of backer prefixes qb64 for VCs in the Registry
+            toad (str): hex of witness threshold
+            estOnly (boolean): True for forcing rotation events for every TEL event.
+
+        """
+        baks = baks if baks is not None else []
+
+        self.cnfg = [TraitDex.NoBackers] if noBackers else []
+        if estOnly:
+            self.cnfg.append(TraitDex.EstOnly)
+
+        pre = self.hab.pre
+
+        regser = eventing.incept(pre,
+                                 baks=baks,
+                                 toad=toad,
+                                 nonce=nonce,
+                                 cnfg=self.cnfg,
+                                 code=MtrDex.Blake3_256)
+        self.regk = regser.pre
+        self.regd = regser.said
+        self.registries.add(self.regk)
+        self.reger.regs.put(keys=self.name,
+                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
+
+        self.processEvent(serder=regser)
+        self.inited = True
+
     def rotate(self, toad=None, cuts=None, adds=None):
         """ Rotate backer list for registry
 
@@ -274,11 +321,7 @@ class Registry:
                                  adds=adds,
                                  cuts=cuts)
 
-        try:
-            self.tvy.processEvent(serder=serder)
-        except kering.MissingAnchorError:
-            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
-
+        self.processEvent(serder=serder)
         return serder
 
     def issue(self, said, dt=None):
@@ -299,11 +342,7 @@ class Registry:
             serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                           dt=dt)
 
-        try:
-            self.tvy.processEvent(serder=serder)
-        except kering.MissingAnchorError:
-            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
-
+        self.processEvent(serder=serder)
         return serder
 
     def revoke(self, said, dt=None):
@@ -333,31 +372,102 @@ class Registry:
             serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
                                            dig=iserder.said, dt=dt)
 
-        try:
-            self.tvy.processEvent(serder=serder)
-        except kering.MissingAnchorError:
-            logger.info("Credential registry missing anchor for inception = {}".format(serder.ked))
-
+        self.processEvent(serder=serder)
         return serder
 
-    def anchorMsg(self, pre, regd, seqner, saider):
-        """  Create key event with seal to serder anchored as data.
 
-        Performs a rotation or interaction event for single sig or multiple sig identifier
-        to anchor the provide registry event.  Inserts outbound cues for external processing
-        of resulting events or multisig handling.
+class SignifyRegistry(BaseRegistry):
+
+    def make(self, *, regser):
+        """ Delayed initialization of Issuer.
+
+        Actual initialization of Issuer from properties or loaded from .reger.  Should
+        only be called after .hab is initied.
 
         Parameters:
-            pre (str): registry event identifier
-            regd (str): registry event SAID
-            seqner (Seqner): sequence number of anchoring event
-            saider (Saider): SAID of the anchoring event
+            regser (Serder): Regsitry inception event
+
+        """
+        pre = self.hab.pre
+        self.regk = regser.pre
+        self.regd = regser.said
+        self.registries.add(self.regk)
+        self.reger.regs.put(keys=self.name,
+                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
+
+        self.processEvent(serder=regser)
+        self.inited = True
+
+    def rotate(self, serder):
+        """ Rotate backer list for registry
+
+        Parameters:
+            serder (Serder): Regsitry inception event
+
+        Returns:
+            boolean: True if rotation is successful
 
         """
 
-        key = dgKey(pre, regd)
-        sealet = seqner.qb64b + saider.qb64b
-        self.reger.putAnc(key, sealet)
+        if self.noBackers:
+            raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
+
+        if serder.ked['s'] != self.regi + 1:
+            raise ValueError(f"Invalid sequence number {serder.ked['s']}")
+
+        self.processEvent(serder=serder)
+        return serder
+
+    def issue(self, said, dt=None):
+        """ Create and process an iss or bis message event
+
+        Parameters:
+            said (str): qb64 SAID of credential to issue
+            dt (str): iso8601 formatted date time string of issuance
+
+        Returns:
+            boolean: True if issuance is successful
+
+        """
+
+        if self.noBackers:
+            serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
+        else:
+            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+                                          dt=dt)
+
+        self.processEvent(serder=serder)
+        return serder
+
+    def revoke(self, said, dt=None):
+        """ Perform revocation of credential
+
+        Create and process rev or brv message event
+
+        Parameters:
+            said (str): qb64 SAID of the credential to revoke
+            dt (str): iso8601 formatted date time string of revocation
+
+        Returns:
+            boolean: True if revocation is successful.
+
+        """
+        vci = said
+        vcser = self.reger.getTel(snKey(pre=vci, sn=0))
+        if vcser is None:
+            raise kering.ValidationError("Invalid revoke of {} that has not been issued "
+                                         "pre={}.".format(vci, self.regk))
+        ievt = self.reger.getTvt(dgKey(pre=vci, dig=vcser))
+        iserder = Serder(raw=bytes(ievt))
+
+        if self.noBackers:
+            serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
+        else:
+            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+                                           dig=iserder.said, dt=dt)
+
+        self.processEvent(serder=serder)
+        return serder
 
 
 class Registrar(doing.DoDoer):
@@ -421,7 +531,6 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
         return registry
-
 
     def issue(self, regk, said, dt=None, smids=None, rmids=None):
         """
@@ -540,7 +649,6 @@ class Registrar(doing.DoDoer):
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None
 
-
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
 
@@ -566,7 +674,6 @@ class Registrar(doing.DoDoer):
         while True:
             self.processEscrows()
             yield 0.5
-
 
     def processEscrows(self):
         """
