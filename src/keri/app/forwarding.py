@@ -72,10 +72,12 @@ class Poster(doing.DoDoer):
                     hab = self.hby.habs[src]
 
                 ends = hab.endsFor(recp)
+                print(f"sending to {ends}")
                 try:
                     if Roles.controller in ends:
                         yield from self.sendDirect(hab, ends[Roles.controller], serder=srdr, atc=atc)
                     elif Roles.agent in ends:
+                        print("sending to agent")
                         yield from self.sendDirect(hab, ends[Roles.agent], serder=srdr, atc=atc)
                     elif Roles.mailbox in ends:
                         yield from self.forward(hab, ends[Roles.mailbox], recp=recp, serder=srdr, atc=atc, topic=tpc)

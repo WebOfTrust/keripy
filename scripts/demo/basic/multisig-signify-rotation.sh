@@ -11,9 +11,12 @@ kli init --name multisig2 --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-
 kli incept --name multisig2 --alias multisig2 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
 
 kli oobi resolve --name multisig1 --oobi-alias multisig2 --oobi http://127.0.0.1:5642/oobi/EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name multisig1 --oobi-alias agent0 --oobi http://127.0.0.1:3902/oobi/ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK/agent/EFebpJik0emPaSuvoSPYuLVpSAsaWVDwf4WYVPOBva_p
 kli oobi resolve --name multisig2 --oobi-alias multisig1 --oobi http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name multisig2 --oobi-alias agent0 --oobi http://127.0.0.1:3902/oobi/ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK/agent/EFebpJik0emPaSuvoSPYuLVpSAsaWVDwf4WYVPOBva_p
+
+read  -n 1 -r -p "Press any key after agent0 has created their AID:"
+
+kli oobi resolve --name multisig1 --oobi-alias agent0 --oobi http://127.0.0.1:3902/oobi/EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv/agent/EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei
+kli oobi resolve --name multisig2 --oobi-alias agent0 --oobi http://127.0.0.1:3902/oobi/EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv/agent/EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei
 
 # Follow commands run in parallel
 kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-signify-sample.json &
@@ -28,9 +31,12 @@ PID_LIST=""
 kli status --name multisig1 --alias multisig
 
 
+echo "Multisig1 interacting"
 kli multisig interact --name multisig1 --alias multisig --data '{"i": "EE77q3_zWb5ojgJr-R1vzsL5yiL4Nzm-bfSOQzQl02dy"}' &
 pid=$!
 PID_LIST+=" $pid"
+
+echo "Multisig2 interacting"
 kli multisig interact --name multisig2 --alias multisig --data '{"i": "EE77q3_zWb5ojgJr-R1vzsL5yiL4Nzm-bfSOQzQl02dy"}' &
 pid=$!
 PID_LIST+=" $pid"
