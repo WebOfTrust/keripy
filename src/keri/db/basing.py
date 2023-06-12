@@ -99,7 +99,8 @@ class KeyStateRecord:  # baser.state
 
 
     """
-    v: str = ''  # version string need to change to actual version tuple (major, minor)
+    v: str = ''  # version string need to remove replace with vn below
+    vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str =''  # identifier prefix qb64
     s: str ='0'  # sequence number of latest event in KEL as hex str
     p: str =''  # prior event digest qb64

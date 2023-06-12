@@ -1035,6 +1035,7 @@ def state(pre,
     KeyStateDict:
     {
         "v": "KERI10JSON00011c_",
+        "vn": []1,0],
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
         "s": "2":,
         "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
@@ -1145,6 +1146,7 @@ def state(pre,
 
 
     ksd = dict(v=vs,  # version string
+               vn=list(version), # version number as list [major, minor]
                i=pre,  # qb64 prefix
                s=sner.numh,  # lowercase hex string no leading zeros
                p=pig,

@@ -14,6 +14,7 @@ def test_keystate(mockHelpingNowUTC):
     """
         {
           "v": "KERI10JSON000301_",
+          "vn": (1,0),
           "t": "rpy",
           "d": "E_9aLcmV9aEVEm7mXvEY3V_CmbyvG7Ahj6HCq-D48meM",
           "dt": "2021-11-04T12:57:59.823350+00:00",

@@ -12,6 +12,7 @@ import pytest
 from hio.base import doing
 
 from tests.app import openMultiSig
+from keri.kering import Versionage
 from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
@@ -23,7 +24,7 @@ from keri.db import dbing
 from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
-from keri.help.helping import datify
+from keri.help.helping import datify, dictify
 
 
 def test_baser():
@@ -1982,6 +1983,7 @@ def test_keystaterecord():
     ksn = asdict(ksr)  # key state notice dict
     assert ksn == {
                     'v': '',
+                    'vn': [],
                     'i': '',
                     's': '0',
                     'p': '',
@@ -1999,6 +2001,13 @@ def test_keystaterecord():
                     'ee': {},
                     'di': ''
                   }
+
+    dksn = dictify(ksr)
+    assert dksn == ksn
+
+    dksr = datify(basing.KeyStateRecord, ksn)
+    assert dksr == ksr
+
 
     """End Test"""
 
@@ -2067,6 +2076,7 @@ def test_dbdict():
         dgkey = eventing.dgKey(pre=pre, dig=serder.said)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
+
         db.states.pin(keys=pre, val=datify(KeyStateRecord,
                                            state.ked))  # put state in database
         assert db.states.getDict(keys=pre) is not None
