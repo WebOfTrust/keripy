@@ -298,7 +298,8 @@ class Komer(KomerBase):
                 raise ExceptionHere
             use val here
         """
-        return helping.dictify(self.get(keys))
+        val = self.get(keys)
+        return helping.dictify(val) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):

@@ -12,7 +12,7 @@ from hio.base import doing
 from keri import kering
 from keri.app.cli.common import displaying, existing
 from keri.core import coring
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.help import helping
 from keri.kering import ConfigurationError
 
@@ -64,7 +64,7 @@ def rollback(tymth, tock=0.0, **opts):
                 raise kering.ValidationError(f"top event at sequence number {hab.kever.sn} has been published to "
                                              f"{len(wigs)} witnesses, unable to rollback.")
 
-            state = hby.db.states.get(keys=serder.pre)
+            ked = hby.db.states.getDict(keys=serder.pre)
             pdig = hby.db.getKeLast(dbing.snKey(serder.preb, serder.sn - 1))
 
             pDgKey = dbing.dgKey(serder.preb, bytes(pdig))  # get message
@@ -80,19 +80,21 @@ def rollback(tymth, tock=0.0, **opts):
             hby.db.delKes(dbing.snKey(serder.preb, serder.sn))
 
             seqner = coring.Number(num=serder.sn - 1)
-            fner = coring.Number(numh=state.ked['f'])
+            fner = coring.Number(numh=ked['f'])
             fner = coring.Number(num=fner.num - 1)
 
             # Update the only items in state that will change after rolling back an ixn
-            state.ked['s'] = seqner.numh
-            state.ked['et'] = pserder.ked['t']
-            state.ked['p'] = pserder.ked['p']
-            state.ked['d'] = pserder.said
-            state.ked['f'] = fner.numh
-            state.ked['dt'] = helping.nowIso8601()
+            ked['s'] = seqner.numh
+            ked['et'] = pserder.ked['t']
+            ked['p'] = pserder.ked['p']
+            ked['d'] = pserder.said
+            ked['f'] = fner.numh
+            ked['dt'] = helping.nowIso8601()
 
-            state = coring.Serder(ked=state.ked)
-            hby.db.states.pin(keys=hab.pre, val=state)
+            state = coring.Serder(ked=ked)
+            hby.db.states.pin(keys=hab.pre,
+                              val=helping.datify(basing.KeyStateRecord,
+                                                 state.ked))
 
             # Refresh all habs to reload this one
             hby.db.reload()
