@@ -5,6 +5,7 @@ tests.db.dbing module
 """
 import json
 import os
+from dataclasses import asdict
 
 import lmdb
 import pytest
@@ -1966,6 +1967,38 @@ def test_usebaser():
     """ End Test """
 
 
+def test_keystaterecord():
+    """
+    Test KeyStateRecord dataclass
+    """
+    ksr = basing.KeyStateRecord()
+
+    assert isinstance(ksr, basing.KeyStateRecord)
+    assert ksr.i == ''
+
+    ksn = asdict(ksr)  # key state notice dict
+    assert ksn == {
+                    'i': '',
+                    's': '0',
+                    'p': '',
+                    'd': '',
+                    'f': '0',
+                    'dt': '',
+                    'et': '',
+                    'kt': '0',
+                    'k': [],
+                    'nt': '0',
+                    'n': [],
+                    'bt': '0',
+                    'b': [],
+                    'c': [],
+                    'ee': {},
+                    'di': ''
+                  }
+
+    """End Test"""
+
+
 def test_dbdict():
     """
     Test custom dbdict subclass of dict
@@ -2053,6 +2086,8 @@ def test_dbdict():
 
 
     assert not os.path.exists(db.path)
+
+
 
 
 
