@@ -1004,7 +1004,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair non transferable
     assert signer0.code == MtrDex.ECDSA_256r1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256r1N
-    keys0 = [signer0.verfer.qb64]    
+    keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
     assert serder.ked["n"] == []
@@ -1033,7 +1033,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
-    assert serder.ked["n"] == []    
+    assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EPqQeDE6eoawHEwQjyB4kwLTwZ2VV6jDz_TXWFV7sE8T",'
                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
                           b'"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],'
@@ -1053,7 +1053,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false    
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd'
@@ -1080,7 +1080,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true    
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0'
@@ -1106,7 +1106,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true    
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1114,7 +1114,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder0.ked["kt"] == 1
     assert serder0.ked["nt"] == 1
     assert serder0.ked["n"] == nxt1
-    assert serder0.ked["bt"] == 0  # int not hex str    
+    assert serder0.ked["bt"] == 0  # int not hex str
     assert serder0.raw == (b'{"v":"KERI10JSON00012d_","t":"icp","d":"ECMsDN8WUWcKGe7X0GNrecOgtrTkuHTfoo7YoQ4TIOLS",'
                            b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
                            b'"kt":1,"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
@@ -1132,7 +1132,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1)    
+    serder0 = incept(keys=keys0, ndigs=nxt1)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1140,7 +1140,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder0.ked["kt"] == "1"
     assert serder0.ked["nt"] == "1"
     assert serder0.ked["n"] == nxt1
-    assert serder0.ked["bt"] == "0"  # hex str    
+    assert serder0.ked["bt"] == "0"  # hex str
     assert serder0.raw == (b'{"v":"KERI10JSON000133_","t":"icp","d":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
                            b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
                            b'"kt":"1","k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
@@ -1171,7 +1171,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder1.ked["kt"] == "1"
     assert serder1.ked["nt"] == "1"
     assert serder1.ked["n"] == keys2
-    assert serder1.ked["bt"] == '0'  # hex str    
+    assert serder1.ked["bt"] == '0'  # hex str
     assert serder1.raw == (b'{"v":"KERI10JSON000168_","t":"rot","d":"ENsyn8FRcmd9N3Dhi_kRdWcnI_AIa7yhDNsHXycclSXQ",'
                            b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"1","p":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
                            b'"kt":"1","k":["1AAJAtrK9Q8IqgO3B4IKY4m8Dl7dp1fC77dNCsHP2aWctria"],'
@@ -1231,7 +1231,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder0.ked["kt"] == "1"
     assert serder0.ked["nt"] == "1"
     assert serder0.ked["n"] == nxt1
-    assert serder0.ked["bt"] == '0'  # hex str 
+    assert serder0.ked["bt"] == '0'  # hex str
     assert serder0.raw == (b'{"v":"KERI10JSON00012f_","t":"icp","d":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u",'
                            b'"i":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u","s":"0","kt":"1",'
                            b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
@@ -1249,7 +1249,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true    
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z'
@@ -1275,7 +1275,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true    
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
@@ -1289,7 +1289,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
                           b'"nt":1,"n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
                           b'"bt":0,"b":[],"c":[],"a":[]}')
-    
+
 
     # Inception: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -1333,7 +1333,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)    
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1347,7 +1347,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
                            b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
                            b'"bt":"0","br":[],"ba":[],"a":[]}')
-    
+
     saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
     assert serder1.said == saider.qb64
 
@@ -1361,7 +1361,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive    
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1398,13 +1398,13 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)    
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
     assert serder4.ked["t"] == Ilks.rct
     assert serder4.ked["d"] == serder2.said
     assert serder4.raw == (b'{"v":"KERI10JSON000095_","t":"rct","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
-                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2"}')    
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2"}')
 
 
     # Delegated Inception:
@@ -1426,7 +1426,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serderD.ked["i"] == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
     assert serderD.ked["s"] == '0'
     assert serderD.ked["t"] == Ilks.dip
-    assert serderD.ked["n"] == nxtD    
+    assert serderD.ked["n"] == nxtD
     assert serderD.raw == (b'{"v":"KERI10JSON000163_","t":"dip","d":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj",'
                            b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"0",'
                            b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
@@ -1453,11 +1453,11 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
                       ndigs=nxtR)
-    
+
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
     assert serderR.ked["t"] == Ilks.drt
-    assert serderR.ked["n"] == nxtR    
+    assert serderR.ked["n"] == nxtR
     assert serderR.raw == (b'{"v":"KERI10JSON000164_","t":"drt","d":"EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO",'
                            b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"4","p":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30",'
                            b'"kt":"1","k":["1AABAh-zxZOUdAZwXBhbtZQgzD3LLPMYxF7HgsPbd2mILaPc"],'
@@ -2131,7 +2131,7 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.digs == nxt
-        state = kever.db.states.get(keys=kever.prefixer.qb64)
+        state = Serder(ked=kever.db.states.getDict(keys=kever.prefixer.qb64))
         assert state.sn == kever.sner.num == 0
         feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
         assert feqner.sn == kever.sn
@@ -4789,7 +4789,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert serder.said == natHab.kever.serder.said
         nstate = natHab.kever.state()
 
-        state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
+        state = Serder(ked=natHab.db.states.getDict(keys=natHab.pre))  # Serder instance
         assert state.raw == (b'{"v":"KERI10JSON00029e_","i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe0dgk3kgH_",'
                             b'"s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"EA3QbTpV15Mv'
                             b'LSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:00.000000+0'

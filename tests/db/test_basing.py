@@ -16,13 +16,14 @@ from keri.app import habbing
 from keri.core import coring, eventing
 from keri.core.coring import MtrDex
 from keri.core.coring import Serials, versify
-from keri.core.coring import Salter
+from keri.core.coring import Salter, Serder
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.db import basing
 from keri.db import dbing
-from keri.db.basing import openDB, Baser
+from keri.db.basing import openDB, Baser, KeyStateRecord
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
+from keri.help.helping import datify
 
 
 def test_baser():
@@ -1715,7 +1716,7 @@ def test_clean_baser():
         assert ldig == natHab.kever.serder.saidb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
         assert serder.said == natHab.kever.serder.said
-        state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
+        state = Serder(ked=natHab.db.states.getDict(keys=natHab.pre))  # Serder instance
         assert state.sn == 6
         assert state.ked["f"] == '6'
         assert natHab.db.env.stat()['entries'] <= 96 #68
@@ -1741,7 +1742,9 @@ def test_clean_baser():
                                       isith='2',
                                       ndigs=[diger.qb64 for diger in natHab.kever.digers])
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
-            natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
+            natHab.db.states.pin(keys=natHab.pre,
+                                 val=datify(KeyStateRecord,
+                                            natHab.kever.state().ked))
 
             assert fn == 7
             # verify garbage event in database
@@ -1782,7 +1785,7 @@ def test_clean_baser():
             # confirm bad event missing from database
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre, badsrdr.said))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
-            state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
+            state = Serder(ked=natHab.db.states.getDict(keys=natHab.pre))  # Serder instance
             assert state.sn == 6
             assert state.ked["f"] == '6'
 
@@ -1978,6 +1981,7 @@ def test_keystaterecord():
 
     ksn = asdict(ksr)  # key state notice dict
     assert ksn == {
+                    'v': '',
                     'i': '',
                     's': '0',
                     'p': '',
@@ -2063,8 +2067,9 @@ def test_dbdict():
         dgkey = eventing.dgKey(pre=pre, dig=serder.said)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
-        db.states.pin(keys=pre, val=state)  # put state in database
-        assert db.states.get(keys=pre) is not None
+        db.states.pin(keys=pre, val=datify(KeyStateRecord,
+                                           state.ked))  # put state in database
+        assert db.states.getDict(keys=pre) is not None
 
         kever = eventing.Kever(state=state, db=db)
         assert kever.state().ked == state.ked

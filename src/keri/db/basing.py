@@ -23,7 +23,6 @@ import os
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
-from typing import Optional
 
 import lmdb
 from ordered_set import OrderedSet as oset
@@ -36,6 +35,7 @@ from .. import kering
 from ..core import coring, eventing, parsing
 
 from .. import help
+
 
 logger = help.ogler.getLogger()
 
@@ -58,10 +58,10 @@ class dbdict(dict):
         except KeyError as ex:
             if not self.db:
                 raise ex  # reraise KeyError
-            if (state := self.db.states.get(keys=k)) is None:
+            if (ked := self.db.states.getDict(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                kever = eventing.Kever(state=state, db=self.db)
+                kever = eventing.Kever(state=coring.Serder(ked=ked), db=self.db)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
@@ -99,6 +99,7 @@ class KeyStateRecord:  # baser.state
 
 
     """
+    v: str = ''  # version string need to change to actual version tuple (major, minor)
     i: str =''  # identifier prefix qb64
     s: str ='0'  # sequence number of latest event in KEL as hex str
     p: str =''  # prior event digest qb64
@@ -107,9 +108,9 @@ class KeyStateRecord:  # baser.state
     dt: str = ''  # datetime of creation of state
     et: str = ''  # latest est evt packet type (ilk)
     kt: str = '0'  # signing threshold sith
-    k: list = field(default_factory=list)  # signing key list qb64
+    k: list[str] = field(default_factory=list)  # signing key list qb64
     nt: str =  '0'  # next rotation threshold nsith
-    n: list =  field(default_factory=list) #  next rotation key digest list qb64
+    n: list[str] =  field(default_factory=list) #  next rotation key digest list qb64
     bt: str = '0'  # backer threshold hex num str
     b: list = field(default_factory=list)  # backer AID list qb64
     c: list[str] =  field(default_factory=list)  # config trait list
@@ -738,8 +739,12 @@ class Baser(dbing.LMDBer):
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
-        # Kever state
-        self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
+        # Kever state made of KeyStateRecord
+        self.states = koming.Komer(db=self,
+                                   schema=KeyStateRecord,
+                                   subkey='stts.')
+        #self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
+
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 
         # habitat application state keyed by habitat name, includes prefix
@@ -973,9 +978,10 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (state := self.states.get(keys=data.hid)) is not None:
+            if (ked := self.states.getDict(keys=data.hid)) is not None:
                 try:
-                    kever = eventing.Kever(state=state, db=self,
+                    kever = eventing.Kever(state=coring.Serder(ked=ked),
+                                           db=self,
                                            prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
@@ -992,9 +998,10 @@ class Baser(dbing.LMDBer):
         # Load namespaced Habs
         removes = []
         for keys, data in self.nmsp.getItemIter():
-            if (state := self.states.get(keys=data.hid)) is not None:
+            if (ked := self.states.getDict(keys=data.hid)) is not None:
                 try:
-                    kever = eventing.Kever(state=state, db=self,
+                    kever = eventing.Kever(state=coring.Serder(ked=ked),
+                                           db=self,
                                            prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate

@@ -10,7 +10,7 @@ from collections import namedtuple
 from dataclasses import dataclass, astuple
 from urllib.parse import urlsplit
 from math import ceil
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 from hio.help import decking
 
 from . import coring
@@ -21,7 +21,7 @@ from .. import help
 from .. import kering
 from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
-from ..help import helping
+
 from ..kering import (MissingEntryError,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
@@ -31,6 +31,8 @@ from ..kering import (MissingEntryError,
 from ..kering import Version
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
+
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
@@ -1701,7 +1703,9 @@ class Kever:
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
-            self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
+            self.db.states.pin(keys=self.prefixer.qb64,
+                               val=helping.datify(basing.KeyStateRecord,
+                                                  self.state().ked))
 
 
     @property
@@ -2014,7 +2018,9 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
-                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.states.pin(keys=self.prefixer.qb64,
+                                   val=helping.datify(basing.KeyStateRecord,
+                                                      self.state().ked))
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -2061,7 +2067,9 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
-                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.states.pin(keys=self.prefixer.qb64,
+                                   val=helping.datify(basing.KeyStateRecord,
+                                                      self.state().ked))
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))

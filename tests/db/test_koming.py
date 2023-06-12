@@ -125,6 +125,9 @@ def test_kom_happy_path():
 
         assert mydb.getDict(keys=keys) == asdict(actual)
 
+        # test None
+        assert mydb.getDict(keys=("bla, bal")) == None
+
         mydb.rem(keys)
 
         actual = mydb.get(keys=keys)
