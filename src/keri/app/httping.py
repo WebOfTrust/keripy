@@ -178,7 +178,7 @@ def streamCESRRequests(client, ims, dest, path=None):
     cnt = 0
     while ims:  # extract and deserialize message from ims
         try:
-            serder = coring.Serder(raw=ims)
+            serder = coring.Sadder(raw=ims)
         except kering.ShortageError as ex:  # need more bytes
             raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
         else:  # extracted successfully
