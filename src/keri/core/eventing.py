@@ -2337,10 +2337,7 @@ class Kever:
 
         return odxs
 
-
-
-    def validateDelegation(self, serder, sigers, wigers=None,
-                           delseqner=None, delsaider=None):
+    def validateDelegation(self, serder, sigers, wigers=None, delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
@@ -2443,7 +2440,6 @@ class Kever:
         # when custody of disc is in question then trustable otherwise not
 
         return delegator  # return delegator prefix
-
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
