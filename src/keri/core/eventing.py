@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from collections import namedtuple
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass, astuple, asdict
 from urllib.parse import urlsplit
 from math import ceil
 from ordered_set import OrderedSet as oset
@@ -20,6 +20,7 @@ from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counte
 from .. import help
 from .. import kering
 from ..db import basing, dbing
+from ..db.basing import KeyStateRecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
 from ..kering import (MissingEntryError,
@@ -28,7 +29,7 @@ from ..kering import (MissingEntryError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
-from ..kering import Version
+from ..kering import Version, Versionage
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
 
@@ -1144,8 +1145,8 @@ def state(pre,
         raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
                          f"latest est event.")
 
-
-    ksd = dict(v=vs,  # version string
+    ksr = basing.KeyStateRecord(
+               v=vs,  # version string
                vn=list(version), # version number as list [major, minor]
                i=pre,  # qb64 prefix
                s=sner.numh,  # lowercase hex string no leading zeros
@@ -1166,8 +1167,31 @@ def state(pre,
                ee=eevt._asdict(),  # latest est event dict
                di=dpre if dpre is not None else "",
                )
+    return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
 
-    return Serder(ked=ksd)  # return serialized ksd
+    #ksd = dict(v=vs,  # version string
+               #vn=list(version), # version number as list [major, minor]
+               #i=pre,  # qb64 prefix
+               #s=sner.numh,  # lowercase hex string no leading zeros
+               #p=pig,
+               #d=dig,
+               #f=fner.numh,  # lowercase hex string no leading zeros
+               #dt=stamp,
+               #et=eilk,
+               #kt=(tholder.num if intive and tholder.num is not None and
+                    #tholder.num <= MaxIntThold else tholder.sith),
+               #k=keys,  # list of qb64
+               #nt=(ntholder.num if intive and ntholder.num is not None and
+                    #ntholder.num <= MaxIntThold else ntholder.sith),
+               #n=ndigs,
+               #bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
+               #b=wits,  # list of qb64 may be empty
+               #c=cnfg if cnfg is not None else [],
+               #ee=eevt._asdict(),  # latest est event dict
+               #di=dpre if dpre is not None else "",
+               #)
+
+    #return Serder(ked=ksd)  # return serialized ksd
 
 
 def query(route="",
@@ -1607,7 +1631,7 @@ class Kever:
         Verify incepting serder against sigers raises ValidationError if not
 
         Parameters:
-            state (Serder | None): instance of key state notice 'ksn' message body
+            state (KeyStateRecord | None): instance for key state notice
             serder (Serder | None): instance of inception event
             sigers (list | None): of Siger instances of indexed controller signatures
                 of event. Index is offset into keys list from latest est event
@@ -1706,8 +1730,10 @@ class Kever:
             self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64,
-                               val=helping.datify(basing.KeyStateRecord,
-                                                  self.state().ked))
+                               val=self.state())
+            #self.db.states.pin(keys=self.prefixer.qb64,
+                               #val=helping.datify(basing.KeyStateRecord,
+                                                  #self.state().ked))
 
 
     @property
@@ -1758,43 +1784,43 @@ class Kever:
 
     def reload(self, state):
         """
-        Reload Kever attributes (aka its state) from state serder
+        Reload Kever attributes (aka its state) from state (KeyStateRecord)
 
         Parameters:
-            state (Serder): instance of key state notice 'ksn' message body
+            state (KeyStateRecord | None): instance for key state notice
 
         """
-        for k in KSN_LABELS:
-            if k not in state.ked:
-                raise ValidationError(f"Missing element = {k} from state."
-                                      f" = {state}.")
+        #for k in KSN_LABELS:
+            #if k not in state.ked:
+                #raise ValidationError(f"Missing element = {k} from state."
+                                      #f" = {state}.")
 
-        self.version = state.version
-        self.prefixer = Prefixer(qb64=state.pre)
-        self.sner = state.sner  # sequence number Number instance hex str
-        self.fner = state.fner # first seen ordinal Number hex str
-        self.dater = Dater(dts=state.ked["dt"])
-        self.ilk = state.ked["et"]
-        self.tholder = Tholder(sith=state.ked["kt"])
-        self.ntholder = Tholder(sith=state.ked["nt"])
-        self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.digers = [Diger(qb64=dig) for dig in state.ked["n"]]
-        self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
-        self.wits = state.ked["b"]
-        self.cuts = state.ked["ee"]["br"]
-        self.adds = state.ked["ee"]["ba"]
+        self.version = Versionage._make(state.vn)
+        self.prefixer = Prefixer(qb64=state.i)
+        self.sner = Number(numh=state.s)  # sequence number Number instance hex str
+        self.fner = Number(numh=state.f) # first seen ordinal Number hex str
+        self.dater = Dater(dts=state.dt)
+        self.ilk = state.et
+        self.tholder = Tholder(sith=state.kt)
+        self.ntholder = Tholder(sith=state.nt)
+        self.verfers = [Verfer(qb64=key) for key in state.k]
+        self.digers = [Diger(qb64=dig) for dig in state.n]
+        self.toader = Number(numh=state.bt)  # auto converts from hex num
+        self.wits = state.b
+        self.cuts = state.ee["br"]
+        self.adds = state.ee["ba"]
         self.estOnly = False
-        self.doNotDelegate = True if "DND" in state.ked["c"] else False
-        self.estOnly = True if "EO" in state.ked["c"] else False
-        self.lastEst = LastEstLoc(s=int(state.ked['ee']['s'], 16),
-                                  d=state.ked['ee']['d'])
-        self.delegator = state.ked['di'] if state.ked['di'] else None
+        self.doNotDelegate = True if "DND" in state.c else False
+        self.estOnly = True if "EO" in state.c else False
+        self.lastEst = LastEstLoc(s=int(state.ee['s'], 16),
+                                  d=state.ee['d'])
+        self.delegator = state.di if state.di else None
         self.delegated = True if self.delegator else False
 
         if (raw := self.db.getEvt(key=dgKey(pre=self.prefixer.qb64,
-                                            dig=state.ked['d']))) is None:
-            raise MissingEntryError("Corresponding event for state={} not found."
-                                    "".format(state.pretty()))
+                                            dig=state.d))) is None:
+            raise MissingEntryError(f"Corresponding event not found for state="
+                                    f"{state}.")
         self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
 
@@ -2586,12 +2612,10 @@ class Kever:
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
 
 
-    def state(self, kind=Serials.json):
+    def state(self):
         """
-        Returns Serder instance of current key state notification message
+        Returns KeyStateRecord instance of current key state
 
-        Parameters:
-            kind is serialization kind for message json, cbor, mgpk
         """
         eevt = StateEstEvent(s="{:x}".format(self.lastEst.s),
                              d=self.lastEst.d,
@@ -2620,7 +2644,6 @@ class Kever:
                       wits=self.wits,
                       cnfg=cnfg,
                       dpre=self.delegator,
-                      kind=kind
                       )
                 )
 

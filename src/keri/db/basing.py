@@ -23,7 +23,11 @@ import os
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
+import json
 
+
+import cbor2 as cbor
+import msgpack
 import lmdb
 from ordered_set import OrderedSet as oset
 
@@ -35,6 +39,7 @@ from .. import kering
 from ..core import coring, eventing, parsing
 
 from .. import help
+from ..help import helping
 
 
 logger = help.ogler.getLogger()
@@ -58,10 +63,10 @@ class dbdict(dict):
         except KeyError as ex:
             if not self.db:
                 raise ex  # reraise KeyError
-            if (ked := self.db.states.getDict(keys=k)) is None:
+            if (ksr := self.db.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                kever = eventing.Kever(state=coring.Serder(ked=ked), db=self.db)
+                kever = eventing.Kever(state=ksr, db=self.db)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
@@ -83,8 +88,44 @@ class dbdict(dict):
         else:
             return self.__getitem__(k)
 
+
 @dataclass
-class KeyStateRecord:  # baser.state
+class RawRecord:
+    """RawRecord is base class for dataclasses that provides private utility
+    methods for representing the dataclass as some other format like dict,
+    json bytes, cbor bytes, mgpk bytes as a raw format. Typically uses case
+    is to transform dataclass into dict or serialization of its transformation
+    into dict so that it can be included in messages or stored in a database.
+    """
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+    def _asdict(self):
+        """Returns dict version of record"""
+        return helping.dictify(self)
+
+
+    def _asjson(self):
+        """Returns json bytes version of record"""
+        return json.dumps(self._asdict(),
+                          separators=(",", ":"),
+                          ensure_ascii=False).encode("utf-8")
+
+
+    def _ascbor(self):
+        """Returns cbor bytes version of record"""
+        return cbor.dumps(self._asdict())
+
+
+    def _asmgpk(self):
+        """Returns mgpk bytes version of record"""
+        return msgpack.dumps(self._asdict())
+
+
+
+@dataclass
+class KeyStateRecord(RawRecord):  # baser.state
     """
     Key State information keyed by Identifier Prefix of associated KEL.
     For local AIDs that correspond to Habs this is the Hab AID.
@@ -123,8 +164,7 @@ class KeyStateRecord:  # baser.state
             # ba = backer (witness) add list (adds) from latest est event
     di: str = '' # delegator aid qb64 if any otherwise empty '' str
 
-    def __iter__(self):
-        return iter(asdict(self))
+
 
 
 
