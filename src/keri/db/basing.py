@@ -97,6 +97,13 @@ class RawRecord:
     is to transform dataclass into dict or serialization of its transformation
     into dict so that it can be included in messages or stored in a database.
     """
+
+    @classmethod
+    def _fromdict(cls, d: dict):
+        """returns instance of clas initialized from dict d """
+        return helping.datify(cls, d)
+
+
     def __iter__(self):
         return iter(asdict(self))
 
@@ -163,8 +170,6 @@ class KeyStateRecord(RawRecord):  # baser.state
             # br = backer (witness) remove list (cuts) from latest est event
             # ba = backer (witness) add list (adds) from latest est event
     di: str = '' # delegator aid qb64 if any otherwise empty '' str
-
-
 
 
 
@@ -900,9 +905,12 @@ class Baser(dbing.LMDBer):
         self.kdts = subing.CesrSuber(db=self, subkey='kdts.', klas=coring.Dater)
 
         # all key state messages. Maps key state said to serialization. ksns are
-        # versioned sads ( with version string) so use Serder to deserialize and
+        # KeyStateRecords so use ._asdict or ._asjson as appropriate
         # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
-        self.ksns = subing.SerderSuber(db=self, subkey='ksns.')
+        self.ksns = koming.Komer(db=self,
+                                schema=KeyStateRecord,
+                                subkey='ksns.')
+        #self.ksns = subing.SerderSuber(db=self, subkey='ksns.')
 
         # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys
         # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
@@ -1019,9 +1027,9 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (ked := self.states.getDict(keys=data.hid)) is not None:
+            if (ksr := self.states.get(keys=data.hid)) is not None:
                 try:
-                    kever = eventing.Kever(state=coring.Serder(ked=ked),
+                    kever = eventing.Kever(state=ksr,
                                            db=self,
                                            prefixes=self.prefixes,
                                            local=True)
@@ -1039,9 +1047,9 @@ class Baser(dbing.LMDBer):
         # Load namespaced Habs
         removes = []
         for keys, data in self.nmsp.getItemIter():
-            if (ked := self.states.getDict(keys=data.hid)) is not None:
+            if (ksr := self.states.get(keys=data.hid)) is not None:
                 try:
-                    kever = eventing.Kever(state=coring.Serder(ked=ked),
+                    kever = eventing.Kever(state=ksr,
                                            db=self,
                                            prefixes=self.prefixes,
                                            local=True)

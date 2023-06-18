@@ -2139,23 +2139,23 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.digs == nxt
-        state = Serder(ked=kever.db.states.getDict(keys=kever.prefixer.qb64))
-        assert state.sn == kever.sner.num == 0
+        state = kever.db.states.get(keys=kever.prefixer.qb64)
+        assert state.s == kever.sner.numh == '0'
         feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
         assert feqner.sn == kever.sn
 
-        serderK = kever.state()
-        assert serderK.ked == state.ked
-        assert serderK.pre == kever.prefixer.qb64
-        assert serderK.sn == kever.sn
-        assert ([verfer.qb64 for verfer in serderK.verfers] ==
+        ksr = kever.state()  # key state record
+        assert ksr == state
+        assert ksr.i == kever.prefixer.qb64
+        assert ksr.s == kever.sner.numh
+        assert ([key for key in ksr.k] ==
                 [verfer.qb64 for verfer in kever.verfers])
-        assert serderK.raw == (b'{"v":"KERI10JSON0001c1_","vn":[1,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarE'
-                    b'em-AAEg3e","s":"0","p":"","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi"'
-                    b',"f":"0","dt":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["D'
-                    b'AUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXT'
-                    b'LWQ1QjxHrihBmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EB'
-                    b'TCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
+        assert ksr._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarE'
+            b'em-AAEg3e","s":"0","p":"","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi"'
+            b',"f":"0","dt":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["D'
+            b'AUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXT'
+            b'LWQ1QjxHrihBmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EB'
+            b'TCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
 
         # test exposeds
         raw = b"raw salt to test"
@@ -4797,18 +4797,18 @@ def test_reload_kever(mockHelpingNowUTC):
         assert serder.said == natHab.kever.serder.said
         nstate = natHab.kever.state()
 
-        state = Serder(ked=natHab.db.states.getDict(keys=natHab.pre))  # Serder instance
-        assert state.raw == (b'{"v":"KERI10JSON0002a9_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
-                        b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
-                        b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
-                        b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
-                        b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
-                        b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
-                        b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
-                        b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
-                        b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
-        assert state.ked["f"] == '6'
-        assert state.ked == nstate.ked
+        state =natHab.db.states.get(keys=natHab.pre)  # key state record
+        assert state._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
+                    b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
+                    b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
+                    b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
+                    b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
+                    b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
+                    b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
+                    b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
+                    b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
+        assert state.f == '6'
+        assert state == nstate
 
         # now create new Kever with state
         kever = eventing.Kever(state=state, db=natHby.db)
@@ -4818,16 +4818,16 @@ def test_reload_kever(mockHelpingNowUTC):
         assert kever.serder.said == natHab.kever.serder.said
 
         kstate = kever.state()
-        assert kstate.ked == state.ked
-        assert state.raw == (b'{"v":"KERI10JSON0002a9_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
-                b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
-                b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
-                b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
-                b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
-                b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
-                b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
-                b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
-                b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
+        assert kstate == state
+        assert state._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
+                    b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
+                    b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
+                    b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
+                    b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
+                    b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
+                    b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
+                    b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
+                    b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
 
     assert not os.path.exists(natHby.ks.path)
     assert not os.path.exists(natHby.db.path)

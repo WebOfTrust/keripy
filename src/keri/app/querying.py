@@ -43,10 +43,10 @@ class KeyStateNoticer(doing.DoDoer):
             match cue['kin']:
                 case "keyStateSaved":
                     kcue = cue
-                    ksn = kcue['serder']
-                    match ksn.pre:
+                    ksn = kcue['serder'] # key state notice dict
+                    match ksn["i"]:
                         case self.pre:
-                            if kever.sn < ksn.sn:
+                            if kever.sn < int(ksn["s"], 16):
                                 # Add new doer here instead of cueing to a while loop
                                 self.extend([LogQuerier(hby=self.hby, hab=self.hab, ksn=ksn)])
                                 self.remove([self.witq])
@@ -70,7 +70,7 @@ class LogQuerier(doing.DoDoer):
         self.hab = hab
         self.ksn = ksn
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.witq.query(src=self.hab.pre, pre=self.ksn.pre)
+        self.witq.query(src=self.hab.pre, pre=self.ksn["i"])
         super(LogQuerier, self).__init__(doers=[self.witq], **opts)
 
     def recur(self, tyme, deeds=None):
@@ -79,8 +79,8 @@ class LogQuerier(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        kever = self.hab.kevers[self.ksn.pre]
-        if kever.sn >= self.ksn.sn:
+        kever = self.hab.kevers[self.ksn["i"]]
+        if kever.sn >= int(self.ksn['s'], 16):
             self.remove([self.witq])
             return True
 

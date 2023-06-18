@@ -219,11 +219,11 @@ class WatchDoer(doing.DoDoer):
 
         witstate = WitnessState()
         witstate.wit = wit
-        mysn = preksn.sner.num
-        mydig = preksn.ked['d']
-        witstate.sn = coring.Number(num=witksn.ked["f"]).num
-        witstate.dig = witksn.ked['d']
-        
+        mysn = int(preksn.s, 16)
+        mydig = preksn.d
+        witstate.sn = int(witksn.f, 16)
+        witstate.dig = witksn.d
+
         # At the same sequence number, check the DIGs
         if mysn == witstate.sn:
             if mydig == witstate.dig:

@@ -44,8 +44,8 @@ def test_querying():
 
         # Cue up a saved key state equal to the one we have
         hby.kvy.cues.clear()
-        ksn = subHab.kever.state()
-        cue = dict(kin="keyStateSaved", serder=ksn)
+        ksr = subHab.kever.state()
+        cue = dict(kin="keyStateSaved", serder=ksr._asdict())
         hby.kvy.cues.append(cue)
 
         doist.recur(deeds=deeds)
@@ -62,8 +62,8 @@ def test_querying():
 
         # rotate AID and submit as a new keyStateSave
         rot = subHab.rotate()
-        ksn = subHab.kever.state()
-        cue = dict(kin="keyStateSaved", serder=ksn)
+        ksr = subHab.kever.state()
+        cue = dict(kin="keyStateSaved", serder=ksr._asdict())
         hby.kvy.cues.append(cue)
         deeds = doist.enter(doers=[qdoer])
         doist.recur(deeds=deeds)

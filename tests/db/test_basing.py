@@ -1745,7 +1745,7 @@ def test_clean_baser():
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre,
                                  val=datify(KeyStateRecord,
-                                            natHab.kever.state().ked))
+                                            natHab.kever.state()))
 
             assert fn == 7
             # verify garbage event in database
@@ -2055,6 +2055,10 @@ def test_keystaterecord():
 
     dksr = datify(basing.KeyStateRecord, ksn)
     assert dksr == ksr
+
+    nksr = basing.KeyStateRecord._fromdict(ksn)
+    assert nksr == ksr
+    assert nksr._asdict() == ksn
 
 
     """End Test"""
