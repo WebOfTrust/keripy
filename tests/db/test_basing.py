@@ -5,7 +5,7 @@ tests.db.dbing module
 """
 import json
 import os
-from dataclasses import asdict
+from dataclasses import dataclass, asdict
 
 import lmdb
 import pytest
@@ -1745,7 +1745,7 @@ def test_clean_baser():
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre,
                                  val=datify(KeyStateRecord,
-                                            natHab.kever.state().ked))
+                                            natHab.kever.state()))
 
             assert fn == 7
             # verify garbage event in database
@@ -1971,6 +1971,40 @@ def test_usebaser():
     """ End Test """
 
 
+def test_rawrecord():
+    """
+    Test RawRecord dataclass
+    """
+    @dataclass
+    class TestRecord(basing.RawRecord):
+        x: str = ""
+        y: int = 0
+
+    record = TestRecord()
+
+    assert isinstance(record, TestRecord)
+    assert isinstance(record, basing.RawRecord)
+
+    assert "x" in record
+    assert "y" in record
+
+    assert record.x == ''
+    assert record.y == 0
+
+    record = TestRecord(x="hi", y=3)
+
+    assert record.x == 'hi'
+    assert record.y == 3
+
+    assert record._asdict() == {'x': 'hi', 'y': 3}
+    assert record._asjson() == b'{"x":"hi","y":3}'
+    assert record._ascbor() == b'\xa2axbhiay\x03'
+    assert record._asmgpk() == b'\x82\xa1x\xa2hi\xa1y\x03'
+
+    """End Test"""
+
+
+
 def test_keystaterecord():
     """
     Test KeyStateRecord dataclass
@@ -2002,11 +2036,29 @@ def test_keystaterecord():
                     'di': ''
                   }
 
+    assert ksr._asdict() == ksn
+    assert ksr._asjson() == (b'{"v":"","vn":[],"i":"","s":"0","p":"","d":"","f":"0","dt":"","et":"","kt":"0'
+                             b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"ee":{},"di":""}')
+    assert ksr._ascbor() == (b'\xb2av`bvn\x80ai`asa0ap`ad`afa0bdt`bet`bkta0ak\x80bnta0an\x80bbta0ab'
+                             b'\x80ac\x80bee\xa0bdi`')
+    assert ksr._asmgpk() == (b'\xde\x00\x12\xa1v\xa0\xa2vn\x90\xa1i\xa0\xa1s\xa10\xa1p\xa0\xa1d\xa0\xa1'
+                             b'f\xa10\xa2dt\xa0\xa2et\xa0\xa2kt\xa10\xa1k\x90\xa2nt\xa10\xa1n\x90\xa2'
+                             b'bt\xa10\xa1b\x90\xa1c\x90\xa2ee\x80\xa2di\xa0')
+
+    assert str(ksr) == repr(ksr) == ("KeyStateRecord(v='', vn=[], i='', s='0',"
+                                     " p='', d='', f='0', dt='', et='', "
+                                     "kt='0', k=[], nt='0', n=[], bt='0', b=[], "
+                                     "c=[], ee={}, di='')")
+
     dksn = dictify(ksr)
     assert dksn == ksn
 
     dksr = datify(basing.KeyStateRecord, ksn)
     assert dksr == ksr
+
+    nksr = basing.KeyStateRecord._fromdict(ksn)
+    assert nksr == ksr
+    assert nksr._asdict() == ksn
 
 
     """End Test"""
@@ -2077,22 +2129,23 @@ def test_dbdict():
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
 
-        db.states.pin(keys=pre, val=datify(KeyStateRecord,
-                                           state.ked))  # put state in database
-        assert db.states.getDict(keys=pre) is not None
+        db.states.pin(keys=pre, val=state)  # put state in database
+        dbstate = db.states.get(keys=pre)
+        assert dbstate is not None
+        assert dbstate == state
 
         kever = eventing.Kever(state=state, db=db)
-        assert kever.state().ked == state.ked
+        assert kever.state() == state
 
         dkever = dbd[pre]  # read through cache works here
         dstate = dkever.state()
-        assert  dstate.ked == state.ked
+        assert  dstate == state
 
         del dbd[pre]  # not in dbd memory
         assert pre in dbd  #  read through cache works
         dkever = dbd[pre]
         dstate = dkever.state()
-        assert  dstate.ked == state.ked
+        assert  dstate == state
 
         db.states.rem(keys=pre)
         assert pre in dbd  # still in memory

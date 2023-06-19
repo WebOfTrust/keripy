@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from collections import namedtuple
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass, astuple, asdict
 from urllib.parse import urlsplit
 from math import ceil
 from ordered_set import OrderedSet as oset
@@ -20,6 +20,7 @@ from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counte
 from .. import help
 from .. import kering
 from ..db import basing, dbing
+from ..db.basing import KeyStateRecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
 from ..kering import (MissingEntryError,
@@ -28,7 +29,7 @@ from ..kering import (MissingEntryError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
-from ..kering import Version
+from ..kering import Version, Versionage
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                       KSN_LABELS, RPY_LABELS)
 
@@ -1144,8 +1145,8 @@ def state(pre,
         raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
                          f"latest est event.")
 
-
-    ksd = dict(v=vs,  # version string
+    ksr = basing.KeyStateRecord(
+               v=vs,  # version string
                vn=list(version), # version number as list [major, minor]
                i=pre,  # qb64 prefix
                s=sner.numh,  # lowercase hex string no leading zeros
@@ -1166,8 +1167,31 @@ def state(pre,
                ee=eevt._asdict(),  # latest est event dict
                di=dpre if dpre is not None else "",
                )
+    return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
 
-    return Serder(ked=ksd)  # return serialized ksd
+    #ksd = dict(v=vs,  # version string
+               #vn=list(version), # version number as list [major, minor]
+               #i=pre,  # qb64 prefix
+               #s=sner.numh,  # lowercase hex string no leading zeros
+               #p=pig,
+               #d=dig,
+               #f=fner.numh,  # lowercase hex string no leading zeros
+               #dt=stamp,
+               #et=eilk,
+               #kt=(tholder.num if intive and tholder.num is not None and
+                    #tholder.num <= MaxIntThold else tholder.sith),
+               #k=keys,  # list of qb64
+               #nt=(ntholder.num if intive and ntholder.num is not None and
+                    #ntholder.num <= MaxIntThold else ntholder.sith),
+               #n=ndigs,
+               #bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
+               #b=wits,  # list of qb64 may be empty
+               #c=cnfg if cnfg is not None else [],
+               #ee=eevt._asdict(),  # latest est event dict
+               #di=dpre if dpre is not None else "",
+               #)
+
+    #return Serder(ked=ksd)  # return serialized ksd
 
 
 def query(route="",
@@ -1607,7 +1631,7 @@ class Kever:
         Verify incepting serder against sigers raises ValidationError if not
 
         Parameters:
-            state (Serder | None): instance of key state notice 'ksn' message body
+            state (KeyStateRecord | None): instance for key state notice
             serder (Serder | None): instance of inception event
             sigers (list | None): of Siger instances of indexed controller signatures
                 of event. Index is offset into keys list from latest est event
@@ -1706,8 +1730,10 @@ class Kever:
             self.fner = Number(num=fn)
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64,
-                               val=helping.datify(basing.KeyStateRecord,
-                                                  self.state().ked))
+                               val=self.state())
+            #self.db.states.pin(keys=self.prefixer.qb64,
+                               #val=helping.datify(basing.KeyStateRecord,
+                                                  #self.state().ked))
 
 
     @property
@@ -1758,43 +1784,43 @@ class Kever:
 
     def reload(self, state):
         """
-        Reload Kever attributes (aka its state) from state serder
+        Reload Kever attributes (aka its state) from state (KeyStateRecord)
 
         Parameters:
-            state (Serder): instance of key state notice 'ksn' message body
+            state (KeyStateRecord | None): instance for key state notice
 
         """
-        for k in KSN_LABELS:
-            if k not in state.ked:
-                raise ValidationError(f"Missing element = {k} from state."
-                                      f" = {state}.")
+        #for k in KSN_LABELS:
+            #if k not in state.ked:
+                #raise ValidationError(f"Missing element = {k} from state."
+                                      #f" = {state}.")
 
-        self.version = state.version
-        self.prefixer = Prefixer(qb64=state.pre)
-        self.sner = state.sner  # sequence number Number instance hex str
-        self.fner = state.fner # first seen ordinal Number hex str
-        self.dater = Dater(dts=state.ked["dt"])
-        self.ilk = state.ked["et"]
-        self.tholder = Tholder(sith=state.ked["kt"])
-        self.ntholder = Tholder(sith=state.ked["nt"])
-        self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.digers = [Diger(qb64=dig) for dig in state.ked["n"]]
-        self.toader = Number(num=state.ked["bt"])  # auto converts from hex num
-        self.wits = state.ked["b"]
-        self.cuts = state.ked["ee"]["br"]
-        self.adds = state.ked["ee"]["ba"]
+        self.version = Versionage._make(state.vn)
+        self.prefixer = Prefixer(qb64=state.i)
+        self.sner = Number(numh=state.s)  # sequence number Number instance hex str
+        self.fner = Number(numh=state.f) # first seen ordinal Number hex str
+        self.dater = Dater(dts=state.dt)
+        self.ilk = state.et
+        self.tholder = Tholder(sith=state.kt)
+        self.ntholder = Tholder(sith=state.nt)
+        self.verfers = [Verfer(qb64=key) for key in state.k]
+        self.digers = [Diger(qb64=dig) for dig in state.n]
+        self.toader = Number(numh=state.bt)  # auto converts from hex num
+        self.wits = state.b
+        self.cuts = state.ee["br"]
+        self.adds = state.ee["ba"]
         self.estOnly = False
-        self.doNotDelegate = True if "DND" in state.ked["c"] else False
-        self.estOnly = True if "EO" in state.ked["c"] else False
-        self.lastEst = LastEstLoc(s=int(state.ked['ee']['s'], 16),
-                                  d=state.ked['ee']['d'])
-        self.delegator = state.ked['di'] if state.ked['di'] else None
+        self.doNotDelegate = True if "DND" in state.c else False
+        self.estOnly = True if "EO" in state.c else False
+        self.lastEst = LastEstLoc(s=int(state.ee['s'], 16),
+                                  d=state.ee['d'])
+        self.delegator = state.di if state.di else None
         self.delegated = True if self.delegator else False
 
         if (raw := self.db.getEvt(key=dgKey(pre=self.prefixer.qb64,
-                                            dig=state.ked['d']))) is None:
-            raise MissingEntryError("Corresponding event for state={} not found."
-                                    "".format(state.pretty()))
+                                            dig=state.d))) is None:
+            raise MissingEntryError(f"Corresponding event not found for state="
+                                    f"{state}.")
         self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
 
@@ -2020,9 +2046,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
-                self.db.states.pin(keys=self.prefixer.qb64,
-                                   val=helping.datify(basing.KeyStateRecord,
-                                                      self.state().ked))
+                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -2069,9 +2093,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
-                self.db.states.pin(keys=self.prefixer.qb64,
-                                   val=helping.datify(basing.KeyStateRecord,
-                                                      self.state().ked))
+                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -2586,12 +2608,10 @@ class Kever:
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
 
 
-    def state(self, kind=Serials.json):
+    def state(self):
         """
-        Returns Serder instance of current key state notification message
+        Returns KeyStateRecord instance of current key state
 
-        Parameters:
-            kind is serialization kind for message json, cbor, mgpk
         """
         eevt = StateEstEvent(s="{:x}".format(self.lastEst.s),
                              d=self.lastEst.d,
@@ -2620,7 +2640,6 @@ class Kever:
                       wits=self.wits,
                       cnfg=cnfg,
                       dpre=self.delegator,
-                      kind=kind
                       )
                 )
 
@@ -3459,6 +3478,7 @@ class Kevery:
         """
         pass
 
+
     def removeStaleReplyLocScheme(self, saider):
         """
         Process reply escrow at saider for route "/loc/scheme"
@@ -3476,6 +3496,7 @@ class Kevery:
         router.addRoute("/end/role/{action}", self, suffix="EndRole")
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
+
 
     def processReplyEndRole(self, *, serder, saider, route,
                             cigars=None, tsgs=None, **kwargs):
@@ -3665,6 +3686,7 @@ class Kevery:
 
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
+
     def processReplyKeyStateNotice(self, *, serder, saider, route,
                                    cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /ksn
@@ -3737,41 +3759,43 @@ class Kevery:
                                   f"msg={serder.ked}.")
         aid = kwargs["aid"]
         data = serder.ked["a"]
-        kserder = coring.Serder(ked=data)
+        try:
+            ksr = KeyStateRecord._fromdict(d=data)
+        except Exception as ex:
+            raise ValidationError(f"Malformed key state notice = {data}.") from ex
 
-        for k in KSN_LABELS:
-            if k not in kserder.ked:
-                raise ValidationError("Missing element = {} from {} msg."
-                                      " ksn = {}.".format(k, Ilks.ksn,
-                                                          serder.pretty()))
+        #for k in KSN_LABELS:
+            #if k not in ksr.ked:
+                #raise ValidationError("Missing element = {} from {} msg."
+                                      #" ksn = {}.".format(k, Ilks.ksn,
+                                                          #serder.pretty()))
         # fetch from serder to process
-        ked = kserder.ked
-        pre = kserder.pre
-        sn = kserder.sn
+        pre = ksr.i
+        sn = int(ksr.s, 16)
 
         # check source and ensure we should accept it
-        baks = ked["b"]
+        baks = ksr.b
         wats = set()
         for _, habr in self.db.habs.getItemIter():
             wats |= set(habr.watchers)
 
         # not in promiscuous mode
         if not self.lax:
-            if aid != kserder.pre and \
+            if aid != ksr.i and \
                     aid not in baks and \
                     aid not in wats:
                 raise kering.UntrustedKeyStateSource("key state notice for {} from untrusted source {} "
-                                                     .format(kserder.pre, aid))
+                                                     .format(ksr.pre, aid))
 
-        if kserder.pre in self.kevers:
-            kever = self.kevers[kserder.pre]
-            if kserder.sn < kever.sner.num:
+        if ksr.i in self.kevers:
+            kever = self.kevers[ksr.i]
+            if int(ksr.s, 16) < kever.sner.num:
                 raise ValidationError("Skipped stale key state at sn {} for {}."
-                                      "".format(kserder.sn, kserder.pre))
+                                      "".format(int(ksr.s, 16), ksr.i))
 
         keys = (pre, aid,)
         osaider = self.db.knas.get(keys=keys)  # get old said if any
-        dater = coring.Dater(dts=serder.ked["dt"])
+        dater = coring.Dater(dts=ksr.dt)
 
         # BADA Logic
         accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
@@ -3781,7 +3805,7 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified reply.")
 
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
-        diger = coring.Diger(qb64=ked["d"])
+        diger = coring.Diger(qb64=ksr.d)
 
         # Only accept key state if for last seen version of event at sn
         if ldig is not None:  # escrow because event does not yet exist in database
@@ -3792,12 +3816,12 @@ class Kevery:
             sserder = Serder(raw=bytes(sraw))
 
             if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
-                raise ValidationError("Mismatch keystate at sn = {} with db."
-                                      "".format(ked["s"]))
+                raise ValidationError(f"Mismatch keystate at sn = {int(ksr.s,16)}"
+                                      f" with db.")
 
         ksaider = coring.Saider(qb64=diger.qb64)
-        self.updateKeyState(aid=aid, serder=kserder, saider=ksaider, dater=dater)
-        self.cues.append(dict(kin="keyStateSaved", serder=kserder))
+        self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
+        self.cues.append(dict(kin="keyStateSaved", serder=serder))
 
 
     def updateEnd(self, keys, saider, allowed=None):
@@ -3835,14 +3859,14 @@ class Kevery:
 
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
-    def escrowKeyStateNotice(self, *, pre, aid, serder, saider, dater, cigars=None, tsgs=None):
+    def escrowKeyStateNotice(self, *, pre, aid, ksr, saider, dater, cigars=None, tsgs=None):
         """
         Escrow reply by route
 
         Parameters:
             pre (str): identifier of key state
             aid (str): identifier of authorizer of key state
-            serder (Serder): instance of reply msg (SAD)
+            ksr (KeyStateRecord): instance holds key state notice
             saider (Saider): instance  from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             cigars (list): of Cigar instances that contain nontrans signing couple
@@ -3856,7 +3880,7 @@ class Kevery:
         """
         keys = (saider.qb64,)
         self.db.kdts.put(keys=keys, val=dater)  # first one idempotent
-        self.db.ksns.put(keys=keys, val=serder)  # first one idempotent
+        self.db.ksns.put(keys=keys, val=ksr)  # first one idempotent
 
         for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
@@ -3866,7 +3890,8 @@ class Kevery:
 
         return self.db.knes.put(keys=(pre, aid), vals=[saider])  # overwrite
 
-    def updateKeyState(self, aid, serder, saider, dater):
+
+    def updateKeyState(self, aid, ksr, saider, dater):
         """
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
@@ -3874,7 +3899,7 @@ class Kevery:
 
         Parameters:
             aid (str): identifier of key state
-            serder (Serder): instance of reply msg (SAD)
+            ksr (KeyStateRecord): converted from key state notice dict in reply msg
             saider (Saider): instance  from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
         """
@@ -3882,9 +3907,10 @@ class Kevery:
 
         # Add source of ksn to the key for DATEs too...  (source AID, ksn AID)
         self.db.kdts.put(keys=keys, val=dater)  # first one idempotent
-        self.db.ksns.pin(keys=keys, val=serder)  # first one idempotent
-        # Add source of ksn to the key...  (source AID, ksn AID)
-        self.db.knas.pin(keys=(serder.pre, aid), val=saider)  # overwrite
+        self.db.ksns.pin(keys=keys, val=ksr)  # first one idempotent
+        # Add source of ksr to the key...  (ksr AID, source aid)
+        self.db.knas.pin(keys=(ksr.i, aid), val=saider)  # overwrite
+
 
     def removeKeyState(self, saider):
         if saider:
@@ -3895,9 +3921,10 @@ class Kevery:
             self.db.ksns.rem(keys=keys)
             self.db.kdts.rem(keys=keys)
 
+
     def processEscrowKeyState(self):
         """
-        Process escrows for reply messages. Escrows are keyed by reply pre
+        Process escrows for key state reply messages. Escrows are keyed by reply pre
         and val is reply said
 
         triple (prefixer, seqner, diger)
@@ -3910,6 +3937,8 @@ class Kevery:
 
                 keys = (saider.qb64,)
                 dater = self.db.kdts.get(keys=keys)
+                # following is wrong need the actual serder of the reply message not
+                # the embedded key state notice or key state record
                 serder = self.db.ksns.get(keys=keys)
                 vcigars = self.db.kcgs.get(keys=keys)
 
@@ -3933,7 +3962,10 @@ class Kevery:
 
                         raise ValidationError(f"Stale key state escrow at pre = {pre}.")
 
-                    self.processReplyKeyStateNotice(serder=serder, saider=saider, route=serder.ked["r"], cigars=cigars,
+                    self.processReplyKeyStateNotice(serder=serder,
+                                                    saider=saider,
+                                                    route=serder.ked["r"],
+                                                    cigars=cigars,
                                                     tsgs=tsgs, aid=aid)
 
                 except kering.OutOfOrderKeyStateError as ex:
@@ -3963,6 +3995,7 @@ class Kevery:
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+
 
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
@@ -4036,8 +4069,9 @@ class Kevery:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                 raise QueryNotFoundError("Query not found error={}.".format(ked))
 
-            ksn = reply(route=f"/ksn/{src}", data=kever.state().ked)
-            self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=ksn, dest=source.qb64))
+            rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict())
+            self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=rserder,
+                                dest=source.qb64))
 
         elif route == "mbx":
             pre = qry["i"]

@@ -82,21 +82,21 @@ def test_keystate(mockHelpingNowUTC):
         iserder = coring.Serder(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
 
-        # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        # Get key state record (ksr) from Bob and verify
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
 
-        # Get ksn from Wes and verify
+        # Get key state record (ksr) from Wes and verify
         bobKeverFromWes = wesHab.kevers[bobHab.pre]
-        ksn = bobKeverFromWes.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        ksr = bobKeverFromWes.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
@@ -107,7 +107,7 @@ def test_keystate(mockHelpingNowUTC):
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
         assert cue["kin"] == "keyStateSaved"
-        assert cue["serder"].pre == bobHab.pre
+        assert cue["serder"].ked['a']["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
@@ -143,21 +143,21 @@ def test_keystate(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
 
-        # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        # Get ksr key state record from Bob and verify
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
 
-        # Get ksn from Wes and verify
+        # Get ksr key state record from Wes and verify
         bobKeverFromWes = wesHab.kevers[bobHab.pre]
-        ksn = bobKeverFromWes.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        ksr = bobKeverFromWes.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
         #bamHab = habbing.Habitat(name="bam", ks=bamKS, db=bamDB, isith='1', icount=1,
                                  #transferable=True, temp=True)
@@ -177,7 +177,7 @@ def test_keystate(mockHelpingNowUTC):
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
         assert cue["kin"] == "keyStateSaved"
-        assert cue["serder"].pre == bobHab.pre
+        assert cue["serder"].ked["a"]["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
@@ -212,20 +212,20 @@ def test_keystate(mockHelpingNowUTC):
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
 
-        # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        # Get ksr key state record from Bob and verify
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
-        # Get ksn from Wes and verify
+        # Get ksr key state record from Wes and verify
         bobKeverFromWes = wesHab.kevers[bobHab.pre]
-        ksn = bobKeverFromWes.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        ksr = bobKeverFromWes.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksn.ked)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict())
 
         bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
         parsing.Parser().parse(ims=bytearray(msg), kvy=bamKvy)
@@ -243,22 +243,22 @@ def test_keystate(mockHelpingNowUTC):
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
         assert bobHab.pre == bobpre
 
-        # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 0
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        # Get ksr key state record from Bob and verify
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '0'
+        assert ksr.d == bobHab.kever.serder.said
 
         for _ in range(3):
             bobHab.rotate()
 
-        # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 3
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        # Get ksr key state record from Bob and verify
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '3'
+        assert ksr.d == bobHab.kever.serder.said
 
-        staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
+        staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict())
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
@@ -270,12 +270,12 @@ def test_keystate(mockHelpingNowUTC):
             bobHab.rotate()
 
         # Get ksn from Bob and verify
-        ksn = bobHab.kever.state()
-        assert ksn.pre == bobHab.pre
-        assert ksn.sn == 8
-        assert ksn.ked["d"] == bobHab.kever.serder.said
+        ksr = bobHab.kever.state()
+        assert ksr.i == bobHab.pre
+        assert ksr.s == '8'
+        assert ksr.d == bobHab.kever.serder.said
 
-        liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksn.ked)
+        liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict())
         parsing.Parser().parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy)
 
         msgs = bytearray()  # outgoing messages
@@ -293,7 +293,7 @@ def test_keystate(mockHelpingNowUTC):
         saider = bamHby.db.knas.get(keys=keys)
         assert saider.qb64 == bobHab.kever.serder.said
         latest = bamHby.db.ksns.get(keys=(saider.qb64,))
-        assert latest.sn == 8
+        assert latest.s == '8'
 
     """End Test"""
 

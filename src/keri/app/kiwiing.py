@@ -768,7 +768,7 @@ class KeyStateEnd:
 
         res = dict(
             pre=pre,
-            state=kever.state().ked
+            state=kever.state()._asdict()
         )
 
         kel = []
