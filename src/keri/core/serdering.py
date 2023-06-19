@@ -204,10 +204,6 @@ class Serder:
                 {
                     Vrsn_1_0:
                     {
-                        None: Fieldage(saids={},
-                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
-                                dt='',et='', kt='0', k=[], nt='0', n=[],
-                                bt='0', b=[], c=[], ee={}, di='')),
                         Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
                             alls=dict(v='', t='',d='', i='', s='0', kt='0',
@@ -264,10 +260,6 @@ class Serder:
                     },
                     Vrsn_1_1:
                     {
-                        None: Fieldage(saids={},
-                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
-                                dt='',et='', kt='0', k=[], nt='0', n=[],
-                                bt='0', b=[], c=[], ee={}, di='')),
                         Ilks.icp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
                             alls=dict(v='', t='',d='', i='', s='0', kt='0',
@@ -308,10 +300,6 @@ class Serder:
                 {
                     Vrsn_1_1:
                     {
-                        None: Fieldage(saids={},
-                            alls=dict(v='', i='',s='0' , p='', d='', f='0',
-                                dt='',et='', kt='0', k=[], nt='0', n=[],
-                                bt='0', b=[], c=[], ee={}, di='')),
                         Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                                   Saids.i: DigDex.Blake3_256,},
                             alls=dict(v='', t='',d='', i='', ii='', s='0', c=[],
