@@ -1035,7 +1035,7 @@ def state(pre,
 
     KeyStateDict:
     {
-        "v": "KERI10JSON00011c_",
+        #"v": "KERI10JSON00011c_",
         "vn": []1,0],
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
         "s": "2":,
@@ -1063,7 +1063,7 @@ def state(pre,
 
     "di": "" when not delegated
     """
-    vs = versify(version=version, kind=kind, size=0)
+    #vs = versify(version=version, kind=kind, size=0)
 
     sner = Number(num=sn)  # raises InvalidValueError if sn < 0
 
@@ -1146,7 +1146,6 @@ def state(pre,
                          f"latest est event.")
 
     ksr = basing.KeyStateRecord(
-               v=vs,  # version string
                vn=list(version), # version number as list [major, minor]
                i=pre,  # qb64 prefix
                s=sner.numh,  # lowercase hex string no leading zeros
@@ -1168,30 +1167,6 @@ def state(pre,
                di=dpre if dpre is not None else "",
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
-
-    #ksd = dict(v=vs,  # version string
-               #vn=list(version), # version number as list [major, minor]
-               #i=pre,  # qb64 prefix
-               #s=sner.numh,  # lowercase hex string no leading zeros
-               #p=pig,
-               #d=dig,
-               #f=fner.numh,  # lowercase hex string no leading zeros
-               #dt=stamp,
-               #et=eilk,
-               #kt=(tholder.num if intive and tholder.num is not None and
-                    #tholder.num <= MaxIntThold else tholder.sith),
-               #k=keys,  # list of qb64
-               #nt=(ntholder.num if intive and ntholder.num is not None and
-                    #ntholder.num <= MaxIntThold else ntholder.sith),
-               #n=ndigs,
-               #bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
-               #b=wits,  # list of qb64 may be empty
-               #c=cnfg if cnfg is not None else [],
-               #ee=eevt._asdict(),  # latest est event dict
-               #di=dpre if dpre is not None else "",
-               #)
-
-    #return Serder(ked=ksd)  # return serialized ksd
 
 
 def query(route="",
@@ -1731,9 +1706,6 @@ class Kever:
             self.dater = Dater(dts=dts)
             self.db.states.pin(keys=self.prefixer.qb64,
                                val=self.state())
-            #self.db.states.pin(keys=self.prefixer.qb64,
-                               #val=helping.datify(basing.KeyStateRecord,
-                                                  #self.state().ked))
 
 
     @property
@@ -1790,11 +1762,6 @@ class Kever:
             state (KeyStateRecord | None): instance for key state notice
 
         """
-        #for k in KSN_LABELS:
-            #if k not in state.ked:
-                #raise ValidationError(f"Missing element = {k} from state."
-                                      #f" = {state}.")
-
         self.version = Versionage._make(state.vn)
         self.prefixer = Prefixer(qb64=state.i)
         self.sner = Number(numh=state.s)  # sequence number Number instance hex str
