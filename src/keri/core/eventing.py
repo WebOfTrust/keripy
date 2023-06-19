@@ -20,7 +20,7 @@ from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counte
 from .. import help
 from .. import kering
 from ..db import basing, dbing
-from ..db.basing import KeyStateRecord
+from ..db.basing import KeyStateRecord, StateEERecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
 from ..kering import (MissingEntryError,
@@ -1163,7 +1163,7 @@ def state(pre,
                bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
                b=wits,  # list of qb64 may be empty
                c=cnfg if cnfg is not None else [],
-               ee=eevt._asdict(),  # latest est event dict
+               ee=StateEERecord._fromdict(eevt._asdict()),  # latest est event dict
                di=dpre if dpre is not None else "",
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
@@ -1774,13 +1774,13 @@ class Kever:
         self.digers = [Diger(qb64=dig) for dig in state.n]
         self.toader = Number(numh=state.bt)  # auto converts from hex num
         self.wits = state.b
-        self.cuts = state.ee["br"]
-        self.adds = state.ee["ba"]
+        self.cuts = state.ee.br
+        self.adds = state.ee.ba
         self.estOnly = False
         self.doNotDelegate = True if "DND" in state.c else False
         self.estOnly = True if "EO" in state.c else False
-        self.lastEst = LastEstLoc(s=int(state.ee['s'], 16),
-                                  d=state.ee['d'])
+        self.lastEst = LastEstLoc(s=int(state.ee.s, 16),
+                                  d=state.ee.d)
         self.delegator = state.di if state.di else None
         self.delegated = True if self.delegator else False
 

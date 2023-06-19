@@ -2009,15 +2009,18 @@ def test_keystaterecord():
     """
     Test KeyStateRecord dataclass
     """
+    seer = basing.StateEERecord()
+    assert seer.s == '0'
+    assert seer.d == ''
+    assert seer._asdict() == {'s': '0', 'd': '', 'br': [], 'ba': []}
+
     ksr = basing.KeyStateRecord()
 
     assert isinstance(ksr, basing.KeyStateRecord)
     assert ksr.i == ''
 
     ksn = asdict(ksr)  # key state notice dict
-    assert ksn == {
-                    #'v': '',
-                    'vn': [],
+    assert ksn == {'vn': [],
                     'i': '',
                     's': '0',
                     'p': '',
@@ -2032,36 +2035,26 @@ def test_keystaterecord():
                     'bt': '0',
                     'b': [],
                     'c': [],
-                    'ee': {},
-                    'di': ''
-                  }
+                    'ee': {'s': '0', 'd': '', 'br': [], 'ba': []},
+                    'di': ''}
 
     assert ksr._asdict() == ksn
     assert ksr._asjson() == (b'{"vn":[],"i":"","s":"0","p":"","d":"","f":"0","dt":"","et":"","kt":"0","k":['
-                             b'],"nt":"0","n":[],"bt":"0","b":[],"c":[],"ee":{},"di":""}')
-
-                            #(b'{"v":"","vn":[],"i":"","s":"0","p":"","d":"","f":"0","dt":"","et":"","kt":"0'
-                             #b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"ee":{},"di":""}')
+                        b'],"nt":"0","n":[],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"","br":[],"ba":['
+                        b']},"di":""}')
 
     assert ksr._ascbor() == (b'\xb1bvn\x80ai`asa0ap`ad`afa0bdt`bet`bkta0ak\x80bnta0an\x80bbta0ab\x80ac'
-                             b'\x80bee\xa0bdi`')
-
-                            #(b'\xb2av`bvn\x80ai`asa0ap`ad`afa0bdt`bet`bkta0ak\x80bnta0an\x80bbta0ab'
-                             #b'\x80ac\x80bee\xa0bdi`')
+                             b'\x80bee\xa4asa0ad`bbr\x80bba\x80bdi`')
 
     assert ksr._asmgpk() == (b'\xde\x00\x11\xa2vn\x90\xa1i\xa0\xa1s\xa10\xa1p\xa0\xa1d\xa0\xa1f\xa10'
-                             b'\xa2dt\xa0\xa2et\xa0\xa2kt\xa10\xa1k\x90\xa2nt\xa10\xa1n\x90\xa2bt\xa1'
-                             b'0\xa1b\x90\xa1c\x90\xa2ee\x80\xa2di\xa0')
-
-                            #(b'\xde\x00\x12\xa1v\xa0\xa2vn\x90\xa1i\xa0\xa1s\xa10\xa1p\xa0\xa1d\xa0\xa1'
-                             #b'f\xa10\xa2dt\xa0\xa2et\xa0\xa2kt\xa10\xa1k\x90\xa2nt\xa10\xa1n\x90\xa2'
-                             #b'bt\xa10\xa1b\x90\xa1c\x90\xa2ee\x80\xa2di\xa0')
+                            b'\xa2dt\xa0\xa2et\xa0\xa2kt\xa10\xa1k\x90\xa2nt\xa10\xa1n\x90\xa2bt\xa1'
+                            b'0\xa1b\x90\xa1c\x90\xa2ee\x84\xa1s\xa10\xa1d\xa0\xa2br\x90\xa2ba\x90\xa2d'
+                            b'i\xa0')
 
 
-    assert str(ksr) == repr(ksr) == ("KeyStateRecord(vn=[], i='', s='0',"
-                                     " p='', d='', f='0', dt='', et='', "
-                                     "kt='0', k=[], nt='0', n=[], bt='0', b=[], "
-                                     "c=[], ee={}, di='')")
+    assert str(ksr) == repr(ksr) == ("KeyStateRecord(vn=[], i='', s='0', p='', d='', f='0', dt='', et='', kt='0', "
+                                     "k=[], nt='0', n=[], bt='0', b=[], c=[], ee=StateEERecord(s='0', d='', br=[], "
+                                     "ba=[]), di='')")
 
     dksn = dictify(ksr)
     assert dksn == ksn

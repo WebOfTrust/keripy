@@ -130,6 +130,23 @@ class RawRecord:
         return msgpack.dumps(self._asdict())
 
 
+@dataclass
+class StateEERecord(RawRecord):
+    """
+    Corresponds to StateEstEvent namedtuple used as sub record in KeyStateRecord
+    for latest establishment event associated with current key state
+
+    Attributes:
+        s (str): sequence number of latest est evt lowercase hex no leading zeros
+        d (str): SAID qb64  of latest est evt
+        br (list[str]): backer aids qb64 remove list (cuts) from latest est event
+        ba (list[str]): backer aids qb64 add list (adds) from latest est event
+    """
+    s: str ='0'  # sequence number of latest event in KEL as hex str
+    d: str =''  # latest event digest qb64
+    br: list = field(default_factory=list)  # backer AID qb64 remove (cut) list
+    ba: list = field(default_factory=list)  # backer AID qb64 add list
+
 
 @dataclass
 class KeyStateRecord(RawRecord):  # baser.state
@@ -139,15 +156,31 @@ class KeyStateRecord(RawRecord):  # baser.state
     (see baser.state at 'stts')
 
     Attributes:
+        vn (list[int]): version list [major, minor]
         i (str): identifier prefix qb64
         s (str): sequence number of latest event in KEL as hex str
         p (str): prior event digest qb64
         d (str): latest event digest qb64
         f (str): first seen ordinal number of latest event in KEL as hex str
+        dt (str): datetime iso-8601
+        et (str): latest establishment event packet type
+        kt (str): signing threshold sith
+        k (list[str]): signing keys qb64
+        nt (str): next prerotated threshold sith
+        n (list[str]): pre-rotation keys qb64
+        bt (str): backer threshold hex num
+        b (list[str]): backer aids qb64
+        c (list[str]): config traits
+        ee (StateEERecord): instance
+            corresponds to StateEstEvent namedtuple
+                s = sn of latest est event as lowercase hex string  no leading zeros,
+                d = SAID digest qb64  of latest establishment event
+                br = backer (witness) remove list (cuts) from latest est event
+                ba = backer (witness) add list (adds) from latest est event
+        di (str): delegator aid qb64
 
 
     """
-    #v: str = ''  # version string need to remove replace with vn below
     vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str =''  # identifier prefix qb64
     s: str ='0'  # sequence number of latest event in KEL as hex str
@@ -163,7 +196,9 @@ class KeyStateRecord(RawRecord):  # baser.state
     bt: str = '0'  # backer threshold hex num str
     b: list = field(default_factory=list)  # backer AID list qb64
     c: list[str] =  field(default_factory=list)  # config trait list
-    ee: dict = field(default_factory=dict) # latest est event details
+    ee: StateEERecord = field(default_factory=StateEERecord)
+
+    #field(default_factory=dict) # latest est event details
         # asdict of StateEstEvent
             # s = sn of latest est event as lowercase hex string  no leading zeros,
             # d = SAID digest qb64  of latest establishment event
