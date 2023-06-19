@@ -1588,16 +1588,16 @@ def test_state(mockHelpingNowUTC):
                     )
 
     raw = ksr._asjson()
-    assert raw == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                b'lSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"E'
-                b'ANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:'
-                b'00.000000+00:00","et":"ixn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz'
-                b'6llSvWQTWZN"],"nt":"1","n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],'
-                b'"bt":"2","b":["BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJ'
-                b'x39hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9'
-                b'W"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30",'
-                b'"br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6P'
-                b'btdg7S1NSeinNQkJ4oCFASqwRc_9W"]},"di":""}')
+    assert raw == (b'{"vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN","s":"4","p":"'
+                    b'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EANkcl_QewzrRSKH2p9zUskHI'
+                    b'462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"i'
+                    b'xn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","'
+                    b'n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["BGhCNcrRB'
+                    b'R6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39hlObnetizGFjuZT1jq0ge'
+                    b'no0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"],"c":[],"ee":{"s":"3"'
+                    b',"d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSK'
+                    b'DTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqw'
+                    b'Rc_9W"]},"di":""}')
 
     assert ksr.d == 'EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
     assert ksr.i == preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
@@ -1727,18 +1727,16 @@ def test_state(mockHelpingNowUTC):
                     )
 
     raw = ksr._asjson()
-
-    assert raw == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                b'lSvWQTWZN","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"E'
-                b'ANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:'
-                b'00.000000+00:00","et":"ixn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz'
-                b'6llSvWQTWZN"],"nt":"1","n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],'
-                b'"bt":"2","b":["BGhCNcrRBR6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJ'
-                b'x39hlObnetizGFjuZT1jq0geno0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9'
-                b'W"],"c":[],"ee":{"s":"3","d":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30",'
-                b'"br":["BDU5LLVHxQSb9EdSKDTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6P'
-                b'btdg7S1NSeinNQkJ4oCFASqwRc_9W"]},"di":"DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-99'
-                b'3_s5Ie1"}')
+    assert raw == (b'{"vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN","s":"4","p":"'
+                b'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"EANkcl_QewzrRSKH2p9zUskHI'
+                b'462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"i'
+                b'xn","kt":"1","k":["DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"],"nt":"1","'
+                b'n":["EDDOarj1lzr8pqG5a-SSnM2cc_3JgstRRjmzrrA_Bibg"],"bt":"2","b":["BGhCNcrRB'
+                b'R6mlBduhbuCYL7Bwc3gbuyaGo9opZsd0D8F","BO7x6ctSA7FllJx39hlObnetizGFjuZT1jq0ge'
+                b'no0NRK","BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqwRc_9W"],"c":[],"ee":{"s":"3"'
+                b',"d":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BDU5LLVHxQSb9EdSK'
+                b'DTYyqViusxGT8Y4DHOyktkOv5Rt"],"ba":["BK7isi_2-A-RE6Pbtdg7S1NSeinNQkJ4oCFASqw'
+                b'Rc_9W"]},"di":"DBs-gd3nJGtF0Ch2jn7NLaUKsCKB7l3nLs-993_s5Ie1"}')
 
     assert ksr.d == 'EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
     assert ksr.i == preC == 'DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN'
@@ -2150,12 +2148,12 @@ def test_kever(mockHelpingNowUTC):
         assert ksr.s == kever.sner.numh
         assert ([key for key in ksr.k] ==
                 [verfer.qb64 for verfer in kever.verfers])
-        assert ksr._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarE'
-            b'em-AAEg3e","s":"0","p":"","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi"'
-            b',"f":"0","dt":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["D'
-            b'AUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXT'
-            b'LWQ1QjxHrihBmwwrV2tYaSG7hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EB'
-            b'TCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
+        assert ksr._asjson() == (b'{"vn":[1,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e","s":"0","p":"'
+                        b'","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","f":"0","dt":"2021-01-0'
+                        b'1T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hqlQKD8W-FAEa5JU'
+                        b'vJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7'
+                        b'hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EBTCANzIfUThxmM1z1SFxQuwoo'
+                        b'GdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
 
         # test exposeds
         raw = b"raw salt to test"
@@ -4798,15 +4796,15 @@ def test_reload_kever(mockHelpingNowUTC):
         nstate = natHab.kever.state()
 
         state =natHab.db.states.get(keys=natHab.pre)  # key state record
-        assert state._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
-                    b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
-                    b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
-                    b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
-                    b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
-                    b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
-                    b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
-                    b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
-                    b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
+        assert state._asjson() == (b'{"vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe0dgk3kgH_","s":"6","p":"'
+                            b'ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"EA3QbTpV15MvLSXHSedm4lRYd'
+                            b'QhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:00.000000+00:00","et":"i'
+                            b'xn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2e2wzYtEAs3s","DNjSHBbYJa'
+                            b'aUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsINEG207T4pSdjaMIxU9SKhfeeH'
+                            b'CwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy72ZG7Tey0PS2CrXY","EO_z0O'
+                            b'FTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7IX6yl4F2t-WoUCaRFZ-0g5dx'
+                            b'_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EJ7s1vk30hWK_l-exQtzj4'
+                            b'P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
         assert state.f == '6'
         assert state == nstate
 
@@ -4819,15 +4817,15 @@ def test_reload_kever(mockHelpingNowUTC):
 
         kstate = kever.state()
         assert kstate == state
-        assert state._asjson() == (b'{"v":"KERI10JSON000000_","vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe'
-                    b'0dgk3kgH_","s":"6","p":"ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"E'
-                    b'A3QbTpV15MvLSXHSedm4lRYdQhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:'
-                    b'00.000000+00:00","et":"ixn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2'
-                    b'e2wzYtEAs3s","DNjSHBbYJaaUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsIN'
-                    b'EG207T4pSdjaMIxU9SKhfeeHCwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy7'
-                    b'2ZG7Tey0PS2CrXY","EO_z0OFTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7'
-                    b'IX6yl4F2t-WoUCaRFZ-0g5dx_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d"'
-                    b':"EJ7s1vk30hWK_l-exQtzj4P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
+        assert state._asjson() == (b'{"vn":[1,0],"i":"EBm9JqQKS4a3EYv5I7BmAPiwhdSQvFAOpqe0dgk3kgH_","s":"6","p":"'
+                            b'ED_HpKSCQJoeGxHYjPRD2tgUhbIrLf6fH3e3xJFSq2dL","d":"EA3QbTpV15MvLSXHSedm4lRYd'
+                            b'QhmYXqXafsD4i75B_yo","f":"6","dt":"2021-01-01T00:00:00.000000+00:00","et":"i'
+                            b'xn","kt":"2","k":["DCORPGaoMtI_RyJFUTIzk0xdza_z6sBQ2e2wzYtEAs3s","DNjSHBbYJa'
+                            b'aUKJuPd34n7SRYiZHirwvW-QiHRtfRvBh4","DN-hL9CKn6WdsINEG207T4pSdjaMIxU9SKhfeeH'
+                            b'CwfvT"],"nt":"2","n":["EGZ9WHJPgrvDpe08gJpEZ8Gz-rcy72ZG7Tey0PS2CrXY","EO_z0O'
+                            b'FTUZ1pmfxj-VnQJcsYFdIVq2tWkN9nUWRxQab_","EMeWMAZpVy7IX6yl4F2t-WoUCaRFZ-0g5dx'
+                            b'_LLoEywhx"],"bt":"0","b":[],"c":[],"ee":{"s":"2","d":"EJ7s1vk30hWK_l-exQtzj4'
+                            b'P5u_wIzki1drVR4FAKDbEW","br":[],"ba":[]},"di":""}')
 
     assert not os.path.exists(natHby.ks.path)
     assert not os.path.exists(natHby.db.path)
