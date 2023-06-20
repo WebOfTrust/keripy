@@ -291,10 +291,11 @@ def revoke(
                p=dig,
                dt=helping.nowIso8601()
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
+
+    _, ked = coring.Saider.saidify(sad=ked)
 
     return Serder(ked=ked)  # return serialized ked
 
