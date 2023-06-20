@@ -378,7 +378,7 @@ class EndAuthRecord:  # nested as field value in baser.locs
     controller id, cid, and a role. used to lookup authorization in end authN
     database with keyspace given by (cid.role.eid) where cid is the authorizing
     controller for the eid (endpoint id) at the given role.
-    The cid is usually a transferable identifer with a KEL but may be non-trans.
+    The cid is usually a transferable identifier with a KEL but may be non-trans.
     The eid is usually a nontransferable identifier when its used for roles
     witness or watcher but may be transferable for other roles such as controller,
     judge, juror, public watcher, or registrar.
@@ -505,7 +505,7 @@ class Baser(dbing.LMDBer):
 
         .evts is named sub DB whose values are serialized events
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
         .fels is named sub DB of first seen event log table (FEL) of digests
@@ -522,7 +522,7 @@ class Baser(dbing.LMDBer):
             the datetime when the event was first escrosed and then later first
             seen by log. Used for escrows timeouts and extended validation.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             Value is ISO 8601 datetime stamp bytes
 
         .aess is named sub DB of authorizing event source seal couples
@@ -533,12 +533,12 @@ class Baser(dbing.LMDBer):
             dgKey
             Values are couples used to lookup authorizer's source event in
             .kels sub DB
-            DB is keyed by identifer prefix plus digest of key event
+            DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
 
         .sigs is named sub DB of fully qualified indexed event signatures
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .wigs is named sub DB of indexed witness signatures of event
@@ -546,7 +546,7 @@ class Baser(dbing.LMDBer):
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
@@ -554,13 +554,13 @@ class Baser(dbing.LMDBer):
             These are: non-transferale prefix plus non-indexed event signature
             by that prefix.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
             qualified items. These are: receipted event digest,
-            non-transferable receiptor identfier prefix,
+            non-transferable receiptor identifier prefix,
             plus nonindexed receipt event signature by that prefix.
             snKey
             DB is keyed by receipted event controller prefix plus sn
@@ -575,7 +575,7 @@ class Baser(dbing.LMDBer):
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .vres is named sub DB of unverified event validator receipt escrowed
@@ -586,21 +586,21 @@ class Baser(dbing.LMDBer):
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
             to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .pses is named sub DB of partially signed escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .pdes is named sub DB of partially delegated escrowed couples
@@ -610,14 +610,14 @@ class Baser(dbing.LMDBer):
             issuing) source event.
             dgKey
             Values are couples used to lookup source event in .kels sub DB
-            DB is keyed by identifer prefix plus digest of key event
+            DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
 
         .pwes is named sub DB of partially witnessed escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .uwes is named sub DB of unverified event indexed escrowed couples from
@@ -640,21 +640,21 @@ class Baser(dbing.LMDBer):
             Values are digests used to lookup event in .evts, .sigs and .dtss
             sub DBs.
             snKey
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .dels is named sub DB of deplicitous event log tables that map sequence numbers
+        .dels is named sub DB of duplicitous event log tables that map sequence numbers
             to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .ldes is named sub DB of likely deplicitous escrowed event tables
+        .ldes is named sub DB of likely duplicitous escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .fons is named subDB instance of MatterSuber that maps
@@ -873,7 +873,7 @@ class Baser(dbing.LMDBer):
         # maps key=cid.role.eid to val=said of end reply
         self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Saider)
 
-        # service endpoint identifer (eid) auths keyed by controller cid.role.eid
+        # service endpoint identifier (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
         self.ends = koming.Komer(db=self, subkey='ends.',
                                  schema=EndpointRecord, )
@@ -1020,7 +1020,7 @@ class Baser(dbing.LMDBer):
         self.schema = subing.SchemerSuber(db=self,
                                           subkey='schema.')
 
-        # Field values for contact information for remote identfiers.  Keyed by prefix/field
+        # Field values for contact information for remote identifiers.  Keyed by prefix/field
         self.cfld = subing.Suber(db=self,
                                  subkey="cfld.")
 
@@ -1032,7 +1032,7 @@ class Baser(dbing.LMDBer):
 
         # Transferable signatures on contact data
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
-        # Chunked image data for contact information for remote identfiers
+        # Chunked image data for contact information for remote identifiers
         self.imgs = self.env.open_db(key=b'imgs.')
 
         # Delegation escrow dbs #

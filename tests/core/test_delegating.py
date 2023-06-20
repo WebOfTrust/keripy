@@ -15,7 +15,7 @@ logger = help.ogler.getLogger()
 
 def test_delegation():
     """
-    Test creation and validation of delegated identifer prefixes and events
+    Test creation and validation of delegated identifier prefixes and events
 
     """
     # bob is the delegator del is bob's delegate

@@ -158,8 +158,7 @@ class OobiResource(doing.DoDoer):
 
         ---
         summary: Resolve OOBI and assign an alias for the remote identifier
-        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact
-                     data for resolved identifier
+        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact data for resolved identifier
         tags:
            - OOBIs
         requestBody:
@@ -253,7 +252,7 @@ class OobiResource(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):
             rep.status = falcon.HTTP_400
-            rep.text = f"Identifer for {alias} is not a group hab, not supported"
+            rep.text = f"Identifier for {alias} is not a group hab, not supported"
             return
 
         oobis = body["oobis"]

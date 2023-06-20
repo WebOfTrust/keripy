@@ -129,7 +129,7 @@ class IdentifierEnd(doing.DoDoer):
                                  description: qualified base64 identifier prefix of delegator
                                  type: string
                               witnesses:
-                                 description: list of qualified base64 identfier prefixes of witnesses
+                                 description: list of qualified base64 identifier prefixes of witnesses
                                  type: string
                               public_keys:
                                  description: list of current public keys
@@ -203,7 +203,7 @@ class IdentifierEnd(doing.DoDoer):
                                  description: qualified base64 identifier prefix of delegator
                                  type: string
                               witnesses:
-                                 description: list of qualified base64 identfier prefixes of witnesses
+                                 description: list of qualified base64 identifier prefixes of witnesses
                                  type: string
                               public_keys:
                                  description: list of current public keys
@@ -286,8 +286,8 @@ class IdentifierEnd(doing.DoDoer):
             alias: human readable name of identifier to update contact information
 
         ---
-        summary:  Update metadata associated with the identfier of the alias
-        description:  Update metadata associated with the identfier of the alias
+        summary:  Update metadata associated with the identifier of the alias
+        description:  Update metadata associated with the identifier of the alias
         tags:
            - Identifiers
         parameters:
@@ -309,7 +309,7 @@ class IdentifierEnd(doing.DoDoer):
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -353,8 +353,8 @@ class IdentifierEnd(doing.DoDoer):
             alias: human readable name of identifier to replace contact information
 
         ---
-        summary:  Replace metadata associated with the identfier of the alias
-        description:  Replace metadata associated with the identfier of the alias
+        summary:  Replace metadata associated with the identifier of the alias
+        description:  Replace metadata associated with the identifier of the alias
         tags:
            - Identifiers
         parameters:
@@ -376,7 +376,7 @@ class IdentifierEnd(doing.DoDoer):
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -442,7 +442,7 @@ class IdentifierEnd(doing.DoDoer):
                      type: array
                      items:
                         type: string
-                     description: human readable alias for the new identfier
+                     description: human readable alias for the new identifier
         responses:
            200:
               description: identifier information
@@ -874,13 +874,13 @@ class RegistryEnd(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         ---
-        summary: List credential issuance and revocation registies
-        description: List credential issuance and revocation registies
+        summary: List credential issuance and revocation registries
+        description: List credential issuance and revocation registries
         tags:
            - Registries
         responses:
            200:
-              description:  array of current credential issuance and revocation registies
+              description:  array of current credential issuance and revocation registries
 
         """
         res = []
@@ -936,7 +936,7 @@ class RegistryEnd(doing.DoDoer):
                       type: array
                       items:
                          type: string
-                      description: List of qb64 AIDs of witnesses to be used for the new group identfier.
+                      description: List of qb64 AIDs of witnesses to be used for the new group identifier.
                     estOnly:
                       type: boolean
                       required: false
@@ -963,7 +963,7 @@ class RegistryEnd(doing.DoDoer):
         hab = self.hby.habByName(alias)
         if hab is None:
             rep.status = falcon.HTTP_404
-            rep.text = "alias is not a valid reference to an identfier"
+            rep.text = "alias is not a valid reference to an identifier"
             return
 
         c = dict()
@@ -985,14 +985,14 @@ class RegistryEnd(doing.DoDoer):
 
 class CredentialEnd(doing.DoDoer):
     """
-    ReST API for admin of credentials
+    ReST API for admin of credentials incuding listing, issuing, revoking, and exporting.
 
     """
 
     def __init__(self, hby, rgy, registrar, credentialer, verifier, notifier):
         """ Create endpoint for issuing and listing credentials
 
-        Endpoints for issuing and listing credentials from non-group identfiers only
+        Endpoints for issuing and listing credentials from non-group identifiers only
 
         Parameters:
             hby (Habery): identifier database environment
@@ -1020,11 +1020,12 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias (str): human readable name of identifier to load credentials for
+            alias (str): human-readable name of identifier to load credentials for
 
         ---
         summary:  List credentials in credential store (wallet)
-        description: List issued or received credentials current verified
+        description: List issued or received credentials currently verified in credential store
+                     (wallet)
         tags:
            - Credentials
         parameters:
@@ -1094,7 +1095,7 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             _: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias (str): human readable name of identifier to load credentials for
+            alias (str): human-readable name of identifier to load credentials for
             said (str): SAID of credential to export
 
         ---
@@ -1185,7 +1186,7 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
 
         ---
         summary: Perform credential issuance
@@ -1215,6 +1216,9 @@ class CredentialEnd(doing.DoDoer):
                     schema:
                       type: string
                       description: SAID of credential schema being issued
+                    rules:
+                      type: object
+                      description: Rules section (Ricardian contract) for credential being issued
                     source:
                       type: object
                       description: ACDC edge or edge group for chained credentials
@@ -1280,12 +1284,12 @@ class CredentialEnd(doing.DoDoer):
         rep.data = creder.raw
 
     def on_post_iss(self, req, rep, alias=None):
-        """ Initiate a credential issuance from a group multisig identfier
+        """ Initiate a credential issuance from a group multisig identifier
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
 
         ---
         summary: Initiate credential issuance from a group multisig identifier
@@ -1328,8 +1332,8 @@ class CredentialEnd(doing.DoDoer):
                                type: string
                                description: SAID of reference chain schema
                     rules:
-                      type: array
-                      description: list of credential chain sources (ACDC)
+                      type: object
+                      description: Rules section (Ricardian contract) for credential being issued
                     credentialData:
                       type: object
                       description: dynamic map of values specific to the schema
@@ -1395,12 +1399,12 @@ class CredentialEnd(doing.DoDoer):
 
 
     def on_put_iss(self, req, rep, alias=None):
-        """ Participate in a credential issuance from a group identfier
+        """ Participate in a credential issuance from a group identifier
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
 
         ---
         summary: Participate in a credential issuance from a group multisig identifier
@@ -1496,11 +1500,12 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
 
         ---
         summary: Revoke credential
-        description: PArticipate in a credential revocation for a group multisig issuer
+        description: Revoke a credential for a single signature issuer
+                     or participate in revocation for a group multisig issuer.
         tags:
            - Credentials
         parameters:
@@ -1551,7 +1556,7 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
             said: qb64 SAID of the credential to be revoked
 
         ---
@@ -1607,12 +1612,12 @@ class CredentialEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: qb64 identfier prefix of issuer of credential
+            alias: qb64 identifier prefix of issuer of credential
             said: qb64 identifier prefix of recipient of credential
 
         ---
         summary: Revoke credential
-        description: PArticipate in a credential revocation for a group multisig issuer
+        description: Participate in a credential revocation for a group multisig issuer
         tags:
            - Group Credentials
         parameters:
@@ -1626,7 +1631,7 @@ class CredentialEnd(doing.DoDoer):
              name: alias
              schema:
                 type: string
-             description: human readable alias for issuer identifier
+             description: human-readable alias for issuer identifier
              required: true
            - in: path
              name: said
@@ -1914,8 +1919,8 @@ class ChallengeEnd(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         ---
-        summary:  Get list of agent identfiers
-        description:  Get the list of identfiers associated with this agent
+        summary:  Get a random word list
+        description:  Generate and return a random word list based on the cryptographic strength arg
         tags:
            - Challenge/Response
         parameters:
@@ -1927,16 +1932,16 @@ class ChallengeEnd(doing.DoDoer):
              required: false
         responses:
             200:
-              description: An array of Identifier key state information
+              description: Random word list
               content:
                   application/json:
                     schema:
-                        description: Randon word list
+                        description: Random word list
                         type: object
                         properties:
                             words:
                                 type: array
-                                description: random challange word list
+                                description: random challenge word list
                                 items:
                                     type: string
 
@@ -1957,10 +1962,10 @@ class ChallengeEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: human readable name of identifier to use to sign the challange/response
+            alias: human-readable name of identifier to use to sign the challenge/response
 
         ---
-        summary:  Sign challange message and forward to peer identfiier
+        summary:  Sign challenge message and forward to peer identifier
         description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
                       to recipient
         tags:
@@ -1981,7 +1986,7 @@ class ChallengeEnd(doing.DoDoer):
                     properties:
                         recipient:
                           type: string
-                          description: human readable alias recipient identifier to send signed challenge to
+                          description: human-readable alias recipient identifier to send signed challenge to
                         words:
                           type: array
                           description:  challenge in form of word list
@@ -2021,12 +2026,11 @@ class ChallengeEnd(doing.DoDoer):
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
-            alias: human readable name of identifier to use to sign the challange/response
+            alias: human-readable name of identifier to use to sign the challenge/response
 
         ---
-        summary:  Sign challange message and forward to peer identfiier
-        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message
-                      to recipient
+        summary:  Sign challenge message and forward to peer identifier
+        description:  Sign a challenge word list received out of bands and send `exn` peer to peer message to recipient
         tags:
            - Challenge/Response
         parameters:
@@ -2035,7 +2039,7 @@ class ChallengeEnd(doing.DoDoer):
             schema:
               type: string
             required: true
-            description: Human readable alias for the identifier to create
+            description: Human-readable alias for the identifier to create
         requestBody:
             required: true
             content:
@@ -2093,8 +2097,8 @@ class NotificationEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
         ---
-        summary:  Get list of notifcations for the controller of the agent
-        description:  Get list of notifcations for the controller of the agent.  Notifications will
+        summary:  Get list of notifications for the controller of the agent
+        description:  Get list of notifications for the controller of the agent.  Notifications will
                        be sorted by creation date/time
         parameters:
           - in: query
@@ -2225,9 +2229,8 @@ class ContactEnd:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
         ---
-        summary:  Get list of contact information associated with remote identfiers
-        description:  Get list of contact information associated with remote identfiers.  All
-                      information is metadata and kept in local storage only
+        summary:  Get list of contact information associated with remote identifiers
+        description:  Get list of contact information associated with remote identifiers.  All information is metadata and kept in local storage only
         tags:
            - Contacts
         parameters:
@@ -2349,7 +2352,7 @@ class ContactEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -2382,8 +2385,8 @@ class ContactEnd:
             prefix: qb64 identifier prefix of contact to associate with image
 
         ---
-         summary: Uploads an image to associate with identfier.
-         description: Uploads an image to associate with identfier.
+         summary: Uploads an image to associate with identifier.
+         description: Uploads an image to associate with identifier.
          tags:
             - Contacts
          parameters:
@@ -2430,8 +2433,8 @@ class ContactEnd:
             prefix: qb64 identifier prefix of contact information to get
 
        ---
-        summary:  Get contact image for identifer prefix
-        description:  Get contact image for identifer prefix
+        summary:  Get contact image for identifier prefix
+        description:  Get contact image for identifier prefix
         tags:
            - Contacts
         parameters:
@@ -2477,8 +2480,8 @@ class ContactEnd:
             prefix: qb64 identifier prefix of contact information to get
 
        ---
-        summary:  Get contact information associated with single remote identfier
-        description:  Get contact information associated with single remote identfier.  All
+        summary:  Get contact information associated with single remote identifier
+        description:  Get contact information associated with single remote identifier.  All
                       information is meta-data and kept in local storage only
         tags:
            - Contacts
@@ -2518,8 +2521,8 @@ class ContactEnd:
             prefix: qb64 identifier to update contact information
 
         ---
-        summary:  Update provided fields in contact information associated with remote identfier prefix
-        description:  Update provided fields in contact information associated with remote identfier prefix.  All
+        summary:  Update provided fields in contact information associated with remote identifier prefix
+        description:  Update provided fields in contact information associated with remote identifier prefix.  All
                       information is metadata and kept in local storage only
         tags:
            - Contacts
@@ -2542,7 +2545,7 @@ class ContactEnd:
            200:
               description: Updated contact information for remote identifier
            400:
-              description: Invalid identfier used to update contact information
+              description: Invalid identifier used to update contact information
            404:
               description: Prefix not found in identifier contact information
         """
@@ -2575,8 +2578,8 @@ class ContactEnd:
             prefix: qb64 identifier prefix to delete contact information
 
         ---
-        summary:  Delete contact information associated with remote identfier
-        description:  Delete contact information associated with remote identfier
+        summary:  Delete contact information associated with remote identifier
+        description:  Delete contact information associated with remote identifier
         tags:
            - Contacts
         parameters:
@@ -2819,8 +2822,8 @@ class EscrowEnd:
             dig (str) qb64 SAID of the event to load
 
         ---
-        summary:  Display escrow status for entire database or search for single identifier in escrows
-        description:  Display escrow status for entire database or search for single identifier in escrows
+        summary:  Display escrow status of an event for an identifier
+        description:  Display escrow status of an event for an identifier
         tags:
            - Escrows
         parameters:
@@ -2857,9 +2860,13 @@ class EscrowEnd:
 
 
 class AeidEnd:
+    """
+    aeid (str): qb64 of non-transferable identifier prefix for authentication and encryption of
+                secrets in keeper.
+    """
 
     def __init__(self, hby):
-        """ Initialize endpoint for updating the passcode for this Habery
+        """ Initialize endpoint for updating the passcode (AEID) for this Habery
 
         Parameters:
             hby (Habery): identifier environment database
@@ -2895,9 +2902,8 @@ class AeidEnd:
             rep: falcon.Response HTTP response
 
        ---
-        summary:  Create new contact information for an identifier
-        description:  Creates new information for an identifier, overwriting all existing
-                      information for that identifier
+        summary:  Update the passcode (AEID) used to decrypt and unlock the local keystore
+        description:  Update the passcode (AEID) used to decrypt and unlock the local keystore
         tags:
            - Passcode
         parameters:

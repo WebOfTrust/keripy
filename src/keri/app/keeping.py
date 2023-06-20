@@ -188,7 +188,7 @@ class Keeper(dbing.LMDBer):
             }
         sits (koming.Komer): named sub DB whose values are serialized dicts of
             PreSit instance
-            Key is identifer prefix (fully qualified qb64)
+            Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict of public key situation
                 {
                   old: { pubs: ridx:, kidx,  dt:},
@@ -970,7 +970,7 @@ class Manager:
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
-            even when the identifer prefix is transferable.
+            even when the identifier prefix is transferable.
 
         """
         # get root defaults to initialize key sequence
@@ -1148,7 +1148,7 @@ class Manager:
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
-            even when the identifer prefix is transferable.
+            even when the identifier prefix is transferable.
 
         """
         # Secret to decrypt here

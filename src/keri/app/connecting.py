@@ -23,7 +23,7 @@ class Organizer:
         self.hby = hby
 
     def update(self, pre, data):
-        """ Add or update contact information in data for the identfier prefix
+        """ Add or update contact information in data for the identifier prefix
 
         Parameters:
             pre (str): qb64 identifier prefix of contact information to update
@@ -126,7 +126,7 @@ class Organizer:
         return data
 
     def list(self):
-        """ Return list of all contact information for all remote identfiers
+        """ Return list of all contact information for all remote identifiers
 
         Returns:
             list: All contact information

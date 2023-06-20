@@ -1000,7 +1000,7 @@ class Serder:
     @property
     def proto(self):
         """proto property getter
-        protocol identifer type value of Protocolage such as 'KERI' or 'ACDC'
+        protocol identifier type value of Protocolage such as 'KERI' or 'ACDC'
 
         Returns:
             proto (str): Protocolage value as protocol type

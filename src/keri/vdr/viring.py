@@ -114,43 +114,43 @@ class Reger(dbing.LMDBer):
 
         .tvts is named sub DB whose values are serialized TEL events
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
         .tels is named sub DB of transaction event log tables that map sequence
             numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifer prefix plus sequence number of tel event
+            DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
         .tibs is named sub DB of indexed backer signatures of event
             Backers always have nontransferable indetifier prefixes.
             The index is the offset of the backer into the backer list
             of the anchored management event wrt the receipted event.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
         .oots is named sub DB of out of order escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifer prefix plus sequence number of key event
+            DB is keyed by identifier prefix plus sequence number of key event
             Only one value per DB key is allowed
         .baks is named sub DB of ordered list of backers at given point in
             management TEL.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
         .twes is named sub DB of partially witnessed escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifer prefix plus sequence number of tel event
+            DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
         .taes is named sub DB of anchorless escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
             Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifer prefix plus sequence number of tel event
+            DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
         .ancs is a named sub DB of anchors to KEL events.  Quadlet
             Each quadruple is concatenation of  four fully qualified items
@@ -160,7 +160,7 @@ class Reger(dbing.LMDBer):
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
-            DB is keyed by identifer prefix plus digest of serialized event
+            DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
         .regs is named subDB instance of Komer that maps registry names to registry keys

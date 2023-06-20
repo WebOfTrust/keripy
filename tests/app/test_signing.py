@@ -60,7 +60,7 @@ def test_sad_signature(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                         b'bAqteP0BApbos85syKE_VgfuNTtVRYkAlw5fwb_4ZWN-V-FFO_MrSGt71luX0rt-9e'
                         b'hNZFPHV1EuPc1YDQvZJ1XqPumewN')
 
-        # sign with non-trans identifer with a specific set of paths
+        # sign with non-trans identifier with a specific set of paths
         sig1 = signing.ratify(wanHab, cred, paths=paths)
         assert sig1 == (b'{"v":"ACDC10JSON0002e2_","d":"EIEbtplUZZrV3-jVAnOUcH-xcxOCuiJqtSK'
                         b'lDJSxUJLW","i":"EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM","ri'
@@ -326,7 +326,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
         cred = proving.credential(schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
                                   issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
-        # sign with single sig transferable identfier with multiple specified paths
+        # sign with single sig transferable identifier with multiple specified paths
         # Bad magic values here but can't figure out where looks like Sadder Said seeder
         # is using a bad magic value
         sig1 = signing.ratify(hab=hab, serder=cred, paths=[[], ["a"], ["a", "i"]])
