@@ -395,7 +395,7 @@ class Habery:
 
         self.reconfigure()  # post hab load reconfiguration
 
-    def makeHab(self, name, ns=None, **kwa):
+    def makeHab(self, name, ns=None, cf=None, **kwa):
         """Make new Hab with name, pre is generated from **kwa
 
         Parameters: (Passthrough to hab.make)
@@ -418,7 +418,8 @@ class Habery:
         if ns is not None and "." in ns:
             raise kering.ConfigurationError("Hab namespace names are not allowed to contain the '.' character")
 
-        hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+        cf = cf if cf is not None else self.cf
+        hab = Hab(ks=self.ks, db=self.db, cf=cf, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                   name=name, ns=ns, temp=self.temp)
 

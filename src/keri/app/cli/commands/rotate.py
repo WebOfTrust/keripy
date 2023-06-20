@@ -176,7 +176,6 @@ class RotateDoer(doing.DoDoer):
             self.adds = set(self.wits) - set(ewits)
             if self.endpoint:
                 for wit in self.adds:
-                    print(f"catching up {wit}")
                     yield from receiptor.catchup(hab.pre, wit)
 
         hab.rotate(isith=self.isith, nsith=self.nsith, ncount=self.count, toad=self.toad,
@@ -193,6 +192,10 @@ class RotateDoer(doing.DoDoer):
             if self.endpoint:
                 yield from receiptor.receipt(hab.pre, sn=hab.kever.sn)
             else:
+                for wit in self.adds:
+                    self.mbx.addPoller(hab, witness=wit)
+                    
+                print("Waiting for witness receipts...")
                 witDoer = agenting.WitnessReceiptor(hby=self.hby)
                 self.extend(doers=[witDoer])
                 yield self.tock

@@ -34,7 +34,7 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 
-def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
+def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632):
     """
     Setup witness controller and doers
 
@@ -59,7 +59,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
     oobiRes = oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
-    rep = storing.Respondant(hby=hby, mbx=mbx)
+    rep = storing.Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = eventing.Kevery(db=hby.db,
@@ -83,7 +83,7 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
-    receiptEnd = ReceiptEnd(hab=hab, inbound=cues)
+    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
 
     server = http.Server(port=httpPort, app=app)
@@ -92,18 +92,19 @@ def setupWitness(hby, alias="witness", mbx=None, tcpPort=5631, httpPort=5632):
     # setup doers
     regDoer = basing.BaserDoer(baser=verfer.reger)
 
-    server = serving.Server(host="", port=tcpPort)
-    serverDoer = serving.ServerDoer(server=server)
+    if tcpPort is not None:
+        server = serving.Server(host="", port=tcpPort)
+        serverDoer = serving.ServerDoer(server=server)
 
-    directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+        directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+        doers.extend([directant, serverDoer])
 
     witStart = WitnessStart(hab=hab, parser=parser, cues=receiptEnd.outbound,
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
                             responses=rep.cues, queries=httpEnd.qrycues)
 
     doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, directant, serverDoer, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
-
+    doers.extend([regDoer, exchanger, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
     return doers
 
 
@@ -627,6 +628,11 @@ class MailboxDirector(doing.DoDoer):
 
         self.prefixes.add(hab.pre)
 
+    def addPoller(self, hab, witness):
+        poller = Poller(hab=hab, topics=self.topics, witness=witness)
+        self.pollers.append(poller)
+        self.extend([poller])
+
     def processPollIter(self):
         """
         Iterate through cues and yields one or more responses for each cue.
@@ -1012,10 +1018,11 @@ class ReceiptEnd(doing.DoDoer):
 
      """
 
-    def __init__(self, hab, inbound=None, outbound=None):
+    def __init__(self, hab, inbound=None, outbound=None, aids=None):
         self.hab = hab
         self.inbound = inbound if inbound is not None else decking.Deck()
         self.outbound = outbound if outbound is not None else decking.Deck()
+        self.aids = aids
         self.receipts = set()
         self.psr = parsing.Parser(framed=True,
                                   kvy=self.hab.kvy)
@@ -1042,6 +1049,9 @@ class ReceiptEnd(doing.DoDoer):
         serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
 
         pre = serder.ked["i"]
+        if self.aids is not None and pre not in self.aids:
+            raise falcon.HTTPBadRequest(description=f"invalid AID={pre} for witnessing receipting")
+
         ilk = serder.ked["t"]
         if ilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
             raise falcon.HTTPBadRequest(description=f"invalid event type ({ilk})for receipting")

@@ -16,8 +16,7 @@ from keri.core import coring
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
+parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")

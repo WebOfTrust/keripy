@@ -140,7 +140,7 @@ class Respondant(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, reps=None, cues=None, mbx=None, **kwa):
+    def __init__(self, hby, reps=None, cues=None, mbx=None, aids=None, **kwa):
         """
         Creates Respondant that uses local environment to find the destination KEL and stores
         peer to peer messages in mbx, the mailboxer
@@ -154,6 +154,7 @@ class Respondant(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
 
         self.hby = hby
+        self.aids = aids
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
         self.postman = forwarding.Poster(hby=self.hby, mbx=self.mbx)
 
@@ -225,6 +226,11 @@ class Respondant(doing.DoDoer):
                     serder = cue["serder"]  # Serder of received event for other pre
                     cuedKed = serder.ked
                     cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+
+                    # If respondant configured with list of acceptable AIDs to witness for, check them here
+                    if self.aids is not None and cuedPrefixer.qb64 not in self.aids:
+                        continue
+
                     if cuedPrefixer.qb64 in self.hby.kevers:
                         kever = self.hby.kevers[cuedPrefixer.qb64]
                         owits = oset(kever.wits)
