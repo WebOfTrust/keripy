@@ -5,7 +5,6 @@ keri.app.grouping module
 
 module for enveloping and forwarding KERI message
 """
-import json
 from ordered_set import OrderedSet as oset
 
 from hio import help
@@ -549,7 +548,6 @@ class Counselor(doing.DoDoer):
             if None in merfers:  # not all members have contributed
                 continue
 
-
             # contribute diger from each rmid member to group event
             migers = [self.hby.kevers[mid].digers[0] for mid in grec.rmids]
 
@@ -990,14 +988,11 @@ class MultisigRotateHandler(doing.DoDoer):
 
                 src = prefixer.qb64
                 aids = pay["aids"]
+                smids = pay["smids"]
+                rmids = pay["rmids"]
                 gid = pay["gid"]
 
-                ghab = self.hby.habs[gid]
-                if ghab is None:
-                    logger.error(f"invalid rotate message, not a local group: {pay}")
-                    continue
-
-                if src not in ghab.smids or src not in ghab.kevers:
+                if src not in smids or src not in self.hby.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 
@@ -1005,13 +1000,16 @@ class MultisigRotateHandler(doing.DoDoer):
                     r='/multisig/rot',
                     src=src,
                     aids=aids,
+                    smids=smids,
+                    rmids=rmids
                 )
-                data["i"] = ghab.pre
+                data["i"] = gid
                 data["toad"] = pay["toad"] if "toad" in pay else None
                 data["wits"] = pay["wits"] if "wits" in pay else []
                 data["adds"] = pay["adds"] if "adds" in pay else []
                 data["cuts"] = pay["cuts"] if "cuts" in pay else []
                 data["isith"] = pay["isith"] if "isith" in pay else None
+                data["nsith"] = pay["nsith"] if "nsith" in pay else None
                 data["data"] = pay["data"] if "data" in pay else None
 
                 self.notifier.add(attrs=data)
@@ -1021,11 +1019,17 @@ class MultisigRotateHandler(doing.DoDoer):
             yield
 
 
-def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data):
+def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data, nsith=None, smids=None, rmids=None):
+    smids = smids if smids is not None else aids
+    rmids = rmids if rmids is not None else smids
+    nsith = nsith if nsith is not None else isith
     exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
                                            aids=aids,
+                                           smids=smids,
+                                           rmids=rmids,
                                            isith=isith,
+                                           nsith=nsith,
                                            toad=toad,
                                            cuts=list(cuts),
                                            adds=list(adds),

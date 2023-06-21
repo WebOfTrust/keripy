@@ -5,6 +5,7 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+from ordered_set import OrderedSet as oset
 
 from hio import help
 from hio.base import doing
@@ -80,7 +81,7 @@ class GroupMultisigRotate(doing.DoDoer):
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
-        
+
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
 
@@ -115,7 +116,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         if self.smids is None:
             self.smids = ghab.smids
-            
+
         if self.rmids is None:
             self.rmids = self.smids
 
@@ -128,7 +129,28 @@ class GroupMultisigRotate(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
-        seqner = coring.Seqner(sn=ghab.kever.sn+1)
+        exn, ims = grouping.multisigRotateExn(ghab,
+                                              cuts=self.cuts,
+                                              adds=self.adds,
+                                              aids=self.smids,
+                                              isith=self.isith,
+                                              nsith=self.nsith,
+                                              toad=self.toad,
+                                              smids=self.smids,
+                                              rmids=self.rmids,
+                                              data=self.data)
+
+        others = list(oset(self.smids + (self.rmids or [])))
+        others.remove(ghab.mhab.pre)
+
+        for recpt in others:  # this goes to other participants only as a signaling mechanism
+            self.postman.send(src=ghab.mhab.pre,
+                              dest=recpt,
+                              topic="multisig",
+                              serder=exn,
+                              attachment=ims)
+
+        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         self.counselor.rotate(ghab=ghab, smids=self.smids, rmids=self.rmids,
                               isith=self.isith, nsith=self.nsith, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds),

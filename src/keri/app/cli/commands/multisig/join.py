@@ -112,6 +112,9 @@ class ConfirmDoer(doing.DoDoer):
                     self.remove(self.toRemove)
                     return True
 
+                if route == '/multisig/rot':
+                    print(f"we got a rotation with {attrs}")
+
                 if route == '/multisig/ixn':
                     done = yield from self.interact(attrs)
                     if done:
