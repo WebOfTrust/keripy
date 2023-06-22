@@ -947,23 +947,6 @@ class Baser(dbing.LMDBer):
                                 subkey='ksns.')
         #self.ksns = subing.SerderSuber(db=self, subkey='ksns.')
 
-        # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys
-        # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
-        #  of reply and trans signer's key state est evt to val Siger for each
-        # signature.
-        self.ksgs = subing.CesrIoSetSuber(db=self, subkey='ksgs.', klas=coring.Siger)
-
-        # all key state kcgs  (ksn non-indexed signature serializations) maps ksn SAID
-        # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
-        # nontrans qb64 of Prefixer is same as Verfer
-        self.kcgs = subing.CatCesrIoSetSuber(db=self, subkey='kcgs.',
-                                             klas=(coring.Verfer, coring.Cigar))
-
-        # all key state escrows indices of partially signed ksn messages. Maps
-        # route in reply to single (Saider,)  of escrowed ksn.
-        # Routes such as /ksn/{aid}
-        self.knes = subing.CesrIoSetSuber(db=self, subkey='knes', klas=coring.Saider)
-
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
