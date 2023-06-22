@@ -3731,11 +3731,6 @@ class Kevery:
         except Exception as ex:
             raise ValidationError(f"Malformed key state notice = {data}.") from ex
 
-        #for k in KSN_LABELS:
-            #if k not in ksr.ked:
-                #raise ValidationError("Missing element = {} from {} msg."
-                                      #" ksn = {}.".format(k, Ilks.ksn,
-                                                          #serder.pretty()))
         # fetch from serder to process
         pre = ksr.i
         sn = int(ksr.s, 16)
@@ -3826,38 +3821,6 @@ class Kevery:
 
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
-    def escrowKeyStateNotice(self, *, pre, aid, ksr, saider, dater, cigars=None, tsgs=None):
-        """
-        Escrow reply by route
-
-        Parameters:
-            pre (str): identifier of key state
-            aid (str): identifier of authorizer of key state
-            ksr (KeyStateRecord): instance holds key state notice
-            saider (Saider): instance  from said in serder (SAD)
-            dater (Dater): instance from date-time in serder (SAD)
-            cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
-
-            tsgs (Iterable): of quadruples of form (prefixer, seqner, diger, siger) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
-                siger is indexed sig from trans endorser's key from est evt
-        """
-        keys = (saider.qb64,)
-        self.db.kdts.put(keys=keys, val=dater)  # first one idempotent
-        self.db.ksns.put(keys=keys, val=ksr)  # first one idempotent
-
-        for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
-            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-            self.db.ksgs.put(keys=quadkeys, vals=sigers)
-        for cigar in cigars:  # process each couple to verify sig and write to db
-            self.db.kcgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-
-        return self.db.knes.put(keys=(pre, aid), vals=[saider])  # overwrite
-
-
     def updateKeyState(self, aid, ksr, saider, dater):
         """
         Update Reply SAD in database given by by serder and associated databases
@@ -3878,91 +3841,12 @@ class Kevery:
         # Add source of ksr to the key...  (ksr AID, source aid)
         self.db.knas.pin(keys=(ksr.i, aid), val=saider)  # overwrite
 
-
     def removeKeyState(self, saider):
         if saider:
             keys = (saider.qb64,)
 
-            self.db.ksgs.trim(keys=(saider.qb64, ""))  # remove whole branch
-            self.db.kcgs.rem(keys=keys)
             self.db.ksns.rem(keys=keys)
             self.db.kdts.rem(keys=keys)
-
-
-    def processEscrowKeyState(self):
-        """
-        Process escrows for key state reply messages. Escrows are keyed by reply pre
-        and val is reply said
-
-        triple (prefixer, seqner, diger)
-        quadruple (prefixer, seqner, diger, siger)
-
-        """
-        for (pre, aid, ion), saider in self.db.knes.getIoItemIter():
-            try:
-                tsgs = fetchTsgs(db=self.db.ksgs, saider=saider)
-
-                keys = (saider.qb64,)
-                dater = self.db.kdts.get(keys=keys)
-                # following is wrong need the actual serder of the reply message not
-                # the embedded key state notice or key state record
-                serder = self.db.ksns.get(keys=keys)
-                vcigars = self.db.kcgs.get(keys=keys)
-
-                try:
-                    if not (dater and serder and (tsgs or vcigars)):
-                        raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
-                                         f"for pre={pre}.")
-
-                    cigars = []
-                    if vcigars:
-                        for (verfer, cigar) in vcigars:
-                            cigar.verfer = verfer
-                            cigars.append(cigar)
-
-                    # do date math for stale escrow
-                    if ((helping.nowUTC() - dater.datetime) >
-                            datetime.timedelta(seconds=self.TimeoutKSN)):
-                        # escrow stale so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Stale key state escrow "
-                                    " at pre = %s\n", pre)
-
-                        raise ValidationError(f"Stale key state escrow at pre = {pre}.")
-
-                    self.processReplyKeyStateNotice(serder=serder,
-                                                    saider=saider,
-                                                    route=serder.ked["r"],
-                                                    cigars=cigars,
-                                                    tsgs=tsgs, aid=aid)
-
-                except kering.OutOfOrderKeyStateError as ex:
-                    # still waiting on missing prior event to validate
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
-
-                except Exception as ex:  # other error so remove from reply escrow
-                    self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow
-                    self.removeKeyState(saider)
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
-                    else:
-                        logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
-
-                else:  # unescrow succeded
-                    self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow only
-                    logger.info("Kevery unescrow succeeded for key state=\n%s\n",
-                                serder.pretty())
-
-            except Exception as ex:  # log diagnostics errors etc
-                self.db.knes.remIokey(iokeys=(pre, aid, ion))  # remove escrow
-                self.removeKeyState(saider)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
-
 
     def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
@@ -4356,7 +4240,6 @@ class Kevery:
             self.processEscrowPartialWigs()
             self.processEscrowPartialSigs()
             self.processEscrowDuplicitous()
-            self.processEscrowKeyState()
             self.processQueryNotFound()
 
         except Exception as ex:  # log diagnostics errors etc
