@@ -70,9 +70,8 @@ class Counselor(doing.DoDoer):
         print(f"Waiting for other signatures for {seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
 
-
     def rotate(self, ghab, smids, *, rmids=None, isith=None, nsith=None,
-               toad=None, cuts=None, adds=None, data=None):
+               toad=None, cuts=None, adds=None, data=None, local=True):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -91,6 +90,7 @@ class Counselor(doing.DoDoer):
             cuts (list) of qb64 pre of witnesses to be removed from witness list
             adds (list) of qb64 pre of witnesses to be added to witness list
             data (list) of dicts of committed data such as seals
+            local (bool) True means rotate local AID automatically
 
         RotateRecord:
             date (str | None):  datetime of rotation
@@ -150,7 +150,7 @@ class Counselor(doing.DoDoer):
                                              f" group={ghab.pre}.") from ex
             smsns.append(Number(num=skever.lastEst.s).numh)
 
-        rmsns = []   # vector clock of sn of rotating member lst est evt
+        rmsns = []  # vector clock of sn of rotating member lst est evt
         for mid in rmids:
             try:
                 rkever = ghab.kevers[mid]
@@ -166,15 +166,17 @@ class Counselor(doing.DoDoer):
         rec = basing.RotateRecord(date=helping.nowIso8601(),
                                   smids=smids, smsns=smsns,
                                   rmids=rmids, rmsns=rmsns,
-                                  sn=Number(num=gkever.sn+1).numh,
+                                  sn=Number(num=gkever.sn + 1).numh,
                                   isith=isith, nsith=nsith,
                                   toad=toad, cuts=cuts, adds=adds,
                                   data=data)
 
         # perform local member rotation and then wait for own witnesses to receipt
-        ghab.mhab.rotate()  # rotate own local member hab
-        print(f"Rotated local member={ghab.mhab.pre}, waiting for witness receipts")
-        self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
+        if local:
+            ghab.mhab.rotate()  # rotate own local member hab
+            print(f"Rotated local member={ghab.mhab.pre}, waiting for witness receipts")
+            self.witDoer.msgs.append(dict(pre=ghab.mhab.pre, sn=ghab.mhab.kever.sn))
+
         return self.hby.db.glwe.put(keys=(ghab.pre,), val=rec)
 
     def complete(self, prefixer, seqner, saider=None):
@@ -568,79 +570,29 @@ class Counselor(doing.DoDoer):
             serder = coring.Serder(raw=rot)
             del rot[:serder.size]  # strip signatures from
 
-            others = list(oset(grec.smids + (grec.rmids or []))) # list(rec.smids)
+            others = list(oset(grec.smids + (grec.rmids or [])))  # list(rec.smids)
             others.remove(ghab.mhab.pre)
             print(f"Sending rotation event to {len(others)} other participants")
+
+            exn, ims = multisigRotateExn(ghab,
+                                         aids=grec.smids,
+                                         smids=grec.smids,
+                                         rmids=grec.rmids,
+                                         ked=serder.ked)
             for recpt in others:
                 self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig",
                                   serder=serder, attachment=rot)
+                self.postman.send(src=ghab.mhab.pre,
+                                  dest=recpt,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=ims)
 
             self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
 
             print("Waiting for other signatures...")
             # change below to put the said in the keys not the val
             # should also fix the delegated escrow as well move to key space
-            return self.hby.db.gpse.add(keys=(ghab.pre,),
-                                        val=(coring.Seqner(sn=serder.sn),
-                                             serder.saider))
-
-
-
-
-    def oldProcessPartialAidEscrow(self):
-        """
-        See new
-
-        """
-        # ignore saider because it is not relevant yet ???
-        # wait until the keys state relative to the vector clock element for each
-        # member of the group shows that they all have rotated their local member
-        # hab before calling a rotate on this local member's instance of the group
-        # hab
-        for (pre,), rec in self.hby.db.gpae.getItemIter():  # group partial escrow
-            ghab = self.hby.habs[pre]  # get group hab instanace at group hab id pre
-            gkever = ghab.kever  # group hab's Kever instance key state
-
-            merfers = []  # to be newly current verfers of group signing keys
-            migers = list(gkever.digers)  # to be newly next digers of rotation keys
-            indices = []  # local member's signers who have already rotated
-
-            for aid in rec.smids:
-                idx = ghab.smids.index(aid)  # find index into smids for aid
-                pkever = self.hby.kevers[aid]  # given state for given participant
-                if pkever.digers[0].qb64 != gkever.digers[idx].qb64:
-                    indices.append(idx)
-                    merfers.append(pkever.verfers[0])
-                    migers[idx] = pkever.digers[0]
-
-            if not gkever.ntholder.satisfy(indices):
-                continue
-
-            # if weighted and new weights not provided then use prior weight
-            if gkever.tholder.weighted and rec.isith is None:
-                isith = [gkever.ntholder.sith[idx] for idx in indices]
-            else:
-                isith = rec.isith  # use provided new isith
-
-            # use new nsith when provided otherwise default to prior nsith
-            nsith = rec.nsith if rec.nsith is not None else gkever.ntholder.sith
-
-
-            rot = ghab.rotate(isith=isith, nsith=nsith,
-                              toad=rec.toad, cuts=rec.cuts, adds=rec.adds, data=rec.data,
-                              merfers=merfers, migers=migers)
-            serder = coring.Serder(raw=rot)
-            del rot[:serder.size]
-
-            others = list(oset(rec.smids + (rec.rmids or []))) # list(rec.smids)
-            others.remove(ghab.mhab.pre)
-            print(f"Sending rotation event to {len(others)} other participants")
-            for recpt in others:
-                self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig",
-                                  serder=serder, attachment=rot)
-
-            self.hby.db.gpae.rem((pre,))  # remove rot rec from this escrow
-            print("Waiting for other signatures...")
             return self.hby.db.gpse.add(keys=(ghab.pre,),
                                         val=(coring.Seqner(sn=serder.sn),
                                              serder.saider))
@@ -982,8 +934,8 @@ class MultisigRotateHandler(doing.DoDoer):
                     continue
 
                 pay = msg["payload"]
-                if "aids" not in pay or "gid" not in pay:
-                    logger.error(f"invalid rotation payload, aids and gid are required.  payload: {pay}")
+                if "smids" not in pay or "rmids" not in "aids" not in pay or "gid" not in pay or "ked" not in pay:
+                    logger.error(f"invalid rotation payload, aids, gid and ked are required.  payload: {pay}")
                     continue
 
                 src = prefixer.qb64
@@ -991,6 +943,7 @@ class MultisigRotateHandler(doing.DoDoer):
                 smids = pay["smids"]
                 rmids = pay["rmids"]
                 gid = pay["gid"]
+                ked = pay["ked"]
 
                 if src not in smids or src not in self.hby.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
@@ -998,19 +951,13 @@ class MultisigRotateHandler(doing.DoDoer):
 
                 data = dict(
                     r='/multisig/rot',
+                    i=gid,
                     src=src,
                     aids=aids,
                     smids=smids,
-                    rmids=rmids
+                    rmids=rmids,
+                    ked=ked
                 )
-                data["i"] = gid
-                data["toad"] = pay["toad"] if "toad" in pay else None
-                data["wits"] = pay["wits"] if "wits" in pay else []
-                data["adds"] = pay["adds"] if "adds" in pay else []
-                data["cuts"] = pay["cuts"] if "cuts" in pay else []
-                data["isith"] = pay["isith"] if "isith" in pay else None
-                data["nsith"] = pay["nsith"] if "nsith" in pay else None
-                data["data"] = pay["data"] if "data" in pay else None
 
                 self.notifier.add(attrs=data)
 
@@ -1019,21 +966,16 @@ class MultisigRotateHandler(doing.DoDoer):
             yield
 
 
-def multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data, nsith=None, smids=None, rmids=None):
+def multisigRotateExn(ghab, aids, ked, smids=None, rmids=None):
     smids = smids if smids is not None else aids
     rmids = rmids if rmids is not None else smids
-    nsith = nsith if nsith is not None else isith
+
     exn = exchanging.exchange(route=MultisigRotateHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
                                            aids=aids,
                                            smids=smids,
                                            rmids=rmids,
-                                           isith=isith,
-                                           nsith=nsith,
-                                           toad=toad,
-                                           cuts=list(cuts),
-                                           adds=list(adds),
-                                           data=data)
+                                           ked=ked)
                               )
     ims = ghab.mhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(ims[exn.size:])
@@ -1094,11 +1036,12 @@ class MultisigInteractHandler(doing.DoDoer):
                     continue
 
                 pay = msg["payload"]
-                if "aids" not in pay or "gid" not in pay:
+                if "sn" not in pay or "aids" not in pay or "gid" not in pay:
                     logger.error(f"invalid rotation payload, aids and gid are required.  payload: {pay}")
                     continue
 
                 src = prefixer.qb64
+                sn = pay["sn"]
                 aids = pay["aids"]
                 gid = pay["gid"]
 
@@ -1115,6 +1058,7 @@ class MultisigInteractHandler(doing.DoDoer):
                     r='/multisig/ixn',
                     src=src,
                     gid=gid,
+                    sn=sn,
                     aids=aids,
                 )
                 data["data"] = pay["data"] if "data" in pay else None
@@ -1124,11 +1068,12 @@ class MultisigInteractHandler(doing.DoDoer):
             yield
 
 
-def multisigInteractExn(ghab, aids, data):
+def multisigInteractExn(ghab, sn, aids, data):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
         ghab (Hab): group Hab to endorse the message
+        sn (int): sequence number of proposed interaction event
         aids (list): qb64 identifier prefixes to include in the interaction event
         data (list): data to anchor in the interaction event
 
@@ -1139,6 +1084,7 @@ def multisigInteractExn(ghab, aids, data):
 
     exn = exchanging.exchange(route=MultisigInteractHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
+                                           sn=sn,
                                            aids=aids,
                                            data=data)
                               )

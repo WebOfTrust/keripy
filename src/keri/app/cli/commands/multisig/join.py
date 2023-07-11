@@ -6,16 +6,15 @@ keri.kli.commands.delegate module
 """
 import argparse
 import json
-from ordered_set import OrderedSet as oset
-
-from prettytable import PrettyTable
 
 from hio.base import doing
+from prettytable import PrettyTable
 
 from keri import help
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting
 from keri.app.cli.common import existing, displaying
 from keri.core import coring, eventing
+from keri.db import basing
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -95,7 +94,8 @@ class ConfirmDoer(doing.DoDoer):
         print("Waiting for group multisig events...")
 
         while True:
-            for keys, notice in self.notifier.noter.notes.getItemIter():
+            notes = list(self.notifier.noter.notes.getItemIter(keys=b'',))
+            for keys, notice in notes:
                 attrs = notice.attrs
                 route = attrs['r']
 
@@ -109,11 +109,15 @@ class ConfirmDoer(doing.DoDoer):
                         if delete:
                             self.notifier.noter.notes.rem(keys=keys)
 
-                    self.remove(self.toRemove)
-                    return True
-
                 if route == '/multisig/rot':
-                    print(f"we got a rotation with {attrs}")
+                    done = yield from self.rotate(attrs)
+                    if done:
+                        self.notifier.noter.notes.rem(keys=keys)
+
+                    else:
+                        delete = input(f"\nDelete rotation event [Y|n]? ")
+                        if delete:
+                            self.notifier.noter.notes.rem(keys=keys)
 
                 if route == '/multisig/ixn':
                     done = yield from self.interact(attrs)
@@ -124,9 +128,6 @@ class ConfirmDoer(doing.DoDoer):
                         delete = input(f"\nDelete event [Y|n]? ")
                         if delete:
                             self.notifier.noter.notes.rem(keys=keys)
-
-                    self.remove(self.toRemove)
-                    return True
 
                 yield self.tock
 
@@ -187,7 +188,6 @@ class ConfirmDoer(doing.DoDoer):
                 print(f"{e.args[0]}")
                 return False
 
-
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
             saider = coring.Saider(qb64=prefixer.qb64)
@@ -198,9 +198,98 @@ class ConfirmDoer(doing.DoDoer):
 
             return True
 
+    def rotate(self, attrs):
+        gid = attrs["i"]
+        smids = attrs["smids"]  # change attrs["aids"]" to "smids"
+        rmids = attrs["rmids"]  # change attrs["aids"]" to "smids"
+        ked = attrs["ked"]
+        both = list(set(smids + (rmids or [])))
+
+        mid = None
+        for smid in smids:
+            if smid in self.hby.habs:
+                mid = smid
+                break
+
+        if mid is None:
+            print(f"Unable to join {gid}, no local AIDs in signing authority group {smids}")
+            return True  # return True here so the event is deleted, there is no recourse here
+
+        mhab = self.hby.habs[mid]
+
+        if gid not in self.hby.kevers:
+            print(f"Unable to join {gid}, current KEL not available")
+            return False
+
+        kever = self.hby.kevers[gid]
+        serder = coring.Serder(ked=ked)
+        seqner = coring.Seqner(sn=serder.sn)
+
+        if serder.sner.num <= kever.sner.num:
+            print(f"Discarding stale rotation event for AID {gid} to sequence number {serder.sner.num}")
+            return True  # return True here so event is deleted, we will never process this event
+        elif serder.sner.num != kever.sner.num + 1:
+            print(f"Unable to joid {gid}, current KEL out of date")
+
+        if gid not in self.hby.habs:
+            print(f"\nRequest to add local AID '{mhab.name}' to multisig AID {gid} in rotation to {serder.sner.num}:")
+            self.showEvent(mhab, both, ked)
+            yn = input(f"Join [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
+            if not approve:
+                return False
+
+            print(f"Please enter an alias for new AID:")
+            alias = input(f"Alias: ")
+            ghab = habbing.GroupHab(ks=self.hby.ks, db=self.hby.db, cf=self.hby.cf, mgr=self.hby.mgr,
+                                    rtr=self.hby.rtr, rvy=self.hby.rvy, kvy=self.hby.kvy, psr=self.hby.psr,
+                                    name=alias, pre=gid, temp=self.hby.temp, smids=smids)
+            ghab.mhab = mhab
+            habord = basing.HabitatRecord(hid=ghab.pre,
+                                          mid=mhab.pre,
+                                          smids=smids,
+                                          rmids=rmids)
+            self.hby.db.habs.put(keys=alias, val=habord)
+            self.hby.prefixes.add(gid)
+            ghab.inited = True
+            self.hby.habs[ghab.pre] = ghab
+
+            local = False
+
+        else:
+            ghab = self.hby.habs[gid]
+            local = True
+            print(f"\nRequest to rotate {ghab.name} to {serder.sner.num}:")
+            yn = input(f"\nJoin [Y|n]? ")
+            approve = yn in ('', 'y', 'Y')
+
+        if approve:
+            isith = serder.ked['kt']
+            nsith = serder.ked['nt']
+            toad = serder.ked['bt']
+            cuts = serder.ked['br']
+            adds = serder.ked['ba']
+            data = serder.ked['a']
+
+            self.counselor.rotate(ghab=ghab, smids=smids, rmids=rmids,
+                                  isith=isith, nsith=nsith, toad=toad,
+                                  cuts=list(cuts), adds=list(adds),
+                                  data=data, local=local)
+
+            while True:
+                saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
+                if saider is not None:
+                    break
+
+                yield self.tock
+
+            print()
+            displaying.printIdentifier(self.hby, ghab.pre)
+            return True
 
     def interact(self, attrs):
         pre = attrs["gid"]
+        sn = attrs["sn"]
         smids = attrs["aids"]  # change attrs["aids"]" to "smids"
         rmids = attrs["rmids"] if "rmids" in attrs else None
         data = attrs["data"]
@@ -217,7 +306,11 @@ class ConfirmDoer(doing.DoDoer):
             print(f"Local AID {ghab.mhab.pre} not a requested signer in {both}")
             return False
 
-        print(f"Group Multisig Interaction for {ghab.name} ({ghab.pre}) proposed:")
+        if sn <= ghab.kever.sner.num:
+            print(f"Discarding stale interaction event for AID {pre} to sequence number {sn}")
+            return True  # return True here so event is deleted, we will never process this event
+
+        print(f"\nGroup Multisig Interaction for {ghab.name} ({ghab.pre}) proposed:")
         print(f"Data:")
         print(json.dumps(data, indent=2))
         yn = input(f"\nJoin [Y|n]? ")
@@ -294,9 +387,10 @@ class ConfirmDoer(doing.DoDoer):
         if not thold.weighted:
             tab.add_row(["Signature Threshold", thold.num])
 
-        tab.add_row(["Establishment Only", eventing.TraitCodex.EstOnly in ked["c"]])
-        tab.add_row(["Do Not Delegate", eventing.TraitCodex.DoNotDelegate in ked["c"]])
-        tab.add_row(["Witness Threshold", ked["bt"]])
-        tab.add_row(["Witnesses", "\n".join(ked["b"])])
+        if 'c' in ked:
+            tab.add_row(["Establishment Only", eventing.TraitCodex.EstOnly in ked["c"]])
+            tab.add_row(["Do Not Delegate", eventing.TraitCodex.DoNotDelegate in ked["c"]])
+            tab.add_row(["Witness Threshold", ked["bt"]])
+            tab.add_row(["Witnesses", "\n".join(ked["b"])])
 
         print(tab)
