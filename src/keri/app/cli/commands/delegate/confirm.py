@@ -133,7 +133,7 @@ class ConfirmDoer(doing.DoDoer):
 
                         serder = coring.Serder(raw=msg)
 
-                        exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
+                        exn, atc = grouping.multisigInteractExn(hab, serder.sner.num, aids, [anchor])
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         #others = list(hab.smids)
                         others.remove(hab.mhab.pre)

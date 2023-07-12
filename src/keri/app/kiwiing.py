@@ -2399,15 +2399,6 @@ class MultisigEventEnd(MultisigEndBase):
                               toad=toad, cuts=list(cuts), adds=list(adds),
                               data=data)
 
-        # Create `exn` peer to peer message to notify other participants UI
-        exn, atc = grouping.multisigRotateExn(ghab, aids, isith, toad, cuts, adds, data)
-        others = list(oset(ghab.smids + (ghab.rmids or [])))
-
-        others.remove(ghab.mhab.pre)
-
-        for recpt in others:  # send notification to other participants as a signalling mechanism
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
-
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/rot/complete", i=ghab.pre, s=sn))
 
@@ -2584,7 +2575,9 @@ class MultisigEventEnd(MultisigEndBase):
         rmids = body["rmids"] if "rmids" in body else ghab.rmids
         data = body["data"] if "data" in body else None
 
-        exn, atc = grouping.multisigInteractExn(ghab, aids, data)
+        serder = self.ixn(ghab=ghab, data=data, aids=aids)
+
+        exn, atc = grouping.multisigInteractExn(ghab, serder.sner.num, aids, data)
 
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         #others = list(ghab.smids)
@@ -2593,7 +2586,6 @@ class MultisigEventEnd(MultisigEndBase):
         for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
 
-        serder = self.ixn(ghab=ghab, data=data, aids=aids)
         # cue up an event to send notification when complete
         self.evts.append(dict(r="/ixn/complete", i=serder.pre, s=serder.sn, d=serder.said))
 

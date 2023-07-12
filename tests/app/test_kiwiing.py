@@ -349,29 +349,6 @@ def test_multisig_rotation():
         # escrow event for local witnessing
         assert hby1.db.glwe.get(keys=(ghab1.pre,)) is not None
 
-        # sends local rotation event to other participants to start the rotation
-        assert len(rotEnd.postman.evts) == 2
-        evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab2.mhab.pre
-        assert evt["topic"] == "multisig"
-        evt = rotEnd.postman.evts.popleft()
-        assert evt["src"] == ghab1.mhab.pre
-        assert evt["dest"] == ghab3.mhab.pre
-        assert evt["topic"] == "multisig"
-        payload = evt["serder"].ked["a"]
-        assert set(payload['adds']) == {'BCyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw',
-                                        'BDoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c',
-                                        'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo'}
-
-        assert payload['aids'] == ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
-                                   'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
-                                   'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv']
-        assert payload['cuts'] == []
-        assert payload['isith'] == '2'
-        assert payload['toad'] == 2
-        assert payload['data'] is None
-
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
         counselor = grouping.Counselor(hby=hby2)
@@ -442,11 +419,12 @@ def test_multisig_interaction():
         assert evt["dest"] == ghab3.mhab.pre
         assert evt["topic"] == "multisig"
         payload = evt["serder"].ked["a"]
-        assert payload == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
-                           'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
+        assert payload == {'aids': ['EH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba',
                                     'EJPlLivjjHWkkSpvUTT7iewTlG_TolGIpUbAxsK8Dslu',
                                     'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv'],
-                           'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0}}
+                           'data': {'i': 'ECKuCwnnPA3z212QjiWewHv2jQwArMu7HPRBUSXOSqKv', 's': 0},
+                           'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
+                           'sn': 1}
 
         app = falcon.App()
         # Now join rotation with hby2 who will initiate the rotation with a POST
