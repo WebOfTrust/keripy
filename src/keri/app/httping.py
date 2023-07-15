@@ -218,7 +218,7 @@ class Clienter(doing.DoDoer):
         doers = [doing.doify(self.clientDo)]
         super(Clienter, self).__init__(doers=doers)
 
-    def request(self, method, url):
+    def request(self, method, url, body=None, headers=None):
         purl = parse.urlparse(url)
 
         client = http.clienting.Client(scheme=purl.scheme,
@@ -230,6 +230,8 @@ class Clienter(doing.DoDoer):
             method=method,
             path=f"{purl.path}?{purl.query}",
             qargs=None,
+            headers=headers,
+            body=body
         )
 
         clientDoer = http.clienting.ClientDoer(client=client)
