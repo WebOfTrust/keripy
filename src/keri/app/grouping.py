@@ -23,10 +23,10 @@ logger = help.ogler.getLogger()
 
 class Counselor(doing.DoDoer):
 
-    def __init__(self, hby, **kwa):
+    def __init__(self, hby, swain=None, **kwa):
 
         self.hby = hby
-        self.swain = delegating.Boatswain(hby=self.hby)
+        self.swain = swain if swain is not None else delegating.Boatswain(hby=self.hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 

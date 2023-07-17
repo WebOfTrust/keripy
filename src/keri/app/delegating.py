@@ -29,7 +29,7 @@ class Boatswain(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, **kwa):
+    def __init__(self, hby, proxy=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -45,6 +45,7 @@ class Boatswain(doing.DoDoer):
         self.postman = forwarding.Poster(hby=hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.witDoer = agenting.Receiptor(hby=self.hby)
+        self.proxy = proxy
 
         super(Boatswain, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                         **kwa)
@@ -75,6 +76,8 @@ class Boatswain(doing.DoDoer):
             phab = hab
         elif proxy is not None:
             phab = proxy
+        elif self.proxy is not None:
+            phab = self.proxy
         else:
             raise kering.ValidationError("no proxy to send messages for delegation")
 
