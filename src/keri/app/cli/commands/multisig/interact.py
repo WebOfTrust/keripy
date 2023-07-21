@@ -106,14 +106,15 @@ class GroupMultisigInteract(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
-        aids = self.aids if self.aids is not None else ghab.smids
+        smids, rmids = ghab.members()
+        aids = self.aids if self.aids is not None else smids
 
         rmids = None  # need to fix
         ixn = ghab.interact(data=self.data)
 
         serder = coring.Serder(raw=ixn)
         exn, atc = grouping.multisigInteractExn(ghab, serder.sner.num, aids, self.data)
-        others = list(oset(ghab.smids + (ghab.rmids or [])))
+        others = list(aids)
 
         others.remove(ghab.mhab.pre)
 

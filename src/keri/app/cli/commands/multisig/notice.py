@@ -81,34 +81,34 @@ class NoticeDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
-        habord = hab.db.habs.get(keys=self.alias)
 
-        if hab.group and habord is not None:
+        if hab.group:
+            (smids, rmids) = hab.members()
             serder = hab.kever.serder
             rot = hab.makeOwnEvent(sn=hab.kever.sn)
             eserder = coring.Serder(raw=rot)
             del rot[:eserder.size]
 
             ilk = serder.ked['t']
-            others = list(oset(habord.smids + (habord.rmids or [])))  # list(rec.smids)
+            others = list(oset(smids + (rmids or [])))  # list(rec.smids)
             others.remove(hab.mhab.pre)
 
             if ilk in (Ilks.rot,):
                 print(f"Sending rot event to {len(others)} participants.")
                 exn, ims = grouping.multisigRotateExn(hab,
-                                                      aids=habord.smids,
-                                                      smids=habord.smids,
-                                                      rmids=habord.rmids,
+                                                      aids=smids,
+                                                      smids=smids,
+                                                      rmids=rmids,
                                                       ked=serder.ked)
             elif ilk in (Ilks.icp,):
                 print(f"Sending icp event to {len(others)} participants.")
                 exn, ims = grouping.multisigInceptExn(hab,
-                                                      aids=habord.smids,
+                                                      aids=smids,
                                                       ked=serder.ked)
             elif ilk in (Ilks.ixn,):
                 print(f"Sending ixn event to {len(others)} participants.")
                 exn, ims = grouping.multisigInteractExn(hab,
-                                                        aids=habord.smids,
+                                                        aids=smids,
                                                         sn=serder.sn,
                                                         data=serder.ked["a"])
             else:

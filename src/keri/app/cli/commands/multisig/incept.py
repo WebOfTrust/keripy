@@ -139,7 +139,6 @@ class GroupMultisigIncept(doing.DoDoer):
                                                   aids=ghab.smids,
                                                   ked=serder.ked)
             others = list(oset(smids + (rmids or [])))
-            #others = list(smids)
             others.remove(ghab.mhab.pre)
 
             for recpt in others:  # this goes to other participants only as a signaling mechanism

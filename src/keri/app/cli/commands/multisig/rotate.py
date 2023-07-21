@@ -113,11 +113,12 @@ class GroupMultisigRotate(doing.DoDoer):
         if ghab is None:
             raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
 
+        smids, rmids = ghab.members()
         if self.smids is None:
-            self.smids = ghab.smids
+            self.smids = smids
 
         if self.rmids is None:
-            self.rmids = self.smids
+            self.rmids = rmids
 
         if self.wits:
             if self.adds or self.cuts:
