@@ -91,10 +91,12 @@ class RequestDoer(doing.DoDoer):
 
         if hab.group:
             phab = hab.mhab
+            smids, _ = hab.members()
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
+            smids = []
 
-        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, ked=srdr.ked, aids=hab.smids)
+        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, ked=srdr.ked, aids=smids)
 
         # delegate AID ICP and exn of delegation request EXN
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)

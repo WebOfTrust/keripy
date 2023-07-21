@@ -1388,8 +1388,8 @@ class CredentialEnd(doing.DoDoer):
 
         exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
 
-        others = list(oset(hab.smids + (hab.rmids or [])))
-        #others = list(hab.smids)
+        smids, rmids = hab.members()
+        others = list(oset(smids + (rmids or [])))
         others.remove(hab.mhab.pre)
 
         for recpt in others:

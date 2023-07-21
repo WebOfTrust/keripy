@@ -9,6 +9,7 @@ import os
 from contextlib import contextmanager
 from urllib.parse import urlsplit
 from math import ceil
+from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 from hio.core import wiring
@@ -2244,3 +2245,45 @@ class GroupHab(BaseHab):
 
         return self.mhab.endorse(serder, last=True)
 
+    def members(self):
+        """ Seach local Kevers database to find the current members of this group AID
+
+        Returns:
+            (smids, rmids): A tuple of lists of signing member AIDs and rotation member AIDs
+
+        """
+
+        verfers = self.kever.verfers
+        skeys = oset([verfer.qb64 for verfer in verfers])
+
+        digers = self.kever.digers
+        dkeys = oset([diger.qb64 for diger in digers])
+
+        smids = [None] * len(verfers)
+        rmids = [None] * len(digers)
+        for (preb, _, raw) in self.db.getAllItemIter(db=self.db.evts):
+            pre = bytes(preb).decode("utf-8")
+            serder = coring.Serder(raw=bytes(raw))
+            if not serder.est:
+                continue
+
+            if len(serder.verfers) != 1 or len(serder.digers) != 1:
+                continue
+
+            skey = serder.verfers[0].qb64
+            if skey in skeys:
+                idx = skeys.index(skey)
+                smids[idx] = pre
+
+            dkey = serder.digers[0].qb64
+            if dkey in dkeys:
+                idx = dkeys.index(dkey)
+                rmids[idx] = pre
+
+            if None not in smids and None not in rmids:
+                break
+
+        if None in smids or None in rmids:
+            raise kering.ConfigurationError(f"Unable to find members for {self.pre}")
+
+        return smids, rmids

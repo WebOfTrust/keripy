@@ -127,8 +127,9 @@ class Counselor(doing.DoDoer):
 
         """
         mid = ghab.mhab.pre
-        smids = smids if smids is not None else ghab.smids
-        rmids = rmids if rmids is not None else ghab.rmids
+        s, r = ghab.members()
+        smids = smids if smids is not None else s
+        rmids = rmids if rmids is not None else r
         both = list(oset(smids + (rmids or [])))
 
         if mid not in both:
@@ -1050,7 +1051,8 @@ class MultisigInteractHandler(doing.DoDoer):
                     logger.error(f"invalid rotate message, not a local group: {pay}")
                     continue
 
-                if src not in ghab.smids or src not in ghab.kevers:
+                smids, _ = ghab.members()
+                if src not in smids or src not in ghab.kevers:
                     logger.error(f"invalid incept message, source not knows or not part of group.  evt: {msg}")
                     continue
 

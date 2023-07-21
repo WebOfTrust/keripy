@@ -119,7 +119,8 @@ class ConfirmDoer(doing.DoDoer):
                         continue
 
                     if hab.group:
-                        aids = hab.smids
+                        smids, rmids = hab.members()
+                        aids = smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
                         if self.interact:
@@ -134,8 +135,7 @@ class ConfirmDoer(doing.DoDoer):
                         serder = coring.Serder(raw=msg)
 
                         exn, atc = grouping.multisigInteractExn(hab, serder.sner.num, aids, [anchor])
-                        others = list(oset(hab.smids + (hab.rmids or [])))
-                        #others = list(hab.smids)
+                        others = list(oset(smids + (rmids or [])))
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism

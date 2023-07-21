@@ -413,8 +413,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
+            s, r = hab.members()
+            smids = smids if smids is not None else s
+            rmids = rmids if rmids is not None else r
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
                                  mid=hab.mhab.pre, smids=smids, rmids=rmids)
@@ -465,8 +466,9 @@ class Registrar(doing.DoDoer):
             return vcid, rseq.sn
 
         else:  # multisig group hab
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
+            s, r = hab.members()
+            smids = smids if smids is not None else s
+            rmids = rmids if rmids is not None else r
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
                                  mid=hab.mhab.pre, smids=smids, rmids=rmids)
@@ -518,8 +520,9 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
+            s, r = hab.members()
+            smids = smids if smids is not None else s
+            rmids = rmids if rmids is not None else r
             prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
                                  mid=hab.mhab.pre, smids=smids, rmids=rmids)
@@ -748,8 +751,9 @@ class Credentialer(doing.DoDoer):
         registry = self.rgy.regs[regk]
         hab = registry.hab
         if hab.group:
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
+            s, r = hab.members()
+            smids = smids if smids is not None else s
+            rmids = rmids if rmids is not None else r
 
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
@@ -761,7 +765,6 @@ class Credentialer(doing.DoDoer):
             craw = signing.ratify(hab=hab, serder=creder)
             atc = bytearray(craw[creder.size:])
             others = list(oset(smids + (rmids or [])))
-            #others = list(smids)
             others.remove(hab.mhab.pre)
 
             print(f"Sending signed credential to {others} other participants")
