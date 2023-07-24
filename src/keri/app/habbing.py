@@ -330,15 +330,20 @@ class Habery:
             pre = habord.hid
 
             # create Hab instance and inject dependencies
-            if habord.mid:
+            if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid is not None:
+            elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=name, pre=habord.sid)
+            elif habord.sid and habord.mid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=habord.sid)
+                groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -361,15 +366,20 @@ class Habery:
             pre = habord.hid
 
             # create Hab instance and inject dependencies
-            if habord.mid:
+            if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid is not None:
+            elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=name, ns=ns, pre=habord.sid)
+            elif habord.sid and habord.mid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=habord.sid)
+                groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -387,7 +397,6 @@ class Habery:
             if ns not in self.namespaces:
                 self.namespaces[ns] = dict()
             self.namespaces[ns][hab.pre] = hab
-
 
         # Populate the participant hab after loading all habs
         for habord in groups:
@@ -594,8 +603,8 @@ class Habery:
     def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                         name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                              name=name, mhab=mhab, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         if ns is None:
@@ -2380,9 +2389,20 @@ class SignifyHab(BaseHab):
 
 
 class SignifyGroupHab(SignifyHab):
-    def __init__(self, mhab, **kwa):
+    def __init__(self, mhab=None, **kwa):
         self.mhab = mhab
         super(SignifyGroupHab, self).__init__(**kwa)
+
+    def make(self, *, serder, sigers, **kwargs):
+        self.pre = serder.ked["i"]  # new pre
+        self.prefixes.add(self.pre)
+
+        self.processEvent(serder, sigers)
+
+        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre)
+        self.save(habord)
+
+        self.inited = True
 
     def processEvent(self, serder, sigers):
         """ Process event with signatures ignoring missing signature exceptions
