@@ -8,6 +8,9 @@ SHELL ["/bin/bash", "-c"]
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
 WORKDIR /keripy
-COPY ./ ./ 
-RUN source "$HOME/.cargo/env" && pip install -r requirements.txt
-RUN pip install -e .
+COPY ./ ./
+RUN source "$HOME/.cargo/env" \ 
+    && pip install -r requirements.txt \ 
+    && pip install -e .
+
+ENTRYPOINT ["kli", "witness", "demo"]
