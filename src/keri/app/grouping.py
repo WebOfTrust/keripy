@@ -23,10 +23,11 @@ logger = help.ogler.getLogger()
 
 class Counselor(doing.DoDoer):
 
-    def __init__(self, hby, swain=None, **kwa):
+    def __init__(self, hby, swain=None, proxy=None, **kwa):
 
         self.hby = hby
         self.swain = swain if swain is not None else delegating.Boatswain(hby=self.hby)
+        self.proxy = proxy
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
@@ -53,7 +54,6 @@ class Counselor(doing.DoDoer):
 
         print(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
-
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -139,7 +139,10 @@ class Counselor(doing.DoDoer):
                         self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
-                        self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
+                        if self.proxy:
+                            self.witq.query(hab=self.proxy, pre=kever.delegator, anchor=anchor)
+                        else:
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -545,7 +548,7 @@ def multisigInteractExn(ghab, aids, data):
     return exn, atc
 
 
-class MultisigIssueHandler(doing.DoDoer):
+class MultisigIssueHandler(doing.Doer):
     """
     Handler for multisig group issuance notification EXN messages
 
@@ -616,6 +619,53 @@ def multisigIssueExn(hab, creder):
 
     """
     exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked)
+    evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+
+    return exn, atc
+
+
+class MultisigRpyHandler(doing.Doer):
+    """
+    Handler for multisig group rpy message handler
+
+    """
+    resource = "/multisig/rpy"
+
+    def __init__(self, notifier, msgs=None, **kwa):
+        self.notifier = notifier
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        super(MultisigRpyHandler, self).__init__(**kwa)
+
+    def recur(self, tyme):
+        if self.msgs:
+            msg = self.msgs.popleft()
+            rpy = msg["payload"]
+
+            serder = coring.Serder(ked=rpy)
+            data = dict(
+                r=self.resource,
+                ked=serder.ked
+            )
+
+            self.notifier.add(attrs=data)
+
+        return False
+
+
+def multisigRpyExn(hab, rpy):
+    """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
+
+    Parameters:
+        hab (Hab): identifier Hab for ensorsing the message to send
+        rpy (Serder): Serder `rpy` instance to send to other members for approval
+
+    Returns:
+        Serder: Serder of exn message to send
+        butearray: attachment signatures
+
+    """
+    exn = exchanging.exchange(route=MultisigRpyHandler.resource, payload=rpy.ked)
     evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(evt[exn.size:])
 

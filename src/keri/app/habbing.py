@@ -6,13 +6,13 @@ keri.app.habbing module
 """
 import json
 from contextlib import contextmanager
-from urllib.parse import urlsplit
 from math import ceil
+from urllib.parse import urlsplit
 
 from hio.base import doing
 from hio.help import hicting
-from keri.peer import exchanging
 
+from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
@@ -1874,7 +1874,6 @@ class BaseHab:
                             msgs.extend(self.makeEndRole(eid=eid, role=role))
                 if witness:  # we are witness, set KEL as authz
                     msgs.extend(self.replay(cid))
-
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
