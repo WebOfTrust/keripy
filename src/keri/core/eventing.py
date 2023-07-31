@@ -3529,36 +3529,32 @@ class Kevery:
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
         route = "/end/role"  # escrow based on route base
+        data = serder.ked['a']
 
-        ends = serder.ked["a"]
-        if isinstance(ends, dict):
-            ends = [ends]
+        for k in ("cid", "role", "eid"):
+            if k not in data:
+                raise ValidationError(f"Missing element={k} from attributes in"
+                                      f" {Ilks.rpy} msg={serder.ked}.")
 
-        for data in ends:
-            for k in ("cid", "role", "eid"):
-                if k not in data:
-                    raise ValidationError(f"Missing element={k} from attributes in"
-                                          f" {Ilks.rpy} msg={serder.ked}.")
+        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cid = cider.qb64  # controller authorizing eid at role
+        role = data["role"]
+        if role not in kering.Roles:
+            raise ValidationError(f"Invalid role={role} from attributes in "
+                                  f"{Ilks.rpy} msg={serder.ked}.")
+        eider = coring.Prefixer(qb64=data["eid"])  # raises error if unsupported code
+        eid = eider.qb64  # controller of endpoint at role
+        aid = cid  # authorizing attribution id
+        keys = (aid, role, eid)
+        osaider = self.db.eans.get(keys=keys)  # get old said if any
+        # BADA Logic
+        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+                                        aid=aid, osaider=osaider, cigars=cigars,
+                                        tsgs=tsgs)
+        if not accepted:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
-            cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
-            cid = cider.qb64  # controller authorizing eid at role
-            role = data["role"]
-            if role not in kering.Roles:
-                raise ValidationError(f"Invalid role={role} from attributes in "
-                                      f"{Ilks.rpy} msg={serder.ked}.")
-            eider = coring.Prefixer(qb64=data["eid"])  # raises error if unsupported code
-            eid = eider.qb64  # controller of endpoint at role
-            aid = cid  # authorizing attribution id
-            keys = (aid, role, eid)
-            osaider = self.db.eans.get(keys=keys)  # get old said if any
-            # BADA Logic
-            accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
-                                            aid=aid, osaider=osaider, cigars=cigars,
-                                            tsgs=tsgs)
-            if not accepted:
-                raise UnverifiedReplyError(f"Unverified reply.")
-
-            self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
+        self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 
     def processReplyLocScheme(self, *, serder, saider, route,
                               cigars=None, tsgs=None):
