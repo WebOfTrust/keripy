@@ -83,7 +83,7 @@ class Configer(filing.Filer):
         """
         super(Configer, self).__init__(name=name,
                                        base=base,
-                                       filed=True,
+                                       filed=filed,
                                        mode=mode,
                                        fext=fext,
                                        **kwa)
