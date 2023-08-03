@@ -278,9 +278,10 @@ class Revery:
                 if dater.datetime <= odater.datetime:
                     logger.info("Kevery process: skipped stale update from "
                                 "%s of reply msg=\n%s\n", aid, serder.pretty())
+                    raise ValidationError(f"Stale update of {route} from {aid} "
+                                          f"via {Ilks.rpy}={serder.ked}.")
                     continue  # skip if not later
-                    # raise ValidationError(f"Stale update of {route} from {aid} "
-                    # f"via {Ilks.rpy}={serder.ked}.")
+
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
@@ -314,6 +315,8 @@ class Revery:
                         logger.info("Kevery process: skipped stale key state sig"
                                     "from %s sn=%s<%s on reply msg=\n%s\n",
                                     aid, seqner.sn, osqr.sn, serder.pretty())
+                        raise ValidationError(f"Stale update of {route} from {aid} "
+                                              f"via {Ilks.rpy}={serder.ked}.")
                         continue  # skip if sn earlier
 
                     if seqner.sn == osqr.sn:  # sn same so check datetime
@@ -322,6 +325,8 @@ class Revery:
                                 logger.info("Kevery process: skipped stale key"
                                             "state sig datetime from %s on reply msg=\n%s\n",
                                             aid, serder.pretty())
+                                raise ValidationError(f"Stale update of {route} from {aid} "
+                                                      f"via {Ilks.rpy}={serder.ked}.")
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
@@ -473,6 +478,7 @@ class Revery:
                     if ((helping.nowUTC() - dater.datetime) >
                             datetime.timedelta(seconds=self.TimeoutRPE)):
                         # escrow stale so raise ValidationError which unescrows below
+                        print("Removing from escrow")
                         logger.info("Kevery unescrow error: Stale reply escrow "
                                     " at route = %s\n", route)
 
@@ -488,7 +494,7 @@ class Revery:
                         logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     self.removeReply(saider)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
@@ -496,12 +502,12 @@ class Revery:
                         logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow only
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     logger.info("Kevery unescrow succeeded for reply=\n%s\n",
                                 serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
                 self.removeReply(saider)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])

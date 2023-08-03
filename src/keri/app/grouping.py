@@ -625,53 +625,6 @@ def multisigIssueExn(hab, creder):
     return exn, atc
 
 
-class MultisigRpyHandler(doing.Doer):
-    """
-    Handler for multisig group rpy message handler
-
-    """
-    resource = "/multisig/rpy"
-
-    def __init__(self, notifier, msgs=None, **kwa):
-        self.notifier = notifier
-        self.msgs = msgs if msgs is not None else decking.Deck()
-        super(MultisigRpyHandler, self).__init__(**kwa)
-
-    def recur(self, tyme):
-        if self.msgs:
-            msg = self.msgs.popleft()
-            rpy = msg["payload"]
-
-            serder = coring.Serder(ked=rpy)
-            data = dict(
-                r=self.resource,
-                ked=serder.ked
-            )
-
-            self.notifier.add(attrs=data)
-
-        return False
-
-
-def multisigRpyExn(hab, rpy):
-    """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
-
-    Parameters:
-        hab (Hab): identifier Hab for ensorsing the message to send
-        rpy (Serder): Serder `rpy` instance to send to other members for approval
-
-    Returns:
-        Serder: Serder of exn message to send
-        butearray: attachment signatures
-
-    """
-    exn = exchanging.exchange(route=MultisigRpyHandler.resource, payload=rpy.ked)
-    evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
-    atc = bytearray(evt[exn.size:])
-
-    return exn, atc
-
-
 def getEscrowedEvent(db, pre, sn):
     key = snKey(pre, sn)
     dig = db.getPseLast(key)

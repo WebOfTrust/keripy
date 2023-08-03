@@ -104,7 +104,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
 
                 elif route == '/multisig/ixn':
@@ -114,7 +114,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
 
                 elif route == '/multisig/rot':
@@ -125,7 +125,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
 
                 elif route == '/multisig/rpy':
@@ -136,7 +136,7 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
 
                 yield self.tock

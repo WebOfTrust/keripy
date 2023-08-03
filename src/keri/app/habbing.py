@@ -1859,26 +1859,29 @@ class BaseHab:
         if eids is None:
             eids = []
 
-        if role == kering.Roles.witness:
-            if kever := self.kevers[cid] if cid in self.kevers else None:
-                witness = self.pre in kever.wits  # see if we are cid's witness
+        if cid not in self.kevers:
+            return msgs
 
-                # latest key state for cid
-                for eid in kever.wits:
-                    if not eids or eid in eids:
-                        if eid == self.pre:
-                            msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
-                        else:
-                            msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                        if not witness:  # we are not witness, send auth records
-                            msgs.extend(self.makeEndRole(eid=eid, role=role))
-                if witness:  # we are witness, set KEL as authz
-                    msgs.extend(self.replay(cid))
+        kever = self.kevers[cid]
+        witness = self.pre in kever.wits  # see if we are cid's witness
+
+        if role == kering.Roles.witness:
+            # latest key state for cid
+            for eid in kever.wits:
+                if not eids or eid in eids:
+                    if eid == self.pre:
+                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                    else:
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                    if not witness:  # we are not witness, send auth records
+                        msgs.extend(self.makeEndRole(eid=eid, role=role))
+
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.makeEndRole(eid=eid, role=erole))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
+        msgs.extend(self.replay(cid))
         return msgs
 
     def replyToOobi(self, aid, role, eids=None):
