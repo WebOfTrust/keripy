@@ -13,7 +13,7 @@ parser.add_argument('--config-file',
 
 
 def vlei(args):
-    print("\n******* Starting Agents for vLEI scenairo testing on ports:"
+    print("\n******* Starting Agents for vLEI scenario testing on ports:"
           "\n\n"
           "    RootGARs:  5620, 5621\n"
           "    ExtGARs:   5622, 5623\n"
