@@ -328,7 +328,7 @@ class PresentationRequestHandler(doing.Doer):
                     data["schema"] = dict(
                         n=payload["s"]
                     )
-                if "i" in payload:
+                if "n" in payload:
                     data["credential"] = dict(
                         n=payload["n"]
                     )
