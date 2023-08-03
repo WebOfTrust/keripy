@@ -42,7 +42,7 @@ a running agent.  To run the `-agent` commands, a single agent or set of agents 
 many scripts require a set of witnesses be running locally.  The following section details how to run agents and witnesses.
 
 ### Running Witnesses
-Witnesses can be started in several ways using the `kli witness` subcommands or the shell script `demo/start-witness.sh`.  The
+Witnesses can be started in several ways using the `kli witness` subcommands or the shell script `demo/basic/start-witness.sh`.  The
 following 2 subcommands are available for starting witnesses:
 
 * `kli witness start` - starts a single witness (used inside the start-witness.sh script)
@@ -51,7 +51,7 @@ following 2 subcommands are available for starting witnesses:
 For most of the scripts that require witnesses you will use `kli witness demo` to start the 3 known witnesses.
 
 ### Running Agents
-Agents can be started in several ways using the `kli agent` subcommands or the shell script `demo/start-agent.sh` for the 
+Agents can be started in several ways using the `kli agent` subcommands or the shell script `demo/basic/start-agent.sh` for the 
 scripts that execute `curl` commands against running agents.  The following 3 subcommands are available for starting
 agents:
 
