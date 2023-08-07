@@ -93,9 +93,6 @@ class GroupMultisigInteract(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        ToDo: NRR
-        confirm only needs ghab.smids or do we need to add self.rmids to
-
         """
         # enter context
         self.wind(tymth)

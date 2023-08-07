@@ -6,13 +6,13 @@ keri.app.habbing module
 """
 import json
 from contextlib import contextmanager
-from urllib.parse import urlsplit
 from math import ceil
+from urllib.parse import urlsplit
 
 from hio.base import doing
 from hio.help import hicting
-from keri.peer import exchanging
 
+from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
@@ -330,15 +330,20 @@ class Habery:
             pre = habord.hid
 
             # create Hab instance and inject dependencies
-            if habord.mid:
+            if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid is not None:
+            elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=name, pre=habord.sid)
+            elif habord.sid and habord.mid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=habord.sid)
+                groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -361,15 +366,20 @@ class Habery:
             pre = habord.hid
 
             # create Hab instance and inject dependencies
-            if habord.mid:
+            if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=name, ns=ns, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
-            elif habord.sid is not None:
+            elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=name, ns=ns, pre=habord.sid)
+            elif habord.sid and habord.mid:
+                hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                                      rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                                      name=name, pre=habord.sid)
+                groups.append(habord)
             else:
                 hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -387,7 +397,6 @@ class Habery:
             if ns not in self.namespaces:
                 self.namespaces[ns] = dict()
             self.namespaces[ns][hab.pre] = hab
-
 
         # Populate the participant hab after loading all habs
         for habord in groups:
@@ -594,8 +603,8 @@ class Habery:
     def makeSignifyGroupHab(self, name, mhab, ns=None, **kwa):
         # create group Hab in this Habery
         hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
-                         rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                         name=name, mhab=mhab, ns=ns, temp=self.temp)
+                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                              name=name, mhab=mhab, ns=ns, temp=self.temp)
 
         hab.make(**kwa)  # finish making group hab with injected pass throughs
         if ns is None:
@@ -1850,27 +1859,29 @@ class BaseHab:
         if eids is None:
             eids = []
 
-        if role == kering.Roles.witness:
-            if kever := self.kevers[cid] if cid in self.kevers else None:
-                witness = self.pre in kever.wits  # see if we are cid's witness
+        if cid not in self.kevers:
+            return msgs
 
-                # latest key state for cid
-                for eid in kever.wits:
-                    if not eids or eid in eids:
-                        if eid == self.pre:
-                            msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
-                        else:
-                            msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                        if not witness:  # we are not witness, send auth records
-                            msgs.extend(self.makeEndRole(eid=eid, role=role))
-                if witness:  # we are witness, set KEL as authz
-                    msgs.extend(self.replay(cid))
+        kever = self.kevers[cid]
+        witness = self.pre in kever.wits  # see if we are cid's witness
+
+        if role == kering.Roles.witness:
+            # latest key state for cid
+            for eid in kever.wits:
+                if not eids or eid in eids:
+                    if eid == self.pre:
+                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                    else:
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                    if not witness:  # we are not witness, send auth records
+                        msgs.extend(self.makeEndRole(eid=eid, role=role))
 
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.makeEndRole(eid=eid, role=erole))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
+        msgs.extend(self.replay(cid))
         return msgs
 
     def replyToOobi(self, aid, role, eids=None):
@@ -2380,9 +2391,20 @@ class SignifyHab(BaseHab):
 
 
 class SignifyGroupHab(SignifyHab):
-    def __init__(self, mhab, **kwa):
+    def __init__(self, mhab=None, **kwa):
         self.mhab = mhab
         super(SignifyGroupHab, self).__init__(**kwa)
+
+    def make(self, *, serder, sigers, **kwargs):
+        self.pre = serder.ked["i"]  # new pre
+        self.prefixes.add(self.pre)
+
+        self.processEvent(serder, sigers)
+
+        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, sid=self.pre)
+        self.save(habord)
+
+        self.inited = True
 
     def processEvent(self, serder, sigers):
         """ Process event with signatures ignoring missing signature exceptions

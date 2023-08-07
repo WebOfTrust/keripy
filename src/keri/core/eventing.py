@@ -1251,7 +1251,7 @@ def reply(route="",
       "r" : "logs/processor",
       "a" :
       {
-         "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
          "name": "John Jones",
          "role": "Founder",
@@ -3529,8 +3529,8 @@ class Kevery:
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
         route = "/end/role"  # escrow based on route base
+        data = serder.ked['a']
 
-        data = serder.ked["a"]
         for k in ("cid", "role", "eid"):
             if k not in data:
                 raise ValidationError(f"Missing element={k} from attributes in"
