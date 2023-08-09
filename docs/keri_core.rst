@@ -31,3 +31,8 @@ keri.core.scheming
 .. automodule:: keri.core.scheming
     :members:
 
+keri.core.serdering
+------------------
+
+.. automodule:: keri.core.serdering
+    :members:

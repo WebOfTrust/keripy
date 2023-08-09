@@ -13,10 +13,28 @@ keri.app.apping
 .. automodule:: keri.app.apping
     :members:
 
+keri.app.booting
+---------------
+
+.. automodule:: keri.app.booting
+    :members:
+
+keri.app.challenging
+---------------
+
+.. automodule:: keri.app.challenging
+    :members:
+
 keri.app.configing
 ------------------
 
 .. automodule:: keri.app.configing
+    :members:
+
+keri.app.connecting
+------------------
+
+.. automodule:: keri.app.connecting
     :members:
 
 keri.app.delegating
@@ -73,10 +91,29 @@ keri.app.kiwiing
 .. automodule:: keri.app.kiwiing
     :members:
 
-keri.app.obtaining
+keri.app.notifying
+----------------
+
+.. automodule:: keri.app.notifying
+    :members:
+
+
+keri.app.oobing
 ------------------
 
-.. automodule:: keri.app.obtaining
+.. automodule:: keri.app.oobing
+    :members:
+
+keri.app.querying
+------------------
+
+.. automodule:: keri.app.querying
+    :members:
+
+keri.app.signaling
+------------------
+
+.. automodule:: keri.app.signaling
     :members:
 
 keri.app.signing
@@ -95,10 +132,4 @@ keri.app.storing
 ----------------
 
 .. automodule:: keri.app.storing
-    :members:
-
-keri.app.watching
------------------
-
-.. automodule:: keri.app.watching
     :members:
