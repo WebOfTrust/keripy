@@ -3785,7 +3785,6 @@ class Kevery:
         self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
         self.cues.append(dict(kin="keyStateSaved", serder=serder))
 
-
     def updateEnd(self, keys, saider, allowed=None):
         """
         Update end auth database .eans and end database .ends.
