@@ -57,6 +57,12 @@ class RoleDoer(doing.DoDoer):
 
         if self.hab is None:
             raise kering.ConfigurationError(f"unknown alias={alias}")
+        if not isinstance(self.hab, habbing.GroupHab):
+            raise ValueError("non-group AIDs not supported, try `kli ends add` instead.")
+
+        self.smids = self.hab.db.signingMembers(self.hab.pre)
+        self.others = [smid for smid in self.smids if smid != self.hab.mhab.pre]
+        self.psr = parsing.Parser(kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         doers = [self.mbx, self.postman, doing.doify(self.roleDo)]
 
@@ -78,17 +84,13 @@ class RoleDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if not isinstance(self.hab, habbing.GroupHab):
-            raise ValueError("non-group AIDs not supported, try `kli ends add` instead.")
-
-        smids = self.hab.db.signingMembers(self.hab.pre)
 
         tab = PrettyTable()
         tab.field_names = ["From Member", "Adding AID", "In Role", "Local"]
         tab.align["From Member"] = "l"
 
-        auths = []
-        for smid in smids:
+        auths = {}
+        for smid in self.smids:
             ends = self.hab.endsFor(smid)
             for role in self.roles:
                 if role in ends:
@@ -105,8 +107,9 @@ class RoleDoer(doing.DoDoer):
                             name = f"Unknown ({smid})"
 
                         tab.add_row([name, k, role.capitalize(), local])
-                        auths.append(dict(cid=self.hab.pre, role=role, eid=k))
+                        auths[(self.hab.pre, role, k)] = None  # None timestamp means not signed yet
 
+        stamp = helping.nowUTC()
         print(f"Adding the following endpoint role authorizations for {self.hab.pre}")
         print(tab)
         yes = input(f"\nAuthorize new Roles [Y|n]? ")
@@ -114,65 +117,64 @@ class RoleDoer(doing.DoDoer):
             self.remove([self.mbx, self.postman])
             return
 
-        psr = parsing.Parser()
-        route = "/end/role/add"
-        others = [smid for smid in smids if smid != self.hab.mhab.pre]
-        approved = []
-        saids = []
-        stamp = helping.nowUTC()
+        # Check reply escrows and see if any that we approved have already been signed by someone
+        escrowed = self.hab.db.rpes.get(keys=("/end/role",))
+        for saider in escrowed:
+            serder = self.hab.db.rpys.get(keys=(saider.qb64,))
+            payload = serder.ked['a']
+            keys = tuple(payload.values())
+            then = helping.fromIso8601(serder.ked["dt"])
+            if keys in auths and then < stamp:
+                self.authorize(data=payload, stamp=then)
+                auths[keys] = then  # track signed role auths by timestamp signed
 
-        msgs = bytearray()
-        for data in auths:
-            approved.append(tuple(data.values()))
-            msg = self.hab.reply(route=route, data=data, stamp=helping.toIso8601(stamp))
-            serder = coring.Serder(raw=msg)
-            atc = bytes(msg[serder.size:])
-            for o in others:
-                self.postman.send(hab=self.hab.mhab, dest=o, topic="multisig", serder=serder,
-                                  attachment=atc)
+        # Loop through all approved and sign ones we haven't signed yet
+        for keys, dt in auths.items():
+            if dt is not None:  # Already signed one, skip
+                continue
 
-            saids.append(serder.said)
-            msgs.extend(msg)
-
-        psr.parse(ims=bytes(msgs), kvy=self.hab.kvy, rvy=self.hab.rvy)
+            data = dict(cid=keys[0], role=keys[1], eid=keys[2])
+            self.authorize(data=data, stamp=stamp)
+            auths[keys] = stamp  # track signed role auths by timestamp signed
 
         print("Waiting for approvals from other members...")
-        while approved:
+        while not all([self.hab.db.ends.get(keys=key) for key in auths]):
             escrowed = self.hab.db.rpes.get(keys=("/end/role",))
             for saider in escrowed:
-                if saider.qb64 in saids:
-                    continue
-
                 serder = self.hab.db.rpys.get(keys=(saider.qb64,))
                 payload = serder.ked['a']
                 keys = tuple(payload.values())
 
-                if keys in approved:
+                if keys in auths:  # this is an auth I agreed to create
                     then = helping.fromIso8601(serder.ked["dt"])
-                    if then > stamp:
-                        msg = self.hab.endorse(serder=serder)
-                        atc = bytes(msg[serder.size:])
-                        psr.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
-                        for o in others:
-                            self.postman.send(hab=self.hab.mhab, dest=o, topic="multisig", serder=serder,
-                                              attachment=atc)
+                    stamp = auths[keys]
+
+                    if stamp == then:  # This is one we already signed, continue
+                        continue
+
+                    print(f"New approval recieved")
+                    if then < stamp:
+                        print("Earlier than mine, resigning")
+                        payload = serder.ked['a']
+                        self.authorize(data=payload, stamp=then)
+                        auths[keys] = then
                     else:
+                        print("Later than mine, deleting")
                         self.hab.db.rpes.rem(keys=("/end/role",), val=saider)
 
-                    approved.remove(keys)
-            yield 1.0
-
-        while True:
-            finished = True
-            for keys in approved:
-                if not self.hab.loadEndRole(cid=keys[0], role=keys[1], eid=keys[2]):
-                    finished = False
-
-            if finished:
-                break
-
-            yield 1.0
+            yield 3.0
 
         print("All endpoint role authorizations approved")
         self.remove([self.mbx, self.postman])
         return
+
+    def authorize(self, data, stamp):
+        msg = self.hab.reply(route="/end/role/add", data=data, stamp=helping.toIso8601(stamp))
+        serder = coring.Serder(raw=msg)
+        atc = bytes(msg[serder.size:])
+        self.psr.parse(ims=bytes(msg))
+        for o in self.others:
+            self.postman.send(hab=self.hab.mhab, dest=o, topic="multisig", serder=serder,
+                              attachment=atc)
+
+        return serder
