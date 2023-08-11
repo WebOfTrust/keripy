@@ -73,18 +73,20 @@ def generate(tymth, tock=0.0, **opts):
                 sys.exit(-1)
 
             wit = random.choice(hab.kever.wits)
-            urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+            urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
             if not urls:
                 raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-            up = urlparse(urls[kering.Schemes.http])
-            enc = urllib.parse.quote_plus(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
+            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+            up = urlparse(url)
+            enc = urllib.parse.quote_plus(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/witness")
             print(f"did:keri:{hab.pre}?oobi={enc}")
         elif role in (kering.Roles.controller,):
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
             if not urls:
                 print(f"{alias} identifier {hab.pre} does not have any controller endpoints")
                 return
-            up = urlparse(urls[kering.Schemes.http])
-            enc = urllib.parse.quote_plus(f"http://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
+            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+            up = urlparse(url)
+            enc = urllib.parse.quote_plus(f"{up.scheme}://{up.hostname}:{up.port}/oobi/{hab.pre}/controller")
             print(f"did:keri:{hab.pre}?oobi={enc}")

@@ -153,11 +153,11 @@ class Receiptor(doing.DoDoer):
             return
 
         wit = random.choice(hab.kever.wits)
-        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
         if not urls:
             raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-        base = urls[kering.Schemes.http]
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
         client = self.clienter.request("GET", url)
@@ -849,12 +849,13 @@ def httpClient(hab, wit):
         ClientDoer: Doer for client
 
     """
-    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
     if not urls:
         raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-    up = urlparse(urls[kering.Schemes.http])
-    client = http.clienting.Client(hostname=up.hostname, port=up.port)
+    url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+    up = urlparse(url)
+    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
