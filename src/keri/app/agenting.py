@@ -731,10 +731,10 @@ class HTTPMessenger(doing.DoDoer):
         doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
         up = urlparse(url)
-        if up.scheme != kering.Schemes.http:
+        if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
-        self.client = http.clienting.Client(hostname=up.hostname, port=up.port)
+        self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
@@ -825,8 +825,8 @@ def messengerFrom(hab, pre, urls):
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    if kering.Schemes.http in urls:
-        url = urls[kering.Schemes.http]
+    if kering.Schemes.http in urls or kering.Schemes.https:
+        rl = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         witer = HTTPMessenger(hab=hab, wit=pre, url=url)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
