@@ -832,9 +832,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
     assert saider.qb64 == serder0.said
 
-    saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
-    assert saider.qb64 == serder0.said
-
 
     # Rotation: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
