@@ -107,7 +107,7 @@ class RespondDoer(doing.DoDoer):
         recp = recp[0]['id']
 
         payload = dict(i=hab.pre, words=self.words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload)
+        exn = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
         ims = hab.endorse(serder=exn, last=True, pipelined=False)
         del ims[:exn.size]
 

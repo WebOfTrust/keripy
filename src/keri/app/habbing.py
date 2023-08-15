@@ -1346,22 +1346,56 @@ class BaseHab:
 
         return msg
 
-    def exchange(self, serder, save=False):
+    def exchange(self, route,
+                 payload,
+                 recipient,
+                 date=None,
+                 eid=None,
+                 dig=None,
+                 modifiers=None,
+                 embeds=None,
+                 save=False):
         """
         Returns signed exn, message of serder with count code and receipt
         couples (pre+cig)
         Builds msg and then processes it into own db to validate
         """
         # sign serder event
+
+        e = dict()
+        end = bytearray()
+        for label, msg in embeds.items():
+            serder = coring.Serder(raw=msg)
+            e[label] = serder.ked
+            atc = bytes(msg[serder.size:])
+            if not atc:
+                continue
+
+            pathed = bytearray()
+            pather = coring.Pather(path=["e", label])
+            pathed.extend(pather.qb64b)
+            pathed.extend(atc)
+            end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                      count=(len(pathed) // 4)).qb64b)
+            end.extend(pathed)
+
+        serder = exchanging.exchange(route=route,
+                                     payload=payload,
+                                     sender=self.pre,
+                                     recipient=recipient,
+                                     date=date,
+                                     dig=dig,
+                                     modifiers=modifiers,
+                                     embeds=e)
+
         if self.kever.prefixer.transferable:
-            seal = eventing.SealLast(i=self.kever.prefixer.qb64)
-            sigers = self.sign(ser=serder.raw,
-                               indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+            msg = self.endorse(serder=serder, pipelined=False)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
             msg = eventing.messagize(serder, cigars=cigars)
+
+        msg.extend(end)
 
         if save:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
@@ -2304,6 +2338,20 @@ class SignifyHab(BaseHab):
         """
         msg = eventing.messagize(serder, sigers=sigers)
         self.processEvent(serder, sigers)
+        return msg
+
+    def exchange(self, serder, seal=None, sigers=None, save=False):
+        """
+        Returns signed exn, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        # sign serder event
+        msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+
+        if save:
+            self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+
         return msg
 
     def processEvent(self, serder, sigers):

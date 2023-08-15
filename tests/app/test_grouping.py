@@ -651,10 +651,11 @@ def test_multisig_incept(mockHelpingNowUTC):
         exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids, ked=hab.kever.serder.ked)
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'EOgdGcAn757slSJ1NS5LhGe-zebnL4zi4Uxo-UaMuH9T'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADWUWkkQDAM'
-                       b'AGvVIlQ6qPJceInrSzqnkCUuHfimfVG6g22OAiyudhD5veBtzjz8UjFpoSSTeZCT'
-                       b'J1n0ZmELHFAL')
+        assert exn.saidb == b'EMq96lefHDxLmaFGx85QvmTzSUkqnSWSIS3eli7_DDas'
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACesK58'
+                       b'7e7Ldl4KDl4ICVhzsNaxH40fkLB5zGUxuEar6T7pPXG1hRvpYK3Lev-NTA8wqFqZ'
+                       b'ZlRTjUBZna4a1hEM')
         data = exn.ked["a"]
         assert data["smids"] == aids
         assert data["ked"] == hab.kever.serder.ked
@@ -665,10 +666,11 @@ def test_multisig_rotate(mockHelpingNowUTC):
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, ked=dict())
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'EDA_jhxl8dxOjym2IQ0qW6LhZlG1vL8OrNtYb5En3o44'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAD6tICmQtM0'
-                       b'oIiSLU5bDr_5xjLCc4nKJxiWcDkvUJWQn17K38TirWObrkYM45q68YP00z-KYrYI'
-                       b'uY51hpx6wEYD')
+        assert exn.saidb == b'EGjgXISPNTsAGnxKrTLGYoPyKDYlBtRpGXfuaE7EScTR'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAADyz1Uw'
+                       b'X3R6uQ-X6LZRfp-dbClLgJoTYmI6kQwcaka5A1Pk5qeXSa6wVGNP1cIrmKEObdU_'
+                       b'2xwZOCg1gg1pJggI')
 
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
@@ -682,10 +684,11 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 data=[{"i": 1, "x": 0, "d": 2}])
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EN9CoGmdCd8fNaYK3FrYUJhmJHL7aZ3OhFZzEutJ5xZZ'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABKPpOh4dSt'
-                       b'geh8iLU95Vk9dtOyvCujQu6zsy0a5cvHctgew_acCv4ZAT_oYneVBDkPnEdcdFJW'
-                       b'wlqtQ784zK4L')
+        assert exn.saidb == b'EKrtWq-oH1I7Bb_LHCdObU7kZfd34Q9TANxneBQ_ljyP'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAC_mo2O'
+                       b'njqR1vQq54-fcHHh1O1fOc9zlKpyla17cd8mII8F6dvx38hMAuX9UQldJGmEPgX-'
+                       b'9LJdGrDLEo8H5wsK')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.smids
         assert data["gid"] == ghab1.pre

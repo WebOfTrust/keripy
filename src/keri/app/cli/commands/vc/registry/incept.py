@@ -103,6 +103,12 @@ class RegistryInceptor(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(self.alias)
+        if hab is None:
+            raise ValueError(f"{self.alias} is not a valid AID alias")
+
+        if isinstance(hab, habbing.GroupHab):
+            raise ValueError(f"{self.alias} is a group multisig AID alias, you must use multisig specific command")
+
         registry = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
 
         while not self.registrar.complete(pre=registry.regk, sn=0):

@@ -920,9 +920,6 @@ class Baser(dbing.LMDBer):
         # exchange message signatures
         self.ecigs = subing.CesrIoSetSuber(db=self, subkey='ecigs.', klas=coring.Cigar)
 
-        # exchange source prefix
-        self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
-
         # exchange pathed attachments
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")
 

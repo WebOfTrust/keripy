@@ -231,7 +231,7 @@ def credentialIssueExn(hab, issuer, schema, said):
         a=said,
     )
 
-    exn = exchanging.exchange(route="/credential/issue", payload=data)
+    exn = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]
 
@@ -439,8 +439,8 @@ def presentationExchangeExn(hab, reger, said):
         n=said,
     )
 
-    exn = exchanging.exchange(route="/presentation", payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    exn = exchanging.exchange(route="/presentation", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims

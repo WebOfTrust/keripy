@@ -6,17 +6,17 @@ keri.app.grouping module
 module for enveloping and forwarding KERI message
 """
 
-from hio import help
 from hio.base import doing
 from hio.help import decking
 
-from keri import kering
-from keri.app import delegating, agenting
-from keri.core import coring
-from keri.db import dbing
-from keri.db.dbing import snKey
-from keri.peer import exchanging
-from keri.vc import proving
+from .. import kering
+from .. import help
+from ..app import delegating, agenting
+from ..core import coring
+from ..db import dbing
+from ..db.dbing import snKey
+from ..peer import exchanging
+from ..vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -337,8 +337,8 @@ def multisigInceptExn(hab, smids, rmids, ked, delegator=None):
 
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchanging.exchange(route=MultisigInceptHandler.resource, modifiers=dict(),
-                              payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+                              payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims
@@ -433,9 +433,9 @@ def multisigRotateExn(ghab, smids, rmids, ked):
                               payload=dict(gid=ghab.pre,
                                            smids=smids,
                                            rmids=rmids,
-                                           ked=ked)
+                                           ked=ked), sender=ghab.mhab.pre
                               )
-    ims = ghab.mhab.endorse(serder=exn, last=True, pipelined=False)
+    ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
 
     return exn, atc
@@ -540,9 +540,9 @@ def multisigInteractExn(ghab, aids, data):
     exn = exchanging.exchange(route=MultisigInteractHandler.resource, modifiers=dict(),
                               payload=dict(gid=ghab.pre,
                                            aids=aids,
-                                           data=data)
+                                           data=data), sender=ghab.mhab.pre
                               )
-    ims = ghab.mhab.endorse(serder=exn, last=True, pipelined=False)
+    ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
 
     return exn, atc
@@ -618,7 +618,7 @@ def multisigIssueExn(hab, creder):
         butearray: attachment signatures
 
     """
-    exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked)
+    exn = exchanging.exchange(route="/multisig/issue", payload=creder.ked, sender=hab.pre)
     evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
     atc = bytearray(evt[exn.size:])
 
