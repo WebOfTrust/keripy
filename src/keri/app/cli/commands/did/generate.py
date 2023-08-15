@@ -72,7 +72,7 @@ def generate(tymth, tock=0.0, **opts):
                 print(f"{alias} identifier {hab.pre} does not have any witnesses.")
                 sys.exit(-1)
 
-            wit  = random.choice(hab.kever.wits)
+            wit = random.choice(hab.kever.wits)
             urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
             if not urls:
                 raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")

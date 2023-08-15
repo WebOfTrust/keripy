@@ -96,7 +96,6 @@ class ConfirmDoer(doing.DoDoer):
             for keys, notice in self.notifier.noter.notes.getItemIter():
                 attrs = notice.attrs
                 route = attrs['r']
-                print(keys, notice)
 
                 if route == '/multisig/icp/init':
                     done = yield from self.incept(attrs)
@@ -105,11 +104,8 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
-
-                    self.remove(self.toRemove)
-                    return True
 
                 elif route == '/multisig/ixn':
                     done = yield from self.interact(attrs)
@@ -118,11 +114,8 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
-
-                    self.remove(self.toRemove)
-                    return True
 
                 elif route == '/multisig/rot':
 
@@ -132,15 +125,22 @@ class ConfirmDoer(doing.DoDoer):
 
                     else:
                         delete = input(f"\nDelete event [Y|n]? ")
-                        if delete:
+                        if delete in ("Y", "y"):
                             self.notifier.noter.notes.rem(keys=keys)
 
-                    self.remove(self.toRemove)
-                    return True
+                elif route == '/multisig/rpy':
+
+                    done = yield from self.rpy(attrs)
+                    if done:
+                        self.notifier.noter.notes.rem(keys=keys)
+
+                    else:
+                        delete = input(f"\nDelete event [Y|n]? ")
+                        if delete in ("Y", "y"):
+                            self.notifier.noter.notes.rem(keys=keys)
 
                 yield self.tock
             yield self.tock
-
 
     def incept(self, attrs):
         """ Incept group multisig
@@ -402,3 +402,16 @@ class ConfirmDoer(doing.DoDoer):
                 tab.add_row(row)
 
         print(tab)
+
+    def rpy(self, attrs):
+        """  Handle reply messages
+
+        Parameters:
+            attrs (dict): attributes of the reply message
+
+        Returns:
+
+        """
+        ked = attrs["ked"]
+
+

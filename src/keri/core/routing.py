@@ -488,7 +488,7 @@ class Revery:
                         logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     self.removeReply(saider)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
@@ -496,12 +496,12 @@ class Revery:
                         logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow only
+                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
                     logger.info("Kevery unescrow succeeded for reply=\n%s\n",
                                 serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
                 self.removeReply(saider)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])

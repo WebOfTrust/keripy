@@ -23,10 +23,11 @@ logger = help.ogler.getLogger()
 
 class Counselor(doing.DoDoer):
 
-    def __init__(self, hby, swain=None, **kwa):
+    def __init__(self, hby, swain=None, proxy=None, **kwa):
 
         self.hby = hby
         self.swain = swain if swain is not None else delegating.Boatswain(hby=self.hby)
+        self.proxy = proxy
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
@@ -53,7 +54,6 @@ class Counselor(doing.DoDoer):
 
         print(f"Waiting for other signatures for {serder.pre}:{seqner.sn}...")
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
-
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event
@@ -139,7 +139,10 @@ class Counselor(doing.DoDoer):
                         self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
                         anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
-                        self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
+                        if self.proxy:
+                            self.witq.query(hab=self.proxy, pre=kever.delegator, anchor=anchor)
+                        else:
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delegator, anchor=anchor)
 
                     print("Waiting for delegation approval...")
                     self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
@@ -545,7 +548,7 @@ def multisigInteractExn(ghab, aids, data):
     return exn, atc
 
 
-class MultisigIssueHandler(doing.DoDoer):
+class MultisigIssueHandler(doing.Doer):
     """
     Handler for multisig group issuance notification EXN messages
 

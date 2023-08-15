@@ -15,7 +15,7 @@ from keri.core import coring, eventing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials')
+parser = argparse.ArgumentParser(description='Export end points')
 parser.set_defaults(handler=lambda args: export_ends(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
@@ -83,9 +83,5 @@ class ExportDoer(doing.DoDoer):
                                          cigars=[cigar],
                                          sigers=sigers,
                                          pipelined=True))
-        #
-        # print(
-        #     f"Current {'issued' if self.issued else 'received'} credentials for {self.hab.name} ("
-        #     f"{self.hab.pre}):\n")
 
         return True
