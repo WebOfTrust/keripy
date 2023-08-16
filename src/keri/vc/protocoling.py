@@ -9,7 +9,6 @@ from hio.base import doing
 from hio.help import decking
 
 from .. import help
-from ..app import signing
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()

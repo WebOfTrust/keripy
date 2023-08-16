@@ -441,7 +441,6 @@ class Habery:
                 self.namespaces[ns] = dict()
             self.namespaces[ns][hab.pre] = hab
 
-
         return hab
 
     def makeGroupHab(self, group, mhab, smids, rmids=None, ns=None, **kwa):
@@ -559,7 +558,6 @@ class Habery:
                                                     f"identifier {rmid} in group's"
                                                     f" next members ={rmids}")
 
-
         # create group Hab in this Habery
         hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                        rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
@@ -628,7 +626,6 @@ class Habery:
         self.db.prefixes.remove(hab.pre)
 
         return True
-
 
     def extractMerfersMigers(self, smids, rmids=None):
         """
@@ -713,7 +710,6 @@ class Habery:
                     hab = nsp[pre]
 
         return hab
-
 
     def habByName(self, name, ns=None):
         """
@@ -1052,7 +1048,6 @@ class BaseHab:
             self.db.nmsp.put(keys=(self.ns, self.name),
                              val=habord)
 
-
     def reconfigure(self):
         """Apply configuration from config file managed by .cf. to this Hab.
         Assumes that .pre and signing keys have been setup in order to create
@@ -1362,31 +1357,14 @@ class BaseHab:
         """
         # sign serder event
 
-        e = dict()
-        end = bytearray()
-        for label, msg in embeds.items():
-            serder = coring.Serder(raw=msg)
-            e[label] = serder.ked
-            atc = bytes(msg[serder.size:])
-            if not atc:
-                continue
-
-            pathed = bytearray()
-            pather = coring.Pather(path=["e", label])
-            pathed.extend(pather.qb64b)
-            pathed.extend(atc)
-            end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                      count=(len(pathed) // 4)).qb64b)
-            end.extend(pathed)
-
-        serder = exchanging.exchange(route=route,
-                                     payload=payload,
-                                     sender=self.pre,
-                                     recipient=recipient,
-                                     date=date,
-                                     dig=dig,
-                                     modifiers=modifiers,
-                                     embeds=e)
+        serder, end = exchanging.exchange(route=route,
+                                          payload=payload,
+                                          sender=self.pre,
+                                          recipient=recipient,
+                                          date=date,
+                                          dig=dig,
+                                          modifiers=modifiers,
+                                          embeds=embeds)
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, pipelined=False)
@@ -2316,7 +2294,6 @@ class SignifyHab(BaseHab):
         """
         raise kering.KeriError("Signify hab does not support local signing")
 
-
     def rotate(self, *, serder=None, sigers=None, **kwargs):
         """
         Perform rotation operation. Register rotation in database.
@@ -2433,7 +2410,6 @@ class SignifyHab(BaseHab):
 
         # introduce yourself, please
         msgs.extend(self.replay(cid))
-
 
         return msgs
 

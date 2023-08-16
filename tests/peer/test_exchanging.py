@@ -43,6 +43,8 @@ def test_exchanger():
         assert msg["pre"].qb64b == hab.kever.prefixer.qb64b
         assert msg["attachments"] == []
 
+        exn,
+
 
 def test_hab_exchange(mockHelpingNowUTC):
     with habbing.openHby() as hby:

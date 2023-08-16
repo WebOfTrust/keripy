@@ -8,7 +8,7 @@ import time
 from hio.base import doing, tyming
 
 from keri.app import habbing, messaging
-from keri.core import parsing
+from keri.core import parsing, coring
 from keri.core.coring import MtrDex
 from keri.peer import exchanging
 from keri.vdr import eventing
@@ -17,7 +17,7 @@ from keri.vdr import eventing
 def test_messagenger():
     with habbing.openHab(name="test0", temp=True) as (hby, hab):
 
-        msgr = messaging.Messager(name=hab.name, temp=True)
+        msgr = messaging.Messanger(hby=hby)
         recp = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         regser = eventing.incept(hab.pre,
                                  baks=[],
@@ -38,7 +38,7 @@ def test_messagenger():
         print(exn.pretty())
 
         exc = exchanging.Exchanger(db=hby.db, handlers=[])
-        messaging.loadHandlers(hby=hby, exc=exc, msgr=msgr)
+        messaging.loadHandlers(exc=exc, msgr=msgr)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
@@ -58,8 +58,15 @@ def test_messagenger():
         assert doist.limit == limit
         doist.exit()
 
-        assert msgr.mexns.get(keys=(exn.said,)) is not None
+        assert msgr.msgdb.mexns.get(keys=(exn.said,)) is not None
 
+        exns = msgr.list()
+        assert len(exns) == 1
+        (exn, paths) = exns[0]
 
-
-
+        for path in paths:
+            bpath = bytearray(path.encode("utf-8"))
+            pather = coring.Pather(qb64b=bpath, strip=True)
+            vcp = pather.resolve(sad=exn.ked)
+            serder = coring.Serder(ked=vcp)
+            print(serder.pretty())

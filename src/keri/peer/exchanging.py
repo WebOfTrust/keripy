@@ -125,18 +125,19 @@ class Exchanger(doing.DoDoer):
             raise MissingSignatureError("Failure satisfying exn, no cigs or sigs"
                                         " for evt = {}.".format(serder.ked))
 
-        a = coring.Pather(path=["e"])
+        e = coring.Pather(path=["e"])
         attachments = []
-        for pattach in pathed:
+        for p in pathed:
+            pattach = bytearray(p)
             pather = coring.Pather(qb64b=pattach, strip=True)
-            if pather.startswith(a):
-                np = pather.strip(a)
+            if pather.startswith(e):
+                np = pather.strip(e)
                 attachments.append((np, pattach))
 
         # Always persis local events and events where the behavior has indicated persistence is required
         if self.local or (hasattr(behavior, 'persist') and behavior.persist):
             try:
-                self.logEvent(serder, [pathed for (_, pathed) in attachments], tsgs, cigars)
+                self.logEvent(serder, pathed, tsgs, cigars)
             except Exception as ex:
                 print(ex)
 
@@ -247,7 +248,7 @@ class Exchanger(doing.DoDoer):
             for siger in sigers:
                 self.db.esigs.add(keys=quadkeys, val=siger)
         for cigar in cigars:
-            self.db.esigs.add(keys=(dig,), val=cigar)
+            self.db.ecigs.add(keys=(dig,), vals=[(cigar.verfer, cigar)])
 
         self.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         self.db.exns.put(keys=(dig,), val=serder)
@@ -283,7 +284,24 @@ def exchange(route,
     ilk = eventing.Ilks.exn
     dt = date if date is not None else helping.nowIso8601()
     p = dig if dig is not None else ""
-    e = embeds if embeds is not None else {}
+    embeds = embeds if embeds is not None else {}
+
+    e = dict()
+    end = bytearray()
+    for label, msg in embeds.items():
+        serder = coring.Serder(raw=msg)
+        e[label] = serder.ked
+        atc = bytes(msg[serder.size:])
+        if not atc:
+            continue
+
+        pathed = bytearray()
+        pather = coring.Pather(path=["e", label])
+        pathed.extend(pather.qb64b)
+        pathed.extend(atc)
+        end.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                  count=(len(pathed) // 4)).qb64b)
+        end.extend(pathed)
 
     attrs = dict(
     )
@@ -305,4 +323,81 @@ def exchange(route,
                e=e)
 
     _, ked = coring.Saider.saidify(sad=ked)
-    return eventing.Serder(ked=ked)  # return serialized ked
+    return eventing.Serder(ked=ked), end  # return serialized ked
+
+
+def cloneMessage(hby, said):
+    """ Load and verify signatures on message exn
+
+    Parameters:
+        hby (Habery): database environment from which to clone message
+        said (str): qb64 SAID of message exn to load
+
+    Returns:
+        tuple: (serder, list) of message exn and pathed signatures on embedded attachments
+
+    """
+    exn = hby.db.exns.get(keys=(said,))
+    verify(hby=hby, serder=exn)
+
+    pathed = [p for p in hby.db.epath.get(keys=(exn.said,))]
+    return exn, pathed
+
+
+def verify(hby, serder):
+    """  Verify that the signatures in the database are valid for the provided exn
+
+    Parameters:
+        hby (Habery): database environment from which to verify message
+        serder (Serder): exn serder to load and verify signatures for
+
+    Returns:
+        bool: True means threshold satisfyig signatures were loaded and verified successfully
+
+    """
+    tsgs = []
+    klases = (coring.Prefixer, coring.Seqner, coring.Saider)
+    args = ("qb64", "snh", "qb64")
+    sigers = []
+    old = None  # empty keys
+    for keys, siger in hby.db.esigs.getItemIter(keys=(serder.said, "")):
+        quad = keys[1:]
+        if quad != old:  # new tsg
+            if sigers:  # append tsg made for old and sigers
+                prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+
+                tsgs.append((prefixer, seqner, saider, sigers))
+                sigers = []
+            old = quad
+        sigers.append(siger)
+    if sigers and old:
+        prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
+        tsgs.append((prefixer, seqner, saider, sigers))
+
+    accepted = False
+    for prefixer, seqner, ssaider, sigers in tsgs:
+        if prefixer.qb64 not in hby.kevers or hby.kevers[prefixer.qb64].sn < seqner.sn:
+            raise MissingSignatureError(f"Unable to find sender {prefixer.qb64} in kevers"
+                                        f" for evt = {serder.ked}.")
+
+        # Verify the signatures are valid and that the signature threshold as of the signing event is met
+        tholder, verfers = hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=ssaider.qb64)
+        _, indices = eventing.verifySigs(serder.raw, sigers, verfers)
+
+        if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
+            raise MissingSignatureError(f"Unable to find sender {prefixer.qb64} in kevers"
+                                        f" for evt = {serder.ked}.")
+        accepted = True
+
+    cigars = hby.db.ecigs.get(keys=(serder.said,))
+    for cigar in cigars:
+        if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
+            raise MissingSignatureError("Failure satisfying exn on cigs for {}"
+                                        " for evt = {}.".format(cigar,
+                                                                serder.ked))
+        accepted = True
+
+    if not accepted:
+        raise MissingSignatureError(f"No valid signatures stored for evt = {serder.ked}")
+
+

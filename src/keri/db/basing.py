@@ -918,7 +918,8 @@ class Baser(dbing.LMDBer):
         self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=coring.Siger)
 
         # exchange message signatures
-        self.ecigs = subing.CesrIoSetSuber(db=self, subkey='ecigs.', klas=coring.Cigar)
+        self.ecigs = subing.CatCesrIoSetSuber(db=self, subkey='ecigs.',
+                                              klas=(coring.Verfer, coring.Cigar))
 
         # exchange pathed attachments
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")

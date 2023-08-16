@@ -181,6 +181,7 @@ class BaseRegistry:
         self.cues = cues if cues is not None else decking.Deck()
         self.regk = regk
         self.regd = None
+        self.vcp = None
         self.cnfg = []
 
         self.inited = False
@@ -282,19 +283,19 @@ class Registry(BaseRegistry):
 
         pre = self.hab.pre
 
-        regser = eventing.incept(pre,
-                                 baks=baks,
-                                 toad=toad,
-                                 nonce=nonce,
-                                 cnfg=self.cnfg,
-                                 code=MtrDex.Blake3_256)
-        self.regk = regser.pre
-        self.regd = regser.said
+        self.vcp = eventing.incept(pre,
+                                   baks=baks,
+                                   toad=toad,
+                                   nonce=nonce,
+                                   cnfg=self.cnfg,
+                                   code=MtrDex.Blake3_256)
+        self.regk = self.vcp.pre
+        self.regd = self.vcp.said
         self.registries.add(self.regk)
         self.reger.regs.put(keys=self.name,
                             val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
 
-        self.processEvent(serder=regser)
+        self.processEvent(serder=self.vcp)
         self.inited = True
 
     def rotate(self, toad=None, cuts=None, adds=None):
@@ -483,17 +484,13 @@ class Registrar(doing.DoDoer):
 
         super(Registrar, self).__init__(doers=doers)
 
-    def incept(self, name, pre, conf=None, smids=None, rmids=None):
+    def incept(self, name, pre, conf=None):
         """
 
         Parameters:
             name (str): human readable name for the registry
             pre (str): qb64 identifier prefix of issuing identifier in control of this registry
             conf (dict): configuration information for the registry (noBackers, estOnly)
-            smids (list): group signing member ids qb64 in the anchoring event
-                need to contribute current signing key
-            rmids (list): group rotating member ids in the anchoring event
-                need to contribute digest of next rotating key
 
         Returns:
             Registry:  created registry
@@ -510,9 +507,9 @@ class Registrar(doing.DoDoer):
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         if not isinstance(hab, GroupHab):
             if estOnly:
-                hab.rotate(data=[rseal])
+                evt = hab.rotate(data=[rseal])
             else:
-                hab.interact(data=[rseal])
+                evt = hab.interact(data=[rseal])
 
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
@@ -524,13 +521,13 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            evt, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
-        return registry
+        return registry, evt
 
     def issue(self, regk, said, dt=None, smids=None, rmids=None):
         """
@@ -572,7 +569,7 @@ class Registrar(doing.DoDoer):
             return vcid, rseq.sn
 
         else:  # multisig group hab
-            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            serder, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
@@ -622,27 +619,26 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            serder, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, rserder.said), val=(prefixer, seqner, saider))
             return vcid, rseq.sn
 
-
     @staticmethod
     def multisigIxn(hab, rseal):
         ixn = hab.interact(data=[rseal])
-        gserder = coring.Serder(raw=ixn)
+        serder = coring.Serder(raw=bytes(ixn))
 
-        sn = gserder.sn
-        said = gserder.said
+        sn = serder.sn
+        said = serder.said
 
         prefixer = coring.Prefixer(qb64=hab.pre)
         seqner = coring.Seqner(sn=sn)
         saider = coring.Saider(qb64=said)
 
-        return prefixer, seqner, saider
+        return ixn, prefixer, seqner, saider
 
     def complete(self, pre, sn=0):
         seqner = coring.Seqner(sn=sn)
@@ -683,7 +679,6 @@ class Registrar(doing.DoDoer):
         self.processWitnessEscrow()
         self.processMultisigEscrow()
         self.processDiseminationEscrow()
-
 
     def processWitnessEscrow(self):
         """
@@ -877,7 +872,6 @@ class Credentialer(doing.DoDoer):
 
         parsing.Parser().parse(ims=craw, vry=self.verifier)
 
-
     def processCredentialMissingSigEscrow(self):
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
             rseq = coring.Seqner(qb64=snq)
@@ -890,11 +884,8 @@ class Credentialer(doing.DoDoer):
             # Remove from this escrow
             self.rgy.reger.cmse.rem(keys=(said, snq))
 
-            hab = self.hby.habs[creder.issuer]
-            kever = hab.kever
             # place in escrow to diseminate to other if witnesser and if there is an issuee
             self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
-
 
     def processCredentialIssuedEscrow(self):
         for (said, snq), creder in self.rgy.reger.crie.getItemIter():
@@ -992,7 +983,6 @@ class Credentialer(doing.DoDoer):
 
             self.rgy.reger.crie.rem(keys=(said, snq))
 
-
     def processCredentialSentEscrow(self):
         """
         Process Poster cues to ensure that the last message (exn notification) has
@@ -1011,10 +1001,8 @@ class Credentialer(doing.DoDoer):
                 self.rgy.reger.crse.rem(keys=(said,))
                 self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
 
-
     def complete(self, said):
         return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
-
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be completed.
@@ -1041,7 +1029,6 @@ class Credentialer(doing.DoDoer):
         while True:
             self.processEscrows()
             yield 0.5
-
 
     def processEscrows(self):
         """
