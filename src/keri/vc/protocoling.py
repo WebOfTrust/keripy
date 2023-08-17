@@ -130,6 +130,7 @@ class IssueHandler(doing.DoDoer):
     """
 
     resource = "/credential/issue"
+    persist = True
 
     def __init__(self, hby, rgy, notifier, **kwa):
         """ Initialize instance
@@ -230,7 +231,7 @@ def credentialIssueExn(hab, issuer, schema, said):
         a=said,
     )
 
-    exn = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre)
+    exn, _ = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=True, pipelined=False)
     del ims[:exn.size]
 
@@ -438,7 +439,7 @@ def presentationExchangeExn(hab, reger, said):
         n=said,
     )
 
-    exn = exchanging.exchange(route="/presentation", payload=data, sender=hab.pre)
+    exn, _ = exchanging.exchange(route="/presentation", payload=data, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 

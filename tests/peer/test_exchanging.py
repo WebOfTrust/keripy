@@ -24,9 +24,9 @@ def test_exchanger():
         act.extend(sadsig.proof)
 
         # create the forward message with payload embedded at `a` field
-        fwd = exchanging.exchange(route='/fwd', sender=hab.pre,
-                                  modifiers=dict(pre="EBCAFG", topic="/delegation"),
-                                  payload={}, embeds=dict(evt=ser.ked))
+        fwd, _ = exchanging.exchange(route='/fwd', sender=hab.pre,
+                                     modifiers=dict(pre="EBCAFG", topic="/delegation"),
+                                     payload={}, embeds=dict(evt=ser.raw))
         exnsigs = hab.sign(ser=fwd.raw,
                            verfers=hab.kever.verfers,
                            indexed=True)
@@ -42,8 +42,6 @@ def test_exchanger():
         assert msg["modifiers"] == {'pre': 'EBCAFG', 'topic': '/delegation'}
         assert msg["pre"].qb64b == hab.kever.prefixer.qb64b
         assert msg["attachments"] == []
-
-        exn,
 
 
 def test_hab_exchange(mockHelpingNowUTC):
@@ -105,6 +103,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
         msg = hab2.interact(data=[seal])
+        ixn = coring.Serder(raw=msg)
 
         embeds = dict(
             vcp=regser.raw,
@@ -141,6 +140,27 @@ def test_hab_exchange(mockHelpingNowUTC):
         paths = hab.db.epath.get(keys=(serder.said,))
         assert len(paths) == 1
 
+        # Read and verify signatures on exn from database.
+        clone, atcs = exchanging.cloneMessage(hby, exn.said)
+        assert clone.said == exn.said
+
+        # Paths retrieved should be resolvable against event ked, and usable for verification
+        assert len(atcs) == 1
+        atc = atcs[0]
+        assert atc == ('5AACAA-e-ixn-AABAACaoxfQp5L_Gd0nKqJXMbLTXzkrJJDd8RFxWdTSes'
+                       'AMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
+
+        sig = bytearray(atc.encode("utf-8"))
+        pather = coring.Pather(qb64b=sig, strip=True)
+        ked = pather.resolve(sad=clone.ked)
+        assert ked == ixn.ked
+
+        # Remove the count off the front of the index signature attachment
+        counter = coring.Counter(qb64b=sig, strip=True)
+        assert counter.count == 1
+        siger = coring.Siger(qb64b=sig)
+        assert hab2.kever.verfers[0].verify(sig=siger.raw, ser=ixn.raw) is True
+
         # Test exn from non-transferable AID
         hab = hby.makeHab(name="test1", transferable=False)
         assert hab.pre == "BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG"
@@ -167,3 +187,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         serder = hab.db.exns.get(keys=(exn.said,))
         assert serder.ked == exn.ked
+
+
+
+

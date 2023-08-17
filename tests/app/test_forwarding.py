@@ -43,7 +43,7 @@ def test_postman(seeder):
 
         pman = forwarding.Poster(hby=hby)
 
-        exn = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
+        exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
         atc = hab.endorse(exn, last=False)
         del atc[:exn.size]
         pman.send(src=hab.pre, dest=recpHab.pre, topic="echo", serder=exn, attachment=atc)

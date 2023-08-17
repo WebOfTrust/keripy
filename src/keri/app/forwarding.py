@@ -168,8 +168,8 @@ class Poster(doing.DoDoer):
         msg = bytearray()
         msg.extend(introduce(hab, mbx))
         # create the forward message with payload embedded at `a` field
-        fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                                  payload={}, embeds=dict(evt=serder.ked), sender=hab.pre)
+        fwd, _ = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                                     payload={}, embeds=dict(evt=serder.raw), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, pipelined=False)
 
         # Transpose the signatures to point to the new location

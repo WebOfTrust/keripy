@@ -267,57 +267,94 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", hby=hby, notifier=notifier))
 
 
-def multisigInceptExn(hab, smids, rmids, ked, delegator=None):
+def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
+    """
+
+    Args:
+        hab (Hab): habitat of local multisig member AID
+        smids (list): list of qb64 AIDs of members with signing authority
+        rmids (list): list of qb64 AIDs of members with rotation authority
+        icp (bytes): serialized inception event with CESR streamed attachments
+        delegator (str): qb64 AID of Delegator is group multisig is a delegated AID
+
+    Returns:
+        tuple: (Serder, bytes): Serder of exn message and CESR attachments
+
+    """
     data = dict(
         smids=smids,
         rmids=rmids,
-        ked=ked
+    )
+
+    embeds = dict(
+        icp=icp,
     )
 
     if delegator is not None:
         data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn = exchanging.exchange(route="/multisig/icp", modifiers=dict(),
-                              payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/multisig/icp", modifiers=dict(),
+                                   payload=data, embeds=embeds, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
+    ims.extend(end)
 
     return exn, ims
 
 
-def multisigRotateExn(ghab, smids, rmids, ked):
-    exn = exchanging.exchange(route="/multisig/rot", modifiers=dict(),
-                              payload=dict(gid=ghab.pre,
-                                           smids=smids,
-                                           rmids=rmids,
-                                           ked=ked), sender=ghab.mhab.pre
-                              )
+def multisigRotateExn(ghab, smids, rmids, rot):
+    """
+
+    Args:
+        ghab (GroupHab): habitat of group multisig AID
+        smids (list): list of qb64 AIDs of members with signing authority
+        rmids (list): list of qb64 AIDs of members with rotation authority
+        rot (bytes): serialized rotation event with CESR streamed attachments
+
+    Returns:
+        tuple: (Serder, bytes): Serder of exn message and CESR attachments
+
+    """
+    embeds = dict(
+        rot=rot,
+    )
+
+    exn, end = exchanging.exchange(route="/multisig/rot", modifiers=dict(),
+                                   payload=dict(gid=ghab.pre,
+                                                smids=smids,
+                                                rmids=rmids), sender=ghab.mhab.pre,
+                                   embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
+    atc.extend(end)
 
     return exn, atc
 
 
-def multisigInteractExn(ghab, aids, data):
+def multisigInteractExn(ghab, aids, ixn):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
         ghab (Hab): group Hab to endorse the message
         aids (list): qb64 identifier prefixes to include in the interaction event
-        data (list): data to anchor in the interaction event
+        ixn (bytes): serialized interaction event with CESR streamed attachments
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
     """
 
-    exn = exchanging.exchange(route="/multisig/ixn", modifiers=dict(),
-                              payload=dict(gid=ghab.pre,
-                                           aids=aids,
-                                           data=data), sender=ghab.mhab.pre
-                              )
+    embeds = dict(
+        ixn=ixn,
+    )
+
+    exn, end = exchanging.exchange(route="/multisig/ixn", modifiers=dict(),
+                                   payload=dict(gid=ghab.pre,
+                                                aids=aids), sender=ghab.mhab.pre,
+                                   embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
+    atc.extend(end)
 
     return exn, atc
 

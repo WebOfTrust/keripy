@@ -131,22 +131,22 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            evt = ghab.makeOwnInception(allowPartiallySigned=True)
-            serder = coring.Serder(raw=evt)
-            del evt[:serder.size]
+            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+            serder = coring.Serder(raw=icp)
+            atc = bytes(icp[serder.size:])
 
             # Create a notification EXN message to send to the other agents
             exn, ims = grouping.multisigInceptExn(ghab.mhab,
                                                   smids=ghab.smids,
                                                   rmids=ghab.rmids,
-                                                  ked=serder.ked)
+                                                  icp=icp)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
 
             for recpt in others:  # this goes to other participants only as a signaling mechanism
                 self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
-                                  attachment=bytearray(evt))
+                                  attachment=bytearray(atc))
                 self.postman.send(src=ghab.mhab.pre,
                                   dest=recpt,
                                   topic="multisig",

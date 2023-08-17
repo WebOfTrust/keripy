@@ -15,7 +15,6 @@ logger = help.ogler.getLogger()
 
 
 def test_pathed_material(mockHelpingNowUTC):
-
     class MockHandler:
         resource = "/fwd"
 
@@ -30,22 +29,11 @@ def test_pathed_material(mockHelpingNowUTC):
         # Create series of events
         debMsgs = dict(icp=debHab.makeOwnInception(), ixn0=debHab.interact(), rot=debHab.rotate(),
                        ixn1=debHab.interact())
-        events = {}
-        atc = bytearray()
-        for k, msg in debMsgs.items():
-            evt = coring.Serder(raw=msg)
-            events[k] = evt.ked
-            pather = coring.Pather(path=["e", k])
-            btc = pather.qb64b + msg[evt.size:]
-            atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                      count=(len(btc) // 4)).qb64b)
-            atc.extend(btc)
-
-        fwd = exchanging.exchange(route='/fwd',
-                                  modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=events,
-                                  sender=debHab.pre)
+        fwd, end = exchanging.exchange(route='/fwd',
+                                       modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
+                                       sender=debHab.pre)
         fwd = debHab.endorse(fwd, last=False, pipelined=False)
-        fwd.extend(atc)
+        fwd.extend(end)
         handler = MockHandler()
         exc = exchanging.Exchanger(db=debHby.db, handlers=[handler])
         parser = parsing.Parser(exc=exc)

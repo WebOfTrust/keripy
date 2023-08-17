@@ -132,14 +132,11 @@ class ConfirmDoer(doing.DoDoer):
                         serder = coring.Serder(raw=msg)
                         del msg[:serder.size]
 
-                        exn, atc = grouping.multisigInteractExn(hab, aids, [anchor])
+                        exn, atc = grouping.multisigInteractExn(hab, aids, ixn=msg)
                         others = list(oset(hab.smids + (hab.rmids or [])))
-                        # others = list(hab.smids)
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
-                            self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
-                                              attachment=bytearray(msg))
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 

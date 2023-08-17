@@ -240,7 +240,7 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         )
 
         # Create the `exn` message for presentation request
-        vicExcSrdr = exchanging.exchange(route="/presentation/request", payload=pl, sender=vicHab.pre)
+        vicExcSrdr, _ = exchanging.exchange(route="/presentation/request", payload=pl, sender=vicHab.pre)
         excMsg = bytearray(vicExcSrdr.raw)
         excMsg.extend(vicHab.endorse(vicExcSrdr, last=False))
 

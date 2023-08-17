@@ -269,8 +269,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
 
         # embed the credential in an exn and transpose the signature
         scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said, root=coring.Pather(path=["a"]))
-        exn = exchanging.exchange(route="/credential/issue", payload=scre.crd, date="2022-01-04T11:58:55.154502+00:00",
-                                  sender=hab.pre)
+        exn, _ = exchanging.exchange(route="/credential/issue", payload=scre.crd,
+                                     date="2022-01-04T11:58:55.154502+00:00", sender=hab.pre)
         msg = hab.endorse(serder=exn)
         msg.extend(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars))
         assert msg == (b'{"v":"KERI10JSON000281_","t":"exn","d":"EE9ZRRMqb8NCjXtm_gYsn0rc'
@@ -351,8 +351,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
         assert len(sadsigers) == 3
 
         # create a new exn message with the credential as the payload
-        exn = exchanging.exchange(route="/credential/issue", payload=scre.crd, date="2022-01-04T11:58:55.154502+00:00",
-                                  sender=hab.pre)
+        exn, _ = exchanging.exchange(route="/credential/issue", payload=scre.crd,
+                                     date="2022-01-04T11:58:55.154502+00:00", sender=hab.pre)
 
         # sign the exn message
         msg = hab.endorse(serder=exn)
