@@ -232,7 +232,7 @@ def credentialIssueExn(hab, issuer, schema, said):
     )
 
     exn, _ = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims

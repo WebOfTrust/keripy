@@ -387,7 +387,7 @@ def multisigRegistryInceptExn(hab, recipient, vcp, ixn, rot):
 
     exn, end = exchanging.exchange(route="/multisig/vcp", payload={}, sender=hab.pre, recipient=recipient,
                                    embeds=embeds)
-    evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
+    evt = hab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -423,7 +423,7 @@ def multisigIssueExn(hab, recipient, acdc, iss, ixn=None, rot=None):
 
     exn, end = exchanging.exchange(route="/multisig/iss", payload={}, sender=hab.pre, recipient=recipient,
                                    embeds=embeds)
-    evt = hab.mhab.endorse(serder=exn, last=True, pipelined=False)
+    evt = hab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 

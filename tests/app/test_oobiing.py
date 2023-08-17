@@ -88,9 +88,10 @@ def test_oobi_share(mockHelpingNowUTC):
                            'r': '/oobis',
                            't': 'exn',
                            'v': 'KERI10JSON00012e_'}
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACsgmsuVJoY'
-                       b'5a7vicZQ7pT_MZqCe-0psgReRxyoBfFaAPxZ7Vss2eteFuvwDWBeyKc1B-ycp-2Q'
-                       b'ZzIZJ94_9hIP')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACsgmsu'
+                       b'VJoY5a7vicZQ7pT_MZqCe-0psgReRxyoBfFaAPxZ7Vss2eteFuvwDWBeyKc1B-yc'
+                       b'p-2QZzIZJ94_9hIP')
 
 
 def test_oobi_share_endpoint():

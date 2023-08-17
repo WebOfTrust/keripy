@@ -1799,8 +1799,8 @@ class PresentationEnd(doing.DoDoer):
         if issuer is not None:
             pl['i'] = issuer
 
-        exn = exchanging.exchange(route="/presentation/request", payload=pl, sender=hab.pre)
-        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/presentation/request", payload=pl, sender=hab.pre)
+        ims = hab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
         self.postman.send(src=hab.pre, dest=recp, topic="credential", serder=exn, attachment=ims)
 
@@ -2011,8 +2011,8 @@ class ChallengeEnd(doing.DoDoer):
         words = body["words"]
         recpt = body["recipient"]
         payload = dict(i=hab.pre, words=words)
-        exn = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
-        ims = hab.endorse(serder=exn, last=True, pipelined=False)
+        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
+        ims = hab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
