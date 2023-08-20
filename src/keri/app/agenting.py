@@ -153,11 +153,11 @@ class Receiptor(doing.DoDoer):
             return
 
         wit = random.choice(hab.kever.wits)
-        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
         if not urls:
             raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-        base = urls[kering.Schemes.http]
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
         client = self.clienter.request("GET", url)
@@ -731,10 +731,10 @@ class HTTPMessenger(doing.DoDoer):
         doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
         up = urlparse(url)
-        if up.scheme != kering.Schemes.http:
+        if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
-        self.client = http.clienting.Client(hostname=up.hostname, port=up.port)
+        self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
@@ -825,8 +825,8 @@ def messengerFrom(hab, pre, urls):
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    if kering.Schemes.http in urls:
-        url = urls[kering.Schemes.http]
+    if kering.Schemes.http in urls or kering.Schemes.https in urls:
+        url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         witer = HTTPMessenger(hab=hab, wit=pre, url=url)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
@@ -849,12 +849,13 @@ def httpClient(hab, wit):
         ClientDoer: Doer for client
 
     """
-    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http)
+    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
     if not urls:
         raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-    up = urlparse(urls[kering.Schemes.http])
-    client = http.clienting.Client(hostname=up.hostname, port=up.port)
+    url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+    up = urlparse(url)
+    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
