@@ -289,7 +289,7 @@ def exchange(route,
     e = dict()
     end = bytearray()
     for label, msg in embeds.items():
-        serder = coring.Serder(raw=msg)
+        serder = coring.Sadder(raw=msg)
         e[label] = serder.ked
         atc = bytes(msg[serder.size:])
         if not atc:
@@ -340,8 +340,26 @@ def cloneMessage(hby, said):
     exn = hby.db.exns.get(keys=(said,))
     verify(hby=hby, serder=exn)
 
-    pathed = [p for p in hby.db.epath.get(keys=(exn.said,))]
+    pathed = dict()
+    e = coring.Pather(path=["e"])
+    for p in hby.db.epath.get(keys=(exn.said,)):
+        pb = bytearray(p.encode("utf-8"))
+        pather = coring.Pather(qb64b=pb, strip=True)
+        if pather.startswith(e):
+            np = pather.strip(e)
+            nesting(np.path, pathed, pb)
+
     return exn, pathed
+
+
+def nesting(paths, acc, val):
+    if len(paths) == 0:
+        return val
+    else:
+        first_value = paths[0]
+        nacc = dict()
+        acc[first_value] = nesting(paths[1:], nacc, val)
+        return acc
 
 
 def verify(hby, serder):

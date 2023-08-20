@@ -3,11 +3,44 @@
 tests.peer.test_exchanging module
 
 """
-
 from keri.app import habbing, forwarding, storing, signing
 from keri.core import coring
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
+
+
+def test_nesting():
+    paths = ['a']
+    val = "-JAbccDefg"
+    pathed = dict()
+
+    np = exchanging.nesting(paths, pathed, val)
+    assert np == pathed
+    assert pathed == {'a': '-JAbccDefg'}
+
+    paths = ['a', 'b']
+    val = "-JAbccDefg"
+    pathed = dict()
+
+    np = exchanging.nesting(paths, pathed, val)
+    assert np == pathed
+    assert pathed == {'a': {'b': '-JAbccDefg'}}
+
+    paths = ['a', 'b', 'c', 'd', 'e']
+    val = "-JAbccDefg"
+    pathed = dict()
+
+    np = exchanging.nesting(paths, pathed, val)
+    assert np == pathed
+    assert pathed == {'a': {'b': {'c': {'d': {'e': '-JAbccDefg'}}}}}
+
+    paths = []
+    val = "-JAbccDefg"
+    pathed = dict()
+
+    np = exchanging.nesting(paths, pathed, val)
+    assert np == val
+    assert pathed == {}
 
 
 def test_exchanger():
@@ -146,16 +179,12 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         # Paths retrieved should be resolvable against event ked, and usable for verification
         assert len(atcs) == 1
-        atc = atcs[0]
-        assert atc == ('5AACAA-e-ixn-AABAACaoxfQp5L_Gd0nKqJXMbLTXzkrJJDd8RFxWdTSes'
-                       'AMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
+        assert 'ixn' in atcs
+        atc = atcs['ixn']
+        assert atc == (b'-AABAACaoxfQp5L_Gd0nKqJXMbLTXzkrJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L'
+                       b'7SwIrq8yBinj990PLJHl7sXmq04I')
 
-        sig = bytearray(atc.encode("utf-8"))
-        pather = coring.Pather(qb64b=sig, strip=True)
-        ked = pather.resolve(sad=clone.ked)
-        assert ked == ixn.ked
-
-        # Remove the count off the front of the index signature attachment
+        sig = bytearray(atc)
         counter = coring.Counter(qb64b=sig, strip=True)
         assert counter.count == 1
         siger = coring.Siger(qb64b=sig)
@@ -187,7 +216,3 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         serder = hab.db.exns.get(keys=(exn.said,))
         assert serder.ked == exn.ked
-
-
-
-

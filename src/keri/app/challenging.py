@@ -54,7 +54,6 @@ class ChallengeHandler(doing.Doer):
 
             while self.msgs:
                 msg = self.msgs.popleft()
-                print("GOT MESSAGE", msg)
                 payload = msg["payload"]
                 signer = msg["pre"]
                 words = payload["words"]

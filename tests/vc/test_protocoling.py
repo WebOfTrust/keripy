@@ -19,7 +19,6 @@ from keri.vdr import verifying, credentialing
 def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     """ Test Issuing ACDC """
 
-
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
@@ -110,8 +109,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                        b'7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7LkGGG8sBNm1Q8B')
 
         # Create the `exn` message for issue credential
-        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
-                                                         said=creder.said)
+        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, message="", acdc=msg, iss=iss.raw)
         excMsg = bytearray(sidExcSrdr.raw)
         excMsg.extend(atc)
         # Parse the exn issue credential message on Red's side
