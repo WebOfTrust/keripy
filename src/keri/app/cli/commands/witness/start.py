@@ -28,7 +28,7 @@ parser.add_argument('-H', '--http',
 parser.add_argument('-T', '--tcp',
                     action='store',
                     default=5632,
-                    help="Local port number the HTTP server listens on. Default is 5632.")
+                    help="Local port number the TCP server listens on. Default is 5632.")
 parser.add_argument('-n', '--name',
                     action='store',
                     default="witness",
