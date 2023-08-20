@@ -1071,22 +1071,15 @@ class Parser:
 
             elif ilk in (Ilks.exn,):
                 args = dict(serder=serder)
-                if ssgs:
-                    pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                    args["source"] = pre
-                    args["sigers"] = sigers
-
-                elif cigars:
-                    args["cigars"] = cigars
-
-                else:
-                    raise kering.ValidationError("Missing attached exchanger signature(s) "
-                                                 "to peer exchange msg = {}.".format(serder.pretty()))
                 if pathed:
                     args["pathed"] = pathed
 
                 try:
-                    exc.processEvent(**args)
+                    if cigars:
+                        exc.processEvent(cigars=cigars, **args)
+
+                    if tsgs:
+                        exc.processEvent(tsgs=tsgs, **args)
 
                 except AttributeError as e:
                     raise kering.ValidationError("No Exchange to process so dropped msg"

@@ -41,7 +41,7 @@ def credential(schema,
         schema (SAID): of schema for this credential
         issuer (str): qb64 identifier prefix of the issuer
         status (str): qb64 said of the credential registry
-        recipient (str): qb64 identifier prefix of the recipient
+        recipient (Option[str|None]): qb64 identifier prefix of the recipient
         data (dict): of the values being assigned to the subject of this credential
         private (bool): apply nonce used for privacy preserving ACDC
         salt (string): salt for nonce

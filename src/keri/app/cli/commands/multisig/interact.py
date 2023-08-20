@@ -107,16 +107,16 @@ class GroupMultisigInteract(doing.DoDoer):
 
         ixn = ghab.interact(data=self.data)
         serder = coring.Serder(raw=ixn)
-        del ixn[:serder.size]
+        atc = bytes(ixn[serder.size:])
 
-        exn, atc = grouping.multisigInteractExn(ghab, aids, self.data)
+        exn, ims = grouping.multisigInteractExn(ghab, aids, ixn=ixn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
-                              attachment=bytearray(ixn))
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=atc)
+                              attachment=bytearray(atc))
+            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=serder.sn)

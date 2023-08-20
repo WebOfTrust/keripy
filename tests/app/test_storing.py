@@ -80,8 +80,8 @@ def test_mailboxing():
             d = dict(a="b", b=idx)
             dest = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
 
-            exn = exchanging.exchange("/credential/issue", payload=d,
-                                      date="2021-07-15T13:01:37.624492+00:00")
+            exn, _ = exchanging.exchange("/credential/issue", payload=d,
+                                      date="2021-07-15T13:01:37.624492+00:00", sender=dest.qb64)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []

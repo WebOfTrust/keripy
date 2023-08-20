@@ -2917,15 +2917,6 @@ class Kevery:
         ilk = ked["t"]
         said = serder.said
 
-        # if not self.lax:  # otherwise in promiscuous mode
-        #     if self.local:
-        #         if pre not in self.prefixes:  # nonlocal event when in local mode
-        #             raise ValueError("Nonlocal event pre={} not in prefixes={}."
-        #                              "when local mode.".format(pre, self.prefixes))
-        #     else:
-        #         if pre in self.prefixes:  # local event when in nonlocal mode
-        #             raise ValueError("Local event pre={} in prefixes when "
-        #                              "nonlocal mode.".format(pre, self.prefixes))
 
         if pre not in self.kevers:  # first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
@@ -3652,7 +3643,6 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified reply.")
 
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
-
 
     def processReplyKeyStateNotice(self, *, serder, saider, route,
                                    cigars=None, tsgs=None, **kwargs):

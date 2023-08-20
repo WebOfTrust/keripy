@@ -126,10 +126,11 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EMj7eSEtgYjkjLPwBFelUX6I2RMzSudhqdDwzgofHhGn'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACf_qKy8TCn'
-                       b'K_2xoBzBZeGRd_bzUj8WAsIXKRAy7bmf881bLLi0KyjLDmdZ4YvEd2i-aG7qn6nI'
-                       b'9QXT8vApFtsP')
+        assert exn.saidb == b'EDm73OiBCx71BPBgwYgt0EFZ6575xaTxJv1KW_bIb-RM'
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACPcEv9'
+                       b'uyCA53Zhwl9BAgyapHMISku1KIRMbJtbi6bfXkqRgsD7Wt4NToLC8GIHlqOUsUhV'
+                       b'Gd4hW8BrMyKG9oYP')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         assert data["ked"] == serder.ked
@@ -179,8 +180,6 @@ def test_delegation_request_handler(mockHelpingNowUTC):
 
         notifier = notifying.Notifier(hby=hby)
         exc = exchanging.Exchanger(db=hby.db, handlers=[])
-        oobiery = keri.app.oobiing.Oobiery(hby=hby)
-
         delegating.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 
         ims = bytearray(exn.raw)

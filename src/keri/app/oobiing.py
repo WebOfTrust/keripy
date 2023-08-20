@@ -343,9 +343,9 @@ def oobiRequestExn(hab, dest, oobi):
     )
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
-                              payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    exn, _ = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
+                                 payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims

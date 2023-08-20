@@ -9,7 +9,6 @@ from hio.base import doing
 from hio.help import decking
 
 from .. import help
-from ..app import signing
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -88,7 +87,7 @@ class ApplyHandler(doing.Doer):
             yield self.tock
 
 
-class IssueHandler(doing.DoDoer):
+class IssueHandler(doing.Doer):
     """ Sample class that handles a credential Issue `exn` message.
 
     By default, this handler verifies the credential with the provided verifier.
@@ -131,6 +130,7 @@ class IssueHandler(doing.DoDoer):
     """
 
     resource = "/credential/issue"
+    persist = True
 
     def __init__(self, hby, rgy, notifier, **kwa):
         """ Initialize instance
@@ -149,76 +149,33 @@ class IssueHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
-        doers = [doing.doify(self.msgDo)]
+        super(IssueHandler, self).__init__(**kwa)
 
-        super(IssueHandler, self).__init__(doers=doers, **kwa)
+    def recur(self, tyme):
+        if self.msgs:
+            msg = self.msgs.popleft()
+            serder = msg["serder"]
+            attrs = serder.ked["a"]
 
-    def msgDo(self, tymth, tock=0.0):
-        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+            data = dict(
+                r=self.resource,
+                d=serder.said,
+                m=attrs["m"]
+            )
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+            self.notifier.add(attrs=data)
 
-        Messages:
-            payload (dict): representing the body of a /credential/issue message
-            pre (qb64): identifier prefix of sender
-            sigers (list): of Sigers representing the sigs on the /credential/issue message
-            verfers (list): of Verfers of the keys used to sign the message
-
-        """
-        # enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                if "i" not in payload or "s" not in payload or "a" not in payload:
-                    print(f"invalid credential issuance message, i, s and a are required fields.  evt=: "
-                          f"{payload}")
-                    continue
-
-                iaid = payload["i"]
-                ssaid = payload["s"]
-                csaid = payload["a"]
-
-                data = dict(
-                    r='/credential/issue',
-                    issuer=dict(
-                        i=iaid
-                    ),
-                    schema=dict(
-                        d=ssaid
-                    ),
-                    credential=dict(
-                        d=csaid
-                    )
-                )
-
-                creder = self.rgy.reger.creds.get(csaid)
-                if creder is not None:
-                    data["credential"]["sad"] = creder.crd
-
-                # TODO:  Get schema resolver and Organizer to load schema and contact info if any.
-                self.notifier.add(attrs=data)
-                yield self.tock
-
-            yield self.tock
+        return False
 
 
-def credentialIssueExn(hab, issuer, schema, said):
+def credentialIssueExn(hab, message, acdc, iss):
     """
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
-        issuer (str): qb64 AID of the issuer of the credential
-        schema (str): qb64 SAID of JSON schema of credential being issued
-        said (str): qb64 SAID of credentiual being issued
+        message(str): Human readable message regarding the credential issuance
+        acdc (bytes): CESR stream of serialized ACDC with attachments
+        iss (bytes): serialized TEL issuance event
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -226,14 +183,18 @@ def credentialIssueExn(hab, issuer, schema, said):
 
     """
     data = dict(
-        i=issuer,
-        s=schema,
-        a=said,
+        m=message,
     )
 
-    exn = exchanging.exchange(route="/credential/issue", payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    embeds = dict(
+        acdc=acdc,
+        iss=iss
+    )
+
+    exn, end = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre, embeds=embeds)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
+    ims.extend(end)
 
     return exn, ims
 
@@ -439,8 +400,8 @@ def presentationExchangeExn(hab, reger, said):
         n=said,
     )
 
-    exn = exchanging.exchange(route="/presentation", payload=data)
-    ims = hab.endorse(serder=exn, last=True, pipelined=False)
+    exn, _ = exchanging.exchange(route="/presentation", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 
     return exn, ims

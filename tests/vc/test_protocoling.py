@@ -19,7 +19,6 @@ from keri.vdr import verifying, credentialing
 def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     """ Test Issuing ACDC """
 
-
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     wanSalt = coring.Salter(raw=b'wann-the-witness').qb64
@@ -110,8 +109,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                        b'7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7LkGGG8sBNm1Q8B')
 
         # Create the `exn` message for issue credential
-        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, issuer=sidHab.pre, schema=creder.schema,
-                                                         said=creder.said)
+        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, message="", acdc=msg, iss=iss.raw)
         excMsg = bytearray(sidExcSrdr.raw)
         excMsg.extend(atc)
         # Parse the exn issue credential message on Red's side
@@ -240,9 +238,9 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         )
 
         # Create the `exn` message for presentation request
-        vicExcSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
+        vicExcSrdr, _ = exchanging.exchange(route="/presentation/request", payload=pl, sender=vicHab.pre)
         excMsg = bytearray(vicExcSrdr.raw)
-        excMsg.extend(vicHab.endorse(vicExcSrdr, last=True))
+        excMsg.extend(vicHab.endorse(vicExcSrdr, last=False))
 
         # Parse the exn presentation request message on Han's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=hanKvy, exc=hanExc)
@@ -261,13 +259,10 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
         assert exn.ked['r'] == "/presentation"
-        assert atc == bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADLme3QTaP_'
-                                b'SXsHiPGUisJt6uEgy5MAJUk2ZcYGIcpUPGIy8zBU21APfrfQUoz19APsln589JLj'
-                                b'FPvi4pJJyk8J')
-
-        #bytearray(b'-HABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADqyvceNUq0'
-                                #b'utmXQ6fFtE6juYK9B9lszFHgtM09FX5VCc5aESYM5lqgwHqOgaBjU11qfSMkIQ9K'
-                                #b'OrBRPNu_PMIP')
+        assert atc == (b'-FABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT60AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADIp5mc'
+                       b'-vUgOrwtbUWXl_9CQYIRzSfp43IfVZURja-NXe0xyg5wCYI2P40WWWk8gQbw6YWY'
+                       b'a58t6zuAeJNW_p4L')
 
         msg = bytearray(exn.raw)
         msg.extend(atc)

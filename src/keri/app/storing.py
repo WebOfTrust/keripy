@@ -197,7 +197,7 @@ class Respondant(doing.DoDoer):
                     forwardHab = senderHab
 
                 # sign the exn to get the signature
-                eattach = senderHab.endorse(exn, last=True, pipelined=False)
+                eattach = senderHab.endorse(exn, last=False, pipelined=False)
                 del eattach[:exn.size]
                 self.postman.send(recipient, topic=topic, serder=exn, hab=forwardHab, attachment=eattach)
 

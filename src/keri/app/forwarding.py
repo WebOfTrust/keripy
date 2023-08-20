@@ -168,14 +168,14 @@ class Poster(doing.DoDoer):
         msg = bytearray()
         msg.extend(introduce(hab, mbx))
         # create the forward message with payload embedded at `a` field
-        fwd = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                                  payload=serder.ked)
-        ims = hab.endorse(serder=fwd, last=True, pipelined=False)
+        fwd, _ = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                                     payload={}, embeds=dict(evt=serder.raw), sender=hab.pre)
+        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
 
         # Transpose the signatures to point to the new location
         if atc is not None:
             pathed = bytearray()
-            pather = coring.Pather(path=["a"])
+            pather = coring.Pather(path=["e", "evt"])
             pathed.extend(pather.qb64b)
             pathed.extend(atc)
             ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
@@ -189,7 +189,6 @@ class Poster(doing.DoDoer):
 
         while not witer.idle:
             _ = (yield self.tock)
-
 
 
 class ForwardHandler(doing.Doer):
@@ -267,7 +266,7 @@ class ForwardHandler(doing.Doer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                payload = msg["payload"]
+                embeds = msg["embeds"]
                 modifiers = msg["modifiers"]
                 attachments = msg["attachments"]
 
@@ -277,7 +276,7 @@ class ForwardHandler(doing.Doer):
 
                 pevt = bytearray()
                 for pather, atc in attachments:
-                    ked = pather.resolve(payload)
+                    ked = pather.resolve(embeds)
                     sadder = coring.Sadder(ked=ked, kind=eventing.Serials.json)
                     pevt.extend(sadder.raw)
                     pevt.extend(atc)

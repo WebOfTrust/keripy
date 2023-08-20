@@ -648,85 +648,72 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 def test_multisig_incept(mockHelpingNowUTC):
     with habbing.openHab(name="test", temp=True) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids, ked=hab.kever.serder.ked)
+        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids,
+                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
 
         assert exn.ked["r"] == '/multisig/icp'
-        assert exn.saidb == b'EOgdGcAn757slSJ1NS5LhGe-zebnL4zi4Uxo-UaMuH9T'
-        assert atc == (b'-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADWUWkkQDAM'
-                       b'AGvVIlQ6qPJceInrSzqnkCUuHfimfVG6g22OAiyudhD5veBtzjz8UjFpoSSTeZCT'
-                       b'J1n0ZmELHFAL')
+        assert exn.saidb == b'EBg6T3OvkVFGCL088Vp3uqml-0cLYdQMFddmM8mIzp4P'
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABq9vDk'
+                       b'5QhnKzGfdCsbBXou987_wGC5z_VwIPl0fM2W6AIxNZNzhIeFckeHJHIZAXtMPqly'
+                       b'xq8z4Mu5Y81x9UYO-LAa5AACAA-e-icp-AABAACihaKoLnoXxRoxGbFfOy67YSh6'
+                       b'UxtgjT2oxupnLDz2FlhevGJKTMObbdex9f0Hqob6uTavSJvsXf5RzitskkkC')
         data = exn.ked["a"]
         assert data["smids"] == aids
-        assert data["ked"] == hab.kever.serder.ked
+        assert "icp" in exn.ked['e']
 
 
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, ked=dict())
+        rot = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
+               b'LM8BnqxV","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"3","p":"EH'
+               b'V57zdXq3lB3PZ4mmlOWt4SOOubIKDpcG5sSZh5jayZ","kt":["1/3","1/3","1/3"],"k":["D'
+               b'OKBAV-_3Z63w7yGmzu6pZCdUlpnEytbnChUhiTZGLa_","DOKFe0a-q2yyi_Yyh9wxLsSnG9e3nx'
+               b'vAXlgMaIFSo0YE","DKq5vZxsl7lCtFkuxSdfRRm-Edzdk_mRnh3xlVESXpck"],"nt":["1/3",'
+               b'"1/3","1/3"],"n":["EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2","EFl4us5uR0'
+               b'hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW-_1oKw7rvqlDd'
+               b'gha9v"],"bt":"0","br":[],"ba":[],"a":[]}')
+        exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot)
 
         assert exn.ked["r"] == '/multisig/rot'
-        assert exn.saidb == b'EDA_jhxl8dxOjym2IQ0qW6LhZlG1vL8OrNtYb5En3o44'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAD6tICmQtM0'
-                       b'oIiSLU5bDr_5xjLCc4nKJxiWcDkvUJWQn17K38TirWObrkYM45q68YP00z-KYrYI'
-                       b'uY51hpx6wEYD')
+        assert exn.saidb == b'EDtvD4TH25Q_PEBc4sBMY3b7_BiOSFefAgOMzckaCLXd'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAD6lkP5'
+                       b'1s_JUPhgxSWqfvk0JWpMO4lVVQBJRIqNrq4DHEBuYcW7vRZtXsC8RE5kAlMC7n4v'
+                       b'fea1cbnugEBngsgJ')
 
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
-        assert data["ked"] == dict()
+        assert "rot" in exn.ked["e"]
 
 
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
+        ixn = ghab1.mhab.interact()
         exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
-                                                data=[{"i": 1, "x": 0, "d": 2}])
+                                                ixn=ixn)
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EN9CoGmdCd8fNaYK3FrYUJhmJHL7aZ3OhFZzEutJ5xZZ'
-        assert atc == (b'-HABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABKPpOh4dSt'
-                       b'geh8iLU95Vk9dtOyvCujQu6zsy0a5cvHctgew_acCv4ZAT_oYneVBDkPnEdcdFJW'
-                       b'wlqtQ784zK4L')
+        assert exn.saidb == b'EKFI14nlfSDOIGdbk6KtvFiwtidvEohMwrpP5e4WUqRy'
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAACG53Jc'
+                       b'MncW3KDzsqZEC1t_9zbqwxbAV16cjpVslxcGit03dXoDt5OeFL7V71ZUKc8kAtdS'
+                       b'raHzI4w0FXKcMccK-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU-8WQ8A70nc'
+                       b'tYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnztA82pAo1Skhf1vQwD')
         data = exn.ked["a"]
         assert data["aids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
-        assert data["data"] == [{"i": 1, "x": 0, "d": 2}]
+        assert "ixn" in exn.ked["e"]
 
 
 def test_multisig_incept_handler(mockHelpingNowUTC):
-    with habbing.openHab(name="test0", temp=True) as (hby, hab):
-
-        aids = [hab.pre, "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        serder = eventing.incept(keys=["DAEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"],
-                                 ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
-
-        notifier = notifying.Notifier(hby=hby)
-        handler = grouping.MultisigInceptHandler(hby=hby, notifier=notifier)
-
-        # Pass message missing keys:
-        handler.msgs.append(dict(name="value"))
-        handler.msgs.append(dict(pre=hab.kever.prefixer))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(aids=aids)))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(smids=aids, ked=serder.ked)))
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        assert len(notifier.signaler.signals) == 1
-        doist.exit()
 
     with habbing.openHab(name="test0", temp=True) as (hby, hab):
 
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids, ked=hab.kever.serder.ked)
+        exn, atc = grouping.multisigInceptExn(hab=hab, smids=aids, rmids=aids,
+                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
 
         notifier = notifying.Notifier(hby=hby)
         exc = exchanging.Exchanger(db=hby.db, handlers=[])
@@ -754,41 +741,13 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):
-    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
-
-        notifier = notifying.Notifier(hby=hby)
-        handler = grouping.MultisigRotateHandler(hby=hby, notifier=notifier)
-
-        # Pass message missing keys:
-        handler.msgs.append(dict(name="value"))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.smids)))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.smids, gid=ghab.pre)))
-        handler.msgs.append(dict(pre=ghab.mhab.kever.prefixer, payload=dict(smids=ghab.smids,
-                                                                            rmids=ghab.rmids, ked=dict())))
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
-
-        assert len(notifier.signaler.signals) == 1
 
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
-        icp = ghab1.makeOwnInception()
-        serder = coring.Serder(raw=icp)
+        msg = ghab1.mhab.rotate()
+
         exn, atc = grouping.multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
-                                              ked=serder.ked)
+                                              rot=msg)
         notifier = notifying.Notifier(hby=hby1)
         exc = exchanging.Exchanger(db=hby1.db, handlers=[])
         grouping.loadHandlers(hby=hby1, exc=exc, notifier=notifier)
@@ -815,38 +774,11 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
 
 def test_multisig_interact_handler(mockHelpingNowUTC):
-    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
-
-        notifier = notifying.Notifier(hby=hby)
-        handler = grouping.MultisigInteractHandler(hby=hby, notifier=notifier)
-
-        # Pass message missing keys:
-        handler.msgs.append(dict(name="value"))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.smids)))
-        handler.msgs.append(dict(pre=ghab.kever.prefixer, payload=dict(aids=ghab.smids, gid=ghab.pre)))
-        handler.msgs.append(dict(pre=ghab.mhab.kever.prefixer, payload=dict(aids=ghab.smids, gid=ghab.pre)))
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
-
-        assert len(notifier.signaler.signals) == 1
-
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
 
+        ixn = ghab1.mhab.interact()
         exn, atc = grouping.multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
-                                                data=[{"i": 1, "x": 0, "d": 2}])
+                                                ixn=ixn)
 
         notifier = notifying.Notifier(hby=hby1)
         exc = exchanging.Exchanger(db=hby1.db, handlers=[])
