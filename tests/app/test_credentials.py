@@ -66,7 +66,7 @@ def createMbxEndRole(hab, cid, eid, url):
     hab.db.locs.pin(keys=lockeys, val=httplocer)  # overwrite
 
 
-class TestDoer(doing.DoDoer):
+class RunTestDoer(doing.DoDoer):
 
     def __init__(self, wanHby, hby1, hab1, hby2, hab2, hby3, hab3, recp):
         self.hab1 = hab1
@@ -131,7 +131,7 @@ class TestDoer(doing.DoDoer):
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
 
-        super(TestDoer, self).__init__(doers=doers)
+        super(RunTestDoer, self).__init__(doers=doers)
 
     def escrowDo(self, tymth, tock=0.0):
         self.wind(tymth)
@@ -235,7 +235,7 @@ def test_multisig_issue_agent():
             habbing.openHby(name="wan", salt=salt, temp=True) as wanHby, \
             habbing.openHab(name="recp", transferable=True) as (_, recp):
 
-        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, hby3, hab3, recp)
+        testDoer = RunTestDoer(wanHby, hby1, hab1, hby2, hab2, hby3, hab3, recp)
 
         # Neuter this test for now, it will be moved to KERIA
         assert testDoer.done is None
