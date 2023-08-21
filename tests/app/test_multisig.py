@@ -10,15 +10,15 @@ import falcon
 from falcon import testing
 from hio.base import doing
 from keri import kering
-from keri.app import (habbing, storing, kiwiing, grouping, indirecting,
-                      directing, agenting, booting, notifying)
+from keri.app import (habbing, kiwiing, grouping, indirecting,
+                      agenting, booting, notifying)
 from keri.core import coring, eventing, parsing
 from keri.vdr import credentialing
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestDoer(doing.DoDoer):
+class RunTestDoer(doing.DoDoer):
 
     def __init__(self, wanHby, hby1, hab1, hby2, hab2, seeder):
         self.hby1 = hby1
@@ -46,7 +46,7 @@ class TestDoer(doing.DoDoer):
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
 
-        super(TestDoer, self).__init__(doers=doers)
+        super(RunTestDoer, self).__init__(doers=doers)
 
     def testDo(self, tymth, tock=0.0):
         self.wind(tymth)
@@ -158,7 +158,7 @@ def test_multisig_identifier_ends(seeder):
     with habbing.openHab(name="multisig1", temp=True, wits=[wanPre]) as (hby1, hab1), \
             habbing.openHab(name="multisig2", temp=True, wits=[wanPre]) as (hby2, hab2), \
             habbing.openHby(name="wan", salt=salt, temp=True) as wanHby:
-        testDoer = TestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
+        testDoer = RunTestDoer(wanHby, hby1, hab1, hby2, hab2, seeder)
 
         # Neuter this test for now, it will be moved to KERIA
         assert testDoer.done is None

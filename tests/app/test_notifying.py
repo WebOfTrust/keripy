@@ -120,13 +120,13 @@ def test_noter():
     note = notifying.notice(payload, dt=dt)
     assert noter.add(note, cig) is True
 
-    notes = noter.getNotes(start="")
+    notes = noter.getNotes(start=0)
     assert len(notes) == 1
     note1, cig1 = notes[0]
     assert note1.rid == note.rid
     assert cig1.qb64 == cig.qb64
 
-    notes = noter.getNotes(start=dt)
+    notes = noter.getNotes(start=0)
     assert len(notes) == 1
     note2, cig2 = notes[0]
     assert note2.rid == note.rid
@@ -134,7 +134,7 @@ def test_noter():
 
     assert noter.rem("ABC") is False
     assert noter.rem(note.rid) is True
-    notes = noter.getNotes(start="")
+    notes = noter.getNotes(start=0)
     assert len(notes) == 0
 
     dt = datetime.datetime.now()
@@ -146,7 +146,7 @@ def test_noter():
     assert noter.add(note, cig) is True
 
     res = []
-    for note in noter.getNoteIter(start=dt):
+    for note in noter.getNotes(start=0):
         res.append(note)
 
     assert len(res) == 3
@@ -160,10 +160,13 @@ def test_noter():
         assert noter.add(note, cig) is True
 
     res = []
-    for note in noter.getNoteIter(limit=5):
+    for note in noter.getNotes(end=4):
         res.append(note)
 
     assert len(res) == 5
+
+    cnt = noter.getNoteCnt()
+    assert cnt == 13
 
 
 def test_notifier():
@@ -204,12 +207,6 @@ def test_notifier():
 
         notes = notifier.getNotes()
         assert len(notes) == 3
-
-        res = []
-        for note in notifier.getNoteIter(start=dt):
-            res.append(note)
-
-        assert len(res) == 3
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")

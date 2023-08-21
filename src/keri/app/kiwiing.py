@@ -3102,8 +3102,6 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     signaler = signaling.Signaler()
     notifier = notifying.Notifier(hby=hby, signaler=signaler)
     verifier = verifying.Verifier(hby=hby, reger=rgy.reger)
-    wallet = walleting.Wallet(reger=verifier.reger, name=hby.name)
-
     handlers = []
 
     mbx = storing.Mailboxer(name=hby.name)
