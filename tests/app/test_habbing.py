@@ -26,6 +26,7 @@ def test_habery():
     Test Habery class
     """
     # test default
+    default_salt = coring.Salter(raw=b'0123456789abcdef').qb64
     hby = habbing.Habery(temp=True)
     assert hby.name == "test"
     assert hby.base == ""
@@ -54,7 +55,7 @@ def test_habery():
 
     assert hby.mgr.seed == ""
     assert hby.mgr.aeid == ""
-    assert hby.mgr.salt == habbing.SALT
+    assert hby.mgr.salt == default_salt
     assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
@@ -87,7 +88,7 @@ def test_habery():
 
     assert hby.mgr.seed == seed4bran
     assert hby.mgr.aeid == aeid4seed
-    assert hby.mgr.salt == habbing.SALT
+    assert hby.mgr.salt == default_salt
     assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
@@ -154,7 +155,7 @@ def test_habery():
     assert hby.mgr is not None
     assert hby.mgr.seed == seed4bran
     assert hby.mgr.aeid == aeid4seed
-    assert hby.mgr.salt == habbing.SALT
+    assert hby.mgr.salt == default_salt
     assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
@@ -215,7 +216,7 @@ def test_habery():
     assert hby.mgr is not None
     assert hby.mgr.seed == seed4bran
     assert hby.mgr.aeid == aeid4seed
-    assert hby.mgr.salt == habbing.SALT
+    assert hby.mgr.salt == default_salt
     assert hby.mgr.pidx == 1
     assert hby.mgr.algo == keeping.Algos.salty
     assert hby.mgr.tier == coring.Tiers.low
@@ -263,7 +264,7 @@ def test_habery():
 
         assert hby.mgr.seed == ""
         assert hby.mgr.aeid == ""
-        assert hby.mgr.salt == habbing.SALT
+        assert hby.mgr.salt == default_salt
         assert hby.mgr.pidx == 1
         assert hby.mgr.algo == keeping.Algos.salty
         assert hby.mgr.tier == coring.Tiers.low
@@ -312,7 +313,7 @@ def test_habery():
         # test bran to seed
         assert hby.mgr.seed == seed4bran
         assert hby.mgr.aeid == aeid4seed
-        assert hby.mgr.salt == habbing.SALT
+        assert hby.mgr.salt == default_salt
         assert hby.mgr.pidx == 1
         assert hby.mgr.algo == keeping.Algos.salty
         assert hby.mgr.tier == coring.Tiers.low
@@ -606,7 +607,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
     # salt = salter.qb64
     # assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    salt = habbing.SALT
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     cname = "tam"  # controller name
     cbase = "main"  # controller base shared

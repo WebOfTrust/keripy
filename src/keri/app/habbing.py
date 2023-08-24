@@ -23,11 +23,8 @@ from ..kering import MissingSignatureError, Roles
 
 logger = help.ogler.getLogger()
 
-SALT = coring.Salter(raw=b'0123456789abcdef').qb64  # '0AAwMTIzNDU2Nzg5YWJjZGVm'
-
-
 @contextmanager
-def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
+def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
     """
     Context manager wrapper for Habery instance.
     Context 'with' statements call .close on exit of 'with' block
@@ -72,6 +69,7 @@ def openHby(*, name="test", base="", temp=True, salt=SALT, **kwa):
 
     """
     habery = None
+    salt = salt if not None else coring.Salter(raw=b'0123456789abcdef').qb64
     try:
         habery = Habery(name=name, base=base, temp=temp, salt=salt, **kwa)
         yield habery
@@ -296,7 +294,7 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = SALT
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
         else:
             salt = coring.Salter(qb64=salt).qb64
 
