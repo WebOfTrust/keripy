@@ -17,7 +17,8 @@ def test_standalone_kli_commands(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test") is False
 
     parser = multicommand.create_parser(commands)
-    args = parser.parse_args(["init", "--name", "test", "--nopasscode", "--salt", habbing.SALT])
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    args = parser.parse_args(["init", "--name", "test", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
 
@@ -257,7 +258,8 @@ def test_incept_and_rotate_opts(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
 
     parser = multicommand.create_parser(commands)
-    args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", habbing.SALT])
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64
+    args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
 
