@@ -225,12 +225,6 @@ class ConfirmDoer(doing.DoDoer):
         serder = coring.Serder(ked=ked)
         seqner = coring.Seqner(sn=serder.sn)
 
-        if serder.sner.num <= kever.sner.num:
-            print(f"Discarding stale rotation event for AID {gid} to sequence number {serder.sner.num}")
-            return True  # return True here so event is deleted, we will never process this event
-        elif serder.sner.num != kever.sner.num + 1:
-            print(f"Unable to joid {gid}, current KEL out of date")
-
         if gid not in self.hby.habs:
             print(f"\nRequest to add local AID '{mhab.name}' to multisig AID {gid} in rotation to {serder.sner.num}:")
             self.showEvent(mhab, both, ked)
@@ -253,6 +247,13 @@ class ConfirmDoer(doing.DoDoer):
             self.hby.prefixes.add(gid)
             ghab.inited = True
             self.hby.habs[ghab.pre] = ghab
+
+            if serder.sner.num <= kever.sner.num:
+                print(f"Caught up to existing rotation event for AID {gid} to sequence number {serder.sner.num}")
+                return True  # return True here so event is deleted, we will never process this event
+            elif serder.sner.num != kever.sner.num + 1:
+                print(f"Unable to joid {gid}, current KEL out of date")
+                return False
 
             local = False
 
