@@ -90,6 +90,10 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         assert creder.said == "EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a"
 
         iss = issuer.issue(said=creder.said)
+        assert iss.raw == (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EM2k14GK1AoAd9RuKdfDQIlYQhKyZ056-7A4'
+                           b'Ydr9K4BU","i":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a","s":"0","ri":"E'
+                           b'PzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","dt":"2021-06-27T21:26:21.23325'
+                           b'7+00:00"}')
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)

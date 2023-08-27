@@ -303,6 +303,10 @@ def exchange(route,
                                   count=(len(pathed) // 4)).qb64b)
         end.extend(pathed)
 
+    if e:
+        e["d"] = ""
+        _, e = coring.Saider.saidify(sad=e, label=coring.Saids.d)
+
     attrs = dict(
     )
 

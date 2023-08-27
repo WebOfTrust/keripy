@@ -1382,10 +1382,9 @@ class CredentialEnd(doing.DoDoer):
             rep.text = e.args[0]
             return
 
-        exn, atc = grouping.multisigIssueExn(hab=hab, creder=creder)
+        exn, atc = grouping.multisigIssueExn(ghab=hab, creder=creder)
 
         others = list(oset(hab.smids + (hab.rmids or [])))
-        #others = list(hab.smids)
         others.remove(hab.mhab.pre)
 
         for recpt in others:
@@ -1688,7 +1687,7 @@ class CredentialEnd(doing.DoDoer):
 
             if route == "/iss/complete":
                 if self.credentialer.complete(said=said):
-                    self.notifier.add(dict(
+                    self.notifier.add(attrs=dict(
                         r=f"{tpc}{route}",
                         a=dict(d=said),
                     ))
@@ -1697,7 +1696,7 @@ class CredentialEnd(doing.DoDoer):
 
             elif route == "/rev/complete":
                 if self.registrar.complete(pre=said, sn=1):
-                    self.notifier.add(dict(
+                    self.notifier.add('exn', dict(
                         r=f"{tpc}{route}",
                         a=dict(d=said),
                     ))

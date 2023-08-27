@@ -112,14 +112,14 @@ class RegistryInceptor(doing.DoDoer):
 
         if isinstance(hab, GroupHab):
             send = input(f"\nSend message to other members of this group AID [Y|n]? ")
-            if send in ("Y", "y"):
-
+            if send in ("Y", "y", ''):
+                usage = input(f"Please enter a description of the credential registry: ")
                 smids = hab.db.signingMembers(pre=hab.pre)
                 smids.remove(hab.mhab.pre)
 
                 for recp in smids:  # this goes to other participants only as a signaling mechanism
-                    exn, atc = grouping.multisigRegistryInceptExn(hab=hab.mhab, recipient=recp,
-                                                                  vcp=registry.vcp.raw, ixn=ixn)
+                    exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, recipient=recp,
+                                                                  vcp=registry.vcp.raw, ixn=ixn, usage=usage)
                     self.postman.send(src=hab.mhab.pre,
                                       dest=recp,
                                       topic="multisig",
