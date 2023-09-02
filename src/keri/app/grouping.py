@@ -43,8 +43,8 @@ class Counselor(doing.DoDoer):
 
             ghab (Hab): group Habitat
             prefixer (Prefixer): prefixer of group identifier
-            seqner (Seqner): seqner of inception event of group identifier
-            saider (Saider): saider of inception event of group identifier
+            seqner (Seqner): seqner of event of group identifier
+            saider (Saider): saider of event of group identifier
 
         """
         evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)
@@ -225,8 +225,16 @@ class MultisigNotificationHandler(doing.Doer):
 
     """
     persist = True
+    local = True
 
     def __init__(self, resource, mux, **kwargs):
+        """ Create an exn handler for multisig messages
+
+        Parameters:
+            resource:
+            mux:
+            **kwargs:
+        """
         self.resource = resource
         self.mux = mux
         self.msgs = decking.Deck()
@@ -240,6 +248,7 @@ class MultisigNotificationHandler(doing.Doer):
             serder = msg["serder"]
 
             self.mux.add(serder=serder)
+
         return False
 
 
@@ -355,14 +364,13 @@ def multisigInteractExn(ghab, aids, ixn):
     return exn, atc
 
 
-def multisigRegistryInceptExn(ghab, recipient, usage, vcp, ixn=None, rot=None):
+def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
     """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
 
     Either rot or ixn are required but not both
 
     Parameters:
         ghab (GroupHab): identifier Hab for ensorsing the message to send
-        recipient (str): qb64 AID to send this message t0
         usage (str): human readable reason for creating the credential registry
         vcp (bytes): serialized Credentials registry inception event
         ixn (bytes): CESR stream of serialized and signed interaction event anchoring registry inception event
@@ -383,7 +391,7 @@ def multisigRegistryInceptExn(ghab, recipient, usage, vcp, ixn=None, rot=None):
         embeds['ixn'] = ixn
 
     exn, end = exchanging.exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
-                                   sender=ghab.mhab.pre, recipient=recipient, embeds=embeds)
+                                   sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -494,7 +502,7 @@ class Multiplexor:
         self.hby = hby
         self.rtr = routing.Router()
         self.rvy = routing.Revery(db=self.hby.db, rtr=self.rtr)
-        self.exc = exchanging.Exchanger(db=self.hby.db, handlers=[], local=False)
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
@@ -555,11 +563,8 @@ class Multiplexor:
             case _:
                 raise ValueError(f"invalid route {route} for multiplexed exn={ked}")
 
-        if self.hby.db.meids.get(keys=(esaid,)) is None:  # No other members have submitted this collection of events
-            self.hby.db.meids.pin(keys=(esaid,), vals=[serder.saider])
-            self.hby.db.maids.pin(keys=(esaid,), vals=[coring.Prefixer(qb64=serder.pre)])
-
-            if sender not in self.hby.kevers:  # We are sending this one, don't need to notify us
+        if len(self.hby.db.meids.get(keys=(esaid,))) == 0:  # No one has submitted this message yet
+            if sender not in self.hby.habs:  # We are not sending this one, notify us
                 data = dict(
                     r=route,
                     d=serder.said
@@ -567,46 +572,44 @@ class Multiplexor:
 
                 self.notifier.add(attrs=data)
 
-        else:  # others have already submitted this collection of events.
-            submitters = self.hby.db.maids.get(keys=(esaid,))
-            if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
+        self.hby.db.meids.add(keys=(esaid,), val=serder.saider)
+        self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
 
-                # If we've already submitted an identical payload, parse this one because we've approved it
-                approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
-                if approved:
-                    # Clone exn from database, ensuring it is stored with valid signatures
-                    exn, paths = exchanging.cloneMessage(self.hby, said=serder.said)
-                    e = exn.ked['e']
-                    ims = bytearray()
+        submitters = self.hby.db.maids.get(keys=(esaid,))
+        if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
 
-                    # Loop through all the embedded events, extract the attachments for those events...
-                    for key, val in e.items():
-                        if not isinstance(val, dict):
-                            continue
+            # If we've already submitted an identical payload, parse this one because we've approved it
+            approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
+            if approved:
+                # Clone exn from database, ensuring it is stored with valid signatures
+                exn, paths = exchanging.cloneMessage(self.hby, said=serder.said)
+                e = exn.ked['e']
+                ims = bytearray()
 
-                        sadder = coring.Sadder(ked=val)
-                        ims.extend(sadder.raw)
+                # Loop through all the embedded events, extract the attachments for those events...
+                for key, val in e.items():
+                    if not isinstance(val, dict):
+                        continue
 
-                        if key in paths:
-                            atc = paths[key]
-                            ims.extend(atc)
+                    sadder = coring.Sadder(ked=val)
+                    ims.extend(sadder.raw)
+                    if key in paths:
+                        atc = paths[key]
+                        ims.extend(atc)
 
-                    # ... and parse
-                    self.psr.parse(ims=ims)
+                # ... and parse
+                self.psr.parse(ims=ims)
 
-                else:
-                    # Should we prod the user with another submission if we haven't already approved it?
-                    route = ked['r']
-                    data = dict(
-                        r=route,
-                        d=serder.said,
-                        e=embed['d']
-                    )
+            else:
+                # Should we prod the user with another submission if we haven't already approved it?
+                route = ked['r']
+                data = dict(
+                    r=route,
+                    d=serder.said,
+                    e=embed['d']
+                )
 
-                    self.notifier.add(attrs=data)
-
-            self.hby.db.meids.add(keys=(esaid,), val=serder.saider)
-            self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
+                self.notifier.add(attrs=data)
 
     def get(self, esaid):
         saiders = self.hby.db.meids.get(keys=(esaid,))

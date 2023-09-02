@@ -17,6 +17,7 @@ logger = help.ogler.getLogger()
 def test_pathed_material(mockHelpingNowUTC):
     class MockHandler:
         resource = "/fwd"
+        local = True
 
         def __init__(self):
             self.msgs = decking.Deck()
@@ -35,7 +36,7 @@ def test_pathed_material(mockHelpingNowUTC):
         fwd = debHab.endorse(fwd, last=False, pipelined=False)
         fwd.extend(end)
         handler = MockHandler()
-        exc = exchanging.Exchanger(db=debHby.db, handlers=[handler])
+        exc = exchanging.Exchanger(hby=debHby, handlers=[handler])
         parser = parsing.Parser(exc=exc)
 
         parser.parseOne(ims=fwd)
@@ -43,7 +44,7 @@ def test_pathed_material(mockHelpingNowUTC):
         msg = handler.msgs.popleft()
 
         embeds = msg["embeds"]
-        assert len(embeds) == 4
+        assert len(embeds) == 5
         assert embeds["icp"]["t"] == coring.Ilks.icp
         assert embeds["ixn0"]["t"] == coring.Ilks.ixn
         assert embeds["rot"]["t"] == coring.Ilks.rot

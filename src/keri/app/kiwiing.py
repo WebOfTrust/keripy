@@ -3115,7 +3115,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
 
     handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler])
 
-    exchanger = exchanging.Exchanger(db=hby.db, handlers=handlers)
+    exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(db=hby.db, signaler=signaler, exc=exchanger)
     grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiery = keri.app.oobiing.Oobiery(hby=hby)

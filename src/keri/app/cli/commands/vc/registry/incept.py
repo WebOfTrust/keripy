@@ -6,6 +6,8 @@ from hio.base import doing
 from keri.app import indirecting, habbing, grouping, forwarding
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
+from keri.app.notifying import Notifier
+from keri.peer import exchanging
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
@@ -81,9 +83,14 @@ class RegistryInceptor(doing.DoDoer):
         counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
+        notifier = Notifier(self.hby)
+        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(self.hby, exc, mux)
+
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
-        doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx]
+        doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx, exc]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo, **kwa)])
@@ -111,20 +118,17 @@ class RegistryInceptor(doing.DoDoer):
         registry, ixn = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
 
         if isinstance(hab, GroupHab):
-            send = input(f"\nSend message to other members of this group AID [Y|n]? ")
-            if send in ("Y", "y", ''):
-                usage = input(f"Please enter a description of the credential registry: ")
-                smids = hab.db.signingMembers(pre=hab.pre)
-                smids.remove(hab.mhab.pre)
+            usage = input(f"Please enter a description of the credential registry: ")
+            smids = hab.db.signingMembers(pre=hab.pre)
+            smids.remove(hab.mhab.pre)
 
-                for recp in smids:  # this goes to other participants only as a signaling mechanism
-                    exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, recipient=recp,
-                                                                  vcp=registry.vcp.raw, ixn=ixn, usage=usage)
-                    self.postman.send(src=hab.mhab.pre,
-                                      dest=recp,
-                                      topic="multisig",
-                                      serder=exn,
-                                      attachment=atc)
+            for recp in smids:  # this goes to other participants only as a signaling mechanism
+                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, ixn=ixn, usage=usage)
+                self.postman.send(src=hab.mhab.pre,
+                                  dest=recp,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=atc)
 
         while not self.registrar.complete(pre=registry.regk, sn=0):
             self.rgy.processEscrows()

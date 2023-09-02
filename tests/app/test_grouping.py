@@ -700,18 +700,19 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
         recipient = "EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU"
         vcp = veventing.incept(ghab1.pre)
         ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)])
-        exn, atc = grouping.multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, recipient=recipient, ixn=ixn,
+        exn, atc = grouping.multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, ixn=ixn,
                                                       usage="Issue vLEI Credentials")
 
         assert exn.ked["r"] == '/multisig/vcp'
-        assert exn.saidb == b'EOupVAlPOjOE9qzEHp9KM4__iVJmm9cSjBqxMJftrif2'
+        assert exn.saidb == b'EOEQNt4iBGCkQkHQqYkade56WIfg148W8jAo8xunAsxq'
         assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAD6iWEv'
-                       b'KEGDxvSHzkjDgjEoChbPHQQ1njkK--BYh2r1FxWVTTBig1ZmNPua9CsI7MvRaM1B'
-                       b'oiZoTtRDrTLNgTMF-LAa5AACAA-e-ixn-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAChpUup'
+                       b'y7Wq39vSN3Y2H7aw59WMnFv5QGqMAebjkSKN9gXtcr9Z0uCM5J2I7x1dcvjKgMxO'
+                       b'IKpVB62iizfygDsP-LAa5AACAA-e-ixn-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
                        b'VWK9LOTwyN2lSfHr2zY638P1SBStoh8mjgy7nOTGMyujOXMKvF_ZDeQ_ISYA')
         data = exn.ked["a"]
-        assert data["i"] == recipient
+        assert data == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
+                        'usage': 'Issue vLEI Credentials'}
         assert "vcp" in exn.ked["e"]
         assert "ixn" in exn.ked["e"]
 
@@ -724,14 +725,14 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
         notifier = notifying.Notifier(hby=hby)
         mux = grouping.Multiplexor(hby=hby, notifier=notifier)
-        exc = exchanging.Exchanger(db=hby.db, handlers=[])
+        exc = exchanging.Exchanger(hby=hby, handlers=[])
         grouping.loadHandlers(hby=hby, exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
 
-        limit = 0.5
+        limit = 1.0
         tock = 0.03125
         doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
         doist.enter()
@@ -761,7 +762,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         msg = ghab1.mhab.rotate()
         notifier = notifying.Notifier(hby=hby1)
         mux = grouping.Multiplexor(hby=hby1, notifier=notifier)
-        exc = exchanging.Exchanger(db=hby1.db, handlers=[])
+        exc = exchanging.Exchanger(hby=hby1, handlers=[])
         grouping.loadHandlers(hby=hby1, exc=exc, mux=mux)
 
         # create and send message from ghab2
@@ -833,7 +834,7 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
 
         notifier = notifying.Notifier(hby=hby1)
         mux = grouping.Multiplexor(hby=hby1, notifier=notifier)
-        exc = exchanging.Exchanger(db=hby1.db, handlers=[])
+        exc = exchanging.Exchanger(hby=hby1, handlers=[])
         grouping.loadHandlers(hby=hby1, exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)

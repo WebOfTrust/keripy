@@ -63,7 +63,7 @@ class ConfirmDoer(doing.DoDoer):
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.org = connecting.Organizer(hby=hby)
         self.notifier = notifying.Notifier(hby=hby)
-        self.exc = exchanging.Exchanger(db=hby.db, handlers=[])
+        self.exc = exchanging.Exchanger(hby=hby, handlers=[])
         grouping.loadHandlers(hby=hby, exc=self.exc, notifier=self.notifier)
         self.counselor = grouping.Counselor(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
