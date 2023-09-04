@@ -158,7 +158,7 @@ class IssueHandler(doing.Doer):
             attrs = serder.ked["a"]
 
             data = dict(
-                r=self.resource,
+                r=f"/exn/{self.resource}",
                 d=serder.said,
                 m=attrs["m"]
             )

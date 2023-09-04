@@ -32,7 +32,6 @@ from ..vdr.viring import Reger
 logger = help.ogler.getLogger()
 
 
-
 def incept(
         pre,
         toad=None,
@@ -41,7 +40,7 @@ def incept(
         cnfg=None,
         version=Version,
         kind=Serials.json,
-        code=None,
+        code=MtrDex.Blake3_256,
 ):
     """ Returns serder of credential registry inception (vcp) message event
 

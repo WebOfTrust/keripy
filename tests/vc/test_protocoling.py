@@ -69,7 +69,7 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         # Create Red's wallet and Issue Handler for receiving the credential
         redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, notifier=notifier)
-        redExc = exchanging.Exchanger(db=sidHby.db, tymth=doist.tymen(), handlers=[redIssueHandler])
+        redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
@@ -90,6 +90,10 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         assert creder.said == "EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a"
 
         iss = issuer.issue(said=creder.said)
+        assert iss.raw == (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EM2k14GK1AoAd9RuKdfDQIlYQhKyZ056-7A4'
+                           b'Ydr9K4BU","i":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a","s":"0","ri":"E'
+                           b'PzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","dt":"2021-06-27T21:26:21.23325'
+                           b'7+00:00"}')
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)
@@ -229,8 +233,8 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         notifier = notifying.Notifier(hby=hanHby)
         hanRequestHandler = PresentationRequestHandler(hby=hanHby, notifier=notifier)
         hanPresentHandler = PresentationProofHandler(notifier=notifier)
-        hanExc = exchanging.Exchanger(db=hanHby.db, tymth=doist.tymen(), handlers=[hanRequestHandler,
-                                                                                   hanPresentHandler])
+        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler,
+                                                                                 hanPresentHandler])
 
         # Create the issue credential payload
         pl = dict(
@@ -266,8 +270,12 @@ def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         msg = bytearray(exn.raw)
         msg.extend(atc)
-        parsing.Parser().parse(ims=msg, kvy=hanKvy, exc=hanExc)
-        doist.do(doers=[hanExc])
+
+        vicExc = exchanging.Exchanger(hby=vicHby, tymth=doist.tymen(), handlers=[hanRequestHandler,
+                                                                                 hanPresentHandler])
+
+        parsing.Parser().parse(ims=msg, kvy=vicKvy, exc=vicExc)
+        doist.do(doers=[vicExc])
         assert doist.tyme == limit * 2
 
         resp = notifier.signaler.signals.popleft()

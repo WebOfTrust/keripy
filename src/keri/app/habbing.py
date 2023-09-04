@@ -219,7 +219,7 @@ class Habery:
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.rtr = routing.Router()
         self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
-        self.exc = exchanging.Exchanger(db=self.db, handlers=[], local=True)
+        self.exc = exchanging.Exchanger(hby=self, handlers=[])
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)

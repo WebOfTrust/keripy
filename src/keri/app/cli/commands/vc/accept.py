@@ -72,7 +72,7 @@ class AcceptDoer(doing.DoDoer):
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         issueHandler = protocoling.IssueHandler(hby=self.hby, rgy=self.rgy, notifier=self.notifier)
-        self.exc = exchanging.Exchanger(db=self.hby.db, handlers=[issueHandler])
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[issueHandler])
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/credential'], exc=self.exc, verifier=self.vry)
 
         self.doers = [self.mbx, self.exc]

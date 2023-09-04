@@ -1801,7 +1801,6 @@ class Pather(Bexter):
         """
         return Pather(path=root.path + self.path)
 
-
     def strip(self, root):
         """ Returns a new Pather with root stipped off the front if it exists
 

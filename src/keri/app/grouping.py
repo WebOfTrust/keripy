@@ -12,11 +12,10 @@ from hio.help import decking
 from .. import kering
 from .. import help
 from ..app import delegating, agenting
-from ..core import coring
+from ..core import coring, routing, eventing, parsing
 from ..db import dbing
 from ..db.dbing import snKey
 from ..peer import exchanging
-from ..vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -44,8 +43,8 @@ class Counselor(doing.DoDoer):
 
             ghab (Hab): group Habitat
             prefixer (Prefixer): prefixer of group identifier
-            seqner (Seqner): seqner of inception event of group identifier
-            saider (Saider): saider of inception event of group identifier
+            seqner (Seqner): seqner of event of group identifier
+            saider (Saider): saider of event of group identifier
 
         """
         evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)
@@ -226,10 +225,18 @@ class MultisigNotificationHandler(doing.Doer):
 
     """
     persist = True
+    local = True
 
-    def __init__(self, resource, notifier, **kwargs):
+    def __init__(self, resource, mux, **kwargs):
+        """ Create an exn handler for multisig messages
+
+        Parameters:
+            resource:
+            mux:
+            **kwargs:
+        """
         self.resource = resource
-        self.notifier = notifier
+        self.mux = mux
         self.msgs = decking.Deck()
         self.cues = decking.Deck()
 
@@ -240,31 +247,26 @@ class MultisigNotificationHandler(doing.Doer):
             msg = self.msgs.popleft()
             serder = msg["serder"]
 
-            data = dict(
-                r=self.resource,
-                d=serder.said
-            )
-
-            self.notifier.add(attrs=data)
+            self.mux.add(serder=serder)
 
         return False
 
 
-def loadHandlers(hby, exc, notifier):
+def loadHandlers(hby, exc, mux):
     """ Load handlers for the peer-to-peer distributed group multisig protocol
 
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        notifier (Notifier): Database for storing mailbox messages
+        mux (Multiplexor): Multisig communication coordinator
 
     """
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/icp", hby=hby, notifier=notifier))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rot", hby=hby, notifier=notifier))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/ixn", hby=hby, notifier=notifier))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", hby=hby, notifier=notifier))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", hby=hby, notifier=notifier))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", hby=hby, notifier=notifier))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/icp", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rot", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/ixn", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", hby=hby, mux=mux))
 
 
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
@@ -281,7 +283,10 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
 
     """
+    rmids = rmids if rmids is not None else smids
+    serder = coring.Serder(raw=icp)
     data = dict(
+        gid=serder.pre,
         smids=smids,
         rmids=rmids,
     )
@@ -336,7 +341,7 @@ def multisigInteractExn(ghab, aids, ixn):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
-        ghab (Hab): group Hab to endorse the message
+        ghab (GroupHab): group Hab to endorse the message
         aids (list): qb64 identifier prefixes to include in the interaction event
         ixn (bytes): serialized interaction event with CESR streamed attachments
 
@@ -359,14 +364,14 @@ def multisigInteractExn(ghab, aids, ixn):
     return exn, atc
 
 
-def multisigRegistryInceptExn(hab, recipient, vcp, ixn, rot):
-    """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
+def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
+    """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
 
     Either rot or ixn are required but not both
 
     Parameters:
-        hab (Hab): identifier Hab for ensorsing the message to send
-        recipient (str): qb64 AID to send this message t0
+        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        usage (str): human readable reason for creating the credential registry
         vcp (bytes): serialized Credentials registry inception event
         ixn (bytes): CESR stream of serialized and signed interaction event anchoring registry inception event
         rot (bytes): CESR stream of serialized and signed rotation event anchoring registry inception event
@@ -385,22 +390,22 @@ def multisigRegistryInceptExn(hab, recipient, vcp, ixn, rot):
     elif ixn is not None:
         embeds['ixn'] = ixn
 
-    exn, end = exchanging.exchange(route="/multisig/vcp", payload={}, sender=hab.pre, recipient=recipient,
-                                   embeds=embeds)
-    evt = hab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchanging.exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
+                                   sender=ghab.mhab.pre, embeds=embeds)
+    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigIssueExn(hab, recipient, acdc, iss, ixn=None, rot=None):
+def multisigIssueExn(ghab, recipient, acdc, iss, ixn=None, rot=None):
     """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
 
     Either rot or ixn are required but not both
 
     Parameters:
-        hab (Hab): identifier Hab for ensorsing the message to send
+        ghab (GroupHab): identifier Hab for ensorsing the message to send
         recipient (str): qb64 AID to send this message t0
         acdc (bytes): CESR stream of serialized Creder instance of the issued credential, with signatures
         iss (bytes): serialized Credential issuance event
@@ -421,9 +426,9 @@ def multisigIssueExn(hab, recipient, acdc, iss, ixn=None, rot=None):
     elif ixn is not None:
         embeds['ixn'] = ixn
 
-    exn, end = exchanging.exchange(route="/multisig/iss", payload={}, sender=hab.pre, recipient=recipient,
-                                   embeds=embeds)
-    evt = hab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchanging.exchange(route="/multisig/iss", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
+                                   recipient=recipient, embeds=embeds)
+    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -460,3 +465,162 @@ def getEscrowedEvent(db, pre, sn):
         msg.extend(couple)
 
     return msg
+
+
+class Multiplexor:
+    """ Multiplexor (mux) is responsible for coordinating peer-to-peer messages between group multisig participants
+
+    When new messages arrive the Mux will associate the SAID of the embedded messages with the exn message said
+    as well as the sender.  This will allow the controller of the participant in the group multisig to have knowledge
+    of who has sent what messages and whether they match.  In addition, if the controller of the local participant
+    has already approved the messages embedded in this exn, the messages will be passed thru a non-local parser.
+
+    Attributes:
+        hby (habbing.Habery): database environment for local Habs
+        rtr (routing.Router): routes reply 'rpy' messages
+        rvy (routing.Revery): factory that processes reply 'rpy' messages
+        exc (exchanging.Exchanger): processor and router for peer-to-peer msgs
+        kvy (eventing.Kevery): factory for local processing of local event msgs
+        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        notifier (notifying.Notifier): stores notices for numan consumption
+
+        Parameters:
+            hby (habbing.Habery): database environment for local Habs
+            notifier (notifying.Notifier): stores notices for numan consumption
+
+
+    """
+
+    def __init__(self, hby, notifier):
+        """ Create Multiplexor for local database and Habs
+
+        Parameters:
+            hby (habbing.Habery): database environment for local Habs
+            notifier (notifying.Notifier): stores notices for numan consumption
+
+        """
+        self.hby = hby
+        self.rtr = routing.Router()
+        self.rvy = routing.Revery(db=self.hby.db, rtr=self.rtr)
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
+        self.kvy.registerReplyRoutes(router=self.rtr)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+
+        self.notifier = notifier
+
+    def add(self, serder):
+        """ Process /multisig message by associating the exn with the SAID of the embedded event section
+
+        Adds the exn message contained in `serder` to the set of messages received for a given set of embedded
+        events.  Ensures this is a /multisig message with the correct properties and then stores the SAID of the
+        exn message and the prefix of the sender associated with the SAID of the embedded event section.  Also
+        sends the controller of the local participant a notice.
+
+        This method will extract and parse the embedded events if the local participant has already approved the
+        events so that any addition signatures can be processed.
+
+        Parameters:
+            serder (coring.Serder): peer-to-peer exn "/multisig" message to coordinate from other participants
+
+        Returns:
+
+        """
+        ked = serder.ked
+        if 'e' not in ked:  # No embedded events
+            return
+
+        embed = ked['e']
+        esaid = embed['d']
+        sender = ked['i']
+        route = ked['r']
+        payload = ked['a']
+
+        # Route specific logic to ensure this is a valid exn for a local participant.
+        match route.split("/"):
+            case ["", "multisig", "icp"]:
+                mids = payload["smids"]
+                if "rmids" in payload:
+                    mids.extend(payload["rmids"])
+                member = any([True for mid in mids if mid in self.hby.kevers])
+                if not member:
+                    raise ValueError(f"invalid request to join group, not member in mids={mids}")
+
+            case ["", "multisig", "rot"]:
+                gid = payload["gid"]
+                if gid not in self.hby.habs:
+                    mids = payload["smids"]
+                    mids.extend(payload["rmids"])
+                    member = any([True for mid in mids if mid in self.hby.kevers])
+                    if not member:
+                        raise ValueError(f"invalid request to join group, not member in mids={mids}")
+
+            case ["", "multisig", *_]:
+                gid = payload["gid"]
+                if gid not in self.hby.habs:
+                    raise ValueError(f"invalid request to participate in group, not member of gid={gid}")
+
+            case _:
+                raise ValueError(f"invalid route {route} for multiplexed exn={ked}")
+
+        if len(self.hby.db.meids.get(keys=(esaid,))) == 0:  # No one has submitted this message yet
+            if sender not in self.hby.habs:  # We are not sending this one, notify us
+                data = dict(
+                    r=route,
+                    d=serder.said
+                )
+
+                self.notifier.add(attrs=data)
+
+        self.hby.db.meids.add(keys=(esaid,), val=serder.saider)
+        self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
+
+        submitters = self.hby.db.maids.get(keys=(esaid,))
+        if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
+
+            # If we've already submitted an identical payload, parse this one because we've approved it
+            approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
+            if approved:
+                # Clone exn from database, ensuring it is stored with valid signatures
+                exn, paths = exchanging.cloneMessage(self.hby, said=serder.said)
+                e = exn.ked['e']
+                ims = bytearray()
+
+                # Loop through all the embedded events, extract the attachments for those events...
+                for key, val in e.items():
+                    if not isinstance(val, dict):
+                        continue
+
+                    sadder = coring.Sadder(ked=val)
+                    ims.extend(sadder.raw)
+                    if key in paths:
+                        atc = paths[key]
+                        ims.extend(atc)
+
+                # ... and parse
+                self.psr.parse(ims=ims)
+
+            else:
+                # Should we prod the user with another submission if we haven't already approved it?
+                route = ked['r']
+                data = dict(
+                    r=route,
+                    d=serder.said,
+                    e=embed['d']
+                )
+
+                self.notifier.add(attrs=data)
+
+    def get(self, esaid):
+        saiders = self.hby.db.meids.get(keys=(esaid,))
+
+        exns = []
+        for saider in saiders:
+            exn, paths = exchanging.cloneMessage(hby=self.hby, said=saider.qb64)
+            exns.append(dict(
+                exn=exn.ked,
+                paths={k: path.decode("utf-8") for k, path in paths.items()},
+            ))
+
+        return exns
+

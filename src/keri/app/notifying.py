@@ -26,7 +26,7 @@ def notice(attrs, dt=None, read=False):
         Notice:  Notice instance
 
     """
-    dt = dt if dt is not None else datetime.datetime.now().isoformat()
+    dt = dt if dt is not None else helping.nowIso8601()
 
     if hasattr(dt, "isoformat"):
         dt = dt.isoformat()

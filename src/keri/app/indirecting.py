@@ -52,7 +52,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-    exchanger = exchanging.Exchanger(db=hby.db, handlers=[forwarder])
+    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
     clienter = httping.Clienter()
     oobiery = keri.app.oobiing.Oobiery(hby=hby, clienter=clienter)
 
