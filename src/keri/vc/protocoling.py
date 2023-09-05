@@ -405,3 +405,221 @@ def presentationExchangeExn(hab, reger, said):
     del ims[:exn.size]
 
     return exn, ims
+
+
+class IpexHandler(doing.Doer):
+    """ Processor of `exn` IPEX messages.
+
+    """
+
+    resource = "/ipex"
+    persist = True
+
+    def __init__(self, hby, rgy, notifier, **kwa):
+        """ Initialize instance
+
+        Parameters:
+            hab (Habitat): local identifier environment
+            wallet (Wallet) credential wallet that will hold the credentials
+            ims (Optional(bytearray)): inbound message stream to process
+            notifier (Notifier): outbound notifications
+            **kwa (dict): keyword arguments passed to DoDoer
+
+        """
+        self.hby = hby
+        self.rgy = rgy
+        self.notifier = notifier
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(IssueHandler, self).__init__(**kwa)
+
+    def recur(self, tyme):
+        if self.msgs:
+            msg = self.msgs.popleft()
+            serder = msg["serder"]
+            attrs = serder.ked["a"]
+
+            if not attrs["r"].startWith(self.resource):
+                return False
+            data = dict(
+                r=f"/exn{attrs['r']}",
+                d=serder.said,
+                m=attrs["m"]
+            )
+
+            self.notifier.add(attrs=data)
+
+        return False
+    
+def ipexApplyExn(hab, message, schema, attrs):
+    """ Apply for an ACDC
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the credential application
+        schema (any): schema or its SAID
+        attrs (any): attribute field label list
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+        s=schema,
+        a=attrs
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/apply", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+
+def ipexOfferExn(hab, message, offer):
+    """ Offer a metadata ACDC
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the credential offer
+        offer (any): metadata ACDC or its SAID
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+        o=offer,
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+
+def ipexAgreeExn(hab, message, offer):
+    """ Agree an offer
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the credential agreement
+        offer (any): offer received or its SAID
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+        o=offer
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+    
+def ipexGrantExn(hab, message, acdc, iss):
+    """ Disclose an ACDC
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the credential disclosure
+        acdc (bytes): CESR stream of serialized ACDC with attachments
+        iss (bytes): serialized TEL issuance event
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+    )
+
+    embeds = dict(
+        acdc=acdc,
+        iss=iss
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+
+def ipexAdmitExn(hab, message, grant):
+    """ Admit a disclosure
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the admission
+        grant (any): grant received or its SAID
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+        g=grant
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+
+def ipexSpurnExn(hab, message, spurn):
+    """ Reject an application, offer or agreement
+
+    Parameters:
+        hab(Hab): identifier environment for issuer of credential
+        message(str): Human readable message regarding the admission
+        spurn (any): apply, offer or agree received, or its SAID that is rejected
+
+    Returns:
+        Serder: credential issuance exn peer to peer message
+        bytes: attachments for exn message
+
+    """
+    data = dict(
+        m=message,
+        s=spurn
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre)
+    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    del ims[:exn.size]
+    ims.extend(end)
+
+    return exn, ims
+
+def loadHandlers(hby, exc, rgy, notifier):
+    """ Load handlers for the IPEX protocol
+
+    Parameters:
+        hby (Habery): Database and keystore for environment
+        exc (Exchanger): Peer-to-peer message router
+
+    """
+    exc.addHandler(IpexHandler(resource="/ipex/apply", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/offer", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/agree", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/grant", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/admit", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/spurn", hby=hby, rgy=rgy, notifier=notifier))
