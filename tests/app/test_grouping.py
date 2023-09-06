@@ -683,14 +683,14 @@ def test_multisig_interact(mockHelpingNowUTC):
                                                 ixn=ixn)
 
         assert exn.ked["r"] == '/multisig/ixn'
-        assert exn.saidb == b'EEF5ZsnC9jHcUkFKwBQMf2UN1Y9tGd35Abhvj7BDaR2q'
+        assert exn.saidb == b'EGQ_DqGlSBx2MKJfHr6liXAngFpQ0UCtV1cdVMUtJHdN'
         assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABjrENS'
-                       b'dUUefjTshfEXeafWGGBrHCptBQP0ZIyU853TyiEfC9pbuejZG-Szew-UquERpUqO'
-                       b'5Qofp9S5SUt_z04O-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU-8WQ8A70nc'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAB3yX6b'
+                       b'EXb8N63PKaMaFqijZVT5TqVtoO8q1BFnoJW3rDkNuJ9lEMpEN-44HKGtvniWZ6-d'
+                       b'CVPS4fsEXKZAKGkB-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU-8WQ8A70nc'
                        b'tYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnztA82pAo1Skhf1vQwD')
         data = exn.ked["a"]
-        assert data["aids"] == ghab1.smids
+        assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
         assert "ixn" in exn.ked["e"]
 

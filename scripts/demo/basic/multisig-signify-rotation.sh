@@ -48,15 +48,15 @@ read  -n 1 -r -p "Press any key after agent0 has rotated:"
 
 kli rotate --name multisig1 --alias multisig1
 kli query --name multisig2 --alias multisig2 --prefix EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4
-kli query --name multisig2 --alias multisig2 --prefix ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK
+kli query --name multisig2 --alias multisig2 --prefix EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv
 kli rotate --name multisig2 --alias multisig2
 kli query --name multisig1 --alias multisig1 --prefix EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1
-kli query --name multisig1 --alias multisig1 --prefix ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK
+kli query --name multisig1 --alias multisig1 --prefix EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv
 
-kli multisig rotate --name multisig1 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK:1 --isith '["1/3", "1/3", "1/3"]' --nsith '["1/3", "1/3", "1/3"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --rmids ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK &
+kli multisig rotate --name multisig1 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv:1 --isith '["1/3", "1/3", "1/3"]' --nsith '["1/3", "1/3", "1/3"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --rmids EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig rotate --name multisig2 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK:1 --isith '["1/3", "1/3", "1/3"]' --nsith '["1/3", "1/3", "1/3"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --rmids ELUvZ8aJEHAQE-0nsevyYTP98rBbGJUrTj5an-pCmwrK &
+kli multisig rotate --name multisig2 --alias multisig --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv:1 --isith '["1/3", "1/3", "1/3"]' --nsith '["1/3", "1/3", "1/3"]' --rmids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 --rmids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --rmids EOGvmhJDBbJP4zeXaRun5vSz0O3_1zB10DwNMyjXlJEv &
 pid=$!
 PID_LIST+=" $pid"
 

@@ -7,7 +7,7 @@ import json
 
 import falcon
 
-from keri.app import booting, specing, kiwiing, habbing, grouping, notifying
+from keri.app import booting, specing, kiwiing, habbing
 
 
 def test_spec_resource():

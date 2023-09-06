@@ -40,8 +40,6 @@ logger = help.ogler.getLogger()
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
 
-
-
 @dataclass(frozen=True)
 class TraitCodex:
     """
