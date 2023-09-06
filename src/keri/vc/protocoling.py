@@ -440,8 +440,6 @@ class IpexHandler(doing.Doer):
             serder = msg["serder"]
             attrs = serder.ked["a"]
 
-            if not attrs["r"].startWith(self.resource):
-                return False
             data = dict(
                 r=f"/exn{attrs['r']}",
                 d=serder.said,
