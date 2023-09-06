@@ -477,13 +477,13 @@ def ipexApplyExn(hab, message, schema, attrs):
 
     return exn, ims
 
-def ipexOfferExn(hab, message, offer):
+def ipexOfferExn(hab, message, acdc):
     """ Offer a metadata ACDC
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the credential offer
-        offer (any): metadata ACDC or its SAID
+        acdc (any): metadata ACDC or its SAID
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -491,11 +491,14 @@ def ipexOfferExn(hab, message, offer):
 
     """
     data = dict(
-        m=message,
-        o=offer,
+        m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre)
+    embeds = dict(
+        acdc=acdc
+    )
+
+    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -527,7 +530,7 @@ def ipexAgreeExn(hab, message, offer):
 
     return exn, ims
     
-def ipexGrantExn(hab, message, acdc, iss):
+def ipexGrantExn(hab, message, acdc, iss, anc):
     """ Disclose an ACDC
 
     Parameters:
@@ -535,6 +538,7 @@ def ipexGrantExn(hab, message, acdc, iss):
         message(str): Human readable message regarding the credential disclosure
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
+        anc (bytes): serialized anchoring event in the KEL, either ixn or rot
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -547,7 +551,8 @@ def ipexGrantExn(hab, message, acdc, iss):
 
     embeds = dict(
         acdc=acdc,
-        iss=iss
+        iss=iss,
+        anc=anc
     )
 
     exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds)
