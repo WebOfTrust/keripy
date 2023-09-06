@@ -7,7 +7,7 @@ from hio.base import doing
 
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier
-from keri.core import parsing
+from keri.core import parsing, eventing
 
 
 def test_querying():
@@ -45,7 +45,8 @@ def test_querying():
         # Cue up a saved key state equal to the one we have
         hby.kvy.cues.clear()
         ksr = subHab.kever.state()
-        cue = dict(kin="keyStateSaved", serder=ksr._asdict())
+        rpy = eventing.reply(route="/ksn", data=ksr._asdict())
+        cue = dict(kin="keyStateSaved", serder=rpy)
         hby.kvy.cues.append(cue)
 
         doist.recur(deeds=deeds)
@@ -63,7 +64,8 @@ def test_querying():
         # rotate AID and submit as a new keyStateSave
         rot = subHab.rotate()
         ksr = subHab.kever.state()
-        cue = dict(kin="keyStateSaved", serder=ksr._asdict())
+        rpy = eventing.reply(route="/ksn", data=ksr._asdict())
+        cue = dict(kin="keyStateSaved", serder=rpy)
         hby.kvy.cues.append(cue)
         deeds = doist.enter(doers=[qdoer])
         doist.recur(deeds=deeds)

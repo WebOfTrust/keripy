@@ -249,6 +249,7 @@ class Respondant(doing.DoDoer):
                     src = cue["src"]
                     dest = cue["dest"]
                     msgs = cue["msgs"]
+
                     hab = self.hby.habByPre(src)
                     if hab is None:
                         continue

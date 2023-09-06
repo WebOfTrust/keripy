@@ -355,7 +355,7 @@ def multisigInteractExn(ghab, aids, ixn):
 
     exn, end = exchanging.exchange(route="/multisig/ixn", modifiers=dict(),
                                    payload=dict(gid=ghab.pre,
-                                                aids=aids), sender=ghab.mhab.pre,
+                                                smids=aids), sender=ghab.mhab.pre,
                                    embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])

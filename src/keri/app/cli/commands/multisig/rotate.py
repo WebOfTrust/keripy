@@ -13,8 +13,10 @@ from hio.base import doing
 from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import rotating, existing, displaying, config
+from keri.app.notifying import Notifier
 from keri.core import coring
 from keri.db import dbing
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -85,12 +87,16 @@ class GroupMultisigRotate(doing.DoDoer):
         
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        notifier = Notifier(self.hby)
+        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(self.hby, exc, mux)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'])
+        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
-        doers = [mbd, self.hbyDoer, self.counselor, self.postman]
+        doers = [mbd, self.hbyDoer, self.counselor, self.postman, exc]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.rotateDo)])
@@ -212,9 +218,6 @@ class GroupMultisigRotate(doing.DoDoer):
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # Send event AND notification message to others
-            self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=rserder,
-                              attachment=bytearray(rot))
-
             self.postman.send(src=ghab.mhab.pre,
                               dest=recpt,
                               topic="multisig",
