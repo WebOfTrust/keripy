@@ -5,7 +5,9 @@ tests.app.indirecting module
 """
 import json
 
+import falcon
 import pytest
+from hio.core import tcp, http
 from hio.help import decking
 
 from keri.app import indirecting, storing, habbing
@@ -147,6 +149,14 @@ def test_qrymailbox_iter():
         mb.iter.TimeoutMBX = 0  # Force the iter to timeout
         with pytest.raises(StopIteration):
             next(mbi)
+
+
+def test_createHttpServer():
+    port = 5632
+    app = falcon.App()
+    server = indirecting.createHttpServer(port, app)
+    assert isinstance(server, http.Server)
+
 
 
 if __name__ == "__main__":
