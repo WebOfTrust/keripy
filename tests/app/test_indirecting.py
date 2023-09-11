@@ -6,6 +6,7 @@ tests.app.indirecting module
 import json
 
 import falcon
+import hio
 import pytest
 from hio.core import tcp, http
 from hio.help import decking
@@ -151,11 +152,30 @@ def test_qrymailbox_iter():
             next(mbi)
 
 
-def test_createHttpServer():
+class MockServerTls:
+    def __init__(self,  certify, keypath, certpath, cafilepath, port):
+        pass
+
+
+class MockHttpServer:
+    def __init__(self, port, app, servant=None):
+        self.servant = servant
+
+
+def test_createHttpServer(monkeypatch):
     port = 5632
     app = falcon.App()
     server = indirecting.createHttpServer(port, app)
     assert isinstance(server, http.Server)
+
+    monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
+    monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
+
+    server = indirecting.createHttpServer(port, app, keypath='keypath', certpath='certpath', cafilepath='cafilepath')
+
+    assert isinstance(server, MockHttpServer)
+    assert isinstance(server.servant, MockServerTls)
+
 
 
 
