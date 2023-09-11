@@ -84,7 +84,7 @@ class VerifyDoer(doing.DoDoer):
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 
-        doers = [self.mbd, self.exc, doing.doify(self.verifyDo)]
+        doers = [self.mbd, doing.doify(self.verifyDo)]
 
         super(VerifyDoer, self).__init__(doers=doers)
 

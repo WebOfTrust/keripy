@@ -86,11 +86,11 @@ class RegistryInceptor(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.hby, exc, mux)
+        grouping.loadHandlers(exc, mux)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
-        doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx, exc]
+        doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo, **kwa)])

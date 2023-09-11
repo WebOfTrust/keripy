@@ -191,7 +191,7 @@ class Poster(doing.DoDoer):
             _ = (yield self.tock)
 
 
-class ForwardHandler(doing.Doer):
+class ForwardHandler:
     """
     Handler for forward `exn` messages used to envelope other KERI messages intended for another recipient.
     This handler acts as a mailbox for other identifiers and stores the messages in a local database.
@@ -227,68 +227,44 @@ class ForwardHandler(doing.Doer):
 
     resource = "/fwd"
 
-    def __init__(self, hby, mbx, cues=None, **kwa):
+    def __init__(self, hby, mbx):
         """
 
         Parameters:
+            hby (Habery): database environment
             mbx (Mailboxer): message storage for store and forward
-            formats (list) of format str names accepted for offers
-            cues (Optional(decking.Deck)): outbound cue messages
 
         """
         self.hby = hby
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
         self.mbx = mbx
 
-        super(ForwardHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of IPEX protocol exn messages
 
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
+            serder (Serder): Serder of the IPEX protocol exn message
+            attachments (list): list of tuples of root pathers and CESR SAD path attachments to the exn event
 
         """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        embeds = serder.ked['e']
+        modifiers = serder.ked['q'] if 'q' in serder.ked else {}
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                embeds = msg["embeds"]
-                modifiers = msg["modifiers"]
-                attachments = msg["attachments"]
+        recipient = modifiers["pre"]
+        topic = modifiers["topic"]
+        resource = f"{recipient}/{topic}"
 
-                recipient = modifiers["pre"]
-                topic = modifiers["topic"]
-                resource = f"{recipient}/{topic}"
+        pevt = bytearray()
+        for pather, atc in attachments:
+            ked = pather.resolve(embeds)
+            sadder = coring.Sadder(ked=ked, kind=eventing.Serials.json)
+            pevt.extend(sadder.raw)
+            pevt.extend(atc)
 
-                pevt = bytearray()
-                for pather, atc in attachments:
-                    ked = pather.resolve(embeds)
-                    sadder = coring.Sadder(ked=ked, kind=eventing.Serials.json)
-                    pevt.extend(sadder.raw)
-                    pevt.extend(atc)
+        if not pevt:
+            print("error with message, nothing to forward", serder.ked)
+            return
 
-                if not pevt:
-                    print("error with message, nothing to forward", msg)
-                    continue
-
-                self.mbx.storeMsg(topic=resource, msg=pevt)
-                yield self.tock
-
-            yield self.tock
+        self.mbx.storeMsg(topic=resource, msg=pevt)
 
 
 def introduce(hab, wit):

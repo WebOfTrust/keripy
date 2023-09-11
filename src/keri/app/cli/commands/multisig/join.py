@@ -64,12 +64,13 @@ class ConfirmDoer(doing.DoDoer):
         self.org = connecting.Organizer(hby=hby)
         self.notifier = notifying.Notifier(hby=hby)
         self.exc = exchanging.Exchanger(hby=hby, handlers=[])
-        grouping.loadHandlers(hby=hby, exc=self.exc, notifier=self.notifier)
+        mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
+        grouping.loadHandlers(exc=self.exc, mux=mux)
         self.counselor = grouping.Counselor(hby=hby)
         self.mbx = indirecting.MailboxDirector(hby=hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                               '/delegate'])
 
-        doers = [self.hbyDoer, self.witq, self.exc, self.mbx, self.counselor]
+        doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
 

@@ -8,7 +8,6 @@ module for enveloping and forwarding KERI message
 
 from hio import help
 from hio.base import doing
-from hio.help import decking
 
 from . import agenting, forwarding
 from .habbing import GroupHab
@@ -206,83 +205,52 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(delreq)
 
 
-class DelegateRequestHandler(doing.DoDoer):
+class DelegateRequestHandler:
     """
     Handler for multisig group inception notification EXN messages
 
     """
     resource = "/delegate/request"
 
-    def __init__(self, hby, notifier, **kwa):
+    def __init__(self, hby, notifier):
         """
 
         Parameters:
-            mbx (Mailboxer) of format str names accepted for offers
-            controller (str) qb64 identity prefix of controller
-            cues (decking.Deck) of outbound cue messages from handler
+            hby (Habery) database environment for this handler
+            notifier (str) notifier for converting delegate request exn messages to controller notifications
 
         """
         self.hby = hby
         self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
 
-        super(DelegateRequestHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of delegation request messages
 
         Parameters:
-            payload is dict representing the body of a multisig/incept message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
+            serder (Serder): Serder of the exn delegation request message
+            pathed (list): list of CESR SAD path attachments to the exn event
 
         """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                if "pre" not in msg:
-                    logger.error(f"invalid delegate request message, missing pre.  evt=: {msg}")
-                    continue
+        src = serder.pre
+        pay = serder.ked['a']
+        delpre = pay["delpre"]
+        if delpre not in self.hby.habs:
+            logger.error(f"invalid delegate request message, no local delpre for evt=: {pay}")
+            return
 
-                prefixer = msg["pre"]
-                if "payload" not in msg:
-                    logger.error(f"invalid delegate request message, missing payload.  evt=: {msg}")
-                    continue
+        data = dict(
+            src=src,
+            r='/delegate/request',
+            delpre=delpre,
+            ked=pay["ked"]
+        )
+        if "aids" in pay:
+            data["aids"] = pay["aids"]
 
-                pay = msg["payload"]
-                if "ked" not in pay or "delpre" not in pay:
-                    logger.error(f"invalid delegate request payload, ked and delpre are required.  payload=: {pay}")
-                    continue
-
-                src = prefixer.qb64
-                delpre = pay["delpre"]
-                if delpre not in self.hby.habs:
-                    logger.error(f"invalid delegate request message, no local delpre for evt=: {pay}")
-                    continue
-
-                data = dict(
-                    src=src,
-                    r='/delegate/request',
-                    delpre=delpre,
-                    ked=pay["ked"]
-                )
-                if "aids" in pay:
-                    data["aids"] = pay["aids"]
-
-                self.notifier.add(attrs=data)
-                # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
-                # multisig group
-
-                yield
-            yield
+        self.notifier.add(attrs=data)
+        # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
+        # multisig group
 
 
 def delegateRequestExn(hab, delpre, ked, aids=None):

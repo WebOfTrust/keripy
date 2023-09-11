@@ -13,12 +13,16 @@ kli oobi resolve --name holder --oobi-alias holder --oobi http://127.0.0.1:7723/
 
 kli vc registry incept --name issuer --alias issuer --registry-name vLEI
 
-kli vc issue --name issuer --alias issuer --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
-kli vc accept --name holder --alias holder --poll --auto
+kli vc create --name issuer --alias issuer --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json
+SAID=$(kli vc list --name issuer --alias issuer --issued --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
+
+echo "Created ${SAID}"
+exit 0
+
+kli ipex grant --name issuer --alias issuer --said "${SAID}"
+kli ipex admit --name holder --alias holder --poll --auto
 
 kli vc list --name holder --alias holder
-
-SAID=$(kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
 kli vc revoke --name issuer --alias issuer --registry-name vLEI --said "${SAID}"
 sleep 2

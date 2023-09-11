@@ -5,21 +5,19 @@ keri.vdr.credentialing module
 
 VC issuer support
 """
-from ordered_set import OrderedSet as oset
-
 from hio.base import doing
 from hio.help import decking
 
 from keri.vdr import viring
 from .. import kering, help
-from ..app import agenting, signing, forwarding
+from ..app import agenting, signing
 from ..app.habbing import GroupHab
 from ..core import parsing, coring, scheming
 from ..core.coring import Seqner, MtrDex, Serder
 from ..core.eventing import SealEvent, TraitDex
 from ..db import dbing
 from ..db.dbing import snKey, dgKey
-from ..vc import proving, protocoling
+from ..vc import proving
 from ..vdr import eventing
 from ..vdr.viring import Reger
 
@@ -763,8 +761,7 @@ class Credentialer(doing.DoDoer):
         self.rgy = rgy
         self.registrar = registrar
         self.verifier = verifier
-        self.postman = forwarding.Poster(hby=hby)
-        doers = [self.postman, doing.doify(self.escrowDo)]
+        doers = [doing.doify(self.escrowDo)]
 
         super(Credentialer, self).__init__(doers=doers)
 
@@ -851,44 +848,16 @@ class Credentialer(doing.DoDoer):
                                          dt=dt, smids=smids, rmids=rmids)
 
         rseq = coring.Seqner(sn=seq)
-        if isinstance(hab, GroupHab):
-            craw = signing.ratify(hab=hab, serder=creder)
-            atc = bytearray(craw[creder.size:])
-            others = list(oset(smids + (rmids or [])))
+        # escrow waiting for other signatures
+        self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
 
-            others.remove(hab.mhab.pre)
-
-            print(f"Sending signed credential to {others} other participants")
-            for recpt in others:
-                self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=creder, attachment=atc)
-
-            # escrow waiting for other signatures
-            self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
-        else:
-            craw = signing.ratify(hab=hab, serder=creder)
-
-            # escrow waiting for registry anchors to be complete
-            self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
-
-        parsing.Parser().parse(ims=craw, vry=self.verifier)
+        try:
+            self.verifier.processCredential(creder=creder)
+        except (kering.MissingRegistryError, kering.MissingSchemaError):
+            pass
 
     def processCredentialMissingSigEscrow(self):
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
-            rseq = coring.Seqner(qb64=snq)
-
-            # Look for the saved saider
-            saider = self.rgy.reger.saved.get(keys=said)
-            if saider is None:
-                continue
-
-            # Remove from this escrow
-            self.rgy.reger.cmse.rem(keys=(said, snq))
-
-            # place in escrow to diseminate to other if witnesser and if there is an issuee
-            self.rgy.reger.crie.put(keys=(creder.said, rseq.qb64), val=creder)
-
-    def processCredentialIssuedEscrow(self):
-        for (said, snq), creder in self.rgy.reger.crie.getItemIter():
             rseq = coring.Seqner(qb64=snq)
 
             if not self.registrar.complete(pre=said, sn=rseq.sn):
@@ -898,110 +867,14 @@ class Credentialer(doing.DoDoer):
             if saider is None:
                 continue
 
-            issr = creder.issuer
-            regk = creder.status
+            # Remove from this escrow
+            self.rgy.reger.cmse.rem(keys=(said, snq))
 
-            print("Credential issuance complete, sending to recipient")
-            if "i" in creder.subject:
-                recp = creder.subject["i"]
-
-                hab = self.hby.habs[issr]
-                if isinstance(hab, GroupHab):
-                    sender = hab.mhab.pre
-                else:
-                    sender = issr
-
-                ikever = self.hby.db.kevers[issr]
-                for msg in self.hby.db.cloneDelegation(ikever):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                for msg in self.hby.db.clonePreIter(pre=issr):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                if regk is not None:
-                    for msg in self.verifier.reger.clonePreIter(pre=regk):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                for msg in self.verifier.reger.clonePreIter(pre=creder.said):
-                    serder = coring.Serder(raw=msg)
-                    atc = msg[serder.size:]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                sources = self.verifier.reger.sources(self.hby.db, creder)
-                for source, atc in sources:
-                    regk = source.status
-                    vci = source.said
-
-                    issr = source.crd["i"]
-                    ikever = self.hby.db.kevers[issr]
-                    for msg in self.hby.db.cloneDelegation(ikever):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                    for msg in self.hby.db.clonePreIter(pre=issr):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
-
-                    for msg in self.verifier.reger.clonePreIter(pre=regk):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
-
-                    for msg in self.verifier.reger.clonePreIter(pre=vci):
-                        serder = coring.Serder(raw=msg)
-                        atc = msg[serder.size:]
-                        self.postman.send(src=sender, dest=recp, topic="credential", serder=serder,
-                                          attachment=atc)
-
-                    serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(source.said)
-                    atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
-                    del atc[:serder.size]
-                    self.postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
-
-                serder, sadsigs, sadcigs = self.rgy.reger.cloneCred(creder.said)
-                atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
-                iss = next(self.verifier.reger.clonePreIter(pre=creder.said))
-
-                exn, atc = protocoling.credentialIssueExn(hab=hab, message="", acdc=atc, iss=bytes(iss))
-                self.postman.send(src=sender, dest=recp, topic="credential", serder=exn, attachment=atc)
-
-                # Escrow until postman has successfully sent the notification
-                self.rgy.reger.crse.put(keys=(exn.said,), val=creder)
-            else:
-                # Credential complete, mark it in the database
-                self.rgy.reger.ccrd.put(keys=(said,), val=creder)
-
-            self.rgy.reger.crie.rem(keys=(said, snq))
-
-    def processCredentialSentEscrow(self):
-        """
-        Process Poster cues to ensure that the last message (exn notification) has
-        been sent before declaring the credential complete
-
-        """
-        for (said,), creder in self.rgy.reger.crse.getItemIter():
-            found = False
-            while self.postman.cues:
-                cue = self.postman.cues.popleft()
-                if cue["said"] == said:
-                    found = True
-                    break
-
-            if found:
-                self.rgy.reger.crse.rem(keys=(said,))
-                self.rgy.reger.ccrd.put(keys=(creder.said,), val=creder)
+            # place in escrow to diseminate to other if witnesser and if there is an issuee
+            self.rgy.reger.ccrd.put(keys=(said,), val=creder)
 
     def complete(self, said):
-        return self.rgy.reger.ccrd.get(keys=(said,)) is not None and len(self.postman.evts) == 0
+        return self.rgy.reger.ccrd.get(keys=(said,)) is not None
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be completed.
@@ -1034,9 +907,7 @@ class Credentialer(doing.DoDoer):
         Process credential registry anchors:
 
         """
-        self.processCredentialIssuedEscrow()
         self.processCredentialMissingSigEscrow()
-        self.processCredentialSentEscrow()
 
 
 def sendCredential(hby, hab, reger, postman, creder, recp):

@@ -80,12 +80,12 @@ class GroupMultisigInteract(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.hby, exc, mux)
+        grouping.loadHandlers(exc, mux)
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
 
-        doers = [self.hbyDoer, self.postman, mbd, self.counselor, exc]
+        doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.interactDo)])

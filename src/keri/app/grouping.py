@@ -219,54 +219,47 @@ class Counselor(doing.DoDoer):
                 self.witDoer.gets.append(dict(pre=pre, sn=seqner.sn))
 
 
-class MultisigNotificationHandler(doing.Doer):
+class MultisigNotificationHandler:
     """
     Handler for multisig coordination EXN messages
 
     """
-    persist = True
-    local = True
 
-    def __init__(self, resource, mux, **kwargs):
+    def __init__(self, resource, mux):
         """ Create an exn handler for multisig messages
 
         Parameters:
             resource:
             mux:
-            **kwargs:
         """
         self.resource = resource
         self.mux = mux
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
 
-        super(MultisigNotificationHandler, self).__init__(**kwargs)
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of multisig exn messages
 
-    def recur(self, tyme):
-        if self.msgs:
-            msg = self.msgs.popleft()
-            serder = msg["serder"]
+        Parameters:
+            serder (Serder): Serder of the exn multisig message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
-            self.mux.add(serder=serder)
-
-        return False
+        """
+        self.mux.add(serder=serder)
 
 
-def loadHandlers(hby, exc, mux):
+def loadHandlers(exc, mux):
     """ Load handlers for the peer-to-peer distributed group multisig protocol
 
     Parameters:
-        hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
         mux (Multiplexor): Multisig communication coordinator
 
     """
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/icp", hby=hby, mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rot", hby=hby, mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/ixn", hby=hby, mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", hby=hby, mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", hby=hby, mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", hby=hby, mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/icp", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rot", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/ixn", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", mux=mux))
 
 
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
@@ -399,40 +392,29 @@ def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
     return exn, atc
 
 
-def multisigIssueExn(ghab, recipient, acdc, iss, ixn=None, rot=None):
+def multisigExn(ghab, exn):
     """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
 
     Either rot or ixn are required but not both
 
     Parameters:
         ghab (GroupHab): identifier Hab for ensorsing the message to send
-        recipient (str): qb64 AID to send this message t0
-        acdc (bytes): CESR stream of serialized Creder instance of the issued credential, with signatures
-        iss (bytes): serialized Credential issuance event
-        ixn (bytes): CESR stream of serialized and signed interaction event anchoring credential issuance event
-        rot (bytes): CESR stream of serialized and signed rotation event anchoring credential issuance event
+        exn (bytes): CESR stream of serialized echange message, with signatures
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
 
     """
     embeds = dict(
-        acdc=acdc,
-        iss=iss,
+        exn=exn
     )
 
-    if rot is not None:
-        embeds["rot"] = rot
-    elif ixn is not None:
-        embeds['ixn'] = ixn
-
-    exn, end = exchanging.exchange(route="/multisig/iss", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
-                                   recipient=recipient, embeds=embeds)
+    wexn, end = exchanging.exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
-    atc = bytearray(evt[exn.size:])
+    atc = bytearray(evt[wexn.size:])
     atc.extend(end)
 
-    return exn, atc
+    return wexn, atc
 
 
 def getEscrowedEvent(db, pre, sn):

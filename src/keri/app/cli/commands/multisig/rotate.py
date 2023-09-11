@@ -90,13 +90,13 @@ class GroupMultisigRotate(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.hby, exc, mux)
+        grouping.loadHandlers(exc, mux)
 
         mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
-        doers = [mbd, self.hbyDoer, self.counselor, self.postman, exc]
+        doers = [mbd, self.hbyDoer, self.counselor, self.postman]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.rotateDo)])
