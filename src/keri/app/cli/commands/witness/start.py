@@ -44,6 +44,9 @@ parser.add_argument('--config-file',
                     action='store',
                     default=None,
                     help="configuration filename override")
+parser.add_argument("--keypath", action="store", required=False, default=None)
+parser.add_argument("--certpath", action="store", required=False, default=None)
+parser.add_argument("--cafilepath", action="store", required=False, default=None)
 
 
 def launch(args):
@@ -62,14 +65,17 @@ def launch(args):
                tcp=int(args.tcp),
                http=int(args.http),
                configDir=args.configDir,
-               configFile=args.configFile)
+               configFile=args.configFile,
+               keypath=args.keypath,
+               certpath=args.certpath,
+               cafilepath=args.cafilepath)
 
     logger.info("\n******* Ended Witness for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
 def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
-               configDir="", configFile=""):
+               configDir="", configFile="", keypath=None, certpath=None, cafilepath=None):
     """
     Setup and run one witness
     """
@@ -96,6 +102,9 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     doers.extend(indirecting.setupWitness(alias=alias,
                                           hby=hby,
                                           tcpPort=tcp,
-                                          httpPort=http))
+                                          httpPort=http,
+                                          keypath=keypath,
+                                          certpath=certpath,
+                                          cafilepath=cafilepath))
 
     directing.runController(doers=doers, expire=expire)

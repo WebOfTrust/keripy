@@ -14,7 +14,7 @@ import traceback
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
-from hio.core import http
+from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
@@ -34,7 +34,8 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 
-def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632):
+def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
+                 keypath=None, certpath=None, cafilepath=None):
     """
     Setup witness controller and doers
 
@@ -86,7 +87,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
 
-    server = http.Server(port=httpPort, app=app)
+    server = createHttpServer(httpPort, app, keypath, certpath, cafilepath)
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
@@ -106,6 +107,30 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     doers.extend(oobiRes)
     doers.extend([regDoer, exchanger, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
     return doers
+
+
+def createHttpServer(port, app, keypath=None, certpath=None, cafilepath=None):
+    """
+    Create an HTTP or HTTPS server depending on whether TLS key material is present
+    Parameters:
+        port (int)         : port to listen on for all HTTP(s) server instances
+        app (falcon.App)   : application instance to pass to the http.Server instance
+        keypath (string)   : the file path to the TLS private key
+        certpath (string)  : the file path to the TLS signed certificate (public key)
+        cafilepath (string): the file path to the TLS CA certificate chain file
+    Returns:
+        hio.core.http.Server
+    """
+    if keypath is not None and certpath is not None and cafilepath is not None:
+        servant = tcp.ServerTls(certify=False,
+                                keypath=keypath,
+                                certpath=certpath,
+                                cafilepath=cafilepath,
+                                port=port)
+        server = http.Server(port=port, app=app, servant=servant)
+    else:
+        server = http.Server(port=port, app=app)
+    return server
 
 
 class WitnessStart(doing.DoDoer):
