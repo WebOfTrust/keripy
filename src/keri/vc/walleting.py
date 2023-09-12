@@ -45,8 +45,8 @@ class Wallet:
 
         creds = []
         for saider in saiders:
-            creder, sadsigers, sadcigars = self.reger.cloneCred(said=saider.qb64)
-            creds.append((creder, sadsigers, sadcigars))
+            creder = self.reger.cloneCred(said=saider.qb64)
+            creds.append(creder)
 
         return creds
 

@@ -66,15 +66,8 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                b'znY1IIiKDIrg-vIyge6mBl2QV8dDjI3","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"}}')
 
-        sig0 = (b'AABrPJSGOU5oUGZjYHvgTo6dblTHX0yNq-SACUc3mgg68RspLkw2rCmXGpZuxnKN0spAzU3Wj0UN'
-                b'2C98Yrab1uYA')
-
         parsing.Parser().parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
-        creder, sadsigers, sadcigars = verifier.reger.cloneCred(said=creder.said)
+        creder = verifier.reger.cloneCred(said=creder.said)
         assert creder.raw == ser
-
-        # verify the signature
-        assert len(sadsigers) == 0
-        assert len(sadcigars) == 0

@@ -260,7 +260,7 @@ class Verifier:
 
         """
         for (said,), dater in db.getItemIter():
-            creder, sadsigers, sadcigars = self.reger.cloneCred(said)
+            creder = self.reger.cloneCred(said)
 
             try:
 

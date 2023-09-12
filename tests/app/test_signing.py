@@ -238,10 +238,8 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
         saider = verifier.reger.saved.get(keys=cred.said)
         assert saider is not None
 
-        scre, sadsigers, sadcigars = verifier.reger.cloneCred(said=cred.said)
+        scre = verifier.reger.cloneCred(said=cred.said)
         assert scre.raw == cred.raw
-        assert len(sadcigars) == 0
-        assert len(sadsigers) == 0
 
     # multiple path sigs
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):

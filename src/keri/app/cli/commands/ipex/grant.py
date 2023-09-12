@@ -85,7 +85,7 @@ class GrantDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        creder, _, _ = self.rgy.reger.cloneCred(said=self.said)
+        creder = self.rgy.reger.cloneCred(said=self.said)
         if creder is None:
             raise ValueError(f"invalid credential SAID to grant={self.said}")
 

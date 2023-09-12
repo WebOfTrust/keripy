@@ -324,7 +324,7 @@ class Reger(dbing.LMDBer):
         creds = []
         for saider in saids:
             key = saider.qb64
-            creder, sadsigers, sadcigars = self.cloneCred(said=key)
+            creder = self.cloneCred(said=key)
 
             chainSaids = []
             for k, p in creder.chains.items():
@@ -342,13 +342,6 @@ class Reger(dbing.LMDBer):
             cred = dict(
                 sad=creder.crd,
                 pre=creder.issuer,
-                sadsigers=[dict(
-                    path=pather.bext,
-                    pre=prefixer.qb64,
-                    sn=seqner.sn,
-                    d=saider.qb64
-                ) for (pather, prefixer, seqner, saider, sigers) in sadsigers],
-                sadcigars=[dict(path=pather.bext, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
                 chains=chains,
                 status=status.ked,
             )
@@ -380,8 +373,7 @@ class Reger(dbing.LMDBer):
         """
 
         creder = self.creds.get(keys=(said,))
-        # TODO: refactor usages to get rid of signatures
-        return creder, [], []
+        return creder
 
     def clonePreIter(self, pre, fn=0):
         """ Iterator of first seen event messages
@@ -466,11 +458,8 @@ class Reger(dbing.LMDBer):
 
         sources = []
         for said in saids:
-            screder, sadsigers, sadcigars = self.cloneCred(said=said)
-
-            craw = signing.provision(serder=screder, sadsigers=sadsigers, sadcigars=sadcigars)
-            del craw[screder.size:]
-            sources.append((screder, craw))
+            screder = self.cloneCred(said=said)
+            sources.append(screder)
             sources.extend(self.sources(db, screder))
 
         return sources

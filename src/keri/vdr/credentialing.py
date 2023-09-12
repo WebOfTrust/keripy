@@ -935,15 +935,13 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     for source, atc in sources:
         sendArtifacts(hby, reger, postman, source, sender, recp)
 
-        serder, sadsigs, sadcigs = reger.cloneCred(source.said)
-        atc = signing.provision(serder=source, sadcigars=sadcigs, sadsigers=sadsigs)
-        del atc[:serder.size]
+        serder = reger.cloneCred(source.said)
+        # TODO: Determine what to do with streaming the credential here
         postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
 
-    serder, sadsigs, sadcigs = reger.cloneCred(creder.said)
-    atc = signing.provision(serder=creder, sadcigars=sadcigs, sadsigers=sadsigs)
-    del atc[:serder.size]
-    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
+    serder = reger.cloneCred(creder.said)
+    # TODO: Determine what to do with streaming the credential here
+    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=bytes())
 
 
 def sendArtifacts(hby, reger, postman, creder, sender, recp):

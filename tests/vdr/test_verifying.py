@@ -91,10 +91,9 @@ def test_verifier(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre, sadsigers, sadcigars = regery.reger.cloneCred(said=creder.saider.qb64)
+        dcre = regery.reger.cloneCred(said=creder.saider.qb64)
 
         assert dcre.raw == creder.raw
-        assert len(sadsigers) == 0
 
         saider = regery.reger.issus.get(hab.pre)
         assert saider[0].qb64 == creder.said
@@ -363,10 +362,8 @@ def test_verifier_chained_credential(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre, sadsig, sadcig = ronreg.reger.cloneCred(said=creder.said)
+        dcre = ronreg.reger.cloneCred(said=creder.said)
         assert dcre.raw == creder.raw
-        assert len(sadsig) == 0
-        assert len(sadcig) == 0
 
         saider = ronreg.reger.issus.get(ron.pre)
         assert saider[0].qb64 == creder.said
@@ -431,10 +428,8 @@ def test_verifier_chained_credential(seeder):
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
 
-        dcre, sadsig, sadcig = ianreg.reger.cloneCred(said=vLeiCreder.said)
+        dcre = ianreg.reger.cloneCred(said=vLeiCreder.said)
         assert dcre.raw == vLeiCreder.raw
-        assert len(sadsig) == 0
-        assert len(sadcig) == 0
 
         dater = ianreg.reger.mce.get(vLeiCreder.saider.qb64b)
         assert dater is not None
