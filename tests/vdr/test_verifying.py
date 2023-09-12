@@ -26,17 +26,17 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EHraBkp-XMf1x_bo70O2x3br'
-                    b'BCHlJHa7q_MzsBNeYz2_","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
-                    b'KXqgcX4","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4"}}-V'
-                    b'Aj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABUWETZTw'
-                    b'TVuh0mNvN5KsJ_9V1epoP5wqgW32x8nUnGB20aI8xQBAhQ-aVP61ZEq97BDGSnxO'
-                    b'hU6tGCfDmvtugI')
+                       b'BCHlJHa7q_MzsBNeYz2_","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
+                       b'KXqgcX4","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4"}}-V'
+                       b'Aj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABUWETZTw'
+                       b'TVuh0mNvN5KsJ_9V1epoP5wqgW32x8nUnGB20aI8xQBAhQ-aVP61ZEq97BDGSnxO'
+                       b'hU6tGCfDmvtugI')
 
 
 def test_verifier(seeder):
     with (habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
-            habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
+          habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o"
@@ -64,10 +64,9 @@ def test_verifier(seeder):
                                     data=d,
                                     status=issuer.regk)
 
-        sadsigers, sadcigars = signing.signPaths(hab=hab, serder=creder, paths=[[]])
         missing = False
         try:
-            verifier.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
+            verifier.processCredential(creder)
         except kering.MissingRegistryError:
             missing = True
 
@@ -95,7 +94,7 @@ def test_verifier(seeder):
         dcre, sadsigers, sadcigars = regery.reger.cloneCred(said=creder.saider.qb64)
 
         assert dcre.raw == creder.raw
-        assert len(sadsigers) == 1
+        assert len(sadsigers) == 0
 
         saider = regery.reger.issus.get(hab.pre)
         assert saider[0].qb64 == creder.said
@@ -336,11 +335,9 @@ def test_verifier_chained_credential(seeder):
                                     data=d,
                                     status=roniss.regk)
 
-        sadsigers, sadcigars = signing.signPaths(hab=ron, serder=creder, paths=[[]])
-
         missing = False
         try:
-            ronverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
+            ronverfer.processCredential(creder)
         except kering.MissingRegistryError:
             missing = True
 
@@ -368,16 +365,8 @@ def test_verifier_chained_credential(seeder):
 
         dcre, sadsig, sadcig = ronreg.reger.cloneCred(said=creder.said)
         assert dcre.raw == creder.raw
-        assert len(sadsig) == 1
+        assert len(sadsig) == 0
         assert len(sadcig) == 0
-
-        expect = [m.qb64 for m in sadsig[0][:-1]]
-        actual = [m.qb64 for m in sadsigers[0][:-1]]
-        assert expect == actual
-
-        sig0 = sadsig[-1][0]
-        sig1 = sadsigers[-1][0]
-        assert sig0.qb64b == sig1.qb64b
 
         saider = ronreg.reger.issus.get(ron.pre)
         assert saider[0].qb64 == creder.said
@@ -419,11 +408,9 @@ def test_verifier_chained_credential(seeder):
                                             usageDisclaimer="Use carefully."
                                         )])
 
-        vLeiSadsigers, vLeiSadcigars = signing.signPaths(hab=ian, serder=vLeiCreder, paths=[[]])
-
         missing = False
         try:
-            ianverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
+            ianverfer.processCredential(vLeiCreder)
         except kering.MissingRegistryError:
             missing = True
 
@@ -446,16 +433,8 @@ def test_verifier_chained_credential(seeder):
 
         dcre, sadsig, sadcig = ianreg.reger.cloneCred(said=vLeiCreder.said)
         assert dcre.raw == vLeiCreder.raw
-        assert len(sadsig) == 1
+        assert len(sadsig) == 0
         assert len(sadcig) == 0
-
-        expect = [m.qb64 for m in sadsig[0][:-1]]
-        actual = [m.qb64 for m in vLeiSadsigers[0][:-1]]
-        assert expect == actual
-
-        sig0 = sadsig[-1][0]
-        sig1 = vLeiSadsigers[-1][0]
-        assert sig0.qb64b == sig1.qb64b
 
         dater = ianreg.reger.mce.get(vLeiCreder.saider.qb64b)
         assert dater is not None
@@ -477,7 +456,7 @@ def test_verifier_chained_credential(seeder):
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
-        ianverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
+        ianverfer.processCredential(creder)
 
         # Process the escrows to get Ian's credential out of missing chain escrow
         ianverfer.processEscrows()
@@ -508,17 +487,15 @@ def test_verifier_chained_credential(seeder):
         _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         untargetedCreder = proving.credential(issuer=ian.pre,
-                                        schema=optionalIssueeSchema,
-                                        data=d,
-                                        status=ianiss.regk,
-                                        source=chain,
-                                        rules={})
-
-        untargetedSadsigers, untargetedSadcigars = signing.signPaths(hab=ian, serder=untargetedCreder, paths=[[]])
+                                              schema=optionalIssueeSchema,
+                                              data=d,
+                                              status=ianiss.regk,
+                                              source=chain,
+                                              rules={})
 
         missing = False
         try:
-            ianverfer.processCredential(untargetedCreder, sadsigers=untargetedSadsigers, sadcigars=untargetedSadcigars)
+            ianverfer.processCredential(untargetedCreder)
         except kering.MissingRegistryError:
             missing = True
 
@@ -555,17 +532,15 @@ def test_verifier_chained_credential(seeder):
         _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
 
         chainedCreder = proving.credential(issuer=ian.pre,
-                                        schema=optionalIssueeSchema,
-                                        data=d,
-                                        status=ianiss.regk,
-                                        source=chain,
-                                        rules={})
-
-        chainedSadsigers, chainedSadcigars = signing.signPaths(hab=ian, serder=chainedCreder, paths=[[]])
+                                           schema=optionalIssueeSchema,
+                                           data=d,
+                                           status=ianiss.regk,
+                                           source=chain,
+                                           rules={})
 
         missing = False
         try:
-            ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
+            ianverfer.processCredential(chainedCreder)
         except kering.MissingRegistryError:
             missing = True
 
@@ -584,7 +559,7 @@ def test_verifier_chained_credential(seeder):
 
         # Ensure that when specifying I2I it is enforced
         try:
-            ianverfer.processCredential(chainedCreder, sadsigers=chainedSadsigers, sadcigars=chainedSadcigars)
+            ianverfer.processCredential(chainedCreder)
         except kering.MissingChainError:
             pass
 
@@ -600,7 +575,7 @@ def test_verifier_chained_credential(seeder):
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
-        vicverfer.processCredential(creder, sadsigers=sadsigers, sadcigars=sadcigars)
+        vicverfer.processCredential(creder)
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
         assert cue["kin"] == "saved"
@@ -616,7 +591,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
-        vicverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
+        vicverfer.processCredential(vLeiCreder)
 
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
@@ -641,6 +616,6 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(kering.RevokedChainError):
-            vicverfer.processCredential(vLeiCreder, sadsigers=vLeiSadsigers, sadcigars=vLeiSadcigars)
+            vicverfer.processCredential(vLeiCreder)
 
     """End Test"""

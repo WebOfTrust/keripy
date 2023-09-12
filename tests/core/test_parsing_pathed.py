@@ -21,6 +21,11 @@ def test_pathed_material(mockHelpingNowUTC):
 
         def __init__(self):
             self.msgs = decking.Deck()
+            self.atcs = decking.Deck()
+
+        def handle(self, serder, attachments=None):
+            self.msgs.append(serder)
+            self.atcs.append(attachments)
 
     with (habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as hby,
           habbing.openHby(name="deb", base="test") as debHby):
@@ -41,15 +46,16 @@ def test_pathed_material(mockHelpingNowUTC):
 
         parser.parseOne(ims=fwd)
         assert len(handler.msgs) == 1
-        msg = handler.msgs.popleft()
+        serder = handler.msgs.popleft()
 
-        embeds = msg["embeds"]
+        embeds = serder.ked['e']
         assert len(embeds) == 5
         assert embeds["icp"]["t"] == coring.Ilks.icp
         assert embeds["ixn0"]["t"] == coring.Ilks.ixn
         assert embeds["rot"]["t"] == coring.Ilks.rot
         assert embeds["ixn1"]["t"] == coring.Ilks.ixn
-        attachments = msg["attachments"]
+        assert len(handler.atcs) == 1
+        attachments = handler.atcs.popleft()
         assert len(attachments) == 4
         (path1, attachment1) = attachments[0]
         assert path1.bext == "-icp"

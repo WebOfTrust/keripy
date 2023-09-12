@@ -264,6 +264,7 @@ class ForwardHandler:
             print("error with message, nothing to forward", serder.ked)
             return
 
+        print("storing to resource")
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 

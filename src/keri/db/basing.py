@@ -920,7 +920,7 @@ class Baser(dbing.LMDBer):
         self.erts = subing.CesrIoSetSuber(db=self, subkey="erts.", klas=coring.Saider)
 
         # Forward pointer to a provided reply message
-        self.erpy = subing.CesrSuber(db=self, subkey="erpy", klas=coring.Saider)
+        self.erpy = subing.CesrSuber(db=self, subkey="erpy.", klas=coring.Saider)
 
         # exchange messages
         self.sxns = subing.SerderSuber(db=self, subkey="sxns.")

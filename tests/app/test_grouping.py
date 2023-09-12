@@ -775,17 +775,6 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
 
-        limit = 0.5
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
         # There should still only be one notification because we don't notify for our own event
         assert len(notifier.signaler.signals) == 1
 

@@ -10,7 +10,6 @@ from keri import kering
 from keri.app import habbing, delegating, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
 from keri.db import dbing
-from keri.peer import exchanging
 
 
 def test_boatswain(seeder):
@@ -138,32 +137,13 @@ def test_delegation_request(mockHelpingNowUTC):
 def test_delegation_request_handler(mockHelpingNowUTC):
     with habbing.openHab(name="test", temp=True) as (hby, hab):
 
-        src = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
-        ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
         notifier = notifying.Notifier(hby=hby)
         handler = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
+        exn, _ = delegating.delegateRequestExn(hab, hab.pre, ked=serder.ked)
 
-        # Pass message missing keys:
-        handler.msgs.append(dict(name="value"))
-        handler.msgs.append(dict(pre=hab.kever.prefixer))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=hab.pre)))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=src, ked=serder.ked)))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=hab.pre, ked=serder.ked)))
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
+        handler.handle(serder=exn)
 
         assert len(notifier.getNotes()) == 1

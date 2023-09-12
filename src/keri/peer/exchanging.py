@@ -213,7 +213,7 @@ class Exchanger:
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None):
         dig = serder.said
         pdig = serder.ked['p']
-        route = serder.kex['r']
+        route = serder.ked['r']
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
@@ -228,7 +228,8 @@ class Exchanger:
         saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         self.hby.db.erts.add(keys=(route,), val=saider)
-        self.hby.db.erpy.pin(keys=(pdig,), val=saider)
+        if pdig:
+            self.hby.db.erpy.pin(keys=(pdig,), val=saider)
         self.hby.db.exns.put(keys=(dig,), val=serder)
 
     def lead(self, hab, said):
@@ -364,6 +365,9 @@ def cloneMessage(hby, said):
 
     """
     exn = hby.db.exns.get(keys=(said,))
+    if exn is None:
+        return None, None
+
     verify(hby=hby, serder=exn)
 
     pathed = dict()

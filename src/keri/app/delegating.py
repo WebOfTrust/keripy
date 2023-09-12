@@ -228,7 +228,7 @@ class DelegateRequestHandler:
 
         Parameters:
             serder (Serder): Serder of the exn delegation request message
-            pathed (list): list of CESR SAD path attachments to the exn event
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
 

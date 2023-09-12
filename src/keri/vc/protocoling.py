@@ -61,7 +61,7 @@ class IpexHandler:
             case["", "ipex", Ipex.apply]:
                 if not dig:  # Apply messages can only start an IPEX exchange
                     return True
-            case["", "ipex", verb] if verb in (Ipex.offer, Ipex.agree, Ipex.grant):
+            case["", "ipex", verb] if verb in (Ipex.offer, Ipex.grant):
                 if not dig:  # This is an offer, agree or grant opening an IPEX exchange, no prior
                     return True
 
@@ -78,7 +78,7 @@ class IpexHandler:
 
                 return self.response(pserder) is None  # Make sure we don't have a response already
 
-            case["", "ipex", verb] if verb in (Ipex.admit, Ipex.spurn):
+            case["", "ipex", verb] if verb in (Ipex.admit, Ipex.agree, Ipex.spurn):
                 if not dig:  # Admit and Spurn messages can NOT start an IPEX exchange
                     return False
 
@@ -106,7 +106,7 @@ class IpexHandler:
         Returns:
 
         """
-        saider = self.hby.db.erpys.get(key=(serder.said,))
+        saider = self.hby.db.erpy.get(keys=(serder.said,))
         if saider:
             rserder, _ = exchanging.cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
             return rserder
@@ -118,7 +118,7 @@ class IpexHandler:
 
         Parameters:
             serder (Serder): Serder of the IPEX protocol exn message
-            pathed (list): list of CESR SAD path attachments to the exn event
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
         attrs = serder.ked["a"]
@@ -200,7 +200,7 @@ def ipexAgreeExn(hab, message, offer):
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the credential agreement
-        offer (any): offer received or its SAID
+        offer (Serder): IPEX exn offer message that this offer is response to.
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -208,11 +208,10 @@ def ipexAgreeExn(hab, message, offer):
 
     """
     data = dict(
-        m=message,
-        o=offer
+        m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre, dig=offer.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -220,7 +219,7 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, message, acdc, iss, anc):
+def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
     """ Disclose an ACDC
 
     Parameters:
@@ -229,6 +228,7 @@ def ipexGrantExn(hab, message, acdc, iss, anc):
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
+        agree (Serder): optional IPEX exn agree message that this grant is response to.
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -245,7 +245,11 @@ def ipexGrantExn(hab, message, acdc, iss, anc):
         anc=anc
     )
 
-    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds)
+    kwa = dict()
+    if agree is not None:
+        kwa['dig'] = agree.said
+
+    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -259,7 +263,7 @@ def ipexAdmitExn(hab, message, grant):
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
-        grant (str): qb64 SAID of IPEX grant exn message
+        grant (Serder): IPEX grant exn message serder
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -270,7 +274,7 @@ def ipexAdmitExn(hab, message, grant):
         m=message,
     )
 
-    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant)
+    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -278,13 +282,13 @@ def ipexAdmitExn(hab, message, grant):
     return exn, ims
 
 
-def ipexSpurnExn(hab, message, spurn):
+def ipexSpurnExn(hab, message, spurned):
     """ Reject an application, offer or agreement
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
-        spurn (any): apply, offer or agree received, or its SAID that is rejected
+        spurned (Serder): apply, offer, agree or grant received
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -292,11 +296,10 @@ def ipexSpurnExn(hab, message, spurn):
 
     """
     data = dict(
-        m=message,
-        s=spurn
+        m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre, dig=spurned.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)

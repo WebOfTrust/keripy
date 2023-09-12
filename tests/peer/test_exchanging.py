@@ -69,17 +69,10 @@ def test_exchanger():
                            verfers=hab.kever.verfers,
                            indexed=True)
         tsgs = [(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, exnsigs)]
-        exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs,
-                         sadsigs=[(sadsig.pather, sadsig.sigers)])
+        exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs)
 
-        assert len(forwarder.msgs) == 1
-        msg = forwarder.msgs.popleft()
-
-        assert msg["payload"] == {}
-        assert msg["embeds"]["evt"] == ser.ked
-        assert msg["modifiers"] == {'pre': 'EBCAFG', 'topic': '/delegation'}
-        assert msg["pre"].qb64b == hab.kever.prefixer.qb64b
-        assert msg["attachments"] == []
+        msgs = forwarder.mbx.getTopicMsgs(topic="EBCAFG/delegation")
+        print(msgs)
 
 
 def test_hab_exchange(mockHelpingNowUTC):

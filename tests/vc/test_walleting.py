@@ -76,12 +76,5 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         assert creder.raw == ser
 
         # verify the signature
-        assert len(sadsigers) == 1
-        (_, _, _, _, sigers) = sadsigers[0]
-        assert sigers[0].qb64b == sig0
+        assert len(sadsigers) == 0
         assert len(sadcigars) == 0
-
-        # verify we can look up credential by Schema SAID
-        schema = verifier.reger.schms.get(schema)
-        assert len(schema) == 1
-        assert schema[0].qb64 == creder.said

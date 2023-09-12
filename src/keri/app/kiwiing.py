@@ -18,7 +18,6 @@ from .. import help
 from ..app import specing, storing, indirecting, httping, habbing, delegating, booting
 from ..core import coring
 from ..peer import exchanging
-from ..vc import protocoling
 from ..vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()

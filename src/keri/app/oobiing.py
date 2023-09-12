@@ -296,17 +296,16 @@ class OobiRequestHandler:
 
         Parameters:
             serder (Serder): Serder of the exn OOBI request message
-            pathed (list): list of CESR SAD path attachments to the exn event
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
-        prefixer = serder.pre
+        src = serder.pre
         pay = serder.ked['a']
         if "oobi" not in pay:
             print(f"invalid oobi message, missing oobi.  evt={serder.ked}")
             return
         oobi = pay["oobi"]
 
-        src = prefixer.qb64
         obr = basing.OobiRecord(date=helping.nowIso8601())
         self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
