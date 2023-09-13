@@ -1253,7 +1253,7 @@ class Baser(dbing.LMDBer):
             for wig in wigs:
                 atc.extend(wig)
 
-        # add authorizer (delegator/issure) source seal event couple to attachments
+        # add authorizer (delegator/issuer) source seal event couple to attachments
         couple = self.getAes(dgkey)
         if couple is not None:
             atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,

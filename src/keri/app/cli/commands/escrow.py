@@ -127,23 +127,15 @@ def escrows(tymth, tock=0.0, **opts):
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
                 for (said,), dater in reger.mre.getItemIter():
-                    creder = reger.cloneCred(said)
+                    creder, *_ = reger.cloneCred(said)
                     creds.append(creder.crd)
 
                 escrows["missing-registry-escrow"] = creds
 
-            if (not escrow) or escrow == "missing-issuer-escrow":
-                creds = list()
-                for (said,), dater in reger.mie.getItemIter():
-                    creder = reger.cloneCred(said)
-                    creds.append(creder.crd)
-
-                escrows["missing-issuer-escrow"] = creds
-
             if (not escrow) or escrow == "broken-chain-escrow":
                 creds = list()
                 for (said,), dater in reger.mce.getItemIter():
-                    creder = reger.cloneCred(said)
+                    creder, *_ = reger.cloneCred(said)
                     creds.append(creder.crd)
 
                 escrows["broken-chain-escrow"] = creds
@@ -151,7 +143,7 @@ def escrows(tymth, tock=0.0, **opts):
             if (not escrow) or escrow == "missing-schema-escrow":
                 creds = list()
                 for (said,), dater in reger.mse.getItemIter():
-                    creder = reger.cloneCred(said)
+                    creder, *_ = reger.cloneCred(said)
                     creds.append(creder.crd)
 
                 escrows["missing-schema-escrow"] = creds

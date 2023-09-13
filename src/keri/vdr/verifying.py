@@ -86,7 +86,7 @@ class Verifier:
         while creds:
             self.processCredential(**creds.pull())
 
-    def processCredential(self, creder):
+    def processCredential(self, creder, prefixer, seqner, saider):
         """ Credential data and signature(s) verification
 
         Verify the data of the credential against the schema, the SAID of the credential and
@@ -94,6 +94,9 @@ class Verifier:
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix of source anchoring KEL or TEL event
+            seqner (Seqner): sequence number of source anchoring KEL or TEL event
+            saider (Saider): SAID of source anchoring KEL or TEL event
 
         """
         regk = creder.status
@@ -102,20 +105,20 @@ class Verifier:
         prov = creder.chains
 
         if regk not in self.tevers:  # registry event not found yet
-            if self.escrowMRE(creder):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
-            if self.escrowMRE(creder):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         dtnow = helping.nowUTC()
         dte = helping.fromIso8601(state.ked["dt"])
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-            if self.escrowMRE(creder):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
@@ -126,7 +129,7 @@ class Verifier:
         # Verify the credential against the schema
         scraw = self.resolver.resolve(schema)
         if not scraw:
-            if self.escrowMSE(creder):
+            if self.escrowMSE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
@@ -155,7 +158,7 @@ class Verifier:
                 op = node['o'] if 'o' in node else None
                 state = self.verifyChain(nodeSaid, op, creder.issuer)
                 if state is None:
-                    self.escrowMCE(creder)
+                    self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
@@ -163,7 +166,7 @@ class Verifier:
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.ked["dt"])
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-                    self.escrowMCE(creder)
+                    self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
@@ -174,69 +177,54 @@ class Verifier:
                     logger.info("Successfully validated credential chain {} for credential {}"
                                 .format(label, creder.said))
 
-        self.saveCredential(creder)
+        self.saveCredential(creder, prefixer, seqner, saider)
         self.cues.append(dict(kin="saved", creder=creder))
 
-    def escrowPSC(self, creder):
-        """ Credential Partial Signature Escrow
-
-        Parameters:
-            creder (Creder): that contains the credential to process
-
-        """
-        key = creder.saider.qb64b
-
-        self.reger.logCred(creder)
-        return self.reger.pse.put(keys=key, val=coring.Dater())
-
-    def escrowMRE(self, creder):
+    def escrowMRE(self, creder, prefixer, seqner, saider):
         """ Missing Registry Escrow
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mre.put(keys=key, val=coring.Dater())
 
-    def escrowMIE(self, creder):
-        """ Missing Issuer Escrow
+    def escrowMCE(self, creder, prefixer, seqner, saider):
+        """ Missing Chain Escrow
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder)
-        return self.reger.mie.put(keys=key, val=coring.Dater())
-
-    def escrowMCE(self, creder):
-        """ Missing Issuer Escrow
-
-        Parameters:
-            creder (Creder): that contains the credential to process
-
-        """
-        key = creder.saider.qb64b
-
-        self.reger.logCred(creder)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mce.put(keys=key, val=coring.Dater())
 
-    def escrowMSE(self, creder):
+    def escrowMSE(self, creder, prefixer, seqner, saider):
         """
         Missing Credential Schema Escrow
 
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mse.put(keys=key, val=coring.Dater())
 
     def processEscrows(self):
@@ -246,8 +234,6 @@ class Verifier:
 
         self._processEscrow(self.reger.mce, self.TimeoutMRI, kering.MissingChainError)
         self._processEscrow(self.reger.mse, self.TimeoutMRI, kering.MissingSchemaError)
-        self._processEscrow(self.reger.pse, self.TimeoutPSE, kering.MissingSignatureError)
-        self._processEscrow(self.reger.mie, self.TimeoutMRI, kering.MissingIssuerError)
         self._processEscrow(self.reger.mre, self.TimeoutMRE, kering.MissingRegistryError)
 
     def _processEscrow(self, db, timeout, etype: Type[Exception]):
@@ -260,7 +246,7 @@ class Verifier:
 
         """
         for (said,), dater in db.getItemIter():
-            creder = self.reger.cloneCred(said)
+            creder, prefixer, seqner, saider = self.reger.cloneCred(said)
 
             try:
 
@@ -274,7 +260,7 @@ class Verifier:
                     raise kering.ValidationError("Stale event escrow "
                                                  "at said = {}.".format(bytes(said)))
 
-                self.processCredential(creder)
+                self.processCredential(creder, prefixer, seqner, saider)
 
             except etype as ex:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -293,14 +279,17 @@ class Verifier:
                 logger.info("Verifier unescrow succeeded in valid group op: "
                             "creder=\n%s\n", creder.pretty())
 
-    def saveCredential(self, creder):
+    def saveCredential(self, creder, prefixer, seqner, saider):
         """ Write the credential and associated indicies to the database
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
-        self.reger.logCred(creder)
+        self.reger.logCred(creder, prefixer, seqner, saider)
 
         schema = creder.schema.encode("utf-8")
         issuer = creder.issuer.encode("utf-8")

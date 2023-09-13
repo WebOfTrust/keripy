@@ -63,10 +63,11 @@ def test_verifier(seeder):
                                     schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
                                     data=d,
                                     status=issuer.regk)
-
         missing = False
         try:
-            verifier.processCredential(creder)
+            # Specify an anchor directly in the KEL
+            verifier.processCredential(creder, prefixer=hab.kever.prefixer, seqner=seqner,
+                                       saider=hab.kever.serder.saider)
         except kering.MissingRegistryError:
             missing = True
 
@@ -91,7 +92,7 @@ def test_verifier(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre = regery.reger.cloneCred(said=creder.saider.qb64)
+        dcre, *_ = regery.reger.cloneCred(said=creder.saider.qb64)
 
         assert dcre.raw == creder.raw
 
@@ -336,7 +337,8 @@ def test_verifier_chained_credential(seeder):
 
         missing = False
         try:
-            ronverfer.processCredential(creder)
+            ronverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
+                                        saider=ron.kever.serder.saider)
         except kering.MissingRegistryError:
             missing = True
 
@@ -362,7 +364,7 @@ def test_verifier_chained_credential(seeder):
         assert cue["kin"] == "saved"
         assert cue["creder"].raw == creder.raw
 
-        dcre = ronreg.reger.cloneCred(said=creder.said)
+        dcre, *_ = ronreg.reger.cloneCred(said=creder.said)
         assert dcre.raw == creder.raw
 
         saider = ronreg.reger.issus.get(ron.pre)
@@ -407,7 +409,8 @@ def test_verifier_chained_credential(seeder):
 
         missing = False
         try:
-            ianverfer.processCredential(vLeiCreder)
+            ianverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                        saider=ian.kever.serder.saider)
         except kering.MissingRegistryError:
             missing = True
 
@@ -428,7 +431,7 @@ def test_verifier_chained_credential(seeder):
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
 
-        dcre = ianreg.reger.cloneCred(said=vLeiCreder.said)
+        dcre, *_ = ianreg.reger.cloneCred(said=vLeiCreder.said)
         assert dcre.raw == vLeiCreder.raw
 
         dater = ianreg.reger.mce.get(vLeiCreder.saider.qb64b)
@@ -451,7 +454,8 @@ def test_verifier_chained_credential(seeder):
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
-        ianverfer.processCredential(creder)
+        ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
+                                    saider=ron.kever.serder.saider)
 
         # Process the escrows to get Ian's credential out of missing chain escrow
         ianverfer.processEscrows()
@@ -490,7 +494,8 @@ def test_verifier_chained_credential(seeder):
 
         missing = False
         try:
-            ianverfer.processCredential(untargetedCreder)
+            ianverfer.processCredential(untargetedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                        saider=ian.kever.serder.saider)
         except kering.MissingRegistryError:
             missing = True
 
@@ -535,7 +540,8 @@ def test_verifier_chained_credential(seeder):
 
         missing = False
         try:
-            ianverfer.processCredential(chainedCreder)
+            ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                        saider=ian.kever.serder.saider)
         except kering.MissingRegistryError:
             missing = True
 
@@ -554,7 +560,8 @@ def test_verifier_chained_credential(seeder):
 
         # Ensure that when specifying I2I it is enforced
         try:
-            ianverfer.processCredential(chainedCreder)
+            ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                        saider=ian.kever.serder.saider)
         except kering.MissingChainError:
             pass
 
@@ -570,7 +577,8 @@ def test_verifier_chained_credential(seeder):
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
-        vicverfer.processCredential(creder)
+        vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                    saider=ian.kever.serder.saider)
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
         assert cue["kin"] == "saved"
@@ -586,7 +594,8 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
-        vicverfer.processCredential(vLeiCreder)
+        vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                    saider=ian.kever.serder.saider)
 
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
@@ -611,6 +620,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(kering.RevokedChainError):
-            vicverfer.processCredential(vLeiCreder)
+            vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
+                                        saider=ian.kever.serder.saider)
 
     """End Test"""

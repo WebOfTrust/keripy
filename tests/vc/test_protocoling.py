@@ -4,13 +4,14 @@ tests.vc.protocoling module
 
 """
 
-from keri.app import habbing, signing, notifying
-from keri.core import coring, scheming, eventing, parsing
+from keri.app import habbing, notifying
+from keri.core import coring, scheming, parsing
 from keri.core.eventing import SealEvent
+from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vc.proving import credential
-from keri.vdr import verifying, credentialing
+from keri.vdr import credentialing, verifying
 
 
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
@@ -33,10 +34,6 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         redHab = redHby.makeHab(name="test")
         redPre = redHab.pre
         assert redPre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-
-        redKvy = eventing.Kevery(db=redHby.db)
-        redRgy = credentialing.Regery(hby=redHby, name="red", temp=True)
-        redVer = verifying.Verifier(hby=redHby, reger=redRgy.reger)
 
         sidRgy = credentialing.Regery(hby=sidHby, name="bob", temp=True)
         sidVer = verifying.Verifier(hby=sidHby, reger=sidRgy.reger)
@@ -81,17 +78,32 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=sidHab.kever.serder.saider)
         sidRgy.processEscrows()
 
-        msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qw'
+        msg = creder.raw
+        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG",'
+                       b'"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITak'
+                       b'YpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
+                       b'","a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T2'
+                       b'1:26:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LE'
+                       b'I":"254900OPPU84GM83MG36"}}')
+        atc = bytearray(msg)
+        atc.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
+        atc.extend(coring.Seqner(sn=0).qb64b)
+        atc.extend(iss.saidb)
+
+        assert atc == (b'{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qw'
                        b'vHdlvgfOyG","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                        b'ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCn'
                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EF2__B6DiLQHpdJZ'
                        b'_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T21:26:21.233257+0'
                        b'0:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LEI":"'
-                       b'254900OPPU84GM83MG36"}}-VA3-JAB6AABAAA--FABEIaGMMWJFPmtXznY1IIiK'
-                       b'DIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1'
-                       b'IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAAV9Rag13NGlWcPLxwDLRCXGpPVt80L8'
-                       b'ocwi7op4rRPYkRv3XN8tX88N630cdR2ndQu74xScCcb0reEh33dwvkB')
+                       b'254900OPPU84GM83MG36"}}-IABEDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHd'
+                       b'lvgfOyG0AAAAAAAAAAAAAAAAAAAAAAAEK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9'
+                       b'afqdCIZjMy3')
+        parsing.Parser().parseOne(ims=bytes(atc), vry=sidVer)
+
+        # Successfully parsed credential is now saved in database.
+        assert sidVer.reger.saved.get(keys=(creder.said,)) is not None
 
         ipexhan = protocoling.IpexHandler(resource="/ipex/apply", hby=sidHby, rgy=sidRgy, notifier=notifier)
 
@@ -271,5 +283,3 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         parsing.Parser().parse(ims=amsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(admit0.said,))
         assert serder.ked == admit0.ked
-
-

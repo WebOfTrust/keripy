@@ -98,7 +98,7 @@ class ExportDoer(doing.DoDoer):
         self.outputCred(said=self.said)
 
     def outputCred(self, said):
-        creder = self.rgy.reger.cloneCred(said=said)
+        creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
             issr = creder.issuer

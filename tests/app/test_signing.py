@@ -9,7 +9,6 @@ from keri.app import signing
 from keri.core import coring, parsing, eventing
 from keri.core.eventing import SealEvent
 from keri.db import basing
-from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import verifying, credentialing
 
@@ -165,18 +164,6 @@ def test_sad_signature(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                         b'la0mm_DeMwS1KXomLb_j1zCmgZ3RJPAPACA539yer3U8JQlcgXrdbPlR-1kADcFA4bsN_'
                         b'klRSu7p61y-Z2CS5d7Aitrc7yq00YIG_u-v7OToChDC3TsVCR4D')
 
-        iss = issuer.issue(said=cred.said)
-        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=hab.kever.serder.saider)
-        regery.processEscrows()
-
-        parsing.Parser().parse(ims=sig1, vry=verifier)
-
-        saider = verifier.reger.saved.get(keys=cred.said)
-        assert saider is not None
-
     """End Test"""
 
 
@@ -214,17 +201,21 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
                                   issuer=hab.pre, data=d, source={}, status=issuer.regk)
 
         # Sign with non-transferable identifier, defaults to single signature on entire SAD
-        sig0 = signing.ratify(hab=hab, serder=cred)
-        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU3y'
-                        b'cpjdtCUD","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","ri":'
-                        b'"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCnVRk1ha'
-                        b'tTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcuvv8j5F4F'
-                        b'WRHD8xlZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+00:00","i":'
-                        b'"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"254900OPPU84'
-                        b'GM83MG36"},"e":{}}-JAB6AABAAA--FABEKC8085pwSwzLwUGzh-HrEoFDwZnCJq2'
-                        b'7bVp5atdMT9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJ'
-                        b'q27bVp5atdMT9o-AABAACIRDrYzCyMB5jBHY9jwfT4KEb7kx_vYgHJ7LDsiQRD-Roj'
-                        b'5bGfJXj6PAo5TS36t4kWmiBhpvqLgb2l9vUhpiUK')
+        sig0 = bytearray(cred.raw)
+        sig0.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        sig0.extend(coring.Prefixer(qb64=issuer.regk).qb64b)
+        sig0.extend(seqner.qb64b)
+        sig0.extend(coring.Saider(qb64=issuer.regd).qb64b)
+
+        assert sig0 == (b'{"v":"ACDC10JSON00019e_","d":"EK88fyN65bfA63o1jgeOGKeIxw6sTJEwwU'
+                        b'3ycpjdtCUD","i":"EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o","'
+                        b'ri":"ENzh5cyGjFhQYuIXuheXV2wkKp23rkxYI7wbEBQIyqhP","s":"EMQWEcCn'
+                        b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EFyxk35e1r5G9pcu'
+                        b'vv8j5F4FWRHD8xlZ_E4rWPdlVASI","dt":"2021-06-09T17:35:54.169967+0'
+                        b'0:00","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","LEI":"'
+                        b'254900OPPU84GM83MG36"},"e":{}}-IABENzh5cyGjFhQYuIXuheXV2wkKp23rk'
+                        b'xYI7wbEBQIyqhP0AAAAAAAAAAAAAAAAAAAAAABENzh5cyGjFhQYuIXuheXV2wkKp'
+                        b'23rkxYI7wbEBQIyqhP')
 
         iss = issuer.issue(said=cred.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
@@ -238,7 +229,7 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
         saider = verifier.reger.saved.get(keys=cred.said)
         assert saider is not None
 
-        scre = verifier.reger.cloneCred(said=cred.said)
+        scre, *_ = verifier.reger.cloneCred(said=cred.said)
         assert scre.raw == cred.raw
 
     # multiple path sigs
@@ -278,20 +269,6 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
                         b'9o0AAAAAAAAAAAAAAAAAAAAAAAEKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atd'
                         b'MT9o-AABAABsIw-EgCMnex1m7Qm8RkU4jMGAV3wNGyD_CxfetmMp-iGBLhZ5wArAw6'
                         b'_Qdg75K_NMTKVV4hv7bWw3OvJnNY8A')
-
-        # Issue the credential and parse into credential store
-        iss = issuer.issue(said=cred.said)
-        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=hab.kever.serder.saider)
-        regery.processEscrows()
-
-        parsing.Parser().parse(ims=sig1, vry=verifier)
-
-        # verify the credential is saved
-        saider = verifier.reger.saved.get(keys=cred.said)
-        assert saider is not None
 
     # signing SAD with non-transferable identifier
     with habbing.openHab(name="wan", temp=True, salt=b'0123456789abcdef', transferable=False) as (hby, hab):

@@ -934,14 +934,14 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     sources = reger.sources(hby.db, creder)
     for source, atc in sources:
         sendArtifacts(hby, reger, postman, source, sender, recp)
-
-        serder = reger.cloneCred(source.said)
-        # TODO: Determine what to do with streaming the credential here
         postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
 
-    serder = reger.cloneCred(creder.said)
-    # TODO: Determine what to do with streaming the credential here
-    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=bytes())
+    serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
+    atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+    atc.extend(prefixer.qb64b)
+    atc.extend(seqner.qb64b)
+    atc.extend(saider.saidb)
+    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
 
 
 def sendArtifacts(hby, reger, postman, creder, sender, recp):

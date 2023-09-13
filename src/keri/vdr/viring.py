@@ -247,6 +247,11 @@ class Reger(dbing.LMDBer):
         # Holds the credential
         self.creds = proving.CrederSuber(db=self, subkey="creds.")
 
+        # database of anchors to credentials.  prefix is either AID with direct credential
+        # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
+        self.cancs = subing.CatCesrSuber(db=self, subkey='cancs.',
+                                         klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+
         # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
@@ -268,12 +273,8 @@ class Reger(dbing.LMDBer):
         # Index of credentials by schema
         self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=coring.Saider)
 
-        # Partially signed credential escrow
-        self.pse = subing.CesrSuber(db=self, subkey='pse.', klas=coring.Dater)
         # Missing reegistry escrow
         self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=coring.Dater)
-        # Missing issuer escrow
-        self.mie = subing.CesrSuber(db=self, subkey='mie.', klas=coring.Dater)
         # Broken chain escrow
         self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=coring.Dater)
         # Missing schema escrow
@@ -324,7 +325,7 @@ class Reger(dbing.LMDBer):
         creds = []
         for saider in saids:
             key = saider.qb64
-            creder = self.cloneCred(said=key)
+            creder, prefixer, seqner, saider = self.cloneCred(said=key)
 
             chainSaids = []
             for k, p in creder.chains.items():
@@ -344,19 +345,28 @@ class Reger(dbing.LMDBer):
                 pre=creder.issuer,
                 chains=chains,
                 status=status.ked,
+                anchor=dict(
+                    pre=prefixer.qb64,
+                    sn=seqner.sn,
+                    d=saider.qb64
+                )
             )
 
             creds.append(cred)
         return creds
 
-    def logCred(self, creder):
+    def logCred(self, creder, prefixer, seqner, saider):
         """ Save the base credential and seals (est evt+sigs quad) with no indices.
 
         Parameters:
             creder (Creder): that contains the credential to process
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
+        self.cancs.pin(keys=key, val=[prefixer, seqner, saider])
         self.creds.put(keys=key, val=creder)
 
     def cloneCred(self, said):
@@ -373,7 +383,8 @@ class Reger(dbing.LMDBer):
         """
 
         creder = self.creds.get(keys=(said,))
-        return creder
+        prefixer, seqner, saider = self.cancs.get(keys=(said,))
+        return creder, prefixer, seqner, saider
 
     def clonePreIter(self, pre, fn=0):
         """ Iterator of first seen event messages
@@ -458,8 +469,14 @@ class Reger(dbing.LMDBer):
 
         sources = []
         for said in saids:
-            screder = self.cloneCred(said=said)
-            sources.append(screder)
+            screder, prefixer, seqner, saider = self.cloneCred(said=said)
+
+            atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+            atc.extend(prefixer.qb64b)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64)
+
+            sources.append((screder, atc))
             sources.extend(self.sources(db, screder))
 
         return sources

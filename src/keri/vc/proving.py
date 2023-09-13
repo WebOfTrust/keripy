@@ -46,7 +46,7 @@ def credential(schema,
         private (bool): apply nonce used for privacy preserving ACDC
         salt (string): salt for nonce
         source (dict | list): of source credentials to which this credential is chained
-        rules (list): ACDC rules section for credential
+        rules (dict | list): ACDC rules section for credential
         version (Version): version instance
         kind (Serials): serialization kind
 
