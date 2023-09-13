@@ -86,8 +86,6 @@ class RequestDoer(doing.DoDoer):
 
         (seqner, saider) = esc[0]
         evt = hab.makeOwnEvent(sn=seqner.sn)
-        srdr = coring.Serder(raw=evt)
-        del evt[:srdr.size]
         delpre = hab.kever.delegator  # get the delegator identifier
 
         if isinstance(hab, GroupHab):
@@ -95,9 +93,11 @@ class RequestDoer(doing.DoDoer):
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
 
-        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, ked=srdr.ked, aids=hab.smids)
+        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
 
         # delegate AID ICP and exn of delegation request EXN
+        srdr = coring.Serder(raw=evt)
+        del evt[:srdr.size]
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
         self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
 

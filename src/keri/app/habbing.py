@@ -1888,7 +1888,7 @@ class BaseHab:
 
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
         msgs.extend(self.replay(cid))

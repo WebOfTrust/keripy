@@ -3541,7 +3541,8 @@ class Kevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise UnverifiedReplyError(f"Unverified reply.")
+            # print(f"Unverified reply. {serder.ked}")
+            raise UnverifiedReplyError(f"Unverified reply. {serder.ked}")
 
         self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 
@@ -3638,7 +3639,8 @@ class Kevery:
                                       aid=aid, osaider=osaider, cigars=cigars,
                                       tsgs=tsgs)
         if not accepted:
-            raise UnverifiedReplyError(f"Unverified reply.")
+            # print(f"Unverified reply. {serder.ked}")
+            raise UnverifiedReplyError(f"Unverified reply. {serder.ked}")
 
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
@@ -3752,7 +3754,8 @@ class Kevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise UnverifiedReplyError(f"Unverified reply.")
+            # print(f"Unverified reply. {serder.ked}")
+            raise UnverifiedReplyError(f"Unverified reply. {serder.ked}")
 
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
         diger = coring.Diger(qb64=ksr.d)

@@ -223,7 +223,7 @@ class Exchanger:
             for siger in sigers:
                 self.hby.db.esigs.add(keys=quadkeys, val=siger)
         for cigar in cigars:
-            self.hby.db.ecigs.add(keys=(dig,), vals=[(cigar.verfer, cigar)])
+            self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
 
         saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])

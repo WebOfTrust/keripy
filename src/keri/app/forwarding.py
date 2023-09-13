@@ -168,22 +168,18 @@ class Poster(doing.DoDoer):
         msg = bytearray()
         msg.extend(introduce(hab, mbx))
         # create the forward message with payload embedded at `a` field
-        fwd, _ = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                                     payload={}, embeds=dict(evt=serder.raw), sender=hab.pre)
+
+        evt = bytearray(serder.raw)
+        evt.extend(atc)
+        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, pipelined=False)
 
         # Transpose the signatures to point to the new location
-        if atc is not None:
-            pathed = bytearray()
-            pather = coring.Pather(path=["e", "evt"])
-            pathed.extend(pather.qb64b)
-            pathed.extend(atc)
-            ims.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
-                                      count=(len(pathed) // 4)).qb64b)
-            ims.extend(pathed)
-
         witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
         msg.extend(ims)
+        msg.extend(atc)
+
         witer.msgs.append(bytearray(msg))  # make a copy
         self.extend([witer])
 
@@ -246,6 +242,7 @@ class ForwardHandler:
             attachments (list): list of tuples of root pathers and CESR SAD path attachments to the exn event
 
         """
+
         embeds = serder.ked['e']
         modifiers = serder.ked['q'] if 'q' in serder.ked else {}
 
@@ -264,7 +261,6 @@ class ForwardHandler:
             print("error with message, nothing to forward", serder.ked)
             return
 
-        print("storing to resource")
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 

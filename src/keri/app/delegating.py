@@ -64,8 +64,6 @@ class Boatswain(doing.DoDoer):
 
         # load the event and signatures
         evt = hab.makeOwnEvent(sn=sn)
-        srdr = coring.Serder(raw=evt)
-        del evt[:srdr.size]
 
         smids = []
         if isinstance(hab, GroupHab):
@@ -81,9 +79,12 @@ class Boatswain(doing.DoDoer):
             raise kering.ValidationError("no proxy to send messages for delegation")
 
         # Send exn message for notification purposes
-        exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=smids)
+        exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
 
         self.postman.send(hab=phab, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+
+        srdr = coring.Serder(raw=evt)
+        del evt[:srdr.size]
         self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
         anchor = dict(i=srdr.pre, s=srdr.sn, d=srdr.said)
@@ -234,6 +235,8 @@ class DelegateRequestHandler:
 
         src = serder.pre
         pay = serder.ked['a']
+        embeds = serder.ked['e']
+
         delpre = pay["delpre"]
         if delpre not in self.hby.habs:
             logger.error(f"invalid delegate request message, no local delpre for evt=: {pay}")
@@ -243,20 +246,32 @@ class DelegateRequestHandler:
             src=src,
             r='/delegate/request',
             delpre=delpre,
-            ked=pay["ked"]
+            ked=embeds["evt"]
         )
         if "aids" in pay:
             data["aids"] = pay["aids"]
 
         self.notifier.add(attrs=data)
-        # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
-        # multisig group
 
 
-def delegateRequestExn(hab, delpre, ked, aids=None):
+def delegateRequestExn(hab, delpre, evt, aids=None):
+    """
+
+    Parameters:
+        hab (Hab): database environment of sender
+        delpre (str): qb64 AID of delegator
+        evt (bytes): serialized and signed event requiring delegation approval
+        aids (list): list of multisig AIDs participating
+
+    Returns:
+
+    """
     data = dict(
         delpre=delpre,
-        ked=ked
+    )
+
+    embeds = dict(
+        evt=evt
     )
 
     if aids is not None:
@@ -264,7 +279,7 @@ def delegateRequestExn(hab, delpre, ked, aids=None):
 
     # Create `exn` peer to peer message to notify other participants UI
     exn, _ = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
-                                 payload=data, sender=hab.pre)
+                                 payload=data, sender=hab.pre, embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 

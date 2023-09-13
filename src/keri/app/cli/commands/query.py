@@ -5,6 +5,7 @@ keri.kli.commands module
 """
 import argparse
 import datetime
+import json
 
 from hio import help
 from hio.base import doing
@@ -31,18 +32,20 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
+parser.add_argument('--anchor', help='JSON file containing the anchor to search for', default=None, required=False)
 
 
 def query(args):
     name = args.name
 
-    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix)
+    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix,
+                         anchor=args.anchor)
     return [qryDoer]
 
 
 class LaunchDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, pre, **kwa):
+    def __init__(self, name, alias, base, bran, pre, anchor, **kwa):
         doers = []
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -52,6 +55,7 @@ class LaunchDoer(doing.DoDoer):
         self.logs = decking.Deck()
 
         self.pre = pre
+        self.anchor = anchor
         self.loaded = False
 
         self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
@@ -72,17 +76,25 @@ class LaunchDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        end = helping.nowUTC() + datetime.timedelta(seconds=5)
-        print(f"Checking for updates...")
-        qryDo = querying.QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
-        self.extend([qryDo])
+        end = helping.nowUTC() + datetime.timedelta(seconds=10)
+
+        if self.anchor is not None:
+            f = open(self.anchor)
+            anchor = json.load(f)
+            print(f"Checking for anchor {anchor}...")
+            doer = querying.AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor)
+        else:
+            print(f"Checking for updates...")
+            doer = querying.QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
+
+        self.extend([doer])
 
         while helping.nowUTC() < end:
-            if qryDo.done:
+            if doer.done:
                 break
             yield 1.0
 
-        self.remove([qryDo])
+        self.remove([doer])
         print("\n")
 
         displaying.printExternal(self.hby, self.pre)
