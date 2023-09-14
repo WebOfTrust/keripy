@@ -1,14 +1,15 @@
+# Builder layer
+FROM python:3.10.13-alpine3.18 as builder
 
-FROM python:3.10.4-alpine3.16 as builder
+# Install compilation dependencies
+RUN apk --no-cache add \
+    bash \
+    alpine-sdk \
+    libffi-dev \
+    libsodium \
+    libsodium-dev
 
-RUN apk update
-RUN apk add bash
 SHELL ["/bin/bash", "-c"]
-
-RUN apk add alpine-sdk
-RUN apk add libffi-dev
-RUN apk add libsodium
-RUN apk add libsodium-dev
 
 # Setup Rust for blake3 dependency build
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
@@ -19,23 +20,31 @@ RUN python -m venv venv
 
 ENV PATH=/keripy/venv/bin:${PATH}
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip && \
+    mkdir /keripy/src
 
+# Copy Python dependency files in
 COPY requirements.txt setup.py .
-COPY src/ src/
-RUN . ${HOME}/.cargo/env && pip install -r requirements.txt
+# Set up Rust environment and install Python dependencies
+# Must source the Cargo environment for the blake3 library to see
+# the Rust intallation during requirements install
+RUN . ${HOME}/.cargo/env && \
+    pip install -r requirements.txt
 
-FROM python:3.10.4-alpine3.16
+# Runtime layer
+FROM python:3.10.13-alpine3.18
 
-RUN apk add alpine-sdk
-RUN apk add libsodium-dev
-
-ENV PATH=/keripy/venv/bin:${PATH}
-
-COPY --from=builder /keripy /keripy
+RUN apk --no-cache add \
+    bash \
+    alpine-sdk \
+    libsodium-dev
 
 WORKDIR /keripy
 
-# Install KERIpy dependencies
-# Must source the Cargo environment for the blake3 library to see the Rust intallation during requirements install
+COPY --from=builder /keripy /keripy
+COPY src/ src/
+
+ENV PATH=/keripy/venv/bin:${PATH}
+
+
 ENTRYPOINT [ "kli" ]
