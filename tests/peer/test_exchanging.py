@@ -72,7 +72,7 @@ def test_exchanger():
         exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs)
 
         msgs = forwarder.mbx.getTopicMsgs(topic="EBCAFG/delegation")
-        print(msgs)
+        assert len(msgs) == 0  # No pathed argument, so nothing to forward.
 
 
 def test_hab_exchange(mockHelpingNowUTC):

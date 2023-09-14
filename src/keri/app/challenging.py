@@ -46,7 +46,7 @@ class ChallengeHandler:
         words = payload["words"]
 
         msg = dict(
-            signer=signer.qb64,
+            signer=signer,
             said=serder.said,
             words=words
         )
@@ -55,4 +55,4 @@ class ChallengeHandler:
         self.signaler.push(msg, topic="/challenge")
 
         # Log signer against event to track successful challenges with signed response
-        self.db.reps.add(keys=(signer.qb64,), val=serder.saider)
+        self.db.reps.add(keys=(signer,), val=serder.saider)

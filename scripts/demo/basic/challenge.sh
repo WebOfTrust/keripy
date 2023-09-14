@@ -2,9 +2,11 @@
 
 kli init --name cha1 --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 kli incept --name cha1 --alias cha1 --file ${KERI_DEMO_SCRIPT_DIR}/data/challenge-sample.json
+kli ends add --name cha1 --alias cha1 --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox
 
 kli init --name cha2 --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file pool2-witness-oobis
 kli incept --name cha2 --alias cha2 --file ${KERI_DEMO_SCRIPT_DIR}/data/challenge-sample-pool2.json
+kli ends add --name cha2 --alias cha2 --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox
 
 cha1_oobi="$(kli oobi generate --name cha1 --alias cha1 --role witness | sed -n '2 p')"
 cha2_oobi="$(kli oobi generate --name cha2 --alias cha2 --role witness | sed -n '2 p')"

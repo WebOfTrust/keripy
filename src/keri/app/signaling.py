@@ -225,7 +225,6 @@ class SignalsEnd:
 
         rep.set_header('Content-Type', "text/event-stream")
         rep.status = falcon.HTTP_200
-        print(f"get for {self.signals}")
         rep.stream = SignalIterable(signals=self.signals)
 
     def on_get(self, req, rep):

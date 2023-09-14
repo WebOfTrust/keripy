@@ -40,7 +40,6 @@ class Exchanger:
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
-        doers = []
         for handler in handlers:
             if handler.resource in self.routes:
                 raise ValidationError("unable to register behavior {}, it has already been registered"
