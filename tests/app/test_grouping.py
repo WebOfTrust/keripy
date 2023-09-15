@@ -726,26 +726,11 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         notifier = notifying.Notifier(hby=hby)
         mux = grouping.Multiplexor(hby=hby, notifier=notifier)
         exc = exchanging.Exchanger(hby=hby, handlers=[])
-        grouping.loadHandlers(hby=hby, exc=exc, mux=mux)
+        grouping.loadHandlers(exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
-
         assert len(notifier.signaler.signals) == 0
 
         esaid = exn.ked['e']['d']
@@ -763,7 +748,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         notifier = notifying.Notifier(hby=hby1)
         mux = grouping.Multiplexor(hby=hby1, notifier=notifier)
         exc = exchanging.Exchanger(hby=hby1, handlers=[])
-        grouping.loadHandlers(hby=hby1, exc=exc, mux=mux)
+        grouping.loadHandlers(exc=exc, mux=mux)
 
         # create and send message from ghab2
         exn, atc = grouping.multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
@@ -771,20 +756,6 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         ims = bytearray(exn.raw)
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
-
-        limit = 0.5
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
 
         # One notification
         assert len(notifier.signaler.signals) == 1
@@ -803,17 +774,6 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         ims = bytearray(exn.raw)
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
-
-        limit = 0.5
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
 
         # There should still only be one notification because we don't notify for our own event
         assert len(notifier.signaler.signals) == 1
@@ -835,25 +795,11 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         notifier = notifying.Notifier(hby=hby1)
         mux = grouping.Multiplexor(hby=hby1, notifier=notifier)
         exc = exchanging.Exchanger(hby=hby1, handlers=[])
-        grouping.loadHandlers(hby=hby1, exc=exc, mux=mux)
+        grouping.loadHandlers(exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
         parsing.Parser().parseOne(ims=ims, exc=exc)
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[exc])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
 
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1

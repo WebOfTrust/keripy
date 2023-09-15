@@ -263,7 +263,6 @@ class Respondant(doing.DoDoer):
                         del raw[:serder.size]
                         self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
 
-
                 elif cueKin in ("reply",):
                     src = cue["src"]
                     serder = cue["serder"]

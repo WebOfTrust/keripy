@@ -21,56 +21,38 @@ def loadHandlers(db, signaler, exc):
     exc.addHandler(chacha)
 
 
-class ChallengeHandler(doing.Doer):
+class ChallengeHandler:
     """  Handle challenge response peer to peer `exn` message """
 
     resource = "/challenge/response"
-    persist = True
 
     def __init__(self, db, signaler):
         """ Initialize peer to peer challenge response messsage """
 
         self.db = db
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
         self.signaler = signaler
         super(ChallengeHandler, self).__init__()
 
-    def do(self, tymth, *, tock=0.0, **opts):
-        """  Do override to process incoming challenge responses
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of Challenge response messages
 
         Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+            serder (Serder): Serder of the exn challenge response message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
-        # start enter context
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        payload = serder.ked['a']
+        signer = serder.pre
+        words = payload["words"]
 
-        while True:
+        msg = dict(
+            signer=signer,
+            said=serder.said,
+            words=words
+        )
 
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                signer = msg["pre"]
-                words = payload["words"]
+        # Notify controller of sucessful challenge
+        self.signaler.push(msg, topic="/challenge")
 
-                serder = msg["serder"]
-
-                msg = dict(
-                    signer=signer.qb64,
-                    said=serder.said,
-                    words=words
-                )
-
-                # Notify controller of sucessful challenge
-                self.signaler.push(msg, topic="/challenge")
-
-                # Log signer against event to track successful challenges with signed response
-                self.db.reps.add(keys=(signer.qb64,), val=serder.saider)
-
-                yield self.tock
-            yield self.tock
+        # Log signer against event to track successful challenges with signed response
+        self.db.reps.add(keys=(signer,), val=serder.saider)

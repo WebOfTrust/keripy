@@ -11,7 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.core import eventing, coring
+from keri.core import coring
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
@@ -28,7 +28,6 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
                     dest="bran", default=None)  # passcode => bran
 
 parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=True)
-parser.add_argument("--signatures", help="export signatures as attachments to the credential", action="store_true")
 parser.add_argument("--tels", help="export the transaction event logs for the credential and any chained credentials",
                     action="store_true")
 parser.add_argument("--kels", help="export the key event logs for the issuer's of the credentials", action="store_true")
@@ -49,14 +48,13 @@ def export_credentials(args):
     chains = args.chains
 
     if args.full:
-        sigs = tels = kels = chains = True
+        tels = kels = chains = True
 
     ed = ExportDoer(name=args.name,
                     alias=args.alias,
                     base=args.base,
                     bran=args.bran,
                     said=args.said,
-                    sigs=sigs,
                     tels=tels,
                     kels=kels,
                     chains=chains,
@@ -66,9 +64,8 @@ def export_credentials(args):
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, sigs, tels, kels, chains, files):
+    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files):
         self.said = said
-        self.sigs = sigs
         self.tels = tels
         self.kels = kels
         self.chains = chains
@@ -101,7 +98,7 @@ class ExportDoer(doing.DoDoer):
         self.outputCred(said=self.said)
 
     def outputCred(self, said):
-        creder, sadsigers, sadcigars = self.rgy.reger.cloneCred(said=said)
+        creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
             issr = creder.issuer
@@ -130,15 +127,9 @@ class ExportDoer(doing.DoDoer):
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')
             f.write(creder.raw.decode("utf-8"))
-            if self.sigs:
-                f.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode("utf-8"))
             f.close()
         else:
             sys.stdout.write(creder.raw.decode("utf-8"))
-            if self.sigs:
-                sys.stdout.write(eventing.proofize(sadtsgs=sadsigers, sadcigars=sadcigars, pipelined=True).decode(
-                    "utf-8"))
-
             sys.stdout.flush()
 
     def outputTEL(self, regk):

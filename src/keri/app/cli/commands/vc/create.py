@@ -160,10 +160,6 @@ class CredentialIssuer(doing.DoDoer):
                                                        rules=rules,
                                                        data=data,
                                                        private=private)
-                print(f"Writing credential {self.creder.said} to {out}")
-                f = open(out, mode="w")
-                json.dump(self.creder.crd, f)
-                f.close()
             else:
                 self.creder = proving.Creder(ked=credential)
                 self.credentialer.validate(creder=self.creder)
@@ -177,10 +173,10 @@ class CredentialIssuer(doing.DoDoer):
         doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.credentialer]
         self.toRemove = list(doers)
 
-        doers.extend([doing.doify(self.issueDo)])
+        doers.extend([doing.doify(self.createDo)])
         super(CredentialIssuer, self).__init__(doers=doers)
 
-    def issueDo(self, tymth, tock=0.0):
+    def createDo(self, tymth, tock=0.0):
         """  Issue Credential doer method
 
 
@@ -197,5 +193,5 @@ class CredentialIssuer(doing.DoDoer):
             self.rgy.processEscrows()
             yield self.tock
 
-        print(f"{self.creder.said} has been issued.")
+        print(f"{self.creder.said} has been created.")
         self.remove(self.toRemove)

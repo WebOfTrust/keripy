@@ -12,7 +12,7 @@ from hio.base import doing
 import keri
 from hio.core import http
 from keri.app import habbing, oobiing, notifying
-from keri.core import coring
+from keri.core import coring, parsing
 from keri.db import basing
 from keri.end import ending
 from keri.help import helping
@@ -32,20 +32,11 @@ def test_oobi_share(mockHelpingNowUTC):
         oobiing.loadHandlers(hby=hby, exc=exc, notifier=notifier)
 
         assert "/oobis" in exc.routes
-
         handler = exc.routes["/oobis"]
-        msg = dict(
-            pre=hab.kever.prefixer,
-            payload=dict(
-                oobi=oobi
-            ))
-        handler.msgs.append(msg)
 
-        limit = 1.0
-        tock = 0.25
-        doist = doing.Doist(limit=limit, tock=tock)
-        doist.do(doers=[handler])
-        assert doist.tyme == limit
+        exn, _ = oobiing.oobiRequestExn(hab, hab.pre, oobi)
+
+        handler.handle(serder=exn)
 
         obr = hby.db.oobis.get(keys=(oobi,))
         assert obr is not None
@@ -61,19 +52,6 @@ def test_oobi_share(mockHelpingNowUTC):
                               'oobialias': 'Phil',
                               'r': '/oobi',
                               'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
-
-        msg = dict(
-            pre=hab.kever.prefixer,
-            payload=dict(
-            ))
-        handler.msgs.append(msg)
-
-        limit = 1.0
-        tock = 0.25
-        doist = doing.Doist(limit=limit, tock=tock)
-        doist.do(doers=[handler])
-        assert doist.tyme == limit
-        assert len(notifier.signaler.signals) == 0
 
         exn, atc = oobiing.oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
                                           oobi="http://127.0.0.1/oobi")

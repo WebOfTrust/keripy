@@ -21,13 +21,9 @@ kli ipex grant --name issuer --alias issuer --said "${SAID}" --recipient ELjSFdr
 echo "Checking holder for grant messages..."
 GRANT=$(kli ipex list --name holder --alias holder --poll --said)
 
-echo "Admitting credential from grant ${GRANT}"
-kli ipex admit --name holder --alias holder --said "${GRANT}"
+echo "Spurning credential from grant ${GRANT}"
+kli ipex spurn --name holder --alias holder --said "${GRANT}"
 
 kli vc list --name holder --alias holder
 
-exit 0
-
-kli vc revoke --name issuer --alias issuer --registry-name vLEI --said "${SAID}"
-sleep 2
-kli vc list --name holder --alias holder --poll
+kli ipex list --name issuer --alias issuer --sent --poll

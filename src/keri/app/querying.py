@@ -111,3 +111,28 @@ class SeqNoQuerier(doing.DoDoer):
             return True
 
         return super(SeqNoQuerier, self).recur(tyme, deeds)
+
+
+class AnchorQuerier(doing.DoDoer):
+
+    def __init__(self, hby, hab, pre, anchor, **opts):
+        self.hby = hby
+        self.hab = hab
+        self.pre = pre
+        self.anchor = anchor
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq.query(src=self.hab.pre, pre=self.pre, anchor=anchor)
+        super(AnchorQuerier, self).__init__(doers=[self.witq], **opts)
+
+    def recur(self, tyme, deeds=None):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
+        kever = self.hab.kevers[self.pre]
+        if self.hby.db.findAnchoringEvent(self.pre, anchor=self.anchor):
+            self.remove([self.witq])
+            return True
+
+        return super(AnchorQuerier, self).recur(tyme, deeds)

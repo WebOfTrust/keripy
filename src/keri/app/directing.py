@@ -187,10 +187,6 @@ class Reactor(doing.DoDoer):
         else:
             self.tvy = None
 
-        if self.exc is not None:
-            doers.extend([doing.doify(self.exchangerDo)])
-
-
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
@@ -289,34 +285,6 @@ class Reactor(doing.DoDoer):
             self.kevery.processEscrows()
             if self.tvy is not None:
                 self.tvy.processEscrows()
-            yield
-        return False  # should never get here except forced close
-
-
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        yield  # enter context
-        while True:
-            for rep in self.exc.processResponseIter():
-                self.sendMessage(rep["msg"], label="response")
-                yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
 
@@ -571,9 +539,6 @@ class Reactant(doing.DoDoer):
         else:
             self.tevery = None
 
-        if self.exchanger is not None:
-            doers.extend([doing.doify(self.exchangerDo)])
-
         self.kevery.registerReplyRoutes(router=rvy.rtr)
 
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
@@ -679,34 +644,6 @@ class Reactant(doing.DoDoer):
             self.kevery.processEscrows()
             if self.tevery is not None:
                 self.tevery.processEscrows()
-            yield
-        return False  # should never get here except forced close
-
-
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            for rep in self.exchanger.processResponseIter():
-                self.sendMessage(rep["msg"], label="response")
-                yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
 

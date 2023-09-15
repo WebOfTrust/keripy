@@ -247,6 +247,11 @@ class Reger(dbing.LMDBer):
         # Holds the credential
         self.creds = proving.CrederSuber(db=self, subkey="creds.")
 
+        # database of anchors to credentials.  prefix is either AID with direct credential
+        # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
+        self.cancs = subing.CatCesrSuber(db=self, subkey='cancs.',
+                                         klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+
         # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, seqner.q64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
@@ -268,12 +273,8 @@ class Reger(dbing.LMDBer):
         # Index of credentials by schema
         self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=coring.Saider)
 
-        # Partially signed credential escrow
-        self.pse = subing.CesrSuber(db=self, subkey='pse.', klas=coring.Dater)
         # Missing reegistry escrow
         self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=coring.Dater)
-        # Missing issuer escrow
-        self.mie = subing.CesrSuber(db=self, subkey='mie.', klas=coring.Dater)
         # Broken chain escrow
         self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=coring.Dater)
         # Missing schema escrow
@@ -303,12 +304,6 @@ class Reger(dbing.LMDBer):
         self.ctel = subing.CesrSuber(db=self, subkey='ctel.',
                                      klas=coring.Saider)
 
-        # Credential Issuance Escrow
-        self.crie = proving.CrederSuber(db=self, subkey="drie.")
-
-        # Credential Sent Escrow
-        self.crse = proving.CrederSuber(db=self, subkey="crse.")
-
         # Credential Missing Signature Escrow
         self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
 
@@ -330,7 +325,7 @@ class Reger(dbing.LMDBer):
         creds = []
         for saider in saids:
             key = saider.qb64
-            creder, sadsigers, sadcigars = self.cloneCred(said=key)
+            creder, prefixer, seqner, asaider = self.cloneCred(said=key)
 
             chainSaids = []
             for k, p in creder.chains.items():
@@ -348,43 +343,33 @@ class Reger(dbing.LMDBer):
             cred = dict(
                 sad=creder.crd,
                 pre=creder.issuer,
-                sadsigers=[dict(
-                    path=pather.bext,
-                    pre=prefixer.qb64,
-                    sn=seqner.sn,
-                    d=saider.qb64
-                ) for (pather, prefixer, seqner, saider, sigers) in sadsigers],
-                sadcigars=[dict(path=pather.bext, cigar=cigar.qb64) for (pather, cigar) in sadcigars],
                 chains=chains,
                 status=status.ked,
+                anchor=dict(
+                    pre=prefixer.qb64,
+                    sn=seqner.sn,
+                    d=asaider.qb64
+                )
             )
 
             creds.append(cred)
         return creds
 
-    def logCred(self, creder, sadsigers=None, sadcigars=None):
+    def logCred(self, creder, prefixer, seqner, saider):
         """ Save the base credential and seals (est evt+sigs quad) with no indices.
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
+        self.cancs.pin(keys=key, val=[prefixer, seqner, saider])
         self.creds.put(keys=key, val=creder)
 
-        if sadcigars:
-            for (pather, cigar) in sadcigars:
-                keys = (creder.saider.qb64, pather.qb64)
-                self.spcgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-        if sadsigers:  # want sn in numerical order so use hex
-            for (pather, prefixer, seqner, saider, sigers) in sadsigers:
-                quinkeys = (creder.saider.qb64, pather.qb64, prefixer.qb64, f"{seqner.sn:032x}", saider.qb64)
-                for siger in sigers:
-                    self.spsgs.add(keys=quinkeys, val=siger)
-
-    def cloneCred(self, said, root=None):
+    def cloneCred(self, said):
         """ Load base credential and CESR proof signatures from database.
 
         Base credential and all signatures are returned from the credential
@@ -394,44 +379,12 @@ class Reger(dbing.LMDBer):
 
         Parameters:
             said(str or bytes): qb64 SAID of credential
-            root (Optional(Pather)): a target path transposition location for all signatures
 
         """
 
         creder = self.creds.get(keys=(said,))
-        sadcigars = []  # transferable signature groups
-        sadsigers = []  # transferable signature groups
-
-        for keys, cigar in self.spcgs.getItemIter(keys=(creder.saider.qb64, "")):
-            pather = coring.Pather(qb64=keys[1])
-            if root is not None:
-                pather = pather.root(root)
-            sadcigars.append((pather, cigar))
-
-        klases = (coring.Pather, coring.Prefixer, coring.Seqner, coring.Saider)
-        args = ("qb64", "qb64", "snh", "qb64")
-        sigers = []
-        old = None  # empty keys
-        for keys, siger in self.spsgs.getItemIter(keys=(creder.saider.qb64, "")):
-            quad = keys[1:]
-            if quad != old:  # new tsg
-                if sigers:  # append tsg made for old and sigers
-                    pather, prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
-                    if root is not None:
-                        pather = pather.root(root)
-
-                    sadsigers.append((pather, prefixer, seqner, saider, sigers))
-                    sigers = []
-                old = quad
-            sigers.append(siger)
-        if sigers and old:
-            pather, prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
-            if root is not None:
-                pather = pather.root(root)
-
-            sadsigers.append((pather, prefixer, seqner, saider, sigers))
-
-        return creder, sadsigers, sadcigars
+        prefixer, seqner, saider = self.cancs.get(keys=(said,))
+        return creder, prefixer, seqner, saider
 
     def clonePreIter(self, pre, fn=0):
         """ Iterator of first seen event messages
@@ -452,36 +405,45 @@ class Reger(dbing.LMDBer):
             pre = pre.encode("utf-8")
 
         for fn, dig in self.getTelItemPreIter(pre, fn=fn):
-            msg = bytearray()  # message
-            atc = bytearray()  # attachments
-            dgkey = dbing.dgKey(pre, dig)  # get message
-            if not (raw := self.getTvt(key=dgkey)):
-                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-            msg.extend(raw)
-
-            # add indexed backer signatures to attachments
-            if tibs := self.getTibs(key=dgkey):
-                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                          count=len(tibs)).qb64b)
-                for tib in tibs:
-                    atc.extend(tib)
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.getAnc(dgkey)
-            if couple is not None:
-                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                          count=1).qb64b)
-                atc.extend(couple)
-
-            # prepend pipelining counter to attachments
-            if len(atc) % 4:
-                raise ValueError("Invalid attachments size={}, nonintegral"
-                                 " quadlets.".format(len(atc)))
-            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                  count=(len(atc) // 4)).qb64b
-            msg.extend(pcnt)
-            msg.extend(atc)
+            msg = self.cloneTvt(pre, dig)
             yield msg
+
+    def cloneTvtAt(self, pre, sn=0):
+        snkey = dbing.snKey(pre, sn)
+        dig = self.getTel(key=snkey)
+        return self.cloneTvt(pre, dig)
+
+    def cloneTvt(self, pre, dig):
+        msg = bytearray()  # message
+        atc = bytearray()  # attachments
+        dgkey = dbing.dgKey(pre, dig)  # get message
+        if not (raw := self.getTvt(key=dgkey)):
+            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+        msg.extend(raw)
+
+        # add indexed backer signatures to attachments
+        if tibs := self.getTibs(key=dgkey):
+            atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                      count=len(tibs)).qb64b)
+            for tib in tibs:
+                atc.extend(tib)
+
+        # add authorizer (delegator/issure) source seal event couple to attachments
+        couple = self.getAnc(dgkey)
+        if couple is not None:
+            atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                      count=1).qb64b)
+            atc.extend(couple)
+
+        # prepend pipelining counter to attachments
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                              count=(len(atc) // 4)).qb64b
+        msg.extend(pcnt)
+        msg.extend(atc)
+        return msg
 
     def sources(self, db, creder):
         """ Returns raw bytes of any source ('e') credential that is in our database
@@ -507,11 +469,14 @@ class Reger(dbing.LMDBer):
 
         sources = []
         for said in saids:
-            screder, sadsigers, sadcigars = self.cloneCred(said=said)
+            screder, prefixer, seqner, saider = self.cloneCred(said=said)
 
-            craw = signing.provision(serder=screder, sadsigers=sadsigers, sadcigars=sadcigars)
-            del craw[screder.size:]
-            sources.append((screder, craw))
+            atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+            atc.extend(prefixer.qb64b)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64)
+
+            sources.append((screder, atc))
             sources.extend(self.sources(db, screder))
 
         return sources

@@ -105,7 +105,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                             responses=rep.cues, queries=httpEnd.qrycues)
 
     doers.extend(oobiRes)
-    doers.extend([regDoer, exchanger, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
+    doers.extend([regDoer, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
     return doers
 
 
@@ -150,8 +150,7 @@ class WitnessStart(doing.DoDoer):
         self.responses = responses if responses is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [doing.doify(self.start), doing.doify(self.msgDo),
-                 doing.doify(self.exchangerDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
+        doers = [doing.doify(self.start), doing.doify(self.msgDo), doing.doify(self.escrowDo), doing.doify(self.cueDo)]
         super().__init__(doers=doers, **opts)
 
     def start(self, tymth=None, tock=0.0):
@@ -252,30 +251,6 @@ class WitnessStart(doing.DoDoer):
                     self.responses.append(cue)
                 yield self.tock
             yield self.tock
-
-    def exchangerDo(self, tymth=None, tock=0.0):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            .exc responses and pass them on to the HTTPRespondant
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            for rep in self.exc.processResponseIter():
-                self.replies.append(rep)
-                yield  # throttle just do one cue at a time
-            yield
-
 
 class Indirector(doing.DoDoer):
     """
@@ -579,9 +554,6 @@ class MailboxDirector(doing.DoDoer):
         else:
             self.tvy = None
 
-        if self.exchanger is not None:
-            doers.extend([doing.doify(self.exchangerDo)])
-
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -731,37 +703,6 @@ class MailboxDirector(doing.DoDoer):
             if self.verifier is not None:
                 self.verifier.processEscrows()
 
-            yield
-
-    def exchangerDo(self, tymth=None, tock=0.0):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            self.exchanger.processEscrow()
-            yield
-
-            for rep in self.exchanger.processResponseIter():
-                self.rep.reps.append(rep)
-                yield  # throttle just do one cue at a time
             yield
 
     @property

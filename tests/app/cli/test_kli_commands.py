@@ -244,7 +244,6 @@ def test_standalone_kli_commands(helpers, capsys):
                           '  "partially-signed-events": [],\n'
                           '  "likely-duplicitous-events": [],\n'
                           '  "missing-registry-escrow": [],\n'
-                          '  "missing-issuer-escrow": [],\n'
                           '  "broken-chain-escrow": [],\n'
                           '  "missing-schema-escrow": []\n'
                           '}\n')

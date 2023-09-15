@@ -8,6 +8,16 @@ from ..app.habbing import GroupHab
 from ..core import coring, eventing
 
 
+def serialize(creder, prefixer, seqner, saider):
+    craw = bytearray(creder.raw)
+    craw.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+    craw.extend(prefixer.qb64b)
+    craw.extend(seqner.qb64b)
+    craw.extend(saider.qb64b)
+
+    return bytes(craw)
+
+
 def ratify(hab, serder, paths=None, pipelined=False):
     """ Sign the SAD or SAIDs with the keys from the Habitat.
 

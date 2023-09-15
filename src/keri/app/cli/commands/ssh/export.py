@@ -10,12 +10,11 @@ import stat
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec, ed25519
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from hio import help
 from hio.base import doing
 
-from keri.app.cli.common import displaying, existing
-from keri.core import coring
+from keri.app.cli.common import existing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()

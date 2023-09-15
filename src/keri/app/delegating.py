@@ -8,7 +8,6 @@ module for enveloping and forwarding KERI message
 
 from hio import help
 from hio.base import doing
-from hio.help import decking
 
 from . import agenting, forwarding
 from .habbing import GroupHab
@@ -65,8 +64,6 @@ class Boatswain(doing.DoDoer):
 
         # load the event and signatures
         evt = hab.makeOwnEvent(sn=sn)
-        srdr = coring.Serder(raw=evt)
-        del evt[:srdr.size]
 
         smids = []
         if isinstance(hab, GroupHab):
@@ -82,9 +79,12 @@ class Boatswain(doing.DoDoer):
             raise kering.ValidationError("no proxy to send messages for delegation")
 
         # Send exn message for notification purposes
-        exn, atc = delegateRequestExn(phab, delpre=delpre, ked=srdr.ked, aids=smids)
+        exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
 
         self.postman.send(hab=phab, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+
+        srdr = coring.Serder(raw=evt)
+        del evt[:srdr.size]
         self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
         anchor = dict(i=srdr.pre, s=srdr.sn, d=srdr.said)
@@ -206,89 +206,72 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(delreq)
 
 
-class DelegateRequestHandler(doing.DoDoer):
+class DelegateRequestHandler:
     """
     Handler for multisig group inception notification EXN messages
 
     """
     resource = "/delegate/request"
 
-    def __init__(self, hby, notifier, **kwa):
+    def __init__(self, hby, notifier):
         """
 
         Parameters:
-            mbx (Mailboxer) of format str names accepted for offers
-            controller (str) qb64 identity prefix of controller
-            cues (decking.Deck) of outbound cue messages from handler
+            hby (Habery) database environment for this handler
+            notifier (str) notifier for converting delegate request exn messages to controller notifications
 
         """
         self.hby = hby
         self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
 
-        super(DelegateRequestHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of delegation request messages
 
         Parameters:
-            payload is dict representing the body of a multisig/incept message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
+            serder (Serder): Serder of the exn delegation request message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                if "pre" not in msg:
-                    logger.error(f"invalid delegate request message, missing pre.  evt=: {msg}")
-                    continue
+        src = serder.pre
+        pay = serder.ked['a']
+        embeds = serder.ked['e']
 
-                prefixer = msg["pre"]
-                if "payload" not in msg:
-                    logger.error(f"invalid delegate request message, missing payload.  evt=: {msg}")
-                    continue
+        delpre = pay["delpre"]
+        if delpre not in self.hby.habs:
+            logger.error(f"invalid delegate request message, no local delpre for evt=: {pay}")
+            return
 
-                pay = msg["payload"]
-                if "ked" not in pay or "delpre" not in pay:
-                    logger.error(f"invalid delegate request payload, ked and delpre are required.  payload=: {pay}")
-                    continue
+        data = dict(
+            src=src,
+            r='/delegate/request',
+            delpre=delpre,
+            ked=embeds["evt"]
+        )
+        if "aids" in pay:
+            data["aids"] = pay["aids"]
 
-                src = prefixer.qb64
-                delpre = pay["delpre"]
-                if delpre not in self.hby.habs:
-                    logger.error(f"invalid delegate request message, no local delpre for evt=: {pay}")
-                    continue
-
-                data = dict(
-                    src=src,
-                    r='/delegate/request',
-                    delpre=delpre,
-                    ked=pay["ked"]
-                )
-                if "aids" in pay:
-                    data["aids"] = pay["aids"]
-
-                self.notifier.add(attrs=data)
-                # if I am multisig, send oobi information of participants in (delegateeeeeeee) mutlisig group to his
-                # multisig group
-
-                yield
-            yield
+        self.notifier.add(attrs=data)
 
 
-def delegateRequestExn(hab, delpre, ked, aids=None):
+def delegateRequestExn(hab, delpre, evt, aids=None):
+    """
+
+    Parameters:
+        hab (Hab): database environment of sender
+        delpre (str): qb64 AID of delegator
+        evt (bytes): serialized and signed event requiring delegation approval
+        aids (list): list of multisig AIDs participating
+
+    Returns:
+
+    """
     data = dict(
         delpre=delpre,
-        ked=ked
+    )
+
+    embeds = dict(
+        evt=evt
     )
 
     if aids is not None:
@@ -296,7 +279,7 @@ def delegateRequestExn(hab, delpre, ked, aids=None):
 
     # Create `exn` peer to peer message to notify other participants UI
     exn, _ = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
-                                 payload=data, sender=hab.pre)
+                                 payload=data, sender=hab.pre, embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
 

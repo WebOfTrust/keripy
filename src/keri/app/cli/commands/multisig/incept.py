@@ -92,13 +92,13 @@ class GroupMultisigIncept(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
         exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.hby, exc, mux)
+        grouping.loadHandlers(exc, mux)
 
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
-        doers = [self.hbyDoer, self.mbx, self.counselor, self.postman, exc]
+        doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo)])

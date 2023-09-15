@@ -916,6 +916,12 @@ class Baser(dbing.LMDBer):
         # exchange messages
         self.exns = subing.SerderSuber(db=self, subkey="exns.")
 
+        # Index of exn message route to SAID of exn
+        self.erts = subing.CesrIoSetSuber(db=self, subkey="erts.", klas=coring.Saider)
+
+        # Forward pointer to a provided reply message
+        self.erpy = subing.CesrSuber(db=self, subkey="erpy.", klas=coring.Saider)
+
         # exchange messages
         self.sxns = subing.SerderSuber(db=self, subkey="sxns.")
 
@@ -1247,7 +1253,7 @@ class Baser(dbing.LMDBer):
             for wig in wigs:
                 atc.extend(wig)
 
-        # add authorizer (delegator/issure) source seal event couple to attachments
+        # add authorizer (delegator/issuer) source seal event couple to attachments
         couple = self.getAes(dgkey)
         if couple is not None:
             atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,

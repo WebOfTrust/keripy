@@ -6,10 +6,10 @@ keri.peer.exchanging module
 import logging
 from datetime import timedelta
 
-from hio.base import doing
 from hio.help import decking
 
-from .. import help
+from .. import help, kering
+from ..app import habbing
 from ..core import eventing, coring
 from ..help import helping
 from ..kering import ValidationError, MissingSignatureError
@@ -19,17 +19,17 @@ ExchangeMessageTimeWindow = timedelta(seconds=300)
 logger = help.ogler.getLogger()
 
 
-class Exchanger(doing.DoDoer):
+class Exchanger:
     """
      Peer to Peer KERI message Exchanger.
     """
 
-    def __init__(self, hby, handlers, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
+    def __init__(self, hby, handlers, cues=None, delta=ExchangeMessageTimeWindow):
         """ Initialize instance
 
         Parameters:
             hby (Haberyu): database environment
-            handler(list): list of Handlers capable of responding to exn messages
+            handlers(list): list of Handlers capable of responding to exn messages
             cues (Deck):  of Cues i.e. notices of requests needing response
             delta (timedelta): message timeout window
         """
@@ -40,16 +40,12 @@ class Exchanger(doing.DoDoer):
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
-        doers = []
         for handler in handlers:
             if handler.resource in self.routes:
                 raise ValidationError("unable to register behavior {}, it has already been registered"
                                       "".format(handler.resource))
 
             self.routes[handler.resource] = handler
-            doers.append(handler)
-
-        super(Exchanger, self).__init__(doers=doers, **kwa)
 
     def addHandler(self, handler):
         if handler.resource in self.routes:
@@ -57,7 +53,6 @@ class Exchanger(doing.DoDoer):
                                   "".format(handler.resource))
 
         self.routes[handler.resource] = handler
-        self.doers.append(handler)
 
     def processEvent(self, serder, tsgs=None, cigars=None, **kwargs):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
@@ -74,12 +69,7 @@ class Exchanger(doing.DoDoer):
 
         """
         route = serder.ked["r"]
-        payload = serder.ked["a"]
-        embeds = serder.ked["e"]
         sender = serder.ked["i"]
-        local = sender in self.hby.habs
-
-        modifiers = serder.ked["q"] if 'q' in serder.ked else dict()
         pathed = kwargs["pathed"] if "pathed" in kwargs else []
 
         if route not in self.routes:
@@ -132,41 +122,23 @@ class Exchanger(doing.DoDoer):
                 np = pather.strip(e)
                 attachments.append((np, pattach))
 
-        # Always persis local events and events where the behavior has indicated persistence is required
-        if local or (hasattr(behavior, 'persist') and behavior.persist):
-            try:
-                self.logEvent(serder, pathed, tsgs, cigars)
-            except Exception as ex:
-                print(ex)
+        # Perform behavior specific verification, think IPEX chaining requirements
+        try:
+            if not behavior.verify(serder=serder, attachments=attachments):
+                logger.info(f"exn event for route {route} failed behavior verfication.  exn={serder.ked}")
+                return
 
-        # Do not execute behavior for local events, just validate and save
-        msg = dict(
-            payload=payload,
-            embeds=embeds,
-            modifiers=modifiers,
-            pre=coring.Prefixer(qb64=sender),
-            serder=serder,
-            attachments=attachments
-        )
-        if local:
-            if hasattr(behavior, 'local') and behavior.local:
-                behavior.msgs.append(msg)
-        else:
-            behavior.msgs.append(msg)
+        except AttributeError:
+            logger.info(f"Behavior for {route} missing or does not have verify for exn={serder.ked}")
 
-    def processResponseIter(self):
-        """ Iterate through cues and yields one or more responses for each cue.
+        # Always persis events
+        self.logEvent(serder, pathed, tsgs, cigars)
 
-        """
-        responses = []
-        for _, behavior in self.routes.items():  # get responses from all behaviors
-            while behavior.cues:
-                cue = behavior.cues.popleft()
-                responses.append(cue)
-
-        while responses:  # iteratively process each response in responses
-            msg = responses.pop(0)
-            yield msg
+        # Execute any behavior specific handling, not sure if this should be different than verify
+        try:
+            behavior.handle(serder=serder, attachments=attachments)
+        except AttributeError:
+            logger.info(f"Behavior for {route} missing or does not have handle for exn={serder.ked}")
 
     def processEscrow(self):
         """ Process all escrows for `exn` messages
@@ -239,6 +211,8 @@ class Exchanger(doing.DoDoer):
 
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None):
         dig = serder.said
+        pdig = serder.ked['p']
+        route = serder.ked['r']
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
@@ -248,10 +222,58 @@ class Exchanger(doing.DoDoer):
             for siger in sigers:
                 self.hby.db.esigs.add(keys=quadkeys, val=siger)
         for cigar in cigars:
-            self.hby.db.ecigs.add(keys=(dig,), vals=[(cigar.verfer, cigar)])
+            self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
 
+        saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        self.hby.db.erts.add(keys=(route,), val=saider)
+        if pdig:
+            self.hby.db.erpy.pin(keys=(pdig,), val=saider)
         self.hby.db.exns.put(keys=(dig,), val=serder)
+
+    def lead(self, hab, said):
+        """ Determines is current member represented by hab is the lead of an exn message
+
+        Lead is the signer of the exn with the lowest signing index
+
+        Parameters:
+            hab (Hab): Habitat for sending of exchange message represented by SAID
+            said (str): qb64 SAID of exchange message
+
+        Returns:
+            bool: True means hab is the lead
+
+        """
+        if not isinstance(hab, habbing.GroupHab):
+            return True
+
+        keys = [verfer.qb64 for verfer in hab.kever.verfers]
+        sigers = self.hby.db.esigs.get(keys=(said,))
+        if not sigers:  # otherwise its a list of sigs
+            return False
+
+        windex = min([siger.index for siger in sigers])
+
+        # True if Elected to perform delegation and witnessing
+        return hab.mhab.kever.verfers[0].qb64 == keys[windex]
+
+    def complete(self, said):
+        """
+
+        Args:
+            said (str): qb64 said of exchange message to check status
+
+        Returns:
+            bool: True means exchange message is has been saved
+        """
+        serder = self.hby.db.exns.get(keys=(said,))
+        if not serder:
+            return False
+        else:
+            if serder.said != said:
+                raise kering.ValidationError(f"invalid exchange escrowed event {serder.said}-{said}")
+
+        return True
 
 
 def exchange(route,
@@ -342,6 +364,9 @@ def cloneMessage(hby, said):
 
     """
     exn = hby.db.exns.get(keys=(said,))
+    if exn is None:
+        return None, None
+
     verify(hby=hby, serder=exn)
 
     pathed = dict()

@@ -3,21 +3,19 @@
 tests.vc.protocoling module
 
 """
-from hio.base import doing
 
-from keri.app import habbing, indirecting, signing, storing, notifying
-from keri.core import coring, scheming, eventing, parsing
+from keri.app import habbing, notifying
+from keri.core import coring, scheming, parsing
 from keri.core.eventing import SealEvent
+from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import protocoling
-from keri.vc.protocoling import IssueHandler, PresentationRequestHandler, PresentationProofHandler, \
-    presentationExchangeExn
 from keri.vc.proving import credential
-from keri.vdr import verifying, credentialing
+from keri.vdr import credentialing, verifying
 
 
-def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
-    """ Test Issuing ACDC """
+def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
+    """ Test IPEX exchange protocol """
 
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
@@ -25,36 +23,17 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     assert wanSalt == '0AB3YW5uLXRoZS13aXRuZXNz'
 
     with (habbing.openHby(name="red", base="test") as redHby,
-          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby,
-          habbing.openHby(name="wan", base="test", salt=wanSalt) as wanHby):
-
-
-        # setup wan's Hab and doers
-        wanDoers = indirecting.setupWitness(alias="wan",
-                                            hby=wanHby,
-                                            tcpPort=5632,
-                                            httpPort=5642)
-
-        wanHab = wanHby.habByName(name="wan")
-        wanPre = wanHab.pre
-        assert wanPre == 'BOigXdxpp1r43JhO--czUTwrCXzoWrIwW8i41KWDlr8s'
-
+          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)
-        seeder.seedSchema(wanHby.db)
 
-        limit = 1.0
-        tock = 1.0
-        doist = doing.Doist(limit=limit, tock=tock)
-
-        sidHab = sidHby.makeHab(name="test",
-                                wits=[wanHab.pre])
+        sidHab = sidHby.makeHab(name="test")
         sidPre = sidHab.pre
-        assert sidPre == "EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ"
+        assert sidPre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
-        redKvy = eventing.Kevery(db=redHby.db)
-        redRgy = credentialing.Regery(hby=redHby, name="red", temp=True)
-        redVer = verifying.Verifier(hby=redHby, reger=redRgy.reger)
+        redHab = redHby.makeHab(name="test")
+        redPre = redHab.pre
+        assert redPre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         sidRgy = credentialing.Regery(hby=sidHby, name="bob", temp=True)
         sidVer = verifying.Verifier(hby=sidHby, reger=sidRgy.reger)
@@ -67,9 +46,8 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=sidHab.kever.serder.saider)
         sidRgy.processEscrows()
 
-        # Create Red's wallet and Issue Handler for receiving the credential
-        redIssueHandler = IssueHandler(hby=sidHby, rgy=sidRgy, notifier=notifier)
-        redExc = exchanging.Exchanger(hby=sidHby, tymth=doist.tymen(), handlers=[redIssueHandler])
+        sidExc = exchanging.Exchanger(hby=sidHby, handlers=[])
+        protocoling.loadHandlers(hby=sidHby, exc=sidExc, rgy=sidRgy, notifier=notifier)
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
@@ -87,12 +65,12 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             data=d,
                             status=issuer.regk)
 
-        assert creder.said == "EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a"
+        assert creder.said == "EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG"
 
         iss = issuer.issue(said=creder.said)
-        assert iss.raw == (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EM2k14GK1AoAd9RuKdfDQIlYQhKyZ056-7A4'
-                           b'Ydr9K4BU","i":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a","s":"0","ri":"E'
-                           b'PzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","dt":"2021-06-27T21:26:21.23325'
+        assert iss.raw == (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9afq'
+                           b'dCIZjMy3","i":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG","s":"0","ri":"E'
+                           b'O0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","dt":"2021-06-27T21:26:21.23325'
                            b'7+00:00"}')
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
@@ -100,189 +78,208 @@ def test_issuing(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=sidHab.kever.serder.saider)
         sidRgy.processEscrows()
 
-        msg = signing.ratify(sidHab, serder=creder, pipelined=True)
-        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-sm'
-                       b'fTu0bOvN-a","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","'
-                       b'ri":"EPzhcSAxNzgx-TgD_IJ59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCn'
-                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EOM45RCy4W3Kt6-U'
-                       b'_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T21:26:21.233257+0'
-                       b'0:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LEI":"'
-                       b'254900OPPU84GM83MG36"}}-VA3-JAB6AABAAA--FABEELPMtVeoAMwq-cEvyqQk'
-                       b'PlVlHHj86nNxpb-77KcM3DZ0AAAAAAAAAAAAAAAAAAAAAAAEELPMtVeoAMwq-cEv'
-                       b'yqQkPlVlHHj86nNxpb-77KcM3DZ-AABAADx-hk7PsYCG3M5qyg2SZPV30BOpV2Wy'
-                       b'7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7LkGGG8sBNm1Q8B')
+        msg = creder.raw
+        assert msg == (b'{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG",'
+                       b'"i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITak'
+                       b'YpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
+                       b'","a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T2'
+                       b'1:26:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LE'
+                       b'I":"254900OPPU84GM83MG36"}}')
+        atc = bytearray(msg)
+        atc.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
+        atc.extend(coring.Seqner(sn=0).qb64b)
+        atc.extend(iss.saidb)
 
-        # Create the `exn` message for issue credential
-        sidExcSrdr, atc = protocoling.credentialIssueExn(hab=sidHab, message="", acdc=msg, iss=iss.raw)
-        excMsg = bytearray(sidExcSrdr.raw)
-        excMsg.extend(atc)
-        # Parse the exn issue credential message on Red's side
+        assert atc == (b'{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qw'
+                       b'vHdlvgfOyG","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+                       b'ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCn'
+                       b'VRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EF2__B6DiLQHpdJZ'
+                       b'_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T21:26:21.233257+0'
+                       b'0:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LEI":"'
+                       b'254900OPPU84GM83MG36"}}-IABEDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHd'
+                       b'lvgfOyG0AAAAAAAAAAAAAAAAAAAAAAAEK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9'
+                       b'afqdCIZjMy3')
+        parsing.Parser().parseOne(ims=bytes(atc), vry=sidVer)
 
-        parsing.Parser().parse(ims=bytearray(msg), vry=sidVer)
+        # Successfully parsed credential is now saved in database.
+        assert sidVer.reger.saved.get(keys=(creder.said,)) is not None
 
-        parsing.Parser().parse(ims=bytearray(msg), kvy=redKvy, exc=redExc, vry=redVer)
-        parsing.Parser().parse(ims=bytearray(excMsg), kvy=redKvy, exc=redExc)
-        doers = wanDoers + [redExc]
-        doist.do(doers=doers)
-        assert doist.tyme == limit
+        ipexhan = protocoling.IpexHandler(resource="/ipex/apply", hby=sidHby, rgy=sidRgy, notifier=notifier)
 
-        ser = (b'{"v":"ACDC10JSON000197_","d":"EIanW-Icbisj1noOeOJDfPIsIy0QZUB-smfTu0bOvN-a",'
-               b'"i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","ri":"EPzhcSAxNzgx-TgD_IJ'
-               b'59xJB7tAFCjIBWLzB9ZWesacD","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'
-               b'","a":{"d":"EOM45RCy4W3Kt6-U_oUhaK4SYvRp-9MbLwBmlkn-wY1_","dt":"2021-06-27T2'
-               b'1:26:21.233257+00:00","i":"EELPMtVeoAMwq-cEvyqQkPlVlHHj86nNxpb-77KcM3DZ","LE'
-               b'I":"254900OPPU84GM83MG36"}}')
-        sig0 = (b'AADx-hk7PsYCG3M5qyg2SZPV30BOpV2Wy7nVq7s90TlvrHnGA5KY9NNB25_Be1vyO7WKepIXD7Lk'
-                b'GGG8sBNm1Q8B')
+        apply0, apply0atc = protocoling.ipexApplyExn(sidHab, "Please give me a credential", schema=schema, attrs={})
+        assert apply0.raw == (b'{"v":"KERI10JSON00013a_","t":"exn","d":"ELTsAF3uujMxAsMaDuK_fovjTf6uhD7TDay4'
+                              b'FYeF1HyS","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"","dt":"20'
+                              b'21-06-27T21:26:21.233257+00:00","r":"/ipex/apply","q":{},"a":{"m":"Please gi'
+                              b've me a credential","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{'
+                              b'}},"e":{}}')
 
-        # verify we can load serialized VC by SAID
-        creder, sadsigers, sadcigars = sidRgy.reger.cloneCred(said=creder.said)
-        assert creder.raw == ser
+        # No requirements for apply, except that its first, no `p`
+        assert ipexhan.verify(serder=apply0) is True
 
-        # verify the signature
-        assert len(sadsigers) == 1
-        (_, _, _, _, sigers) = sadsigers[0]
-        assert sigers[0].qb64b == sig0
-        assert len(sadcigars) == 0
+        offer0, offer0atc = protocoling.ipexOfferExn(sidHab, "How about this", acdc=creder.raw, apply=apply0)
+        assert offer0.raw == (b'{"v":"KERI10JSON0002f0_","t":"exn","d":"EGoyRJ3CwXu_1npugrPb2RF19TfshnXfhM8y'
+                              b'kAuEwIf5","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"ELTsAF3uuj'
+                              b'MxAsMaDuK_fovjTf6uhD7TDay4FYeF1HyS","dt":"2021-06-27T21:26:21.233257+00:00",'
+                              b'"r":"/ipex/offer","q":{},"a":{"m":"How about this"},"e":{"acdc":{"v":"ACDC10'
+                              b'JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG","i":"EIaGMMW'
+                              b'JFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGs'
+                              b'jaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"'
+                              b'EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T21:26:21.2332'
+                              b'57+00:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LEI":"254900OP'
+                              b'PU84GM83MG36"}},"d":"EOVRKHUAEjvfyWzQ8IL4icBiaVuy_CSTse_W_AssaAeE"}}')
 
-        # verify we can look up credential by Schema SAID
-        schema = sidRgy.reger.schms.get(schema)
-        assert len(schema) == 1
-        assert schema[0].qb64 == creder.said
+        # This should fail because it is not first and the apply isn't persisted yet
+        assert ipexhan.verify(serder=offer0) is False
 
+        # Now try to parse the offer before the apply, watch it fail
+        omsg = bytearray(offer0.raw)
+        omsg.extend(offer0atc)
 
-def test_proving(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    hanSalt = coring.Salter(raw=b'abcdef0123456789').qb64
-    vicSalt = coring.Salter(raw=b'fedcba9876543210').qb64
+        parsing.Parser().parse(ims=bytes(omsg), exc=sidExc)
 
-    with habbing.openHby(name="han", base="test", salt=hanSalt) as hanHby, \
-            habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby, \
-            habbing.openHby(name="vic", base="test", salt=vicSalt) as vicHby:
-        limit = 1.0
-        tock = 1.0
-        doist = doing.Doist(limit=limit, tock=tock)
-        seeder.seedSchema(db=hanHby.db)
-        seeder.seedSchema(db=sidHby.db)
-        seeder.seedSchema(db=vicHby.db)
+        # Not saved because no apply
+        assert sidHby.db.exns.get(keys=(offer0.said,)) is None
 
-        # sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
-        sidHab = sidHby.makeHab(name="test")
-        assert sidHab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-        sidIcpMsg = sidHab.makeOwnInception()
+        amsg = bytearray(apply0.raw)
+        amsg.extend(apply0atc)
 
-        hanKvy = eventing.Kevery(db=hanHby.db)
-        parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=hanKvy)
-        assert hanKvy.kevers[sidHab.pre].sn == 0  # accepted event
+        # Now parse both messages in order and both will save
+        parsing.Parser().parse(ims=amsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(apply0.said,))
+        assert serder.ked == apply0.ked
+        parsing.Parser().parse(ims=omsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(offer0.said,))
+        assert serder.ked == offer0.ked
 
-        # hanHab = habbing.Habitat(ks=hanKS, db=hanDB, salt=hanSalt, temp=True)
-        hanHab = hanHby.makeHab(name="test")
-        assert hanHab.pre == "EKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6"
-        hanIcpMsg = hanHab.makeOwnInception()
+        # Let's see if we can spurn a message we previously accepted.
+        spurn0, spurn0atc = protocoling.ipexSpurnExn(sidHab, "I reject you", spurned=apply0)
+        assert spurn0.raw == (b'{"v":"KERI10JSON00011d_","t":"exn","d":"EN6BXnp402214Uc_Q5AyjXHr-Rm2eUw0RWyO'
+                              b'qZtIip4-","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"ELTsAF3uuj'
+                              b'MxAsMaDuK_fovjTf6uhD7TDay4FYeF1HyS","dt":"2021-06-27T21:26:21.233257+00:00",'
+                              b'"r":"/ipex/spurn","q":{},"a":{"m":"I reject you"},"e":{}}')
 
-        vicKvy = eventing.Kevery(db=vicHby.db)
-        parsing.Parser().parse(ims=bytearray(hanIcpMsg), kvy=vicKvy)
-        assert vicKvy.kevers[hanHab.pre].sn == 0  # accepted event
+        # This will fail, we've already responded with an offer
+        assert ipexhan.verify(spurn0) is False
 
-        # vicHab = habbing.Habitat(ks=vicKS, db=vicDB, salt=vicSalt, temp=True)
-        vicHab = vicHby.makeHab(name="test")
-        assert vicHab.pre == "EFWujxD_N6DKo4Heaq-vSmv9a5RV09gbJUt68wBFIdAo"
-        vicIcpMsg = vicHab.makeOwnInception()
+        # Now lets try an offer without a pointer back to a reply
+        offer1, offer1atc = protocoling.ipexOfferExn(sidHab, "Here a credential offer", acdc=creder.raw)
+        assert offer1.raw == (b'{"v":"KERI10JSON0002cd_","t":"exn","d":"EMEmoi4k9gxWu4uZyYuEK3MvFPn-5B0LHnNx'
+                              b'uQ4vRqRA","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"","dt":"20'
+                              b'21-06-27T21:26:21.233257+00:00","r":"/ipex/offer","q":{},"a":{"m":"Here a cr'
+                              b'edential offer"},"e":{"acdc":{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpem'
+                              b'h_6xkaGNuoDsRU3qwvHdlvgfOyG","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
+                              b'I3","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hat'
+                              b'TNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwch'
+                              b'O9yylr3xx","dt":"2021-06-27T21:26:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIi'
+                              b'KDIrg-vIyge6mBl2QV8dDjI3","LEI":"254900OPPU84GM83MG36"}},"d":"EOVRKHUAEjvfyW'
+                              b'zQ8IL4icBiaVuy_CSTse_W_AssaAeE"}}')
 
-        parsing.Parser().parse(ims=bytearray(vicIcpMsg), kvy=hanKvy)
-        assert hanKvy.kevers[vicHab.pre].sn == 0  # accepted event
+        # Will work because it is starting a new conversation
+        assert ipexhan.verify(serder=offer1) is True
 
-        schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
+        omsg = bytearray(offer1.raw)
+        omsg.extend(offer1atc)
+        parsing.Parser().parse(ims=omsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(offer1.said,))
+        assert serder.ked == offer1.ked
 
-        hanReg = credentialing.Regery(hby=hanHby, name="han", temp=True)
-        issuer = hanReg.makeRegistry(prefix=hanHab.pre, name="han")
-        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hanHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hanHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hanHab.kever.serder.saider)
-        hanReg.processEscrows()
+        agree, argeeAtc = protocoling.ipexAgreeExn(sidHab, "I'll accept that offer", offer=offer0)
+        assert agree.raw == (b'{"v":"KERI10JSON000127_","t":"exn","d":"ECDIZYM_le19AYxRef_jfkfHsdrlsiLWofA7'
+                             b'LHrpFR43","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"EGoyRJ3CwX'
+                             b'u_1npugrPb2RF19TfshnXfhM8ykAuEwIf5","dt":"2021-06-27T21:26:21.233257+00:00",'
+                             b'"r":"/ipex/agree","q":{},"a":{"m":"I\'ll accept that offer"},"e":{}}')
 
-        verifier = verifying.Verifier(hby=hanHby, reger=hanReg.reger)
+        # Can not create an agree without an offer, so this will pass since it has an offer that has no response
+        assert ipexhan.verify(serder=agree) is True
 
-        creder = credential(issuer=sidHab.pre,
-                            schema=schema,
-                            recipient=hanHab.pre,
-                            data=dict(
-                                LEI="254900OPPU84GM83MG36",
-                            ),
-                            status=issuer.regk,
-                            )
-        assert creder.said == "EEO1aft5aKWawxAIuN4_x0b2oeajvAikyR_w0sADoiXv"
+        amsg = bytearray(agree.raw)
+        amsg.extend(argeeAtc)
+        parsing.Parser().parse(ims=amsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(agree.said,))
+        assert serder.ked == agree.ked
 
-        msg = signing.ratify(sidHab, serder=creder)
+        # First try a bare grant (no prior agree)
+        anc = sidHab.makeOwnEvent(sn=2)
+        grant0, grant0atc = protocoling.ipexGrantExn(sidHab, "Here's a credential", acdc=msg, iss=iss.raw, anc=anc)
+        assert grant0.raw == (b'{"v":"KERI10JSON0004fe_","t":"exn","d":"EE6csOli0VeioLJH5YtmU8U3fGIT4Id0J9xF'
+                              b'NPZ4oURv","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"","dt":"20'
+                              b'21-06-27T21:26:21.233257+00:00","r":"/ipex/grant","q":{},"a":{"m":"Here\''
+                              b's a credential"},"e":{"acdc":{"v":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpem'
+                              b'h_6xkaGNuoDsRU3qwvHdlvgfOyG","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
+                              b'I3","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hat'
+                              b'TNyK3sIykYSrrFvafX3bHQ9Gkk1kC","a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwch'
+                              b'O9yylr3xx","dt":"2021-06-27T21:26:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIi'
+                              b'KDIrg-vIyge6mBl2QV8dDjI3","LEI":"254900OPPU84GM83MG36"}},"iss":{"v":"KERI10J'
+                              b'SON0000ed_","t":"iss","d":"EK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9afqdCIZjMy3","i"'
+                              b':"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG","s":"0","ri":"EO0_SyqPS1-EVY'
+                              b'SITakYpUHaUZZpZGsjaXFOaO_kCfS4","dt":"2021-06-27T21:26:21.233257+00:00"},"an'
+                              b'c":{"v":"KERI10JSON00013a_","t":"ixn","d":"EOjAxp-AMLzicGz2h-DxvMK9kicajpZEw'
+                              b'dN8-8k54hvz","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":"2","p":'
+                              b'"EGKglEgIpdHuhuwl-IiSDG9x094gMrRxVaXGgXvCzCYM","a":[{"i":"EDkftEwWBpohjTpemh'
+                              b'_6xkaGNuoDsRU3qwvHdlvgfOyG","s":"0","d":"EK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9af'
+                              b'qdCIZjMy3"}]},"d":"EI5mZXZ84Su4DrEUOxtl-NaUURQtTJeAn12xf146beg3"}}')
 
-        iss = issuer.issue(said=creder.said)
-        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hanHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hanHab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=hanHab.kever.serder.saider)
-        hanReg.processEscrows()
+        assert ipexhan.verify(serder=grant0) is True
 
-        parsing.Parser().parse(ims=msg, vry=verifier)
+        # Lets save this bare offer so we can test full spurn workflow
+        gmsg = bytearray(grant0.raw)
+        gmsg.extend(grant0atc)
+        parsing.Parser().parse(ims=gmsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(grant0.said,))
+        assert serder.ked == grant0.ked
 
-        # verify we can load serialized VC by SAID
-        key = creder.said.encode("utf-8")
-        assert hanReg.reger.creds.get(key) is not None
+        # Let's see if we can spurn a message we previously accepted.
+        spurn1, spurn1atc = protocoling.ipexSpurnExn(sidHab, "I reject you", spurned=grant0)
+        assert spurn1.raw == (b'{"v":"KERI10JSON00011d_","t":"exn","d":"EIIYc4NMfFjConU2eacUDljTxsKJ77biwkMw'
+                              b'AfzkF_Yr","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"EE6csOli0V'
+                              b'eioLJH5YtmU8U3fGIT4Id0J9xFNPZ4oURv","dt":"2021-06-27T21:26:21.233257+00:00",'
+                              b'"r":"/ipex/spurn","q":{},"a":{"m":"I reject you"},"e":{}}')
+        smsg = bytearray(spurn1.raw)
+        smsg.extend(spurn1atc)
+        parsing.Parser().parse(ims=smsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(spurn1.said,))
+        assert serder.ked == spurn1.ked  # This credential grant has been spurned and not accepted into database
 
-        # Create Red's wallet and Issue Handler for receiving the credential
-        notifier = notifying.Notifier(hby=hanHby)
-        hanRequestHandler = PresentationRequestHandler(hby=hanHby, notifier=notifier)
-        hanPresentHandler = PresentationProofHandler(notifier=notifier)
-        hanExc = exchanging.Exchanger(hby=hanHby, tymth=doist.tymen(), handlers=[hanRequestHandler,
-                                                                                 hanPresentHandler])
+        # Now we'll run a grant pointing back to the agree all the way to the database
+        grant1, grant1atc = protocoling.ipexGrantExn(sidHab, "Here's a credential", acdc=msg, iss=iss.raw, anc=anc,
+                                                     agree=agree)
+        assert grant1.raw == (b'{"v":"KERI10JSON00052a_","t":"exn","d":"EKn9k1v27ZK8TyS-kEMzHNfpbRV1d-tUMbaZ'
+                              b'Mtmx0aeF","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"ECDIZYM_le'
+                              b'19AYxRef_jfkfHsdrlsiLWofA7LHrpFR43","dt":"2021-06-27T21:26:21.233257+00:00",'
+                              b'"r":"/ipex/grant","q":{},"a":{"m":"Here\'s a credential"},"e":{"acdc":{"v'
+                              b'":"ACDC10JSON000197_","d":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG","i"'
+                              b':"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","ri":"EO0_SyqPS1-EVYSITakYpU'
+                              b'HaUZZpZGsjaXFOaO_kCfS4","s":"EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC","'
+                              b'a":{"d":"EF2__B6DiLQHpdJZ_C0bddxy2o6nXIHEwchO9yylr3xx","dt":"2021-06-27T21:2'
+                              b'6:21.233257+00:00","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","LEI":'
+                              b'"254900OPPU84GM83MG36"}},"iss":{"v":"KERI10JSON0000ed_","t":"iss","d":"EK2Wx'
+                              b'cpF3oL1yqS3Z8i08WDYkHDcYhJL9afqdCIZjMy3","i":"EDkftEwWBpohjTpemh_6xkaGNuoDsR'
+                              b'U3qwvHdlvgfOyG","s":"0","ri":"EO0_SyqPS1-EVYSITakYpUHaUZZpZGsjaXFOaO_kCfS4",'
+                              b'"dt":"2021-06-27T21:26:21.233257+00:00"},"anc":{"v":"KERI10JSON00013a_","t":'
+                              b'"ixn","d":"EOjAxp-AMLzicGz2h-DxvMK9kicajpZEwdN8-8k54hvz","i":"EIaGMMWJFPmtXz'
+                              b'nY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":"2","p":"EGKglEgIpdHuhuwl-IiSDG9x094gMrR'
+                              b'xVaXGgXvCzCYM","a":[{"i":"EDkftEwWBpohjTpemh_6xkaGNuoDsRU3qwvHdlvgfOyG","s":'
+                              b'"0","d":"EK2WxcpF3oL1yqS3Z8i08WDYkHDcYhJL9afqdCIZjMy3"}]},"d":"EI5mZXZ84Su4D'
+                              b'rEUOxtl-NaUURQtTJeAn12xf146beg3"}}')
+        assert ipexhan.verify(serder=grant1) is True
 
-        # Create the issue credential payload
-        pl = dict(
-            s=schema
-        )
+        gmsg = bytearray(grant1.raw)
+        gmsg.extend(grant1atc)
+        parsing.Parser().parse(ims=gmsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(grant1.said,))
+        assert serder.ked == grant1.ked
 
-        # Create the `exn` message for presentation request
-        vicExcSrdr, _ = exchanging.exchange(route="/presentation/request", payload=pl, sender=vicHab.pre)
-        excMsg = bytearray(vicExcSrdr.raw)
-        excMsg.extend(vicHab.endorse(vicExcSrdr, last=False))
+        # And now the last... admit the granted credential to complete the full flow
+        admit0, admit0atc = protocoling.ipexAdmitExn(sidHab, "Thanks for the credential", grant=grant1)
+        assert admit0.raw == (b'{"v":"KERI10JSON00012a_","t":"exn","d":"EHdoJ4nxDPOcOPKkEvo5DO7zMECsnPcdw9iB'
+                              b'uwh9YVNN","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","p":"EKn9k1v27Z'
+                              b'K8TyS-kEMzHNfpbRV1d-tUMbaZMtmx0aeF","dt":"2021-06-27T21:26:21.233257+00:00",'
+                              b'"r":"/ipex/admit","q":{},"a":{"m":"Thanks for the credential"},"e":{}}')
+        assert ipexhan.verify(serder=admit0) is True
 
-        # Parse the exn presentation request message on Han's side
-        parsing.Parser().parse(ims=bytearray(excMsg), kvy=hanKvy, exc=hanExc)
-        doist.do(doers=[hanExc])
-        assert doist.tyme == limit
-
-        resp = notifier.signaler.signals.popleft()
-        assert resp is not None
-        notifier.noter.rem(resp.rid)
-
-        note = resp.attrs["note"]
-        a = note["a"]
-        assert a["schema"] == dict(
-            n=schema
-        )
-
-        exn, atc = presentationExchangeExn(hanHab, reger=hanReg.reger, said=creder.said)
-        assert exn.ked['r'] == "/presentation"
-        assert atc == (b'-FABEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT60AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEKiRAvVAoSwdTxOpHZZXojpY3RxVIYQffLUF7ITQDKT6-AABAADIp5mc'
-                       b'-vUgOrwtbUWXl_9CQYIRzSfp43IfVZURja-NXe0xyg5wCYI2P40WWWk8gQbw6YWY'
-                       b'a58t6zuAeJNW_p4L')
-
-        msg = bytearray(exn.raw)
-        msg.extend(atc)
-
-        vicExc = exchanging.Exchanger(hby=vicHby, tymth=doist.tymen(), handlers=[hanRequestHandler,
-                                                                                 hanPresentHandler])
-
-        parsing.Parser().parse(ims=msg, kvy=vicKvy, exc=vicExc)
-        doist.do(doers=[vicExc])
-        assert doist.tyme == limit * 2
-
-        resp = notifier.signaler.signals.popleft()
-        assert resp is not None
-        note = resp.attrs["note"]
-        a = note["a"]
-        assert a == {'credential': {'n': 'EEO1aft5aKWawxAIuN4_x0b2oeajvAikyR_w0sADoiXv'},
-                     'issuer': {'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'},
-                     'r': '/presentation',
-                     'schema': {'n': 'EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC'}}
+        amsg = bytearray(admit0.raw)
+        amsg.extend(admit0atc)
+        parsing.Parser().parse(ims=amsg, exc=sidExc)
+        serder = sidHby.db.exns.get(keys=(admit0.said,))
+        assert serder.ked == admit0.ked

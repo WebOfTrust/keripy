@@ -267,7 +267,11 @@ def test_credential_parsator():
                             data=credSubject,
                             status=issuer.regk)
 
-        msg = hab.endorse(serder=creder)
+        msg = bytearray(creder.raw)
+        msg.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
+        msg.extend(hab.kever.prefixer.qb64b)
+        msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
+        msg.extend(hab.kever.serder.saider.qb64b)
 
         verifier = verifying.Verifier(hby=hby)
         parsing.Parser().parse(ims=msg, vry=verifier)

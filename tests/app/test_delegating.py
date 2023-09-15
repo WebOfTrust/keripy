@@ -10,7 +10,6 @@ from keri import kering
 from keri.app import habbing, delegating, indirecting, agenting, notifying
 from keri.core import eventing, parsing, coring
 from keri.db import dbing
-from keri.peer import exchanging
 
 
 def test_boatswain(seeder):
@@ -122,48 +121,37 @@ def test_delegation_request(mockHelpingNowUTC):
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
-        exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, ked=serder.ked)
+        evt = hab.endorse(serder=serder)
+        exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
+
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADECnBl'
+                       b'0c14SVi7Keh__sd1PVhinSy-itPr33ZxvSjJYFastqXw9ZTFGNKsY6iALUk5xP3S'
+                       b'399tJrPFe7PtuNAN')
 
         assert exn.ked["r"] == '/delegate/request'
-        assert exn.saidb == b'EDm73OiBCx71BPBgwYgt0EFZ6575xaTxJv1KW_bIb-RM'
+        assert exn.saidb == b'EOiDc2wEmhHc7sbLG64y2gveCIRlFe4BuISaz0mlOuZz'
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACPcEv9'
-                       b'uyCA53Zhwl9BAgyapHMISku1KIRMbJtbi6bfXkqRgsD7Wt4NToLC8GIHlqOUsUhV'
-                       b'Gd4hW8BrMyKG9oYP')
+                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAADECnBl'
+                       b'0c14SVi7Keh__sd1PVhinSy-itPr33ZxvSjJYFastqXw9ZTFGNKsY6iALUk5xP3S'
+                       b'399tJrPFe7PtuNAN')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
-        assert data["ked"] == serder.ked
+        embeds = exn.ked['e']
+        assert embeds["evt"] == serder.ked
 
 
 def test_delegation_request_handler(mockHelpingNowUTC):
     with habbing.openHab(name="test", temp=True) as (hby, hab):
 
-        src = "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
-        ctrl = "EIwLgWhrDj2WI4WCiArWVAYsarrP-B48OM4T6_Wk6BLs"
         serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
+        evt = hab.endorse(serder=serder)
         notifier = notifying.Notifier(hby=hby)
         handler = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
+        exn, _ = delegating.delegateRequestExn(hab, hab.pre, evt=evt)
 
-        # Pass message missing keys:
-        handler.msgs.append(dict(name="value"))
-        handler.msgs.append(dict(pre=hab.kever.prefixer))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=hab.pre)))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=src, ked=serder.ked)))
-        handler.msgs.append(dict(pre=hab.kever.prefixer, payload=dict(delpre=hab.pre, ked=serder.ked)))
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[handler])
-        doist.enter()
-
-        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-
-        while not tymer.expired:
-            doist.recur()
-            time.sleep(doist.tock)
-
-        assert doist.limit == limit
-        doist.exit()
+        handler.handle(serder=exn)
 
         assert len(notifier.getNotes()) == 1

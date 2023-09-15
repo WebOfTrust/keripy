@@ -18,7 +18,6 @@ from .. import help
 from ..app import specing, storing, indirecting, httping, habbing, delegating, booting
 from ..core import coring
 from ..peer import exchanging
-from ..vc import protocoling
 from ..vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
@@ -261,16 +260,8 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
     registrar = credentialing.Registrar(hby=hby, rgy=rgy, counselor=counselor)
     credentialer = credentialing.Credentialer(hby=hby, rgy=rgy, registrar=registrar, verifier=verifier)
 
-    issueHandler = protocoling.IssueHandler(hby=hby, rgy=rgy, notifier=notifier)
-    requestHandler = protocoling.PresentationRequestHandler(hby=hby, notifier=notifier)
-    applyHandler = protocoling.ApplyHandler(hby=hby, rgy=rgy, verifier=verifier, name=hby.name)
-    proofHandler = protocoling.PresentationProofHandler(notifier=notifier)
-
-    handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler])
-
     exchanger = exchanging.Exchanger(hby=hby, handlers=handlers)
     challenging.loadHandlers(db=hby.db, signaler=signaler, exc=exchanger)
-    grouping.loadHandlers(hby=hby, exc=exchanger, notifier=notifier)
     oobiery = keri.app.oobiing.Oobiery(hby=hby)
     authn = oobiing.Authenticator(hby=hby)
 
@@ -287,7 +278,7 @@ def setup(hby, rgy, servery, bootConfig, *, controller="", insecure=False, stati
                                               "/challenge", "/oobi"],
                                       cues=cues)
     # configure a kevery
-    doers.extend([exchanger, mbd, rep])
+    doers.extend([mbd, rep])
 
     # Load admin interface
     app = falcon.App(middleware=falcon.CORSMiddleware(

@@ -12,9 +12,7 @@ from typing import Type
 from hio.help import decking
 
 from .. import help, kering
-from ..app import signing
 from ..core import parsing, coring, scheming
-from .. import core
 from ..help import helping
 from ..vdr import eventing
 from ..vdr.viring import Reger
@@ -69,7 +67,6 @@ class Verifier:
 
         self.inited = True
 
-
     @property
     def tevers(self):
         """ Returns .db.tevers
@@ -89,7 +86,7 @@ class Verifier:
         while creds:
             self.processCredential(**creds.pull())
 
-    def processCredential(self, creder, sadsigers=None, sadcigars=None):
+    def processCredential(self, creder, prefixer, seqner, saider):
         """ Credential data and signature(s) verification
 
         Verify the data of the credential against the schema, the SAID of the credential and
@@ -97,8 +94,9 @@ class Verifier:
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix of source anchoring KEL or TEL event
+            seqner (Seqner): sequence number of source anchoring KEL or TEL event
+            saider (Saider): SAID of source anchoring KEL or TEL event
 
         """
         regk = creder.status
@@ -106,24 +104,21 @@ class Verifier:
         schema = creder.schema
         prov = creder.chains
 
-        sadcigars = sadcigars if sadcigars is not None else []
-        sadsigers = sadsigers if sadsigers is not None else []
-
         if regk not in self.tevers:  # registry event not found yet
-            if self.escrowMRE(creder, sadsigers, sadcigars):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
-            if self.escrowMRE(creder, sadsigers, sadcigars):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         dtnow = helping.nowUTC()
         dte = helping.fromIso8601(state.ked["dt"])
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-            if self.escrowMRE(creder, sadsigers, sadcigars):
+            if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
@@ -134,7 +129,7 @@ class Verifier:
         # Verify the credential against the schema
         scraw = self.resolver.resolve(schema)
         if not scraw:
-            if self.escrowMSE(creder, sadsigers, sadcigars):
+            if self.escrowMSE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
@@ -146,41 +141,6 @@ class Verifier:
                   .format(creder.said, schema, ex))
             raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}: {}"
                                                      .format(creder.said, schema, ex))
-
-        for (pather, cigar) in sadcigars:
-            if not cigar.verfer.verify(cigar.raw, creder.raw):  # cig not verify
-                self.escrowPSC(creder, sadsigers, sadcigars)
-                raise kering.MissingSignatureError("Failure satisfying credential on sigs for {}"
-                                                   " for evt = {}.".format(cigar,
-                                                                           creder.crd))
-
-        rooted = False
-        for (pather, prefixer, seqner, saider, sigers) in sadsigers:
-            if pather.bext != "-":
-                continue
-
-            rooted = True
-            if prefixer.qb64 not in self.hby.kevers or self.hby.kevers[prefixer.qb64].sn < seqner.sn:
-                if self.escrowMIE(creder, sadsigers, sadcigars):
-                    self.cues.append(dict(kin="query", q=dict(pre=prefixer.qb64, sn=seqner.sn)))
-                raise kering.MissingIssuerError("issuer identifier {} not in Kevers".format(prefixer.qb64))
-
-            # Verify the signatures are valid and that the signature threshold as of the signing event is met
-            tholder, verfers = self.hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=saider.qb64)
-            _, indices = core.eventing.verifySigs(creder.raw, sigers, verfers)
-
-            if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
-                self.escrowPSC(creder, sadsigers, sadcigars)
-                raise kering.MissingSignatureError("Failure satisfying credential sith = {} on sigs for {}"
-                                                   " for evt = {}.".format(tholder.sith,
-                                                                           [siger.qb64 for siger in sigers],
-                                                                           creder.crd))
-        if not rooted:
-            print("Missing root signature for ", vcid)
-            raise kering.MissingSignatureError("No root signature on credential with paths {}"
-                                               " for evt = {}.".format([pather.bext for (pather, _, _, _, _)
-                                                                       in sadsigers],
-                                                                       creder.crd))
 
         if isinstance(prov, list):
             edges = prov
@@ -198,7 +158,7 @@ class Verifier:
                 op = node['o'] if 'o' in node else None
                 state = self.verifyChain(nodeSaid, op, creder.issuer)
                 if state is None:
-                    self.escrowMCE(creder, sadsigers, sadcigars)
+                    self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
@@ -206,7 +166,7 @@ class Verifier:
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.ked["dt"])
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
-                    self.escrowMCE(creder, sadsigers, sadcigars)
+                    self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
@@ -217,80 +177,54 @@ class Verifier:
                     logger.info("Successfully validated credential chain {} for credential {}"
                                 .format(label, creder.said))
 
-        self.saveCredential(creder, sadsigers, sadcigars)
-        msg = signing.provision(creder, sadsigers=sadsigers, sadcigars=sadcigars)
-        self.cues.append(dict(kin="saved", creder=creder, msg=msg))
+        self.saveCredential(creder, prefixer, seqner, saider)
+        self.cues.append(dict(kin="saved", creder=creder))
 
-    def escrowPSC(self, creder, sadsigers, sadcigars):
-        """ Credential Partial Signature Escrow
-
-        Parameters:
-            creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
-
-        """
-        key = creder.saider.qb64b
-
-        self.reger.logCred(creder, sadsigers, sadcigars)
-        return self.reger.pse.put(keys=key, val=coring.Dater())
-
-    def escrowMRE(self, creder, sadsigers, sadcigars):
+    def escrowMRE(self, creder, prefixer, seqner, saider):
         """ Missing Registry Escrow
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder, sadsigers, sadcigars)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mre.put(keys=key, val=coring.Dater())
 
-    def escrowMIE(self, creder, sadsigers, sadcigars):
-        """ Missing Issuer Escrow
+    def escrowMCE(self, creder, prefixer, seqner, saider):
+        """ Missing Chain Escrow
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder, sadsigers, sadcigars)
-        return self.reger.mie.put(keys=key, val=coring.Dater())
-
-    def escrowMCE(self, creder, sadsigers, sadcigars):
-        """ Missing Issuer Escrow
-
-        Parameters:
-            creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
-
-        """
-        key = creder.saider.qb64b
-
-        self.reger.logCred(creder, sadsigers, sadcigars)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mce.put(keys=key, val=coring.Dater())
 
-    def escrowMSE(self, creder, sadsigers, sadcigars):
+    def escrowMSE(self, creder, prefixer, seqner, saider):
         """
         Missing Credential Schema Escrow
 
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
         key = creder.saider.qb64b
 
-        self.reger.logCred(creder, sadsigers, sadcigars)
+        self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mse.put(keys=key, val=coring.Dater())
 
     def processEscrows(self):
@@ -300,8 +234,6 @@ class Verifier:
 
         self._processEscrow(self.reger.mce, self.TimeoutMRI, kering.MissingChainError)
         self._processEscrow(self.reger.mse, self.TimeoutMRI, kering.MissingSchemaError)
-        self._processEscrow(self.reger.pse, self.TimeoutPSE, kering.MissingSignatureError)
-        self._processEscrow(self.reger.mie, self.TimeoutMRI, kering.MissingIssuerError)
         self._processEscrow(self.reger.mre, self.TimeoutMRE, kering.MissingRegistryError)
 
     def _processEscrow(self, db, timeout, etype: Type[Exception]):
@@ -314,7 +246,7 @@ class Verifier:
 
         """
         for (said,), dater in db.getItemIter():
-            creder, sadsigers, sadcigars = self.reger.cloneCred(said)
+            creder, prefixer, seqner, saider = self.reger.cloneCred(said)
 
             try:
 
@@ -328,7 +260,7 @@ class Verifier:
                     raise kering.ValidationError("Stale event escrow "
                                                  "at said = {}.".format(bytes(said)))
 
-                self.processCredential(creder, sadsigers, sadcigars)
+                self.processCredential(creder, prefixer, seqner, saider)
 
             except etype as ex:
                 if logger.isEnabledFor(logging.DEBUG):
@@ -347,16 +279,17 @@ class Verifier:
                 logger.info("Verifier unescrow succeeded in valid group op: "
                             "creder=\n%s\n", creder.pretty())
 
-    def saveCredential(self, creder, sadsigers, sadcigars):
+    def saveCredential(self, creder, prefixer, seqner, saider):
         """ Write the credential and associated indicies to the database
 
         Parameters:
             creder (Creder): that contains the credential to process
-            sadsigers (list): sad path signatures from transferable identifier
-            sadcigars (list): sad path signatures from non-transferable identifier
+            prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
+            seqner (Seqner): sequence number of event anchoring credential
+            saider (Diger) digest of anchoring event for credential
 
         """
-        self.reger.logCred(creder, sadsigers, sadcigars)
+        self.reger.logCred(creder, prefixer, seqner, saider)
 
         schema = creder.schema.encode("utf-8")
         issuer = creder.issuer.encode("utf-8")
@@ -384,8 +317,9 @@ class Verifier:
         """ Verifies the node credential at the end of an edge
 
         Parameters:
-            nodeSubject(str): qb64 of node credential subject
             nodeSaid: (str): qb64 SAID of node credential
+            op(str): edge operator
+            issuer (str) qb64 AID of issuer
 
         Returns:
             Serder: transaction event state notification message

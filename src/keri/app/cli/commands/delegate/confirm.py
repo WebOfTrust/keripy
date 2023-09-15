@@ -10,11 +10,12 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, indirecting, agenting, grouping, forwarding
+from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri.core import coring
 from keri.db import dbing
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -59,7 +60,15 @@ class ConfirmDoer(doing.DoDoer):
         self.witq = agenting.WitnessInquisitor(hby=hby)
         self.postman = forwarding.Poster(hby=hby)
         self.counselor = grouping.Counselor(hby=hby)
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'])
+        self.notifier = notifying.Notifier(hby=hby)
+        self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
+
+        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
+        grouping.loadHandlers(exc=exc, mux=self.mux)
+
+        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
+                                               exc=exc)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -130,15 +139,11 @@ class ConfirmDoer(doing.DoDoer):
                             continue
 
                         serder = coring.Serder(raw=msg)
-                        ims = bytes(msg[serder.size:])
-
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 
                         for recpt in others:  # send notification to other participants as a signalling mechanism
-                            self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=serder,
-                                              attachment=ims)
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 

@@ -3,453 +3,135 @@
 keri.vc.handling module
 
 """
-import json
-
-from hio.base import doing
-from hio.help import decking
+import os
+from collections import namedtuple
 
 from .. import help
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
 
-
-class ApplyHandler(doing.Doer):
-    """
-        {
-           "v": "KERI10JSON00011c_",                               // KERI Version String
-           "t": "exn",                                             // peer to peer message ilk
-           "d": "EvLi9I4T6tiIEi4IxZtQy8S7ec5SZYwKJnUBPIgYs5Ks",
-           "dt": "2020-08-22T17:50:12.988921+00:00"
-           "r": "/credential/apply"
-           "a" {
-               "s": "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs",
-               "a": {
-                  "LEI": "254900OPPU84GM83MG36"
-               }
-           } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
-        }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
-
-    """
-
-    resource = "/credential/apply"
-
-    def __init__(self, hby, rgy, verifier, name, cues=None, **kwa):
-        """ Initialize instance
-
-        Parameters:
-            hab (Habitat): credential wallet that will hold the issued credentials
-            verifier (Verifier): Local credential verifier used to verify and save any issued credential
-            name (str): local alias of issuer to use for issuing credential
-            issuerCues (Optional(decking.Deck)): outbound cue messages for issuer
-            cues (Optional(decking.Deck)): outbound cue messages
-            **kwa (dict): keyword arguments passed to DoDoer
-
-        """
-        self.hby = hby
-        self.rgy = rgy
-        self.verifier = verifier
-        self.name = name
-        self.issuer = None
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.msgs = decking.Deck()
-
-        super(ApplyHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """ Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                recipientIdentifier = msg["pre"]
-                print(recipientIdentifier)
-
-                yield self.tock
-
-            yield self.tock
-
-
-class IssueHandler(doing.Doer):
-    """ Sample class that handles a credential Issue `exn` message.
-
-    By default, this handler verifies the credential with the provided verifier.
-    The incoming message must have the following format:
-
-         {
-       "vc" [
-         {
-           "vc": {
-              "v": "KERI10JSON00011c_", //KERI Version String
-              "x": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the Schema
-              "d": {
-                   "type": [
-                       "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI"
-                   ],
-                   "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
-                   "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",
-                   "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
-                   "credentialSubject": {
-                       "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
-                       "lei": "254900OPPU84GM83MG36"
-                   },
-                   "credentialSchema": {
-                       "id": ""
-                       "type": ""
-                   },
-                   "credentialStatus": {
-                      "id": "",
-                      "type": ""
-                   }
-              }
-           }, // embedded verifiable credential
-           "proof": "-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE
-                 -d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA"
-           }
-       ]   //list of verifiable credentials
-    }
-
-
-    """
-
-    resource = "/credential/issue"
-    persist = True
-
-    def __init__(self, hby, rgy, notifier, **kwa):
-        """ Initialize instance
-
-        Parameters:
-            hab (Habitat): local identifier environment
-            wallet (Wallet) credential wallet that will hold the issued credentials
-            ims (Optional(bytearray)): inbound message stream to process
-            notifier (Notifier): outbound notifications
-            **kwa (dict): keyword arguments passed to DoDoer
-
-        """
-        self.hby = hby
-        self.rgy = rgy
-        self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
-
-        super(IssueHandler, self).__init__(**kwa)
-
-    def recur(self, tyme):
-        if self.msgs:
-            msg = self.msgs.popleft()
-            serder = msg["serder"]
-            attrs = serder.ked["a"]
-
-            data = dict(
-                r=f"/exn/{self.resource}",
-                d=serder.said,
-                m=attrs["m"]
-            )
-
-            self.notifier.add(attrs=data)
-
-        return False
-
-
-def credentialIssueExn(hab, message, acdc, iss):
-    """
-
-    Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        message(str): Human readable message regarding the credential issuance
-        acdc (bytes): CESR stream of serialized ACDC with attachments
-        iss (bytes): serialized TEL issuance event
-
-    Returns:
-        Serder: credential issuance exn peer to peer message
-        bytes: attachments for exn message
-
-    """
-    data = dict(
-        m=message,
-    )
-
-    embeds = dict(
-        acdc=acdc,
-        iss=iss
-    )
-
-    exn, end = exchanging.exchange(route="/credential/issue", payload=data, sender=hab.pre, embeds=embeds)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
-    del ims[:exn.size]
-    ims.extend(end)
-
-    return exn, ims
-
-
-class PresentationRequestHandler(doing.Doer):
-    """ Processor for a presentation request
-
-        Processor for a credential request with input descriptors in the payload used to
-        match saved credentials based on a schema.  The payload of the request is expected to
-        have the following format:
-
-             {
-                ""submission_requirements": [{
-                   "name": "Proof of LEI",
-                   "rule": "pick",
-                   "count": 1,
-                   "from": "A"
-                 }]
-                "input_descriptors": [
-                   {
-                      "x":"EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA",
-                      "group": ["A"],
-                   }
-                ],
-                "format": {
-                   "cesr": {
-                     "proof_type": ["Ed25519Signature2018"]
-                   }
-                }
-             }
-
-    """
-
-    resource = "/presentation/request"
-
-    def __init__(self, hby, notifier, cues=None, **kwa):
-        """ Create an `exn` request handler for processing credential presentation requests
-
-        Parameters
-            hab (Habitat): is the environment
-            wallet (Wallet): is the wallet holding the credentials to present
-            cues (Optional(decking.Deck)): outbound response cue for  this handler
-
-        """
-        self.hby = hby
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-        self.notifier = notifier
-
-        super(PresentationRequestHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """ Process presentation request message with sender identifier, sigs and verfers
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload (dict): representing the body of a /presentation/request message
-            pre (qb64): identifier prefix of sender
-            sigers (list): of Sigers representing the sigs on the /presentation/request message
-            verfers (list): of Verfers of the keys used to sign the message
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                if "i" not in payload and "s" not in payload and "n" not in payload:
-                    print(f"invalid credential request message, one of i, s and n are required fields.  evt=: "
-                          f"{payload}")
-                    continue
-
-                data = dict(
-                    r='/presentation/request',
-                    issuer={},
-                    schema={},
-                    credential={}
-                )
-
-                if "i" in payload:
-                    data["issuer"] = dict(
-                        i=payload["i"]
-                    )
-                if "s" in payload:
-                    data["schema"] = dict(
-                        n=payload["s"]
-                    )
-                if "n" in payload:
-                    data["credential"] = dict(
-                        n=payload["n"]
-                    )
-
-                self.notifier.add(attrs=data)
-
-                yield self.tock
-
-            yield self.tock
-
-
-class PresentationProofHandler(doing.Doer):
-    """ Processor for responding to presentation proof peer to peer message.
-
-      The payload of the message is expected to have the following format:
-
-    """
-
-    resource = "/presentation"
-
-    def __init__(self, notifier, cues=None, **kwa):
-        """ Initialize instance
-
-        Parameters:
-            cues (decking.Deck): outbound cue messages
-            proofs (decking.Deck): inbound proof request `exn` messages
-            **kwa (dict): keyword arguments passes to super Doer
-
-        """
-        self.msgs = decking.Deck()
-        self.notifier = notifier
-        self.cues = cues if cues is not None else decking.Deck()
-
-        super(PresentationProofHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """ Handle incoming messages by parsing and verifying the credential and storing it in the wallet
-
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        Messages:
-            payload is dict representing the body of a /credential/issue message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-
-        """
-        self.wind(tymth)
-        self.tock = tock
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                if "i" not in payload or "s" not in payload or "n" not in payload:
-                    print(f"invalid credential presentation message, i, s and n are required fields.  evt=: "
-                          f"{payload}")
-                    continue
-
-                iaid = payload["i"]
-                ssaid = payload["s"]
-                csaid = payload["n"]
-
-                data = dict(
-                    r='/presentation',
-                    issuer=dict(
-                        i=iaid
-                    ),
-                    schema=dict(
-                        n=ssaid
-                    ),
-                    credential=dict(
-                        n=csaid
-                    )
-                )
-                self.notifier.add(attrs=data)
-            yield
-
-
-def presentationExchangeExn(hab, reger, said):
-    """ Create a presentation exchange.
-
-    Create presentation exchange body containing the credential and event logs
-    needed to provide proof of holding a valid credential
-
-    Parameters:
-        hab (Hab): is the environment database
-        reger (Registry): is the credential registry database
-        said (str): qb64 SAID of the credential to present
-
-    Returns:
-        dict: presentation dict for credential
-
-    """
-    creder = reger.creds.get(said)
-    if creder is None:
-        raise ValueError(f"unable to find credential {said} to present")
-
-    data = dict(
-        i=creder.issuer,
-        s=creder.schema,
-        n=said,
-    )
-
-    exn, _ = exchanging.exchange(route="/presentation", payload=data, sender=hab.pre)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
-    del ims[:exn.size]
-
-    return exn, ims
-
-
-class IpexHandler(doing.Doer):
+Ipexage = namedtuple("Ipexage", 'apply offer agree grant admit spurn')
+Ipex = Ipexage(apply="apply", offer="offer", agree="agree", grant="grant", admit="admit", spurn="spurn")
+PreviousRoutes = {
+    Ipex.offer: (Ipex.apply,),
+    Ipex.agree: (Ipex.offer,),
+    Ipex.grant: (Ipex.agree,),
+    Ipex.admit: (Ipex.grant,),
+    Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
+}
+
+
+class IpexHandler:
     """ Processor of `exn` IPEX messages.
 
     """
 
-    resource = "/ipex"
-    persist = True
-
-    def __init__(self, hby, rgy, notifier, **kwa):
+    def __init__(self, resource, hby, rgy, notifier):
         """ Initialize instance
 
         Parameters:
-            hab (Habitat): local identifier environment
-            wallet (Wallet) credential wallet that will hold the credentials
-            ims (Optional(bytearray)): inbound message stream to process
+            resource (str): route of messages for this handler
+            hby (Habery): local identifier environment
+            rgy (Regery): Credential database environment
             notifier (Notifier): outbound notifications
-            **kwa (dict): keyword arguments passed to DoDoer
 
         """
+        self.resource = resource
         self.hby = hby
         self.rgy = rgy
         self.notifier = notifier
-        self.msgs = decking.Deck()
-        self.cues = decking.Deck()
 
-        super(IssueHandler, self).__init__(**kwa)
+    def verify(self, serder, attachments=None):
+        """  Do route specific processsing of IPEX protocol exn messages
 
-    def recur(self, tyme):
-        if self.msgs:
-            msg = self.msgs.popleft()
-            serder = msg["serder"]
-            attrs = serder.ked["a"]
+        Parameters:
+            serder (Serder): Serder of the IPEX protocol exn message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
-            data = dict(
-                r=f"/exn{attrs['r']}",
-                d=serder.said,
-                m=attrs["m"]
-            )
+        Returns:
+            bool: True means the exn passed behaviour specific verification for IPEX protocol messages
 
-            self.notifier.add(attrs=data)
+        """
+
+        route = serder.ked['r']
+        dig = serder.ked['p']
+
+        match route.split("/"):
+            case["", "ipex", Ipex.apply]:
+                if not dig:  # Apply messages can only start an IPEX exchange
+                    return True
+            case["", "ipex", verb] if verb in (Ipex.offer, Ipex.grant):
+                if not dig:  # This is an offer, agree or grant opening an IPEX exchange, no prior
+                    return True
+
+                pserder, _ = exchanging.cloneMessage(self.hby, said=dig)
+                if pserder is None:  # previous reference message does not exist
+                    return False
+
+                proute = pserder.ked['r']
+                pverb = os.path.basename(os.path.normpath(proute))
+
+                # Use established PreviousRoutes to determine if this response is valid
+                if pverb not in PreviousRoutes[verb]:
+                    return False
+
+                return self.response(pserder) is None  # Make sure we don't have a response already
+
+            case["", "ipex", verb] if verb in (Ipex.admit, Ipex.agree, Ipex.spurn):
+                if not dig:  # Admit and Spurn messages can NOT start an IPEX exchange
+                    return False
+
+                pserder, _ = exchanging.cloneMessage(self.hby, said=dig)
+                if pserder is None:  # previous reference message does not exist
+                    return False
+
+                proute = pserder.ked['r']
+                pverb = os.path.basename(os.path.normpath(proute))
+
+                # Use established PreviousRoutes to determine if this response is valid
+                if pverb not in PreviousRoutes[verb]:
+                    return False
+
+                return self.response(pserder) is None  # Make sure we don't have a response already
 
         return False
-    
+
+    def response(self, serder):
+        """ Return the IPEX exn message sent as a response to the provided serder, if any
+
+        Parameters:
+            serder (Serder): IPEX exn message to check for a response
+
+        Returns:
+
+        """
+        saider = self.hby.db.erpy.get(keys=(serder.said,))
+        if saider:
+            rserder, _ = exchanging.cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
+            return rserder
+
+        return None
+
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of IPEX protocol exn messages
+
+        Parameters:
+            serder (Serder): Serder of the IPEX protocol exn message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+
+        """
+        attrs = serder.ked["a"]
+
+        data = dict(
+            r=f"/exn{serder.ked['r']}",
+            d=serder.said,
+            m=attrs["m"]
+        )
+
+        self.notifier.add(attrs=data)
+
+
 def ipexApplyExn(hab, message, schema, attrs):
     """ Apply for an ACDC
 
@@ -477,13 +159,15 @@ def ipexApplyExn(hab, message, schema, attrs):
 
     return exn, ims
 
-def ipexOfferExn(hab, message, acdc):
+
+def ipexOfferExn(hab, message, acdc, apply=None):
     """ Offer a metadata ACDC
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the credential offer
         acdc (any): metadata ACDC or its SAID
+        apply (Serder): optional IPEX exn apply message that this offer is response to.
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -498,12 +182,17 @@ def ipexOfferExn(hab, message, acdc):
         acdc=acdc
     )
 
-    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds)
+    kwa = dict()
+    if apply is not None:
+        kwa["dig"] = apply.said
+
+    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
+
 
 def ipexAgreeExn(hab, message, offer):
     """ Agree an offer
@@ -511,7 +200,7 @@ def ipexAgreeExn(hab, message, offer):
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the credential agreement
-        offer (any): offer received or its SAID
+        offer (Serder): IPEX exn offer message that this offer is response to.
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -519,18 +208,18 @@ def ipexAgreeExn(hab, message, offer):
 
     """
     data = dict(
-        m=message,
-        o=offer
+        m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre, dig=offer.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
-    
-def ipexGrantExn(hab, message, acdc, iss, anc):
+
+
+def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
     """ Disclose an ACDC
 
     Parameters:
@@ -539,6 +228,7 @@ def ipexGrantExn(hab, message, acdc, iss, anc):
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
+        agree (Serder): optional IPEX exn agree message that this grant is response to.
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -555,12 +245,17 @@ def ipexGrantExn(hab, message, acdc, iss, anc):
         anc=anc
     )
 
-    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds)
+    kwa = dict()
+    if agree is not None:
+        kwa['dig'] = agree.said
+
+    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
+
 
 def ipexAdmitExn(hab, message, grant):
     """ Admit a disclosure
@@ -568,7 +263,7 @@ def ipexAdmitExn(hab, message, grant):
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
-        grant (any): grant received or its SAID
+        grant (Serder): IPEX grant exn message serder
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -577,23 +272,23 @@ def ipexAdmitExn(hab, message, grant):
     """
     data = dict(
         m=message,
-        g=grant
     )
 
-    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
 
-def ipexSpurnExn(hab, message, spurn):
+
+def ipexSpurnExn(hab, message, spurned):
     """ Reject an application, offer or agreement
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
-        spurn (any): apply, offer or agree received, or its SAID that is rejected
+        spurned (Serder): apply, offer, agree or grant received
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -601,16 +296,16 @@ def ipexSpurnExn(hab, message, spurn):
 
     """
     data = dict(
-        m=message,
-        s=spurn
+        m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre)
+    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre, dig=spurned.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
+
 
 def loadHandlers(hby, exc, rgy, notifier):
     """ Load handlers for the IPEX protocol
@@ -618,6 +313,8 @@ def loadHandlers(hby, exc, rgy, notifier):
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
+        rgy (Regery): Credential database environment
+        notifier (Notifier): outbound notifications
 
     """
     exc.addHandler(IpexHandler(resource="/ipex/apply", hby=hby, rgy=rgy, notifier=notifier))
