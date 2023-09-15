@@ -121,7 +121,8 @@ class ListDoer(doing.DoDoer):
             for said in saids:
                 print(said.qb64)
         else:
-            print(f"Current {'issued' if self.issued else 'received'} credentials for {self.hab.name} ({self.hab.pre}):\n")
+            print(f"Current {'issued' if self.issued else 'received'}"
+                  f" credentials for {self.hab.name} ({self.hab.pre}):\n")
             creds = self.rgy.reger.cloneCreds(saids)
             for idx, cred in enumerate(creds):
                 sad = cred['sad']
@@ -148,5 +149,8 @@ class ListDoer(doing.DoDoer):
                     print("    Full Credential:")
                     for line in bsad.splitlines():
                         print(f"\t{line}")
+
+            else:
+                print("None\n")
 
         self.remove([self.mbx])

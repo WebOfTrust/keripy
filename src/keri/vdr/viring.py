@@ -325,7 +325,7 @@ class Reger(dbing.LMDBer):
         creds = []
         for saider in saids:
             key = saider.qb64
-            creder, prefixer, seqner, saider = self.cloneCred(said=key)
+            creder, prefixer, seqner, asaider = self.cloneCred(said=key)
 
             chainSaids = []
             for k, p in creder.chains.items():
@@ -348,7 +348,7 @@ class Reger(dbing.LMDBer):
                 anchor=dict(
                     pre=prefixer.qb64,
                     sn=seqner.sn,
-                    d=saider.qb64
+                    d=asaider.qb64
                 )
             )
 

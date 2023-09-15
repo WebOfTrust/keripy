@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import forwarding, connecting, habbing, grouping, indirecting
+from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
 from keri.core import coring, parsing
@@ -85,9 +85,11 @@ class GrantDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        creder, *_ = self.rgy.reger.cloneCred(said=self.said)
+        creder, prefixer, seqner, saider = self.rgy.reger.cloneCred(said=self.said)
         if creder is None:
             raise ValueError(f"invalid credential SAID to grant={self.said}")
+
+        acdc = signing.serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
             recp = creder.subject['i'] if 'i' in creder.subject else None
@@ -111,7 +113,7 @@ class GrantDoer(doing.DoDoer):
                                                 anchor=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, message=self.message, acdc=creder.raw, iss=iss, anc=anc)
+        exn, atc = protocoling.ipexGrantExn(hab=self.hab, message=self.message, acdc=acdc, iss=iss, anc=anc)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
@@ -134,14 +136,16 @@ class GrantDoer(doing.DoDoer):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
-            print("Sending grant message...")
+            print(f"Sending grant message {exn.said}...")
+            credentialing.sendRegistry(self.hby, self.rgy.reger, self.postman, creder, self.hab.pre, recp)
             self.postman.send(src=self.hab.pre,
                               dest=recp,
                               topic="credential",
                               serder=exn,
                               attachment=atc)
 
-            while not self.postman.cues:
+            while not self.postman.sent(said=exn.said):
                 yield self.tock
 
+            print("... grant message sent")
         self.remove(self.toRemove)

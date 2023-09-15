@@ -119,6 +119,19 @@ class Poster(doing.DoDoer):
 
         self.evts.append(evt)
 
+    def sent(self, said):
+        """ Check if message with given SAID was sent
+
+        Parameters:
+            said (str): qb64 SAID of message to check for
+        """
+
+        for cue in self.cues:
+            if cue["said"] == said:
+                return True
+
+        return False
+
     def sendEvent(self, hab, fn=0):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing

@@ -10,10 +10,12 @@ from hio.base import doing
 from keri.app import forwarding, connecting, habbing, grouping, indirecting
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import coring, parsing
+from keri.core import parsing, coring, eventing
 from keri.peer import exchanging
 from keri.vc import protocoling
-from keri.vdr import credentialing
+from keri.vdr import credentialing, verifying
+from keri.vdr import eventing as teventing
+
 
 parser = argparse.ArgumentParser(description='Accept a credential being issued or presented in response to an IPEX '
                                              'grant')
@@ -51,6 +53,13 @@ class AdmitDoer(doing.DoDoer):
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
+
+        kvy = eventing.Kevery(db=self.hby.db)
+        tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
+        vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+
+        self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry)
+
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
 
@@ -81,7 +90,7 @@ class AdmitDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        grant, _ = exchanging.cloneMessage(self.hby, self.said)
+        grant, pathed = exchanging.cloneMessage(self.hby, self.said)
         if grant is None:
             raise ValueError(f"exn message said={self.said} not found")
 
@@ -89,8 +98,20 @@ class AdmitDoer(doing.DoDoer):
         if route != "/ipex/grant":
             raise ValueError(f"exn said={self.said} is not a grant message, route={route}")
 
+        embeds = grant.ked['e']
+
+        for label in ("anc", "iss", "acdc"):
+            ked = embeds[label]
+            sadder = coring.Sadder(ked=ked)
+            ims = bytearray(sadder.raw) + pathed[label]
+            self.psr.parseOne(ims=ims)
+
+        said = embeds["acdc"]["d"]
+        while not self.rgy.reger.saved.get(keys=said):
+            yield self.tock
+
         recp = grant.ked['i']
-        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=self.said)
+        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 

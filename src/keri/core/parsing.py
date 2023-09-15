@@ -1115,7 +1115,8 @@ class Parser:
                 try:
                     tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
 
-                except AttributeError:
+                except AttributeError as e:
+                    print(e)
                     raise kering.ValidationError("No tevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
             else:
@@ -1130,7 +1131,6 @@ class Parser:
             except AttributeError as e:
                 raise kering.ValidationError("No verifier to process so dropped credential"
                                              "= {}.".format(creder.pretty()))
-
         else:
             raise kering.ValidationError("Unexpected protocol type = {} for event message ="
                                          " {}.".format(sadder.proto, sadder.pretty()))

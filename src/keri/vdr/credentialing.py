@@ -564,7 +564,7 @@ class Registrar(doing.DoDoer):
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
-            return vcid, rseq.sn
+            return vcid, rseq.sn, iserder.said
 
         else:  # multisig group hab
             serder, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
@@ -572,7 +572,7 @@ class Registrar(doing.DoDoer):
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
-            return vcid, rseq.sn
+            return vcid, rseq.sn, iserder.said
 
     def revoke(self, regk, said, dt=None, smids=None, rmids=None):
         """
@@ -844,15 +844,17 @@ class Credentialer(doing.DoDoer):
 
         dt = creder.subject["dt"] if "dt" in creder.subject else None
 
-        vcid, seq = self.registrar.issue(regk=registry.regk, said=creder.said,
-                                         dt=dt, smids=smids, rmids=rmids)
+        vcid, seq, said = self.registrar.issue(regk=registry.regk, said=creder.said,
+                                               dt=dt, smids=smids, rmids=rmids)
 
+        prefixer = coring.Prefixer(qb64=creder.said)
         rseq = coring.Seqner(sn=seq)
+        saider = coring.Saider(qb64=said)
         # escrow waiting for other signatures
         self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
 
         try:
-            self.verifier.processCredential(creder=creder)
+            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=rseq, saider=saider)
         except (kering.MissingRegistryError, kering.MissingSchemaError):
             pass
 
@@ -940,7 +942,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
-    atc.extend(saider.saidb)
+    atc.extend(saider.qb64b)
     postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
 
 
@@ -992,6 +994,30 @@ def sendArtifacts(hby, reger, postman, creder, sender, recp):
             postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
+        serder = coring.Serder(raw=msg)
+        atc = msg[serder.size:]
+        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+
+def sendRegistry(hby, reger, postman, creder, sender, recp):
+    issr = creder.issuer
+    regk = creder.status
+
+    if regk is None:
+        return
+
+    ikever = hby.db.kevers[issr]
+    for msg in hby.db.cloneDelegation(ikever):
+        serder = coring.Serder(raw=msg)
+        atc = msg[serder.size:]
+        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+    for msg in hby.db.clonePreIter(pre=issr):
+        serder = coring.Serder(raw=msg)
+        atc = msg[serder.size:]
+        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+
+    for msg in reger.clonePreIter(pre=regk):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
