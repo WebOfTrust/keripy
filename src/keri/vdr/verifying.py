@@ -106,7 +106,7 @@ class Verifier:
 
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.issuer)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)

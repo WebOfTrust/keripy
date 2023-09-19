@@ -5,8 +5,11 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
-from keri.app import indirecting, habbing, grouping, connecting
+from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
+from keri.core import coring, eventing
+from keri.help import helping
+from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import credentialing, verifying
 
@@ -127,17 +130,26 @@ class CredentialIssuer(doing.DoDoer):
 
         """
         self.name = name
-        self.alias = alias
+        self.registryName = registryName
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hab = self.hby.habByName(alias)
+        if self.hab is None:
+            raise ValueError(f"invalid alias {alias}")
+
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         self.counselor = grouping.Counselor(hby=self.hby)
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.org = connecting.Organizer(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby)
+        notifier = notifying.Notifier(self.hby)
+        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(exc, mux)
 
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                                          verifier=self.verifier)
+                                          verifier=self.verifier, exc=exc)
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
@@ -164,13 +176,11 @@ class CredentialIssuer(doing.DoDoer):
                 self.creder = proving.Creder(ked=credential)
                 self.credentialer.validate(creder=self.creder)
 
-            self.credentialer.issue(creder=self.creder)
-
         except kering.ConfigurationError as e:
             print(f"error issuing credential {e}")
             return
 
-        doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.credentialer]
+        doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.createDo)])
@@ -188,6 +198,42 @@ class CredentialIssuer(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
+
+        registry = self.rgy.registryByName(self.registryName)
+        hab = registry.hab
+
+        dt = self.creder.subject["dt"] if "dt" in self.creder.subject else helping.nowIso8601()
+        iserder = registry.issue(said=self.creder.said, dt=dt)
+
+        vcid = iserder.ked["i"]
+        rseq = coring.Seqner(snh=iserder.ked["s"])
+        rseal = eventing.SealEvent(vcid, rseq.snh, iserder.said)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+
+        if registry.estOnly:
+            anc = hab.rotate(data=[rseal])
+
+        else:
+            anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=anc)
+        self.credentialer.issue(self.creder, iserder)
+        self.registrar.issue(self.creder, iserder, aserder)
+
+        acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre), coring.Seqner(sn=iserder.sn),
+                                 iserder.saider)
+
+        if isinstance(self.hab, habbing.GroupHab):
+            smids = self.hab.db.signingMembers(pre=self.hab.pre)
+            smids.remove(self.hab.mhab.pre)
+
+            for recp in smids:  # this goes to other participants only as a signaling mechanism
+                exn, atc = grouping.multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                self.postman.send(src=self.hab.mhab.pre,
+                                  dest=recp,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=atc)
 
         while not self.credentialer.complete(said=self.creder.said):
             self.rgy.processEscrows()

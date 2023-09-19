@@ -32,6 +32,9 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument('--usage', '-u', help='For multisig issuers, a message to other participants about how this'
+                                          ' registry is to be used',
+                    default=None)
 
 
 def registryIncept(args):
@@ -44,13 +47,14 @@ def registryIncept(args):
     estOnly = args.establishment_only
     noBackers = args.no_backers
     backers = args.backers
+    usage = args.usage
 
     if noBackers and backers:
         print("--no-backers and --backers can not both be provided")
         return -1
 
     icpDoer = RegistryInceptor(name=name, base=base, alias=alias, bran=bran, registryName=registryName,
-                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers)
+                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers, usage=usage)
 
     doers = [icpDoer]
     return doers
@@ -61,7 +65,7 @@ class RegistryInceptor(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, alias, bran, registryName, **kwa):
+    def __init__(self, name, base, alias, bran, registryName, usage, **kwa):
         """  Create RegistryIncepter to pass message and process cues
 
         Parameters:
@@ -77,6 +81,7 @@ class RegistryInceptor(doing.DoDoer):
         self.name = name
         self.alias = alias
         self.registryName = registryName
+        self.usage = usage
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -118,7 +123,10 @@ class RegistryInceptor(doing.DoDoer):
         registry, ixn = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
 
         if isinstance(hab, GroupHab):
-            usage = input(f"Please enter a description of the credential registry: ")
+            usage = self.usage
+            if usage is None:
+                usage = input(f"Please enter a description of the credential registry: ")
+
             smids = hab.db.signingMembers(pre=hab.pre)
             smids.remove(hab.mhab.pre)
 

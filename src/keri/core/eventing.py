@@ -1370,8 +1370,6 @@ def bare(route="",
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
-
-
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
               pipelined=False):
     """

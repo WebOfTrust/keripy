@@ -57,18 +57,6 @@ PID_LIST+=" $pid"
 
 wait $PID_LIST
 
-# Lets not complicate things with rotation just yet
-## Rotate multisig keys:
-#kli multisig rotate --name multisig1 --alias multisig &
-#pid=$!
-#PID_LIST=" $pid"
-#
-#kli multisig rotate --name multisig2 --alias multisig &
-#pid=$!
-#PID_LIST+=" $pid"
-#
-#wait $PID_LIST
-
 # Issue Credential
 kli vc create --name multisig1 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json &
 pid=$!
@@ -96,18 +84,15 @@ kli ipex admit --name holder --alias holder --said "${SAID}"
 
 kli vc list --name holder --alias holder --poll
 
+exit 0
 SAID=$(kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
 echo "Revoking ${SAID}..."
-TIME=$(date -Iseconds -u)
-kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
-pid=$!
-PID_LIST=" $pid"
-
-kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
+kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}"&
 pid=$!
 PID_LIST+=" $pid"
 
+kli multisig join --name multisig2
 
 wait $PID_LIST
 kli vc list --name holder --alias holder --poll

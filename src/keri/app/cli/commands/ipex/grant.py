@@ -113,7 +113,7 @@ class GrantDoer(doing.DoDoer):
                                                 anchor=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, message=self.message, acdc=acdc, iss=iss, anc=anc)
+        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 

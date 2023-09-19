@@ -72,10 +72,6 @@ class Exchanger:
         sender = serder.ked["i"]
         pathed = kwargs["pathed"] if "pathed" in kwargs else []
 
-        if route not in self.routes:
-            raise AttributeError("unregistered route {} for exchange message = {}"
-                                 "".format(route, serder.pretty()))
-
         behavior = self.routes[route] if route in self.routes else None
         if tsgs is not None:
             for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
@@ -229,6 +225,7 @@ class Exchanger:
         self.hby.db.erts.add(keys=(route,), val=saider)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=saider)
+
         self.hby.db.exns.put(keys=(dig,), val=serder)
 
     def lead(self, hab, said):
@@ -381,6 +378,56 @@ def cloneMessage(hby, said):
     return exn, pathed
 
 
+def serializeMessage(hby, said, pipelined=False):
+    atc = bytearray()
+
+    exn = hby.db.exns.get(keys=(said,))
+    if exn is None:
+        return None, None
+
+    atc.extend(exn.raw)
+
+    tsgs, cigars = verify(hby=hby, serder=exn)
+
+    if len(tsgs) > 0:
+        for (prefixer, seqner, saider, sigers) in tsgs:
+            atc.extend(coring.Counter(coring.CtrDex.TransIdxSigGroups, count=1).qb64b)
+            atc.extend(prefixer.qb64b)
+            atc.extend(seqner.qb64b)
+            atc.extend(saider.qb64b)
+
+            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+            for siger in sigers:
+                atc.extend(siger.qb64b)
+
+    if len(cigars) > 0:
+        atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
+        for cigar in cigars:
+            if cigar.verfer.code not in coring.NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(cigar.verfer.qb64))
+            atc.extend(cigar.verfer.qb64b)
+            atc.extend(cigar.qb64b)
+
+    # Smash the pathed components on the end
+    for p in hby.db.epath.get(keys=(exn.said,)):
+        atc.extend(coring.Counter(code=coring.CtrDex.PathedMaterialQuadlets,
+                                  count=(len(p) // 4)).qb64b)
+        atc.extend(p.encode("utf-8"))
+
+    msg = bytearray()
+
+    if pipelined:
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        msg.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                  count=(len(atc) // 4)).qb64b)
+
+    msg.extend(atc)
+    return msg
+
+
 def nesting(paths, acc, val):
     if len(paths) == 0:
         return val
@@ -447,4 +494,4 @@ def verify(hby, serder):
     if not accepted:
         raise MissingSignatureError(f"No valid signatures stored for evt = {serder.ked}")
 
-
+    return tsgs, cigars

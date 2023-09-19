@@ -241,8 +241,7 @@ class ListDoer(doing.DoDoer):
 
         print(f"Credential {sad['d']}:")
         print(f"    Type: {schemer.sed['title']}")
-        print(
-            f"    Status: Accepted {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
+        print(f"    Status: Accepted {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
 
     def deleteNote(self, keys):
         yn = input(f"\n Delete the notification [Y|n]?")

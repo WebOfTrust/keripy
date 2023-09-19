@@ -219,11 +219,12 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
+def ipexGrantExn(hab, recp, message, acdc, iss, anc, agree=None):
     """ Disclose an ACDC
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
+        recp (str) qb64 AID of recipient of GRANT message
         message(str): Human readable message regarding the credential disclosure
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
@@ -237,6 +238,7 @@ def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
     """
     data = dict(
         m=message,
+        i=recp,
     )
 
     embeds = dict(

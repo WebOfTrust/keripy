@@ -260,6 +260,7 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/exn", mux=mux))
 
 
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
@@ -392,6 +393,37 @@ def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
     return exn, atc
 
 
+def multisigIssueExn(ghab, acdc, iss, anc):
+    """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
+
+    Either rot or ixn are required but not both
+
+    Parameters:
+        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        acdc (bytes): serialized Credential
+        iss (bytes): CESR stream of serialized and TEL issuance event
+        anc (bytes): CESR stream of serialized and signed anchoring event anchoring registry inception event
+
+    Returns:
+        tuple: (Serder, bytes): Serder of exn message and CESR attachments
+
+    """
+
+    embeds = dict(
+        acdc=acdc,
+        iss=iss,
+        anc=anc
+    )
+
+    exn, end = exchanging.exchange(route="/multisig/iss", payload={'gid': ghab.pre},
+                                   sender=ghab.mhab.pre, embeds=embeds)
+    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+
+    return exn, atc
+
+
 def multisigExn(ghab, exn):
     """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
 
@@ -409,8 +441,9 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
-    wexn, end = exchanging.exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre, embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    wexn, end = exchanging.exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
+                                    embeds=embeds)
+    evt = ghab.mhab.endorse(serder=wexn, last=False, pipelined=False)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)
 

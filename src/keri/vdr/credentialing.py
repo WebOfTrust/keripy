@@ -10,7 +10,7 @@ from hio.help import decking
 
 from keri.vdr import viring
 from .. import kering, help
-from ..app import agenting, signing
+from ..app import agenting
 from ..app.habbing import GroupHab
 from ..core import parsing, coring, scheming
 from ..core.coring import Seqner, MtrDex, Serder
@@ -527,35 +527,24 @@ class Registrar(doing.DoDoer):
 
         return registry, evt
 
-    def issue(self, regk, said, dt=None, smids=None, rmids=None):
+    def issue(self, creder, iserder, anc):
         """
         Create and process the credential issuance TEL events on the given registry
 
         Parameters:
-            regk (str): qb64 identifier prefix of the credential registry
-            said (str): qb64 SAID of the credential to issue
-            dt (str): iso8601 formatted date string of issuance date
-            smids (list): group signing member ids qb64 in the anchoring event
-                need to contribute current signing key
-            rmids (list): group rotating member ids qb64 in the anchoring event
-                need to contribute digest of next rotating key
+            creder (Creder): credential to issue
+            iserder (Serder): Serder object of TEL iss event
+            anc (Serder): Serder object of anchoring event
+
         """
+        regk = creder.status
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
-        iserder = registry.issue(said=said, dt=dt)
-
         vcid = iserder.ked["i"]
         rseq = coring.Seqner(snh=iserder.ked["s"])
-        rseal = SealEvent(vcid, rseq.snh, iserder.said)
-        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
-            if registry.estOnly:
-                hab.rotate(data=[rseal])
-            else:
-                hab.interact(data=[rseal])
-
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
@@ -564,15 +553,19 @@ class Registrar(doing.DoDoer):
             self.witDoer.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
-            return vcid, rseq.sn, iserder.said
 
         else:  # multisig group hab
-            serder, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            sn = anc.sn
+            said = anc.said
+
+            prefixer = coring.Prefixer(qb64=hab.pre)
+            seqner = coring.Seqner(sn=sn)
+            saider = coring.Saider(qb64=said)
+
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
-            return vcid, rseq.sn, iserder.said
 
     def revoke(self, regk, said, dt=None, smids=None, rmids=None):
         """
@@ -641,7 +634,7 @@ class Registrar(doing.DoDoer):
     def complete(self, pre, sn=0):
         seqner = coring.Seqner(sn=sn)
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
-        return said is not None
+        return said is not None and self.witPub.sent(said=pre)
 
     def escrowDo(self, tymth, tock=1.0):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
@@ -750,7 +743,7 @@ class Registrar(doing.DoDoer):
             print(f"Sending TEL events to witnesses")
             # Fire and forget the TEL event to the witnesses.  Consumers will have to query
             # to determine when the Witnesses have received the TEL events.
-            self.witPub.msgs.append(dict(pre=prefixer.qb64, msg=tevt))
+            self.witPub.msgs.append(dict(pre=prefixer.qb64, said=regk, msg=tevt))
             self.rgy.reger.ctel.put(keys=(regk, rseq.qb64), val=saider)  # idempotent
 
 
@@ -825,43 +818,28 @@ class Credentialer(doing.DoDoer):
 
         return True
 
-    def issue(self, creder, smids=None, rmids=None):
+    def issue(self, creder, serder):
         """ Issue the credential creder and handle witness propagation and communication
 
         Args:
             creder (Creder): Credential object to issue
-            smids (list[str] | None): optional group signing member ids for multisig
-                need to contributed current signing key
-            rmids (list[str] | None): optional group rotating member ids for multisig
+            serder (Serder): KEL or TEL anchoring event
                 need to contribute digest of next rotating key
         """
-        regk = creder.crd["ri"]
-        registry = self.rgy.regs[regk]
-        hab = registry.hab
-        if isinstance(hab, GroupHab):
-            smids = smids if smids is not None else hab.smids
-            rmids = rmids if rmids is not None else hab.rmids
-
-        dt = creder.subject["dt"] if "dt" in creder.subject else None
-
-        vcid, seq, said = self.registrar.issue(regk=registry.regk, said=creder.said,
-                                               dt=dt, smids=smids, rmids=rmids)
-
-        prefixer = coring.Prefixer(qb64=creder.said)
-        rseq = coring.Seqner(sn=seq)
-        saider = coring.Saider(qb64=said)
         # escrow waiting for other signatures
-        self.rgy.reger.cmse.put(keys=(creder.said, rseq.qb64), val=creder)
+        prefixer = coring.Prefixer(qb64=serder.pre)
+        seqner = coring.Seqner(sn=serder.sn)
+
+        self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
 
         try:
-            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=rseq, saider=saider)
+            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner, saider=serder.saider)
         except (kering.MissingRegistryError, kering.MissingSchemaError):
             pass
 
     def processCredentialMissingSigEscrow(self):
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
             rseq = coring.Seqner(qb64=snq)
-
             if not self.registrar.complete(pre=said, sn=rseq.sn):
                 continue
 

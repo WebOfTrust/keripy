@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import forwarding, connecting, habbing, grouping, indirecting
+from keri.app import forwarding, connecting, habbing, grouping, indirecting, agenting
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
 from keri.core import parsing, coring, eventing
@@ -53,12 +53,13 @@ class AdmitDoer(doing.DoDoer):
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
+        self.witq = agenting.WitnessInquisitor(hby=self.hby)
 
-        kvy = eventing.Kevery(db=self.hby.db)
-        tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
-        vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.kvy = eventing.Kevery(db=self.hby.db)
+        self.tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
+        self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry)
+        self.psr = parsing.Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
 
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
@@ -69,9 +70,9 @@ class AdmitDoer(doing.DoDoer):
 
         mbx = indirecting.MailboxDirector(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
-                                          exc=self.exc)
+                                          exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
 
-        self.toRemove = [self.postman, mbx]
+        self.toRemove = [self.postman, mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
 
     def admitDo(self, tymth, tock=0.0):
@@ -99,6 +100,13 @@ class AdmitDoer(doing.DoDoer):
             raise ValueError(f"exn said={self.said} is not a grant message, route={route}")
 
         embeds = grant.ked['e']
+        acdc = embeds["acdc"]
+        issr = acdc['i']
+
+        # Lets get the latest KEL and Registry if needed
+        self.witq.query(src=self.hab.pre, pre=issr)
+        if "ri" in acdc:
+            self.witq.telquery(src=self.hab.pre, wits=self.hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
 
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
@@ -106,7 +114,7 @@ class AdmitDoer(doing.DoDoer):
             ims = bytearray(sadder.raw) + pathed[label]
             self.psr.parseOne(ims=ims)
 
-        said = embeds["acdc"]["d"]
+        said = acdc["d"]
         while not self.rgy.reger.saved.get(keys=said):
             yield self.tock
 
@@ -134,14 +142,14 @@ class AdmitDoer(doing.DoDoer):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
-            print("Sending admit message...")
+            print(f"Sending admit message to {recp}")
             self.postman.send(src=self.hab.pre,
                               dest=recp,
                               topic="credential",
                               serder=exn,
                               attachment=atc)
 
-            while not self.postman.cues:
+            while not self.postman.sent(exn.said):
                 yield self.tock
 
         self.remove(self.toRemove)
