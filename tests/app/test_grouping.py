@@ -3,10 +3,8 @@
 tests.app.grouping module
 
 """
-import time
 from contextlib import contextmanager
 
-from hio.base import doing, tyming
 
 from keri.app import habbing, grouping, notifying
 from keri.core import coring, eventing, parsing
@@ -697,24 +695,23 @@ def test_multisig_interact(mockHelpingNowUTC):
 
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        recipient = "EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU"
         vcp = veventing.incept(ghab1.pre)
         ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)])
-        exn, atc = grouping.multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, ixn=ixn,
+        exn, atc = grouping.multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
                                                       usage="Issue vLEI Credentials")
 
         assert exn.ked["r"] == '/multisig/vcp'
-        assert exn.saidb == b'EOEQNt4iBGCkQkHQqYkade56WIfg148W8jAo8xunAsxq'
+        assert exn.saidb == b'ECKiNFo7fpG4vS5tUeja3EvOqT8ctq4AW8E3HKsP7dJo'
         assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAAChpUup'
-                       b'y7Wq39vSN3Y2H7aw59WMnFv5QGqMAebjkSKN9gXtcr9Z0uCM5J2I7x1dcvjKgMxO'
-                       b'IKpVB62iizfygDsP-LAa5AACAA-e-ixn-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
+                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABh6d0m'
+                       b'lebT57L8o2si7DfEvPCoXJP0ekPiBqkzQns3-P7dz36MPXhjNFW6xRRdUstDLAZe'
+                       b'BEqBxBCltMpTZGsD-LAa5AACAA-e-anc-AABAAD2mK9ICW9x1-0NZGkEDOcAbZ58'
                        b'VWK9LOTwyN2lSfHr2zY638P1SBStoh8mjgy7nOTGMyujOXMKvF_ZDeQ_ISYA')
         data = exn.ked["a"]
         assert data == {'gid': 'EERn_laF0qwP8zTBGL86LbF84J0Yh2IvQSRskH3BZZiy',
                         'usage': 'Issue vLEI Credentials'}
         assert "vcp" in exn.ked["e"]
-        assert "ixn" in exn.ked["e"]
+        assert "anc" in exn.ked["e"]
 
 
 def test_multisig_incept_handler(mockHelpingNowUTC):
