@@ -757,7 +757,7 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             if self.exc.lead(hab.mhab, said=exn.said):
-                print(f"Sending grant message {eserder.said} to {recp}")
+                print(f"Sending message {eserder.said} to {recp}")
                 atc = exchanging.serializeMessage(self.hby, eserder.said)
                 del atc[:eserder.size]
                 self.postman.send(src=hab.mhab.pre,

@@ -32,8 +32,6 @@ parser.add_argument('--recipient', '-R', help='alias or qb64 identifier prefix o
 parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=None, action="store", required=False)
 parser.add_argument('--credential', help='Full credential, \'@\' allowed', default=None, action="store",
                     required=False)
-parser.add_argument('--out', '-o', help='Name of file for credential output', default="credential.json", action="store",
-                    required=False)
 parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
                     required=False, default="")
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -41,6 +39,7 @@ parser.add_argument("--private", help="flag to indicate if this credential needs
                     action="store_true")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument("--time", help="timestamp for the credential creation", required=False, default=None)
 
 
 def issueCredential(args):
@@ -100,7 +99,7 @@ def issueCredential(args):
                                  edges=edges,
                                  rules=rules,
                                  credential=credential,
-                                 out=args.out,
+                                 timestamp=args.time,
                                  private=args.private)
 
     doers = [issueDoer]
@@ -114,7 +113,7 @@ class CredentialIssuer(doing.DoDoer):
     """
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
-                 rules=None, credential=None, out=None, private=False):
+                 rules=None, credential=None, timestamp=None, private=False):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
@@ -131,6 +130,7 @@ class CredentialIssuer(doing.DoDoer):
         """
         self.name = name
         self.registryName = registryName
+        self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         if self.hab is None:
@@ -164,6 +164,9 @@ class CredentialIssuer(doing.DoDoer):
                     if len(recp) != 1:
                         raise ValueError(f"invalid recipient {recipient}")
                     recp = recp[0]['id']
+
+                if self.timestamp is not None:
+                    data["dt"] = self.timestamp
 
                 self.creder = self.credentialer.create(regname=registryName,
                                                        recp=recp,

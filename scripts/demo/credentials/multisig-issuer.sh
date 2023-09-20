@@ -57,36 +57,40 @@ PID_LIST+=" $pid"
 
 wait $PID_LIST
 
-# Lets not complicate things with rotation just yet
 ## Rotate multisig keys:
-#kli multisig rotate --name multisig1 --alias multisig &
-#pid=$!
-#PID_LIST=" $pid"
-#
-#kli multisig rotate --name multisig2 --alias multisig &
-#pid=$!
-#PID_LIST+=" $pid"
-#
-#wait $PID_LIST
+kli multisig rotate --name multisig1 --alias multisig --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 &
+pid=$!
+PID_LIST=" $pid"
 
-# Issue Credential
-kli vc create --name multisig1 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json &
+kli multisig rotate --name multisig2 --alias multisig --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1 --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4 &
 pid=$!
 PID_LIST+=" $pid"
 
-# Wait for 3 seconds to allow credential.json to be created, but still launch in parallel because they will wait for each other
-echo "Multisig2 looking to join"
-kli multisig join --name multisig2
+wait $PID_LIST
+
+# Issue Credential
+TIME=$(date -Iseconds -u)
+kli vc create --name multisig1 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json --time "${TIME}" &
+pid=$!
+PID_LIST+=" $pid"
+
+kli vc create --name multisig2 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json --time "${TIME}" &
+pid=$!
+PID_LIST+=" $pid"
 
 wait $PID_LIST
 
 SAID=$(kli vc list --name multisig1 --alias multisig --issued --said)
 
-kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k &
+kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisig2
+kli ipex grant --name multisig2 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
 
 echo "Polling for holder's IPEX message..."
 SAID=$(kli ipex list --name holder --alias holder --poll --said)

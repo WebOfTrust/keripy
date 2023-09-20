@@ -31,6 +31,7 @@ parser.add_argument("--recipient", "-r", help="alias or qb64 identifier prefix o
 parser.add_argument("--said", "-s", help="SAID of the credential to grant", required=True)
 parser.add_argument("--message", "-m", help="optional human readable message to "
                                             "send to recipient", required=False, default="")
+parser.add_argument("--time", help="timestamp for the revocation", required=False, default=None)
 
 
 def handler(args):
@@ -40,16 +41,18 @@ def handler(args):
                    bran=args.bran,
                    said=args.said,
                    recp=args.recipient,
-                   message=args.message)
+                   message=args.message,
+                   timestamp=args.time)
     return [ed]
 
 
 class GrantDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, recp, message):
+    def __init__(self, name, alias, base, bran, said, recp, message, timestamp):
         self.said = said
         self.recp = recp
         self.message = message
+        self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
@@ -113,7 +116,8 @@ class GrantDoer(doing.DoDoer):
                                                 anchor=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc)
+        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
+                                            dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
@@ -125,9 +129,9 @@ class GrantDoer(doing.DoDoer):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
-            for recp in smids:  # this goes to other participants
+            for part in smids:  # this goes to other participants
                 self.postman.send(src=self.hab.mhab.pre,
-                                  dest=recp,
+                                  dest=part,
                                   topic="multisig",
                                   serder=wexn,
                                   attachment=watc)
@@ -136,9 +140,10 @@ class GrantDoer(doing.DoDoer):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
-            print(f"Sending grant message {exn.said}...")
-            credentialing.sendRegistry(self.hby, self.rgy.reger, self.postman, creder, self.hab.pre, recp)
-            self.postman.send(src=self.hab.pre,
+            print(f"Sending message {exn.said} to {recp}")
+            atc = exchanging.serializeMessage(self.hby, exn.said)
+            del atc[:exn.size]
+            self.postman.send(src=self.hab.mhab.pre,
                               dest=recp,
                               topic="credential",
                               serder=exn,

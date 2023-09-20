@@ -245,13 +245,14 @@ class Exchanger:
             return True
 
         keys = [verfer.qb64 for verfer in hab.kever.verfers]
-        sigers = self.hby.db.esigs.get(keys=(said,))
-        if not sigers:  # otherwise its a list of sigs
+        tsgs = eventing.fetchTsgs(self.hby.db.esigs, coring.Saider(qb64=said))
+        if not tsgs:  # otherwise it contains a list of sigs
             return False
 
+        (_, _, _, sigers) = tsgs[0]
         windex = min([siger.index for siger in sigers])
 
-        # True if Elected to perform delegation and witnessing
+        # True if Elected to send an EXN to its recipient
         return hab.mhab.kever.verfers[0].qb64 == keys[windex]
 
     def complete(self, said):
