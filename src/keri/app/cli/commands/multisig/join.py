@@ -109,69 +109,33 @@ class ConfirmDoer(doing.DoDoer):
                 attrs = notice.attrs
                 route = attrs['r']
 
-                if route == '/multisig/icp/init':
-                    done = yield from self.incept(attrs)
-                    if done:
+                match route:
+                    case '/multisig/icp':
+                        done = yield from self.incept(attrs)
+                    case '/multisig/ixn':
+                        done = yield from self.interact(attrs)
+                    case '/multisig/rot':
+                        done = yield from self.rotate(attrs)
+                    case '/multisig/rpy':
+                        done = yield from self.rpy(attrs)
+                    case '/multisig/vcp':
+                        done = yield from self.vcp(attrs)
+                    case '/multisig/iss':
+                        done = yield from self.iss(attrs)
+                    case '/multisig/rev':
+                        done = yield from self.rev(attrs)
+                    case '/multisig/exn':
+                        done = yield from self.exn(attrs)
+                    case _:
+                        continue
+
+                if done:
+                    self.notifier.noter.notes.rem(keys=keys)
+
+                else:
+                    delete = input(f"\nDelete event [Y|n]? ")
+                    if delete in ("Y", "y"):
                         self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
-
-                elif route == '/multisig/ixn':
-                    done = yield from self.interact(attrs)
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
-
-                elif route == '/multisig/rot':
-
-                    done = yield from self.rotate(attrs)
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
-
-                elif route == '/multisig/rpy':
-
-                    done = yield from self.rpy(attrs)
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
-
-                elif route == '/multisig/iss':
-
-                    done = yield from self.iss(attrs)
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
-
-                elif route == '/multisig/exn':
-
-                    done = yield from self.exn(attrs)
-                    if done:
-                        self.notifier.noter.notes.rem(keys=keys)
-
-                    else:
-                        delete = input(f"\nDelete event [Y|n]? ")
-                        if delete in ("Y", "y"):
-                            self.notifier.noter.notes.rem(keys=keys)
 
                 yield self.tock
             yield self.tock
@@ -180,6 +144,9 @@ class ConfirmDoer(doing.DoDoer):
         """ Incept group multisig
 
         """
+        if True:
+            return True
+
         smids = attrs["smids"]  # change body mids for group member ids
         rmids = attrs["rmids"] if "rmids" in attrs else None
         ked = attrs["ked"]
@@ -446,6 +413,79 @@ class ConfirmDoer(doing.DoDoer):
         """
         ked = attrs["ked"]
 
+    def vcp(self, attrs):
+        """  Handle issue messages
+
+        Parameters:
+            attrs (dict): attributes of the reply message
+
+        Returns:
+
+        """
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+
+        sender = exn.ked['i']
+        payload = exn.ked['a']
+        usage = payload["usage"]
+        gid = payload["gid"]
+        hab = self.hby.habs[gid] if gid in self.hby.habs else None
+        if hab is None:
+            raise ValueError(f"credential issuer not a valid AID={gid}")
+
+        contact = self.org.get(sender)
+        senderAlias = contact['alias']
+
+        embeds = exn.ked['e']
+        print(f"\nGroup Credential Regitry Creation (from {senderAlias}):")
+        print(f"Usage: {usage}:\n")
+
+        yn = input(f"\nApprove [Y|n]? ")
+        approve = yn in ('', 'y', 'Y')
+
+        if approve:
+            # Create and parse the event with "their" signatures
+            registryName = input("Name for Registry: ")
+            anc = embeds["anc"]
+            aserder = coring.Serder(ked=anc)
+            anc = bytearray(aserder.raw) + pathed["anc"]
+            self.psr.parseOne(ims=bytes(anc))
+
+            # Now sign the event and parse it with our signatures
+            sigers = hab.sign(aserder.raw)
+            anc = eventing.messagize(serder=aserder, sigers=sigers)
+            self.psr.parseOne(ims=bytes(anc))
+
+            vcp = embeds["vcp"]
+            vserder = coring.Serder(ked=vcp)
+            try:
+                self.rgy.tvy.processEvent(serder=vserder)
+            except kering.MissingAnchorError:
+                pass
+
+            self.rgy.makeRegistry(name=registryName, prefix=hab.pre, vcp=vserder)
+            self.registrar.incept(vserder, aserder)
+
+            smids = hab.db.signingMembers(pre=hab.pre)
+            smids.remove(hab.mhab.pre)
+
+            for recp in smids:  # this goes to other participants only as a signaling mechanism
+                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=vserder.raw, anc=anc, usage=usage)
+                self.postman.send(src=hab.mhab.pre,
+                                  dest=recp,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=atc)
+
+            while not self.registrar.complete(vserder.pre, sn=0):
+                self.rgy.processEscrows()
+                self.verifier.processEscrows()
+                yield self.tock
+
+            print(f"Registry {vserder.pre} created.")
+
+        yield self.tock
+
     def iss(self, attrs):
         """  Handle issue messages
 
@@ -542,6 +582,116 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Credential {creder.said} complete.")
+
+        yield self.tock
+
+    def rev(self, attrs):
+        """  Handle revocation messages
+
+        Parameters:
+            attrs (dict): attributes of the reply message
+
+        Returns:
+
+        """
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+
+        sender = exn.ked['i']
+        payload = exn.ked['a']
+        said = payload['said']
+
+        creder = self.verifier.reger.creds.get(keys=(said,))
+        if creder is None:
+            print(f"invalid credential SAID {said}")
+            return
+
+        contact = self.org.get(sender)
+        senderAlias = contact['alias']
+
+        embeds = exn.ked['e']
+        scraw = self.verifier.resolver.resolve(creder.schema)
+        if not scraw:
+            raise kering.ConfigurationError("Credential schema {} not found".format(creder.schema))
+
+        schemer = scheming.Schemer(raw=scraw)
+
+        hab = self.hby.habs[creder.issuer]
+        if hab is None:
+            raise ValueError(f"credential issuer not a valid AID={creder.issuer}")
+
+        print(f"\nGroup Credential Revocation Proposed (from {senderAlias}):")
+        print(f"Credential {creder.said}:")
+        print(f"    Type: {schemer.sed['title']}")
+        print(f"    Issued By: {hab.name} ({hab.pre})")
+
+        if "i" in creder.subject:
+            isse = creder.subject['i']
+            contact = self.org.get(isse)
+            if contact is not None and "alias" in contact:
+                print(f"    Issued To: {contact['alias']} ({isse})")
+            else:
+                print(f"    Issued To: Unknown AID ({isse})")
+
+        yn = input(f"\nApprove Revocation [Y|n]? ")
+        approve = yn in ('', 'y', 'Y')
+
+        if approve:
+            # Create and parse the event with "their" signatures
+            anc = embeds["anc"]
+            aserder = coring.Serder(ked=anc)
+            anc = bytearray(aserder.raw) + pathed["anc"]
+            self.psr.parseOne(ims=bytes(anc))
+
+            # Now sign the event and parse it with our signatures
+            sigers = hab.sign(aserder.raw)
+            anc = eventing.messagize(serder=aserder, sigers=sigers)
+            self.psr.parseOne(ims=bytes(anc))
+
+            rev = embeds["rev"]
+            rserder = coring.Serder(ked=rev)
+            try:
+                self.rgy.tvy.processEvent(serder=rserder)
+            except kering.MissingAnchorError:
+                pass
+
+            self.registrar.revoke(creder, rserder, aserder)
+
+            smids = hab.db.signingMembers(pre=hab.pre)
+            smids.remove(hab.mhab.pre)
+
+            for recp in smids:  # this goes to other participants only as a signaling mechanism
+                exn, atc = grouping.multisigRevokeExn(ghab=hab, said=creder.said, rev=rserder.raw, anc=anc)
+                self.postman.send(src=hab.mhab.pre,
+                                  dest=recp,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=atc)
+
+            while not self.registrar.complete(creder.said, sn=1):
+                self.rgy.processEscrows()
+                yield self.tock
+
+            print(f"Credential {creder.said} revoked.")
+            if hab.witnesser() and 'i' in creder.subject:
+                recp = creder.subject['i']
+                msgs = []
+                for msg in self.hby.db.clonePreIter(pre=creder.issuer):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    msgs.append((serder, atc))
+                for msg in self.rgy.reger.clonePreIter(pre=creder.said):
+                    serder = coring.Serder(raw=msg)
+                    atc = msg[serder.size:]
+                    msgs.append((serder, atc))
+
+                for (serder, atc) in msgs:
+                    self.postman.send(src=hab.mhab.pre, dest=recp, topic="credential", serder=serder,
+                                      attachment=atc)
+
+                last = msgs[-1][0]
+                while not self.postman.sent(said=last.said):
+                    yield self.tock
 
         yield self.tock
 

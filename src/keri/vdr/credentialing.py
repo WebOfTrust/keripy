@@ -259,7 +259,7 @@ class Registry(BaseRegistry):
 
     """
 
-    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False):
+    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
@@ -271,22 +271,27 @@ class Registry(BaseRegistry):
             baks (list): initial list of backer prefixes qb64 for VCs in the Registry
             toad (str): hex of witness threshold
             estOnly (boolean): True for forcing rotation events for every TEL event.
+            vcp (Serder): optional vcp event serder if configured outside the Registry
 
         """
-        baks = baks if baks is not None else []
-
-        self.cnfg = [TraitDex.NoBackers] if noBackers else []
-        if estOnly:
-            self.cnfg.append(TraitDex.EstOnly)
-
         pre = self.hab.pre
 
-        self.vcp = eventing.incept(pre,
-                                   baks=baks,
-                                   toad=toad,
-                                   nonce=nonce,
-                                   cnfg=self.cnfg,
-                                   code=MtrDex.Blake3_256)
+        if vcp is None:
+            baks = baks if baks is not None else []
+
+            self.cnfg = [TraitDex.NoBackers] if noBackers else []
+            if estOnly:
+                self.cnfg.append(TraitDex.EstOnly)
+
+            self.vcp = eventing.incept(pre,
+                                       baks=baks,
+                                       toad=toad,
+                                       nonce=nonce,
+                                       cnfg=self.cnfg,
+                                       code=MtrDex.Blake3_256)
+        else:
+            self.vcp = vcp
+
         self.regk = self.vcp.pre
         self.regd = self.vcp.said
         self.registries.add(self.regk)
@@ -482,50 +487,43 @@ class Registrar(doing.DoDoer):
 
         super(Registrar, self).__init__(doers=doers)
 
-    def incept(self, name, pre, conf=None):
+    def incept(self, iserder, anc):
         """
 
         Parameters:
-            name (str): human readable name for the registry
-            pre (str): qb64 identifier prefix of issuing identifier in control of this registry
-            conf (dict): configuration information for the registry (noBackers, estOnly)
+            iserder (Serder): Serder object of TEL iss event
+            anc (Serder): Serder object of anchoring event
 
         Returns:
             Registry:  created registry
 
         """
-        conf = conf if conf is not None else {}  # default config if none specified
-        estOnly = "estOnly" in conf and conf["estOnly"]
-        hab = self.hby.habs[pre]
-
-        registry = self.rgy.makeRegistry(name=name, prefix=pre, **conf)
-
+        registry = self.rgy.regs[iserder.pre]
+        hab = registry.hab
         rseq = coring.Seqner(sn=0)
-        rseal = SealEvent(registry.regk, "0", registry.regd)
-        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
-        if not isinstance(hab, GroupHab):
-            if estOnly:
-                evt = hab.rotate(data=[rseal])
-            else:
-                evt = hab.interact(data=[rseal])
 
+        if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
-            registry.anchorMsg(pre=registry.regk, regd=registry.regd, seqner=seqner, saider=saider)
+            registry.anchorMsg(pre=iserder.pre, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
+            self.witDoer.msgs.append(dict(pre=anc.pre, sn=seqner.sn))
 
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
         else:
-            evt, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            sn = anc.sn
+            said = anc.said
+
+            prefixer = coring.Prefixer(qb64=hab.pre)
+            seqner = coring.Seqner(sn=sn)
+            saider = coring.Saider(qb64=said)
+
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print("Waiting for TEL registry vcp event mulisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
-
-        return registry, evt
 
     def issue(self, creder, iserder, anc):
         """
@@ -567,39 +565,24 @@ class Registrar(doing.DoDoer):
             print(f"Waiting for TEL iss event mulisig anchoring event {seqner.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rseq.qb64, iserder.said), val=(prefixer, seqner, saider))
 
-    def revoke(self, regk, said, dt=None, smids=None, rmids=None):
+    def revoke(self, creder, rserder, anc):
         """
         Create and process the credential revocation TEL events on the given registry
 
         Parameters:
-            regk (str): qb64 identifier prefix of the credential registry
-            said (str): qb64 SAID of the credential to issue
-            dt (str): iso8601 formatted date string of issuance date
-            smids (list): group signing member ids (multisig) in the anchoring event
-                need to contribute digest of current signing key
-            rmids (list | None): group rotating member ids (multisig) in the anchoring event
-                need to contribute digest of next rotating key
+            creder (Creder): credential to issue
+            rserder (Serder): Serder object of TEL rev event
+            anc (Serder): Serder object of anchoring event
         """
+
+        regk = creder.status
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
-        state = registry.tever.vcState(vci=said)
-        if state is None or state.ked["et"] not in (coring.Ilks.iss, coring.Ilks.rev):
-            raise kering.ValidationError(f"credential {said} not is correct state for revocation")
-
-        rserder = registry.revoke(said=said, dt=dt)
-
         vcid = rserder.ked["i"]
         rseq = coring.Seqner(snh=rserder.ked["s"])
-        rseal = SealEvent(vcid, rseq.snh, rserder.said)
-        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
-        if not isinstance(hab, GroupHab):
-            if registry.estOnly:
-                hab.rotate(data=[rseal])
-            else:
-                hab.interact(data=[rseal])
-
+        if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
             saider = hab.kever.serder.saider
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
@@ -610,7 +593,13 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
             return vcid, rseq.sn
         else:
-            serder, prefixer, seqner, saider = self.multisigIxn(hab, rseal)
+            sn = anc.sn
+            said = anc.said
+
+            prefixer = coring.Prefixer(qb64=hab.pre)
+            seqner = coring.Seqner(sn=sn)
+            saider = coring.Saider(qb64=said)
+
             self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
 
             print(f"Waiting for TEL rev event mulisig anchoring event {seqner.sn}")

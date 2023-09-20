@@ -7,6 +7,8 @@ from keri.app import indirecting, habbing, grouping, forwarding
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri.app.notifying import Notifier
+from keri.core import coring
+from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr import credentialing
 
@@ -120,7 +122,18 @@ class RegistryInceptor(doing.DoDoer):
         if hab is None:
             raise ValueError(f"{self.alias} is not a valid AID alias")
 
-        registry, ixn = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
+        estOnly = "estOnly" in kwa and kwa["estOnly"]
+        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **kwa)
+
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+        if estOnly:
+            anc = hab.rotate(data=[rseal])
+        else:
+            anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=bytes(anc))
+        self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         if isinstance(hab, GroupHab):
             usage = self.usage
@@ -131,7 +144,7 @@ class RegistryInceptor(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, ixn=ixn, usage=usage)
+                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

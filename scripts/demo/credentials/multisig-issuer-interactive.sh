@@ -51,9 +51,12 @@ kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI --
 pid=$!
 PID_LIST=" $pid"
 
-kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &
-pid=$!
-PID_LIST+=" $pid"
+#kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &
+#pid=$!
+#PID_LIST+=" $pid"
+
+echo "Multisig2 looking to join credential registry creation"
+kli multisig join --name multisig2
 
 wait $PID_LIST
 
@@ -63,7 +66,7 @@ pid=$!
 PID_LIST+=" $pid"
 
 # Wait for 3 seconds to allow credential.json to be created, but still launch in parallel because they will wait for each other
-echo "Multisig2 looking to join"
+echo "Multisig2 looking to join credential creation"
 kli multisig join --name multisig2
 
 wait $PID_LIST
@@ -72,9 +75,11 @@ SAID=$(kli vc list --name multisig1 --alias multisig --issued --said)
 
 kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k &
 pid=$!
-PID_LIST+=" $pid"
+PID_LIST="$pid"
 
 kli multisig join --name multisig2
+
+wait ${PID_LIST}
 
 echo "Polling for holder's IPEX message..."
 SAID=$(kli ipex list --name holder --alias holder --poll --said)
@@ -82,15 +87,14 @@ SAID=$(kli ipex list --name holder --alias holder --poll --said)
 echo "Admitting GRANT ${SAID}"
 kli ipex admit --name holder --alias holder --said "${SAID}"
 
-kli vc list --name holder --alias holder --poll
+kli vc list --name holder --alias holder
 
-exit 0
 SAID=$(kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
 echo "Revoking ${SAID}..."
-kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}"&
+kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}"&
 pid=$!
-PID_LIST+=" $pid"
+PID_LIST="$pid"
 
 kli multisig join --name multisig2
 

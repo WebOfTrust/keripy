@@ -125,14 +125,14 @@ class GrantDoer(doing.DoDoer):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
-            for recp in smids:  # this goes to other participants only as a signaling mechanism
+            for recp in smids:  # this goes to other participants
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
                                   serder=wexn,
                                   attachment=watc)
 
-            while not self.exc.complete(said=wexn.said):
+            while not self.exc.complete(said=exn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
@@ -148,4 +148,5 @@ class GrantDoer(doing.DoDoer):
                 yield self.tock
 
             print("... grant message sent")
+
         self.remove(self.toRemove)

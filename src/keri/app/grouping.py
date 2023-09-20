@@ -259,7 +259,7 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/ixn", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/vcp", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", mux=mux))
-    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rvk", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rev", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/exn", mux=mux))
 
 
@@ -358,7 +358,7 @@ def multisigInteractExn(ghab, aids, ixn):
     return exn, atc
 
 
-def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
+def multisigRegistryInceptExn(ghab, usage, vcp, anc):
     """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -367,8 +367,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
         ghab (GroupHab): identifier Hab for ensorsing the message to send
         usage (str): human readable reason for creating the credential registry
         vcp (bytes): serialized Credentials registry inception event
-        ixn (bytes): CESR stream of serialized and signed interaction event anchoring registry inception event
-        rot (bytes): CESR stream of serialized and signed rotation event anchoring registry inception event
+        anc (bytes): CESR stream of serialized and signed event anchoring registry inception event
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -377,12 +376,8 @@ def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
 
     embeds = dict(
         vcp=vcp,
+        anc=anc
     )
-
-    if rot is not None:
-        embeds["rot"] = rot
-    elif ixn is not None:
-        embeds['ixn'] = ixn
 
     exn, end = exchanging.exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
                                    sender=ghab.mhab.pre, embeds=embeds)
@@ -394,7 +389,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, ixn=None, rot=None):
 
 
 def multisigIssueExn(ghab, acdc, iss, anc):
-    """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
+    """ Create a peer to peer message to propose a credential creation from a multisig group identifier
 
     Either rot or ixn are required but not both
 
@@ -402,7 +397,7 @@ def multisigIssueExn(ghab, acdc, iss, anc):
         ghab (GroupHab): identifier Hab for ensorsing the message to send
         acdc (bytes): serialized Credential
         iss (bytes): CESR stream of serialized and TEL issuance event
-        anc (bytes): CESR stream of serialized and signed anchoring event anchoring registry inception event
+        anc (bytes): CESR stream of serialized and signed anchoring event anchoring creation
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -416,6 +411,36 @@ def multisigIssueExn(ghab, acdc, iss, anc):
     )
 
     exn, end = exchanging.exchange(route="/multisig/iss", payload={'gid': ghab.pre},
+                                   sender=ghab.mhab.pre, embeds=embeds)
+    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    atc = bytearray(evt[exn.size:])
+    atc.extend(end)
+
+    return exn, atc
+
+
+def multisigRevokeExn(ghab, said, rev, anc):
+    """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
+
+    Either rot or ixn are required but not both
+
+    Parameters:
+        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        said (str): qb64 SAID of credential being revoked
+        rev (bytes): CESR stream of serialized and TEL revocation event
+        anc (bytes): CESR stream of serialized and signed anchoring event anchoring revocation
+
+    Returns:
+        tuple: (Serder, bytes): Serder of exn message and CESR attachments
+
+    """
+
+    embeds = dict(
+        rev=rev,
+        anc=anc
+    )
+
+    exn, end = exchanging.exchange(route="/multisig/rev", payload={'gid': ghab.pre, 'said': said},
                                    sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
