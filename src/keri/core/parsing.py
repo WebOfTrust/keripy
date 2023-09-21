@@ -1116,7 +1116,6 @@ class Parser:
                     tvy.processEvent(serder=serder, seqner=seqner, saider=saider, wigers=wigers)
 
                 except AttributeError as e:
-                    print(e)
                     raise kering.ValidationError("No tevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
             else:

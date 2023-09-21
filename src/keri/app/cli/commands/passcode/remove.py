@@ -47,6 +47,5 @@ def remove(tymth, tock=0.0, **opts):
             print("Passcode removed and keystore unencrypted.")
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

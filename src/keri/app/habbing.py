@@ -2045,6 +2045,9 @@ class BaseHab:
                 msg = self.reply(data=data, route=route)
                 yield msg
 
+    def witnesser(self):
+        return True
+
 
 class Hab(BaseHab):
     """
@@ -2752,3 +2755,16 @@ class GroupHab(BaseHab):
         serder = eventing.query(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True)
+
+    def witnesser(self):
+        kever = self.kever
+        keys = [verfer.qb64 for verfer in kever.verfers]
+        sigs = self.db.getSigs(dbing.dgKey(self.pre, kever.serder.saidb))
+        if not sigs:  # otherwise its a list of sigs
+            return False
+
+        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+        windex = min([siger.index for siger in sigers])
+
+        # True if Elected to perform delegation and witnessing
+        return self.mhab.kever.verfers[0].qb64 == keys[windex]

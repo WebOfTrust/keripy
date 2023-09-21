@@ -7,6 +7,8 @@ from keri.app import indirecting, habbing, grouping, forwarding
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri.app.notifying import Notifier
+from keri.core import coring
+from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr import credentialing
 
@@ -32,6 +34,9 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument('--usage', '-u', help='For multisig issuers, a message to other participants about how this'
+                                          ' registry is to be used',
+                    default=None)
 
 
 def registryIncept(args):
@@ -44,13 +49,14 @@ def registryIncept(args):
     estOnly = args.establishment_only
     noBackers = args.no_backers
     backers = args.backers
+    usage = args.usage
 
     if noBackers and backers:
         print("--no-backers and --backers can not both be provided")
         return -1
 
     icpDoer = RegistryInceptor(name=name, base=base, alias=alias, bran=bran, registryName=registryName,
-                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers)
+                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers, usage=usage)
 
     doers = [icpDoer]
     return doers
@@ -61,7 +67,7 @@ class RegistryInceptor(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, alias, bran, registryName, **kwa):
+    def __init__(self, name, base, alias, bran, registryName, usage, **kwa):
         """  Create RegistryIncepter to pass message and process cues
 
         Parameters:
@@ -77,6 +83,7 @@ class RegistryInceptor(doing.DoDoer):
         self.name = name
         self.alias = alias
         self.registryName = registryName
+        self.usage = usage
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -115,15 +122,29 @@ class RegistryInceptor(doing.DoDoer):
         if hab is None:
             raise ValueError(f"{self.alias} is not a valid AID alias")
 
-        registry, ixn = self.registrar.incept(name=self.registryName, pre=hab.pre, conf=kwa)
+        estOnly = "estOnly" in kwa and kwa["estOnly"]
+        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **kwa)
+
+        rseal = SealEvent(registry.regk, "0", registry.regd)
+        rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
+        if estOnly:
+            anc = hab.rotate(data=[rseal])
+        else:
+            anc = hab.interact(data=[rseal])
+
+        aserder = coring.Serder(raw=bytes(anc))
+        self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         if isinstance(hab, GroupHab):
-            usage = input(f"Please enter a description of the credential registry: ")
+            usage = self.usage
+            if usage is None:
+                usage = input(f"Please enter a description of the credential registry: ")
+
             smids = hab.db.signingMembers(pre=hab.pre)
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, ixn=ixn, usage=usage)
+                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

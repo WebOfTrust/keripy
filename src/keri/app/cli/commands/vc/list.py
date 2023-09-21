@@ -150,7 +150,4 @@ class ListDoer(doing.DoDoer):
                     for line in bsad.splitlines():
                         print(f"\t{line}")
 
-            else:
-                print("None\n")
-
         self.remove([self.mbx])

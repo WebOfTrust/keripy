@@ -698,6 +698,8 @@ class MailboxDirector(doing.DoDoer):
         while True:
             self.kvy.processEscrows()
             self.rvy.processEscrowReply()
+            if self.exchanger is not None:
+                self.exchanger.processEscrow()
             if self.tvy is not None:
                 self.tvy.processEscrows()
             if self.verifier is not None:

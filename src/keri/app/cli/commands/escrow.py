@@ -155,6 +155,5 @@ def escrows(tymth, tock=0.0, **opts):
                     pass
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

@@ -456,7 +456,7 @@ class WitnessInquisitor(doing.DoDoer):
             src = evt["src"]
             r = evt["r"]
             q = evt["q"]
-            wits = evt["wits"]
+            wits = evt["wits"] if "wits" in evt else None
 
             if "hab" in evt:
                 hab = evt["hab"]
@@ -534,9 +534,9 @@ class WitnessInquisitor(doing.DoDoer):
 
         self.msgs.append(msg)
 
-    def telquery(self, src, ri, i=None, r="tels", **kwa):
+    def telquery(self, src, ri, i=None, r="tels", wits=None, **kwa):
         qry = dict(ri=ri)
-        self.msgs.append(dict(src=src, pre=i, r=r, q=qry))
+        self.msgs.append(dict(src=src, pre=i, r=r, wits=wits, q=qry))
 
 
 class WitnessPublisher(doing.DoDoer):
@@ -610,6 +610,19 @@ class WitnessPublisher(doing.DoDoer):
                 yield self.tock
 
             yield self.tock
+
+    def sent(self, said):
+        """ Check if message with given SAID was sent
+
+        Parameters:
+            said (str): qb64 SAID of message to check for
+        """
+
+        for cue in self.cues:
+            if cue["said"] == said:
+                return True
+
+        return False
 
 
 class TCPMessenger(doing.DoDoer):

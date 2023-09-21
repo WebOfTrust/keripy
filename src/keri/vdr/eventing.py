@@ -1665,19 +1665,20 @@ class Tevery:
 
         if route == "tels":
             mgmt = qry["ri"]
+            src = qry["src"]
 
             cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
-            msgs = bytearray()  # outgoing messages
+            msgs = list()  # outgoing messages
             for msg in cloner:
-                msgs.extend(msg)
+                msgs.append(msg)
 
             if vci := qry["i"]:
                 cloner = self.reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    msgs.extend(msg)
+                    msgs.append(msg)
 
             if msgs:
-                self.cues.append(dict(kin="replay", dest=source, msgs=msgs))
+                self.cues.append(dict(kin="replay", src=src, dest=source.qb64, msgs=msgs))
         elif route == "tsn":
             ri = qry["ri"]
             if ri in self.tevers:

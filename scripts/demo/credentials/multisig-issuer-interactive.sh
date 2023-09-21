@@ -51,51 +51,35 @@ kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI --
 pid=$!
 PID_LIST=" $pid"
 
-kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &
-pid=$!
-PID_LIST+=" $pid"
+#kli vc registry incept --name multisig2 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &
+#pid=$!
+#PID_LIST+=" $pid"
 
-wait $PID_LIST
-
-## Rotate multisig keys:
-kli rotate --name multisig1 --alias multisig1
-kli query --name multisig2 --alias multisig2 --prefix EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4
-kli rotate --name multisig2 --alias multisig2
-kli query --name multisig1 --alias multisig1 --prefix EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1
-
-kli multisig rotate --name multisig1 --alias multisig --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 &
-pid=$!
-PID_LIST=" $pid"
-
-kli multisig rotate --name multisig2 --alias multisig --smids EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1:1 --smids EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4:1 &
-pid=$!
-PID_LIST+=" $pid"
+echo "Multisig2 looking to join credential registry creation"
+kli multisig join --name multisig2
 
 wait $PID_LIST
 
 # Issue Credential
-TIME=$(date -Iseconds -u)
-kli vc create --name multisig1 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json --time "${TIME}" &
+kli vc create --name multisig1 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json &
 pid=$!
 PID_LIST+=" $pid"
 
-kli vc create --name multisig2 --alias multisig --registry-name vLEI --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --data @${KERI_DEMO_SCRIPT_DIR}/data/credential-data.json --time "${TIME}" &
-pid=$!
-PID_LIST+=" $pid"
+# Wait for 3 seconds to allow credential.json to be created, but still launch in parallel because they will wait for each other
+echo "Multisig2 looking to join credential creation"
+kli multisig join --name multisig2
 
 wait $PID_LIST
 
 SAID=$(kli vc list --name multisig1 --alias multisig --issued --said)
 
-kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
+kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k &
 pid=$!
-PID_LIST+=" $pid"
+PID_LIST="$pid"
 
-kli ipex grant --name multisig2 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
-pid=$!
-PID_LIST+=" $pid"
+kli multisig join --name multisig2
 
-wait $PID_LIST
+wait ${PID_LIST}
 
 echo "Polling for holder's IPEX message..."
 SAID=$(kli ipex list --name holder --alias holder --poll --said)
@@ -103,20 +87,16 @@ SAID=$(kli ipex list --name holder --alias holder --poll --said)
 echo "Admitting GRANT ${SAID}"
 kli ipex admit --name holder --alias holder --said "${SAID}"
 
-kli vc list --name holder --alias holder --poll
+kli vc list --name holder --alias holder
 
 SAID=$(kli vc list --name holder --alias holder --said --schema EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao)
 
 echo "Revoking ${SAID}..."
-TIME=$(date -Iseconds -u)
-kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
+kli vc revoke --name multisig1 --alias multisig --registry-name vLEI --said "${SAID}"&
 pid=$!
-PID_LIST=" $pid"
+PID_LIST="$pid"
 
-kli vc revoke --name multisig2 --alias multisig --registry-name vLEI --said "${SAID}" --time "${TIME}" &
-pid=$!
-PID_LIST+=" $pid"
-
+kli multisig join --name multisig2
 
 wait $PID_LIST
 kli vc list --name holder --alias holder --poll

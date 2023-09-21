@@ -188,7 +188,7 @@ class GroupMultisigRotate(doing.DoDoer):
                         raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
 
                     evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
-                    serder = coring.Serder(raw=evt)
+                    serder = coring.Serder(raw=bytes(evt))
                     if not serder.est:
                         raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 

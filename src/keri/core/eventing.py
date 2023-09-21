@@ -542,7 +542,7 @@ def fetchTsgs(db, saider, snh=None):
                 prefixer (Prefixer): instance trans signer aid,
                 seqner (Seqner): of sn of trans signer key state est event
                 diger (Diger): of digest of trans signer key state est event
-                signers (list): of Siger instances of indexed signatures
+                sigers (list): of Siger instances of indexed signatures
 
     Parameters:
         db: (Cesr
@@ -1368,8 +1368,6 @@ def bare(route="",
     _, sad = coring.Saider.saidify(sad=sad)
 
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
-
-
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,

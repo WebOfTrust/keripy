@@ -70,6 +70,5 @@ def set_passcode(tymth, tock=0.0, **opts):
             print("Passcode reset and keystore re-encrypted.")
 
     except ConfigurationError as e:
-        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

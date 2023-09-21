@@ -219,16 +219,18 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
+def ipexGrantExn(hab, recp, message, acdc, iss, anc, agree=None, dt=None):
     """ Disclose an ACDC
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
+        recp (str) qb64 AID of recipient of GRANT message
         message(str): Human readable message regarding the credential disclosure
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
         agree (Serder): optional IPEX exn agree message that this grant is response to.
+        dt (str): Iso8601 formatted date string to use for this request
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -237,6 +239,7 @@ def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
     """
     data = dict(
         m=message,
+        i=recp,
     )
 
     embeds = dict(
@@ -249,7 +252,7 @@ def ipexGrantExn(hab, message, acdc, iss, anc, agree=None):
     if agree is not None:
         kwa['dig'] = agree.said
 
-    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, **kwa)
+    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, date=dt, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
