@@ -13,7 +13,7 @@ from prettytable import PrettyTable
 from keri import help, kering
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing, displaying
-from keri.core import coring, eventing, scheming, parsing
+from keri.core import coring, eventing, scheming, parsing, routing
 from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import verifying, credentialing
@@ -68,7 +68,9 @@ class ConfirmDoer(doing.DoDoer):
         self.notifier = notifying.Notifier(hby=self.hby)
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy, vry=self.verifier, exc=self.exc)
+        self.rvy = routing.Revery(db=self.hby.db,  lax=True)
+        self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
+        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy, rvy=self.rvy, vry=self.verifier, exc=self.exc)
 
         mux = grouping.Multiplexor(hby=self.hby, notifier=self.notifier)
         grouping.loadHandlers(exc=self.exc, mux=mux)
@@ -193,9 +195,7 @@ class ConfirmDoer(doing.DoDoer):
                 ghab = self.hby.makeGroupHab(group=alias, mhab=mhab,
                                              smids=smids, rmids=rmids, **inits)
             except ValueError as e:
-                print(f"{e.args[0]}")
                 return False
-
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
@@ -327,7 +327,6 @@ class ConfirmDoer(doing.DoDoer):
                 serder = coring.Serder(ked=ked)
                 rot = ghab.rotate(serder=serder)
             except ValueError as e:
-                print(f"{e.args[0]}")
                 return False
 
             serder = coring.Serder(raw=rot)
@@ -411,7 +410,73 @@ class ConfirmDoer(doing.DoDoer):
         Returns:
 
         """
-        ked = attrs["ked"]
+        said = attrs["d"]
+        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+
+        sender = exn.ked['i']
+        payload = exn.ked['a']
+        gid = payload["gid"]
+        hab = self.hby.habs[gid] if gid in self.hby.habs else None
+        if hab is None:
+            raise ValueError(f"credential issuer not a valid AID={gid}")
+
+        contact = self.org.get(sender)
+        senderAlias = contact['alias']
+
+        embeds = exn.ked['e']
+        rpy = embeds['rpy']
+        cid = rpy['a']['cid']
+        eid = rpy['a']['eid']
+        role = rpy['a']['role']
+
+        if cid == gid:
+            controller = hab.name
+        else:
+            raise ValueError(f"Endpoint role authorization request for wrong controller {gid} != {cid}")
+
+        endpoint = self.org.get(eid)
+        if endpoint is None or 'alias' not in endpoint:
+            endpointAlias = "Unknown Endpoint"
+        else:
+            endpointAlias = endpoint['alias']
+
+        print(f"\nEndpoint Role Authorization (from {senderAlias}):")
+        print(f"    Controller: {controller} ({cid})")
+        print(f"    Role: {role.capitalize()}")
+        print(f"    Endpoint Provider: {endpointAlias} ({eid})")
+
+        yn = input(f"\nApprove [Y|n]? ")
+        approve = yn in ('', 'y', 'Y')
+
+        if approve:
+            # Create and parse the event with "their" signatures
+            rserder = coring.Serder(ked=rpy)
+            anc = bytearray(rserder.raw) + pathed["rpy"]
+            self.psr.parseOne(ims=bytes(anc))
+
+            # Now sign the event and parse it with our signatures
+            anc = hab.endorse(rserder)
+            self.psr.parseOne(ims=bytes(anc))
+
+            smids = hab.db.signingMembers(pre=hab.pre)
+            smids.remove(hab.mhab.pre)
+
+            for recp in smids:  # this goes to other participants only as a signaling mechanism
+                exn, atc = grouping.multisigRpyExn(ghab=hab, rpy=anc)
+                self.postman.send(src=hab.mhab.pre,
+                                  dest=recp,
+                                  topic="multisig",
+                                  serder=exn,
+                                  attachment=atc)
+
+            while not hab.loadEndRole(cid=cid, role=role, eid=eid):
+                self.rgy.processEscrows()
+                self.rvy.processEscrowReply()
+                yield self.tock
+
+            print(f"End role authorization added for role {role}")
+
+        yield self.tock
 
     def vcp(self, attrs):
         """  Handle issue messages

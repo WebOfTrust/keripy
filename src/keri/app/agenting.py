@@ -473,8 +473,6 @@ class WitnessInquisitor(doing.DoDoer):
                     end = ends[Roles.controller]
                 elif Roles.agent in ends:
                     end = ends[Roles.agent]
-                elif Roles.mailbox in ends:
-                    end = ends[Roles.mailbox]
                 elif Roles.witness in ends:
                     end = ends[Roles.witness]
                 else:

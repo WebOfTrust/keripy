@@ -73,14 +73,17 @@ class Poster(doing.DoDoer):
 
                 ends = hab.endsFor(recp)
                 try:
-                    if Roles.controller in ends:
-                        yield from self.sendDirect(hab, ends[Roles.controller], serder=srdr, atc=atc)
-                    elif Roles.agent in ends:
-                        yield from self.sendDirect(hab, ends[Roles.agent], serder=srdr, atc=atc)
-                    elif Roles.mailbox in ends:
-                        yield from self.forward(hab, ends[Roles.mailbox], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                    # If there is a controller, agent or mailbox in ends, send to all
+                    if {Roles.controller, Roles.agent, Roles.mailbox} & set(ends):
+                        for role in (Roles.controller, Roles.agent, Roles.mailbox):
+                            if role in (Roles.controller, Roles.agent) in ends:
+                                yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
+                            elif role == Roles.mailbox:
+                                yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+
+                    # otherwise send to one witness
                     elif Roles.witness in ends:
-                        yield from self.forward(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
                     else:
                         logger.info(f"No end roles for {recp} to send evt={recp}")
                         continue
@@ -167,6 +170,39 @@ class Poster(doing.DoDoer):
         self.remove([witer])
 
     def forward(self, hab, ends, recp, serder, atc, topic):
+        # If we are one of the mailboxes, just store locally in mailbox
+        owits = oset(ends.keys())
+        if self.mbx and owits.intersection(hab.prefixes):
+            msg = bytearray(serder.raw)
+            if atc is not None:
+                msg.extend(atc)
+            self.mbx.storeMsg(topic=f"{recp}/{topic}".encode("utf-8"), msg=msg)
+            return
+
+        # Its not us, randomly select a mailbox and forward it on
+        mbx, mailbox = random.choice(list(ends.items()))
+        msg = bytearray()
+        msg.extend(introduce(hab, mbx))
+        # create the forward message with payload embedded at `a` field
+
+        evt = bytearray(serder.raw)
+        evt.extend(atc)
+        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
+        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+
+        # Transpose the signatures to point to the new location
+        witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
+        msg.extend(ims)
+        msg.extend(atc)
+
+        witer.msgs.append(bytearray(msg))  # make a copy
+        self.extend([witer])
+
+        while not witer.idle:
+            _ = (yield self.tock)
+
+    def forwardToWitness(self, hab, ends, recp, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
