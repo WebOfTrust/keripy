@@ -32,11 +32,9 @@ kli ends add --base "${KERI_TEMP_DIR}" --name multisig1 --alias multisig --eid B
 pid=$!
 PID_LIST="$pid"
 
-#kli ends add --base "${KERI_TEMP_DIR}" --name multisig2 --alias multisig --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox --time "${TIME}" &
-#pid=$!
-#PID_LIST+=" $pid"
-
-kli multisig join --base "${KERI_TEMP_DIR}" --name multisig2
+kli ends add --base "${KERI_TEMP_DIR}" --name multisig2 --alias multisig --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox --time "${TIME}" &
+pid=$!
+PID_LIST+=" $pid"
 
 wait $PID_LIST
 
