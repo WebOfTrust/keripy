@@ -261,6 +261,7 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/iss", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rev", mux=mux))
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/exn", mux=mux))
+    exc.addHandler(MultisigNotificationHandler(resource="/multisig/rpy", mux=mux))
 
 
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
@@ -419,16 +420,14 @@ def multisigIssueExn(ghab, acdc, iss, anc):
     return exn, atc
 
 
-def multisigRevokeExn(ghab, said, rev, anc):
+def multisigRpyExn(ghab, rpy):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
 
     Parameters:
         ghab (GroupHab): identifier Hab for ensorsing the message to send
-        said (str): qb64 SAID of credential being revoked
-        rev (bytes): CESR stream of serialized and TEL revocation event
-        anc (bytes): CESR stream of serialized and signed anchoring event anchoring revocation
+        rpy (bytes): CESR stream of serialized and reply event
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -436,11 +435,10 @@ def multisigRevokeExn(ghab, said, rev, anc):
     """
 
     embeds = dict(
-        rev=rev,
-        anc=anc
+        rpy=rpy
     )
 
-    exn, end = exchanging.exchange(route="/multisig/rev", payload={'gid': ghab.pre, 'said': said},
+    exn, end = exchanging.exchange(route="/multisig/rpy", payload={'gid': ghab.pre},
                                    sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])

@@ -27,4 +27,17 @@ wait $PID_LIST
 
 kli status --name multisig1 --base "${KERI_TEMP_DIR}"  --alias multisig
 
+TIME=$(date -Iseconds -u | sed 's/+00:00//').000000+00:00
+kli ends add --base "${KERI_TEMP_DIR}" --name multisig1 --alias multisig --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox --time "${TIME}" &
+pid=$!
+PID_LIST="$pid"
+
+#kli ends add --base "${KERI_TEMP_DIR}" --name multisig2 --alias multisig --eid BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM --role mailbox --time "${TIME}" &
+#pid=$!
+#PID_LIST+=" $pid"
+
+kli multisig join --base "${KERI_TEMP_DIR}" --name multisig2
+
+wait $PID_LIST
+
 echo "Test Complete"

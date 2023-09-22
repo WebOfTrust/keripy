@@ -6,6 +6,7 @@ message stream parsing support
 """
 
 import logging
+import traceback
 from collections import namedtuple
 from dataclasses import dataclass, astuple
 
@@ -1056,6 +1057,7 @@ class Parser:
                         rvy.processReply(serder, tsgs=tsgs)  # trans
 
                 except AttributeError as e:
+                    print(e)
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 
