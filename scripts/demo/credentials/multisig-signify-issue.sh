@@ -17,10 +17,11 @@
 #kli oobi resolve --name multisig1 --oobi-alias multisig2 --oobi http://127.0.0.1:5642/oobi/EJccSRTfXYF6wrUVuenAIHzwcx3hJugeiJsEKmndi5q1/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 #kli oobi resolve --name multisig2 --oobi-alias multisig1 --oobi http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 #kli oobi resolve --name multisig1 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness
-#kli oobi resolve --name multisig2 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness
+#
 #
 #kli oobi resolve --name multisig1 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
 #kli oobi resolve --name multisig2 --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
+#kli oobi resolve --name holder --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
 #
 #read  -n 1 -r -p "Press any key after agent0 has created their AID:"
 #
@@ -40,6 +41,9 @@
 #kli status --name multisig1 --alias multisig
 #
 #PID_LIST=""
+
+kli oobi resolve --name holder --oobi-alias multisig --oobi http://127.0.0.1:5642/oobi/ENaQNFvFDTCWkoE3O5qTX_JfWLT3HxA2TvmOE-LeSsix/witness
+kli oobi resolve --name holder --oobi-alias vc --oobi http://127.0.0.1:7723/oobi/EBfdlu8R27Fbx-ehrqwImnK-8Cm79sqbAQ4MmvEAYqao
 
 # Create a credential registry owned by the multisig issuer
 kli vc registry incept --name multisig1 --alias multisig --registry-name vLEI --usage "Issue vLEIs" --nonce AHSNDV3ABI6U8OIgKaj3aky91ZpNL54I5_7-qwtC6q2s &
@@ -66,6 +70,30 @@ PID_LIST+=" $pid"
 
 wait $PID_LIST
 
+SAID=$(kli vc list --name multisig1 --alias multisig --issued --said)
 
+kli ipex grant --name multisig1 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
+pid=$!
+PID_LIST="$pid"
+
+kli ipex grant --name multisig2 --alias multisig --said "${SAID}" --recipient ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k --time "${TIME}" &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
+
+kli oobi resolve --name multisig2 --oobi-alias holder --oobi http://127.0.0.1:5642/oobi/ELjSFdrTdCebJlmvbFNX9-TLhR2PO0_60al1kQp5_e6k/witness
+
+echo "Polling for holder's IPEX message..."
+SAID=$(kli ipex list --name holder --alias holder --poll --said)
+
+echo "Admitting GRANT ${SAID}"
+kli ipex admit --name holder --alias holder --said "${SAID}"
+
+echo "Admitted the GRANT"
+kli ipex list --name holder --alias holder
+
+echo "Now possess the credential"
+kli vc list --name holder --alias holder --poll
 
 
