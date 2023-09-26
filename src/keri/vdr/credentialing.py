@@ -823,7 +823,7 @@ class Credentialer(doing.DoDoer):
 
         try:
             self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner, saider=serder.saider)
-        except (kering.MissingRegistryError, kering.MissingSchemaError):
+        except kering.MissingRegistryError:
             pass
 
     def processCredentialMissingSigEscrow(self):
