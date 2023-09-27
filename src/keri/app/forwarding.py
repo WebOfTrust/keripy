@@ -76,10 +76,11 @@ class Poster(doing.DoDoer):
                     # If there is a controller, agent or mailbox in ends, send to all
                     if {Roles.controller, Roles.agent, Roles.mailbox} & set(ends):
                         for role in (Roles.controller, Roles.agent, Roles.mailbox):
-                            if role in (Roles.controller, Roles.agent) in ends:
-                                yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
-                            elif role == Roles.mailbox:
-                                yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                            if role in ends:
+                                if role == Roles.mailbox:
+                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                                else:
+                                    yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
 
                     # otherwise send to one witness
                     elif Roles.witness in ends:

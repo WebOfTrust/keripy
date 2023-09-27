@@ -108,6 +108,7 @@ class AdmitDoer(doing.DoDoer):
         if "ri" in acdc:
             self.witq.telquery(src=self.hab.pre, wits=self.hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
 
+        print(pathed)
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
             sadder = coring.Sadder(ked=ked)

@@ -132,6 +132,8 @@ class ListDoer(doing.DoDoer):
             attrs = note.attrs
             said = attrs['d']
             exn, pathed = exchanging.cloneMessage(self.hby, said)
+            if exn is None:
+                continue
 
             sender = exn.ked['i']
             if (sender in self.hby.habs and not self.sent) or (sender not in self.hby.habs and self.sent):

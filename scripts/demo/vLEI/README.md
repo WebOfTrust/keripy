@@ -11,7 +11,6 @@ using single signature identifiers.
 
 They all require the following commands run in separate terminal windows prior to execution:
 
-* `kli agent vlei`
 * `kli witness demo`
 
 and from the vLEI repo run:
