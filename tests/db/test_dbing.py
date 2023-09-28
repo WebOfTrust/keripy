@@ -791,6 +791,64 @@ def test_lmdber():
         assert dber.setIoSetVals(db, key2, vals3)
         assert dber.getIoSetVals(db, key2) == vals3
 
+        # Empty keys cause lmdb.BalValsizeError so LMDBer now throws a KeyError
+        # if it catches this kind of thing in the various places where it gets
+        # thrown
+        empty_key = ''.encode('utf8')
+        some_value = 'foo'.encode('utf8')
+        with pytest.raises(KeyError):
+            dber.putVal(db, empty_key, some_value)
+        with pytest.raises(KeyError):
+            dber.setVal(db, empty_key, some_value)
+        with pytest.raises(KeyError):
+            dber.getVal(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.delVal(db, empty_key)
+        dber.putIoSetVals(db, empty_key, [some_value])
+        dber.addIoSetVal(db, empty_key, some_value)
+        dber.setIoSetVals(db, empty_key, [some_value])
+        dber.appendIoSetVal(db, empty_key, some_value)
+        dber.getIoSetVals(db, empty_key)
+        [_ for _ in dber.getIoSetValsIter(db, empty_key)]
+        dber.getIoSetValLast(db, empty_key)
+        dber.cntIoSetVals(db, empty_key)
+        dber.delIoSetVals(db, empty_key)
+        dber.delIoSetVal(db, empty_key, some_value)
+        dber.getIoSetItems(db, empty_key)
+        dber.getIoSetItemsIter(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.delIoSetIokey(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.putVals(db, empty_key, [some_value])
+        with pytest.raises(KeyError):
+            dber.addVal(db, empty_key, some_value)
+        with pytest.raises(KeyError):
+            dber.getVals(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.getValLast(db, empty_key)
+        with pytest.raises(KeyError):
+            [_ for _ in dber.getValsIter(db, empty_key)]
+        with pytest.raises(KeyError):
+            dber.cntVals(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.delVals(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.putIoVals(db, empty_key, [some_value])
+        with pytest.raises(KeyError):
+            dber.addIoVal(db, empty_key, some_value)
+        with pytest.raises(KeyError):
+            dber.getIoVals(db, empty_key)
+        with pytest.raises(KeyError):
+            [_ for _ in dber.getIoValsIter(db, empty_key)]
+        with pytest.raises(KeyError):
+            dber.getIoValLast(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.cntIoVals(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.delIoVals(db, empty_key)
+        with pytest.raises(KeyError):
+            dber.delIoVal(db, empty_key, some_value)
+
     assert not os.path.exists(dber.path)
 
     """ End Test """
