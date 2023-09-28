@@ -3732,7 +3732,7 @@ def test_pather():
     assert pather.bext == text
     assert pather.qb64 == "4AADA-0-field1-0"
     assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         pather.resolve(sad)
     assert pather.path == ["0", "field1", "0"]
 

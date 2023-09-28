@@ -1925,7 +1925,7 @@ class Pather(Bexter):
 
                 keys = list(val)
                 if i >= len(keys):
-                    raise Exception(f"invalid dict pointer index {i} for keys {keys}")
+                    raise KeyError(f"invalid dict pointer index {i} for keys {keys}")
 
                 cur = val[list(val)[i]]
             elif idx == "":
@@ -1936,12 +1936,12 @@ class Pather(Bexter):
         elif isinstance(val, list):
             i = int(idx)
             if i >= len(val):
-                raise Exception(f"invalid array pointer index {i} for array {val}")
+                raise KeyError(f"invalid array pointer index {i} for array {val}")
 
             cur = val[i]
 
         else:
-            raise ValueError("invalid traversal type")
+            raise KeyError("invalid traversal type")
 
         return self._resolve(cur, ptr)
 
