@@ -129,6 +129,7 @@ class Exchanger:
 
         # Always persis events
         self.logEvent(serder, pathed, tsgs, cigars)
+        self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
         try:
@@ -208,7 +209,6 @@ class Exchanger:
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None):
         dig = serder.said
         pdig = serder.ked['p']
-        route = serder.ked['r']
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
@@ -222,7 +222,6 @@ class Exchanger:
 
         saider = coring.Saider(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
-        self.hby.db.erts.add(keys=(route,), val=saider)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=saider)
 

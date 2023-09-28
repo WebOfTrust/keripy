@@ -132,11 +132,12 @@ class IpexHandler:
         self.notifier.add(attrs=data)
 
 
-def ipexApplyExn(hab, message, schema, attrs):
+def ipexApplyExn(hab, recp, message, schema, attrs):
     """ Apply for an ACDC
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
+        recp (str): qb64 AID of recipient
         message(str): Human readable message regarding the credential application
         schema (any): schema or its SAID
         attrs (any): attribute field label list
@@ -149,7 +150,8 @@ def ipexApplyExn(hab, message, schema, attrs):
     data = dict(
         m=message,
         s=schema,
-        a=attrs
+        a=attrs,
+        i=recp
     )
 
     exn, end = exchanging.exchange(route="/ipex/apply", payload=data, sender=hab.pre)
