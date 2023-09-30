@@ -155,15 +155,15 @@ class Poster(doing.DoDoer):
             yield self.tock
 
     def sendDirect(self, hab, ends, serder, atc):
-        ctrl, locs = random.choice(list(ends.items()))
-        witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
+        for ctrl, locs in ends.items():
+            witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
 
-        msg = bytearray(serder.raw)
-        if atc is not None:
-            msg.extend(atc)
+            msg = bytearray(serder.raw)
+            if atc is not None:
+                msg.extend(atc)
 
-        witer.msgs.append(bytearray(msg))  # make a copy
-        self.extend([witer])
+            witer.msgs.append(bytearray(msg))  # make a copy
+            self.extend([witer])
 
         while not witer.idle:
             _ = (yield self.tock)
