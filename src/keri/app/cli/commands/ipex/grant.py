@@ -123,7 +123,9 @@ class GrantDoer(doing.DoDoer):
 
         parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
+        sender = self.hab.pre
         if isinstance(self.hab, habbing.GroupHab):
+            sender = self.hab.mhab.pre
             wexn, watc = grouping.multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -143,7 +145,7 @@ class GrantDoer(doing.DoDoer):
             print(f"Sending message {exn.said} to {recp}")
             atc = exchanging.serializeMessage(self.hby, exn.said)
             del atc[:exn.size]
-            self.postman.send(src=self.hab.mhab.pre,
+            self.postman.send(src=sender,
                               dest=recp,
                               topic="credential",
                               serder=exn,
