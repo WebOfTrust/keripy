@@ -10,7 +10,7 @@ def addInceptingArgs(parser):
     """
     Add command line arguments for each of the properties in InceptOptions
     """
-    parser.add_argument('--transferable', '-tf', type=bool, default=None,
+    parser.add_argument('--transferable', '-tf', action="store_true",
                         help='Whether the prefix is transferable or non-transferable')
     parser.add_argument('--wits',         '-w', default=[], required=False, action="append", metavar="<prefix>",
                         help='New set of witnesses, replaces all existing witnesses.  Can appear multiple times')
