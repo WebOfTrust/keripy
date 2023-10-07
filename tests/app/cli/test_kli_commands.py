@@ -47,7 +47,7 @@ def test_standalone_kli_commands(helpers, capsys):
         directing.runController(doers=doers)
 
     # Create transferable identifier
-    args = parser.parse_args(["incept", "--name", "test", "--alias", "trans", "--file",
+    args = parser.parse_args(["incept", "--name", "test", "--alias", "trans", "--transferable", "--file",
                               os.path.join(TEST_DIR, "transferable-sample.json")])
     assert args.handler is not None
     doers = args.handler(args)
@@ -134,7 +134,7 @@ def test_standalone_kli_commands(helpers, capsys):
     # Skipping sign and verify, they rely on console output.
 
     # Establishment Only
-    args = parser.parse_args(["incept", "--name", "test", "--alias", "est-only", "--file",
+    args = parser.parse_args(["incept", "--name", "test", "--alias", "est-only", "--transferable", "--file",
                               os.path.join(TEST_DIR, "estonly-sample.json")])
     assert args.handler is not None
     doers = args.handler(args)
@@ -267,14 +267,14 @@ def test_incept_and_rotate_opts(helpers, capsys):
     with existing.existingHby("test-opts") as hby:
         assert os.path.isdir(hby.db.path) is True
 
-    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable", "True"])
+    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable"])
     assert args.handler is not None
     # Attempt to incept without required arg isith
     with pytest.raises(ValueError):
         args.handler(args)
 
     # Incept with command line arguments
-    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable", "True",
+    args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable",
                               "--isith", "1", "--icount", "1", "--nsith", "1", "--ncount", "1", "--toad", "0"])
     assert args.handler is not None
     doers = args.handler(args)

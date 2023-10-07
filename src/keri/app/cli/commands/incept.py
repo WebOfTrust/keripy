@@ -98,8 +98,7 @@ def mergeArgsWithFile(args):
 
     incept_opts = config.loadFileOptions(args.file, InceptOptions) if args.file != '' else emptyOptions()
 
-    if args.transferable is not None:
-        incept_opts.transferable = args.transferable
+    incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:
         incept_opts.wits = args.wits
     if args.icount is not None:
