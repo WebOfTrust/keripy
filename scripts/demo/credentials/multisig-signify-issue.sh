@@ -32,9 +32,10 @@ kli oobi resolve --name multisig2 --oobi-alias agent0 --oobi http://127.0.0.1:39
 # Follow commands run in parallel
 kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-signify-sample.json &
 pid=$!
-PID_LIST+=" $pid"
+PID_LIST=" $pid"
 kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-signify-sample.json &
 pid=$!
+PID_LIST+=" $pid"
 
 wait $PID_LIST
 PID_LIST=""

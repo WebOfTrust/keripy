@@ -5852,8 +5852,7 @@ def test_serder():
               s="0001",
               t="rot")
     _, e4 = coring.Saider.saidify(sad=e4)
-    print()
-    print(e4)
+
     e4s = json.dumps(e4, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e4s == (b'{"v":"ACDC10JSON00006f_","d":"EMFw6MEBmwWU28-7wK4SJ2kasSzVgLKkAM7iwoqJJ07Z",'
                    b'"i":"ABCDEFG","s":"0001","t":"rot"}')
