@@ -28,7 +28,8 @@ However, this particular file is more about contributing code.  The general prin
 [PythonStyleGuide](./ref/PythonStyleGuide.md)  
 
 ### Commit Message Guidelines
-There are no hard and fast guidelines (TODO: is this true?) but it is helpful to:
+There are no hard and fast guidelines but it is helpful to:
+- Descriptive, to the point messages are ideal
 - Link to the issue you're trying to solve with a message of how the commit does or doesn't solve that issue.
 - Be sure to note important issues for checkpoint commits like "does not build"
 - Most importantly, the commit message should explain the WHY of all the code changes.  When reviewing, reviewers will be confused if code changes for things you didn't list in the commit aren't there.
@@ -55,12 +56,30 @@ See [README.md](README.md).  Always add tests if you fix a bug or add a feature.
 - Message in the appropriate discord channel to let people know about your bug/feature/issue, but remember that maintainers maintain at their own pace and discretion on issues of their choosing.  Its best not to ping them more than once a week.  As with all open source, if its an ultra critical bug/feature for you, cash bounties certainly incentivize people to pay attention and offer to help you directly.
 
 ## Code of Conduct and Respect
-Treat people with respect.  (TODO: Should we add a more complex code of conduct?)
+[From the discord channel](https://discord.com/channels/1148629222647148624/1148686277269532703/1148686279945498624)
+
+We are committed to providing a friendly, safe and welcoming environment for all, regardless of level of experience, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, nationality, or other similar characteristic.
+
+Please avoid using overtly sexual aliases or other nicknames that might detract from a friendly, safe and welcoming environment for all.
+
+Please be kind and courteous. There’s no need to be mean or rude.
+
+Respect that people have differences of opinion and that every design or implementation choice carries a trade-off and numerous costs. There is seldom a right answer.
+
+Please keep unstructured critique to a minimum. If you have solid ideas you want to experiment with, make a fork and see how it works.
+
+We will exclude you from interaction if you insult, demean or harass anyone. That is not welcome behavior. We interpret the term “harassment” as including the definition in the Citizen Code of Conduct; if you have any lack of clarity about what might be included in that concept, please read their definition. In particular, we don’t tolerate behavior that excludes people in socially marginalized groups.
+
+Private harassment is also unacceptable. No matter who you are, if you feel you have been or are being harassed or made uncomfortable by a community member, please contact one of the channel admins immediately. Whether you’re a regular contributor or a newcomer, we care about making this community a safe place for you and we’ve got your back.
+
+Likewise any spamming, trolling, flaming, baiting or other attention-stealing behavior is not welcome.
+Attribution
+Adapted from the Rust Code of Conduct: [https://www.rust-lang.org/policies/code-of-conduct](https://www.rust-lang.org/policies/code-of-conduct)
 
 ## Getting Help
 
 For questions or clarifications, reach out via:
-- Discord: [https://discord.gg/SNBnzwac]
+- Discord: [https://discord.gg/edGDD632tP](https://discord.gg/edGDD632tP)
 - KERI Development Meetings: [https://github.com/WebOfTrust/keri#implementors-call]
 - ACDC Standards Meeting@TOIP (technically must be a member of ToIP to contribute): [https://github.com/WebOfTrust/keri#specification-call]
 
