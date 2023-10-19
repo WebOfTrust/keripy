@@ -35,7 +35,7 @@ There are no hard and fast guidelines but it is helpful to:
 - Most importantly, the commit message should explain the WHY of all the code changes.  When reviewing, reviewers will be confused if code changes for things you didn't list in the commit aren't there.
 
 ### Branching Strategy
-Git flow.  Branch from development, name your feature branches something like `feature-name-of-my-feature` and bugs something like `bug-bug-name` and link the github issue that you (or someone else) def should have created for most non-trivial bugs.  When you have fully implemented or fixed, submit a PR to WebOfTrust/keripy.  If you need feedback it can also be appropriate to submit a **draft** PR to this repository.
+Branch from development, name your feature branches something like `feature-name-of-my-feature` and bugs something like `bug-bug-name` and link the github issue that you (or someone else) should have created for most non-trivial bugs/features.  When you have fully implemented or fixed, submit a PR to WebOfTrust/keripy.  If you need feedback it can also be appropriate to submit a **draft** PR to this repository and ask for comments.
 
 ### Testing
 See [README.md](README.md).  Always add tests if you fix a bug or add a feature.  This should conform to the conventions of the repository (ie if you're fixing some issue in IPEX, put your tests with the tests for IPEX).  If you're doing a greenfield implementation of something, even a few simple unit tests can provide clarity to future developers.
