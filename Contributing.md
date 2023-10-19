@@ -2,10 +2,12 @@
 
 ## Introduction
 
-Welcome to keripy's contribution guide! This project aims to develop a reference implementation of the keri standards and protocols developed in WebOfTrust on github. We deeply appreciate the time and effort of contributors like you!
+Welcome to keripy's contribution guide! This project aims to develop a reference implementation of the KERI standards and protocols developed in WebOfTrust on github. We deeply appreciate the time and effort of contributors like you!
+
+## Legal & Licensing
+This project has a split license whose details are contained [here](https://github.com/WebOfTrust/ietf-keri/blob/main/LICENSE.md)
 
 ## Prerequisites
-
 Before you start, make sure you have:
 
 - Read the [README.md](./README.md) (best quickstart guide for using the project) and can build, install, and run the tests yourself from those instructions (from both the main and development branch).  This is the assumed baseline for any issues, proposed features, or pull requests that you wish you contribute.
@@ -46,7 +48,7 @@ See [README.md](README.md).  Always add tests if you fix a bug or add a feature.
 3. Add tests
 4. Submit a PR to [WebOfTrust/keripy]
 5. Let maintainers know on discord in the appropriate channel
-6. Come to Thursday Keri development meeting to discuss if at all possible (sometimes its easier for maintainers to provide feedback directly rather than through async text, particularly if its a large or complex change).
+6. Come to Thursday KERI development meeting to discuss if at all possible (sometimes its easier for maintainers to provide feedback directly rather than through async text, particularly if its a large or complex change).
 7. Iterate 2-6 if your change needs some fixes/updates
 
 ## Reporting Bugs or Requesting Features
@@ -90,6 +92,3 @@ Thanks to all our wonderful contributors.
 
 - [Project Documentation](kerisse.org)
 - [Related Projects](https://github.com/WebOfTrust)
-
-## Legal & Licensing
-This project is licensed under the [Apache License 2.0](LICENSE)  See LICENSE file in this repo for details.
