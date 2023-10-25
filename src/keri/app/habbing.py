@@ -2099,7 +2099,8 @@ class Hab(BaseHab):
 
     def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, dcode=coring.MtrDex.Blake3_256,
              icode=coring.MtrDex.Ed25519_Seed, transferable=True, isith=None, icount=1, nsith=None, ncount=None,
-             toad=None, wits=None, delpre=None, estOnly=False, DnD=False, hidden=False, data=None):
+             toad=None, wits=None, delpre=None, estOnly=False, DnD=False, hidden=False, data=None, algo=None,
+             salt=None, tier=None):
         """
         Finish setting up or making Hab from parameters includes inception.
         Assumes injected dependencies were already setup.
@@ -2133,6 +2134,10 @@ class Hab(BaseHab):
 
             hidden (bool): A hidden Hab is not included in the list of Habs.
             data (list | None): seal dicts
+                        algo is str key creation algorithm code
+            salt(str): qb64 salt for randomization when salty algorithm used
+            tier(str): is str security criticality tier code when using salty algorithm
+
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
@@ -2164,6 +2169,9 @@ class Hab(BaseHab):
                                               stem=stem,
                                               transferable=transferable,
                                               dcode=dcode,
+                                              algo=algo,
+                                              salt=salt,
+                                              tier=tier,
                                               temp=self.temp)
 
         serder = super(Hab, self).make(isith=isith,
@@ -2207,6 +2215,11 @@ class Hab(BaseHab):
         self.reconfigure()  # should we do this for new Habs not loaded from db
 
         self.inited = True
+
+    @property
+    def algo(self):
+        pp = self.ks.prms.get(self.pre)
+        return pp.algo
 
     def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
                data=None, **kwargs):
