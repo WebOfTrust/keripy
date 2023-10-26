@@ -1010,14 +1010,15 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
-
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
                     algo=algo,
-                    salt=(creator.salt if not self.encrypter
-                          else self.encrypter.encrypt(ser=creator.salt).qb64),
                     stem=creator.stem,
                     tier=creator.tier)
+
+        if creator.salt:
+            pp.salt = (creator.salt if not self.encrypter
+                       else self.encrypter.encrypt(ser=creator.salt).qb64)
 
         dt = helping.nowIso8601()
         ps = PreSit(
