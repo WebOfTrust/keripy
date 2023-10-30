@@ -221,7 +221,7 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, recp, message, acdc, iss, anc, agree=None, dt=None):
+def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=None):
     """ Disclose an ACDC
 
     Parameters:
@@ -246,9 +246,13 @@ def ipexGrantExn(hab, recp, message, acdc, iss, anc, agree=None, dt=None):
 
     embeds = dict(
         acdc=acdc,
-        iss=iss,
-        anc=anc
     )
+
+    if iss is not None:
+        embeds['iss'] = iss
+
+    if anc is not None:
+        embeds['anc'] = anc
 
     kwa = dict()
     if agree is not None:
