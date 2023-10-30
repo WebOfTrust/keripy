@@ -23,7 +23,7 @@ def openCF(cls=None, filed=True, **kwa):
     """
     if cls == None:  # can't reference class before its defined below
         cls = Configer
-    return filing.openFiler(cls=cls, filed=True, **kwa)
+    return filing.openFiler(cls=cls, filed=filed, **kwa)
 
 
 class Configer(filing.Filer):
@@ -83,7 +83,7 @@ class Configer(filing.Filer):
         """
         super(Configer, self).__init__(name=name,
                                        base=base,
-                                       filed=True,
+                                       filed=filed,
                                        mode=mode,
                                        fext=fext,
                                        **kwa)
