@@ -533,7 +533,6 @@ def test_habery_reinitialization():
         assert opre in hby.db.kevers  # read through cache
         assert opre in hby.db.prefixes
 
-        # hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         hab = hby.habByName(name)
         assert hab.pre == opre
         assert hab.prefixes is hab.db.prefixes
@@ -874,8 +873,6 @@ def test_postman_endsfor():
     with habbing.openHby(name="test", temp=True) as hby, \
             habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             habbing.openHab(name="agent", temp=True) as (agentHby, agentHab):
-
-        print()
 
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable

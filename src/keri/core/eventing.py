@@ -1048,7 +1048,7 @@ def state(pre,
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "bt": "1",
         "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
-        "c": ["eo"],
+        "c": ["EO"],
         "ee":
           {
             "s": "1",
@@ -1773,8 +1773,8 @@ class Kever:
         self.cuts = state.ee.br
         self.adds = state.ee.ba
         self.estOnly = False
-        self.doNotDelegate = True if "DND" in state.c else False
-        self.estOnly = True if "EO" in state.c else False
+        self.doNotDelegate = True if TraitCodex.DoNotDelegate in state.c else False
+        self.estOnly = True if TraitCodex.EstOnly in state.c else False
         self.lastEst = LastEstLoc(s=int(state.ee.s, 16),
                                   d=state.ee.d)
         self.delegator = state.di if state.di else None

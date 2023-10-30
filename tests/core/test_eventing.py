@@ -1507,7 +1507,7 @@ def test_state(mockHelpingNowUTC):
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "wt": "1",
         "w": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
-        "c": ["eo"],
+        "c": ["EO"],
         "ee":
           {
             "s": "1",
@@ -2214,9 +2214,6 @@ def test_kever(mockHelpingNowUTC):
         kever.digers = digers  # Monkey patch for test
         ondices = kever.exposeds(sigers=sigers)
         assert ondices ==[1]
-
-
-
 
     with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict
