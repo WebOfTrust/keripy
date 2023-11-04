@@ -39,8 +39,7 @@ parser.add_argument('--passcode', '-p', help='22 character encryption passcode f
 parser.add_argument("--verbose", "-V", help="print full JSON of all credentials", action="store_true")
 parser.add_argument("--said", "-s", help="display only the SAID of found exn message, one per line.",
                     action="store_true")
-parser.add_argument("--type", "-t", help="message type to list, options are (apply, offer, agree, grant, submit)",
-                    action="store_true")
+parser.add_argument("--type", "-t", help="message type to list, options are (apply, offer, agree, grant, submit)")
 parser.add_argument("--poll", "-P", help="Poll mailboxes for any IPEX messages", action="store_true")
 parser.add_argument("--sent", help="Show messages sent by a local identifier, default is messages received.",
                     action="store_true")
@@ -57,14 +56,16 @@ def listNotes(args):
                   poll=args.poll,
                   verbose=args.verbose,
                   said=args.said,
+                  typ=args.type,
                   sent=args.sent)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, poll=False, verbose=False, said=False, sent=False):
+    def __init__(self, name, alias, base, bran, poll=False, verbose=False, said=False, typ=None, sent=False):
         self.poll = poll
+        self.type = typ
         self.verbose = verbose
         self.said = said
         self.sent = sent
@@ -124,8 +125,13 @@ class ListDoer(doing.DoDoer):
             print(f"\n{direction} IPEX Messages:")
 
         self.notes = []
+
+        q = "/exn/ipex"
+        if self.type is not None:
+            q = f"/exn/ipex/{self.type}"
+
         for keys, notice in self.notifier.noter.notes.getItemIter():
-            if notice.pad['a']['r'].startswith("/exn/ipex"):
+            if notice.pad['a']['r'].startswith(q):
                 self.notes.append(notice)
 
         for note in self.notes:

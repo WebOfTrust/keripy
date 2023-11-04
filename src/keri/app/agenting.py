@@ -532,9 +532,13 @@ class WitnessInquisitor(doing.DoDoer):
 
         self.msgs.append(msg)
 
-    def telquery(self, src, ri, i=None, r="tels", wits=None, **kwa):
+    def telquery(self, ri, src=None, i=None, r="tels", hab=None, wits=None, **kwa):
         qry = dict(ri=ri)
-        self.msgs.append(dict(src=src, pre=i, r=r, wits=wits, q=qry))
+        msg = dict(src=src, pre=i, r=r, wits=wits, q=qry)
+        if hab is not None:
+            msg["hab"] = hab
+
+        self.msgs.append(msg)
 
 
 class WitnessPublisher(doing.DoDoer):

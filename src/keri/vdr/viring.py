@@ -474,7 +474,7 @@ class Reger(dbing.LMDBer):
             atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
-            atc.extend(saider.qb64)
+            atc.extend(saider.qb64b)
 
             sources.append((screder, atc))
             sources.extend(self.sources(db, screder))
