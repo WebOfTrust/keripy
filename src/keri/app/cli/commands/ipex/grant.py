@@ -143,6 +143,11 @@ class GrantDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
+            sources = self.rgy.reger.sources(self.hby.db, creder)
+            for source, atc in sources:
+                credentialing.sendArtifacts(self.hby, self.rgy.reger, self.postman, source, sender, recp)
+                self.postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+
             atc = exchanging.serializeMessage(self.hby, exn.said)
             del atc[:exn.size]
             self.postman.send(src=sender,
