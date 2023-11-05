@@ -88,6 +88,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/receipts", receiptEnd)
 
     server = createHttpServer(httpPort, app, keypath, certpath, cafilepath)
+    if not server.reopen():
+        raise RuntimeError(f"cannot create http server on port {httpPort}")
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
@@ -95,6 +97,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
+        if not server.reopen():
+            raise RuntimeError(f"cannot create tcp server on port {tcpPort}")
         serverDoer = serving.ServerDoer(server=server)
 
         directant = directing.Directant(hab=hab, server=server, verifier=verfer)
