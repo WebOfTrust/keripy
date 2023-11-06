@@ -312,11 +312,12 @@ class Reger(dbing.LMDBer):
 
         return self.env
 
-    def cloneCreds(self, saids):
+    def cloneCreds(self, saids, db):
         """ Returns fully expanded credential with chained credentials attached.
 
         Parameters:
            saids (list): of Saider objects:
+           db (Baser): baser object to load schema
 
         Returns:
             list: fully hydrated credentials with full chains provided
@@ -336,13 +337,16 @@ class Reger(dbing.LMDBer):
                     continue
 
                 chainSaids.append(coring.Saider(qb64=p["n"]))
-            chains = self.cloneCreds(chainSaids)
+            chains = self.cloneCreds(chainSaids, db)
 
             regk = creder.status
             status = self.tevers[regk].vcState(saider.qb64)
+            schemer = db.schema.get(creder.schema)
+
             cred = dict(
                 sad=creder.crd,
                 pre=creder.issuer,
+                schema=schemer.sed,
                 chains=chains,
                 status=status.ked,
                 anchor=dict(
