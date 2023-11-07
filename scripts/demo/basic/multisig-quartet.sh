@@ -32,16 +32,16 @@ kli oobi resolve --name multisig4 --oobi-alias multisig2 --oobi http://127.0.0.1
 kli oobi resolve --name multisig4 --oobi-alias multisig3 --oobi http://127.0.0.1:5642/oobi/EMkvHBDM2n9rvjnUiLvdAFJjNZ81Fp0QmEgto-2cG8CS/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # Each single run the same command to create the multisig in parallel
-kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quadlet-sample.json &
+kli multisig incept --name multisig1 --alias multisig1 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quartet-sample.json &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quadlet-sample.json &
+kli multisig incept --name multisig2 --alias multisig2 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quartet-sample.json &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig incept --name multisig3 --alias multisig3 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quadlet-sample.json &
+kli multisig incept --name multisig3 --alias multisig3 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quartet-sample.json &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig incept --name multisig4 --alias multisig4 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quadlet-sample.json &
+kli multisig incept --name multisig4 --alias multisig4 --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-quartet-sample.json &
 pid=$!
 PID_LIST+=" $pid"
 
