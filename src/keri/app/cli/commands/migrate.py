@@ -19,7 +19,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.core import coring, eventing
 from keri.core.coring import Serials, Number, Ilks, Tholder
 from keri.core.eventing import MaxIntThold, TraitDex, ample
 from keri.db import koming, dbing, subing
@@ -179,7 +179,8 @@ def migrate(tymth, tock=0.0, **opts):
                                   schema=KeyStateRecord,
                                   subkey='stts.')
 
-            for kever in hby.kevers.values():
+            for _, stt in hby.db.states.getItemIter():
+                kever = eventing.Kever(state=stt, db=hby.db)
                 ksr = stateFromKever(kever)
                 states.pin(kever.prefixer.qb64, val=ksr)
 
