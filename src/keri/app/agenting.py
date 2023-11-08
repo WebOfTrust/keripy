@@ -453,6 +453,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             evt = self.msgs.popleft()
             pre = evt["pre"]
+            target = evt["target"]
             src = evt["src"]
             r = evt["r"]
             q = evt["q"]
@@ -491,7 +492,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             self.extend([witer])
 
-            msg = hab.query(pre, src=witer.wit, route=r, query=q)  # Query for remote pre Event
+            msg = hab.query(target, src=witer.wit, route=r, query=q)  # Query for remote pre Event
 
             kel = forwarding.introduce(hab, witer.wit)
             if kel:
@@ -526,15 +527,15 @@ class WitnessInquisitor(doing.DoDoer):
         if anchor is not None:
             qry["a"] = anchor
 
-        msg = dict(src=src, pre=pre, r=r, q=qry, wits=wits)
+        msg = dict(src=src, pre=pre, target=pre, r=r, q=qry, wits=wits)
         if hab is not None:
             msg["hab"] = hab
 
         self.msgs.append(msg)
 
-    def telquery(self, ri, src=None, i=None, r="tels", hab=None, wits=None, **kwa):
+    def telquery(self, ri, src=None, i=None, r="tels", hab=None, pre=None, wits=None, **kwa):
         qry = dict(ri=ri)
-        msg = dict(src=src, pre=i, r=r, wits=wits, q=qry)
+        msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry)
         if hab is not None:
             msg["hab"] = hab
 
