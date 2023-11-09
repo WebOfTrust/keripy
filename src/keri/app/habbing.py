@@ -612,6 +612,68 @@ class Habery:
 
         return hab
 
+    def joinSignifyGroupHab(self, pre, name, mhab, smids, rmids=None, ns=None):
+        """Make new Group Hab using group has group hab name, with lhab as local
+        participant.
+
+        Parameters: (non-pass-through):
+            pre (str): qb64 identifier prefix of group
+            name (str): human readable alias for group identifier
+            mhab (Hab): group member (local) hab
+            smids (list): group member signing ids (qb64) from which to extract
+                        inception event current signing keys
+            rmids (list | None): group member rotation ids (qb64) from which to extract
+                        inception event next key digests
+                        if rmids is None then use assign smids to rmids
+                        if rmids is empty then no next key digests
+                        which means group identifier is no longer transferable.
+
+
+        """
+
+        if mhab.pre not in smids and mhab.pre not in rmids:
+            raise kering.ConfigurationError(f"Local member identifier "
+                                            f"{mhab.pre} must be member of "
+                                            f"smids ={smids} and/or "
+                                            f"rmids={rmids}.")
+
+        for mid in smids:
+            if mid not in self.kevers:
+                raise kering.ConfigurationError(f"KEL missing for signing member "
+                                                f"identifier {mid} from group's "
+                                                f"current members ={smids}")
+
+        if rmids is not None:
+            for rmid in rmids:
+                if rmid not in self.kevers:
+                    raise kering.ConfigurationError(f"KEL missing for next member "
+                                                    f"identifier {rmid} in group's"
+                                                    f" next members ={rmids}")
+
+        # create group Hab in this Habery
+        hab = SignifyGroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                              rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
+                              name=name, mhab=mhab, ns=ns, temp=self.temp)
+
+        hab.pre = pre
+        habord = basing.HabitatRecord(hid=hab.pre,
+                                      mid=mhab.pre,
+                                      smids=smids,
+                                      rmids=rmids)
+
+        hab.save(habord)
+        hab.prefixes.add(pre)
+        hab.inited = True
+
+        if ns is None:
+            self.habs[hab.pre] = hab
+        else:
+            if ns not in self.namespaces:
+                self.namespaces[ns] = dict()
+            self.namespaces[ns][hab.pre] = hab
+
+        return hab
+
     def deleteHab(self, name):
         hab = self.habByName(name)
         if not hab:
