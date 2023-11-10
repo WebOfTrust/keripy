@@ -36,6 +36,8 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
                     required=False, default="")
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument('--force', action="store_true", required=False,
+                    help='True means perform migration without prompting the user')
 
 StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 
@@ -158,6 +160,17 @@ class KeyStateRecord(RawRecord):  # baser.state
 
 
 def handler(args):
+    if not args.force:
+        print()
+        print("This command will migrate your datastore to the next version of KERIpy and is not reversible.")
+        print("After this command, you will not be able to access your data store with this version.")
+        print()
+        yn = input("Are you sure you want to continue? [y|N]: ")
+
+        if yn not in ("y", "Y"):
+            print("...exiting")
+            return []
+
     kwa = dict(args=args)
     return [doing.doify(migrate, **kwa)]
 
