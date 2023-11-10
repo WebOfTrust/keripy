@@ -679,7 +679,7 @@ class Habery:
         if not hab:
             return False
 
-        if not self.db.habs.rem(keys=self.name):
+        if not self.db.habs.rem(keys=(name,)):
             return False
 
         del self.habs[hab.pre]
