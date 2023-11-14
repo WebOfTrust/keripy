@@ -105,10 +105,61 @@ class ESSRDoer(doing.DoDoer):
 
         creder = proving.credential(schema="EM9BOwcHae1PWPioc5K2gtoElgoiKL7J_X89bfbdshjn",
                                     issuer=self.hab.pre,
-                                    data=dict(patientId="ABC123", diagnosis="Very Sick"),
+                                    data=dict(
+                                        method="POST",
+                                        path="/base/Patient",
+                                        version="HTTP 1.1",
+                                        headers={
+                                            "Accept": "application/fhir+json",
+                                            "Content-Type": "application/fhir+json",
+                                            "Content-Length": "1198"
+                                        },
+                                        body={
+                                            "resourceType": "Patient",
+                                            "id": "23434",
+                                            "meta": {
+                                                "versionId": "12",
+                                                "lastUpdated": "2014-08-18T15:43:30Z"
+                                            },
+                                            "text": {
+                                                "status": "generated",
+                                                "div": "<!-- Snipped for Brevity -->"
+                                            },
+                                            "extension": [
+                                                {
+                                                    "url": "http://example.org/consent#trials",
+                                                    "valueCode": "renal"
+                                                }
+                                            ],
+                                            "identifier": [
+                                                {
+                                                    "use": "usual",
+                                                    "label": "MRN",
+                                                    "system": "http://www.goodhealth.org/identifiers/mrn",
+                                                    "value": "123456"
+                                                }
+                                            ],
+                                            "name": [
+                                                {
+                                                    "family": "Levin",
+                                                    "given": [
+                                                        "Henry"
+                                                    ],
+                                                    "suffix": [
+                                                        "The 7th"
+                                                    ]
+                                                }
+                                            ],
+                                            "gender": {
+                                                "text": "Male"
+                                            },
+                                            "birthDate": "1932-09-24",
+                                            "active": True
+                                        }
+                                    ),
                                     recipient=recp)
+        print(creder.pretty(size=5000))
 
-        print(creder.pretty())
         msg = creder.raw
 
         # convert signing public key to encryption public key
@@ -118,25 +169,23 @@ class ESSRDoer(doing.DoDoer):
         b64 = encodeB64(raw)
         bexter = coring.Bexter(raw=b64)
 
-        print("Encrypted ACDC")
-        print(bexter.qb64)
-
-        print("Digest of Encrypted material")
+        print("EXN Stream:")
         diger = coring.Diger(ser=bexter.qb2)
-        print(diger.qb64)
-
-
-        ser = f'{recp.verfers[0].qb64}:{diger.qb64}'.encode("utf-8")
-        sigers = self.hab.sign(ser)
-
-        print(f"Signed {ser}:")
-        print(f"\t{sigers[0].qb64}")
-
         x, _ = exchanging.exchange(route="/essr/send",
-                                   payload=dict(d=diger.qb64),
+                                   payload=dict(d=bexter.qb64),
                                    sender=self.hab.pre,
                                    recipient=recp.serder.pre,
                                    date=self.timestamp)
+        ims = self.hab.endorse(serder=x, pipelined=False)
+        atc = ims[x.size:]
+        # atc = ims[x.size:] + bexter.qb64b
+        #
+        # pipe = bytearray()
+        # pipe.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+        #                            count=(len(atc) // 4)).qb64b)
+        # pipe.extend(atc)
+
+        print(x.pretty(size=5000) + atc.decode("utf-8"))
 
         self.remove(self.toRemove)
         return
