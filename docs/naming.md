@@ -384,6 +384,6 @@ patrony
 -ure: noun from verb indicating act or office:  seizure prefecture.
 
 ### References
-
+https://www.amazon.com/Elements-Style-Programmers-Elegant-Programs/dp/1558512918/ref=sr_1_1?crid=1G1NI85WG4JIP&keywords=c+elements+of+style&qid=1700001994&sprefix=c+elements+of+style+%2Caps%2C122&sr=8-1
 http://www.paulnoll.com/Books/Clear-English/English-suffixes-1.html
 http://www.prefixsuffix.com/rootchart.php
