@@ -20,35 +20,31 @@ Readability trumps convention.
 ## Naming Convention Labels:
 These are used in the rules below.
 
-
-    alllowercase
-    ALLUPPERCASE
-    lowerCamelCase
-    UpperCamelCase
-    lower_case_with_underscores
-    UPPER_CASE_WITH_UNDERSCORES
-    Capitalized_With_Underscores
-    _LeadingUnderscoreUpperCamelCase
-    _leadingUnderscoreLowerCamelCase
-    __LeadingDoubleUnderscoreUpperCamelCase
-    __leadingDoubleUnderscoreLowerCamelCase
-
-
+*lowercase*
+*UPPERCASE*
+*lowerCamelCase*
+*UpperCamelCase*
+*lower_case_with_underscores*
+*UPPER_CASE_WITH_UNDERSCORES*
+*Capitalized_With_Underscores*
+*_LeadingUnderscoreUpperCamelCase*
+*_leadingUnderscoreLowerCamelCase*
+*__LeadingDoubleUnderscoreUpperCamelCase*
+*__leadingDoubleUnderscoreLowerCamelCase*
 
 ## Rules
 
 ### Python Standard Library methods and attributes
-
-alllowercase
+*lowercase* or *lower_case_with_underscores* or *lowerCamelCase* depending on package or module.
 startswith()
 In some cases may be lower_case_with_underscores
 
 ### Python builtins
-alllowercase no underscores
+*lowercase* (no underscores).
 setattr()
 
 ### Vertical Spacing
-Spaces between methods and top level functions:
+Spaces between methods and top-level functions:
    two 2
 
 Spaces between Class Definitions:
@@ -64,15 +60,15 @@ Spaces between Class Definitions:
    Following lines outdent. Embedded strings use 'single quotes'.
    """
 
-   Format for code documentation in the the Google flavor of sphinx.ext.napolean format.
+   Format for code documentation uses the the Google flavor of sphinx.ext.napolean format.
    See
    https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
    and
    https://www.sphinx-doc.org/en/master/usage/extensions/example_google.html#example-google
 
-   The Google style uses indentation to separate sections.
+   The Google Napolean style uses indentation to separate sections.
 ```
-   Google style:
+   #### Google style:
 
 ```python
 def func(arg1, arg2):
@@ -92,99 +88,99 @@ def func(arg1, arg2):
 ```
 
 ### Acronyms
-
-When using underscores acronyms should be all uppercase if start uppercase,
-or all lowercase if start lowercase.
-    http_send  Send_HTTP
-
-When using CapCamelCase or mixedCase the acronyms should be treated as words
+When using *UpperCamelCase* or *lowerCamelCase* the acronyms should be treated as words:
     httpSend sendHttp
 
 
+When using underscores, acronyms should be all *lowercase* if start *lowercase*,
+or all *UPPERCASE* if start *UPPERCASE*:
+    http_send  Send_HTTP
+
+
 ### Local Variables and function parameters:
-   lowerCamelCase.
+   *lowerCamelCase*.
 
 ### Any name that conflicts with python reserved word
-   add trailing underscore:
+   Add trailing underscore:
    Examples: id_, file_
 
 ### Package Names:
-   alllowercase. Pithy and short but evocative.
-
+   *lowercase*. Pithy and short but evocative.
+   core, test, keri, hio.
 
 ### Module Names
-   alllowercase. End name in 'ing' so can distinquish package and module references
-   when namespacing. First ref is module not package variable such as:
+   *lowercase*. 
+   End name in 'ing' so can distinguish package and module references
+   when namespacing. The first ref is module not package variable, such as:
    core.behaving, core.clustering
 
 ### Public Module Level Methods and Attributes:
-   lowerCamelCase.
+   *lowerCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: getName setStyle, display, first, last, itemCount, entities, books, data
 
 ### Private Module Level Methods and Attributes (not exported by from import `*`):
-   leadingUnderscoreLowerCamelCase.
+   *leadingUnderscoreLowerCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: `_dirtyBit`
 
 ### Constants Module Level:
-   UPPER_CASE_WITH_UNDERSCORES
+   *UPPER_CASE_WITH_UNDERSCORES*
    Not meant to be changed should be numbers or strings.
    Examples: MY_CONSTANT
 
 ### Dynamic Global Variables (not constants) Module Level:
-   Capitalized_With_Underscores.
+   *Capitalized_With_Underscores*.
    These are reserved for module level globals that may be changed in
    multiple places intentionally.
    Usually this is bad practice so special syntax is used to indicate
    such practice only when necessary.
    Examples: Bad_Practice  REO_Lat_Lon_NE
 
-
 ### Exception Classes:
-   UpperCamelCase.
+   *UpperCamelCase*.
    Example: StandardMuxError
 
 ### Class Names:
-   UpperCamelCase.
-   Examples:  Person  BigDogs
+   *UpperCamelCase*.
+   Classes may be actors which should end in -er or class factories which should end in -ery.
+   Examples:  Employer, Filler, DataFiller, Fillery
 
 ### Public Class Attributes, Class Methods, Static Methods:
-   UpperCamelCase.
+   *UpperCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Example: TotalInstances, Storage, Store, Redact
 
 ### Private Class Attributes, Class Methods, Static Methods:
-   LeadingUnderscoreUpperCamelCase,
+   *LeadingUnderscoreUpperCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Example: `_TotalInstances _Storage __Entries`
 
 ### Very Private Class Attributes, Class Methods, Static Methods (mangled with class name):
-   __LeadingDoubleUnderscoreUpperCamelCase.
+   *__LeadingDoubleUnderscoreUpperCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Example: `__TotalInstances __Storage __Entries`
 
 ### Public Instance Methods and Attributes:
-   lowerCamelCase'
+   *lowerCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: getName setStyle, display, first, last, itemCount, entities, books, data
 
-
 ### Private Instance and Attributes (not exported with from import `*``):
-   leadingUnderscoreLowerCamelCase.
+   *leadingUnderscoreLowerCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples: `_getScore _setInternal _lastName _count _entries`
 
 
 ### Very Private Instance Methods or Attributes  (mangled with class name):
-   __leadingDoubleUnderscoreLowerCamelCase.
+   *__leadingDoubleUnderscoreLowerCamelCase*.
    Methods use verbs.
    Attributes that are sequences use plural nouns.
    Examples:` __getMyName __displayMoney __creature __secretData __entries`
@@ -193,21 +189,22 @@ When using CapCamelCase or mixedCase the acronyms should be treated as words
 
 ## Readability
 
-The book C Elements of Style by  Qualline used a quantitaive approach
-to measuring readability in code. It measured error rate in reading and
+The book "C Elements of Style" by  Qualline used a quantitative approach
+to measuring readability in code. It measured the error rate in reading and
 understanding code as a function of style conventions.
-These include horizontal and veritical white space,
-line length, varible name length, code block demarcation, etc.
+These include horizontal and vertical white space,
+line length, variable name length, code block demarcation, etc.
 
-Results were that too much indentation and too little indentation both reduce
-readability. Ideal is 2, 3, or 4 space indentation. We use 4 because it is the
-python standard and too hard to fight uphill for the slightly more optimal 3.
+One result is that both too much indentation and too little indentation reduce
+readability. Ideal indentation is 2, 3, or 4 spaces. We use 4 spaces because it is the
+standard for Python, and it would be too hard to fight uphill for the slightly more optimal 3.
 
 Verticle white space matters. Code should have paragraphs. Balanced brackets,
-indendation and blank lines demarcate paragraphs
+indentation and blank lines demarcate paragraphs
 
 For example
 
+```C
 void display(void)
 {
   int start;
@@ -217,34 +214,31 @@ void display(void)
   if(start == -1)
     return;
 }
+```
 
 is more readable than
 
+```C
 void display(void){
 int start; start = -1;
 if(start == -1) return;
 }
+``` 
 
 Line length matters. Which means variable length matters.
 Simple logic statments that wrap are no longer simple.
-Context may provide meaning.
+Context may provide meaning. Use doc strings to establish context.
 Scope and class Nesting may provide meaning.
 
 Shorter evocative names are more readable than long descriptive names when
 composing code because the long names make the statements that use the variables
 too long to be easily readable.
 
-aviary vs flyingBirdCage
+`aviary` vs. `flyingBirdCage`
 
-aviary.bird vs flyingBirdCage.bird
+`aviary.bird` vs. `flyingBirdCage.bird`
 
-hawk.wing.size vs hawkWingSize
-
-### Acronyms which are abbreviations that form pronounceable words may be
-highly evocative.
-radar (RAdio Detecting And Ranging),
-laser (Light Amplification through Stimulated Emission and Radiation)
-keri (Key Event Reciept Infrastructure)
+`hawk.wing.size` vs. `hawkWingSize`
 
 
 ## Evocative Semantic Naming
@@ -262,20 +256,51 @@ An evocative semanitic name is a name that calls up the meaning without having
 to explicity detail the meaning. Its a type of mneumonic that balances semantics
 with conciseness which balance improves overall readability and understanding.
 
-aviary vs flyingBirdCage
+*aviary* vs *flyingBirdCage*
 
-Use English suffix composition rules to create pithy terse more consise names
-that are sufficiently evocative.
+Use the doc string for a method, or a function, or a module to establish 
+the semantic meaning of the names used within that context. 
+The doc string can be verbose, which enables the names to be terse. The doc string only
+appears once in the code, whereas the names may appear many times in the code. 
+The terse names need be merely sufficiently evocative to remind a reader of the semantic context 
+established by the doc string. As a result, the statements are shorter and hence more readable.
+This optimizes the overall readability of the code.
+
+### Acronyms 
+Acronyms are abbreviations that form pronounceable words. These may be highly evocative.
+`radar` (RAdio Detecting And Ranging),
+`laser` (Light Amplification through Stimulated Emission and Radiation)
+`keri` (Key Event Reciept Infrastructure)
 
 
 ## Suffix Mapping
 
-Adjective describing module. What does the module enable one to do.
-Verb is the deed or act
-Object is actor doer
-Place to keep track of or create Objects container or factory
- doery actorery doerage actorage
- of an Doer is a doery or doage or dodom or dohood
+Use English suffix composition rules to create pithy terse more consise names
+that are sufficiently evocative. Can use suffix rules to create derivative words
+that are evocative and terse. Words don't have to be in the English
+dictionary or in one's spelling dictiony to be valid, understandable terms. 
+The suffixing rules of English apply nonetheless. Many dictionary words
+started as bespoke created words using suffixing rules that through common
+use become dictionary words. Because code if a very narrow highly technical
+context it is ok to maximize readabilty by using evocative made-up non-dictionary
+terms derived from applying suffixing rules.
+
+
+For example, one can use suffix rules for `ing` to create verb derived
+from root word  that is self-descriptive as a module name of the activity performed by module's code. The
+module name is a passive verb that describes the main purpose of the module. For example,
+`testing` from `test` or `logging` from `log`.
+Answer the question, "What does the module enable one to do as verb ending in `ing`?".
+
+Method names are active verbs like `log` or `delete`. 
+Object names are nouns that imply an actor or doer. 
+Use suffix rules to form action noun like 'logger'.
+Objects that manage other objects are place nouns that imply an activity like `factory`.
+ nunnery, brewery, doery 
+ For a Doer we could have doery, doage, dodom, doship, dohood.
+A variable or attribute whose value describes a property or potential like deletable or deletive.
+
+### More common suffix rules:
 
 -er -or -eur -ster Agent one who does something brewer (Object Classes)
 -ery a place for an actor to act  factory brewery  (Object Factories)
@@ -309,58 +334,56 @@ patrony
 
 
 
-### Rules for English suffixes
+
+
+### Suffixes
+-able, -ible: capable of: worthy,  agreeable, comfortable, credible.
+-age:   act of or state of:  salvage, bondage.
+-acy, -isy:   quality:   hypocrisy, piracy.
+-al, -eal, -ial:   on account of related to, action of:   judicial, official arrival, refusal.
+-ance, -ence:   act or fact of doing state of:   violence, dependence allowance, insurance.
+-ant:  quality of one who:  defiant, expectant, reliant occupant, accountant.
+-dom:  state, condition of:   wisdom, kingdom, martyrdom.
+-er, -or, -eur:  agent, one who:  author, baker, winner, dictator, chauffeur, worker.
+-ier, -ior:   one who:   carrier, warrior.
+-ist:  a person who does:   artist, geologist.
+-er:   degree of comparison:  harder, newer, older.
+-est: highest degree of comparison: hardest, newest, oldest.
+-ed:   past:  jumped, baked.
+-ery:  a place to practice of condition of:  nunnery, cannery surgery bravery, drudgery.
+-ent:  having the quality of:   different, dependent, innocent.
+-en:   made of, to make:  woolen, wooden, darken.
+-ful: full of:  graceful, restful, faithful.
+-hood:   state of being:  boyhood, knighthood, womanhood.
+-ible, -ile, -il:  capable of being:  digestible, responsible, docile, civil.
+-ify:  to make:   magnify, beautify, falsify.
+-ic:   like, made of:   metallic, toxic, poetic.
+-ing:  action of: running, wishing.
+-ion:  act or state of:   confusion, correction, protection.
+-ism:  fact of being:   communism, socialism, defeatism.
+-ish:  like:  childish, sheepish, foolish.
+-ity, -ty:  state of:  security, majesty, chastity, humanity.
+-itis:   inflammation of:   appendicitis, tonsillitis.
+-ive:  having nature of:  attractive, active.
+-ize:  to make:   pasteurize, motorize.
+-less:   without:   keyless, motionless, careless, childless.
+-let:  small:   starlet, eaglet.
+-ly:   like, in a manner of, happening:   heavenly, remarkably, suddenly every absolutely, monthly.
+-ment:   state or quality, act of doing:   accomplishment, excitement placement, movement.
+-meter:  device for measuring:  thermometer, barometer.
+-ness:   state of:  blindness, kindness.
+-ology:  study of:  geology, zoology, archaeology.
+-ous, -ious:  full of:   joyous, marvelous, furious.
+-ship:   quality of, state of, rank of:  friendship, leadership  lordship
+-scope:  instrument for seeing:   telescope, microscope.
+-some:   like:  tiresome, lonesome.
+-tion, -sion:   action, state of being:  condition, attention, fusion.
+-ty   quality or state of:   liberty, majesty.
+-ward: direction:   toward  southward, forward.
+-y:  like, full of, diminutive:  noisy, sooty, kitty.
+-ure: noun from verb indicating act or office:  seizure prefecture.
+
+### References
 
 http://www.paulnoll.com/Books/Clear-English/English-suffixes-1.html
 http://www.prefixsuffix.com/rootchart.php
-
-
-Suffix   Meaning   Examples  Used
-able, ible   capable of, worthy  agreeable, comfortable, credible
-age          act of or state of  salvage, bondage
-acy, isy   quality   hypocrisy, piracy
-al, eal, ial   on account of related to, action of   judicial, official arrival, refusal
-ance, ence   act or fact of doing state of   violence, dependence allowance, insurance
-ant  quality of one who  defiant, expectant, reliant occupant, accountant
-er, or, eur  agent, one who  author, baker, winner, dictator, chauffeur, worker
-ed   past  jumped, baked
-ery  a place to practice of condition of  nunnery, cannery surgery bravery, drudgery
-dom  state, condition of   wisdom, kingdom, martyrdom
-ent  having the quality of   different, dependent, innocent
-en   made of, to make  woolen, wooden, darken
-
-er   degree of comparison  harder, newer, older  5440
-est  highest of comparison   cleanest, hardest, softest  1339
-ful full of  graceful, restful, faithful   212
-hood   state of being  boyhood, knighthood, womanhood  61
-ible, ile, il  capable of being  digestible, responsible, docile, civil  783
-ier, ior   one who   carrier, warrior  1114
-ify  to make   magnify, beautify, falsify  125
-ic   like, made of   metallic, toxic, poetic   3774
-ing  action of   running, wishing  5440
-ion  act or state of   confusion, correction, protection   3362
-ism  fact of being   communism, socialism  1147
-ish  like  childish, sheepish, foolish   566
-ist  a person who does   artist, geologist   1375
-ity, ty  state of  majesty, chastity, humanity   4795
-itis   inflammation of   appendicitis, tonsillitis   124
-ive  having nature of  attractive, active  961
-ize  to make   pasteurize, motorize  637
-less   without   motionless, careless, childless   282
-
-let  small   starlet, eaglet   185
-ly   like, in a manner happening   heavenly, remarkably, suddenly every absolutely, monthly  5440
-ment   state or quality act of doing   accomplishment, excitement placement, movement  680
-meter  device for measuring  thermometer, barometer  166
-ness   state of  blindness, kindness   3322
-ology  study of  geology, zoology, archaeology   374
-ous, ious  full of   joyous, marvelous, furious  1615
-ship   quality of or state of rank of  friendship, leadership  lordship
-scope  instrument for seeing   telescope, microscope
-some   like  tiresome, lonesome
-tion, sion   action, state of being  condition, attention, fusion
-ty   quality or state of   liberty, majesty
-ward   toward  southward, forward
-y  like, full of, diminutive:  noisy, sooty, kitty
-ure noun from verv indicating act or office  seizure prefecture
-
