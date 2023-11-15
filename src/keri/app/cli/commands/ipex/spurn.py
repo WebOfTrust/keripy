@@ -66,7 +66,7 @@ class SpurnDoer(doing.DoDoer):
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, rgy=self.rgy, exc=self.exc, notifier=notifier)
+        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = indirecting.MailboxDirector(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],

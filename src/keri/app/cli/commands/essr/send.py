@@ -187,5 +187,10 @@ class ESSRDoer(doing.DoDoer):
 
         print(x.pretty(size=5000) + atc.decode("utf-8"))
 
+        f = open("exn.cesr", "wb+")
+        f.write(x.raw)
+        f.write(atc)
+        f.close
+
         self.remove(self.toRemove)
         return

@@ -26,6 +26,7 @@ import math
 from collections import namedtuple, deque
 from dataclasses import dataclass, asdict, field
 
+import pysodium
 from hio.base import doing
 
 from .. import kering
@@ -1392,6 +1393,56 @@ class Manager:
                 cigars.append(signer.sign(ser))  # assigns .verfer to cigar
             return cigars
 
+    def decrypt(self, ser, pubs=None, verfers=None):
+        """
+        Returns list of signatures of ser if indexed as Sigers else as Cigars with
+        .verfer assigned.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            pubs (list[str] | None): of qb64 public keys to lookup private keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+            verfers (list[Verfer] | None): Verfer instances of public keys
+                one of pubs or verfers is required. If both then verfers is ignored.
+                If not pubs then gets public key from verfer.qb64
+
+        Returns:
+            bytes: decrypted data
+
+        """
+        signers = []
+        if pubs:
+            for pub in pubs:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
+                        is None):
+                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                signers.append(signer)
+
+        else:
+            for verfer in verfers:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(verfer.qb64,
+                                                decrypter=self.decrypter))
+                        is None):
+                    raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
+                signers.append(signer)
+
+        plain = ser
+        for signer in signers:
+            sigkey = signer.raw + signer.verfer.raw  # sigkey is raw seed + raw verkey
+            prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # raw private encrypt key
+            pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
+            plain = pysodium.crypto_box_seal_open(plain, pubkey, prikey)  # qb64b
+
+        if plain == ser:
+            raise ValueError("unable to decrypt data")
+
+        return plain
 
     def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,

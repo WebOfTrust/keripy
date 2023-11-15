@@ -27,19 +27,17 @@ class IpexHandler:
 
     """
 
-    def __init__(self, resource, hby, rgy, notifier):
+    def __init__(self, resource, hby, notifier):
         """ Initialize instance
 
         Parameters:
             resource (str): route of messages for this handler
             hby (Habery): local identifier environment
-            rgy (Regery): Credential database environment
             notifier (Notifier): outbound notifications
 
         """
         self.resource = resource
         self.hby = hby
-        self.rgy = rgy
         self.notifier = notifier
 
     def verify(self, serder, attachments=None):
@@ -316,19 +314,18 @@ def ipexSpurnExn(hab, message, spurned):
     return exn, ims
 
 
-def loadHandlers(hby, exc, rgy, notifier):
+def loadHandlers(hby, exc, notifier):
     """ Load handlers for the IPEX protocol
 
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        rgy (Regery): Credential database environment
         notifier (Notifier): outbound notifications
 
     """
-    exc.addHandler(IpexHandler(resource="/ipex/apply", hby=hby, rgy=rgy, notifier=notifier))
-    exc.addHandler(IpexHandler(resource="/ipex/offer", hby=hby, rgy=rgy, notifier=notifier))
-    exc.addHandler(IpexHandler(resource="/ipex/agree", hby=hby, rgy=rgy, notifier=notifier))
-    exc.addHandler(IpexHandler(resource="/ipex/grant", hby=hby, rgy=rgy, notifier=notifier))
-    exc.addHandler(IpexHandler(resource="/ipex/admit", hby=hby, rgy=rgy, notifier=notifier))
-    exc.addHandler(IpexHandler(resource="/ipex/spurn", hby=hby, rgy=rgy, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/apply", hby=hby, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/offer", hby=hby, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/agree", hby=hby, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/grant", hby=hby, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/admit", hby=hby, notifier=notifier))
+    exc.addHandler(IpexHandler(resource="/ipex/spurn", hby=hby, notifier=notifier))
