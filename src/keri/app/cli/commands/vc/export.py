@@ -41,8 +41,6 @@ def export_credentials(args):
     """ Command line list credential registries handler
 
     """
-
-    sigs = args.signatures
     tels = args.tels
     kels = args.kels
     chains = args.chains
