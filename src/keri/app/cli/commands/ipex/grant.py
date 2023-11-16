@@ -57,7 +57,6 @@ class GrantDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
 
@@ -69,7 +68,7 @@ class GrantDoer(doing.DoDoer):
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc)
 
-        self.toRemove = [self.postman, mbx]
+        self.toRemove = [mbx]
         super(GrantDoer, self).__init__(doers=self.toRemove + [doing.doify(self.grantDo)])
 
     def grantDo(self, tymth, tock=0.0):
@@ -132,33 +131,37 @@ class GrantDoer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for part in smids:  # this goes to other participants
-                self.postman.send(src=self.hab.mhab.pre,
-                                  dest=part,
-                                  topic="multisig",
-                                  serder=wexn,
-                                  attachment=watc)
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
+                postman.send(serder=wexn,
+                             attachment=watc)
+                doer = doing.DoDoer(doers=postman.deliver())
+                self.extend([doer])
 
             while not self.exc.complete(said=exn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
+            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+
             sources = self.rgy.reger.sources(self.hby.db, creder)
+            credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, sender, recp)
             for source, atc in sources:
-                credentialing.sendArtifacts(self.hby, self.rgy.reger, self.postman, source, sender, recp)
-                self.postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+                credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, sender, recp)
+                postman.send(serder=source, attachment=atc)
 
             atc = exchanging.serializeMessage(self.hby, exn.said)
             del atc[:exn.size]
-            self.postman.send(src=sender,
-                              dest=recp,
-                              topic="credential",
-                              serder=exn,
-                              attachment=atc)
+            postman.send(serder=exn,
+                         attachment=atc)
 
-            while not self.postman.sent(said=exn.said):
+            doer = doing.DoDoer(doers=postman.deliver())
+            self.extend([doer])
+
+            while not doer.done:
                 yield self.tock
 
-            print("... grant message sent")
+            print(f"... grant message sent")
+            self.remove([postman])
 
         self.remove(self.toRemove)

@@ -30,12 +30,11 @@ class Poster(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, mbx=None, evts=None, cues=None, klas=None, **kwa):
+    def __init__(self, hby, mbx=None, evts=None, cues=None, **kwa):
         self.hby = hby
         self.mbx = mbx
         self.evts = evts if evts is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.klas = klas if klas is not None else agenting.HTTPMessenger
 
         doers = [doing.doify(self.deliverDo)]
         super(Poster, self).__init__(doers=doers, **kwa)
@@ -165,10 +164,10 @@ class Poster(doing.DoDoer):
             witer.msgs.append(bytearray(msg))  # make a copy
             self.extend([witer])
 
-        while not witer.idle:
-            _ = (yield self.tock)
+            while not witer.idle:
+                _ = (yield self.tock)
 
-        self.remove([witer])
+            self.remove([witer])
 
     def forward(self, hab, ends, recp, serder, atc, topic):
         # If we are one of the mailboxes, just store locally in mailbox
@@ -235,6 +234,153 @@ class Poster(doing.DoDoer):
 
         while not witer.idle:
             _ = (yield self.tock)
+
+
+class StreamPoster:
+    """
+    DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
+    delivers them to one of the target recipient's witnesses for store and forward
+    to the intended recipient
+
+    """
+
+    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, **kwa):
+        if hab is not None:
+            self.hab = hab
+        else:
+            self.hab = hby.habs[src]
+
+        self.hby = hby
+        self.hab = hab
+        self.recp = recp
+        self.src = src
+        self.messagers = []
+        self.mbx = mbx
+        self.topic = topic
+        self.evts = decking.Deck()
+
+    def deliver(self):
+        """
+        Returns:  doifiable Doist compatible generator method that processes
+                   a queue of messages and envelopes them in a `fwd` message
+                   and sends them to one of the witnesses of the recipient for
+                   store and forward.
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        msg = bytearray()
+
+        while self.evts:
+            evt = self.evts.popleft()
+
+            serder = evt["serder"]
+            atc = evt["attachment"] if "attachment" in evt else b''
+
+            msg.extend(serder.raw)
+            msg.extend(atc)
+
+        if len(msg) == 0:
+            return []
+
+        ends = self.hab.endsFor(self.recp)
+        try:
+            # If there is a controller or agent in ends, send to all
+            if {Roles.controller, Roles.agent, Roles.mailbox} & set(ends):
+                for role in (Roles.controller, Roles.agent, Roles.mailbox):
+                    if role in ends:
+                        if role == Roles.mailbox:
+                            return self.forward(self.hab, ends[role], msg=msg, topic=self.topic)
+                        else:
+                            return self.sendDirect(self.hab, ends[role], msg=msg)
+            # otherwise send to one witness
+            elif Roles.witness in ends:
+                return self.forward(self.hab, ends[Roles.witness], msg=msg, topic=self.topic)
+
+            else:
+                logger.info(f"No end roles for {self.recp} to send evt={self.recp}")
+                return []
+
+        except kering.ConfigurationError as e:
+            logger.error(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
+            return []
+
+    def send(self, serder, attachment=None):
+        """
+        Utility function to queue a msg on the Poster's buffer for
+        enveloping and forwarding to a witness
+
+        Parameters:
+            serder (Serder) KERI event message to envelope and forward:
+            attachment (bytes): attachment bytes
+
+        """
+        ends = self.hab.endsFor(self.recp)
+        try:
+            # If there is a controller, agent or mailbox in ends, send to all
+            if {Roles.controller, Roles.agent, Roles.mailbox} & set(ends):
+                for role in (Roles.controller, Roles.agent, Roles.mailbox):
+                    if role in ends:
+                        if role == Roles.mailbox:
+                            serder, attachment = self.createForward(self.hab, serder=serder, ends=ends,
+                                                                    atc=attachment, topic=self.topic)
+
+            # otherwise send to one witness
+            elif Roles.witness in ends:
+                serder, attachment = self.createForward(self.hab, ends=ends, serder=serder,
+                                                        atc=attachment, topic=self.topic)
+            else:
+                logger.info(f"No end roles for {self.recp} to send evt={self.recp}")
+                raise kering.ValidationError(f"No end roles for {self.recp} to send evt={self.recp}")
+        except kering.ConfigurationError as e:
+            logger.error(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
+            raise kering.ValidationError(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
+
+        evt = dict(serder=serder)
+        if attachment is not None:
+            evt["attachment"] = attachment
+
+        self.evts.append(evt)
+
+    def sendDirect(self, hab, ends, msg):
+        for ctrl, locs in ends.items():
+            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=msg))
+
+        return self.messagers
+
+    def createForward(self, hab, ends, serder, atc, topic):
+        # If we are one of the mailboxes, just store locally in mailbox
+        owits = oset(ends.keys())
+        if self.mbx and owits.intersection(hab.prefixes):
+            msg = bytearray(serder.raw)
+            if atc is not None:
+                msg.extend(atc)
+            self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
+            return None, None
+
+        # Its not us, randomly select a mailbox and forward it on
+        evt = bytearray(serder.raw)
+        evt.extend(atc)
+        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
+                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
+        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        return fwd, ims + atc
+
+    def forward(self, hab, ends, msg, topic):
+        # If we are one of the mailboxes, just store locally in mailbox
+        owits = oset(ends.keys())
+        if self.mbx and owits.intersection(hab.prefixes):
+            self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
+            return []
+
+        # Its not us, randomly select a mailbox and forward it on
+        mbx, mailbox = random.choice(list(ends.items()))
+        ims = bytearray()
+        ims.extend(introduce(hab, mbx))
+        ims.extend(msg)
+
+        self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=mbx, urls=mailbox, msg=bytes(ims)))
+        return self.messagers
 
 
 class ForwardHandler:

@@ -1953,6 +1953,8 @@ class BaseHab:
         if cid not in self.kevers:
             return msgs
 
+        msgs.extend(self.replay(cid))
+
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
 
@@ -1972,7 +1974,6 @@ class BaseHab:
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
-        msgs.extend(self.replay(cid))
         return msgs
 
     def replyToOobi(self, aid, role, eids=None):
@@ -2484,6 +2485,10 @@ class SignifyHab(BaseHab):
         if eids is None:
             eids = []
 
+        # introduce yourself, please
+        msgs.extend(self.replay(cid))
+        print(msgs)
+
         if role == kering.Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
                 witness = self.pre in kever.wits  # see if we are cid's witness
@@ -2502,9 +2507,6 @@ class SignifyHab(BaseHab):
                 msgs.extend(self.replay(eid))
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
-
-        # introduce yourself, please
-        msgs.extend(self.replay(cid))
 
         return msgs
 

@@ -53,7 +53,6 @@ class SpurnDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
 
         kvy = eventing.Kevery(db=self.hby.db)
         tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
@@ -72,7 +71,7 @@ class SpurnDoer(doing.DoDoer):
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc)
 
-        self.toRemove = [self.postman, mbx]
+        self.toRemove = [mbx]
         super(SpurnDoer, self).__init__(doers=self.toRemove + [doing.doify(self.spurnDo)])
 
     def spurnDo(self, tymth, tock=0.0):
@@ -119,24 +118,25 @@ class SpurnDoer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                self.postman.send(src=self.hab.mhab.pre,
-                                  dest=recp,
-                                  topic="multisig",
-                                  serder=wexn,
-                                  attachment=watc)
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
+                postman.send(serder=wexn,
+                             attachment=watc)
+                doer = doing.DoDoer(doers=postman.deliver())
+                self.extend([doer])
 
             while not self.exc.complete(said=wexn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
             print("Sending spurn message...")
-            self.postman.send(src=self.hab.pre,
-                              dest=recp,
-                              topic="credential",
-                              serder=exn,
-                              attachment=atc)
+            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman.send(serder=exn,
+                         attachment=atc)
 
-            while not self.postman.cues:
+            doer = doing.DoDoer(doers=postman.deliver())
+            self.extend([doer])
+
+            while not doer.done:
                 yield self.tock
 
         self.remove(self.toRemove)

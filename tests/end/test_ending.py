@@ -431,11 +431,8 @@ def test_get_oobi():
         rep = client.simulate_get('/oobi', )
         assert rep.status == falcon.HTTP_OK
         serder = coring.Serder(raw=rep.text.encode("utf-8"))
-        assert serder.ked['t'] == coring.Ilks.rpy
-        assert serder.ked['r'] == "/loc/scheme"
-        assert serder.ked['a']['eid'] == hab.pre
-        assert serder.ked['a']['scheme'] == kering.Schemes.http
-        assert serder.ked['a']['url'] == "http://127.0.0.1:5555"
+        assert serder.ked['t'] == coring.Ilks.icp
+        assert serder.ked['i'] == "EOaICQwhOy3wMwecjAuHQTbv_Cmuu1azTMnHi4QtUmEU"
 
     """Done Test"""
 
