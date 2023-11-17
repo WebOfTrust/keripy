@@ -122,9 +122,7 @@ class GrantDoer(doing.DoDoer):
 
         parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
-        sender = self.hab.pre
         if isinstance(self.hab, habbing.GroupHab):
-            sender = self.hab.mhab.pre
             wexn, watc = grouping.multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -145,9 +143,9 @@ class GrantDoer(doing.DoDoer):
             postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
 
             sources = self.rgy.reger.sources(self.hby.db, creder)
-            credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, sender, recp)
+            credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
             for source, atc in sources:
-                credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, sender, recp)
+                credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
                 postman.send(serder=source, attachment=atc)
 
             atc = exchanging.serializeMessage(self.hby, exn.said)

@@ -72,31 +72,6 @@ def test_oobi_share(mockHelpingNowUTC):
                        b'p-2QZzIZJ94_9hIP')
 
 
-def test_oobi_share_endpoint():
-    with openMultiSig(prefix="test") as ((hby1, hab1), (hby2, hab2), (hby3, hab3)):
-        app = falcon.App()
-        oobiEnd = oobiing.OobiResource(hby=hby1)
-        app.add_route("/oobi/groups/{alias}/share", oobiEnd, suffix="share")
-        client = testing.TestClient(app)
-
-        body = dict(oobis=[
-            "http://127.0.0.1:3333/oobi",
-            "http://127.0.0.1:5555/oobi",
-            "http://127.0.0.1:7777/oobi"
-        ])
-        raw = json.dumps(body).encode("utf-8")
-
-        result = client.simulate_post(path="/oobi/groups/test_1/share", body=raw)
-        assert result.status == falcon.HTTP_400
-        result = client.simulate_post(path="/oobi/groups/fake/share", body=raw)
-        assert result.status == falcon.HTTP_404
-        result = client.simulate_post(path="/oobi/groups/test_group1/share", body=raw)
-        assert result.status == falcon.HTTP_200
-
-        # Assert that a message has been send to each participant for each OOBI
-        assert len(oobiEnd.postman.evts) == 6
-
-
 def test_oobiery():
     with habbing.openHby(name="oobi") as hby:
         hab = hby.makeHab(name="oobi")
@@ -198,11 +173,11 @@ def test_authenticator(mockHelpingNowUTC):
         hby.db.woobi.pin(keys=(url,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        endDoers = oobiing.loadEnds(app, hby=hby)
+        oobiing.loadEnds(app, hby=hby)
 
         limit = 2.0
         tock = 0.03125
-        doers = endDoers + authn.doers
+        doers = authn.doers
         doist = doing.Doist(limit=limit, tock=tock)
         doist.do(doers=doers)
 

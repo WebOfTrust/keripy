@@ -244,7 +244,7 @@ class StreamPoster:
 
     """
 
-    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, **kwa):
+    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None, **kwa):
         if hab is not None:
             self.hab = hab
         else:
@@ -257,6 +257,7 @@ class StreamPoster:
         self.messagers = []
         self.mbx = mbx
         self.topic = topic
+        self.headers = headers
         self.evts = decking.Deck()
 
     def deliver(self):
@@ -344,7 +345,8 @@ class StreamPoster:
 
     def sendDirect(self, hab, ends, msg):
         for ctrl, locs in ends.items():
-            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=msg))
+            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=msg,
+                                                               headers=self.headers))
 
         return self.messagers
 

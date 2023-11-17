@@ -5,74 +5,102 @@ keri.kli.commands module
 
 """
 import argparse
+import json
 
 import pysodium
 from hio import help
 from hio.base import doing
 from base64 import urlsafe_b64encode as encodeB64
+from base64 import urlsafe_b64decode as decodeB64
 
 from keri import kering
-from keri.app import grouping, indirecting, forwarding, connecting, signing
+from keri.app import grouping, indirecting, forwarding, connecting
 from keri.app.agenting import WitnessPublisher
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import coring
+from keri.core import coring, scheming
 from keri.peer import exchanging
-from keri.vc import proving, protocoling
+from keri.vc import proving
+from keri.vdr import viring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Encrypt Sender-key Sign Receiver-key send utility.')
+parser = argparse.ArgumentParser(description='Encrypt Sender-key Sign Receiver-key HTTP gateway utility.')
 parser.set_defaults(handler=lambda args: send(args),
                     transferable=True)
-parser.add_argument('--name', '-n', help='keystore name and file location of KERI keystore', required=True)
-parser.add_argument('--base', '-b', help='additional optional prefix to file location of KERI keystore',
+parser.add_argument('url', metavar='<url>', type=str,
+                    help='URL to request')
+parser.add_argument('--name', '-n', help='Keystore name and file location of KERI keystore', required=True)
+parser.add_argument('--base', '-b', help='Additional optional prefix to file location of KERI keystore',
                     required=False, default="")
-parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--alias', '-a', help='Human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
-parser.add_argument("--recipient", "-r", help="alias or qb64 identifier prefix of the self.recp of "
+parser.add_argument("--recipient", "-r", help="Alias or qb64 identifier prefix of the self.recp of "
                                               "the credential", required=True)
 
-parser.add_argument("--time", help="timestamp for the essr send message (used for debugging)",
+parser.add_argument("--time", help="Timestamp for the essr send message (used for debugging)",
                     required=False, default=None)
+parser.add_argument('--request', '-X', dest="method", help='Specify request method to use', default=None,
+                    action="store", required=False)
+parser.add_argument('--data', '-d', help='HTTP POST data, \'@\' allowed', default=None, action="store", required=False)
+parser.add_argument('--header', '-H', help='Pass custom header(s) to server', metavar="<header/@file>", default=None,
+                    action="append", required=False)
+
+HTTP_SCHEMA = "EM9BOwcHae1PWPioc5K2gtoElgoiKL7J_X89bfbdshjn"
 
 
 def send(args):
     """ Command line tool for adding endpoint role authorizations
-
     """
+    if args.data is None:
+        data = None
+    elif args.data.startswith("@"):
+        f = open(args.data[1:], "r")
+        data = f.read()
+    else:
+        data = args.data
+
     ld = ESSRDoer(name=args.name,
                   base=args.base,
                   alias=args.alias,
                   bran=args.bran,
+                  url=args.url,
                   recp=args.recipient,
-                  timestamp=args.time)
+                  timestamp=args.time,
+                  headers=args.header,
+                  data=data,
+                  method=args.method)
+
     return [ld]
 
 
 class ESSRDoer(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, recp, timestamp=None):
+    def __init__(self, name, base, alias, bran, url, recp, headers=None, timestamp=None, data=None, method="GET"):
+        self.url = url
+        self.method = method
         self.recp = recp
         self.timestamp = timestamp
+        self.data = data
+        self.headers = headers if headers is not None else []
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.reger = viring.Reger(name=self.hby.name, temp=self.hby.temp)
         self.hab = self.hby.habByName(alias)
         self.witpub = WitnessPublisher(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
         self.org = connecting.Organizer(hby=self.hby)
         notifier = Notifier(self.hby)
         mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        exc = exchanging.Exchanger(hby=self.hby, handlers=[ESSRResponseHandler(hby=self.hby, reger=self.reger)])
         grouping.loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
         if self.hab is None:
             raise kering.ConfigurationError(f"unknown alias={alias}")
 
-        self.toRemove = [self.witpub, self.postman, mbx]
+        self.toRemove = [self.witpub, self.mbx]
 
         super(ESSRDoer, self).__init__(doers=self.toRemove + [doing.doify(self.sendDo)])
 
@@ -103,94 +131,159 @@ class ESSRDoer(doing.DoDoer):
         if recp is None:
             raise ValueError("unable to find recipient")
 
+        if self.method is None:
+            self.method = "POST" if self.data is not None else "GET"
+
+        h = headers(self.headers)
+
+        if "Accept" not in h:
+            h["Accept"] = "*/*"
+
+        payload = dict(
+            method=self.method,
+            url=self.url,
+            version="HTTP 1.1",
+            headers=h,
+            body=''
+        )
+
+        if self.data is not None:
+            try:
+                data = json.loads(self.data)
+                payload['body'] = data
+
+                if "Content-Length" not in h:
+                    h["Content-Length"] = str(len(self.data))
+
+            except json.JSONDecodeError:
+                raise kering.ConfigurationError("only JSON data accepted currently")
+
         creder = proving.credential(schema="EM9BOwcHae1PWPioc5K2gtoElgoiKL7J_X89bfbdshjn",
                                     issuer=self.hab.pre,
-                                    data=dict(
-                                        method="POST",
-                                        path="/base/Patient",
-                                        version="HTTP 1.1",
-                                        headers={
-                                            "Accept": "application/fhir+json",
-                                            "Content-Type": "application/fhir+json",
-                                            "Content-Length": "1198"
-                                        },
-                                        body={
-                                            "resourceType": "Patient",
-                                            "id": "23434",
-                                            "meta": {
-                                                "versionId": "12",
-                                                "lastUpdated": "2014-08-18T15:43:30Z"
-                                            },
-                                            "text": {
-                                                "status": "generated",
-                                                "div": "<!-- Snipped for Brevity -->"
-                                            },
-                                            "extension": [
-                                                {
-                                                    "url": "http://example.org/consent#trials",
-                                                    "valueCode": "renal"
-                                                }
-                                            ],
-                                            "identifier": [
-                                                {
-                                                    "use": "usual",
-                                                    "label": "MRN",
-                                                    "system": "http://www.goodhealth.org/identifiers/mrn",
-                                                    "value": "123456"
-                                                }
-                                            ],
-                                            "name": [
-                                                {
-                                                    "family": "Levin",
-                                                    "given": [
-                                                        "Henry"
-                                                    ],
-                                                    "suffix": [
-                                                        "The 7th"
-                                                    ]
-                                                }
-                                            ],
-                                            "gender": {
-                                                "text": "Male"
-                                            },
-                                            "birthDate": "1932-09-24",
-                                            "active": True
-                                        }
-                                    ),
+                                    data=payload,
                                     recipient=recp)
-        print(creder.pretty(size=5000))
-
         msg = creder.raw
 
         # convert signing public key to encryption public key
-        recp = self.hby.kevers[recp]
-        pubkey = pysodium.crypto_sign_pk_to_box_pk(recp.verfers[0].raw)
+        rkever = self.hby.kevers[recp]
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(bytes(msg), pubkey)
         b64 = encodeB64(raw)
         bexter = coring.Bexter(raw=b64)
 
-        print("EXN Stream:")
-        diger = coring.Diger(ser=bexter.qb2)
-        x, _ = exchanging.exchange(route="/essr/send",
+        x, _ = exchanging.exchange(route="/essr/req",
                                    payload=dict(d=bexter.qb64),
                                    sender=self.hab.pre,
-                                   recipient=recp.serder.pre,
+                                   recipient=recp,
                                    date=self.timestamp)
         ims = self.hab.endorse(serder=x, pipelined=False)
         atc = ims[x.size:]
-        # atc = ims[x.size:] + bexter.qb64b
-        #
-        # pipe = bytearray()
-        # pipe.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-        #                            count=(len(atc) // 4)).qb64b)
-        # pipe.extend(atc)
 
-        print(x.pretty(size=5000) + atc.decode("utf-8"))
+        postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, headers={
+            "Message-SAID": x.said,
+        })
 
-        f = open("exn.cesr", "wb+")
-        f.write(x.raw)
-        f.write(atc)
-        f.close
+        postman.send(serder=x,
+                     attachment=atc)
+
+        doer = doing.DoDoer(doers=postman.deliver())
+        self.extend([doer])
+
+        while not doer.done:
+            yield self.tock
+
+        messager = doer.doers[0]
+        self.mbx.parser.parse(bytes(messager.rep.body))
 
         self.remove(self.toRemove)
         return
+
+
+def headers(x):
+    return dict([[i.strip().strip(r"'-H \$'") for i in
+                  [h.split(': ')[0], ': '.join(h.split(': ')[1:])]] for h in x])
+
+
+class ESSRResponseHandler:
+    """
+    Handler for multisig coordination EXN messages
+
+    """
+    resource = "/essr/rep"
+
+    def __init__(self, hby, reger):
+        """ Create an exn handler for multisig messages
+
+        Parameters:
+            hby (Habery): database environment for gateway AIDs
+            reger (Reger): verification specific database
+        """
+        self.hby = hby
+        self.reger = reger
+        self.resolver = scheming.CacheResolver(db=hby.db)
+
+    def verify(self, serder, attachments=None):
+        """
+
+        Parameters:
+            serder:
+            attachments:
+
+        Returns:
+
+        """
+        aid = serder.ked['i']
+        if aid not in self.hby.kevers:
+            print(f"unknown AID={aid} sending event")
+            return False
+
+        pay = serder.ked['a']
+        recp = pay['i']
+
+        if recp not in self.hby.habs:
+            print(f"invalid target AID={aid}")
+            return False
+
+        hab = self.hby.habs[recp]
+        bexter = coring.Bexter(qb64=pay['d'])
+        raw = hab.decrypt(decodeB64(bexter.raw))
+
+        try:
+            creder = proving.Creder(raw=raw)
+        except ValueError:
+            print("Invalid encrypted credential")
+            return False
+
+        # Verify the credential against the schema
+        if HTTP_SCHEMA != creder.schema:
+            print(f"schema {creder.schema} not valid for credential {creder.said}")
+            return False
+
+        scraw = self.resolver.resolve(HTTP_SCHEMA)
+        schemer = scheming.Schemer(raw=scraw)
+        try:
+            schemer.verify(creder.raw)
+        except kering.ValidationError as ex:
+            print("Credential {} is not valid against schema {}: {}"
+                  .format(creder.said, creder.schema, ex))
+            return False
+
+        self.reger.creds.pin(keys=(serder.said,), val=creder)
+
+        return True
+
+    def handle(self, serder, attachments=None):
+        """  Do route specific processsing of multisig exn messages
+
+        Parameters:
+            serder (Serder): Serder of the exn multisig message
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+
+        """
+        creder = self.reger.creds.get(keys=(serder.said,))
+        pay = creder.ked['a']
+
+        body = pay["body"]
+
+        print(json.dumps(body))
+

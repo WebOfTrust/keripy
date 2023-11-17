@@ -886,7 +886,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         hby:
         hab:
         reger:
-        postman:
+        postman (StreamPoster): poster to stream credential with
         creder:
         recp:
 
@@ -898,19 +898,19 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     else:
         sender = hab.pre
 
-    sendArtifacts(hby, reger, postman, creder, sender, recp)
+    sendArtifacts(hby, reger, postman, creder, recp)
 
     sources = reger.sources(hby.db, creder)
     for source, atc in sources:
-        sendArtifacts(hby, reger, postman, source, sender, recp)
-        postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+        sendArtifacts(hby, reger, postman, source, recp)
+        postman.send(serder=source, attachment=atc)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
     atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
     atc.extend(saider.qb64b)
-    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
+    postman.send(serder=creder, attachment=atc)
 
 
 def sendArtifacts(hby, reger, postman, creder, recp):
@@ -919,9 +919,8 @@ def sendArtifacts(hby, reger, postman, creder, recp):
     Parameters:
         hby:
         reger:
-        postman:
+        postman (StreamPoster): poster to stream credential with
         creder:
-        sender:
         recp:
 
     Returns:

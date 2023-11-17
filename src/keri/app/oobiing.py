@@ -36,9 +36,7 @@ Result = Resultage(resolved='resolved', failed='failed')
 def loadEnds(app, *, hby, prefix=""):
     oobiEnd = OobiResource(hby=hby)
     app.add_route(prefix + "/oobi", oobiEnd)
-    app.add_route(prefix + "/oobi/groups/{alias}/share", oobiEnd, suffix="share")
-
-    return [oobiEnd]
+    return []
 
 
 def loadHandlers(hby, exc, notifier):
@@ -54,7 +52,7 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(oobireq)
 
 
-class OobiResource(doing.DoDoer):
+class OobiResource:
     """
     Resource for managing OOBIs
 
@@ -68,11 +66,6 @@ class OobiResource(doing.DoDoer):
 
         """
         self.hby = hby
-
-        self.postman = forwarding.Poster(hby=self.hby)
-        doers = [self.postman]
-
-        super(OobiResource, self).__init__(doers=doers)
 
     def on_get_alias(self, req, rep, alias=None):
         """ OOBI GET endpoint
@@ -209,68 +202,6 @@ class OobiResource(doing.DoDoer):
             return
 
         rep.status = falcon.HTTP_202
-
-    def on_post_share(self, req, rep, alias):
-        """ Share OOBI endpoint.
-
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias: human readable name of the local identifier context for resolving this OOBI
-
-        ---
-        summary: Share OOBI and alias for remote identifier with other aids
-        description: Send all other participants in a group AID a copy of the OOBI with suggested alias
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: Human readable alias for AID to use to sign exn message
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                    description: OOBI
-                    properties:
-                        oobis:
-                            type: array
-                            items:
-                                type: string
-                                description:  URL OOBI
-        responses:
-           202:
-              description: OOBI resolution to key state successful
-
-        """
-        body = req.get_media()
-        hab = self.hby.habByName(alias)
-        if hab is None:
-            rep.status = falcon.HTTP_404
-            rep.text = f"Unknown identifier {alias}"
-            return
-
-        if not isinstance(hab, GroupHab):
-            rep.status = falcon.HTTP_400
-            rep.text = f"Identifier for {alias} is not a group hab, not supported"
-            return
-
-        oobis = body["oobis"]
-        both = list(set(hab.smids + (hab.rmids or [])))
-        for mid in both:  # hab.smids
-            if mid == hab.mhab.pre:
-                continue
-
-            for oobi in oobis:
-                exn, atc = oobiRequestExn(hab.mhab, mid, oobi)
-                self.postman.send(src=hab.mhab.pre, dest=mid, topic="oobi", serder=exn, attachment=atc)
-
-        rep.status = falcon.HTTP_200
-        return
 
 
 class OobiRequestHandler:

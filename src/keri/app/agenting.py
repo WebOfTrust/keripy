@@ -899,7 +899,7 @@ class HTTPStreamMessenger(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, wit, url, msg=b'', **kwa):
+    def __init__(self, hab, wit, url, msg=b'', headers=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -911,6 +911,7 @@ class HTTPStreamMessenger(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.rep = None
+        headers = headers if headers is not None else {}
 
         up = urlparse(url)
         if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
@@ -922,8 +923,8 @@ class HTTPStreamMessenger(doing.DoDoer):
         headers = Hict([
             ("Content-Type", "application/cesr"),
             ("Content-Length", len(msg)),
-            (httping.CESR_DESTINATION_HEADER, self.wit)
-        ])
+            (httping.CESR_DESTINATION_HEADER, self.wit),
+        ] + list(headers.items()))
 
         self.client.request(
             method="PUT",
@@ -1004,7 +1005,7 @@ def messengerFrom(hab, pre, urls):
     return witer
 
 
-def streamMessengerFrom(hab, pre, urls, msg):
+def streamMessengerFrom(hab, pre, urls, msg, headers=None):
     """ Create a Witnesser (tcp or http) based on provided endpoints
 
     Parameters:
@@ -1012,13 +1013,14 @@ def streamMessengerFrom(hab, pre, urls, msg):
         pre (str): qb64 identifier prefix of recipient to create a messanger for
         urls (dict): map of schemes to urls of available endpoints
         msg (bytes): bytes of message to send
+        headers (dict): optional headers to send with HTTP requests
 
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
     if kering.Schemes.http in urls or kering.Schemes.https in urls:
         url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-        witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg)
+        witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg, headers=headers)
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
         witer = TCPStreamMessenger(hab=hab, wit=pre, url=url)
