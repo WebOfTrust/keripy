@@ -2487,7 +2487,6 @@ class SignifyHab(BaseHab):
 
         # introduce yourself, please
         msgs.extend(self.replay(cid))
-        print(msgs)
 
         if role == kering.Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
