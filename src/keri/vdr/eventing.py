@@ -1824,7 +1824,7 @@ class Tevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise kering.UnverifiedReplyError(f"Unverified reply.")
+            raise kering.UnverifiedReplyError(f"Unverified registry txn state reply.")
 
         ldig = self.reger.getTel(key=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
 
@@ -1970,7 +1970,7 @@ class Tevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise kering.UnverifiedReplyError(f"Unverified reply.")
+            raise kering.UnverifiedReplyError(f"Unverified credential state reply.")
 
         ldig = self.reger.getTel(key=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 

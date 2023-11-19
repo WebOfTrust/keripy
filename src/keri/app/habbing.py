@@ -1338,6 +1338,25 @@ class BaseHab:
                              indices=indices,
                              ondices=ondices)
 
+    def decrypt(self, ser, verfers=None, **kwa):
+        """Sign given serialization ser using appropriate keys.
+        Use provided verfers or .kever.verfers to lookup keys to sign.
+
+        Parameters:
+            ser (bytes): serialization to sign
+            verfers (list[Verfer] | None): Verfer instances to get pub verifier
+                keys to lookup private siging keys.
+                verfers None means use .kever.verfers. Assumes that when group
+                and verfers is not None then provided verfers must be .kever.verfers
+
+        """
+        if verfers is None:
+            verfers = self.kever.verfers  # when group these provide group signing keys
+
+        return self.mgr.decrypt(ser=ser,
+                                verfers=verfers,
+                                )
+
     def query(self, pre, src, query=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
@@ -1934,6 +1953,8 @@ class BaseHab:
         if cid not in self.kevers:
             return msgs
 
+        msgs.extend(self.replay(cid))
+
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
 
@@ -1953,7 +1974,6 @@ class BaseHab:
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
-        msgs.extend(self.replay(cid))
         return msgs
 
     def replyToOobi(self, aid, role, eids=None):
@@ -2465,6 +2485,9 @@ class SignifyHab(BaseHab):
         if eids is None:
             eids = []
 
+        # introduce yourself, please
+        msgs.extend(self.replay(cid))
+
         if role == kering.Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
                 witness = self.pre in kever.wits  # see if we are cid's witness
@@ -2483,9 +2506,6 @@ class SignifyHab(BaseHab):
                 msgs.extend(self.replay(eid))
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
-
-        # introduce yourself, please
-        msgs.extend(self.replay(cid))
 
         return msgs
 

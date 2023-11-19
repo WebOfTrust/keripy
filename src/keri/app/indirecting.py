@@ -59,7 +59,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)
-    oobiRes = oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
+    oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
     rep = storing.Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
@@ -108,7 +108,6 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                             kvy=kvy, tvy=tvy, rvy=rvy, exc=exchanger, replies=rep.reps,
                             responses=rep.cues, queries=httpEnd.qrycues)
 
-    doers.extend(oobiRes)
     doers.extend([regDoer, httpServerDoer, rep, witStart, receiptEnd, *oobiery.doers])
     return doers
 
@@ -890,27 +889,69 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
-        msg = bytearray(serder.raw)
+        sadder = coring.Sadder(ked=cr.payload, kind=eventing.Serials.json)
+        msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
 
-        ilk = serder.ked["t"]
-        if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
+        if sadder.proto in ("ACDC",):
             rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            rep.set_header('Content-Type', "application/json")
-            rep.status = falcon.HTTP_204
-        elif ilk in (Ilks.qry,):
-            if serder.ked["r"] in ("mbx",):
-                rep.set_header('Content-Type', "text/event-stream")
-                rep.status = falcon.HTTP_200
-                rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
-            else:
+        else:
+            ilk = sadder.ked["t"]
+            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                rep.set_header('Content-Type', "application/json")
+                rep.status = falcon.HTTP_204
+            elif ilk in (Ilks.qry,):
+                if sadder.ked["r"] in ("mbx",):
+                    rep.set_header('Content-Type', "text/event-stream")
+                    rep.status = falcon.HTTP_200
+                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=sadder.said)
+                else:
+                    rep.set_header('Content-Type', "application/json")
+                    rep.status = falcon.HTTP_204
+
+    def on_put(self, req, rep):
+        """
+        Handles PUT for KERI mbx event messages.
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
+        ---
+        summary:  Accept KERI events with attachment headers and parse
+        description:  Accept KERI events with attachment headers and parse.
+        tags:
+           - Events
+        requestBody:
+           required: true
+           content:
+             application/json:
+               schema:
+                 type: object
+                 description: KERI event message
+        responses:
+           200:
+              description: Mailbox query response for server sent events
+           204:
+              description: KEL or EXN event accepted.
+        """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        self.rxbs.extend(req.bounded_stream.read())
+
+        rep.set_header('Content-Type', "application/json")
+        rep.status = falcon.HTTP_204
 
 
 class QryRpyMailboxIterable:

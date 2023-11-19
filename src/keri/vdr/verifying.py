@@ -42,7 +42,7 @@ class Verifier:
 
         """
         self.hby = hby
-        self.reger = reger if reger is not None else Reger(name=self.hby.name, temp=True)
+        self.reger = reger if reger is not None else Reger(name=self.hby.name, temp=self.hby.temp)
         self.creds = creds if creds is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         self.CredentialExpiry = expiry

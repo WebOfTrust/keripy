@@ -46,7 +46,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         sidRgy.processEscrows()
 
         sidExc = exchanging.Exchanger(hby=sidHby, handlers=[])
-        protocoling.loadHandlers(hby=sidHby, exc=sidExc, rgy=sidRgy, notifier=notifier)
+        protocoling.loadHandlers(hby=sidHby, exc=sidExc, notifier=notifier)
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
@@ -104,7 +104,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         # Successfully parsed credential is now saved in database.
         assert sidVer.reger.saved.get(keys=(creder.said,)) is not None
 
-        ipexhan = protocoling.IpexHandler(resource="/ipex/apply", hby=sidHby, rgy=sidRgy, notifier=notifier)
+        ipexhan = protocoling.IpexHandler(resource="/ipex/apply", hby=sidHby, notifier=notifier)
 
         apply0, apply0atc = protocoling.ipexApplyExn(sidHab, message="Please give me a credential", schema=schema,
                                                      recp=redPre, attrs={})

@@ -1106,8 +1106,11 @@ class Parser:
                         exc.processEvent(tsgs=tsgs, **args)
 
                 except AttributeError as e:
+                    print(e)
                     raise kering.ValidationError("No Exchange to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
+                except Exception as e:
+                    print(e)
 
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
                 # TEL msg
