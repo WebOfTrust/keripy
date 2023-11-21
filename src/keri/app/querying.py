@@ -105,6 +105,9 @@ class SeqNoQuerier(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        if self.pre not in self.hab.kevers:
+            return False
+
         kever = self.hab.kevers[self.pre]
         if kever.sn >= self.sn:
             self.remove([self.witq])
@@ -130,6 +133,9 @@ class AnchorQuerier(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        if self.pre not in self.hab.kevers:
+            return False
+
         kever = self.hab.kevers[self.pre]
         if self.hby.db.findAnchoringEvent(self.pre, anchor=self.anchor):
             self.remove([self.witq])
