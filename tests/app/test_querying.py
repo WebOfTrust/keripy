@@ -6,7 +6,7 @@ keri.app.querying module
 from hio.base import doing
 
 from keri.app import habbing
-from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier
+from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
 from keri.core import parsing, eventing
 
 
@@ -86,3 +86,58 @@ def test_querying():
         doist.recur(deeds=deeds)
 
         assert qdoer.done is True
+
+        # Test sequence querier
+        sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre=subHab.pre, sn=5)
+        assert len(sdoer.witq.msgs) == 1
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[sdoer])
+        doist.recur(deeds=deeds)
+        assert len(sdoer.witq.msgs) == 0
+
+        sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre=subHab.pre, sn=1)
+        assert len(sdoer.witq.msgs) == 1
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[sdoer])
+        doist.recur(deeds=deeds)
+        assert len(sdoer.witq.msgs) == 1
+
+        # Test with originally unknown AID
+        sdoer = SeqNoQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", sn=1)
+        assert len(sdoer.witq.msgs) == 1
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[sdoer])
+        doist.recur(deeds=deeds)
+        assert len(sdoer.witq.msgs) == 1
+
+        # Test anchor querier
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre=subHab.pre, anchor={'s': 5})
+        assert len(adoer.witq.msgs) == 1
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[adoer])
+        doist.recur(deeds=deeds)
+        assert len(sdoer.witq.msgs) == 1
+
+        # Test with originally unknown AID
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", anchor={'s': 5})
+        assert len(adoer.witq.msgs) == 1
+
+        tock = 0.03125
+        limit = 1.0
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
+        deeds = doist.enter(doers=[adoer])
+        doist.recur(deeds=deeds)
+        assert len(adoer.witq.msgs) == 1
+
