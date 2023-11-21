@@ -96,7 +96,7 @@ class Receiptor(doing.DoDoer):
                 coring.Counter(qb64b=rct, strip=True)
                 rcts[wit] = rct
             else:
-                raise kering.ValidationError(f"invalid response {rep.status} from witnesses {wit}")
+                logger.error(f"invalid response {rep.status} from witnesses {wit}")
 
         for wit in rcts.keys():
             ewits = [w for w in rcts.keys() if w != wit]
