@@ -421,8 +421,15 @@ class MatterCodex:
     Short:                str = 'M'  # Short 2 byte b2 number
     Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed:   str = 'P'  # X25519 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
     ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
+    Trait3:               str = 'R'  # Trait as 3 char B64 encoded like 'DND'
+    Large:                str = 'S'  # Large 5 byte b2 number
+    Tall:                 str = 'T'  # Tall 11 byte b2 number
+    Great:                str = 'U'  # Great 14 byte b2 number
+    Vast:                 str = 'V'  # Vast 17 byte b2 number
+    Tag1:                 str = 'W'  # Tag as one char (bytes) field map label
+    Tag2:                 str = 'X'  # Tag as two char (bytes) field map label
     Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -431,7 +438,9 @@ class MatterCodex:
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
-    ECDSA_256r1_Sig:      str = "0I"  # ECDSA secp256r1 signature.
+    ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
+    Version:              str = '0J'  # Base64 encoded CESR native msg protocol version 0JKERIBB KERI1.1
+    Trait2:               str = '0K'  # Trait as 2 char B64 encoded like 'EO'
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -439,23 +448,30 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tern:                 str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 100 char b64 Cipher of 24 char qb64 Salt
-    ECDSA_256r1N:         str = "1AAI"  # ECDSA secp256r1 verification key non-transferable, basic derivation.
-    ECDSA_256r1:          str = "1AAJ"  # ECDSA secp256r1 verification or encryption key, basic derivation
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
+    ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
+    ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
+    Null:                 str = '1AAK'  # Null None or empty value
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
-    StrB64_L0:            str = '4A'  # String Base64 Only Lead Size 0
-    StrB64_L1:            str = '5A'  # String Base64 Only Lead Size 1
-    StrB64_L2:            str = '6A'  # String Base64 Only Lead Size 2
-    StrB64_Big_L0:        str = '7AAA'  # String Base64 Only Big Lead Size 0
-    StrB64_Big_L1:        str = '8AAA'  # String Base64 Only Big Lead Size 1
-    StrB64_Big_L2:        str = '9AAA'  # String Base64 Only Big Lead Size 2
-    Bytes_L0:               str = '4B'  # Byte String Leader Size 0
-    Bytes_L1:               str = '5B'  # Byte String Leader Size 1
-    Bytes_L2:               str = '6B'  # ByteString Leader Size 2
-    Bytes_Big_L0:           str = '7AAB'  # Byte String Big Leader Size 0
-    Bytes_Big_L1:           str = '8AAB'  # Byte String Big Leader Size 1
-    Bytes_Big_L2:           str = '9AAB'  # Byte String Big Leader Size 2
+    StrB64_L0:            str = '4A'  # String Base64 only lead size 0
+    StrB64_L1:            str = '5A'  # String Base64 only lead size 1
+    StrB64_L2:            str = '6A'  # String Base64 only lead size 2
+    StrB64_Big_L0:        str = '7AAA'  # String Base64 only big lead size 0
+    StrB64_Big_L1:        str = '8AAA'  # String Base64 only big lead size 1
+    StrB64_Big_L2:        str = '9AAA'  # String Base64 only big lead size 2
+    Bytes_L0:             str = '4B'  # Byte String lead size 0
+    Bytes_L1:             str = '5B'  # Byte String lead size 1
+    Bytes_L2:             str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0:         str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1:         str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2:         str = '9AAB'  # Byte String big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
 
 
     def __iter__(self):
@@ -573,16 +589,18 @@ class NumCodex:
 NumDex = NumCodex()  # Make instance
 
 
+
+
 @dataclass(frozen=True)
 class BextCodex:
     """
-    BextCodex is codex all variable sized Base64 Text (Bext) derivation codes.
+    BextCodex is codex of all variable sized Base64 Text (Bext) derivation codes.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    StrB64_L0: str = '4A'  # String Base64 Only Leader Size 0
-    StrB64_L1: str = '5A'  # String Base64 Only Leader Size 1
-    StrB64_L2: str = '6A'  # String Base64 Only Leader Size 2
+    StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
+    StrB64_L1:     str = '5A'  # String Base64 Only Leader Size 1
+    StrB64_L2:     str = '6A'  # String Base64 Only Leader Size 2
     StrB64_Big_L0: str = '7AAA'  # String Base64 Only Big Leader Size 0
     StrB64_Big_L1: str = '8AAA'  # String Base64 Only Big Leader Size 1
     StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
@@ -592,6 +610,91 @@ class BextCodex:
 
 
 BexDex = BextCodex()  # Make instance
+
+
+
+@dataclass(frozen=True)
+class TextCodex:
+    """
+    TextCodex is codex of all variable sized byte string (Text) derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Bytes_L0:     str = '4B'  # Byte String lead size 0
+    Bytes_L1:     str = '5B'  # Byte String lead size 1
+    Bytes_L2:     str = '6B'  # Byte String lead size 2
+    Bytes_Big_L0: str = '7AAB'  # Byte String big lead size 0
+    Bytes_Big_L1: str = '8AAB'  # Byte String big lead size 1
+    Bytes_Big_L2: str = '9AAB'  # Byte String big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+TexDex = TextCodex()  # Make instance
+
+@dataclass(frozen=True)
+class CipherX25519FixCodex:
+    """
+    CipherX25519FixCodex is codex all fixed sized cipher bytes derivation codes
+    for sealed box encryped ciphertext.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXFixDex = CipherX25519FixCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519VarCodex:
+    """
+    CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarDex = CipherX25519VarCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519AllCodex:
+    """
+    CipherX25519AllCodex is codex all both fixed and variable sized cipher bytes
+    derivation codes for sealed box encryped ciphertext.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXAllDex = CipherX25519AllCodex()  # Make instance
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -676,6 +779,13 @@ class Matter:
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
         'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'S': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'T': Sizage(hs=1, ss=0, fs=16, ls=0),
+        'U': Sizage(hs=1, ss=0, fs=20, ls=0),
+        'V': Sizage(hs=1, ss=0, fs=24, ls=0),
+        'W': Sizage(hs=1, ss=0, fs=4, ls=1),
+        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -685,6 +795,8 @@ class Matter:
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -695,6 +807,7 @@ class Matter:
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -709,6 +822,12 @@ class Matter:
         '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
 
     # Bards table maps first code char. converted to binary sextext of hard size,
@@ -1085,8 +1204,8 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
-        # fs is None
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs >= hs + ss
+        # unless fs is None
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError(f"Need {fs - len(qb64b)} more chars.")
@@ -1176,7 +1295,8 @@ class Matter:
 
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and fs > hs
+        # hs consistent and ss == 0 and not fs % 4 and hs > 0 and
+        # (fs >= hs + ss if fs is not None else True)
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
@@ -3802,8 +3922,9 @@ Xizage = namedtuple("Xizage", "hs ss os fs ls")
 class Indexer:
     """
     Indexer is fully qualified cryptographic material primitive base class for
-    indexed primitives. Indexed codes are a mix of indexed and variable length
-    because code table has two char codes for compact variable length.
+    indexed primitives. In special cases some codes in the Index code table
+    may be of variable length (i.e. not indexed) when the full size table entry
+    is None. In that case the index is used instread as the length.
 
     Sub classes are derivation code and key event element context specific.
 
