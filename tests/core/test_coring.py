@@ -365,6 +365,13 @@ def test_matter():
         'X25519_Private': 'O',
         'X25519_Cipher_Seed': 'P',
         'ECDSA_256r1_Seed': 'Q',
+        'Trait3': 'R',
+        'Large': 'S',
+        'Tall': 'T',
+        'Great': 'U',
+        'Vast': 'V',
+        'Tag1': 'W',
+        'Tag2': 'X',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -374,6 +381,8 @@ def test_matter():
         'SHA2_512': '0G',
         'Long': '0H',
         'ECDSA_256r1_Sig': '0I',
+        'Version': '0J',
+        'Trait2': '0K',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -384,6 +393,7 @@ def test_matter():
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
         'ECDSA_256r1': '1AAJ',
+        'Null': '1AAK',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -398,6 +408,12 @@ def test_matter():
         'Bytes_Big_L0': '7AAB',
         'Bytes_Big_L1': '8AAB',
         'Bytes_Big_L2': '9AAB',
+        'X25519_Cipher_L0': '4C',
+        'X25519_Cipher_L1': '5C',
+        'X25519_Cipher_L2': '6C',
+        'X25519_Cipher_Big_L0': '7AAC',
+        'X25519_Cipher_Big_L1': '8AAC',
+        'X25519_Cipher_Big_L2': '9AAC',
     }
 
     assert Matter.Codex == MtrDex
@@ -433,6 +449,13 @@ def test_matter():
         'O': Sizage(hs=1, ss=0, fs=44, ls=0),
         'P': Sizage(hs=1, ss=0, fs=124, ls=0),
         'Q': Sizage(hs=1, ss=0, fs=44, ls=0),
+        'R': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'S': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'T': Sizage(hs=1, ss=0, fs=16, ls=0),
+        'U': Sizage(hs=1, ss=0, fs=20, ls=0),
+        'V': Sizage(hs=1, ss=0, fs=24, ls=0),
+        'W': Sizage(hs=1, ss=0, fs=4, ls=1),
+        'X': Sizage(hs=1, ss=0, fs=4, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -442,6 +465,8 @@ def test_matter():
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
+        '0J': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -452,6 +477,7 @@ def test_matter():
         '1AAH': Sizage(hs=4, ss=0, fs=100, ls=0),
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
+        '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -466,6 +492,12 @@ def test_matter():
         '7AAB': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAB': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAB': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4C': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5C': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2)
     }
 
     assert Matter.Sizes['A'].hs == 1  # hard size
@@ -481,7 +513,7 @@ def test_matter():
     #  if fs is not None else not (hs + ss) % 4
     for val in Matter.Sizes.values():
         if val.fs is not None:
-            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs > val.hs
+            assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
         else:
             assert not (val.hs + val.ss) % 4
 

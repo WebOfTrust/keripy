@@ -50,7 +50,8 @@ class TraitCodex:
     """
     EstOnly: str = 'EO'  # Only allow establishment events
     DoNotDelegate: str = 'DND'  # Dot not allow delegated identifiers
-    NoBackers: str = 'NB'  # Do not allow any backers for registry
+    NoBackers: str = 'NB'  # Do not allow any registrar backers
+    Backers: str = 'RB' # Registrar backer provided in Registrar seal
 
     def __iter__(self):
         return iter(astuple(self))
