@@ -886,7 +886,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         hby:
         hab:
         reger:
-        postman:
+        postman (StreamPoster): poster to stream credential with
         creder:
         recp:
 
@@ -898,30 +898,29 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     else:
         sender = hab.pre
 
-    sendArtifacts(hby, reger, postman, creder, sender, recp)
+    sendArtifacts(hby, reger, postman, creder, recp)
 
     sources = reger.sources(hby.db, creder)
     for source, atc in sources:
-        sendArtifacts(hby, reger, postman, source, sender, recp)
-        postman.send(src=sender, dest=recp, topic="credential", serder=source, attachment=atc)
+        sendArtifacts(hby, reger, postman, source, recp)
+        postman.send(serder=source, attachment=atc)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
     atc = bytearray(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
     atc.extend(saider.qb64b)
-    postman.send(src=sender, dest=recp, topic="credential", serder=creder, attachment=atc)
+    postman.send(serder=creder, attachment=atc)
 
 
-def sendArtifacts(hby, reger, postman, creder, sender, recp):
+def sendArtifacts(hby, reger, postman, creder, recp):
     """ Stream credential artifacts to recipient using postman
 
     Parameters:
         hby:
         reger:
-        postman:
+        postman (StreamPoster): poster to stream credential with
         creder:
-        sender:
         recp:
 
     Returns:
@@ -935,35 +934,35 @@ def sendArtifacts(hby, reger, postman, creder, sender, recp):
     for msg in hby.db.cloneDelegation(ikever):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)
 
     if isse != recp:
         ikever = hby.db.kevers[isse]
         for msg in hby.db.cloneDelegation(ikever):
             serder = coring.Serder(raw=msg)
             atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc)
 
         for msg in hby.db.clonePreIter(pre=isse):
             serder = coring.Serder(raw=msg)
             atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc)
 
     if regk is not None:
         for msg in reger.clonePreIter(pre=regk):
             serder = coring.Serder(raw=msg)
             atc = msg[serder.size:]
-            postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)
 
 
 def sendRegistry(hby, reger, postman, creder, sender, recp):
@@ -977,14 +976,14 @@ def sendRegistry(hby, reger, postman, creder, sender, recp):
     for msg in hby.db.cloneDelegation(ikever):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=regk):
         serder = coring.Serder(raw=msg)
         atc = msg[serder.size:]
-        postman.send(src=sender, dest=recp, topic="credential", serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc)

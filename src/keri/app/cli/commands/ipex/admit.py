@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.app import forwarding, connecting, habbing, grouping, indirecting, agenting
+from keri.app import connecting, habbing, grouping, indirecting, agenting, forwarding
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
 from keri.core import parsing, coring, eventing
@@ -52,7 +52,6 @@ class AdmitDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=self.hby)
 
         self.kvy = eventing.Kevery(db=self.hby.db)
@@ -66,13 +65,13 @@ class AdmitDoer(doing.DoDoer):
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, rgy=self.rgy, exc=self.exc, notifier=notifier)
+        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = indirecting.MailboxDirector(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
 
-        self.toRemove = [self.postman, mbx, self.witq]
+        self.toRemove = [mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
 
     def admitDo(self, tymth, tock=0.0):
@@ -132,24 +131,25 @@ class AdmitDoer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                self.postman.send(src=self.hab.mhab.pre,
-                                  dest=recp,
-                                  topic="multisig",
-                                  serder=wexn,
-                                  attachment=watc)
+                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
+                postman.send(serder=wexn,
+                             attachment=watc)
+                doer = doing.DoDoer(doers=postman.deliver())
+                self.extend([doer])
 
             while not self.exc.complete(said=wexn.said):
                 yield self.tock
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending admit message to {recp}")
-            self.postman.send(src=self.hab.pre,
-                              dest=recp,
-                              topic="credential",
-                              serder=exn,
-                              attachment=atc)
+            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman.send(serder=exn,
+                         attachment=atc)
 
-            while not self.postman.sent(exn.said):
+            doer = doing.DoDoer(doers=postman.deliver())
+            self.extend([doer])
+
+            while not doer.done:
                 yield self.tock
 
         self.remove(self.toRemove)

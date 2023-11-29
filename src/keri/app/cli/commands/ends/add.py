@@ -33,7 +33,7 @@ parser.add_argument("--role", "-r", help="KERI enpoint authorization role.",
 parser.add_argument("--eid", "-e", help="qualified base64 of AID to authorize with new role for the AID identified "
                                         "by alias",
                     required=True)
-parser.add_argument("--time", help="timestamp for the revocation", required=False, default=None)
+parser.add_argument("--time", help="timestamp for the end auth", required=False, default=None)
 
 
 def add_end(args):

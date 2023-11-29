@@ -10,7 +10,7 @@ from urllib.parse import urlparse, urljoin
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
-from hio.help import decking
+from hio.help import decking, Hict
 
 from . import httping, forwarding
 from .. import help
@@ -69,7 +69,6 @@ class Receiptor(doing.DoDoer):
         if ser.ked['t'] in (coring.Ilks.rot,):
             adds = ser.ked["ba"]
             for wit in adds:
-                print(f"catching up {wit}")
                 yield from self.catchup(ser.pre, wit)
 
         clients = dict()
@@ -97,7 +96,7 @@ class Receiptor(doing.DoDoer):
                 coring.Counter(qb64b=rct, strip=True)
                 rcts[wit] = rct
             else:
-                raise kering.ValidationError(f"invalid response {rep.status} from witnesses {wit}")
+                logger.error(f"invalid response {rep.status} from witnesses {wit}")
 
         for wit in rcts.keys():
             ewits = [w for w in rcts.keys() if w != wit]
@@ -722,6 +721,100 @@ class TCPMessenger(doing.DoDoer):
         return len(self.sent) == self.posted
 
 
+class TCPStreamMessenger(doing.DoDoer):
+    """ Send events to witnesses for receipting using TCP direct connection
+
+    """
+
+    def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+
+        """
+        self.hab = hab
+        self.wit = wit
+        self.url = url
+        self.posted = 0
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.sent = sent if sent is not None else decking.Deck()
+        self.parser = None
+        doers = doers if doers is not None else []
+        doers.extend([doing.doify(self.receiptDo)])
+
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      **kwa)
+
+        super(TCPStreamMessenger, self).__init__(doers=doers)
+
+    def receiptDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        up = urlparse(self.url)
+        if up.scheme != kering.Schemes.tcp:
+            raise ValueError(f"invalid scheme {up.scheme} for TcpWitnesser")
+
+        client = clienting.Client(host=up.hostname, port=up.port)
+        self.parser = parsing.Parser(ims=client.rxbs,
+                                     framed=True,
+                                     kvy=self.kevery)
+
+        clientDoer = clienting.ClientDoer(client=client)
+        self.extend([clientDoer, doing.doify(self.msgDo)])
+
+        while True:
+            while not self.msgs:
+                yield self.tock
+
+            msg = self.msgs.popleft()
+            self.posted += 1
+
+            client.tx(msg)  # send to connected remote
+
+            while client.txbs:
+                yield self.tock
+
+            self.sent.append(msg)
+            yield self.tock
+
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatible generator method (doer dog) to process
+            incoming message stream of .kevery
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield from self.parser.parsator()  # process messages continuously
+
+    @property
+    def idle(self):
+        return len(self.sent) == self.posted
+
+
 class HTTPMessenger(doing.DoDoer):
     """
     Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
@@ -800,6 +893,65 @@ class HTTPMessenger(doing.DoDoer):
         return len(self.msgs) == 0 and self.posted == len(self.sent)
 
 
+class HTTPStreamMessenger(doing.DoDoer):
+    """
+    Interacts with Recipients on HTTP and SSE for sending events and receiving receipts
+
+    """
+
+    def __init__(self, hab, wit, url, msg=b'', headers=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+
+        """
+        self.hab = hab
+        self.wit = wit
+        self.rep = None
+        headers = headers if headers is not None else {}
+
+        up = urlparse(url)
+        if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
+            raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
+
+        self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
+        clientDoer = http.clienting.ClientDoer(client=self.client)
+
+        headers = Hict([
+            ("Content-Type", "application/cesr"),
+            ("Content-Length", len(msg)),
+            (httping.CESR_DESTINATION_HEADER, self.wit),
+        ] + list(headers.items()))
+
+        self.client.request(
+            method="PUT",
+            path="/",
+            headers=headers,
+            body=bytes(msg)
+        )
+
+        doers = [clientDoer]
+
+        super(HTTPStreamMessenger, self).__init__(doers=doers, **kwa)
+
+    def recur(self, tyme, deeds=None):
+        """
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        if self.client.responses:
+            self.rep = self.client.respond()
+            self.remove([self.client])
+            return True
+
+        return super(HTTPStreamMessenger, self).recur(tyme, deeds)
+
+
 def mailbox(hab, cid):
     for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
         if end.allowed:
@@ -847,6 +999,31 @@ def messengerFrom(hab, pre, urls):
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
         witer = TCPMessenger(hab=hab, wit=pre, url=url)
+    else:
+        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
+
+    return witer
+
+
+def streamMessengerFrom(hab, pre, urls, msg, headers=None):
+    """ Create a Witnesser (tcp or http) based on provided endpoints
+
+    Parameters:
+        hab (Habitat): Environment to use to look up witness URLs
+        pre (str): qb64 identifier prefix of recipient to create a messanger for
+        urls (dict): map of schemes to urls of available endpoints
+        msg (bytes): bytes of message to send
+        headers (dict): optional headers to send with HTTP requests
+
+    Returns:
+        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
+    """
+    if kering.Schemes.http in urls or kering.Schemes.https in urls:
+        url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg, headers=headers)
+    elif kering.Schemes.tcp in urls:
+        url = urls[kering.Schemes.tcp]
+        witer = TCPStreamMessenger(hab=hab, wit=pre, url=url)
     else:
         raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 

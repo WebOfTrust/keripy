@@ -81,7 +81,7 @@ class ListDoer(doing.DoDoer):
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        protocoling.loadHandlers(self.hby, self.exc, self.rgy, self.notifier)
+        protocoling.loadHandlers(self.hby, self.exc, self.notifier)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/replay', 'reply', '/credential'],
                                                exc=self.exc, verifier=self.vry)
 
