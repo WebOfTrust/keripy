@@ -14,7 +14,6 @@ from  ordered_set import OrderedSet as oset
 from hio.help import decking
 
 from keri import kering
-from keri.core import coring
 from .. import core
 from .. import help
 from ..core import serdering, coring
@@ -108,12 +107,6 @@ def incept(
     serder = serdering.SerderKERI(sad=ked, makify=True)
     serder._verify()  # raises error if fails verifications
     return serder
-
-    #prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
-    #ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    #ked["d"] = prefixer.qb64
-
-    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def rotate(
@@ -216,10 +209,6 @@ def rotate(
     serder._verify()  # raises error if fails verifications
     return serder
 
-    #_, ked = coring.Saider.saidify(sad=ked)
-
-    #return coring.Serder(ked=ked)  # return serialized ked
-
 
 def issue(
         vcdig,
@@ -260,9 +249,6 @@ def issue(
     serder = serdering.SerderKERI(sad=ked, makify=True)
     serder._verify()  # raises error if fails verifications
     return serder
-
-    #_, ked = coring.Saider.saidify(sad=ked)
-    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def revoke(
@@ -313,8 +299,6 @@ def revoke(
     serder = serdering.SerderKERI(sad=ked, makify=True)
     serder._verify()  # raises error if fails verifications
     return serder
-
-    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def backerIssue(
@@ -368,8 +352,6 @@ def backerIssue(
     serder = serdering.SerderKERI(sad=ked, makify=True)
     serder._verify()  # raises error if fails verifications
     return serder
-
-    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def backerRevoke(
@@ -425,8 +407,6 @@ def backerRevoke(
     serder = serdering.SerderKERI(sad=ked, makify=True)
     serder._verify()  # raises error if fails verifications
     return serder
-
-    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def state(pre,
@@ -544,24 +524,6 @@ def state(pre,
                c=cnfg if cnfg is not None else [],
                )
     return rsr  # return RegStateRecord  use asdict(rsr) to get dict version
-
-
-    #ksd = dict(v=vs,  # version string
-               #i=ri,  # qb64 SAID of the registry
-               #s="{:x}".format(sn),  # lowercase hex string no leading zeros
-               #d=said,
-               #ii=pre,
-               #dt=dts,
-               #et=eilk,
-               #a=a,
-               #bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               #br=br,
-               #ba=ba,
-               #b=wits,  # list of qb64 may be empty
-               #c=cnfg,  # list of config ordered mappings may be empty
-               #)
-
-    #return coring.Serder(ked=ksd)  # return serialized ksd
 
 
 def vcstate(vcpre,
@@ -831,9 +793,7 @@ class Tever:
                                                dig=ksn.ked['d']))) is None:
             raise kering.MissingEntryError("Corresponding event for state={} not found."
                                            "".format(ksn.pretty()))
-        #self.serder = coring.Serder(raw=bytes(raw))
         self.serder = serdering.SerderKERI(raw=bytes(raw))
-
 
     def state(self):  #state(self, kind=Serials.json)
         """ Returns RegStateRecord of state notice of given Registry Event Log
@@ -842,8 +802,6 @@ class Tever:
         Returns:
             rsr: (RegStateRecord): instance for this Tever
 
-        Parameters:
-            kind (str): serialization kind for message json, cbor, mgpk
 
         """
         br = self.cuts
@@ -1811,7 +1769,7 @@ class Tevery:
         data = serder.ked["a"]
         dater = coring.Dater(dts=serder.ked["dt"])
 
-        tserder = serdering.SerderKERI(ked=data)
+        tserder = serdering.SerderKERI(sad=data)
 
         for k in TSN_LABELS:
             if k not in tserder.ked:
