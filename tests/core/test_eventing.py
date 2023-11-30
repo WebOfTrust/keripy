@@ -9,11 +9,11 @@ import blake3
 import pysodium
 import pytest
 
-
+from keri import kering
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri.core import coring, eventing, parsing, serdering
-from keri.core.coring import (Ilks, Diger, MtrDex, Matter, IdrDex, Indexer,
+from keri.core.coring import (Diger, MtrDex, Matter, IdrDex, Indexer,
                               CtrDex, Counter, Salter, Serder, Siger, Cigar,
                               Seqner, Verfer, Signer, Prefixer,
                               generateSigners, IdxSigDex, DigDex)
@@ -32,7 +32,7 @@ from keri.core import serdering
 from keri.db import dbing, basing
 from keri.db.basing import openDB
 from keri.db.dbing import dgKey, snKey
-from keri.kering import (ValidationError, DerivationError)
+from keri.kering import (ValidationError, DerivationError, Ilks)
 
 from keri import help
 from keri.help import helping
@@ -2066,14 +2066,15 @@ def test_kever(mockHelpingNowUTC):
         # create current key
         sith = 1  # one signer
         #  original signing keypair transferable default
-        skp0 = salter.signer(path="A", temp=True)
+        skp0 = salter.signer(path="A", temp=True, transferable=True)
         assert skp0.code == MtrDex.Ed25519_Seed
         assert skp0.verfer.code == MtrDex.Ed25519
+        assert skp0.verfer.qb64 == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
         keys = [skp0.verfer.qb64]
 
         # create next key
         #  next signing keypair transferable is default
-        skp1 = salter.signer(path="N", temp=True)
+        skp1 = salter.signer(path="N", temp=True, transferable=True)
         assert skp1.code == MtrDex.Ed25519_Seed
         assert skp1.verfer.code == MtrDex.Ed25519
         # compute nxt digest
@@ -2086,34 +2087,27 @@ def test_kever(mockHelpingNowUTC):
         toad = 0  # no witnesses
         nsigs = 1  # one attached signature unspecified index
 
-        ked0 = dict(v=versify(kind=Serials.json, size=0),
-                    t=Ilks.icp,
-                    d="",
-                    i="",  # qual base 64 prefix
-                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
-                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-                    k=keys,  # list of signing keys each qual Base64
-                    nt=1,
-                    n=nxt,  # hash qual Base64
-                    bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                    b=[],  # list of qual Base64 may be empty
-                    c=[],  # list of config ordered mappings may be empty
-                    a=[],  # list of seals
-                    )
+        # make with defaults with non-digestive prefix
+        serder = serdering.SerderKERI(makify=True,
+                                      ilk=kering.Ilks.icp,
+                                      saids = {'i': coring.PreDex.Ed25519})
 
-        # Derive AID from ked
-        aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
-        assert aid0.code == MtrDex.Ed25519
-        assert aid0.qb64 == skp0.verfer.qb64 == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
-        # update ked with pre
-        ked0["i"] = aid0.qb64
-        # since not digestive compute SAID
-        _, ked0 = coring.Saider.saidify(sad=ked0)
-        assert ked0['d'] == 'EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi'
-        #'EOf7EL5i19TNSE-n9jgceVXUQKXUa7F5EZcndLHPWUmM'
+        sad = serder.sad
+        sad['i'] = skp0.verfer.qb64  # non-digestive aid
+        sad['s'] = "{:x}".format(sn)  # hex string
+        sad['kt'] = "{:x}".format(sith)  # hex string
+        sad['k'] = keys
+        sad['nt'] = 1
+        sad['n'] = nxt
+        sad['bt'] = "{:x}".format(toad)
 
-        # Serialize ked0
-        tser0 = serdering.SerderKERI(sad=ked0)
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi'
+        assert serder.pre == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
+        aid0 = serder.pre
+
+        # Assign first serialization
+        tser0 = serder
 
         # sign serialization
         tsig0 = skp0.sign(tser0.raw, index=0)
@@ -2124,7 +2118,7 @@ def test_kever(mockHelpingNowUTC):
         kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # no error
         assert kever.db == db
         assert kever.cues == None
-        assert kever.prefixer.qb64 == aid0.qb64
+        assert kever.prefixer.qb64 == aid0
         assert kever.sner.num == 0
         assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
@@ -2210,253 +2204,236 @@ def test_kever(mockHelpingNowUTC):
         ondices = kever.exposeds(sigers=sigers)
         assert ondices ==[1]
 
-    # TODO: Fix or remove test... SerderKERI is now failing before the other checks
-    # with openDB() as db:  # Non-Transferable case
-    #     # Setup inception key event dict
-    #     # create current key
-    #     sith = 1  # one signer
-    #     skp0 = Signer(transferable=False)  # original signing keypair non-transferable
-    #     assert skp0.code == MtrDex.Ed25519_Seed
-    #     assert skp0.verfer.code == MtrDex.Ed25519N
-    #     keys = [skp0.verfer.qb64]
-    #
-    #     # create next key Error case
-    #     skp1 = Signer()  # next signing keypair transferable is default
-    #     assert skp1.code == MtrDex.Ed25519_Seed
-    #     assert skp1.verfer.code == MtrDex.Ed25519
-    #     nxtkeys = [skp1.verfer.qb64]
-    #     # compute nxt digest
-    #     nxt = [Diger(ser=skp1.verfer.qb64b).qb64]  # nxt is not empty so error
-    #
-    #     sn = 0  # inception event so 0
-    #     toad = 0  # no witnesses
-    #     nsigs = 1  # one attached signature unspecified index
-    #
-    #     ked0 = dict(v=versify(kind=Serials.json, size=0),
-    #                 t=Ilks.icp,
-    #                 d="",
-    #                 i="",  # qual base 64 prefix
-    #                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
-    #                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-    #                 k=keys,  # list of signing keys each qual Base64
-    #                 nt=1,
-    #                 n=nxt,  # hash qual Base64
-    #                 bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-    #                 b=[],  # list of qual Base64 may be empty
-    #                 c=[],  # list of config ordered mappings may be empty
-    #                 a={},  # list of seals
-    #                 )
-    #
-    #     # Derive AID from ked
-    #     with pytest.raises(DerivationError):
-    #         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
-    #
-    #
-    #     # assert aid0.code == MtrDex.Ed25519N
-    #     # assert aid0.qb64 == skp0.verfer.qb64
-    #
-    #     # update ked with pre
-    #     ked0["i"] = skp0.verfer.qb64
-    #
-    #     _, ked0 = coring.Saider.saidify(sad=ked0)
-    #
-    #     # Serialize ked0
-    #     tser0 = serdering.SerderKERI(sad=ked0)
-    #
-    #     # sign serialization
-    #     tsig0 = skp0.sign(tser0.raw, index=0)
-    #
-    #     # verify signature
-    #     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
-    #
-    #     with pytest.raises(ValidationError):
-    #         kever = Kever(serder=tser0, sigers=[tsig0], db=db)
-    #
-    #     # retry with valid empty nxt
-    #     nxt = ""  # nxt is empty so no error
-    #     sn = 0  # inception event so 0
-    #     toad = 0  # no witnesses
-    #     nsigs = 1  # one attached signature unspecified index
-    #
-    #     ked0 = dict(v=versify(kind=Serials.json, size=0),
-    #                 t=Ilks.icp,
-    #                 d="",
-    #                 i="",  # qual base 64 prefix
-    #                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
-    #                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-    #                 k=keys,  # list of signing keys each qual Base64
-    #                 nt=0,
-    #                 n=nxt,  # hash qual Base64
-    #                 bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-    #                 b=[],  # list of qual Base64 may be empty
-    #                 c=[],  # list of config ordered mappings may be empty
-    #                 a=[],  # list of seals
-    #                 )
-    #
-    #     # Derive AID from ked
-    #     aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
-    #
-    #     assert aid0.code == MtrDex.Ed25519N
-    #     assert aid0.qb64 == skp0.verfer.qb64
-    #
-    #     # update ked with pre
-    #     ked0["i"] = aid0.qb64
-    #     _, ked0 = coring.Saider.saidify(sad=ked0)
-    #
-    #     # Serialize ked0
-    #     tser0 = serdering.SerderKERI(sad=ked0)
-    #
-    #     # sign serialization
-    #     tsig0 = skp0.sign(tser0.raw, index=0)
-    #
-    #     # verify signature
-    #     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
-    #
-    #     kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
 
-    # with openDB() as db:  # Non-Transferable case
-    #     # Setup inception key event dict
-    #     # create current key
-    #     sith = 1  # one signer
-    #     skp0 = Signer(transferable=False)  # original signing keypair non-transferable
-    #     assert skp0.code == MtrDex.Ed25519_Seed
-    #     assert skp0.verfer.code == MtrDex.Ed25519N
-    #     keys = [skp0.verfer.qb64]
-    #
-    #     # create next key Error case
-    #     skp1 = Signer()  # next signing keypair transferable is default
-    #     assert skp1.code == MtrDex.Ed25519_Seed
-    #     assert skp1.verfer.code == MtrDex.Ed25519
-    #     nxtkeys = [skp1.verfer.qb64]
-    #     # compute nxt digest
-    #     nxt = ""
-    #
-    #     sn = 0  # inception event so 0
-    #     toad = 0  # no witnesses
-    #     nsigs = 1  # one attached signature unspecified index
-    #
-    #     baks = ["BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
-    #
-    #     ked0 = dict(v=versify(kind=Serials.json, size=0),
-    #                 t=Ilks.icp,
-    #                 d="",
-    #                 i="",  # qual base 64 prefix
-    #                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
-    #                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-    #                 k=keys,  # list of signing keys each qual Base64
-    #                 nt=0,
-    #                 n=nxt,  # hash qual Base64
-    #                 bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-    #                 b=baks,  # list of qual Base64 may be empty
-    #                 c=[],  # list of config ordered mappings may be empty
-    #                 a={},  # list of seals
-    #                 )
-    #
-    #     # Derive AID from ked
-    #     with pytest.raises(DerivationError):
-    #         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
-    #
-    #     # update ked with pre
-    #     ked0["i"] = skp0.verfer.qb64
-    #     _, ked0 = coring.Saider.saidify(sad=ked0)
-    #
-    #     # Serialize ked0
-    #     tser0 = serdering.SerderKERI(sad=ked0)
-    #
-    #     # sign serialization
-    #     tsig0 = skp0.sign(tser0.raw, index=0)
-    #
-    #     # verify signature
-    #     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
-    #
-    #     with pytest.raises(ValidationError):
-    #         kever = Kever(serder=tser0, sigers=[tsig0], db=db)
-    #
-    #     # retry with valid empty baks
-    #     baks = []
-    #     # use some data, also invalid
-    #     a = [dict(i="EAz8Wqqom6eeIFsng3cGQiUJ1uiNelCrR9VgFlk_8QAM")]
-    #     sn = 0  # inception event so 0
-    #     toad = 0  # no witnesses
-    #     nsigs = 1  # one attached signature unspecified index
-    #
-    #     ked0 = dict(v=versify(kind=Serials.json, size=0),
-    #                 t=Ilks.icp,
-    #                 d="",
-    #                 i="",  # qual base 64 prefix
-    #                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
-    #                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-    #                 k=keys,  # list of signing keys each qual Base64
-    #                 nt=0,
-    #                 n=nxt,  # hash qual Base64
-    #                 bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-    #                 b=baks,  # list of qual Base64 may be empty
-    #                 c=[],  # list of config ordered mappings may be empty
-    #                 a=a,  # list of seals
-    #                 )
-    #
-    #     # Derive AID from ked
-    #     with pytest.raises(DerivationError):
-    #         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
-    #
-    #     # update ked with pre
-    #     ked0["i"] = aid0.qb64
-    #     _, ked0 = coring.Saider.saidify(sad=ked0)
-    #
-    #     # Serialize ked0
-    #     tser0 = serdering.SerderKERI(sad=ked0)
-    #
-    #     # sign serialization
-    #     tsig0 = skp0.sign(tser0.raw, index=0)
-    #
-    #     # verify signature
-    #     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
-    #
-    #     with pytest.raises(ValidationError):
-    #         kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
-    #
-    #     # retry with valid empty baks and empty a
-    #     baks = []
-    #     a = []
-    #     sn = 0  # inception event so 0
-    #     toad = 0  # no witnesses
-    #     nsigs = 1  # one attached signature unspecified index
-    #
-    #     ked0 = dict(v=versify(kind=Serials.json, size=0),
-    #                 t=Ilks.icp,
-    #                 d="",
-    #                 i="",  # qual base 64 prefix
-    #                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
-    #                 kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-    #                 k=keys,  # list of signing keys each qual Base64
-    #                 nt=0,
-    #                 n=nxt,  # hash qual Base64
-    #                 bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-    #                 b=baks,  # list of qual Base64 may be empty
-    #                 c=[],  # list of config ordered mappings may be empty
-    #                 a=a,  # list of seals
-    #                 )
-    #
-    #     # Derive AID from ked
-    #     aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
-    #
-    #     assert aid0.code == MtrDex.Ed25519N
-    #     assert aid0.qb64 == skp0.verfer.qb64
-    #
-    #     # update ked with pre
-    #     ked0["i"] = aid0.qb64
-    #     _, ked0 = coring.Saider.saidify(sad=ked0)
-    #
-    #     # Serialize ked0
-    #     tser0 = serdering.SerderKERI(sad=ked0)
-    #
-    #     # sign serialization
-    #     tsig0 = skp0.sign(tser0.raw, index=0)
-    #
-    #     # verify signature
-    #     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
-    #
-    #     kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
+    with openDB() as db:  # Non-Transferable case Error nxt not empty
+        # test  Error case Transferable incept event but with nontrans aid
+        # Setup inception key event dict
+        # create current key
+        sith = 1  # one signer
+        # original signing keypair non-transferable
+        skp0 = salter.signer(path="A", temp=True, transferable=False)
+        assert skp0.code == MtrDex.Ed25519_Seed
+        assert skp0.verfer.code == MtrDex.Ed25519N
+        assert skp0.verfer.qb64 == 'BAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
+        keys = [skp0.verfer.qb64]
+
+        # create next key
+        # next signing keypair transferable is default
+        skp1 = salter.signer(path="N", temp=True, transferable=True)
+        assert skp1.code == MtrDex.Ed25519_Seed
+        assert skp1.verfer.code == MtrDex.Ed25519
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest
+        nxt = [Diger(ser=skp1.verfer.qb64b).qb64]  # nxt is not empty so will error
+
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  # one attached signature unspecified index
+
+        # make with defaults with non-transferable prefix
+        serder = serdering.SerderKERI(makify=True,
+                                      ilk=kering.Ilks.icp,
+                                      saids = {'i': coring.PreDex.Ed25519N})
+
+        sad = serder.sad
+        sad['i'] = skp0.verfer.qb64  # non-digestive aid
+        sad['s'] = "{:x}".format(sn)  # hex string
+        sad['kt'] = "{:x}".format(sith)  # hex string
+        sad['k'] = keys
+        sad['nt'] = 1
+        sad['n'] = nxt
+        sad['bt'] = "{:x}".format(toad)
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EFsuiA86Q5gGuVOO3tou8KSU6LORSExIUxzWNrlnW7WP'
+        assert serder.pre == skp0.verfer.qb64
+        aid0 = serder.pre
+
+        # assign serialization
+        tser0 = serder
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)
+
+        # retry with valid empty nxt
+        nxt = ""  # nxt is empty so no error
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+
+
+        # make with defaults with non-transferable prefix
+        serder = serdering.SerderKERI(makify=True,
+                                      ilk=kering.Ilks.icp,
+                                      saids = {'i': coring.PreDex.Ed25519N})
+
+        sad = serder.sad
+        sad['i'] = skp0.verfer.qb64  # non-digestive aid
+        sad['s'] = "{:x}".format(sn)  # hex string
+        sad['kt'] = "{:x}".format(sith)  # hex string
+        sad['k'] = keys
+        sad['nt'] = 0
+        sad['n'] = nxt
+        sad['bt'] = "{:x}".format(toad)
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EHXNdcXZzJnRIdaNk30W5h4yD5sZ2Y_n3u_ReE65X9w-'
+        assert serder.pre == skp0.verfer.qb64
+        aid0 = serder.pre
+
+        # assign serialization
+        tser0 = serder
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
+
+    with openDB() as db:  # Non-Transferable case baks not empty
+        # Setup inception key event dict
+        # create current key
+
+        # original signing keypair non-transferable
+        skp0 = salter.signer(path="B", temp=True, transferable=False)
+        assert skp0.code == MtrDex.Ed25519_Seed
+        assert skp0.verfer.code == MtrDex.Ed25519N
+        assert skp0.verfer.qb64 == 'BEe36N1fb59sXaHIUBOlfSCf4J_H5xajMuMr5u_isjs4'
+        sith = 1  # one signer
+        keys = [skp0.verfer.qb64]
+
+        # create next key
+        # next signing keypair transferable is default
+        skp1 = salter.signer(path="O", temp=True, transferable=True)
+        assert skp1.code == MtrDex.Ed25519_Seed
+        assert skp1.verfer.code == MtrDex.Ed25519
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest must be empty
+        nxt = ""
+
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+
+        # error case if baks not empty
+        baks = ["BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"]
+
+        # make with defaults with non-transferable prefix
+        serder = serdering.SerderKERI(makify=True,
+                                      ilk=kering.Ilks.icp,
+                                      saids = {'i': coring.PreDex.Ed25519N})
+
+        sad = serder.sad
+        sad['i'] = skp0.verfer.qb64  # non-digestive aid
+        sad['s'] = "{:x}".format(sn)  # hex string
+        sad['kt'] = "{:x}".format(sith)  # hex string
+        sad['k'] = keys
+        sad['nt'] = 0
+        sad['n'] = nxt
+        sad['bt'] = "{:x}".format(toad)
+        sad['b'] = baks
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EKcREpfNupJ8oOqdnqDIyJVr1-GgIMBrVOtBUR9Gm6lO'
+        assert serder.pre == skp0.verfer.qb64
+
+
+        # assign serialization
+        tser0 = serder
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)
+
+
+        # retry with toad =1 and baks not empty
+        toad = 1
+        sad =serder.sad  # makes copy
+        sad['bt'] = "{:x}".format(toad)
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EBKhptvqccp0KNBaS45bNPdTE4m19U1IvweHJW2PIEDI'
+        assert serder.pre == skp0.verfer.qb64
+
+        # assign serialization
+        tser0 = serder
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)
+
+
+        # retry with valid empty baks
+        baks = []
+        # use some data, also invalid
+        a = [dict(i="EAz8Wqqom6eeIFsng3cGQiUJ1uiNelCrR9VgFlk_8QAM")]
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+
+        sad =serder.sad  # makes copy
+        sad['bt'] = "{:x}".format(toad)
+        sad['b'] = baks
+        sad['a'] = a
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EEu-cdj_9b_66XRJ5UuhgEvJxAPpn4RjyaHvRgDU3iyA'
+        assert serder.pre == skp0.verfer.qb64
+
+        # assign serialization
+        tser0 = serder
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
+
+        # retry with valid empty baks and empty a
+
+        a = []
+        toad = 0  # no witnesses
+        baks = []
+
+        sad =serder.sad  # makes copy
+        sad['bt'] = "{:x}".format(toad)
+        sad['b'] = baks
+        sad['a'] = a
+
+
+        serder = serdering.SerderKERI(makify=True, verify=True, sad=sad)
+        assert serder.said == 'EOyd2ZALXBm5k9lEpmvakO6RYPDgX1zWSFNd3MfOXL-e'
+        assert serder.pre == skp0.verfer.qb64
+
+        # assign serialization
+        tser0 = serder
+
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
 
 
 
