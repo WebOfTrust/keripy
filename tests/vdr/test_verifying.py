@@ -70,7 +70,7 @@ def test_verifier(seeder):
         try:
             # Specify an anchor directly in the KEL
             verifier.processCredential(creder, prefixer=hab.kever.prefixer, seqner=seqner,
-                                       saider=hab.kever.serder.saider)
+                                       saider=coring.Saider(qb64=hab.kever.serder.said))
         except kering.MissingRegistryError:
             missing = True
 
@@ -347,7 +347,7 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ronverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
-                                        saider=ron.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ron.kever.serder.said))
         except kering.MissingRegistryError:
             missing = True
 
@@ -425,7 +425,7 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=ian.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ian.kever.serder.said))
         except kering.MissingRegistryError:
             missing = True
 
@@ -473,7 +473,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
-                                    saider=ron.kever.serder.saider)
+                                    saider=coring.Saider(qb64=ron.kever.serder.said))
 
         # Process the escrows to get Ian's credential out of missing chain escrow
         ianverfer.processEscrows()
@@ -513,7 +513,7 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(untargetedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=ian.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ian.kever.serder.said))
         except kering.MissingRegistryError:
             missing = True
 
@@ -562,7 +562,7 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=ian.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ian.kever.serder.said))
         except kering.MissingRegistryError:
             missing = True
 
@@ -585,7 +585,7 @@ def test_verifier_chained_credential(seeder):
         # Ensure that when specifying I2I it is enforced
         try:
             ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=ian.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ian.kever.serder.said))
         except kering.MissingChainError:
             pass
 
@@ -602,7 +602,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                    saider=ian.kever.serder.saider)
+                                    saider=coring.Saider(qb64=ian.kever.serder.said))
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
         assert cue["kin"] == "saved"
@@ -619,7 +619,7 @@ def test_verifier_chained_credential(seeder):
 
         # And now verify the credential:
         vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                    saider=ian.kever.serder.saider)
+                                    saider=coring.Saider(qb64=ian.kever.serder.said))
 
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
@@ -648,6 +648,6 @@ def test_verifier_chained_credential(seeder):
 
         with pytest.raises(kering.RevokedChainError):
             vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=ian.kever.serder.saider)
+                                        saider=coring.Saider(qb64=ian.kever.serder.said))
 
     """End Test"""

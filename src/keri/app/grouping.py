@@ -640,7 +640,7 @@ class Multiplexor:
 
                 self.notifier.add(attrs=data)
 
-        self.hby.db.meids.add(keys=(esaid,), val=serder.saider)
+        self.hby.db.meids.add(keys=(esaid,), val=coring.Saider(qb64=serder.said))
         self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
 
         submitters = self.hby.db.maids.get(keys=(esaid,))

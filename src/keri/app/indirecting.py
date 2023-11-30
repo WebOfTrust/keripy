@@ -1059,7 +1059,7 @@ class ReceiptEnd(doing.DoDoer):
         rep.set_header('connection', "close")
 
         cr = httping.parseCesrHttpRequest(req=req)
-        serder = serdering.SerderKERI(ked=cr.payload, kind=eventing.Serials.json)
+        serder = serdering.SerderKERI(sad=cr.payload, kind=eventing.Serials.json)
 
         pre = serder.ked["i"]
         if self.aids is not None and pre not in self.aids:
