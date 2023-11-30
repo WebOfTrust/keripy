@@ -248,7 +248,7 @@ class Serder:
                     Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', dt='', r='',a=[])),
                     Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                        alls=dict(v='', t='',d='', dt='', r='',q={},
+                        alls=dict(v='', t='', d='', i="", p="", dt='', r='',q={},
                                     a=[], e={})),
                     Ilks.vcp: Fieldage(saids={Saids.d: DigDex.Blake3_256,
                                               Saids.i: DigDex.Blake3_256,},
@@ -304,7 +304,7 @@ class Serder:
                     Ilks.bar: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', dt='', r='',a=[])),
                     Ilks.exn: Fieldage(saids={Saids.d: DigDex.Blake3_256},
-                        alls=dict(v='', t='',d='', i='', dt='', r='',q={},
+                        alls=dict(v='', t='', d='', i="", p="", dt='', r='', q={},
                                     a=[], e={})),
                 },
             },
@@ -562,7 +562,7 @@ class Serder:
                 dig = Matter(raw=klas(raw, **ikwa).digest(**dkwa), code=code).qb64
                 if dig != self._sad[label]:  # compare to original
                     raise ValidationError(f"Invalid said field '{label}' in sad"
-                                          f" = {self._sad}.")
+                                          f" = {self._sad}, should be {dig}.")
                 sad[label] = dig
 
         raw = self.dumps(sad, kind=self.kind)

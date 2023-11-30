@@ -109,14 +109,14 @@ def test_credentialer():
     """Test SerderACDC as credential"""
 
     with pytest.raises(ValueError):
-        serdering.SerderACDC() # Creder()
+        serdering.SerderACDC()  # Creder()
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
         v=coring.versify(proto=coring.Protos.acdc, kind=Serials.json, size=0),
         d="",
-        s="abc",
         i="i",
+        s="abc",
         a=sub
     )
     _, d = coring.Saider.saidify(sad=d)

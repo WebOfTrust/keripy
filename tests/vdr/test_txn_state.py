@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 from keri.app import habbing
 from keri.core import routing, parsing, coring, serdering
 from keri.core.eventing import Kevery, SealEvent
@@ -43,11 +45,16 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = issuer.tevers[issuer.regk]
         rsr = tever.state()
 
-        assert rsr.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
-                        b'"s":"0","d":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ii":"EA_SbBUZYwq'
-                        b'LVlAAn14d6QUBQCSReJlZ755JqTgmRhXH","dt":"2021-01-01T00:00:00.000000+00:00","'
-                        b'et":"vcp","a":{"s":1,"d":"EIei8AjSQ9pGJp-UfcFNcxQxzsVHQCgCsViNr81Hl3pd"},"bt'
-                        b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert asdict(rsr) == {'b': [],
+                               'bt': '0',
+                               'c': ['NB'],
+                               'd': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'dt': '2021-01-01T00:00:00.000000+00:00',
+                               'et': 'vcp',
+                               'i': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'ii': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                               's': '0',
+                               'vn': [1, 0]}
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict())
 
@@ -110,11 +117,16 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = issuer.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
-                            b'"s":"0","d":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ii":"EA_SbBUZYwq'
-                            b'LVlAAn14d6QUBQCSReJlZ755JqTgmRhXH","dt":"2021-01-01T00:00:00.000000+00:00","'
-                            b'et":"vcp","a":{"s":1,"d":"EIei8AjSQ9pGJp-UfcFNcxQxzsVHQCgCsViNr81Hl3pd"},"bt'
-                            b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert asdict(tsn) == {'b': [],
+                               'bt': '0',
+                               'c': ['NB'],
+                               'd': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'dt': '2021-01-01T00:00:00.000000+00:00',
+                               'et': 'vcp',
+                               'i': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'ii': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                               's': '0',
+                               'vn': [1, 0]}
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
 
@@ -225,13 +237,18 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = wesReger.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"EBrr1pxZoY5nY38YifrGvn5HSMv0sAwvTTAQ5e3_-ivP",'
-                        b'"s":"0","d":"EBrr1pxZoY5nY38YifrGvn5HSMv0sAwvTTAQ5e3_-ivP","ii":"EDroh9lTel0'
-                        b'P1YQaiL7shXG63SRSzKSDek7PaceOs6bY","dt":"2021-01-01T00:00:00.000000+00:00","'
-                        b'et":"vcp","a":{"s":1,"d":"EHXALltba7vs56tixvcYsZv-JVI1-MlZ60Jk40DuyWFh"},"bt'
-                        b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert asdict(tsn) == {'b': [],
+                               'bt': '0',
+                               'c': ['NB'],
+                               'd': 'EBrr1pxZoY5nY38YifrGvn5HSMv0sAwvTTAQ5e3_-ivP',
+                               'dt': '2021-01-01T00:00:00.000000+00:00',
+                               'et': 'vcp',
+                               'i': 'EBrr1pxZoY5nY38YifrGvn5HSMv0sAwvTTAQ5e3_-ivP',
+                               'ii': 'EDroh9lTel0P1YQaiL7shXG63SRSzKSDek7PaceOs6bY',
+                               's': '0',
+                               'vn': [1, 0]}
 
-        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
+        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn))
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
@@ -342,14 +359,18 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         tever = wesReger.tevers[issuer.regk]
         tsn = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
-                    b'"s":"0","d":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ii":"EA_SbBUZYwq'
-                    b'LVlAAn14d6QUBQCSReJlZ755JqTgmRhXH","dt":"2021-01-01T00:00:00.000000+00:00","'
-                    b'et":"vcp","a":{"s":1,"d":"EIei8AjSQ9pGJp-UfcFNcxQxzsVHQCgCsViNr81Hl3pd"},"bt'
-                    b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert asdict(tsn) == {'b': [],
+                               'bt': '0',
+                               'c': ['NB'],
+                               'd': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'dt': '2021-01-01T00:00:00.000000+00:00',
+                               'et': 'vcp',
+                               'i': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                               'ii': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                               's': '0',
+                               'vn': [1, 0]}
 
-
-        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=tsn.ked)
+        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn))
 
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
