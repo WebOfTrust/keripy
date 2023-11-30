@@ -10,7 +10,7 @@ from ordered_set import OrderedSet as oset
 
 from . import forwarding
 from .. import help
-from ..core import coring
+from ..core import coring, serdering
 from ..core.coring import MtrDex
 from ..db import dbing, subing
 
@@ -241,7 +241,7 @@ class Respondant(doing.DoDoer):
                                 continue
 
                             raw = hab.receipt(serder)
-                            rserder = coring.Serder(raw=raw)
+                            rserder = serdering.SerderKERI(raw=raw)
                             del raw[:rserder.size]
                             self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
 
@@ -259,7 +259,7 @@ class Respondant(doing.DoDoer):
 
                     for msg in msgs:
                         raw = bytearray(msg)
-                        serder = coring.Serder(raw=raw)
+                        serder = serdering.SerderKERI(raw=raw)
                         del raw[:serder.size]
                         self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
 

@@ -13,7 +13,7 @@ from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.db import dbing
 
 logger = help.ogler.getLogger()

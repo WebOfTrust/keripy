@@ -9,7 +9,7 @@ import time
 from hio.base import doing, tyming
 
 from keri.app import forwarding, habbing, indirecting, storing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.peer import exchanging
 
 
@@ -32,7 +32,7 @@ def test_postman(seeder):
         parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy)
         assert recpHab.pre in wesKvy.kevers
 
-        serder = coring.Serder(raw=recpIcp)
+        serder = serdering.SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
@@ -69,7 +69,7 @@ def test_postman(seeder):
             msgs.append(msg)
 
         assert len(msgs) == 1
-        serder = coring.Serder(raw=msgs[0])
+        serder = serdering.SerderKERI(raw=msgs[0])
         assert serder.ked["t"] == coring.Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test")

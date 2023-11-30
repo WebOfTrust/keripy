@@ -8,7 +8,7 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.coring import Counter, CtrDex, Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
@@ -173,7 +173,7 @@ class PublishDoer(doing.DoDoer):
             while True:
                 raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
                 if raw:
-                    found = coring.Serder(raw=bytes(raw))
+                    found = serdering.SerderKERI(raw=bytes(raw))
                     if found and serder.pre == found.pre:
                         break
                 yield self.tock

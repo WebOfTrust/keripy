@@ -1981,7 +1981,7 @@ class Pather(Bexter):
         Returns:
             bytes: Value at the end of the path
         """
-        val = self.resolve(sad=serder.ked)
+        val = self.resolve(sad=serder.sad)
         if isinstance(val, str):
             saider = Saider(qb64=val)
             return saider.qb64b
@@ -3920,8 +3920,7 @@ IdxBthSigDex = IndexedBothSigCodex()  # Make instance
 Xizage = namedtuple("Xizage", "hs ss os fs ls")
 
 class Indexer:
-    """
-    Indexer is fully qualified cryptographic material primitive base class for
+    """ Indexer is fully qualified cryptographic material primitive base class for
     indexed primitives. In special cases some codes in the Index code table
     may be of variable length (i.e. not indexed) when the full size table entry
     is None. In that case the index is used instread as the length.

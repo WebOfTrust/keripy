@@ -6,7 +6,7 @@ tests.vdr.eventing module
 import pytest
 
 from keri.app import habbing, keeping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core import eventing as keventing
 from keri.core.coring import versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner
 from keri.db import basing
@@ -475,7 +475,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(regk, vcp.ked["s"], vcp.saider.qb64)
+        rseal = keventing.SealEvent(regk, vcp.ked["s"], vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
@@ -515,7 +515,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
@@ -542,7 +542,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # try to rotate a backerless registry
         vrt = eventing.rotate(regk, dig=vcp.said)
-        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.saider.qb64)
+        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -557,7 +557,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         iss = eventing.issue(vcdig=vcdig.decode("utf-8"), regk=regk)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.saider.qb64)
+        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -577,7 +577,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.saider.qb64)
+        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -614,7 +614,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         valCigar = valSigner.sign(ser=vcp.raw, index=0)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
@@ -649,7 +649,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         debCigar = debSigner.sign(ser=vrt.raw, index=1)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.saider.qb64)
+        rseal = keventing.SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -667,7 +667,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         debCigar = debSigner.sign(ser=bis.raw, index=1)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(bis.ked["i"], bis.ked["s"], bis.saider.qb64)
+        rseal = keventing.SealEvent(bis.ked["i"], bis.ked["s"], bis.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -696,7 +696,7 @@ def test_tevery():
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
@@ -723,7 +723,7 @@ def test_tevery():
         iss = eventing.issue(vcdig=vcdig.decode("utf-8"), regk=regk)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.saider.qb64)
+        rseal = keventing.SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -738,7 +738,7 @@ def test_tevery():
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.saider.qb64)
+        rseal = keventing.SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -762,7 +762,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         regk = vcp.pre
 
         # successfully anchor to a rotation event
-        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.saider.qb64)
+        rseal = keventing.SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         seqner = Seqner(sn=1)
         # said of rotation
@@ -777,7 +777,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         assert regk not in tvy.tevers
 
         rot = hab.rotate(data=[rseal._asdict()])  # Now rotate so the achoring KEL event gets into the database
-        rotser = coring.Serder(raw=rot)
+        rotser = serdering.SerderKERI(raw=rot)
         assert rotser.saidb == diger.qb64b
 
         tvy.processEscrows()  # process escrows and now the Tever event is good.

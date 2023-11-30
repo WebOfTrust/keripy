@@ -11,7 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.core import coring, serdering
 
 logger = help.ogler.getLogger()
 
@@ -92,7 +92,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))
@@ -110,7 +110,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = coring.Serder(raw=msg)
+                serder = serdering.SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))

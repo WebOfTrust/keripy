@@ -137,7 +137,7 @@ def test_partial_signed_escrow():
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
-                                 dig=kvr.serder.saider.qb64,
+                                 dig=kvr.serder.said,
                                  sn=kvr.sn+1,
                                  data=[])
 
@@ -257,7 +257,7 @@ def test_partial_signed_escrow():
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
-                               dig=kvr.serder.saider.qb64,
+                               dig=kvr.serder.said,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                sn=kvr.sn+1,
@@ -287,7 +287,7 @@ def test_partial_signed_escrow():
         srdr = eventing.rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
-                               dig=kvr.serder.saider.qb64,
+                               dig=kvr.serder.said,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
                                sn=kvr.sn+1,
@@ -304,11 +304,11 @@ def test_partial_signed_escrow():
         # apply msg to Kevery
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert kvr.serder.saider.qb64 != srdr.said  # key state not updated
+        assert kvr.serder.said != srdr.said  # key state not updated
 
         # process escrow
         kvy.processEscrowPartialSigs()
-        assert kvr.serder.saider.qb64 != srdr.said  # key state not updated
+        assert kvr.serder.said != srdr.said  # key state not updated
 
         msg = bytearray(srdr.raw)
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
@@ -318,14 +318,14 @@ def test_partial_signed_escrow():
         # apply msg to Kevery
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert kvr.serder.saider.qb64 != srdr.said  # key state not updated
+        assert kvr.serder.said != srdr.said  # key state not updated
 
         # get DTS set by escrow date time stamp on event
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
 
         # process escrow
         kvy.processEscrowPartialSigs()
-        assert kvr.serder.saider.qb64 == srdr.said  # key state updated
+        assert kvr.serder.said == srdr.said  # key state updated
 
         # get DTS set by first seen event acceptance date time stamp
         adtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.saidb)))
@@ -392,7 +392,7 @@ def test_missing_delegator_escrow():
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bobPre]
         assert bobK.prefixer.qb64 == bobPre
-        assert bobK.serder.saider.qb64 == bobSrdr.said
+        assert bobK.serder.said == bobSrdr.said
 
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.incept(stem='del', temp=True) # algo default salty and rooted
@@ -410,7 +410,7 @@ def test_missing_delegator_escrow():
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
         bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.serder.saider.qb64,
+                                    dig=bobK.serder.said,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
 
@@ -451,7 +451,7 @@ def test_missing_delegator_escrow():
         assert delPre in bobKvy.kevers  # successfully validated
         bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
         assert bobDelK.delegated
-        assert bobDelK.serder.saider.qb64 == delSrdr.said  # key state updated so event was validated
+        assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 
@@ -497,7 +497,7 @@ def test_missing_delegator_escrow():
         assert delPre in delKvy.kevers  # event removed from escrow
         delK = delKvy.kevers[delPre]
         assert delK.delegated
-        assert delK.serder.saider.qb64 == delSrdr.said
+        assert delK.serder.said == delSrdr.said
         couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 
@@ -511,7 +511,7 @@ def test_missing_delegator_escrow():
 
         delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
-                                   dig=bobDelK.serder.saider.qb64,
+                                   dig=bobDelK.serder.said,
                                    sn=bobDelK.sn+1,
                                    ndigs=[diger.qb64 for diger in digers])
 
@@ -520,7 +520,7 @@ def test_missing_delegator_escrow():
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
         bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.serder.saider.qb64,
+                                    dig=bobK.serder.said,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
 
@@ -536,12 +536,12 @@ def test_missing_delegator_escrow():
         # apply msg to bob's Kevery
         psr.parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert bobK.serder.saider.qb64 == bobSrdr.said  # key state updated so event was validated
+        assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
         # apply msg to del's Kevery
         psr.parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[bobPre].serder.saider.qb64 == bobSrdr.said
+        assert delKvy.kevers[bobPre].serder.said == bobSrdr.said
 
         # now create msg from Del's delegated rotation event
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
@@ -563,7 +563,7 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delK.delegated
-        assert delK.serder.saider.qb64 == delSrdr.said
+        assert delK.serder.said == delSrdr.said
         couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 
@@ -571,7 +571,7 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
-        assert bobDelK.serder.saider.qb64 == delSrdr.said  # key state updated so event was validated
+        assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 

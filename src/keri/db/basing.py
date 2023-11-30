@@ -36,7 +36,7 @@ from hio.base import doing
 from . import dbing, koming, subing
 from .. import kering
 
-from ..core import coring, eventing, parsing
+from ..core import coring, eventing, parsing, serdering
 
 from .. import help
 from ..help import helping
@@ -49,7 +49,7 @@ class dbdict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
     from db Baser.stts of kever states to reload kever from state in database
-    if not in memory as dict item
+    when not found in memory as dict item.
     """
     __slots__ = ('db')  # no .__dict__ just for db reference
 
@@ -83,6 +83,16 @@ class dbdict(dict):
             return True
 
     def get(self, k, default=None):
+        """Override of dict get method
+
+        Parameters:
+            k (str): key for dict
+            default: default value to return if not found
+
+        Returns:
+            kever: converted from underlying dict or database
+
+        """
         if not super(dbdict, self).__contains__(k):
             return default
         else:
@@ -156,14 +166,14 @@ class KeyStateRecord(RawRecord):  # baser.state
     (see baser.state at 'stts')
 
     Attributes:
-        vn (list[int]): version list [major, minor]
+        vn (list[int]): version number [major, minor]
         i (str): identifier prefix qb64
         s (str): sequence number of latest event in KEL as hex str
         p (str): prior event digest qb64
         d (str): latest event digest qb64
         f (str): first seen ordinal number of latest event in KEL as hex str
-        dt (str): datetime iso-8601
-        et (str): latest establishment event packet type
+        dt (str): datetime iso-8601 of key state record update, usually now
+        et (str): latest event packet type
         kt (str): signing threshold sith
         k (list[str]): signing keys qb64
         nt (str): next prerotated threshold sith
@@ -177,8 +187,12 @@ class KeyStateRecord(RawRecord):  # baser.state
                 d = SAID digest qb64  of latest establishment event
                 br = backer (witness) remove list (cuts) from latest est event
                 ba = backer (witness) add list (adds) from latest est event
-        di (str): delegator aid qb64
+        di (str): delegator aid qb64 or empty str if not delegated
 
+    Note: the seal anchor dict 'a' field is not included in the state notice
+    because it may be verbose and would impede the main purpose of a notic which
+    is to trigger the download of the latest events, which would include the
+    anchored seals.
 
     """
     vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
@@ -188,7 +202,7 @@ class KeyStateRecord(RawRecord):  # baser.state
     d: str =''  # latest event digest qb64
     f: str ='0'  # first seen ordinal number of latest event in KEL as hex str
     dt: str = ''  # datetime of creation of state
-    et: str = ''  # latest est evt packet type (ilk)
+    et: str = ''  # latest evt packet type (ilk)
     kt: str = '0'  # signing threshold sith
     k: list[str] = field(default_factory=list)  # signing key list qb64
     nt: str =  '0'  # next rotation threshold nsith
@@ -197,13 +211,6 @@ class KeyStateRecord(RawRecord):  # baser.state
     b: list = field(default_factory=list)  # backer AID list qb64
     c: list[str] =  field(default_factory=list)  # config trait list
     ee: StateEERecord = field(default_factory=StateEERecord)
-
-    #field(default_factory=dict) # latest est event details
-        # asdict of StateEstEvent
-            # s = sn of latest est event as lowercase hex string  no leading zeros,
-            # d = SAID digest qb64  of latest establishment event
-            # br = backer (witness) remove list (cuts) from latest est event
-            # ba = backer (witness) add list (adds) from latest est event
     di: str = '' # delegator aid qb64 if any otherwise empty '' str
 
 
@@ -825,11 +832,10 @@ class Baser(dbing.LMDBer):
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
-        # Kever state made of KeyStateRecord
+        # Kever state made of KeyStateRecord key states
         self.states = koming.Komer(db=self,
                                    schema=KeyStateRecord,
                                    subkey='stts.')
-        #self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
 
@@ -1315,7 +1321,7 @@ class Baser(dbing.LMDBer):
 
         """
         for evt in self.clonePreIter(pre=pre):
-            srdr = coring.Serder(raw=evt)
+            srdr = serdering.SerderKERI(raw=evt)
             if "a" in srdr.ked:
                 ancs = srdr.ked["a"]
                 for anc in ancs:
@@ -1430,11 +1436,11 @@ class Baser(dbing.LMDBer):
             # retrieve last event itself of receipter est evt from sdig
             sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = coring.Serder(raw=bytes(sraw))
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise kering.ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
-                                             "".format(sn, sserder.ked))
+                                             "".format(sn, sserder.sad))
 
             verfers = sserder.verfers
             tholder = sserder.tholder

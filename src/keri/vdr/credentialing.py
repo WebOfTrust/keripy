@@ -12,7 +12,7 @@ from keri.vdr import viring
 from .. import kering, help
 from ..app import agenting
 from ..app.habbing import GroupHab
-from ..core import parsing, coring, scheming
+from ..core import parsing, coring, scheming, serdering
 from ..core.coring import Seqner, MtrDex, Serder
 from ..core.eventing import SealEvent, TraitDex
 from ..db import dbing
@@ -343,7 +343,10 @@ class Registry(BaseRegistry):
         if self.noBackers:
             serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerIssue(vcdig=said,
+                                          regk=self.regk,
+                                          regsn=self.regi,
+                                          regd=self.regser.said,
                                           dt=dt)
 
         self.processEvent(serder=serder)
@@ -373,7 +376,10 @@ class Registry(BaseRegistry):
         if self.noBackers:
             serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerRevoke(vcdig=vci,
+                                           regk=self.regk,
+                                           regsn=self.regi,
+                                           regd=self.regser.said,
                                            dig=iserder.said, dt=dt)
 
         self.processEvent(serder=serder)
@@ -504,8 +510,11 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
-            registry.anchorMsg(pre=iserder.pre, regd=iserder.said, seqner=seqner, saider=saider)
+            saider = coring.Saider(qb64=hab.kever.serder.said)
+            registry.anchorMsg(pre=iserder.pre,
+                               regd=iserder.said,
+                               seqner=seqner,
+                               saider=saider)
 
             print("Waiting for TEL event witness receipts")
             self.witDoer.msgs.append(dict(pre=anc.pre, sn=seqner.sn))
@@ -544,7 +553,7 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
+            saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
@@ -584,7 +593,7 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             seqner = coring.Seqner(sn=hab.kever.sner.num)
-            saider = hab.kever.serder.saider
+            saider = coring.Saider(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
@@ -609,7 +618,7 @@ class Registrar(doing.DoDoer):
     @staticmethod
     def multisigIxn(hab, rseal):
         ixn = hab.interact(data=[rseal])
-        serder = coring.Serder(raw=bytes(ixn))
+        serder = serdering.SerderKERI(raw=bytes(ixn))
 
         sn = serder.sn
         said = serder.said
@@ -793,7 +802,7 @@ class Credentialer(doing.DoDoer):
             bool: true if credential is valid against a known schema
 
         """
-        schema = creder.crd['s']
+        schema = creder.sad['s']
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
             raise kering.ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
@@ -927,35 +936,35 @@ def sendArtifacts(hby, reger, postman, creder, recp):
 
     """
     issr = creder.issuer
-    isse = creder.subject["i"] if "i" in creder.subject else None
-    regk = creder.status
+    isse = creder.attrib["i"] if "i" in creder.attrib else None
+    regk = creder.regi
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     if isse != recp:
         ikever = hby.db.kevers[isse]
         for msg in hby.db.cloneDelegation(ikever):
-            serder = coring.Serder(raw=msg)
+            serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 
         for msg in hby.db.clonePreIter(pre=isse):
-            serder = coring.Serder(raw=msg)
+            serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 
     if regk is not None:
         for msg in reger.clonePreIter(pre=regk):
-            serder = coring.Serder(raw=msg)
+            serder = serdering.SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 

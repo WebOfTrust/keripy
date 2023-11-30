@@ -16,8 +16,7 @@ from keri.peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
-from ..core import coring, eventing, parsing, routing
-from ..core.coring import Serder
+from ..core import coring, eventing, parsing, routing, serdering
 from ..db import dbing, basing
 from ..kering import MissingSignatureError, Roles
 
@@ -1160,7 +1159,7 @@ class BaseHab:
         if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
-        return coring.Serder(raw=bytes(raw))
+        return serdering.SerderKERI(raw=bytes(raw))
 
     @property
     def kevers(self):
@@ -1243,7 +1242,7 @@ class BaseHab:
         if kever.delegator is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
-                                      dig=kever.serder.saider.qb64,
+                                      dig=kever.serder.said,
                                       sn=kever.sner.num + 1,
                                       isith=cst,
                                       nsith=nst,
@@ -1256,7 +1255,7 @@ class BaseHab:
         else:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=keys,
-                                     dig=kever.serder.saider.qb64,
+                                     dig=kever.serder.said,
                                      sn=kever.sner.num + 1,
                                      isith=cst,
                                      nsith=nst,
@@ -1290,7 +1289,7 @@ class BaseHab:
         """
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
-                                   dig=kever.serder.saider.qb64,
+                                   dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
                                    data=data)
 
@@ -1307,6 +1306,7 @@ class BaseHab:
                                          "pre={}.".format(self.pre)) from ex
 
         return msg
+
 
     def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
         """Sign given serialization ser using appropriate keys.
@@ -2021,7 +2021,7 @@ class BaseHab:
         dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
         msg = self.db.getEvt(key)
-        serder = coring.Serder(raw=bytes(msg))
+        serder = serdering.SerderKERI(raw=bytes(msg))
 
         sigs = []
         for sig in self.db.getSigsIter(key):
@@ -2169,7 +2169,7 @@ class Hab(BaseHab):
         kevers (dict): of eventing.Kever instances from KELs in local db
             keyed by qb64 prefix. Read through cache of of kevers of states for
             KELs in db.states
-        iserder (coring.Serder): own inception event
+        iserder (serdering.SerderKERI): own inception event
         prefixes (OrderedSet): local prefixes for .db
         accepted (bool): True means accepted into local KEL.
                           False otherwise
@@ -2586,7 +2586,7 @@ class GroupHab(BaseHab):
         kevers (dict): of eventing.Kever instances from KELs in local db
             keyed by qb64 prefix. Read through cache of of kevers of states for
             KELs in db.states
-        iserder (coring.Serder): own inception event
+        iserder (serdering.SerderKERI): own inception event
         prefixes (OrderedSet): local prefixes for .db
         accepted (bool): True means accepted into local KEL.
                           False otherwise

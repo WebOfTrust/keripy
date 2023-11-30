@@ -99,10 +99,10 @@ class Verifier:
             saider (Saider): SAID of source anchoring KEL or TEL event
 
         """
-        regk = creder.status
+        regk = creder.regi
         vcid = creder.said
         schema = creder.schema
-        prov = creder.chains
+        prov = creder.edge
 
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
@@ -190,7 +190,7 @@ class Verifier:
             saider (Diger) digest of anchoring event for credential
 
         """
-        key = creder.saider.qb64b
+        key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mre.put(keys=key, val=coring.Dater())
@@ -205,7 +205,7 @@ class Verifier:
             saider (Diger) digest of anchoring event for credential
 
         """
-        key = creder.saider.qb64b
+        key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mce.put(keys=key, val=coring.Dater())
@@ -222,7 +222,7 @@ class Verifier:
             saider (Diger) digest of anchoring event for credential
 
         """
-        key = creder.saider.qb64b
+        key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
         return self.reger.mse.put(keys=key, val=coring.Dater())
@@ -300,8 +300,8 @@ class Verifier:
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-        if 'i' in creder.subject:
-            subject = creder.subject["i"].encode("utf-8")
+        if 'i' in creder.attrib:
+            subject = creder.attrib["i"].encode("utf-8")
             self.reger.subjs.add(keys=subject, val=saider)
 
     def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
@@ -332,26 +332,26 @@ class Verifier:
         creder = self.reger.creds.get(keys=nodeSaid)
 
         if op not in ['I2I', 'DI2I', 'NI2I']:
-            op = 'I2I' if 'i' in creder.subject else 'NI2I'
+            op = 'I2I' if 'i' in creder.attrib else 'NI2I'
 
         if op != 'NI2I':
-            if 'i' not in creder.subject:
+            if 'i' not in creder.attrib:
                 return None
 
-            iss = self.reger.subjs.get(keys=creder.subject['i'])
+            iss = self.reger.subjs.get(keys=creder.attrib['i'])
             if iss is None:
                 return None
 
-            if op == 'I2I' and issuer != creder.subject['i']:
+            if op == 'I2I' and issuer != creder.attrib['i']:
                 return None
 
             if op == "DI2I":
                 raise NotImplementedError()
 
-        if creder.status not in self.tevers:
+        if creder.regi not in self.tevers:
             return None
 
-        tever = self.tevers[creder.status]
+        tever = self.tevers[creder.regi]
 
         state = tever.vcState(nodeSaid)
         if state is None:

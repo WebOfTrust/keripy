@@ -20,20 +20,25 @@ logger = help.ogler.getLogger()
 
 def test_bare():
     """
-    Test bare message 'bre'
+    Test bare message 'bar'
 
     {
       "v" : "KERI10JSON00011c_",
       "t" : "bar",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "r" : "logs/processor",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "sealed/processor",
       "a" :
-      {
-         "cid": "D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",
-         "role": "watcher",
-         "eid": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-      }
+        {
+          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+            {
+               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+               "dt": "2020-08-22T17:50:12.988921+00:00",
+               "name": "John Jones",
+               "role": "Founder",
+            }
+        }
     }
 
     """
@@ -86,17 +91,19 @@ def test_bare():
                  name="besty",
                )
 
-
+    stamp = "2023-06-26T22:22:13.416766+00:00"
     serderE = eventing.bare(route="/to/the/moon",
                              data=data,
+                             stamp=stamp,
                             )
 
-    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKqOoS5FnJEPwdp'
-                           b'IMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                           b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
-                           b'5CM","name":"besty"}}')
+    assert serderE.raw == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8xapaMhP4I_0yi'
+                        b'hFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r":"/to/the/moon","a":{"c'
+                        b'id":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"E'
+                        b'AoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}')
 
-    assert serderE.ked["d"] == 'EOBOm9NDlTey2VyDGhMZ-wKqOoS5FnJEPwdpIMVH7Oll'
+    assert serderE.said == 'EGPY61eN5zhw7nnlra3bQL8xapaMhP4I_0yihFOLXNgH'
+    assert serderE.stamp == stamp
 
     # create SealEvent for endorsers est evt whose keys use to sign
 
@@ -110,14 +117,14 @@ def test_bare():
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
-                   b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-                   b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6'
-                   b'WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAA'
-                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAACKOcmfrZtRsW_'
-                   b'PKmt_gDXFiAsepoKl85WFTr_XaVGh2qkh_JQ7eN-nEFFgyPv-8a51jrOGRX_tY2M'
-                   b'6DPQqQHUJ')
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
+                    b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
+                    b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
+                    b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
+                    b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhWqp6wC08no2iWhgFYTaUg'
+                    b'rasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
+                    b'DXfrEaqN7zhqTEhkeDZ2z-AABAAACsAGVg747fc-61v64LuAa6WbfCKjKgH6Xo0t'
+                    b'1wz2X7E51I_aWCTSU3KIhqkZirj7aYK__AIy_UvC8Tub7APwH')
 
     # create endorsed bar with trans endorser
     # create trans key pair for endorser
@@ -134,14 +141,14 @@ def test_bare():
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
-                   b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-                   b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMr'
-                   b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAA'
-                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAABABWeacQ_nHgu'
-                   b'Ugw6scJCUIbs5_vczaXxtKTYaryN15e_9Y7GT-korkJc4sHGpkmekr7w2XFhr1Da'
-                   b'OTfVsyNUI')
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
+                b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
+                b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
+                b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
+                b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a-Zblpqe5Hg7w7iz9JCKn'
+                b'MgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
+                b'DXfrEaqN7zhqTEhkeDZ2z-AABAAAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3'
+                b'ZBD3jZzbVPwxKTv8cY1z-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
 
 
     # create endorsed bar with nontrans endorser
@@ -154,12 +161,13 @@ def test_bare():
     cigarE = signerE.sign(ser=serderE.raw)  # no index so Cigar
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderE.raw)
     msg = messagize(serderE, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"bar","d":"EOBOm9NDlTey2VyDGhMZ-wKq'
-          b'OoS5FnJEPwdpIMVH7Oll","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6w'
-          b'C08no2iWhgFYTaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTN'
-          b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABBMr'
-          b'wi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0BBABWeacQ_nHguUgw6scJC'
-          b'UIbs5_vczaXxtKTYaryN15e_9Y7GT-korkJc4sHGpkmekr7w2XFhr1DaOTfVsyNUI')
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
+                    b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
+                    b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
+                    b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
+                    b'nmwyZ-i0d8JZ5CM","name":"besty"}}-CABBMrwi0a-Zblpqe5Hg7w7iz9JCKn'
+                    b'MgWKu_W9w4aNUL64y0BAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3ZBD3jZzb'
+                    b'VPwxKTv8cY1z-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
 
 
     """Done Test"""

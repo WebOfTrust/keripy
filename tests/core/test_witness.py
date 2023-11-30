@@ -7,7 +7,7 @@ import os
 
 from keri import help
 from keri.app import habbing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.db import dbing
 
 logger = help.ogler.getLogger()
@@ -69,8 +69,8 @@ def test_indexed_witness_replay():
         csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
-        assert len(camHab.iserder.werfers) == len(wits)
-        for werfer in camHab.iserder.werfers:
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
         assert camHab.kever.toader.num == 2
@@ -333,8 +333,8 @@ def test_nonindexed_witness_receipts():
         csith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
         assert camHab.kever.prefixer.transferable
-        assert len(camHab.iserder.werfers) == len(wits)
-        for werfer in camHab.iserder.werfers:
+        assert len(camHab.iserder.berfers) == len(wits)
+        for werfer in camHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits
         assert camHab.kever.toader.num == 2
@@ -586,7 +586,7 @@ def test_out_of_order_witnessed_events():
         bobIcp = bobHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
-        iserder = coring.Serder(raw=bytearray(bobIcp))
+        iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
 
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
@@ -594,7 +594,7 @@ def test_out_of_order_witnessed_events():
         bobRotMsg = bobHab.makeOwnEvent(sn=1)
         parsing.Parser().parse(ims=bytearray(bobRotMsg), kvy=wesKvy)
         assert wesKvy.kevers[bobHab.pre].sn == 1
-        bobRot = coring.Serder(raw=bobRotMsg)
+        bobRot = serdering.SerderKERI(raw=bobRotMsg)
         wesHab.receipt(serder=bobRot)
 
         # Get the receipted rotation event and pass, out of order to Bam

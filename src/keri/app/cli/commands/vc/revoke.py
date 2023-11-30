@@ -139,8 +139,8 @@ class RevokeDoer(doing.DoDoer):
             while not self.registrar.complete(creder.said, sn=1):
                 yield self.tock
 
-            if self.hab.witnesser() and 'i' in creder.subject:
-                recp = creder.subject['i']
+            if self.hab.witnesser() and 'i' in creder.attrib:
+                recp = creder.attrib['i']
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
                     serder = coring.Serder(raw=msg)

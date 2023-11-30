@@ -42,7 +42,10 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=sidHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
         sidExc = exchanging.Exchanger(hby=sidHby, handlers=[])
@@ -74,7 +77,10 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=sidHab.kever.serder.saider)
+        issuer.anchorMsg(pre=iss.pre,
+                         regd=iss.said,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
         msg = creder.raw

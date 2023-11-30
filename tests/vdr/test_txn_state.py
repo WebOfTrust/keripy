@@ -1,5 +1,5 @@
 from keri.app import habbing
-from keri.core import routing, parsing, coring
+from keri.core import routing, parsing, coring, serdering
 from keri.core.eventing import Kevery, SealEvent
 
 from keri.vc import proving
@@ -21,7 +21,10 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6'
@@ -38,15 +41,15 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
 
         tever = issuer.tevers[issuer.regk]
-        tsn = tever.state()
+        rsr = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
+        assert rsr.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
                         b'"s":"0","d":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ii":"EA_SbBUZYwq'
                         b'LVlAAn14d6QUBQCSReJlZ755JqTgmRhXH","dt":"2021-01-01T00:00:00.000000+00:00","'
                         b'et":"vcp","a":{"s":1,"d":"EIei8AjSQ9pGJp-UfcFNcxQxzsVHQCgCsViNr81Hl3pd"},"bt'
                         b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
 
-        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
+        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict())
 
         bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -91,7 +94,10 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6'
@@ -184,7 +190,10 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'EBrr1pxZoY5nY38YifrGvn5HSMv0sAwvTTAQ5e3_-ivP'
@@ -194,7 +203,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
 
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
-            iserder = coring.Serder(raw=bytearray(msg))
+            iserder = serdering.SerderKERI(raw=bytearray(msg))
             wesHab.receipt(serder=iserder)
 
         assert bobHab.pre in wesHab.kevers
@@ -299,7 +308,10 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6'
@@ -379,7 +391,10 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         assert issuer.regk == 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6'
@@ -403,17 +418,25 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         bobHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=bobHab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=bobHab.kever.serder.saider)
+        issuer.anchorMsg(pre=iss.pre,
+                         regd=iss.said,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
         regery.processEscrows()
 
         tever = issuer.tevers[issuer.regk]
-        tsn = tever.state()
+        rsr = tever.state()
 
-        assert tsn.raw == (b'{"v":"KERI10JSON000158_","i":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6",'
-                           b'"s":"0","d":"ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ii":"EA_SbBUZYwq'
-                           b'LVlAAn14d6QUBQCSReJlZ755JqTgmRhXH","dt":"2021-06-27T21:26:21.233257+00:00","'
-                           b'et":"vcp","a":{"s":1,"d":"EIei8AjSQ9pGJp-UfcFNcxQxzsVHQCgCsViNr81Hl3pd"},"bt'
-                           b'":"0","br":[],"ba":[],"b":[],"c":["NB"]}')
+        assert rsr._asdict() == {'vn': [1, 0],
+                            'i': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                            's': '0',
+                            'd': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                            'ii': 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH',
+                            'dt': '2021-06-27T21:26:21.233257+00:00',
+                            'et': 'vcp',
+                            'bt': '0',
+                            'b': [],
+                            'c': ['NB']}
 
         ctsn = tever.vcState(vci=creder.said)
         assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"EEqcwL-ew_OaQphSQvy8bRGtnKlL_g_SkXjsAGWgtFGl",'
@@ -474,5 +497,6 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         # check to make sure the tsn escrow state is clear
         assert bamReger.txnsb.escrowdb.get(keys=(creder.said, bobHab.pre)) == []
         # check to make sure the tsn has been saved
-        saider = bamReger.txnsb.saiderdb.get(keys=(creder.said, bobHab.pre))
+        keys = (creder.said, bobHab.pre)
+        saider = bamReger.txnsb.saiderdb.get(keys=keys)
         assert saider.qb64b == b'EIxhyBA8h6BMmtWEJzqNkoAquIkMucpXbdY3kQX25GQu'

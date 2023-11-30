@@ -63,7 +63,7 @@ def test_parser():
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
@@ -81,7 +81,7 @@ def test_parser():
         # Event 2 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
@@ -98,7 +98,7 @@ def test_parser():
 
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=3)
         event_digs.append(serder.said)
         # create sig counter
@@ -114,7 +114,7 @@ def test_parser():
 
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=4)
         event_digs.append(serder.said)
         # create sig counter
@@ -131,7 +131,7 @@ def test_parser():
         # Event 5 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
@@ -148,7 +148,7 @@ def test_parser():
 
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=6)
         event_digs.append(serder.said)
         # create sig counter
@@ -166,7 +166,7 @@ def test_parser():
         # nxt digest is empty
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         sn=7)
         event_digs.append(serder.said)
         # create sig counter
@@ -180,9 +180,9 @@ def test_parser():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        # Event 8 Interaction
+        # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.saider.qb64,
+                          dig=kever.serder.said,
                           sn=8)
         # create sig counter
         counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
@@ -196,10 +196,10 @@ def test_parser():
         msgs.extend(counter.qb64b)
         msgs.extend(siger.qb64b)
 
-        # Event 8 Rotation
+        # Event 8 Rotation override interaction but already abandoned
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.saider.qb64,
+                        dig=kever.serder.said,
                         ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter

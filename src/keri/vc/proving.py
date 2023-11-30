@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from typing import Union
 
 from .. import help
-from ..core import coring
+from ..core import coring, serdering
 from ..core.coring import (Serials, versify)
 from ..db import subing
 from ..kering import Version
@@ -99,7 +99,7 @@ def credential(schema,
 
     _, vc = coring.Saider.saidify(sad=vc)
 
-    return Creder(ked=vc)
+    return serdering.SerderACDC(sad=vc) # Creder(ked=vc)
 
 
 class Creder(coring.Sadder):
@@ -155,7 +155,7 @@ class Creder(coring.Sadder):
             raise ValueError("Invalid protocol {}, must be ACDC".format(self._proto))
 
     @property
-    def crd(self):
+    def sad(self):
         """ crd property getter"""
         return self._ked
 
@@ -170,20 +170,20 @@ class Creder(coring.Sadder):
         return self._ked["s"]
 
     @property
-    def subject(self):
+    def attrib(self):
         """ subject property getter"""
         return self._ked["a"]
 
     @property
-    def status(self):
-        """ status property getter"""
+    def regi(self):
+        """ registry identifier property getter"""
         if "ri" in self._ked:
             return self._ked["ri"]
         else:
             return None
 
     @property
-    def chains(self):
+    def edge(self):
         return self._ked["e"] if "e" in self._ked else {}
 
 

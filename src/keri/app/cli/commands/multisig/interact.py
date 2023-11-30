@@ -14,7 +14,7 @@ from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import existing, displaying, config
 from keri.app.notifying import Notifier
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -113,7 +113,7 @@ class GroupMultisigInteract(doing.DoDoer):
         aids = self.aids if self.aids is not None else ghab.smids
 
         ixn = ghab.interact(data=self.data)
-        serder = coring.Serder(raw=ixn)
+        serder = serdering.SerderKERI(raw=ixn)
 
         exn, ims = grouping.multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))

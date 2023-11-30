@@ -60,7 +60,17 @@ class Serdery:
 
     """
 
-    def reap(self, ims, *, version=Version):
+    def __init__(self, *, version=None):
+        """Init instance
+
+        Parameters:
+            version (Versionage | None): instance supported protocol version
+                     None means do not enforce a supported version
+        """
+        self.version = version  # default version
+
+
+    def reap(self, ims, *, version=None):
         """Extract and return Serder subclass based on protocol type reaped from
         version string inside serialized raw of Serder.
 
@@ -74,6 +84,8 @@ class Serdery:
             version (Versionage | None): instance supported protocol version
                 None means do not enforce a supported version
         """
+        version = version if version is not None else self.version
+
         if len(ims) < Serder.InhaleSize:
             raise ShortageError(f"Need more raw bytes for Serdery to reap.")
 
@@ -267,7 +279,7 @@ class Serder:
                     Ilks.rot: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
-                            ba=[], a=[])),
+                            ba=[], c=[], a=[])),
                     Ilks.ixn: Fieldage({Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='', a=[])),
                     Ilks.dip: Fieldage(saids={Saids.d: DigDex.Blake3_256,
@@ -278,7 +290,7 @@ class Serder:
                     Ilks.drt: Fieldage(saids={Saids.d: DigDex.Blake3_256},
                         alls=dict(v='', t='',d='', i='', s='0', p='',
                             kt='0',k=[], nt='0', n=[], bt='0', br=[],
-                            ba=[], a=[])),
+                            ba=[], c=[], a=[])),
                     Ilks.rct: Fieldage(saids={},
                         alls=dict(v='', t='',d='', i='', s='0')),
                     Ilks.qry: Fieldage(saids={Saids.d: DigDex.Blake3_256},
@@ -405,7 +417,7 @@ class Serder:
                 if label not in self._sad:
                     raise FieldError(f"Missing primary said field in {self._sad}.")
                 self._said = self._sad[label]  # not verified
-            except Exception:
+            except Exception as ex:
                 self._said = None  # no saidive field
 
             if strip:  #only when raw is bytearray
@@ -807,7 +819,7 @@ class Serder:
         if "v" not in sad:
             raise FieldError(f"Missing version string field in {sad}.")
 
-        return sad, proto, version, kind, size
+        return sad, proto, vrsn, kind, size
 
 
     @staticmethod
@@ -1018,6 +1030,15 @@ class Serder:
         """
         return self._vrsn
 
+    @property
+    def version(self):
+        """version property getter alias of .vrsn
+
+        Returns:
+            version (Versionage): instance of protocol version for this Serder
+        """
+        return self.vrsn
+
 
     @property
     def size(self):
@@ -1088,17 +1109,44 @@ class SerderKERI(Serder):
         if (self.vrsn.major < 2 and self.vrsn.minor < 1 and
             self.ilk in (Ilks.qry, Ilks.rpy, Ilks.pro, Ilks.bar, Ilks.exn)):
                 pass
-        else:
+        else:  # verify pre
             try:
                 code = Matter(qb64=self.pre).code
             except Exception as ex:
                 raise ValidationError(f"Invalid identifier prefix = "
                                       f"{self.pre}.") from ex
 
-            if code not in PreDex:
+            if self.ilk in (Ilks.dip, Ilks.drt):
+                idex = DigDex  # delegatee must be digestive prefix
+            else:
+                idex = PreDex  # non delegatee may be non digest
+
+            if code not in idex:
                 raise ValidationError(f"Invalid identifier prefix code = {code}.")
 
+            # non-transferable pre validations
+            if code in [PreDex.Ed25519N, PreDex.ECDSA_256r1N, PreDex.ECDSA_256k1N]:
+                if self.ndigs:
+                    raise ValidationError(f"Non-transferable code = {code} with"
+                                          f" non-empty nxt = {self.ndigs}.")
 
+                if self.backs:
+                    raise ValidationError("Non-transferable code = {code} with"
+                                          f" non-empty backers = {self.backs}.")
+
+                if self.seals:
+                    raise ValidationError("Non-transferable code = {code} with"
+                                          f" non-empty seals = {self.seals}.")
+
+        if self.ilk in (Ilks.dip):  # validate delpre
+            try:
+                code = Matter(qb64=self.delpre).code
+            except Exception as ex:
+                raise ValidationError(f"Invalid delegator prefix = "
+                                      f"{self.delpre}.") from ex
+
+            if code not in PreDex:  # delegator must be valid prefix code
+                raise ValidationError(f"Invalid delegator prefix code = {code}.")
 
 
     @property
@@ -1137,8 +1185,8 @@ class SerderKERI(Serder):
 
     @property
     def sner(self):
-        """
-        sner (Number of sequence number) property getter
+        """Number instance of sequence number, sner property getter
+
         Returns:
             (Number): of ._sad["s"] hex number str converted
         """
@@ -1148,8 +1196,7 @@ class SerderKERI(Serder):
 
     @property
     def sn(self):
-        """
-        sn (sequence number) property getter
+        """Sequence number, sn property getter
         Returns:
             sn (int): of .sner.num from .sad["s"]
         """
@@ -1157,8 +1204,8 @@ class SerderKERI(Serder):
 
     @property
     def seals(self):
-        """
-        seals property getter
+        """Seals property getter
+
         Returns:
             seals (list): from ._sad["a"]
         """
@@ -1168,8 +1215,8 @@ class SerderKERI(Serder):
 
     @property
     def traits(self):
-        """
-        traits property getter  (config traits)
+        """Traits list property getter  (config traits)
+
         Returns:
             traits (list): from ._sad["c"]
         """
@@ -1179,8 +1226,11 @@ class SerderKERI(Serder):
     #Properties of estive Serders ilks in  (icp, rot, dip, drt)
     @property
     def tholder(self):
-        """
-        Returns Tholder instance as converted from ._sad['kt'] or None if missing.
+        """Tholder property getter
+
+        Returns:
+            tholder (Tholder): instance as converted from ._sad['kt']
+                or None if missing.
 
         """
         return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
@@ -1188,8 +1238,7 @@ class SerderKERI(Serder):
 
     @property
     def verfers(self):
-        """
-        Returns list of Verfer instances as converted from ._sad['k'].
+        """Returns list of Verfer instances as converted from ._sad['k'].
         One for each key.
         verfers property getter
         """
@@ -1199,25 +1248,58 @@ class SerderKERI(Serder):
 
     @property
     def ntholder(self):
-        """
-        Returns Tholder instance as converted from ._sad['nt'] or None if missing.
+        """Returns Tholder instance as converted from ._sad['nt'] or None if missing.
 
         """
         return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
 
 
     @property
-    def ndigers(self):
+    def ndigs(self):
         """
-        Returns list of Diger instances as converted from ._sad['n'].
-        One for each next key digests.
-        ndigers property getter
+        Returns:
+            (list): digs
+        """
+        if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
+            return None
+
+        return self._sad.get("n")
+
+
+    @property
+    def digs(self):
+        """
+        Returns:
+            (list): digs
+        """
+        return self.ndigs
+
+
+    @property
+    def ndigers(self):
+        """NDigers property getter
+
+        Returns:
+            ndigers (list[Diger]): instance as converted from ._sad['n'].
+            One for each next key digests.
         """
         if self.vrsn.major < 2 and self.vrsn.minor < 1 and self.ilk == Ilks.vcp:
             return None
 
         digs = self._sad.get("n")
         return [Diger(qb64=dig) for dig in digs] if digs is not None else None
+
+
+    @property
+    def digers(self):
+        """Digers property getter, alias of .ndigers
+
+        Returns:
+            digers (list[Diger]): instance as converted from ._sad['n'].
+            One for each next key digests.
+        """
+        return self.ndigers
+
 
 
     @property
@@ -1241,18 +1323,79 @@ class SerderKERI(Serder):
         return self.bner.num if self.bner is not None else None
 
 
+    # properties for incentive Serders like icp, dip
+    @property
+    def backs(self):
+        """Backers property getter
+
+        Returns:
+            backs (list[str]): aids qb64 from ._sad['b'].
+                           One for each backer (witness).
+
+        """
+        backs = self._sad.get("b")
+        return backs if backs is not None else None
+
+
     @property
     def berfers(self):
-        """
+        """Berfers property getter
         Returns list of Verfer instances as converted from ._sad['b'].
-        One for each backer (witness).
-        berfers property getter
+                One for each backer (witness).
+
         """
         baks = self._sad.get("b")
         return [Verfer(qb64=bak) for bak in baks] if baks is not None else None
 
 
+    # properties for priorative Serders like ixn rot drt
+
+    @property
+    def prior(self):
+        """Prior property getter
+        Returns:
+            prior (str): said qb64 of prior event from ._sad['p'].
+
+        """
+        prior = self._sad.get("p")
+        return prior if prior is not None else None
+
+
+    @property
+    def priorb(self):
+        """Priorb bytes property getter
+        Returns:
+            priorb (str): said qb64b of prior event from ._sad['p'].
+
+        """
+        return self.prior.encode("utf-8") if self.prior is not None else None
+
+
+    # properties for rotative Serders like rot drt
+
+    @property
+    def cuts(self):
+        """Cuts property getter
+        Returns list of aids of instances as converted from ._sad['br'].
+                 One for each backer (witness) to be cut (removed).
+
+        """
+        cuts = self._sad.get("br")
+        return cuts if cuts is not None else None
+
+    @property
+    def adds(self):
+        """Adds property getter
+        Returns list of aids of instances as converted from ._sad['ba'].
+                 One for each backer (witness) to be added.
+
+        """
+        adds = self._sad.get("ba")
+        return adds if adds is not None else None
+
+
     #Properties for delegated Serders ilks in (dip, drt)
+
     @property
     def delpre(self):
         """
@@ -1270,28 +1413,16 @@ class SerderKERI(Serder):
         """
         return self.delpre.encode("utf-8") if self.delpre is not None else None
 
-
-
-    #Properties for state Serder ilk is None
-    @property
-    def fner(self):
-        """
-        fner (Number of first seen ordinal) property getter
-        Returns:
-            (Number): of ._sad["f"] hex number str converted  (state message)
-        """
-        # auto converts hex num str to int
-        return Number(num=self._sad["f"]) if "f" in self._sad else None
-
+    #Propertives for dated Serders, qry, rpy, pro, bar, exn
 
     @property
-    def fn(self):
+    def stamp(self):
         """
-        fn (first seen ordinal number) property getter
         Returns:
-            fn (int): of .fner.num from ._sad["f"]
+           stamp (str): date-time-stamp sad["dt"]. RFC-3339 profile of ISO-8601
+                datetime of creation of message or data
         """
-        return self.fner.num if self.fner is not None else None
+        return self._sad.get("dt")
 
 
     #Properties for exn  exchange
@@ -1300,7 +1431,8 @@ class SerderKERI(Serder):
     #Properties for vcp  (registry  inception event)
     @property
     def uuid(self):
-        """
+        """uuid property getter
+
         Returns:
            uuid (str): qb64  of .sad["u"] salty nonce
         """
@@ -1309,6 +1441,8 @@ class SerderKERI(Serder):
     @property
     def nonce(self):
         """
+        should be deprecated
+
         Returns:
            nonce (str): alias for .uuid property
         """
@@ -1344,17 +1478,17 @@ class SerderCREL(Serder):
         super(SerderCREL, self)._verify(**kwa)
 
         try:
-            code = Matter(qb64=self.isr).code
+            code = Matter(qb64=self.issuer).code
         except Exception as ex:
             raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.isr}.") from ex
+                                  f"{self.issuer}.") from ex
 
         if code not in PreDex:
             raise ValidationError(f"Invalid issuer AID code = {code}.")
 
 
     @property
-    def isr(self):
+    def issuer(self):
         """
         Returns:
            issuer (str): qb64  of .sad["i"] issuer AID property getter
@@ -1363,12 +1497,12 @@ class SerderCREL(Serder):
 
 
     @property
-    def isrb(self):
+    def issuerb(self):
         """
         Returns:
         issuerb (bytes): qb64b  of .issuer property getter as bytes
         """
-        return self.isr.encode("utf-8") if self.isr is not None else None
+        return self.issuer.encode("utf-8") if self.issuer is not None else None
 
 
 class SerderACDC(Serder):
@@ -1395,30 +1529,142 @@ class SerderACDC(Serder):
         super(SerderACDC, self)._verify(**kwa)
 
         try:
-            code = Matter(qb64=self.isr).code
+            code = Matter(qb64=self.issuer).code
         except Exception as ex:
             raise ValidationError(f"Invalid issuer AID = "
-                                  f"{self.isr}.") from ex
+                                  f"{self.issuer}.") from ex
 
         if code not in PreDex:
             raise ValidationError(f"Invalid issuer AID code = {code}.")
 
+    @property
+    def uuid(self):
+        """uuid property getter
+
+        Returns:
+           uuid (str | None): qb64  of .sad["u"] salty nonce
+        """
+        return self._sad.get("u")
+
 
     @property
-    def isr(self):
-        """
+    def uuidb(self):
+        """uuid property getter (uuid bytes)
+
         Returns:
-           issuer (str): qb64  of .sad["i"] issuer AID property getter
+           uuidb (bytes | None): qb64b  of .sad["u"] salty nonce as bytes
+        """
+        return self.uuid.encode("utf-8") if self.uuid is not None else None
+
+
+    @property
+    def issuer(self):
+        """issuer property getter (issuer AID)
+
+        Returns:
+           issuer (str | None): qb64  of .sad["i"] issuer AID
         """
         return self._sad.get('i')
 
 
     @property
-    def isrb(self):
-        """
+    def issuerb(self):
+        """issuerb property getter (issuer AID bytes)
+
         Returns:
-        issuerb (bytes): qb64b  of .issuer property getter as bytes
+        issuerb (bytes | None): qb64b  of .issuer AID as bytes
         """
-        return self.isr.encode("utf-8") if self.isr is not None else None
+        return self.issuer.encode("utf-8") if self.issuer is not None else None
+
+
+    @property
+    def regi(self):
+        """regi property getter (registry identifier SAID)
+
+        Returns:
+           regi (str | None): qb64  of .sad["ri"] registry SAID
+        """
+        return self._sad.get('ri')
+
+
+    @property
+    def regib(self):
+        """regib property getter (registry identifier SAID bytes)
+        Returns:
+        regib (bytes | None): qb64b  of .issuer AID as bytes
+        """
+        return self.issuer.encode("utf-8") if self.issuer is not None else None
+
+
+    @property
+    def schema(self):
+        """schema block or SAID property getter
+
+        Returns:
+            schema (dict | str | None): from ._sad["s"]
+        """
+        return self._sad.get('s')
+
+
+    @property
+    def attrib(self):
+        """attrib block or SAID property getter (attribute)
+
+        Returns:
+            attrib (dict | str | None): from ._sad["a"]
+        """
+        return self._sad.get("a")
+
+
+    @property
+    def issuee(self):
+        """ise property getter (issuee AID)
+
+        Returns:
+           issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
+        """
+        try:
+            return self.attrib.get['i']
+        except:
+            return None
+
+
+    @property
+    def issueeb(self):
+        """isrb property getter (issuee AID bytes)
+        Returns:
+        issueeb (bytes | None): qb64b  of .issuee AID as bytes
+        """
+        return self.issuee.encode("utf-8") if self.issuee is not None else None
+
+
+    @property
+    def attagg(self):
+        """attagg block property getter (attribute aggregate)
+
+        Returns:
+            attagg (dict | str): from ._sad["A"]
+        """
+        return self._sad.get("A")
+
+
+    @property
+    def edge(self):
+        """edge block property getter
+
+        Returns:
+            edge (dict | str): from ._sad["e"]
+        """
+        return self._sad.get("e")
+
+
+    @property
+    def rule(self):
+        """rule block property getter
+
+        Returns:
+            rule (dict | str): from ._sad["r"]
+        """
+        return self._sad.get("r")
 
     # ToDo Schemer property getter. Schemer object

@@ -17,7 +17,8 @@ from keri import kering
 from keri.core import coring
 from .. import core
 from .. import help
-from ..core.coring import (MtrDex, Serder, Serials, versify, Prefixer,
+from ..core import serdering, coring
+from ..core.coring import (MtrDex, Serials, versify, Prefixer,
                            Ilks, Seqner, Verfer)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
 from ..db import basing, dbing
@@ -27,7 +28,7 @@ from ..kering import (MissingWitnessSignatureError, Version,
                       MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
 from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
-from ..vdr.viring import Reger
+from ..vdr import viring
 
 logger = help.ogler.getLogger()
 
@@ -104,11 +105,15 @@ def incept(
                n=nonce  # nonce of random bytes to make each registry unique
                )
 
-    prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
-    ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    ked["d"] = prefixer.qb64
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
 
-    return Serder(ked=ked)  # return serialized ked
+    #prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
+    #ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
+    #ked["d"] = prefixer.qb64
+
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def rotate(
@@ -206,9 +211,14 @@ def rotate(
                br=cuts,  # list of qb64 may be empty
                ba=adds,  # list of qb64 may be empty
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def issue(
@@ -247,8 +257,12 @@ def issue(
     if dt is not None:
         ked["dt"] = dt
 
-    _, ked = coring.Saider.saidify(sad=ked)
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def revoke(
@@ -296,7 +310,11 @@ def revoke(
 
     _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def backerIssue(
@@ -347,7 +365,11 @@ def backerIssue(
     if dt is not None:
         ked["dt"] = dt
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def backerRevoke(
@@ -400,7 +422,11 @@ def backerRevoke(
     if dt is not None:
         ked["dt"] = dt
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #return coring.Serder(ked=ked)  # return serialized ked
 
 
 def state(pre,
@@ -410,17 +436,18 @@ def state(pre,
           eilk,
           br,
           ba,
-          a,
           dts=None,  # default current datetime
           toad=None,  # default based on wits
           wits=None,  # default to []
           cnfg=None,  # default to []
           version=Version,
-          kind=Serials.json,
           ):
     """
-    Returns serder of key state notification message.
-    Utility function to automate creation of key state events.
+    Utility function to create a RegStateRecord of state notice of a given
+        Registry Event Log (REL)
+
+        Returns:
+            rsr: (RegStateRecord): instance
 
     Parameters:
         pre (str): identifier prefix qb64
@@ -463,7 +490,7 @@ def state(pre,
     }
 
     """
-    vs = versify(version=version, kind=kind, size=0)
+    #vs = versify(version=version, kind=kind, size=0)
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -504,22 +531,37 @@ def state(pre,
         raise ValueError("Invalid adds = {} in latest est event, has duplicates"
                          ".".format(ba))
 
-    ksd = dict(v=vs,  # version string
-               i=ri,  # qb64 SAID of the registry
+    rsr = viring.RegStateRecord(
+               vn=list(version), # version number as list [major, minor]
+               i=ri,  # qb64 registry SAID
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
                d=said,
                ii=pre,
                dt=dts,
                et=eilk,
-               a=a,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               br=br,
-               ba=ba,
                b=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config ordered mappings may be empty
+               c=cnfg if cnfg is not None else [],
                )
+    return rsr  # return RegStateRecord  use asdict(rsr) to get dict version
 
-    return Serder(ked=ksd)  # return serialized ksd
+
+    #ksd = dict(v=vs,  # version string
+               #i=ri,  # qb64 SAID of the registry
+               #s="{:x}".format(sn),  # lowercase hex string no leading zeros
+               #d=said,
+               #ii=pre,
+               #dt=dts,
+               #et=eilk,
+               #a=a,
+               #bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               #br=br,
+               #ba=ba,
+               #b=wits,  # list of qb64 may be empty
+               #c=cnfg,  # list of config ordered mappings may be empty
+               #)
+
+    #return coring.Serder(ked=ksd)  # return serialized ksd
 
 
 def vcstate(vcpre,
@@ -544,8 +586,8 @@ def vcstate(vcpre,
         sn (int): sequence number of latest event
         ri (str): registry identifier
         ra (dict): optional registry seal for registries with backers
-        eilk (str): is message type (ilk) oflatest event
-        a (dict): is seal for anchor to key event log
+        eilk (str): is message type (ilk) of latest event
+        a (dict): is seal for anchor in KEL
         dts (str): iso8601 formatted date string of state
         version (Version): is KERI version instance
         kind (str): is serialization kind
@@ -580,7 +622,7 @@ def vcstate(vcpre,
     if ra is None:
         ra = dict()
 
-    ksd = dict(v=vs,  # version string
+    vsd = dict(v=vs,  # version string
                i=vcpre,  # qb64 prefix
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
                d=said,
@@ -591,7 +633,7 @@ def vcstate(vcpre,
                et=eilk,
                )
 
-    return Serder(ked=ksd)  # return serialized ksd
+    return coring.Serder(ked=vsd)  # return serialized vsd
 
 
 def query(regk,
@@ -649,7 +691,7 @@ def query(regk,
 
 class Tever:
     """
-    Tever is KERI transaction event verifier class
+    Tever is KERI/ACDC transaction event log verifier class
     Only supports current version VERSION
 
     Has the following public attributes and properties:
@@ -679,8 +721,9 @@ class Tever:
     """
     NoBackers = False
 
-    def __init__(self, cues=None, stt=None, serder=None, seqner=None, saider=None, bigers=None, db=None,
-                 reger=None, noBackers=None, estOnly=None, regk=None, local=False):
+    def __init__(self, cues=None, stt=None, serder=None, seqner=None, saider=None,
+                 bigers=None, db=None, reger=None, noBackers=None, estOnly=None,
+                 regk=None, local=False):
         """ Create incepting tever and state from registry inception serder
 
         Create incepting tever and state from registry inception serder
@@ -710,7 +753,7 @@ class Tever:
         if not (stt or serder):
             raise ValueError("Missing required arguments. Need state or serder")
 
-        self.reger = reger if reger is not None else Reger()
+        self.reger = reger if reger is not None else viring.Reger()
         self.cues = cues if cues is not None else decking.Deck()
 
         self.db = db if db is not None else basing.Baser(reopen=True)
@@ -788,19 +831,19 @@ class Tever:
                                                dig=ksn.ked['d']))) is None:
             raise kering.MissingEntryError("Corresponding event for state={} not found."
                                            "".format(ksn.pretty()))
-        self.serder = Serder(raw=bytes(raw))
+        #self.serder = coring.Serder(raw=bytes(raw))
+        self.serder = serdering.SerderKERI(raw=bytes(raw))
 
-    def state(self, kind=Serials.json):
-        """ Returns Serder instance of current transaction state notification message
 
-        Returns Serder instance of current transaction state notification message of this
-        credential registry.
+    def state(self):  #state(self, kind=Serials.json)
+        """ Returns RegStateRecord of state notice of given Registry Event Log
+        (REL)
+
+        Returns:
+            rsr: (RegStateRecord): instance for this Tever
 
         Parameters:
             kind (str): serialization kind for message json, cbor, mgpk
-
-        Returns:
-            Serder:  event message Serder instance
 
         """
         br = self.cuts
@@ -822,13 +865,13 @@ class Tever:
                       ri=self.regk,
                       dts=None,
                       eilk=self.ilk,
-                      a=dict(s=seqner.sn, d=diger.qb64),
-                      br=br,
-                      ba=ba,
+                      #a=dict(s=seqner.sn, d=diger.qb64),
                       toad=self.toad,
                       wits=self.baks,
+                      br=br,
+                      ba=ba,
                       cnfg=cnfg,
-                      kind=kind
+                      #kind=kind
                       )
                 )
 
@@ -1004,7 +1047,7 @@ class Tever:
         if not self.serder.compare(said=dig):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
-                                                               self.serder.saider.qb64,
+                                                               self.serder.said,
                                                                ked))
 
         witset = oset(self.baks)
@@ -1158,11 +1201,11 @@ class Tever:
             raise ValidationError("revoke without issue... probably have to escrow")
 
         ievt = bytes(ievt)
-        iserder = Serder(raw=ievt)
+        iserder = serdering.SerderKERI(raw=ievt)
         if not iserder.compare(said=ked["p"]):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
-                                                               self.serder.saider.qb64,
+                                                               self.serder.said,
                                                                ked))
 
         if ilk in (Ilks.rev,):  # simple revoke
@@ -1221,7 +1264,7 @@ class Tever:
 
         dgkey = dbing.dgKey(vci, vcdig)  # get message
         raw = self.reger.getTvt(key=dgkey)
-        serder = coring.Serder(raw=bytes(raw))
+        serder = serdering.SerderKERI(raw=bytes(raw))
 
         if self.noBackers:
             vcilk = Ilks.iss if len(digs) == 1 else Ilks.rev
@@ -1279,7 +1322,7 @@ class Tever:
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
-        dig = serder.saider.qb64b
+        dig = serder.saidb
         key = dgKey(pre, dig)
         sealet = seqner.qb64b + saider.qb64b
         self.reger.putAnc(key, sealet)
@@ -1384,7 +1427,7 @@ class Tever:
         else:
             raw = bytes(raw)
 
-        eserder = Serder(raw=raw)  # deserialize event raw
+        eserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
 
         if eserder.said != saider.qb64:
             return False
@@ -1477,7 +1520,7 @@ class Tever:
         if revt is None:
             raise ValidationError("have to escrow this somewhere")
 
-        rserder = Serder(raw=bytes(revt))
+        rserder = serdering.SerderKERI(raw=bytes(revt))
         # the backer threshold at this event in mgmt TEL
         rtoad = rserder.ked["bt"]
 
@@ -1520,7 +1563,7 @@ class Tevery:
         """
         self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
         self.rvy = rvy
-        self.reger = reger if reger is not None else Reger()
+        self.reger = reger if reger is not None else viring.Reger()
         self.local = True if local else False  # local vs nonlocal restrictions
         self.lax = True if lax else False
         self.cues = cues if cues is not None else decking.Deck()
@@ -1623,8 +1666,8 @@ class Tevery:
                 esn = tever.vcSn(pre)
                 sno = 0 if esn is None else esn + 1
 
-            if not serder.saider.verify(sad=serder.ked):
-                raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
+            #if not serder.saider.verify(sad=serder.sad):
+                #raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
 
             if sn > sno:  # sn later than sno so out of order escrow
                 # escrow out-of-order event
@@ -1768,7 +1811,7 @@ class Tevery:
         data = serder.ked["a"]
         dater = coring.Dater(dts=serder.ked["dt"])
 
-        tserder = coring.Serder(ked=data)
+        tserder = serdering.SerderKERI(ked=data)
 
         for k in TSN_LABELS:
             if k not in tserder.ked:
@@ -1841,13 +1884,13 @@ class Tevery:
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = Serder(raw=bytes(sraw))
+        sserder = serdering.SerderKERI(raw=bytes(sraw))
 
         if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
                                   "".format(ked["s"]))
 
-        self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
+        self.reger.txnsb.updateReply(aid=aid, serder=tserder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", serder=tserder))
 
     def processReplyCredentialTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
@@ -1987,7 +2030,7 @@ class Tevery:
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = Serder(raw=bytes(sraw))
+        sserder = serdering.SerderKERI(raw=bytes(sraw))
 
         if sn < sserder.sn:
             raise ValidationError("Stale txn state at sn = {} with db."
@@ -1997,7 +2040,7 @@ class Tevery:
             raise ValidationError("Mismatch txn state at sn = {} with db."
                                   "".format(ked["s"]))
 
-        self.reger.txnsb.updateState(aid=aid, serder=tserder, saider=tsaider, dater=dater)
+        self.reger.txnsb.updateReply(aid=aid, serder=tserder, saider=tsaider, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", serder=tserder))
 
     @staticmethod
@@ -2094,7 +2137,7 @@ class Tevery:
                     raise ValidationError("Missing escrowed evt at dig = {}."
                                           "".format(bytes(digb)))
 
-                tserder = Serder(raw=bytes(traw))  # escrowed event
+                tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):
@@ -2161,7 +2204,7 @@ class Tevery:
                     raise ValidationError("Missing escrowed evt at dig = {}."
                                           "".format(bytes(digb)))
 
-                tserder = Serder(raw=bytes(traw))  # escrowed event
+                tserder = serdering.SerderKERI(raw=bytes(traw))  # escrowed event
 
                 bigers = None
                 if tibs := self.reger.getTibs(key=dgkey):

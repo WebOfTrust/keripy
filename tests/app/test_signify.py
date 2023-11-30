@@ -66,7 +66,7 @@ def test_remote_salty_hab():
         kever = hab.kever
         assert kever.prefixer.qb64 == lhab.pre  # we have recreated the local hab with the remote hab
         assert kever.sn == 0
-        assert kever.serder.saider.qb64 == lhab.kever.serder.saider.qb64
+        assert kever.serder.said == lhab.kever.serder.said
         assert kever.ilk == coring.Ilks.icp
         assert [verfer.qb64 for verfer in kever.verfers] == keys
         assert [diger.qb64 for diger in kever.digers] == nxt
@@ -89,7 +89,7 @@ def test_remote_salty_hab():
         nxt1 = [ndiger1.qb64]
         assert nxt1 == ['EKNg5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-']
 
-        rot = eventing.rotate(pre=hab.pre, keys=keys1, dig=icp.saider.qb64, sn=1, isith=sith, ndigs=nxt1, toad=toad)
+        rot = eventing.rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad)
         assert rot.raw == lhab.kever.serder.raw
 
         tsig1 = skp1.sign(rot.raw, index=0)
@@ -108,7 +108,7 @@ def test_remote_salty_hab():
         kever = hab.kever
         assert kever.prefixer.qb64 == lhab.pre
         assert kever.sn == 1
-        assert kever.serder.saider.qb64 == lhab.kever.serder.saider.qb64
+        assert kever.serder.said == lhab.kever.serder.said
         assert kever.ilk == coring.Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert [diger.qb64 for diger in kever.digers] == nxt1

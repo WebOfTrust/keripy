@@ -6,7 +6,7 @@ tests.vc.proving module
 import pytest
 
 from keri.app import habbing
-from keri.core import coring, scheming, parsing
+from keri.core import coring, scheming, parsing, serdering
 from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
@@ -15,6 +15,8 @@ from keri.vdr import verifying, credentialing
 
 
 def test_proving(mockHelpingNowIso8601):
+    """Test credential proof with SerderACDC"""
+
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
@@ -64,7 +66,7 @@ def test_proving(mockHelpingNowIso8601):
                        b'6mBl2QV8dDjI3-AABAAAmfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3'
                        b'oxH45Y3kIvZg67u2DyxtUqVixVzRhOOTnMAB_SowI')
 
-        creder = Creder(raw=msg)
+        creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True)
@@ -100,10 +102,15 @@ def test_proving(mockHelpingNowIso8601):
         siger = isigers[0]
         assert siger.verfer.verify(siger.raw, creder.raw) is True
 
+        """End Test"""
+
 
 def test_credentialer():
+    """Test SerderACDC as credential"""
+
     with pytest.raises(ValueError):
-        Creder()
+        serdering.SerderACDC() # Creder()
+
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
         v=coring.versify(proto=coring.Protos.acdc, kind=Serials.json, size=0),
@@ -116,13 +123,13 @@ def test_credentialer():
 
     said = 'EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi'  # creder.said
 
-    creder = Creder(ked=d)
+    creder = serdering.SerderACDC(sad=d) # Creder(ked=d)
     assert creder.said == said
     assert creder.kind == Serials.json
     assert creder.issuer == "i"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.crd == d
+    assert creder.attrib == sub
+    assert creder.sad == d
     assert creder.size == 168
     assert creder.size == len(creder.raw)
     assert creder.raw == (b'{"v":"ACDC10JSON0000a8_","d":"EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi",'
@@ -135,59 +142,61 @@ def test_credentialer():
     assert ked1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
-    creder = Creder(raw=raw1)
+    creder = serdering.SerderADCD(raw=raw1)  # Creder(raw=raw1)
     assert creder.kind == Serials.json
     assert creder.issuer == "i"
-    assert creder.crd == d
+    assert creder.sad == d
     assert creder.size == 168
 
     d2 = dict(d)
     d2["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.cbor, size=0)
-    creder = Creder(ked=d2)
+    creder = serdering.SerderACDC(sad=d2)  # Creder(ked=d2)
     assert creder.said == said  # shouldnt this be different here?
     assert creder.issuer == "i"
     assert creder.schema == "abc"
-    assert creder.subject == sub
+    assert creder.attrib == sub
     assert creder.size == 139
     assert creder.size == len(creder.raw)
-    assert creder.crd == d2
+    assert creder.sad == d2
     assert creder.raw == (b'\xa5avqACDC10CBOR00008b_adx,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWiasc'
                           b'abcaiaiaa\xa3aa\x18{abcabclissuanceDatex 2021-06-27T21:26:21.233257+00:00')
 
     raw2 = bytes(creder.raw)
-    creder = Creder(raw=raw2)
+    creder = serdering.SerderACDC(raw=raw2)  # Creder(raw=raw2)
     assert creder.said == said
     assert creder.issuer == "i"
     assert creder.schema == "abc"
-    assert creder.subject == sub
+    assert creder.attrib == sub
     assert creder.size == 139
     assert creder.size == len(creder.raw)
-    assert creder.crd == d2
+    assert creder.sad == d2
 
     d3 = dict(d)
     d3["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.mgpk, size=0)
-    creder = Creder(ked=d3)
+    creder = serdering.SerderACDC(sad=d3)  # Creder(ked=d3)
 
     assert creder.said == said  # shouldn't this be different here
     assert creder.issuer == "i"
     assert creder.schema == "abc"
-    assert creder.subject == sub
+    assert creder.attrib == sub
     assert creder.size == 138
     assert creder.size == len(creder.raw)
-    assert creder.crd == d3
+    assert creder.sad == d3
     assert creder.raw == (b'\x85\xa1v\xb1ACDC10MGPK00008a_\xa1d\xd9,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG'
                           b'9YyLA4uWi\xa1s\xa3abc\xa1i\xa1i\xa1a\x83\xa1a{\xa1b\xa3abc\xacissuanceDate'
                           b'\xd9 2021-06-27T21:26:21.233257+00:00')
 
     raw3 = bytes(creder.raw)
-    creder = Creder(raw=raw3)
+    creder = serdering.SerderACDC  # Creder(raw=raw3)
     assert creder.said == said
     assert creder.issuer == "i"
     assert creder.schema == "abc"
-    assert creder.subject == sub
+    assert creder.attrib == sub
     assert creder.size == 138
     assert creder.size == len(creder.raw)
-    assert creder.crd == d3
+    assert creder.sad == d3
+
+    """End Test"""
 
 
 def test_credential(mockHelpingNowIso8601):
@@ -248,6 +257,7 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
                         b'rwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"254900OPPU'
                         b'84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project Ma'
                         b'nager"}}')
+    """End Test"""
 
 
 def test_credential_parsator():
@@ -281,6 +291,8 @@ def test_credential_parsator():
         assert cue['kin'] == "telquery"
         q = cue["q"]
         assert q["ri"] == issuer.regk
+
+    """End Test"""
 
 
 if __name__ == '__main__':

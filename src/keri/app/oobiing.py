@@ -20,7 +20,7 @@ from .habbing import GroupHab
 from .. import help
 from .. import kering
 from ..app import forwarding, connecting
-from ..core import routing, eventing, parsing, scheming
+from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
 from ..end import ending
 from ..end.ending import OOBI_RE, DOOBI_RE
@@ -455,7 +455,7 @@ class Oobiery:
                     except (kering.ValidationError, ValueError):
                         pass
 
-                    serder = eventing.Serder(raw=bytearray(response["body"]))
+                    serder = serdering.SerderKERI(raw=bytearray(response["body"]))
                     if not serder.ked['t'] == coring.Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))

@@ -30,7 +30,10 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=sidHab.kever.serder.saider)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
         sidReg.processEscrows()
 
         creder = credential(issuer=sidHab.pre,
@@ -44,7 +47,10 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
         seqner = coring.Seqner(sn=sidHab.kever.sn)
-        issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=seqner, saider=sidHab.kever.serder.saider)
+        issuer.anchorMsg(pre=iss.pre,
+                         regd=iss.said,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=sidHab.kever.serder.said))
         sidReg.processEscrows()
 
         msg = bytearray(creder.raw)
