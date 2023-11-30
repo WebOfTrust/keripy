@@ -39,7 +39,7 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}}),
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}}),
                                          'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'n': ''}),
                                          'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
                                          'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'dt': ''}),
@@ -56,7 +56,7 @@ def test_serder():
                                          'rpy': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
                                          'pro': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'rr': '', 'q': {}}),
                                          'bar': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'a': []}),
-                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}})}},
+                                         'exn': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 'dt': '', 'r': '', 'q': {}, 'a': [], 'e': {}})}},
                              'CREL': {Versionage(major=1, minor=1): {'vcp': Fieldage(saids={'d': 'E', 'i': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'ii': '', 's': '0', 'c': [], 'bt': '0', 'b': [], 'u': ''}),
                                          'vrt': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 'p': '', 's': '0', 'bt': '0', 'br': [], 'ba': []}),
                                          'iss': Fieldage(saids={'d': 'E'}, alls={'v': '', 't': '', 'd': '', 'i': '', 's': '0', 'ri': '', 'dt': ''}),
@@ -996,7 +996,7 @@ def test_serderkeri_rot():
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
     assert serder.bn == 0
-    assert [verfer.qb64 for verfer in serder.berfers] == []
+    assert serder.berfers == None
     assert serder.delpre == None
     assert serder.delpreb == None
     #assert serder.fner == None
@@ -2076,24 +2076,27 @@ def test_serderkeri_exn():
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
     serder = SerderKERI(makify=True, ilk=kering.Ilks.exn)  # make with defaults
-    assert serder.sad == {'v': 'KERI10JSON00007a_',
+    assert serder.sad == {'v': 'KERI10JSON000088_',
                             't': 'exn',
-                            'd': 'EMn4053UPRz5Dn6wQ1QvN_vtTjmShfd0eJsVGjNyLAcb',
+                            'd': 'EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0cFC4e-bU',
+                            'i': '',
+                            'p': '',
                             'dt': '',
                             'r': '',
                             'q': {},
                             'a': [],
                             'e': {}}
 
-    assert serder.raw == (b'{"v":"KERI10JSON00007a_","t":"exn",'
-                          b'"d":"EMn4053UPRz5Dn6wQ1QvN_vtTjmShfd0eJsV'
-                          b'GjNyLAcb","dt":"","r":"","q":{},"a":[],"e":{}}')
+    assert serder.raw == (b'{"v":"KERI10JSON000088_","t":"exn",'
+                           b'"d":"EMuAoRSE4zREKKYyvuNeYCDM9_MwPQIh1WL0'
+                           b'cFC4e-bU","i":"","p":"","dt":"","r":"","q":{},"a":[],"e":{}}')
 
 
 
     assert serder.verify()  # because pre is empty
     assert serder.ilk == kering.Ilks.exn
-    assert serder.pre == None
+    assert serder.pre == ''
+    assert serder.prior == ''
 
     #sad = serder.sad
     ## test makify with preloaded non-digestive 'i' value in sad
@@ -2126,8 +2129,10 @@ def test_serderkeri_exn():
 
     assert not serder.estive
     assert serder.ked == serder.sad
-    assert serder.pre == None
-    assert serder.preb == None
+    assert serder.pre == ''
+    assert serder.preb == b''
+    assert serder.prior == ''
+    assert serder.priorb == b''
     assert serder.sner == None
     assert serder.sn == None
     assert serder.seals == []
@@ -2157,8 +2162,10 @@ def test_serderkeri_exn():
 
     assert not serder.estive
     assert serder.ked == serder.sad
-    assert serder.pre == None  # serder.sad['i'] == pre
-    assert serder.preb == None  # serder.pre.encode("utf-8")
+    assert serder.pre == ''  # serder.sad['i'] == pre
+    assert serder.preb == b''  # serder.pre.encode("utf-8")
+    assert serder.prior == ''
+    assert serder.priorb == b''
     assert serder.sner == None
     assert serder.sn == None
     assert serder.seals == []
