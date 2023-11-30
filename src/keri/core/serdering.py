@@ -1655,7 +1655,7 @@ class SerderACDC(Serder):
         Returns:
             edge (dict | str): from ._sad["e"]
         """
-        return self._sad.get("e")
+        return self._sad.get("e") or {}
 
 
     @property
@@ -1665,6 +1665,6 @@ class SerderACDC(Serder):
         Returns:
             rule (dict | str): from ._sad["r"]
         """
-        return self._sad.get("r")
+        return self._sad.get("r") or {}
 
     # ToDo Schemer property getter. Schemer object

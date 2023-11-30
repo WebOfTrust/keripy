@@ -295,7 +295,7 @@ class Verifier:
         issuer = creder.issuer.encode("utf-8")
 
         # Look up indicies
-        saider = creder.saider
+        saider = coring.Saider(qb64=creder.said)
         self.reger.saved.pin(keys=saider.qb64b, val=saider)
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)

@@ -15,7 +15,7 @@ from ..db import koming, subing, escrowing
 
 from .. import kering
 from ..app import signing
-from ..core import coring
+from ..core import coring, serdering
 from ..db import dbing, basing
 from ..help import helping
 from ..vc import proving
@@ -306,7 +306,7 @@ class Reger(dbing.LMDBer):
         #self.states = subing.SerderSuber(db=self, subkey='stts.')  # registry event state
 
         # Holds the credential
-        self.creds = proving.CrederSuber(db=self, subkey="creds.")
+        self.creds = subing.SerderSuber(db=self, subkey="creds.", klas=serdering.SerderACDC)
 
         # database of anchors to credentials.  prefix is either AID with direct credential
         # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
@@ -366,10 +366,10 @@ class Reger(dbing.LMDBer):
                                      klas=coring.Saider)
 
         # Credential Missing Signature Escrow
-        self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
+        self.cmse = subing.SerderSuber(db=self, subkey="cmse.", klas=serdering.SerderACDC)
 
         # Completed Credentials
-        self.ccrd = proving.CrederSuber(db=self, subkey="ccrd.")
+        self.ccrd = subing.SerderSuber(db=self, subkey="ccrd.", klas=serdering.SerderACDC)
 
         return self.env
 
@@ -430,7 +430,7 @@ class Reger(dbing.LMDBer):
             saider (Diger) digest of anchoring event for credential
 
         """
-        key = creder.saider.qb64b
+        key = creder.said
         self.cancs.pin(keys=key, val=[prefixer, seqner, saider])
         self.creds.put(keys=key, val=creder)
 

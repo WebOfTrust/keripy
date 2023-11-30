@@ -245,12 +245,12 @@ def test_signature_transposition(seeder, mockCoringRandomNonce, mockHelpingNowIs
     with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         seeder.seedSchema(db=hby.db)
         regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
-        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
         seqner = coring.Seqner(sn=hab.kever.sn)
-        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=hab.kever.serder.saider)
+        saider = coring.Saider(qb64=hab.kever.serder.said)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=saider)
         regery.processEscrows()
 
         # where is this schema to be found?
