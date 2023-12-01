@@ -3655,11 +3655,18 @@ def test_direct_mode():
 
         # create message
         vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON000067_","t":"rct","d":null,"i":"EJe_sKQb1otKrz6'
-                                 b'COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2K'
-                                 b'fTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIO'
-                                 b'Vt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3'
-                                 b'-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
+                            b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
+                            b'1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
+                            b'z0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9v'
+                            b'nNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYF'
+                            b'uWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
+
+        #bytearray(b'{"v":"KERI10JSON000067_","t":"rct","d":null,"i":"EJe_sKQb1otKrz6'
+                                 #b'COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2K'
+                                 #b'fTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIO'
+                                 #b'Vt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3'
+                                 #b'-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
         parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
@@ -4950,4 +4957,5 @@ if __name__ == "__main__":
     #test_process_manual()
     #test_keyeventsequence_0()
     #test_process_transferable()
-    test_messagize()
+    #test_messagize()
+    test_direct_mode()
