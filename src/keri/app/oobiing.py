@@ -455,7 +455,13 @@ class Oobiery:
                     except (kering.ValidationError, ValueError):
                         pass
 
-                    serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                    try:
+                        serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                    except ValueError:
+                        obr.state = Result.failed
+                        self.hby.db.coobi.rem(keys=(url,))
+                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        continue
                     if not serder.ked['t'] == coring.Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
