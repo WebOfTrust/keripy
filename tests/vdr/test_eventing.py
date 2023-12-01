@@ -731,8 +731,8 @@ def test_tevery():
 
         tvy.processEvent(serder=iss, seqner=seqner, saider=diger)
         status = tev.vcState(vcdig.decode("utf-8"))
-        assert status.ked['et'] == Ilks.iss
-        assert status.sn == 0
+        assert status.et == Ilks.iss
+        assert status.s == '0'
 
         # revoke the vc
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
@@ -746,8 +746,8 @@ def test_tevery():
 
         tvy.processEvent(serder=rev, seqner=seqner, saider=diger)
         status = tev.vcState(vcdig.decode("utf-8"))
-        assert status.ked["et"] == Ilks.rev
-        assert status.sn == 1
+        assert status.et == Ilks.rev
+        assert status.s == '1'
 
 
 def test_tevery_process_escrow(mockCoringRandomNonce):

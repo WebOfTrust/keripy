@@ -134,7 +134,7 @@ def test_issuer(mockHelpingNowUTC):
                              saider=coring.Saider(qb64=hab.kever.serder.said))
             regery.processEscrows()
             state = issuer.tever.vcState(vci=creder.said)
-            assert state.ked["et"] == coring.Ilks.iss
+            assert state.et == coring.Ilks.iss
 
             rev = issuer.revoke(said=creder.said)
             rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
@@ -146,7 +146,7 @@ def test_issuer(mockHelpingNowUTC):
                              saider=coring.Saider(qb64=hab.kever.serder.said))
             regery.processEscrows()
             state = issuer.tever.vcState(vci=creder.said)
-            assert state.ked["et"] == coring.Ilks.rev
+            assert state.et == coring.Ilks.rev
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr:
         hby, hab = buildHab(db, kpr)
@@ -176,7 +176,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.bis
+        assert state.et == coring.Ilks.bis
 
         rot = issuer.rotate(adds=["BCDfgIp33muOuCI0L8db_TldMJXv892UmW8yfpUuKzkw",
                                   "BBC_BBLMeVwKFbfYSWU7aATS9itLSrGtIFQzCkfoKnjk"])
@@ -202,7 +202,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.brv
+        assert state.et == coring.Ilks.brv
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr:
         hby, hab = buildHab(db, kpr)
@@ -231,7 +231,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.iss
+        assert state.et == coring.Ilks.iss
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
@@ -243,7 +243,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.rev
+        assert state.et == coring.Ilks.rev
 
         with pytest.raises(ValueError):
             issuer.rotate(adds=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
@@ -290,7 +290,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.bis
+        assert state.et == coring.Ilks.bis
 
         # rotate to 2 backers
         rot = issuer.rotate(toad=2, cuts=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
@@ -316,7 +316,7 @@ def test_issuer(mockHelpingNowUTC):
                          saider=coring.Saider(qb64=hab.kever.serder.said))
         regery.processEscrows()
         state = issuer.tever.vcState(vci=creder.said)
-        assert state.ked["et"] == coring.Ilks.brv
+        assert state.et == coring.Ilks.brv
 
     """ End Test """
 

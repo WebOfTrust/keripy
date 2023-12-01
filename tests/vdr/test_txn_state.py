@@ -69,7 +69,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, bobHab.pre))
-        assert saider[0].qb64b == b'EEPziN_7emWTt94juY7X3Nlo44dTAaoCz7PGorkZAWVo'
+        assert saider[0].qb64b == b'ELprJNCkha3b3t7YKOPzfv-prTZvgJFM_xTnaaJop-3A'
 
         tmsgs = bytearray()
         cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
@@ -128,7 +128,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
                                's': '0',
                                'vn': [1, 0]}
 
-        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=tsn.ked)
+        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=asdict(tsn))
 
         bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -136,7 +136,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, bobHab.pre))
-        said = b'EEPziN_7emWTt94juY7X3Nlo44dTAaoCz7PGorkZAWVo'
+        said = b'ELprJNCkha3b3t7YKOPzfv-prTZvgJFM_xTnaaJop-3A'
         assert saider[0].qb64b == said
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
@@ -259,7 +259,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, wesHab.pre))
-        said = b'EMpMvmRARP3rm_JmO57iZ6zhEELmAuVVELo660CMapg5'
+        said = b'EMoqBJpoPJCkCejSUZ8IShTeGd_WQkF0zOQc2l0HQusn'
         assert saider[0].qb64b == said
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
@@ -460,13 +460,17 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
                             'c': ['NB']}
 
         ctsn = tever.vcState(vci=creder.said)
-        assert ctsn.raw == (b'{"v":"KERI10JSON000135_","i":"EEqcwL-ew_OaQphSQvy8bRGtnKlL_g_SkXjsAGWgtFGl",'
-                            b'"s":"0","d":"EIxhyBA8h6BMmtWEJzqNkoAquIkMucpXbdY3kQX25GQu","ri":"ECbNKwkTjZq'
-                            b'sfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6","ra":{},"a":{"s":2,"d":"EGJIFzWexy6LQbW4-'
-                            b'IQqhGLD6wA9yR7pcLzxomjb40Ku"},"dt":"2021-06-27T21:26:21.233257+00:00","et":"'
-                            b'iss"}')
+        assert asdict(ctsn) == {'a': {'d': 'EGJIFzWexy6LQbW4-IQqhGLD6wA9yR7pcLzxomjb40Ku', 's': 2},
+                                'd': 'EIxhyBA8h6BMmtWEJzqNkoAquIkMucpXbdY3kQX25GQu',
+                                'dt': '2021-06-27T21:26:21.233257+00:00',
+                                'et': 'iss',
+                                'i': 'EEqcwL-ew_OaQphSQvy8bRGtnKlL_g_SkXjsAGWgtFGl',
+                                'ra': {},
+                                'ri': 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6',
+                                's': '0',
+                                'vn': [1, 0]}
 
-        rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=ctsn.ked)
+        rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=asdict(ctsn))
 
         bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -474,7 +478,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-mre", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EAxn6pBNsNuGXP7Ngrr80t5PbJ_XuzDvY7DQ5SYodpin'
+        assert saider[0].qb64b == b'EAslzIz1FKVBY1zd_0gF-gclpvHMf1V4arW3puZlPv4K'
         assert len(bamTvy.cues) == 1
         cue = bamTvy.cues.popleft()
         assert cue["kin"] == "telquery"
@@ -503,7 +507,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         assert cue['q']['ri'] == issuer.regk
 
         saider = bamReger.txnsb.escrowdb.get(keys=("credential-ooo", creder.said, bobHab.pre))
-        assert saider[0].qb64b == b'EAxn6pBNsNuGXP7Ngrr80t5PbJ_XuzDvY7DQ5SYodpin'
+        assert saider[0].qb64b == b'EAslzIz1FKVBY1zd_0gF-gclpvHMf1V4arW3puZlPv4K'
 
         vci = creder.said
         tmsgs = bytearray()

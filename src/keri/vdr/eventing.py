@@ -8,6 +8,7 @@ VC TEL  support
 
 import json
 import logging
+from dataclasses import asdict
 from math import ceil
 from  ordered_set import OrderedSet as oset
 
@@ -512,7 +513,7 @@ def state(pre,
                          ".".format(ba))
 
     rsr = viring.RegStateRecord(
-               vn=list(version), # version number as list [major, minor]
+               vn=list(version),  # version number as list [major, minor]
                i=ri,  # qb64 registry SAID
                s="{:x}".format(sn),  # lowercase hex string no leading zeros
                d=said,
@@ -570,8 +571,6 @@ def vcstate(vcpre,
     }
     """
 
-    vs = versify(version=version, kind=kind, size=0)
-
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
 
@@ -584,18 +583,18 @@ def vcstate(vcpre,
     if ra is None:
         ra = dict()
 
-    vsd = dict(v=vs,  # version string
-               i=vcpre,  # qb64 prefix
-               s="{:x}".format(sn),  # lowercase hex string no leading zeros
-               d=said,
-               ri=ri,
-               ra=ra,
-               a=a,
-               dt=dts,
-               et=eilk,
-               )
+    vsr = viring.VcStateRecord(vn=list(version),  # version string
+                               i=vcpre,  # qb64 prefix
+                               s="{:x}".format(sn),  # lowercase hex string no leading zeros
+                               d=said,
+                               ri=ri,
+                               ra=ra,
+                               a=a,
+                               dt=dts,
+                               et=eilk,
+                               )
 
-    return coring.Serder(ked=vsd)  # return serialized vsd
+    return vsr  # return vc state record data class
 
 
 def query(regk,
@@ -1685,11 +1684,11 @@ class Tevery:
             if ri in self.tevers:
                 tever = self.tevers[ri]
                 tsn = tever.state()
-                self.cues.push(dict(kin="reply", route="/tsn/registry", data=tsn.ked, dest=source))
+                self.cues.push(dict(kin="reply", route="/tsn/registry", data=asdict(tsn), dest=source))
 
                 if vcpre := qry["i"]:
                     tsn = tever.vcState(vcpre=vcpre)
-                    self.cues.push(dict(kin="reply", route="/tsn/credential", data=tsn.ked, dest=source))
+                    self.cues.push(dict(kin="reply", route="/tsn/credential", data=asdict(tsn), dest=source))
 
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
@@ -1769,19 +1768,12 @@ class Tevery:
         data = serder.ked["a"]
         dater = coring.Dater(dts=serder.ked["dt"])
 
-        tserder = serdering.SerderKERI(sad=data)
-
-        for k in TSN_LABELS:
-            if k not in tserder.ked:
-                raise ValidationError("Missing element = {} from {} msg."
-                                      " tsn = {}.".format(k, Ilks.tsn,
-                                                          serder.pretty()))
+        rsr = viring.RegStateRecord(**data)
 
         # fetch from serder to process
-        ked = tserder.ked
-        regk = tserder.pre
-        pre = ked["ii"]
-        sn = tserder.sn
+        regk = rsr.i
+        pre = rsr.ii
+        sn = int(rsr.s, 16)
 
         if pre not in self.kevers:
             if self.reger.txnsb.escrowStateNotice(typ="registry-mae", pre=regk, aid=aid, serder=serder, saider=saider,
@@ -1791,12 +1783,12 @@ class Tevery:
             raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
 
         # Load backers from either tsn or Kever of issuer
-        cnfg = ked["c"]
+        cnfg = rsr.c
         if TraitDex.NoBackers in cnfg:
             kevers = self.kevers[pre]
             baks = kevers.wits
         else:
-            baks = ked["b"]
+            baks = rsr.b
 
         wats = set()
         for _, habr in self.db.habs.getItemIter():
@@ -1809,13 +1801,13 @@ class Tevery:
                     aid not in baks and \
                     aid not in wats:
                 raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
-                                                     .format(tserder.pre, aid))
+                                                     .format(rsr.i, aid))
 
         if regk in self.tevers:
             tever = self.tevers[regk]
-            if tserder.sn < tever.sn:
+            if int(rsr.s, 16) < tever.sn:
                 raise ValidationError("Skipped stale transaction state at sn {} for {}."
-                                      "".format(tserder.sn, tserder.pre))
+                                      "".format(rsr.s, rsr.i))
 
         keys = (regk, aid,)
         osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
@@ -1835,9 +1827,9 @@ class Tevery:
                                                   dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
+            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
 
-        tsaider = coring.Saider(qb64=ked["d"])
+        tsaider = coring.Saider(qb64=rsr.d)
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=regk, dig=ldig))
@@ -1846,10 +1838,10 @@ class Tevery:
 
         if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
-                                  "".format(ked["s"]))
+                                  "".format(rsr.s))
 
-        self.reger.txnsb.updateReply(aid=aid, serder=tserder, saider=tsaider, dater=dater)
-        self.cues.append(dict(kin="txnStateSaved", serder=tserder))
+        self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
+        self.cues.append(dict(kin="txnStateSaved", record=rsr))
 
     def processReplyCredentialTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /tsn/registry
@@ -1907,19 +1899,13 @@ class Tevery:
         data = serder.ked["a"]
         dater = coring.Dater(dts=serder.ked["dt"])
 
-        tserder = coring.Serder(ked=data)
-        for k in CRED_TSN_LABELS:
-            if k not in tserder.ked:
-                raise ValidationError("Missing element = {} from {} msg."
-                                      " tsn = {}.".format(k, Ilks.tsn,
-                                                          serder.pretty()))
+        vsr = viring.VcStateRecord(**data)
 
         # fetch from serder to process
-        ked = tserder.ked
-        regk = tserder.ked["ri"]
-        vci = tserder.pre
-        sn = tserder.sn
-        ra = tserder.ked["ra"]
+        regk = vsr.ri
+        vci = vsr.i
+        sn = int(vsr.s, 16)
+        ra = vsr.ra
 
         if 's' in ra:
             regsn = ra["s"]
@@ -1961,7 +1947,7 @@ class Tevery:
                     aid not in baks and \
                     aid not in wats:
                 raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
-                                                     .format(tserder.pre, aid))
+                                                     .format(vsr.i, aid))
 
         keys = (vci, aid,)
         osaider = self.reger.txnsb.current(keys=keys)  # get old said if any
@@ -1981,9 +1967,9 @@ class Tevery:
                                                   saider=saider, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vci)))
 
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(ked))
+            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
 
-        tsaider = coring.Saider(qb64=ked["d"])
+        tsaider = coring.Saider(qb64=vsr.d)
         ldig = bytes(ldig)
         # retrieve last event itself of signer given sdig
         sraw = self.reger.getTvt(key=dgKey(pre=vci, dig=ldig))
@@ -1992,14 +1978,14 @@ class Tevery:
 
         if sn < sserder.sn:
             raise ValidationError("Stale txn state at sn = {} with db."
-                                  "".format(ked["s"]))
+                                  "".format(vsr.s))
 
         if sserder.said != tsaider.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch txn state at sn = {} with db."
-                                  "".format(ked["s"]))
+                                  "".format(vsr.s))
 
-        self.reger.txnsb.updateReply(aid=aid, serder=tserder, saider=tsaider, dater=dater)
-        self.cues.append(dict(kin="txnStateSaved", serder=tserder))
+        self.reger.txnsb.updateReply(aid=aid, serder=serder, saider=tsaider, dater=dater)
+        self.cues.append(dict(kin="txnStateSaved", record=vsr))
 
     @staticmethod
     def registryKey(serder):

@@ -116,12 +116,12 @@ class Verifier:
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         dtnow = helping.nowUTC()
-        dte = helping.fromIso8601(state.ked["dt"])
+        dte = helping.fromIso8601(state.dt)
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
             if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
-        elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
+        elif state.et in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
             logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
             # Log this and continue instead of the previous exception so we save a revoked credential.
             # raise kering.InvalidCredentialStateError("..."))
@@ -164,13 +164,13 @@ class Verifier:
                                                    .format(creder.said, label, nodeSaid))
 
                 dtnow = helping.nowUTC()
-                dte = helping.fromIso8601(state.ked["dt"])
+                dte = helping.fromIso8601(state.dt)
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
                     raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
-                elif state.ked["et"] in (coring.Ilks.rev, coring.Ilks.brv):
+                elif state.et in (coring.Ilks.rev, coring.Ilks.brv):
                     raise kering.RevokedChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
                 else:  # VcStatus == VcStates.Issued

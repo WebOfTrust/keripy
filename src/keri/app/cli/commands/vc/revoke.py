@@ -104,7 +104,7 @@ class RevokeDoer(doing.DoDoer):
             hab = registry.hab
 
             state = registry.tever.vcState(vci=creder.said)
-            if state is None or state.ked["et"] not in (coring.Ilks.iss, coring.Ilks.rev):
+            if state is None or state.et not in (coring.Ilks.iss, coring.Ilks.rev):
                 raise kering.ValidationError(f"credential {creder.said} not is correct state for revocation")
 
             rserder = registry.revoke(said=creder.said, **kwargs)

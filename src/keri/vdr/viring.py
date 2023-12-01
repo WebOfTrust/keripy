@@ -8,7 +8,7 @@ Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing
@@ -135,18 +135,28 @@ class RegStateRecord(basing.RawRecord):  # reger.state
 
     """
     vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
-    i: str =''  # identifier prefix qb64
-    s: str ='0'  # sequence number of latest event in KEL as hex str
-    d: str =''  # latest event digest qb64
+    i: str = ''  # identifier prefix qb64
+    s: str = '0'  # sequence number of latest event in KEL as hex str
+    d: str = ''  # latest event digest qb64
     ii: str = ''  # issuer identifier of registry aid qb64
     dt: str = ''  # datetime of update of state record
     et: str = ''  # TEL evt packet type (ilk)
     bt: str = '0'  # backer threshold hex num str
     b: list = field(default_factory=list)  # backer AID list qb64
-    c: list[str] =  field(default_factory=list)  # config trait list
+    c: list[str] = field(default_factory=list)  # config trait list
 
 
-
+@dataclass
+class VcStateRecord(basing.RawRecord):
+    vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
+    i: str = ''  # identifier prefix qb64
+    s: str = '0'  # sequence number of latest event in KEL as hex str
+    d: str = ''  # latest event digest qb64
+    ri: str = ''  # registry identifier of registry aid qb64
+    ra: dict = field(default_factory=dict)  # registry anchor for registry with backers
+    a: dict = field(default_factory=dict)  # seal for anchor in KEL
+    dt: str = ''  # datetime of update of state record
+    et: str = ''  # TEL evt packet type (ilk)
 
 
 def openReger(name="test", **kwa):
@@ -409,7 +419,7 @@ class Reger(dbing.LMDBer):
                 pre=creder.issuer,
                 schema=schemer.sed,
                 chains=chains,
-                status=status.ked,
+                status=asdict(status),
                 anchor=dict(
                     pre=prefixer.qb64,
                     sn=seqner.sn,
