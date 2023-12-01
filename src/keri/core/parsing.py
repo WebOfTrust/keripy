@@ -1154,6 +1154,6 @@ class Parser:
 
         else:
             raise kering.ValidationError("Unexpected protocol type = {} for event message ="
-                                         " {}.".format(sadder.proto, sadder.pretty()))
+                                         " {}.".format(serder.proto, serder.pretty()))
 
         return True  # done state
