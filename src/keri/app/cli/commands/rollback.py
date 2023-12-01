@@ -11,7 +11,7 @@ from hio.base import doing
 
 from keri import kering
 from keri.app.cli.common import displaying, existing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.db import dbing, basing
 from keri.help import helping
 from keri.kering import ConfigurationError
@@ -69,7 +69,7 @@ def rollback(tymth, tock=0.0, **opts):
 
             pDgKey = dbing.dgKey(serder.preb, bytes(pdig))  # get message
             raw = hby.db.getEvt(key=pDgKey)
-            pserder = coring.Serder(raw=bytes(raw))
+            pserder = serdering.SerderKERI(raw=bytes(raw))
 
             dgkey = dbing.dgKey(serder.preb, serder.saidb)
             hby.db.delEvt(dgkey)

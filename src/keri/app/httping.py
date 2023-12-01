@@ -16,7 +16,7 @@ from hio.help import Hict
 
 from keri import help
 from keri import kering
-from keri.core import coring, parsing
+from keri.core import coring, parsing, serdering
 from keri.end import ending
 from keri.help import helping
 
@@ -127,7 +127,7 @@ def createCESRRequest(msg, client, dest, path=None):
     path = path if path is not None else "/"
 
     try:
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
     except kering.ShortageError as ex:  # need more bytes
         raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
     else:  # extracted successfully

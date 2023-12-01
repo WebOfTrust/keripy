@@ -12,7 +12,7 @@ from hio.base import doing
 import keri
 from hio.core import http
 from keri.app import habbing, oobiing, notifying
-from keri.core import coring, parsing
+from keri.core import coring, parsing, serdering
 from keri.db import basing
 from keri.end import ending
 from keri.help import helping
@@ -155,7 +155,7 @@ class MOOBIEnd:
         }
 
         rpy = (self.hab.reply(route="/oobi/controller", data=a))
-        ser = coring.Serder(raw=rpy)
+        ser = serdering.SerderKERI(raw=rpy)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = ser.raw

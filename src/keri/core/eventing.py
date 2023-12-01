@@ -13,10 +13,12 @@ from math import ceil
 from ordered_set import OrderedSet as oset
 from hio.help import decking
 
-from . import coring
-from .coring import (versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
+from . import coring, serdering
+from .coring import (versify, Serials, Ilks, MtrDex, PreDex, DigDex,
+                     NonTransDex, CtrDex, Counter,
                      Number, Seqner, Siger, Cigar, Dater, Indexer, IdrDex,
-                     Verfer, Diger, Prefixer, Serder, Tholder, Saider)
+                     Verfer, Diger, Prefixer, Tholder, Saider)
+from . import serdering
 from .. import help
 from .. import kering
 from ..db import basing, dbing
@@ -24,7 +26,7 @@ from ..db.basing import KeyStateRecord, StateEERecord
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, splitKey
 
 from ..kering import (MissingEntryError,
-                      ValidationError, MissingSignatureError,
+                      ValidationError, DerivationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
@@ -39,6 +41,7 @@ logger = help.ogler.getLogger()
 
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
+MaxIntThold = 2 ** 32 - 1
 
 @dataclass(frozen=True)
 class TraitCodex:
@@ -502,7 +505,7 @@ def validateSigs(serder, sigers, verfers, tholder):
                           False otherwise.
 
     Parameters:
-        serder (coring.Serder): instance of message
+        serder (SerderKERI): instance of message
         sigers (Iterable): Siger instances of indexed signatures.
             Index is offset into verfers list each providing verification key
         verfers (Iterable): Verfer instances of keys
@@ -571,7 +574,163 @@ def fetchTsgs(db, saider, snh=None):
 
     return tsgs
 
-MaxIntThold = 2 ** 32 - 1
+
+def state(pre,
+          sn,
+          pig,
+          dig,
+          fn,
+          eilk,
+          keys,
+          eevt,
+          stamp=None,  # default current datetime
+          sith=None,  # default based on keys
+          ndigs=None,
+          nsith=None,
+          toad=None,  # default based on wits
+          wits=None,  # default to []
+          cnfg=None,  # default to []
+          dpre=None,
+          version=Version,
+          kind=Serials.json,
+          intive = False,
+          ):
+    """
+    Returns instance of KeyStateRecord in support of key state notification messages.
+    Utility function to automate creation embedded key static notices
+
+    Parameters:
+        pre (str): identifier prefix qb64
+        sn (int): sequence number of latest event
+        pig (str): SAID qb64 of prior event
+        dig (str): SAID qb64 of latest (current) event
+        fn (int):  first seen ordinal number of latest event
+        eilk (str): event (message) type (ilk) of latest (current) event
+        keys (list): qb64 signing keys
+        eevt (StateEstEvent): namedtuple (s,d,wr,wa) for latest est event
+            s = sn of est event
+            d = SAID of est event
+            wr = witness remove list (cuts)
+            wa = witness add list (adds)
+        stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data
+        sith sith (int | str | list | None): current signing threshold input to Tholder
+        ndigs (list | None): current signing key digests qb64
+        nsith int | str | list | None): next signing threshold input to Tholder
+        toad (int | str | None): witness threshold number if str then hex str
+        wits (list | None): prior witness identifier prefixes qb64
+        cnfg (list | None):  strings from TraitDex configuration trait strings
+        dpre (str | None): identifier prefix qb64 delegator if any
+                           If None then dpre in state is empty ""
+        version (Version): KERI protocol version string
+        kind (str): serialization kind from Serials
+        intive (bool): True means sith, nsith, and toad are serialized as ints
+                       instead of hex str when numeric threshold
+
+    """
+    sner = Number(num=sn)  # raises InvalidValueError if sn < 0
+    fner = Number(num=fn)  # raises InvalidValueError if fn < 0
+
+    if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+        raise ValueError(f"Invalid event type et={eilk} in key state.")
+
+    if stamp is None:
+        stamp = helping.nowIso8601()
+
+    if sith is None:
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.num is not None and tholder.num < 1:
+        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
+    if tholder.size > len(keys):
+        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
+
+    if ndigs is None:
+        ndigs = []
+
+    if nsith is None:
+        nsith = max(0, ceil(len(ndigs) / 2))
+
+    ntholder = Tholder(sith=nsith)
+    if ntholder.num is not None and ntholder.num < 0:
+        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
+    if ntholder.size > len(ndigs):
+        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
+
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(witset) / 2))
+
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:  # compute default f and m for len(wits)
+            toad = ample(len(witset))
+    toader = Number(num=toad)
+
+    if witset:
+        if toader.num < 1 or toader.num > len(witset):  # out of bounds toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
+    else:
+        if toader.num != 0:  # invalid toad
+            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
+
+    if not eevt or not isinstance(eevt, StateEstEvent):
+        raise ValueError(f"Missing or invalid latest est event = {eevt} for key "
+                         f"state.")
+    eesner = Number(numh=eevt.s)  # if not whole number raises InvalidValueError
+
+    # cuts is relative to prior wits not current wits provided here
+    cuts = eevt.br if eevt.br is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):  # duplicates in cuts
+        raise ValueError(f"Invalid cuts = {cuts}, has "
+                         f"duplicates, in latest est event, .")
+
+    # adds is relative to prior wits not current wits provided here
+    adds = eevt.ba if eevt.ba is not None else []
+    addset = oset(adds)
+
+    if len(addset) != len(adds):  # duplicates in adds
+        raise ValueError(f"Invalid adds = {adds}, has duplicates,"
+                         f" in latest est event,.")
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
+                         f"latest est event.")
+
+    ksr = basing.KeyStateRecord(
+               vn=list(version), # version number as list [major, minor]
+               i=pre,  # qb64 prefix
+               s=sner.numh,  # lowercase hex string no leading zeros
+               p=pig,
+               d=dig,
+               f=fner.numh,  # lowercase hex string no leading zeros
+               dt=stamp,
+               et=eilk,
+               kt=(tholder.num if intive and tholder.num is not None and
+                    tholder.num <= MaxIntThold else tholder.sith),
+               k=keys,  # list of qb64
+               nt=(ntholder.num if intive and ntholder.num is not None and
+                    ntholder.num <= MaxIntThold else ntholder.sith),
+               n=ndigs,
+               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
+               b=wits,  # list of qb64 may be empty
+               c=cnfg if cnfg is not None else [],
+               ee=StateEERecord._fromdict(eevt._asdict()),  # latest est event dict
+               di=dpre if dpre is not None else "",
+               )
+    return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
+
+
 
 def incept(keys,
            *,
@@ -675,33 +834,47 @@ def incept(keys,
                a=data,  # list of seal dicts
                )
 
+    pre = ""
+    saids = None
     if delpre is not None:  # delegated inception with ilk = dip
-        ked['di'] = delpre
-        if code is None:
-            code = MtrDex.Blake3_256  # Defaults to self addressing digest
+        ked['di'] = delpre  # SerderKERI .verify will ensure valid prefix
+    else:  # non delegated
+        if (code is None or code not in DigDex) and len(keys) == 1:  # use key[0] as default
+            ked["i"] = keys[0]  # SerderKERI .verify will ensure valid prefix
 
+    if code is not None and code in PreDex:  # use code to override all else
+        saids = {'i': code}
 
-    if delpre is None and code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # defaults to not digestive code
-        if prefixer.digestive:
-            raise ValueError("Invalid code, digestive={}, must be derived from"
-                             " ked.".format(prefixer.code))
-    else:  # digestive
-        # raises derivation error if non-empty nxt but ephemeral code
-        prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
+    serder = serdering.SerderKERI(sad=ked, makify=True, saids=saids)
+    serder._verify()  # raises error if fails verifications
+    return serder
 
-        if delpre is not None:
-            if not prefixer.digestive:
-                raise ValueError(f"Invalid derivation code = {prefixer.code} "
-                                 f"for delegation. Must be digestive")
+    #if delpre is not None:  # delegated inception with ilk = dip
+        #ked['di'] = delpre
+        #if code is None:
+            #code = MtrDex.Blake3_256  # force digestive
 
-    ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
-    if prefixer.digestive:
-        ked["d"] = prefixer.qb64
-    else:
-        _, ked = coring.Saider.saidify(sad=ked)
+    #if delpre is None and code is None and len(keys) == 1:
+        #prefixer = Prefixer(qb64=keys[0])  # defaults to not digestive code
+        #if prefixer.digestive:
+            #raise ValueError("Invalid code, digestive={}, must be derived from"
+                             #" ked.".format(prefixer.code))
+    #else:  # digestive
+        ## raises derivation error if non-empty nxt but ephemeral code
+        #prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
-    return Serder(ked=ked)  # return serialized ked
+        #if delpre is not None:
+            #if not prefixer.digestive:
+                #raise ValueError(f"Invalid derivation code = {prefixer.code} "
+                                 #f"for delegation. Must be digestive")
+
+    #ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
+    #if prefixer.digestive:
+        #ked["d"] = prefixer.qb64
+    #else:
+        #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return Serder(ked=ked)  # return serialized ked
 
 def delcept(keys, delpre, **kwa):
     """
@@ -862,9 +1035,14 @@ def rotate(pre,
                ba=adds,  # list of qb64 may be empty
                a= data if data is not None else [],  # list of seals
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return Serder(ked=ked)  # return serialized ked
 
 def deltate(pre,
            keys,
@@ -930,7 +1108,7 @@ def interact(pre,
 
     data = data if data is not None else []
 
-    ked = dict(v=vs,  # version string
+    sad = dict(v=vs,  # version string
                t=ilk,
                d="",
                i=pre,  # qb64 prefix
@@ -938,9 +1116,14 @@ def interact(pre,
                p=dig,  # qb64 digest of prior event
                a=data,  # list of seals
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return Serder(ked=ked)  # return serialized ked
 
 
 def receipt(pre,
@@ -970,202 +1153,16 @@ def receipt(pre,
     if sner.num < 0:  # sn for receipt must be >= 1
         raise ValueError(f"Invalid sn = 0x{sner.numh} for rect.")
 
-    ked = dict(v=vs,  # version string
+    sad = dict(v=vs,  # version string
                t=ilk,  # Ilks.rct
                d=said,  # qb64 digest of receipted event
                i=pre,  # qb64 prefix
                s=sner.numh,  # hex string no leading zeros lowercase
                )
 
-    return Serder(ked=ked)  # return serialized ked
-
-
-def state(pre,
-          sn,
-          pig,
-          dig,
-          fn,
-          eilk,
-          keys,
-          eevt,
-          stamp=None,  # default current datetime
-          sith=None,  # default based on keys
-          ndigs=None,
-          nsith=None,
-          toad=None,  # default based on wits
-          wits=None,  # default to []
-          cnfg=None,  # default to []
-          dpre=None,
-          version=Version,
-          kind=Serials.json,
-          intive = False,
-          ):
-    """
-    Returns serder of key state notification message.
-    Utility function to automate creation of rotation events.
-
-    Parameters:
-        pre (str): identifier prefix qb64
-        sn (int): sequence number of latest event
-        pig (str): SAID qb64 of prior event
-        dig (str): SAID qb64 of latest (current) event
-        fn (int):  first seen ordinal number of latest event
-        eilk (str): event (message) type (ilk) of latest (current) event
-        keys (list): qb64 signing keys
-        eevt (StateEstEvent): namedtuple (s,d,wr,wa) for latest est event
-            s = sn of est event
-            d = SAID of est event
-            wr = witness remove list (cuts)
-            wa = witness add list (adds)
-        stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
-        sith sith (int | str | list | None): current signing threshold input to Tholder
-        ndigs (list | None): current signing key digests qb64
-        nsith int | str | list | None): next signing threshold input to Tholder
-        toad (int | str | None): witness threshold number if str then hex str
-        wits (list | None): prior witness identifier prefixes qb64
-        cnfg (list | None):  strings from TraitDex configuration trait strings
-        dpre (str | None): identifier prefix qb64 delegator if any
-                           If None then dpre in state is empty ""
-        version (Version): KERI protocol version string
-        kind (str): serialization kind from Serials
-        intive (bool): True means sith, nsith, and toad are serialized as ints
-                       instead of hex str when numeric threshold
-
-    KeyStateDict:
-    {
-        #"v": "KERI10JSON00011c_",
-        "vn": []1,0],
-        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "s": "2":,
-        "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
-        "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
-        "f": "3",
-        "dt": "2020-08-22T20:35:06.687702+00:00",
-        "et": "rot",
-        "kt": "1",
-        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
-        "nt": "1",
-        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
-        "bt": "1",
-        "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
-        "c": ["EO"],
-        "ee":
-          {
-            "s": "1",
-            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
-            "br": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
-            "ba": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
-          },
-        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
-    }
-
-    "di": "" when not delegated
-    """
-    #vs = versify(version=version, kind=kind, size=0)
-
-    sner = Number(num=sn)  # raises InvalidValueError if sn < 0
-
-    fner = Number(num=fn)  # raises InvalidValueError if fn < 0
-
-    if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
-        raise ValueError(f"Invalid event type et={eilk} in key state.")
-
-    if stamp is None:
-        stamp = helping.nowIso8601()
-
-    if sith is None:
-        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
-
-    tholder = Tholder(sith=sith)
-    if tholder.num is not None and tholder.num < 1:
-        raise ValueError(f"Invalid sith = {tholder.num} less than 1.")
-    if tholder.size > len(keys):
-        raise ValueError(f"Invalid sith = {tholder.num} for keys = {keys}")
-
-    if ndigs is None:
-        ndigs = []
-
-    if nsith is None:
-        nsith = max(0, ceil(len(ndigs) / 2))
-
-    ntholder = Tholder(sith=nsith)
-    if ntholder.num is not None and ntholder.num < 0:
-        raise ValueError(f"Invalid nsith = {ntholder.num} less than 0.")
-    if ntholder.size > len(ndigs):
-        raise ValueError(f"Invalid nsith = {ntholder.num} for keys = {ndigs}")
-
-    wits = wits if wits is not None else []
-    witset = oset(wits)
-    if len(witset) != len(wits):
-        raise ValueError(f"Invalid wits = {wits}, has duplicates.")
-
-    if toad is None:
-        if not witset:
-            toad = 0
-        else:
-            toad = max(1, ceil(len(witset) / 2))
-
-    if toad is None:
-        if not witset:
-            toad = 0
-        else:  # compute default f and m for len(wits)
-            toad = ample(len(witset))
-    toader = Number(num=toad)
-
-    if witset:
-        if toader.num < 1 or toader.num > len(witset):  # out of bounds toad
-            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
-    else:
-        if toader.num != 0:  # invalid toad
-            raise ValueError(f"Invalid toad = {toader.num} for wits = {witset}")
-
-    if not eevt or not isinstance(eevt, StateEstEvent):
-        raise ValueError(f"Missing or invalid latest est event = {eevt} for key "
-                         f"state.")
-    eesner = Number(numh=eevt.s)  # if not whole number raises InvalidValueError
-
-    # cuts is relative to prior wits not current wits provided here
-    cuts = eevt.br if eevt.br is not None else []
-    cutset = oset(cuts)
-    if len(cutset) != len(cuts):  # duplicates in cuts
-        raise ValueError(f"Invalid cuts = {cuts}, has "
-                         f"duplicates, in latest est event, .")
-
-    # adds is relative to prior wits not current wits provided here
-    adds = eevt.ba if eevt.ba is not None else []
-    addset = oset(adds)
-
-    if len(addset) != len(adds):  # duplicates in adds
-        raise ValueError(f"Invalid adds = {adds}, has duplicates,"
-                         f" in latest est event,.")
-
-    if cutset & addset:  # non empty intersection
-        raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
-                         f"latest est event.")
-
-    ksr = basing.KeyStateRecord(
-               vn=list(version), # version number as list [major, minor]
-               i=pre,  # qb64 prefix
-               s=sner.numh,  # lowercase hex string no leading zeros
-               p=pig,
-               d=dig,
-               f=fner.numh,  # lowercase hex string no leading zeros
-               dt=stamp,
-               et=eilk,
-               kt=(tholder.num if intive and tholder.num is not None and
-                    tholder.num <= MaxIntThold else tholder.sith),
-               k=keys,  # list of qb64
-               nt=(ntholder.num if intive and ntholder.num is not None and
-                    ntholder.num <= MaxIntThold else ntholder.sith),
-               n=ndigs,
-               bt=toader.num if intive and toader.num <= MaxIntThold else toader.numh,
-               b=wits,  # list of qb64 may be empty
-               c=cnfg if cnfg is not None else [],
-               ee=StateEERecord._fromdict(eevt._asdict()),  # latest est event dict
-               di=dpre if dpre is not None else "",
-               )
-    return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
 
 
 def query(route="",
@@ -1209,7 +1206,7 @@ def query(route="",
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.qry
 
-    ked = dict(v=vs,  # version string
+    sad = dict(v=vs,  # version string
                t=ilk,
                d="",
                dt=stamp if stamp is not None else helping.nowIso8601(),
@@ -1217,9 +1214,14 @@ def query(route="",
                rr=replyRoute,
                q=query,
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return Serder(ked=ked)  # return serialized ked
 
 
 def reply(route="",
@@ -1270,14 +1272,18 @@ def reply(route="",
                a=data if data else {},  # attributes
                )
 
-    _, sad = coring.Saider.saidify(sad=sad, kind=kind, label=label)
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
 
-    saider = coring.Saider(qb64=sad[label])
-    if not saider.verify(sad=sad, kind=kind, label=label, prefixed=True):
-        raise ValidationError("Invalid said = {} for reply msg={}."
-                              "".format(saider.qb64, sad))
+    #_, sad = coring.Saider.saidify(sad=sad, kind=kind, label=label)
 
-    return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
+    #saider = coring.Saider(qb64=sad[label])
+    #if not saider.verify(sad=sad, kind=kind, label=label, prefixed=True):
+        #raise ValidationError("Invalid said = {} for reply msg={}."
+                              #"".format(saider.qb64, sad))
+
+    #return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
 def prod(route="",
@@ -1308,7 +1314,7 @@ def prod(route="",
     vs = versify(version=version, kind=kind, size=0)
     ilk = Ilks.pro
 
-    ked = dict(v=vs,  # version string
+    sad = dict(v=vs,  # version string
                t=ilk,
                d="",
                dt=stamp if stamp is not None else helping.nowIso8601(),
@@ -1316,12 +1322,18 @@ def prod(route="",
                rr=replyRoute,
                q=query,
                )
-    _, ked = coring.Saider.saidify(sad=ked)
 
-    return Serder(ked=ked)  # return serialized ked
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
+
+    #_, ked = coring.Saider.saidify(sad=ked)
+
+    #return Serder(ked=ked)  # return serialized ked
 
 def bare(route="",
            data=None,
+           stamp=None,
            version=Version,
            kind=Serials.json):
     """
@@ -1336,13 +1348,17 @@ def bare(route="",
         route is route path string that indicates data flow handler (behavior)
             to processs the exposure
         data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data
         version is Version instance
         kind is serialization kind
+
 
     {
       "v" : "KERI10JSON00011c_",
       "t" : "bar",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
       "r" : "sealed/processor",
       "a" :
         {
@@ -1362,13 +1378,18 @@ def bare(route="",
     sad = dict(v=vs,  # version string
                t=Ilks.bar,
                d="",
+               dt=stamp if stamp is not None else helping.nowIso8601(),
                r=route if route is not None else "",  # route
                a=data if data else {},  # dict of SADs
                )
 
-    _, sad = coring.Saider.saidify(sad=sad)
+    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder._verify()  # raises error if fails verifications
+    return serder
 
-    return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
+    #_, sad = coring.Saider.saidify(sad=sad)
+
+    #return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
@@ -1377,7 +1398,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
     Parameters:
-        serder (Serder): instance containing the event
+        serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
         seal (Union[SealEvent, SealLast]): optional if sigers and
             If SealEvent use attachment group code TransIdxSigGroups plus attach
@@ -1555,7 +1576,7 @@ class Kever:
         sner (Number): instance of sequence number
         fner (Number): instance of first seen ordinal number
         dater (Dater): instance of first seen datetime
-        serder (Serder): instance of current event with .serder.diger for digest
+        serder (SerderKERI): instance of current event with .serder.diger for digest
         ilk (str): from Ilks for current event type
         tholder (Tholder): instance for event signing threshold
         verfers (list): of Verfer instances for current event state set of signing keys
@@ -1604,7 +1625,7 @@ class Kever:
 
         Parameters:
             state (KeyStateRecord | None): instance for key state notice
-            serder (Serder | None): instance of inception event
+            serder (SerderKERI | None): instance of inception event
             sigers (list | None): of Siger instances of indexed controller signatures
                 of event. Index is offset into keys list from latest est event
             wigers (list | None): of Siger instances of indexed witness signatures of
@@ -1656,7 +1677,7 @@ class Kever:
         # may update state as we go because if invalid we fail to finish init
         self.version = serder.version  # version dispatch ?
 
-        ilk = serder.ked["t"]
+        ilk = serder.ilk # serder.ked["t"]
         if ilk not in (Ilks.icp, Ilks.dip):
             raise ValidationError("Expected ilk = {} or {} got {} for evt = {}."
                                   "".format(Ilks.icp, Ilks.dip,
@@ -1785,7 +1806,7 @@ class Kever:
                                             dig=state.d))) is None:
             raise MissingEntryError(f"Corresponding event not found for state="
                                     f"{state}.")
-        self.serder = Serder(raw=bytes(raw))
+        self.serder = serdering.SerderKERI(raw=bytes(raw))
         # May want to do additional checks here
 
 
@@ -1795,7 +1816,7 @@ class Kever:
 
 
         Parameters:
-            serder is Serder instance of inception event
+            serder is SerderKERI instance of inception event
             estOnly is boolean  to indicate establish only events allowed
         """
         ked = serder.ked
@@ -1822,9 +1843,10 @@ class Kever:
         # Can't use usual serder.saider.verify(sad=ked) on inception when digestive
         # since both 'd' and 'i' field are dummied so use prefixer verification
         # otherwise use saider verification below
-        if not self.prefixer.digestive:
-            if not serder.saider.verify(sad=ked):
-                raise ValidationError("Invalid SAID {} for event {}".format(ked["d"], ked))
+        # don't need this with new SerderKERI because .verify() checks for this.
+        #if not self.prefixer.digestive:
+            #if not serder.saider.verify(sad=ked):
+                #raise ValidationError("Invalid SAID {} for event {}".format(ked["d"], ked))
 
 
         self.serder = serder  # need whole serder for digest agility comparisons
@@ -1869,7 +1891,7 @@ class Kever:
 
         # need this to recognize recovery events and transferable receipts
         # last establishment event location
-        self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
+        self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.said)
 
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
@@ -1884,7 +1906,7 @@ class Kever:
                                        else self.DoNotDelegate)
                               else False)  # ensure default doNotDelegate is boolean
 
-        cnfg = serder.ked["c"]  # process cnfg for traits
+        cnfg = serder.traits # serder.ked["c"]  # process cnfg for traits
         if TraitDex.EstOnly in cnfg:
             self.estOnly = True
         if TraitDex.DoNotDelegate in cnfg:
@@ -1898,7 +1920,7 @@ class Kever:
         in sigers and update state
 
         Parameters:
-            serder (Serder): instance of  event
+            serder (SerderKERI): instance of  event
             sigers (list): of SigMat instances of indexed signatures of controller
                 signatures of event. Index is offset into keys list from latest
                 est event and when provided ondex is offset into key digest list
@@ -1922,10 +1944,11 @@ class Kever:
                 and timestamps.
 
         """
-        if not self.transferable:  # not transferable so no events after inception allowed
-            raise ValidationError("Unexpected event = {} is nontransferable "
-                                  " state.".format(serder.ked))
         ked = serder.ked
+        if not self.transferable:  # not transferable so no further events allowed
+            raise ValidationError("Unexpected event = {} is nontransferable "
+                                  " or abandoned state.".format(ked))
+
         if serder.pre != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
                                   " = {} for evt = {}.".format(ked["i"],
@@ -2006,7 +2029,7 @@ class Kever:
             self.adds = adds
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.saider.qb64)
+            self.lastEst = LastEstLoc(s=self.sner.num, d=self.serder.said)
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fner = Number(num=fn)
                 self.dater = Dater(dts=dts)
@@ -2030,7 +2053,7 @@ class Kever:
             if not self.serder.compare(said=ked["p"]):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with state dig"
                                       " = {} for evt = {}.".format(ked["p"],
-                                                                   self.serder.saider.qb64,
+                                                                   self.serder.said,
                                                                    ked))
 
             # interaction event use keys, sith, toad, and wits from pre-existing Kever state
@@ -2073,7 +2096,7 @@ class Kever:
         of rotation subject to additional validation
 
         Parameters:
-            serder (Serder): instance of rotation ('rot' or 'drt') event.
+            serder (SerderKERI): instance of rotation ('rot' or 'drt') event.
             sner (Number): sequence number instance
 
         """
@@ -2116,7 +2139,7 @@ class Kever:
                 if praw is None:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
-                pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
+                pserder = serdering.SerderKERI(raw=bytes(praw))  # deserialize prior event raw
                 if not pserder.compare(said=dig):  # bad recovery event
                     raise ValidationError("Invalid recovery attempt:"
                                           "Mismatch recovery event prior dig"
@@ -2130,7 +2153,7 @@ class Kever:
             if not self.serder.compare(said=dig):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
-                                      "".format(dig, self.serder.saider.qb64, ked))
+                                      "".format(dig, self.serder.said, ked))
 
         # check derivation code of pre for non-transferable
         if not self.digers:  # prior next list is empty so rotations not allowed
@@ -2212,7 +2235,7 @@ class Kever:
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
-            serder (Serder): instance of event
+            serder (SerderKERI): instance of event
             sigers (list): of Siger instances of indexed controllers signatures.
                 Index is offset into verfers list from which public key may be derived.
             verfers (list): of Verfer instances of keys from latest est event
@@ -2340,7 +2363,7 @@ class Kever:
         Assumes state setup
 
         Parameters:
-            serder (Serder): instance of delegated event serder
+            serder (SerderKERI): instance of delegated event serder
             sigers (list): of Siger instances of indexed controller sigs of
                 delegated event. Assumes sigers is list of unique verified sigs
             wigers (list | None): of optional Siger instance of indexed witness sigs of
@@ -2401,7 +2424,7 @@ class Kever:
             raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
                                   "".format(delegator, ddig, serder.ked))
 
-        dserder = Serder(raw=bytes(raw))  # delegating event
+        dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
         # compare digests to make sure they match here
         if not dserder.compare(said=delsaider.qb64):
             raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
@@ -2444,7 +2467,7 @@ class Kever:
         Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
-            serder is Serder instance of current event
+            serder is SerderKERI instance of current event
             sigers is optional list of Siger instance for current event
             wigers is optional list of Siger instance of indexed witness sigs
             wits is optional list of current witnesses provide during any establishment event
@@ -2475,9 +2498,9 @@ class Kever:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
-        for verfer in serder.verfers:
+        for verfer in (serder.verfers if serder.verfers is not None else []):
             self.db.pubs.add(keys=(verfer.qb64,), val=val)
-        for diger in serder.digers:
+        for diger in (serder.digers if serder.digers is not None else []):
             self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
             if seqner and saider:  # authorized delegated or issued event
@@ -2508,7 +2531,7 @@ class Kever:
         or fully signed delegated event but not yet verified delegation.
 
         Parameters:
-            serder is Serder instance of event
+            serder is SerderKERI instance of event
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
         """
@@ -2535,7 +2558,7 @@ class Kever:
         are escrowed elsewhere.
 
         Parameters:
-            serder is Serder instance of delegated or issued event
+            serder is SerderKERI instance of delegated or issued event
             seqner is Seqner instance of sn of seal source event of delegator/issuer
             saider is Saider instance of said of delegator/issuer
         """
@@ -2550,7 +2573,7 @@ class Kever:
         Update associated logs for escrow of partially witnessed event
 
         Parameters:
-            serder is Serder instance of  event
+            serder is SerderKERI instance of  event
             wigers is list of Siger instance of indexed witness sigs
             sigers is optional list of Siger instances of indexed controller sigs
             seqner is Seqner instance of sn of seal source event of delegator/issuer
@@ -2590,7 +2613,7 @@ class Kever:
 
         return (state(pre=self.prefixer.qb64,
                       sn=self.sn, # property self.sner.num
-                      pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
+                      pig=(self.serder.prior if self.serder.prior is not None else ""),
                       dig=self.serder.said,
                       fn=self.fn, # property self.fner.num
                       stamp=self.dater.dts,  # need to add dater object for first seen dts
@@ -2636,8 +2659,8 @@ class Kever:
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
-            serder = coring.Serder(raw=bytes(raw))
-            if serder.est:  # establishment event
+            serder = serdering.SerderKERI(raw=bytes(raw))
+            if serder.estive:  # establishment event
                 return serder.digers
 
         return None
@@ -2681,8 +2704,8 @@ class Kever:
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
-            serder = coring.Serder(raw=bytes(raw))
-            if serder.est:  # establishment event
+            serder = serdering.SerderKERI(raw=bytes(raw))
+            if serder.estive:  # establishment event
                 key = serder.verfers[0].qb64
                 try:
                     i = keys.index(key)  # find index of key in keys
@@ -2734,8 +2757,8 @@ class Kever:
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
-            serder = coring.Serder(raw=bytes(raw))
-            if serder.est:  # establishment event
+            serder = serdering.SerderKERI(raw=bytes(raw))
+            if serder.estive:  # establishment event
                 keys = [verfer.qb64 for verfer in serder.verfers]
                 try:
                     i = keys.index(key) # find index of key in keys
@@ -2871,8 +2894,8 @@ class Kevery:
         for digb in self.db.getKelBackIter(preb, sn):
             dgkey = dgKey(preb, digb)
             raw = self.db.getEvt(dgkey)
-            serder = coring.Serder(raw=bytes(raw))
-            if serder.est:
+            serder = serdering.SerderKERI(raw=bytes(raw))
+            if serder.estive:
                 wits = self.db.wits.get(dgkey)
                 return wits
 
@@ -2886,7 +2909,7 @@ class Kevery:
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-            serder is Serder instance of event to process
+            serder is SerderKERI instance of event to process
             sigers is list of Siger instances of attached controller indexed sigs
             wigers is optional list of Siger instances of attached witness indexed sigs
             delseqner is Seqner instance of delegating event sequence number.
@@ -2963,7 +2986,7 @@ class Kevery:
 
                     wigers, windices = verifySigs(raw=serder.raw,
                                                   sigers=wigers,
-                                                  verfers=eserder.werfers)
+                                                  verfers=eserder.berfers)
 
                     if sigers or wigers:  # at least one verified sig or wig so log evt
                         # not first seen inception so ignore return
@@ -2978,8 +3001,9 @@ class Kevery:
                 #kever.cues = self.cues This is injected when inception is accepted
                 sno = kever.sner.num + 1  # proper sn of new inorder event
 
-                if not serder.saider.verify(sad=serder.ked):
-                    raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
+                # new SerderKERI.verify() already checks for this
+                #if not serder.saider.verify(sad=serder.ked):
+                    #raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
@@ -3037,7 +3061,7 @@ class Kevery:
         Process one witness receipt serder with attached witness sigers
 
         Parameters:
-            serder is Serder instance of serialized receipt message not receipted event
+            serder is SerderKERI instance of serialized receipt message not receipted event
             sigers is list of Siger instances that with witness indexed signatures
                 signature in .raw. Index is offset into witness list of latest
                 establishment event for receipted event. Signature uses key pair
@@ -3065,7 +3089,7 @@ class Kevery:
             dgkey = dgKey(pre=pre, dig=ldig)
             raw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
             # assumes db ensures that raw must not be none
-            lserder = Serder(raw=raw)  # deserialize event raw
+            lserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
 
             if not lserder.compare(said=ked["d"]):  # stale receipt at sn discard
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
@@ -3107,7 +3131,7 @@ class Kevery:
         Process one receipt serder with attached cigars
 
         Parameters:
-            serder is Serder instance of serialized receipt message not receipted message
+            serder is SerderKERI instance of serialized receipt message not receipted message
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
 
@@ -3133,7 +3157,7 @@ class Kevery:
             dgkey = dgKey(pre=pre, dig=ldig)
             raw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
             # assumes db ensures that raw must not be none
-            lserder = Serder(raw=raw)  # deserialize event raw
+            lserder = serdering.SerderKERI(raw=raw)  # deserialize event raw
 
             if not lserder.compare(said=ked["d"]):  # stale receipt at sn discard
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
@@ -3176,7 +3200,7 @@ class Kevery:
         Process attachment with receipt couple
 
         Parameters:
-            serder is Serder instance of receipted serialized event message
+            serder is SerderKERI instance of receipted serialized event message
                 to which receipts are attached from replay
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
@@ -3268,7 +3292,7 @@ class Kevery:
         # retrieve event by dig assumes if ldig is not None that event exists at ldig
         ldig = bytes(ldig).decode("utf-8")
         lraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
-        lserder = Serder(raw=bytes(lraw))
+        lserder = serdering.SerderKERI(raw=bytes(lraw))
         # verify digs match
         if not lserder.compare(said=ldig):  # mismatch events problem with replay
             raise ValidationError("Mismatch receipt of event at sn = {} with db."
@@ -3299,7 +3323,7 @@ class Kevery:
             # retrieve last event itself of receipter est evt from sdig.
             sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
             if not sserder.compare(said=saider.qb64):  # endorser's dig not match event
                 raise ValidationError("Bad trans indexed sig group at sn = {}"
                                       " for ksn = {}."
@@ -3386,7 +3410,7 @@ class Kevery:
                 # retrieve last event itself of receipter
                 sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
                 # assumes db ensures that sraw must not be none because sdig was in KE
-                sserder = Serder(raw=bytes(sraw))
+                sserder = serdering.SerderKERI(raw=bytes(sraw))
                 if not sserder.compare(said=saider.qb64):  # seal dig not match event
                     raise ValidationError("Bad trans receipt quadruple at sn = {}"
                                           " for rct = {}."
@@ -3462,7 +3486,7 @@ class Kevery:
         Assumes already validated saider, dater, and route from serder.ked
 
         Parameters:
-            serder (Serder): instance of reply msg (SAD)
+            serder (SerderKERI): instance of reply msg (SAD)
             saider (Saider): instance  from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
@@ -3553,7 +3577,7 @@ class Kevery:
         Assumes already validated saider, dater, and route from serder.ked
 
         Parameters:
-            serder (Serder): instance of reply msg (SAD)
+            serder (SerderKERI): instance of reply msg (SAD)
             saider (Saider): instance  from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
@@ -3651,7 +3675,7 @@ class Kevery:
         Assumes already validated saider, dater, and route from serder.ked
 
         Parameters:
-            serder (Serder): instance of reply msg (SAD)
+            serder (SerderKERI): instance of reply msg (SAD)
             saider (Saider): instance  from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
@@ -3762,7 +3786,7 @@ class Kevery:
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dgKey(pre=pre, dig=ldig))
             # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
 
             if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
                 raise ValidationError(f"Mismatch keystate at sn = {int(ksr.s,16)}"
@@ -3770,7 +3794,7 @@ class Kevery:
 
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
-        self.cues.append(dict(kin="keyStateSaved", serder=serder))
+        self.cues.append(dict(kin="keyStateSaved", ksn=ksr._asdict()))
 
     def updateEnd(self, keys, saider, allowed=None):
         """
@@ -3840,7 +3864,7 @@ class Kevery:
         Assume promiscuous mode for now.
 
         Parameters:
-            serder (Serder) is query message serder
+            serder (SerderKERI) is query message serder
             source (Prefixer) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
             cigars (list) of Cigar instance of attached non-trans sigs
@@ -3930,7 +3954,7 @@ class Kevery:
 
     def fetchEstEvent(self, pre, sn):
         """
-        Returns Serder instance of establishment event that is authoritative for
+        Returns SerderKERI instance of establishment event that is authoritative for
         event in KEL for pre at sn.
         Returns None if no event at sn accepted in KEL for pre
 
@@ -3950,7 +3974,7 @@ class Kevery:
             if not raw:
                 return None
 
-            serder = Serder(raw=raw)  # deserialize event raw
+            serder = serdering.SerderKERI(raw=raw)  # deserialize event raw
             if serder.ked["t"] in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):
                 return serder  # establishment event so return
 
@@ -3963,7 +3987,7 @@ class Kevery:
         Update associated logs for escrow of Out-of-Order event
 
         Parameters:
-            serder (Serder): instance of  event
+            serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             seqner (Seqner): instance of sn of event delegatint/issuing event if any
             saider (Saider): instance of dig of event delegatint/issuing event if any
@@ -3989,7 +4013,7 @@ class Kevery:
 
         Parameters:
             prefixer (Prefixer): source of query message
-            serder (Serder): instance of  event
+            serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             cigars (list): of non-transferable receipts
         """
@@ -4012,7 +4036,7 @@ class Kevery:
         Update associated logs for escrow of Likely Duplicitous event
 
         Parameters:
-            serder is Serder instance of  event
+            serder is SerderKERI instance of  event
             sigers is list of Siger instance for  event
         """
         dgkey = dgKey(serder.preb, serder.saidb)
@@ -4036,7 +4060,7 @@ class Kevery:
                 for receipted event.
 
         Parameters:
-            serder (Serder): instance of receipt msg not receipted event
+            serder (SerderKERI): instance of receipt msg not receipted event
             wigers (list): of Siger instances for witness indexed signature
                 of receipted event
             said (str) qb64 said of receipted event not serder.dig because
@@ -4069,7 +4093,7 @@ class Kevery:
            cig is non-indexed signature on event with key pair derived from rpre
 
         Parameters:
-            serder (Serder): instance of receipt msg not receipted event
+            serder (SerderKERI): instance of receipt msg not receipted event
             cigars (list): of Cigar instances for event receipt
             said (str): qb64 said in receipt of receipted event not serder.dig because
                 serder is of receipt not receipted event
@@ -4258,7 +4282,7 @@ class Kevery:
             self.db.putEvt(dgkey, serder.raw)
             self.db.addOoe(snKey(pre, sn), serder.dig)
             where:
-                serder is Serder instance of  event
+                serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
@@ -4309,7 +4333,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
@@ -4391,7 +4415,7 @@ class Kevery:
             .db.putEvt(dgkey, serder.raw)
             .db.addPse(snKey(pre, sn), serder.digb)
             where:
-                serder is Serder instance of  event
+                serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
@@ -4444,7 +4468,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgkey)
                     if not sigs:  # otherwise its a list of sigs
@@ -4551,7 +4575,7 @@ class Kevery:
             .db.putEvt(dgkey, serder.raw)
             .db.addPwe(snKey(pre, sn), serder.digb)
             where:
-                serder is Serder instance of  event
+                serder is SerderKERI instance of  event
                 wigers is list of Siger instance for of witnesses of event
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
@@ -4603,7 +4627,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                     #  get sigs
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
@@ -4916,7 +4940,7 @@ class Kevery:
                             raise ValidationError("Invalid receipted evt reference"
                                                   " at pre={} sn={:x}".format(pre, sn))
 
-                        serder = Serder(raw=bytes(raw))  # receipted event
+                        serder = serdering.SerderKERI(raw=bytes(raw))  # receipted event
 
                         #  compare digs
                         if rsaider.qb64b != serder.saidb:
@@ -5045,7 +5069,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
@@ -5128,7 +5152,7 @@ class Kevery:
         for dig in self.db.getPwesIter(key=snKey(pre, sn)):  # search entries
             dig = bytes(dig)  # database dig of receipted event
             # get the escrowed event using database dig in .Pwes
-            serder = Serder(raw=bytes(self.db.getEvt(dgKey(pre, dig))))  # receipted event
+            serder = serdering.SerderKERI(raw=bytes(self.db.getEvt(dgKey(pre, dig))))  # receipted event
             #  compare digs to ensure database dig and rdiger (receipt's dig) match
             if rsaider.qb64b != dig:
                 continue  # not match keep looking
@@ -5299,7 +5323,7 @@ class Kevery:
                         raise ValidationError("Invalid receipted evt reference "
                                               "at pre={} sn={:x}".format(pre, sn))
 
-                    serder = Serder(raw=bytes(raw))  # receipted event
+                    serder = serdering.SerderKERI(raw=bytes(raw))  # receipted event
 
                     #  compare digs
                     if esaider.qb64b != serder.saidb:
@@ -5325,7 +5349,7 @@ class Kevery:
                     # retrieve last event itself of receipter
                     sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
                     # assumes db ensures that sraw must not be none because sdig was in KE
-                    sserder = Serder(raw=bytes(sraw))
+                    sserder = serdering.SerderKERI(raw=bytes(sraw))
                     if not sserder.compare(said=ssaider.qb64):  # seal dig not match event
                         # this unescrows
                         raise ValidationError("Bad chit seal at sn = {} for rct = {}."
@@ -5408,7 +5432,7 @@ class Kevery:
             self.db.putEvt(dgkey, serder.raw)
             self.db.addLde(snKey(pre, sn), serder.digb)
             where:
-                serder is Serder instance of  event
+                serder is SerderKERI instance of  event
                 sigers is list of Siger instance for  event
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
@@ -5458,7 +5482,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
@@ -5544,7 +5568,7 @@ def loadEvent(db, preb, dig):
     if not (raw := db.getEvt(key=dgkey)):
         raise ValueError("Missing event for dig={}.".format(dig))
 
-    serder = coring.Serder(raw=bytes(raw))
+    serder = serdering.SerderKERI(raw=bytes(raw))
     event["ked"] = serder.ked
 
     sn = serder.sn
@@ -5562,7 +5586,7 @@ def loadEvent(db, preb, dig):
     event["signatures"] = dsigs
 
     # add witness state at this event
-    wits = db.wits.get(dgkey) if serder.est else []
+    wits = db.wits.get(dgkey) if serder.estive else []
     event["witnesses"] = [wit.qb64 for wit in wits]
 
     # add indexed witness signatures to attachments

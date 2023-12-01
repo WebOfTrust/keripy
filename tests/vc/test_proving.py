@@ -6,15 +6,17 @@ tests.vc.proving module
 import pytest
 
 from keri.app import habbing
-from keri.core import coring, scheming, parsing
+from keri.core import coring, scheming, parsing, serdering
 from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from keri.core.scheming import CacheResolver
 from keri.kering import Versionage
-from keri.vc.proving import Creder, credential
+from keri.vc.proving import credential
 from keri.vdr import verifying, credentialing
 
 
 def test_proving(mockHelpingNowIso8601):
+    """Test credential proof with SerderACDC"""
+
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
@@ -64,7 +66,7 @@ def test_proving(mockHelpingNowIso8601):
                        b'6mBl2QV8dDjI3-AABAAAmfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3'
                        b'oxH45Y3kIvZg67u2DyxtUqVixVzRhOOTnMAB_SowI')
 
-        creder = Creder(raw=msg)
+        creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True)
@@ -100,94 +102,107 @@ def test_proving(mockHelpingNowIso8601):
         siger = isigers[0]
         assert siger.verfer.verify(siger.raw, creder.raw) is True
 
+        """End Test"""
+
 
 def test_credentialer():
+    """Test SerderACDC as credential"""
+
     with pytest.raises(ValueError):
-        Creder()
+        serdering.SerderACDC()  # Creder()
+
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
         v=coring.versify(proto=coring.Protos.acdc, kind=Serials.json, size=0),
         d="",
+        i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
-        i="i",
         a=sub
     )
     _, d = coring.Saider.saidify(sad=d)
 
-    said = 'EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi'  # creder.said
+    said = 'ENWScKaCtogzVvZfbDmvS3izq7bM7AOhHzjf-QL-VU5m'  # creder.said
 
-    creder = Creder(ked=d)
+    creder = serdering.SerderACDC(sad=d)  # Creder(ked=d)
     assert creder.said == said
     assert creder.kind == Serials.json
-    assert creder.issuer == "i"
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.crd == d
-    assert creder.size == 168
+    assert creder.attrib == sub
+    assert creder.sad == d
+    assert creder.size == 211
     assert creder.size == len(creder.raw)
-    assert creder.raw == (b'{"v":"ACDC10JSON0000a8_","d":"EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWi",'
-                          b'"s":"abc","i":"i","a":{"a":123,"b":"abc","issuanceDate":"2021-06-27T21:26:21'
-                          b'.233257+00:00"}}')
+    assert creder.raw == (b'{"v":"ACDC10JSON0000d3_","d":"ENWScKaCtogzVvZfbDmvS3izq7bM7AOhHzjf-QL-VU5m",'
+                          b'"i":"EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi","s":"abc","a":{"a":123,"b'
+                          b'":"abc","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
 
-    raw1, idt1, knd1, ked1, ver1 = creder._exhale(ked=d)
+    raw1, ked1, knd1, ver1, knd1, size1 = creder._exhale(sad=d)
     assert raw1 == creder.raw
     assert knd1 == Serials.json
     assert ked1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
-    creder = Creder(raw=raw1)
+    creder = serdering.SerderACDC(raw=raw1)  # Creder(raw=raw1)
     assert creder.kind == Serials.json
-    assert creder.issuer == "i"
-    assert creder.crd == d
-    assert creder.size == 168
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.sad == d
+    assert creder.size == 211
 
     d2 = dict(d)
+    d2['d'] = ""
     d2["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.cbor, size=0)
-    creder = Creder(ked=d2)
-    assert creder.said == said  # shouldnt this be different here?
-    assert creder.issuer == "i"
+    _, d2 = coring.Saider.saidify(sad=d2)
+
+    creder = serdering.SerderACDC(sad=d2)  # Creder(ked=d2)
+    assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"  # shouldnt this be different here?
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.size == 139
+    assert creder.attrib == sub
+    assert creder.size == 183
     assert creder.size == len(creder.raw)
-    assert creder.crd == d2
-    assert creder.raw == (b'\xa5avqACDC10CBOR00008b_adx,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG9YyLA4uWiasc'
-                          b'abcaiaiaa\xa3aa\x18{abcabclissuanceDatex 2021-06-27T21:26:21.233257+00:00')
+    assert creder.sad == d2
+    assert creder.raw == (b'\xa5avqACDC10CBOR0000b7_adx,EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvYaix'
+                          b',EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWiascabcaa\xa3aa\x18{abcabcliss'
+                          b'uanceDatex 2021-06-27T21:26:21.233257+00:00')
 
     raw2 = bytes(creder.raw)
-    creder = Creder(raw=raw2)
-    assert creder.said == said
-    assert creder.issuer == "i"
+    creder = serdering.SerderACDC(raw=raw2)  # Creder(raw=raw2)
+    assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.size == 139
+    assert creder.attrib == sub
+    assert creder.size == 183
     assert creder.size == len(creder.raw)
-    assert creder.crd == d2
+    assert creder.sad == d2
 
     d3 = dict(d)
     d3["v"] = coring.versify(proto=coring.Protos.acdc, kind=Serials.mgpk, size=0)
-    creder = Creder(ked=d3)
+    _, d3 = coring.Saider.saidify(sad=d3)
+    creder = serdering.SerderACDC(sad=d3)  # Creder(ked=d3)
 
-    assert creder.said == said  # shouldn't this be different here
-    assert creder.issuer == "i"
+    assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.size == 138
+    assert creder.attrib == sub
+    assert creder.size == 182
     assert creder.size == len(creder.raw)
-    assert creder.crd == d3
-    assert creder.raw == (b'\x85\xa1v\xb1ACDC10MGPK00008a_\xa1d\xd9,EF6maPM_d5ZN7U3NRFC1-6TM7k_EKDz-8AG'
-                          b'9YyLA4uWi\xa1s\xa3abc\xa1i\xa1i\xa1a\x83\xa1a{\xa1b\xa3abc\xacissuanceDate'
-                          b'\xd9 2021-06-27T21:26:21.233257+00:00')
+    assert creder.sad == d3
+    assert creder.raw == (b'\x85\xa1v\xb1ACDC10MGPK0000b6_\xa1d\xd9,EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcF'
+                          b'zuiDly2Y6\xa1i\xd9,EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi\xa1s\xa3'
+                          b'abc\xa1a\x83\xa1a{\xa1b\xa3abc\xacissuanceDate\xd9 2021-06-27T21:26:21.23'
+                          b'3257+00:00')
 
     raw3 = bytes(creder.raw)
-    creder = Creder(raw=raw3)
-    assert creder.said == said
-    assert creder.issuer == "i"
+    creder = serdering.SerderACDC(raw=raw3)
+    assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
+    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
-    assert creder.subject == sub
-    assert creder.size == 138
+    assert creder.attrib == sub
+    assert creder.size == 182
     assert creder.size == len(creder.raw)
-    assert creder.crd == d3
+    assert creder.sad == d3
+
+    """End Test"""
 
 
 def test_credential(mockHelpingNowIso8601):
@@ -234,20 +249,21 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
                       recipient="EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB",
                       private=True,
                       salt=salt,
-                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      issuer="EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",
                       data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    assert "u" in cred.ked
+    assert "u" in cred.sad
     print(cred.raw)
-    assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"EKwDvF8_PWMlw7X1Lb1fiilLIMiK4yTXUdmBasZWb0sF",'
-                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPP'
-                        b'NBnM","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
+    assert cred.raw == (b'{"v":"ACDC10JSON00021c_","d":"ELFOCm58xUlId994cS6m6bsfYOkNHEKoe15Cav-Sj8__",'
+                        b'"u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDl'
+                        b'y2Y6","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M","s":"EZllThM1rLBSM'
                         b'Z_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","a":{"d":"EFwWs1d_fe_VeLZ0vQQKO-gkRvGrpfWAR'
                         b'bI4e9tzcqlV","u":"0AAwMTIzNDU2Nzg5YWJjZGVm","i":"EM_S2MdMaKgP6P2Yyno6-flV6Gq'
                         b'rwPencTIw8tCMR7iB","dt":"2021-06-27T21:26:21.233257+00:00","LEI":"254900OPPU'
                         b'84GM83MG36","personLegalName":"John Doe","engagementContextRole":"Project Ma'
                         b'nager"}}')
+    """End Test"""
 
 
 def test_credential_parsator():
@@ -271,7 +287,7 @@ def test_credential_parsator():
         msg.extend(coring.Counter(coring.CtrDex.SealSourceTriples, count=1).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
         msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
-        msg.extend(hab.kever.serder.saider.qb64b)
+        msg.extend(hab.kever.serder.said.encode("utf-8"))
 
         verifier = verifying.Verifier(hby=hby)
         parsing.Parser().parse(ims=msg, vry=verifier)
@@ -281,6 +297,8 @@ def test_credential_parsator():
         assert cue['kin'] == "telquery"
         q = cue["q"]
         assert q["ri"] == issuer.regk
+
+    """End Test"""
 
 
 if __name__ == '__main__':

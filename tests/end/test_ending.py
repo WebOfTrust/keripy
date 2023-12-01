@@ -14,7 +14,7 @@ from hio.help import Hict
 
 from keri import help, kering
 from keri.app import habbing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.end import ending
 
 logger = help.ogler.getLogger()
@@ -430,7 +430,7 @@ def test_get_oobi():
 
         rep = client.simulate_get('/oobi', )
         assert rep.status == falcon.HTTP_OK
-        serder = coring.Serder(raw=rep.text.encode("utf-8"))
+        serder = serdering.SerderKERI(raw=rep.text.encode("utf-8"))
         assert serder.ked['t'] == coring.Ilks.icp
         assert serder.ked['i'] == "EOaICQwhOy3wMwecjAuHQTbv_Cmuu1azTMnHi4QtUmEU"
 

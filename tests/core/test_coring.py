@@ -26,7 +26,7 @@ from cryptography import exceptions
 from keri.core import coring
 from keri.core import eventing
 from keri.core.coring import (Ilkage, Ilks, Labels, Saids, Protos, Protocolage,
-                              Sadder, Serder, Tholder, Seqner,
+                              Sadder, Tholder, Seqner,
                               NumDex, Number, Siger, Dater, Bexter)
 from keri.core.coring import Serialage, Serials, Tiers, Vstrings
 from keri.core.coring import (Sizage, MtrDex, Matter, Xizage, IdrDex, IdxSigDex,
@@ -365,13 +365,14 @@ def test_matter():
         'X25519_Private': 'O',
         'X25519_Cipher_Seed': 'P',
         'ECDSA_256r1_Seed': 'Q',
-        'Trait3': 'R',
+        'Bext3': 'R',
         'Large': 'S',
         'Tall': 'T',
         'Great': 'U',
         'Vast': 'V',
         'Tag1': 'W',
         'Tag2': 'X',
+        'Bext7': 'Y',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -381,8 +382,8 @@ def test_matter():
         'SHA2_512': '0G',
         'Long': '0H',
         'ECDSA_256r1_Sig': '0I',
-        'Version': '0J',
-        'Trait2': '0K',
+        'Bext2': '0J',
+        'Bext6': '0K',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -413,8 +414,9 @@ def test_matter():
         'X25519_Cipher_L2': '6C',
         'X25519_Cipher_Big_L0': '7AAC',
         'X25519_Cipher_Big_L1': '8AAC',
-        'X25519_Cipher_Big_L2': '9AAC',
+        'X25519_Cipher_Big_L2': '9AAC'
     }
+
 
     assert Matter.Codex == MtrDex
 
@@ -456,6 +458,7 @@ def test_matter():
         'V': Sizage(hs=1, ss=0, fs=24, ls=0),
         'W': Sizage(hs=1, ss=0, fs=4, ls=1),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
+        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -465,8 +468,8 @@ def test_matter():
         '0G': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
-        '0J': Sizage(hs=2, ss=0, fs=8, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
@@ -516,6 +519,7 @@ def test_matter():
             assert val.ss == 0 and not val.fs % 4 and val.hs > 0 and val.fs >= (val.hs + val.ss)
         else:
             assert not (val.hs + val.ss) % 4
+
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -5724,9 +5728,10 @@ def test_versify():
 def test_serder():
     """
     Test the support functionality for Serder key event serialization deserialization
+    deprecated
     """
     with pytest.raises(ValueError):
-        serder = Serder()
+        serder = coring.Serder()
 
     e1 = dict(v=Vstrings.json,
               d="",
@@ -5735,7 +5740,7 @@ def test_serder():
               t="rot")
     _, e1 = coring.Saider.saidify(sad=e1)
 
-    serder = Serder(ked=e1)
+    serder = coring.Serder(ked=e1)
     assert serder.ked == e1
     assert serder.kind == Serials.json
     assert serder.version == Versionage(major=1, minor=0)
@@ -5915,7 +5920,7 @@ def test_serder():
     assert kind4 == Serials.json
     assert size4 == 111
 
-    evt1 = Serder(raw=e1ss)
+    evt1 = coring.Serder(raw=e1ss)
     assert evt1.kind == kind1
     assert evt1.raw == e1s
     assert evt1.ked == ked1
@@ -5933,7 +5938,7 @@ def test_serder():
     assert evt1.said == 'EIM66TjBMfwPnbwK7oZqbZyGz9nOeVmQHeH3NZxrsk8F'
     assert evt1.saider.verify(evt1.ked)
 
-    evt1 = Serder(ked=ked1)
+    evt1 = coring.Serder(ked=ked1)
     assert evt1.kind == kind1
     assert evt1.raw == e1s
     assert evt1.ked == ked1
@@ -5942,13 +5947,13 @@ def test_serder():
     assert evt1.version == vers1
     assert evt1.saider.code == MtrDex.Blake3_256
 
-    evt2 = Serder(raw=e2ss)
+    evt2 = coring.Serder(raw=e2ss)
     assert evt2.kind == kind2
     assert evt2.raw == e2s
     assert evt2.ked == ked2
     assert evt2.version == vers2
 
-    evt2 = Serder(ked=ked2)
+    evt2 = coring.Serder(ked=ked2)
     assert evt2.kind == kind2
     assert evt2.raw == e2s
     assert evt2.ked == ked2
@@ -5956,13 +5961,13 @@ def test_serder():
     assert evt2.raw == e2ss[:size2]
     assert evt2.version == vers2
 
-    evt3 = Serder(raw=e3ss)
+    evt3 = coring.Serder(raw=e3ss)
     assert evt3.kind == kind3
     assert evt3.raw == e3s
     assert evt3.ked == ked3
     assert evt3.version == vers3
 
-    evt3 = Serder(ked=ked3)
+    evt3 = coring.Serder(ked=ked3)
     assert evt3.kind == kind3
     assert evt3.raw == e3s
     assert evt3.ked == ked3
@@ -5971,7 +5976,7 @@ def test_serder():
     assert evt3.version == vers3
 
     #  round trip
-    evt2 = Serder(ked=evt1.ked)
+    evt2 = coring.Serder(ked=evt1.ked)
     assert evt2.kind == evt1.kind
     assert evt2.raw == evt1.raw
     assert evt2.ked == evt1.ked
@@ -5981,7 +5986,7 @@ def test_serder():
     # Test change in kind by Serder
     ked1["v"] = Vstrings.mgpk
     _, ked1 = coring.Saider.saidify(sad=ked1)
-    evt1 = Serder(ked=ked1, kind=Serials.mgpk)  # ked is json but kind mgpk
+    evt1 = coring.Serder(ked=ked1, kind=Serials.mgpk)  # ked is json but kind mgpk
     assert evt1.kind == kind2
     assert evt1.raw == e2s
     assert evt1.ked == ked2
@@ -5992,7 +5997,7 @@ def test_serder():
     assert evt1.saider.verify(evt1.ked)
 
     #  round trip
-    evt2 = Serder(raw=evt1.raw)
+    evt2 = coring.Serder(raw=evt1.raw)
     assert evt2.kind == evt1.kind
     assert evt2.raw == evt1.raw
     assert evt2.ked == evt1.ked
@@ -6001,7 +6006,7 @@ def test_serder():
 
     ked1["v"] = Vstrings.cbor
     _, ked1 = coring.Saider.saidify(sad=ked1)
-    evt1 = Serder(ked=ked1, kind=Serials.cbor)  # ked is json but kind mgpk
+    evt1 = coring.Serder(ked=ked1, kind=Serials.cbor)  # ked is json but kind mgpk
     assert evt1.kind == kind3
     assert evt1.raw == e3s
     assert evt1.ked == ked3
@@ -6010,7 +6015,7 @@ def test_serder():
     assert evt1.version == vers1
 
     #  round trip
-    evt2 = Serder(raw=evt1.raw)
+    evt2 = coring.Serder(raw=evt1.raw)
     assert evt2.kind == evt1.kind
     assert evt2.raw == evt1.raw
     assert evt2.ked == evt1.ked
@@ -6032,7 +6037,7 @@ def test_serder():
            't': 'rot'}
     raw = (
         b'{"v":"KERI10JSON00006a_","d":"HAg9_-rPd8oga-oyPghCEIlJZHKbYXcP86LQl0Yg2AvA","i":"ABCDEFG","s":1,"t":"rot"}')
-    srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
+    srdr = coring.Serder(raw=raw, code=MtrDex.SHA3_256)
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
     assert srdr.ked == ked
@@ -6045,7 +6050,7 @@ def test_serder():
            't': 'rot'}
     raw = (
         b'{"v":"KERI10JSON00006a_","d":"EADZ055vgh5utgSY3OOL1lW0m1pJ1W0Ia6-SVuGa0OqE","i":"ABCDEFG","s":1,"t":"rot"}')
-    srdr = Serder(raw=raw)
+    srdr = coring.Serder(raw=raw)
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
     assert srdr.ked == ked
@@ -6058,20 +6063,20 @@ def test_serder():
             'BEejlxZytU7gjUwtgkmNKmBWiFPKSsXjk_uxzoun8dtK']
 
 
-    pre0 = aids[0]
-    wit0 = aids[1]
-    wit1 = aids[2]
-    srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
-    assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQK'
-                        b'VXvg7oqd","i":"BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI","s":"0","kt":"1'
-                        b'","k":["BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI"],"nt":"0","n":[],"bt":'
-                        b'"2","b":["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4","BEejlxZytU7gjUwtgkm'
-                        b'NKmBWiFPKSsXjk_uxzoun8dtK"],"c":[],"a":[]}')
-    # test for serder.verfers and serder.werfers
-    assert srdr.pre == pre0
-    assert srdr.sn == 0
-    assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
-    assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
+    #pre0 = aids[0]
+    #wit0 = aids[1]
+    #wit1 = aids[2]
+    #srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
+    #assert srdr.raw == (b'{"v":"KERI10JSON00015a_","t":"icp","d":"EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQK'
+                        #b'VXvg7oqd","i":"BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI","s":"0","kt":"1'
+                        #b'","k":["BEy_EvE8OUMqj0AgCJ3wOCOrIVHVtwubYAysPyaAv9VI"],"nt":"0","n":[],"bt":'
+                        #b'"2","b":["BC9Df6ssUZQFQZJYVUyfudw4WTQsugGcvVD_Z4ChFGE4","BEejlxZytU7gjUwtgkm'
+                        #b'NKmBWiFPKSsXjk_uxzoun8dtK"],"c":[],"a":[]}')
+    ## test for serder.verfers and serder.werfers
+    #assert srdr.pre == pre0
+    #assert srdr.sn == 0
+    #assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
+    #assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
 
     # test .said and .saidb properties
     ked = {
@@ -6088,7 +6093,7 @@ def test_serder():
                 "role": "Founder",
             }
     }
-    srdr = Serder(ked=ked)
+    srdr = coring.Serder(ked=ked)
     assert srdr.said == 'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
     assert srdr.saidb == b'EBAjyPZ8Ed4XXl5cVZhqAy7SuaGivQp0WqQKVXvg7oqd'
 
@@ -6108,7 +6113,7 @@ def test_serder():
                )
     _, ked = coring.Saider.saidify(sad=ked)
 
-    srdr = Serder(ked=ked)
+    srdr = coring.Serder(ked=ked)
     assert srdr.tholder.sith == "1"
     assert srdr.tholder.thold == 1
     assert srdr.sn == 0
@@ -6116,17 +6121,17 @@ def test_serder():
 
     # test validation in Serder.sn property
     ked["s"] = "-1"
-    srdr = Serder(ked=ked)
+    srdr = coring.Serder(ked=ked)
     with pytest.raises(InvalidValueError):
         sn = srdr.sn
 
     #ked["s"] = "0" * 33
-    #srdr = Serder(ked=ked)
+    #srdr = coring.Serder(ked=ked)
     #with pytest.raises(InvalidValueError):
         #sn = srdr.sn
 
     ked["s"] = "15.34"
-    srdr = Serder(ked=ked)
+    srdr = coring.Serder(ked=ked)
     with pytest.raises(InvalidValueError):
         sn = srdr.sn
 

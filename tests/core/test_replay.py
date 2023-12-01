@@ -8,7 +8,7 @@ import os
 
 from keri import help
 from keri.app import habbing
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, serdering
 from keri.help import helping
 
 logger = help.ogler.getLogger()
@@ -328,7 +328,7 @@ def test_replay():
         debFelMsgs.extend(msg)
 
         # parse msg
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         assert serder.raw == debHab.iserder.raw
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == coring.Ilks.icp
@@ -402,14 +402,14 @@ def test_replay():
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
         assert len(msg) == 1279
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == coring.Ilks.ixn
         debFelMsgs.extend(msg)
 
         fn += 1
         msg = next(cloner)  # get zeroth event with attachments
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == coring.Ilks.rot
         assert len(msg) == 1648
@@ -420,7 +420,7 @@ def test_replay():
         fn += 1
         while (fn <= 6):
             msg = next(cloner)  # get zeroth event with attachments
-            serder = coring.Serder(raw=msg)
+            serder = serdering.SerderKERI(raw=msg)
             assert serder.sn == fn  # no recovery forks so sn == fn
             assert serder.ked["t"] == coring.Ilks.ixn
             assert len(msg) == 1279

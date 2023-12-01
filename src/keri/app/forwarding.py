@@ -14,7 +14,7 @@ from hio.help import decking, ogler
 from keri import kering
 from keri.app import agenting
 from keri.app.habbing import GroupHab
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 from keri.db import dbing
 from keri.kering import Roles
 from keri.peer import exchanging
@@ -139,7 +139,7 @@ class Poster(doing.DoDoer):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
         icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
-        ser = coring.Serder(raw=icp)
+        ser = serdering.SerderKERI(raw=icp)
         del icp[:ser.size]
 
         sender = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre

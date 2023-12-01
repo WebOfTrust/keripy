@@ -8,59 +8,60 @@ Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing
 
 from .. import kering
 from ..app import signing
-from ..core import coring
-from ..db import dbing
+from ..core import coring, serdering
+from ..db import dbing, basing
 from ..help import helping
 from ..vc import proving
+from ..vdr import eventing
 
 
-class RegerDict(dict):
+class rbdict(dict):
     """ Reger backed read through cache for registry state
 
-    Subclass of dict that has db as attribute and employs read through cache
-    from db Baser.stts of kever states to reload kever from state in database
-    if not in memory as dict item
+    Subclass of dict that has db and reger as attributes and employs read
+    through cache from db Reger.stts of registry states to reload tever from
+    state in database when not found in memory as dict item.
     """
-    __slots__ = ('reger', 'db', 'klas')  # no .__dict__ just for db reference
+    __slots__ = ('db', 'reger')  # no .__dict__ just for db reference
 
     def __init__(self, *pa, **kwa):
-        super(RegerDict, self).__init__(*pa, **kwa)
+        super(rbdict, self).__init__(*pa, **kwa)
         self.db = None
         self.reger = None
 
     def __getitem__(self, k):
-        from ..vdr import eventing
+
         try:
-            return super(RegerDict, self).__getitem__(k)
+            return super(rbdict, self).__getitem__(k)
         except KeyError as ex:
             if not self.db or not self.reger:
                 raise ex  # reraise KeyError
-            if (state := self.reger.states.get(keys=k)) is None:
+            if (rsr := self.reger.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                tever = eventing.Tever(stt=state, db=self.db, reger=self.reger)
+                tever = eventing.Tever(stt=rsr, db=self.db, reger=self.reger)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
-            super(RegerDict, self).__setitem__(k, tever)
+            super(rbdict, self).__setitem__(k, tever)
             return tever
 
     def __setitem__(self, key, item):
-        super(RegerDict, self).__setitem__(key, item)
+        super(rbdict, self).__setitem__(key, item)
         self.reger.states.pin(keys=key, val=item.state())
 
     def __delitem__(self, key):
-        super(RegerDict, self).__delitem__(key)
+        super(rbdict, self).__delitem__(key)
         self.reger.states.rem(keys=key)
 
     def __contains__(self, k):
-        if not super(RegerDict, self).__contains__(k):
+        if not super(rbdict, self).__contains__(k):
             try:
                 self.__getitem__(k)
                 return True
@@ -70,17 +71,17 @@ class RegerDict(dict):
             return True
 
     def get(self, k, default=None):
-        """ Override of dict get method
+        """Override of dict get method
 
-        Args:
+        Parameters:
             k (str): key for dict
             default: default value to return if not found
 
         Returns:
-            Serder: value from underlying dict or database
+            tever: converted from underlying dict or database
 
         """
-        if not super(RegerDict, self).__contains__(k):
+        if not super(rbdict, self).__contains__(k):
             return default
         else:
             return self.__getitem__(k)
@@ -92,6 +93,70 @@ class RegistryRecord:
     """
     registryKey: str
     prefix: str
+
+
+@dataclass
+class RegStateRecord(basing.RawRecord):  # reger.state
+    """
+    Registry Event Log (REL) State information
+
+    (see reger.state at 'stts' for database that holds these records  keyed by
+    Registry SAID, i field)
+
+    Attributes:
+        vn (list[int]): version number [major, minor]
+        i (str): registry SAID qb64 (registry inception event SAID)
+        s (str): sequence number of latest event in KEL as hex str
+        d (str): latest registry event digest qb64
+        ii (str): registry issuer identifier aid qb64
+        dt (str): datetime iso-8601 of registry state record update, usually now
+        et (str): event packet type (ilk)
+        bt (str): backer threshold hex num
+        b (list[str]): backer aids qb64
+        c (list[str]): config traits
+
+    Note: the seal anchor dict 'a' field is not included in the state notice
+    because it may be verbose and would impede the main purpose of a notice which
+    is to trigger the download of the latest events, which would include the
+    anchored seals.
+
+    rsr = viring.RegStateRecord(
+            vn=list(version), # version number as list [major, minor]
+            i=ri,  # qb64 registry SAID
+            s="{:x}".format(sn),  # lowercase hex string no leading zeros
+            d=said,
+            ii=pre,
+            dt=dts,
+            et=eilk,
+            bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+            b=wits,  # list of qb64 may be empty
+            c=cnfg if cnfg is not None else [],
+            )
+
+    """
+    vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
+    i: str = ''  # identifier prefix qb64
+    s: str = '0'  # sequence number of latest event in KEL as hex str
+    d: str = ''  # latest event digest qb64
+    ii: str = ''  # issuer identifier of registry aid qb64
+    dt: str = ''  # datetime of update of state record
+    et: str = ''  # TEL evt packet type (ilk)
+    bt: str = '0'  # backer threshold hex num str
+    b: list = field(default_factory=list)  # backer AID list qb64
+    c: list[str] = field(default_factory=list)  # config trait list
+
+
+@dataclass
+class VcStateRecord(basing.RawRecord):
+    vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
+    i: str = ''  # identifier prefix qb64
+    s: str = '0'  # sequence number of latest event in KEL as hex str
+    d: str = ''  # latest event digest qb64
+    ri: str = ''  # registry identifier of registry aid qb64
+    ra: dict = field(default_factory=dict)  # registry anchor for registry with backers
+    a: dict = field(default_factory=dict)  # seal for anchor in KEL
+    dt: str = ''  # datetime of update of state record
+    et: str = ''  # TEL evt packet type (ilk)
 
 
 def openReger(name="test", **kwa):
@@ -106,7 +171,7 @@ def openReger(name="test", **kwa):
 
 
 class Reger(dbing.LMDBer):
-    """ Vaser sets up named sub databases for VIR
+    """ Reger sets up named sub databases for TEL registry
 
     Attributes:
         see superclass LMDBer for inherited attributes
@@ -204,7 +269,7 @@ class Reger(dbing.LMDBer):
 
         self.registries = oset()
         if "db" in kwa:
-            self._tevers = RegerDict()
+            self._tevers = rbdict()
             self._tevers.reger = self  # assign db for read thorugh cache of kevers
             self._tevers.db = kwa["db"]
         else:
@@ -215,7 +280,8 @@ class Reger(dbing.LMDBer):
 
     @property
     def tevers(self):
-        """ Returns .db.kevers
+        """ Returns ._tevers
+        tevers getter
         """
         return self._tevers
 
@@ -242,10 +308,15 @@ class Reger(dbing.LMDBer):
         self.taes = self.env.open_db(key=b'taes.')
         self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
 
-        self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
+        # Registry state made of RegStateRecord.
+        # Each registry has registry event log keyed by registry identifier
+        self.states = koming.Komer(db=self,
+                                   schema=RegStateRecord,
+                                   subkey='stts.')
+        #self.states = subing.SerderSuber(db=self, subkey='stts.')  # registry event state
 
         # Holds the credential
-        self.creds = proving.CrederSuber(db=self, subkey="creds.")
+        self.creds = subing.SerderSuber(db=self, subkey="creds.", klas=serdering.SerderACDC)
 
         # database of anchors to credentials.  prefix is either AID with direct credential
         # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
@@ -305,10 +376,10 @@ class Reger(dbing.LMDBer):
                                      klas=coring.Saider)
 
         # Credential Missing Signature Escrow
-        self.cmse = proving.CrederSuber(db=self, subkey="cmse.")
+        self.cmse = subing.SerderSuber(db=self, subkey="cmse.", klas=serdering.SerderACDC)
 
         # Completed Credentials
-        self.ccrd = proving.CrederSuber(db=self, subkey="ccrd.")
+        self.ccrd = subing.SerderSuber(db=self, subkey="ccrd.", klas=serdering.SerderACDC)
 
         return self.env
 
@@ -329,7 +400,7 @@ class Reger(dbing.LMDBer):
             creder, prefixer, seqner, asaider = self.cloneCred(said=key)
 
             chainSaids = []
-            for k, p in creder.chains.items():
+            for k, p in creder.edge.items():
                 if k == "d":
                     continue
 
@@ -339,16 +410,16 @@ class Reger(dbing.LMDBer):
                 chainSaids.append(coring.Saider(qb64=p["n"]))
             chains = self.cloneCreds(chainSaids, db)
 
-            regk = creder.status
+            regk = creder.regi
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 
             cred = dict(
-                sad=creder.crd,
+                sad=creder.sad,
                 pre=creder.issuer,
                 schema=schemer.sed,
                 chains=chains,
-                status=status.ked,
+                status=asdict(status),
                 anchor=dict(
                     pre=prefixer.qb64,
                     sn=seqner.sn,
@@ -369,7 +440,7 @@ class Reger(dbing.LMDBer):
             saider (Diger) digest of anchoring event for credential
 
         """
-        key = creder.saider.qb64b
+        key = creder.said
         self.cancs.pin(keys=key, val=[prefixer, seqner, saider])
         self.creds.put(keys=key, val=creder)
 
@@ -460,7 +531,7 @@ class Reger(dbing.LMDBer):
             list: credential sources as resolved from `e` in creder.crd
 
         """
-        chains = creder.chains
+        chains = creder.edge
         saids = []
         for key, source in chains.items():
             if key == 'd':

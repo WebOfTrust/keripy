@@ -12,7 +12,7 @@ from hio.base import doing
 from . import agenting, forwarding
 from .habbing import GroupHab
 from .. import kering
-from ..core import coring
+from ..core import coring, serdering
 from ..db import dbing
 from ..peer import exchanging
 
