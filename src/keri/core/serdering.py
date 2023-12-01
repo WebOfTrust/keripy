@@ -1055,6 +1055,8 @@ class Serder:
         Returns:
            said (str): qb64
         """
+        if not self.Fields[self.proto][self.vrsn][self.ilk].saids.keys() and 'd' in self._sad:
+            return self._sad['d']  # special case for non-saidive messages like rct
         return self._said
 
 
@@ -1064,7 +1066,7 @@ class Serder:
         Returns:
             saidb (bytes): qb64b of said  of .saider
         """
-        return self._said.encode("utf-8") if self._said is not None else None
+        return self.said.encode("utf-8") if self.said is not None else None
 
 
     @property

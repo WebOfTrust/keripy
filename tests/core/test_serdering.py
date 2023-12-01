@@ -1580,7 +1580,9 @@ def test_serderkeri_rct():
 
     assert not serder.verify()  # because pre is empty
     assert serder.ilk == kering.Ilks.rct
-    assert serder.pre == '' != serder.said  # prefix is not saidive
+    assert serder._said == None  # no saidive fields
+    assert serder.pre == ''  # prefix is not saidive
+    assert serder.said == ''  # d field is not saidive
 
     sad = serder.sad
 
