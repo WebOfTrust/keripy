@@ -8,7 +8,7 @@ import os
 import lmdb
 
 from keri.app import keeping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.db import dbing, basing
 from keri.peer import exchanging
 from keri.app.storing import Mailboxer
@@ -91,7 +91,7 @@ def test_mailboxing():
         assert(len(msgs)) == 10
 
         for idx, msg in msgs:
-            exn = coring.Serder(raw=msg)
+            exn = serdering.SerderKERI(raw=msg)
             d = exn.ked["a"]
             assert d["b"] == idx
 

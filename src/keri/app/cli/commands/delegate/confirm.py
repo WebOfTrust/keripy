@@ -13,7 +13,7 @@ from keri import help
 from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.db import dbing
 from keri.peer import exchanging
 
@@ -101,12 +101,12 @@ class ConfirmDoer(doing.DoDoer):
                 eraw = self.hby.db.getEvt(dgkey)
                 if eraw is None:
                     continue
-                eserder = coring.Serder(raw=bytes(eraw))  # escrowed event
+                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
-                ilk = eserder.ked["t"]
+                ilk = eserder.sad["t"]
                 if ilk in (coring.Ilks.dip,):
                     typ = "inception"
-                    delpre = eserder.ked["di"]
+                    delpre = eserder.sad["di"]
 
                 elif ilk in (coring.Ilks.drt,):
                     typ = "rotation"
@@ -138,7 +138,7 @@ class ConfirmDoer(doing.DoDoer):
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
 
-                        serder = coring.Serder(raw=msg)
+                        serder = serdering.SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
@@ -187,7 +187,7 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
-                        wits = [werfer.qb64 for werfer in eserder.werfers]
+                        wits = [werfer.qb64 for werfer in eserder.berfers]
                         self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
 
                         while eserder.pre not in self.hby.kevers:

@@ -7,7 +7,7 @@ routes: /ksn
 
 """
 from keri.app import habbing
-from keri.core import coring, eventing, parsing, routing
+from keri.core import coring, eventing, parsing, routing, serdering
 
 
 def test_keystate(mockHelpingNowUTC):
@@ -61,7 +61,7 @@ def test_keystate(mockHelpingNowUTC):
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
 
-    # defualt for openHby temp = True
+    # default for openHby temp = True
     with (habbing.openHby(name="bob", base="test") as bobHby,
          habbing.openHby(name="bam", base="test") as bamHby,
          habbing.openHby(name="wes", base="test", salt=salt) as wesHby):
@@ -79,7 +79,7 @@ def test_keystate(mockHelpingNowUTC):
         bobIcp = bobHab.makeOwnEvent(sn=0)
         parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
         assert bobHab.pre in wesHab.kevers
-        iserder = coring.Serder(raw=bytearray(bobIcp))
+        iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
 
         # Get key state record (ksr) from Bob and verify
@@ -107,7 +107,7 @@ def test_keystate(mockHelpingNowUTC):
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
         assert cue["kin"] == "keyStateSaved"
-        assert cue["serder"].ked['a']["i"] == bobHab.pre
+        assert cue["ksn"]["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
@@ -177,7 +177,7 @@ def test_keystate(mockHelpingNowUTC):
         assert len(bamKvy.cues) == 1
         cue = bamKvy.cues.popleft()
         assert cue["kin"] == "keyStateSaved"
-        assert cue["serder"].ked["a"]["i"] == bobHab.pre
+        assert cue["ksn"]["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):

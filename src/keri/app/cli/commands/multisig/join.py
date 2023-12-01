@@ -13,7 +13,7 @@ from prettytable import PrettyTable
 from keri import help, kering
 from keri.app import habbing, indirecting, agenting, notifying, grouping, connecting, forwarding
 from keri.app.cli.common import existing, displaying
-from keri.core import coring, eventing, scheming, parsing, routing
+from keri.core import coring, eventing, scheming, parsing, routing, serdering
 from keri.peer import exchanging
 from keri.vc import proving
 from keri.vdr import verifying, credentialing
@@ -233,7 +233,7 @@ class ConfirmDoer(doing.DoDoer):
 
         if approve:
             ixn = ghab.interact(data=data)
-            serder = coring.Serder(raw=ixn)
+            serder = serdering.SerderKERI(raw=ixn)
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
             saider = coring.Saider(qb64b=serder.saidb)
@@ -324,12 +324,12 @@ class ConfirmDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=alias, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                serder = coring.Serder(ked=ked)
+                serder = serdering.SerderKERI(sad=ked)
                 rot = ghab.rotate(serder=serder)
             except ValueError as e:
                 return False
 
-            serder = coring.Serder(raw=rot)
+            serder = serdering.SerderKERI(raw=rot)
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
 
@@ -623,7 +623,7 @@ class ConfirmDoer(doing.DoDoer):
                 pass
 
             acdc = embeds["acdc"]
-            creder = proving.Creder(ked=acdc)
+            creder = serdering.SerderACDC(sad=acdc)
             acdc = bytearray(creder.raw) + pathed["acdc"]
             self.psr.parseOne(ims=bytes(acdc))
 

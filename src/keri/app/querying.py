@@ -43,7 +43,7 @@ class KeyStateNoticer(doing.DoDoer):
             match cue['kin']:
                 case "keyStateSaved":
                     kcue = cue
-                    serder = kcue['serder']  # key state notice dict
+                    serder = kcue['ksn']  # key state notice dict
                     ksn = serder.ked['a']
                     match ksn["i"]:
                         case self.pre:

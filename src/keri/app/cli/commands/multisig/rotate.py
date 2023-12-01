@@ -14,7 +14,7 @@ from keri import kering
 from keri.app import grouping, indirecting, habbing, forwarding
 from keri.app.cli.common import rotating, existing, displaying, config
 from keri.app.notifying import Notifier
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.db import dbing
 from keri.peer import exchanging
 
@@ -84,7 +84,7 @@ class GroupMultisigRotate(doing.DoDoer):
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
-        
+
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
         notifier = Notifier(self.hby)
@@ -123,7 +123,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         if self.smids is None:
             self.smids = ghab.smids
-            
+
         if self.rmids is None:
             self.rmids = self.smids
 
@@ -157,8 +157,8 @@ class GroupMultisigRotate(doing.DoDoer):
                         raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
 
                     evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
-                    serder = coring.Serder(raw=bytes(evt))
-                    if not serder.est:
+                    serder = serdering.SerderKERI(raw=bytes(evt))
+                    if not serder.estive:
                         raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
 
                     merfers.append(serder.verfers[0])
@@ -188,8 +188,8 @@ class GroupMultisigRotate(doing.DoDoer):
                         raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
 
                     evt = self.hby.db.getEvt(dbing.dgKey(mid, bytes(dig)))
-                    serder = coring.Serder(raw=bytes(evt))
-                    if not serder.est:
+                    serder = serdering.SerderKERI(raw=bytes(evt))
+                    if not serder.estive:
                         raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
                     migers.append(serder.digers[0])
@@ -207,7 +207,7 @@ class GroupMultisigRotate(doing.DoDoer):
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
 
-        rserder = coring.Serder(raw=rot)
+        rserder = serdering.SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents
         exn, ims = grouping.multisigRotateExn(ghab=ghab,
                                               smids=smids,

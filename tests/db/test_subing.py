@@ -9,7 +9,7 @@ import pytest
 
 import pysodium
 
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 from keri.db import dbing, subing
 from keri.app import keeping
 from keri.help import helping
@@ -618,7 +618,7 @@ def test_serder_suber():
         keys = (pre, srdr0.said)
         sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Serder)
+        assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
         sdb.rem(keys)
@@ -627,19 +627,19 @@ def test_serder_suber():
 
         sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Serder)
+        assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
         srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
         result = sdb.put(keys=keys, val=srdr1)
         assert not result
-        assert isinstance(actual, coring.Serder)
+        assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr0.said
 
         result = sdb.pin(keys=keys, val=srdr1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Serder)
+        assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr1.said
 
         # test with keys as string not tuple
@@ -647,7 +647,7 @@ def test_serder_suber():
 
         sdb.put(keys=keys, val=srdr1)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Serder)
+        assert isinstance(actual, serdering.SerderKERI)
         assert actual.said == srdr1.said
 
         sdb.rem(keys)

@@ -10,7 +10,7 @@ from hio.help import decking
 
 from .. import help, kering
 from ..app import habbing
-from ..core import eventing, coring
+from ..core import eventing, coring, serdering
 from ..help import helping
 from ..kering import ValidationError, MissingSignatureError
 
@@ -346,7 +346,7 @@ def exchange(route,
                e=e)
 
     _, ked = coring.Saider.saidify(sad=ked)
-    return eventing.Serder(ked=ked), end  # return serialized ked
+    return serdering.SerderKERI(sad=ked), end  # return serialized ked
 
 
 def cloneMessage(hby, said):

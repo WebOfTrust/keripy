@@ -74,11 +74,11 @@ def test_weighted():
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
-        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
+        assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
         # create interaction event for Wes
         wesSrdr = eventing.interact(pre=wesK.prefixer.qb64,
-                                    dig=wesK.serder.saider.qb64,
+                                    dig=wesK.serder.said,
                                     sn=wesK.sn + 1,
                                     data=[])
 
@@ -103,7 +103,7 @@ def test_weighted():
         # apply msg to wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
+        assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -113,7 +113,7 @@ def test_weighted():
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
-                                  dig=wesK.serder.saider.qb64,
+                                  dig=wesK.serder.said,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
@@ -147,7 +147,7 @@ def test_weighted():
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
+        assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -159,7 +159,7 @@ def test_weighted():
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
-                                  dig=wesK.serder.saider.qb64,
+                                  dig=wesK.serder.said,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
@@ -193,7 +193,7 @@ def test_weighted():
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
+        assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -205,7 +205,7 @@ def test_weighted():
         wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
-                                  dig=wesK.serder.saider.qb64,
+                                  dig=wesK.serder.said,
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
@@ -244,7 +244,7 @@ def test_weighted():
         # apply msg to Wes's Kevery
         parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert wesK.serder.saider.qb64 == wesSrdr.said  # key state updated so event was validated
+        assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
     assert not os.path.exists(wesKS.path)
     assert not os.path.exists(wesDB.path)

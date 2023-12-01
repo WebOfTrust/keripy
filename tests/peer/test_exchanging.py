@@ -68,7 +68,7 @@ def test_exchanger():
         exnsigs = hab.sign(ser=fwd.raw,
                            verfers=hab.kever.verfers,
                            indexed=True)
-        tsgs = [(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), hab.kever.serder.saider, exnsigs)]
+        tsgs = [(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn), coring.Saider(qb64=hab.kever.serder.said), exnsigs)]
         exc.processEvent(serder=fwd, source=hab.kever.prefixer, tsgs=tsgs)
 
         msgs = forwarder.mbx.getTopicMsgs(topic="EBCAFG/delegation")
@@ -131,7 +131,6 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
         msg = hab2.interact(data=[seal])
-        ixn = coring.Serder(raw=msg)
 
         embeds = dict(
             vcp=regser.raw,
@@ -162,7 +161,6 @@ def test_hab_exchange(mockHelpingNowUTC):
                        b'wtK_WNbfh_iAytFw9nHZziCED13AwH-LAa5AACAA-e-ixn-AABAACaoxfQp5L_Gd'
                        b'0nKqJXMbLTXzkrJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJ'
                        b'Hl7sXmq04I')
-        exn = coring.Serder(raw=msg)
 
         # Test exn from non-transferable AID
         hab = hby.makeHab(name="test1", transferable=False)

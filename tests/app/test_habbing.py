@@ -648,8 +648,8 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         tsith = '1'  # hex str of threshold int
         tamHab = tamHby.makeHab(name=cname, isith=tsith, icount=3, toad=2, wits=wits)
         assert tamHab.kever.prefixer.transferable
-        assert len(tamHab.iserder.werfers) == len(wits)
-        for werfer in tamHab.iserder.werfers:
+        assert len(tamHab.iserder.berfers) == len(wits)
+        for werfer in tamHab.iserder.berfers:
             assert werfer.qb64 in wits
         assert tamHab.kever.wits == wits
         assert tamHab.kever.toader.num == 2
@@ -882,8 +882,8 @@ def test_postman_endsfor():
         wits = [wesHab.pre]
         hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, )
         assert hab.kever.prefixer.transferable
-        assert len(hab.iserder.werfers) == len(wits)
-        for werfer in hab.iserder.werfers:
+        assert len(hab.iserder.berfers) == len(wits)
+        for werfer in hab.iserder.berfers:
             assert werfer.qb64 in wits
         assert hab.kever.wits == wits
         assert hab.kever.toader.num == 1

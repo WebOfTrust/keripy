@@ -8,7 +8,7 @@ from hio.help import decking
 
 from keri import help
 from keri.app import habbing
-from keri.core import parsing, coring
+from keri.core import parsing, coring, serdering
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()

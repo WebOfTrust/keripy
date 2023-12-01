@@ -12,7 +12,7 @@ from hio.core import tcp, http
 from hio.help import decking
 
 from keri.app import indirecting, storing, habbing
-from keri.core import coring
+from keri.core import coring, serdering
 
 
 def test_mailbox_iter():
@@ -104,9 +104,9 @@ def test_qrymailbox_iter():
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.makeOwnInception()
-        icpSrdr = coring.Serder(raw=icp)
+        icpSrdr = serdering.SerderKERI(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
-        srdr = coring.Serder(raw=qry)
+        srdr = serdering.SerderKERI(raw=qry)
 
         cues = decking.Deck()
         mbx = storing.Mailboxer(temp=True)

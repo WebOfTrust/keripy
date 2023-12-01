@@ -9,7 +9,7 @@ import re
 
 from hio.help import decking
 
-from . import eventing, coring
+from . import eventing, coring, serdering
 from .. import help, kering
 from ..db import dbing
 from ..help import helping
@@ -338,7 +338,7 @@ class Revery:
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = coring.Serder(raw=bytes(sraw))
+            sserder = serdering.SerderKERI(raw=bytes(sraw))
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")

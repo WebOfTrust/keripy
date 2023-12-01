@@ -46,7 +46,7 @@ def test_querying():
         hby.kvy.cues.clear()
         ksr = subHab.kever.state()
         rpy = eventing.reply(route="/ksn", data=ksr._asdict())
-        cue = dict(kin="keyStateSaved", serder=rpy)
+        cue = dict(kin="keyStateSaved", ksn=rpy)
         hby.kvy.cues.append(cue)
 
         doist.recur(deeds=deeds)
@@ -65,7 +65,7 @@ def test_querying():
         rot = subHab.rotate()
         ksr = subHab.kever.state()
         rpy = eventing.reply(route="/ksn", data=ksr._asdict())
-        cue = dict(kin="keyStateSaved", serder=rpy)
+        cue = dict(kin="keyStateSaved", ksn=rpy)
         hby.kvy.cues.append(cue)
         deeds = doist.enter(doers=[qdoer])
         doist.recur(deeds=deeds)

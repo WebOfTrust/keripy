@@ -17,7 +17,7 @@ from keri import help, kering
 from keri.app import indirecting, grouping, habbing, forwarding
 from keri.app.cli.common import existing, displaying
 from keri.app.notifying import Notifier
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.peer import exchanging
 
 logger = help.ogler.getLogger()

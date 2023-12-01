@@ -9,7 +9,7 @@ import pytest
 from falcon.testing import helpers
 
 from keri.app import habbing, httping
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.vdr import credentialing, verifying
 
 
@@ -82,7 +82,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = coring.Serder(raw=args['body'])
+        serder = serdering.SerderKERI(raw=args['body'])
         assert serder.ked["t"] == coring.Ilks.qry
         assert serder.ked["r"] == "tels"
 
@@ -130,7 +130,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = coring.Serder(raw=args['body'])
+        serder = serdering.SerderKERI(raw=args['body'])
         assert serder.ked["t"] == coring.Ilks.qry
         assert serder.ked["r"] == "tels"
 

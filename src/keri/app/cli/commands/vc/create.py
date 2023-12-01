@@ -5,6 +5,7 @@ from hio import help
 from hio.base import doing
 
 from keri import kering
+from keri.core import serdering
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
 from keri.core import coring, eventing
@@ -176,7 +177,7 @@ class CredentialIssuer(doing.DoDoer):
                                                        data=data,
                                                        private=private)
             else:
-                self.creder = proving.Creder(ked=credential)
+                self.creder = serdering.SerderACDC(sad=credential) # proving.Creder(ked=credential)
                 self.credentialer.validate(creder=self.creder)
 
         except kering.ConfigurationError as e:
