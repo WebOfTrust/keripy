@@ -497,8 +497,8 @@ class Registrar(doing.DoDoer):
         """
 
         Parameters:
-            iserder (Serder): Serder object of TEL iss event
-            anc (Serder): Serder object of anchoring event
+            iserder (SerderKERI): Serder object of TEL iss event
+            anc (SerderKERI): Serder object of anchoring event
 
         Returns:
             Registry:  created registry
@@ -539,12 +539,12 @@ class Registrar(doing.DoDoer):
         Create and process the credential issuance TEL events on the given registry
 
         Parameters:
-            creder (Creder): credential to issue
-            iserder (Serder): Serder object of TEL iss event
-            anc (Serder): Serder object of anchoring event
+            creder (SerderACDC): credential to issue
+            iserder (SerderKERI): Serder object of TEL iss event
+            anc (SerderKERI): Serder object of anchoring event
 
         """
-        regk = creder.status
+        regk = creder.regi
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
@@ -584,7 +584,7 @@ class Registrar(doing.DoDoer):
             anc (Serder): Serder object of anchoring event
         """
 
-        regk = creder.status
+        regk = creder.regi
         registry = self.rgy.regs[regk]
         hab = registry.hab
 
@@ -976,7 +976,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
 
 def sendRegistry(hby, reger, postman, creder, sender, recp):
     issr = creder.issuer
-    regk = creder.status
+    regk = creder.regi
 
     if regk is None:
         return
