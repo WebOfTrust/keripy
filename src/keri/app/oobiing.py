@@ -518,6 +518,11 @@ class Oobiery:
 
     def request(self, url, obr):
         client = self.clienter.request("GET", url=url)
+        if client is None:
+            self.hby.db.oobis.rem(keys=(url,))
+            print(f"error getting client for {url}, aborting OOBI")
+            return
+
         self.clients[url] = client
         self.hby.db.oobis.rem(keys=(url,))
         self.hby.db.coobi.pin(keys=(url,), val=obr)
