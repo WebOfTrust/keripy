@@ -417,7 +417,19 @@ def test_matter():
         'X25519_Cipher_L2': '6C',
         'X25519_Cipher_Big_L0': '7AAC',
         'X25519_Cipher_Big_L1': '8AAC',
-        'X25519_Cipher_Big_L2': '9AAC'
+        'X25519_Cipher_Big_L2': '9AAC',
+        'X25519_Cipher_QB64_L0': '4D',
+        'X25519_Cipher_QB64_L1': '5D',
+        'X25519_Cipher_QB64_L2': '6D',
+        'X25519_Cipher_QB64_Big_L0': '7AAD',
+        'X25519_Cipher_QB64_Big_L1': '8AAD',
+        'X25519_Cipher_QB64_Big_L2': '9AAD',
+        'X25519_Cipher_QB2_L0': '4D',
+        'X25519_Cipher_QB2_L1': '5D',
+        'X25519_Cipher_QB2_L2': '6D',
+        'X25519_Cipher_QB2_Big_L0': '7AAD',
+        'X25519_Cipher_QB2_Big_L1': '8AAD',
+        'X25519_Cipher_QB2_Big_L2': '9AAD'
     }
 
 
@@ -506,7 +518,19 @@ def test_matter():
         '6C': Sizage(hs=2, ss=2, fs=None, ls=2),
         '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
-        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2)
+        '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2)
     }
 
     assert Matter.Sizes['A'].hs == 1  # hard size

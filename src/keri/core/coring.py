@@ -421,7 +421,7 @@ class MatterCodex:
     Short:                str = 'M'  # Short 2 byte b2 number
     Big:                  str = 'N'  # Big 8 byte b2 number
     X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
-    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
     ECDSA_256r1_Seed:     str = "Q"  # ECDSA secp256r1 256 bit random Seed for private key
     Tall:                 str = 'R'  # Tall 5 byte b2 number
     Large:                str = 'S'  # Large 11 byte b2 number
@@ -449,9 +449,9 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tern:                 str = '1AAF'  # 3 byte b2 number or 4 char B64 str.
+    Tern:                 str = '1AAF'  # Tern 3 byte b2 number
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
     Null:                 str = '1AAK'  # Null None or empty value
@@ -470,12 +470,24 @@ class MatterCodex:
     Bytes_Big_L0:         str = '7AAB'  # Byte String big lead size 0
     Bytes_Big_L1:         str = '8AAB'  # Byte String big lead size 1
     Bytes_Big_L2:         str = '9AAB'  # Byte String big lead size 2
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
+    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+    X25519_Cipher_QB2_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_QB2_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_QB2_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_QB2_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_QB2_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_QB2_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
 
 
     def __iter__(self):
@@ -638,37 +650,19 @@ class TextCodex:
 TexDex = TextCodex()  # Make instance
 
 @dataclass(frozen=True)
-class CipherX25519FixCodex:
-    """
-    CipherX25519FixCodex is codex all fixed sized cipher bytes derivation codes
-    for sealed box encryped ciphertext.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-CiXFixDex = CipherX25519FixCodex()  # Make instance
-
-
-@dataclass(frozen=True)
 class CipherX25519VarCodex:
     """
     CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
-    for sealed box encryped ciphertext.
+    for sealed box encryped ciphertext. Plaintext is B2.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
+    X25519_Cipher_L0:     str = '4D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 0
+    X25519_Cipher_L1:     str = '5D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 1
+    X25519_Cipher_L2:     str = '6D'  # X25519 sealed box cipher bytes of sniffable plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of sniffable plaintext big lead size 2
 
     def __iter__(self):
         return iter(astuple(self))
@@ -678,27 +672,91 @@ CiXVarDex = CipherX25519VarCodex()  # Make instance
 
 
 @dataclass(frozen=True)
-class CipherX25519AllCodex:
+class CipherX25519FixQB64Codex:
     """
-    CipherX25519AllCodex is codex all both fixed and variable sized cipher bytes
-    derivation codes for sealed box encryped ciphertext.
+    CipherX25519FixQB64Codex is codex all fixed sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B64.
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char b64 Cipher of 44 char qb64 Seed
-    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char b64 Cipher of 24 char qb64 Salt
-    X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher byte string lead size 0
-    X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher byte string lead size 1
-    X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher byte string lead size 2
-    X25519_Cipher_Big_L0: str = '7AAC'  # X25519 sealed box cipher byte string big lead size 0
-    X25519_Cipher_Big_L1: str = '8AAC'  # X25519 sealed box cipher byte string big lead size 1
-    X25519_Cipher_Big_L2: str = '9AAC'  # X25519 sealed box cipher byte string big lead size 2
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
 
     def __iter__(self):
         return iter(astuple(self))
 
 
-CiXAllDex = CipherX25519AllCodex()  # Make instance
+CiXFixQB64Dex = CipherX25519FixQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519VarQB64Codex:
+    """
+    CipherX25519VarQB64Codex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is QB64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarQB64Dex = CipherX25519VarQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519AllQB64Codex:
+    """
+    CipherX25519AllQB64Codex is codex all both fixed and variable sized cipher bytes
+    derivation codes for sealed box encryped ciphertext. Plaintext is B64.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
+    X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
+    X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
+    X25519_Cipher_QB64_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
+    X25519_Cipher_QB64_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
+    X25519_Cipher_QB64_Big_L0: str = '7AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 0
+    X25519_Cipher_QB64_Big_L1: str = '8AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 1
+    X25519_Cipher_QB64_Big_L2: str = '9AAD'  # X25519 sealed box cipher bytes of QB64 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXAllQB64Dex = CipherX25519AllQB64Codex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CipherX25519QB2VarCodex:
+    """
+    CipherX25519QB2VarCodex is codex all variable sized cipher bytes derivation codes
+    for sealed box encryped ciphertext. Plaintext is B2.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    X25519_Cipher_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
+    X25519_Cipher_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
+    X25519_Cipher_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
+    X25519_Cipher_Big_L0: str = '7AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 0
+    X25519_Cipher_Big_L1: str = '8AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 1
+    X25519_Cipher_Big_L2: str = '9AAE'  # X25519 sealed box cipher bytes of QB2 plaintext big lead size 2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+CiXVarQB2Dex = CipherX25519QB2VarCodex()  # Make instance
+
+
 
 
 # namedtuple for size entries in Matter  and Counter derivation code tables
@@ -836,6 +894,18 @@ class Matter:
         '7AAC': Sizage(hs=4, ss=4, fs=None, ls=0),
         '8AAC': Sizage(hs=4, ss=4, fs=None, ls=1),
         '9AAC': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4D': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5D': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6D': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAD': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAD': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAD': Sizage(hs=4, ss=4, fs=None, ls=2),
+        '4E': Sizage(hs=2, ss=2, fs=None, ls=0),
+        '5E': Sizage(hs=2, ss=2, fs=None, ls=1),
+        '6E': Sizage(hs=2, ss=2, fs=None, ls=2),
+        '7AAE': Sizage(hs=4, ss=4, fs=None, ls=0),
+        '8AAE': Sizage(hs=4, ss=4, fs=None, ls=1),
+        '9AAE': Sizage(hs=4, ss=4, fs=None, ls=2),
     }
 
 
