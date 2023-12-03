@@ -455,7 +455,13 @@ class Oobiery:
                     except (kering.ValidationError, ValueError):
                         pass
 
-                    serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                    try:
+                        serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                    except ValueError:
+                        obr.state = Result.failed
+                        self.hby.db.coobi.rem(keys=(url,))
+                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        continue
                     if not serder.ked['t'] == coring.Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
@@ -512,6 +518,11 @@ class Oobiery:
 
     def request(self, url, obr):
         client = self.clienter.request("GET", url=url)
+        if client is None:
+            self.hby.db.oobis.rem(keys=(url,))
+            print(f"error getting client for {url}, aborting OOBI")
+            return
+
         self.clients[url] = client
         self.hby.db.oobis.rem(keys=(url,))
         self.hby.db.coobi.pin(keys=(url,), val=obr)
