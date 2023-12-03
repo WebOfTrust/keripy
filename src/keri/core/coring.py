@@ -429,9 +429,8 @@ class MatterCodex:
     Vast:                 str = 'U'  # Vast 17 byte b2 number
     Label1:               str = 'V'  # Label1 as one char (bytes) field map label lead size 1
     Label2:               str = 'W'  # Label2 as two char (bytes) field map label lead size 0
-    Tag1:                 str = 'X'  # Tag1 1 B64 encoded char with pad for 1 char field tag
-    Tag3:                 str = 'Y'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
-    Tag7:                 str = 'Z'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
+    Tag3:                 str = 'X'  # Tag3 3 B64 encoded chars for field tag or packet type, semver, trait like 'DND'
+    Tag7:                 str = 'Y'  # Tag7 7 B64 encoded chars for field tag or packet kind and version KERIVVV
     Salt_128:             str = '0A'  # 128 bit random salt or 128 bit number (see Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -441,9 +440,10 @@ class MatterCodex:
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number
     ECDSA_256r1_Sig:      str = '0I'  # ECDSA secp256r1 signature.
-    Tag2:                 str = '0J'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
-    Tag5:                 str = '0K'  # Tag5 5 B64 encoded chars with pad for field tag or version or trait like 'EO'
-    Tag6:                 str = '0L'  # Tag6 6 B64 encoded chars for field tag or protocol kind version like KERIVV (KERI 1.1) or KKKVVV
+    Tag1:                 str = '0J'  # Tag1 1 B64 encoded char with pre pad for field tag
+    Tag2:                 str = '0K'  # Tag2 2 B64 encoded chars for field tag or version VV or trait like 'EO'
+    Tag5:                 str = '0L'  # Tag5 5 B64 encoded chars with pre pad for field tag
+    Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for field tag or protocol kind version like KERIVV (KERI 1.1) or KKKVVV
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -455,7 +455,7 @@ class MatterCodex:
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
     Null:                 str = '1AAK'  # Null None or empty value
-    Tag4:                 str = '1AAL'  # Tag4 4 B64 encoded chars for field tag or packet type,
+    Tag4:                 str = '1AAL'  # Tag4 4 B64 encoded chars for field tag or message kind
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
@@ -790,8 +790,7 @@ class Matter:
         'V': Sizage(hs=1, ss=0, fs=4, ls=1),
         'W': Sizage(hs=1, ss=0, fs=4, ls=0),
         'X': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Y': Sizage(hs=1, ss=0, fs=4, ls=0),
-        'Z': Sizage(hs=1, ss=0, fs=8, ls=0),
+        'Y': Sizage(hs=1, ss=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, fs=88, ls=0),
@@ -802,8 +801,9 @@ class Matter:
         '0H': Sizage(hs=2, ss=0, fs=8, ls=0),
         '0I': Sizage(hs=2, ss=0, fs=88, ls=0),
         '0J': Sizage(hs=2, ss=0, fs=4, ls=0),
-        '0K': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0K': Sizage(hs=2, ss=0, fs=4, ls=0),
         '0L': Sizage(hs=2, ss=0, fs=8, ls=0),
+        '0M': Sizage(hs=2, ss=0, fs=8, ls=0),
         '1AAA': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, fs=80, ls=0),
