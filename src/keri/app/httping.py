@@ -221,10 +221,14 @@ class Clienter(doing.DoDoer):
     def request(self, method, url, body=None, headers=None):
         purl = parse.urlparse(url)
 
-        client = http.clienting.Client(scheme=purl.scheme,
-                                       hostname=purl.hostname,
-                                       port=purl.port,
-                                       portOptional=True)
+        try:
+            client = http.clienting.Client(scheme=purl.scheme,
+                                           hostname=purl.hostname,
+                                           port=purl.port,
+                                           portOptional=True)
+        except Exception as e:
+            print(f"error establishing client connection={e}")
+            return None
 
         client.request(
             method=method,
