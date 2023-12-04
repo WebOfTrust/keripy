@@ -44,7 +44,7 @@ from keri.kering import (EmptyMaterialError, RawMaterialError, DerivationError,
                          InvalidValueError, DeserializeError)
 from keri.kering import Version, Versionage, VersionError
 from keri.kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                      KSN_LABELS, RPY_LABELS)
+                      RPY_LABELS)
 from keri.kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 
@@ -91,7 +91,7 @@ def test_ilks():
     Test Ilkage namedtuple instance Ilks
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', ksn='ksn', qry='qry', rpy='rpy',
+                          rct='rct', qry='qry', rpy='rpy',
                           exn='exn', pro='pro', bar='bar',
                           vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
@@ -148,7 +148,7 @@ def test_labels():
     """
     assert Labels == Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS,
                             dip=DIP_LABELS, drt=DRT_LABELS,
-                            rct=[], ksn=KSN_LABELS, qry=[], rpy=RPY_LABELS,
+                            rct=[], qry=[], rpy=RPY_LABELS,
                             exn=[], pro=[], bar=[],
                             vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS,
                             rev=REV_LABELS, bis=BIS_LABELS, brv=BRV_LABELS)
@@ -164,7 +164,6 @@ def test_labels():
     assert Labels.dip == DIP_LABELS
     assert Labels.drt == DRT_LABELS
     assert Labels.rct == []
-    assert Labels.ksn == KSN_LABELS
     assert Labels.qry == []
     assert Labels.rpy == RPY_LABELS
     assert Labels.exn == []

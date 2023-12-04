@@ -112,11 +112,12 @@ ilk is short for packet or message type for a given protocol
 """
 
 # KERI protocol packet (message) types
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn '
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct qry rpy exn '
                                'pro bar vcp vrt iss rev bis brv '))
 
-Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+              rct='rct',
+              qry='qry', rpy='rpy', exn='exn', pro='pro', bar='bar',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 # note ksn is not actual standalone message but is embedded in exn msg when sent
@@ -145,8 +146,8 @@ DRT_LABELS = ["v", "d", "i", "s", "t", "p", "kt", "k", "nt", "n",
               "bt", "br", "ba", "a"]
 IXN_LABELS = ["v", "d", "i", "s", "t", "p", "a"]
 
-KSN_LABELS = ["v", "d", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "nt", "n",
-              "bt", "b", "c", "ee", "di"]
+#KSN_LABELS = ["v", "d", "i", "s", "p", "d", "f", "dt", "et", "kt", "k", "nt", "n",
+              #"bt", "b", "c", "ee", "di"]
 
 RPY_LABELS = ["v", "d", "t", "d", "dt", "r", "a"]
 
