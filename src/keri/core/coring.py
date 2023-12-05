@@ -37,7 +37,7 @@ from ..kering import (Versionage, Version, VERRAWSIZE, VERFMT, VERFULLSIZE,
                       versify, deversify, Rever)
 from ..kering import Serials, Serialage, Protos, Protocolage, Ilkage, Ilks
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                      KSN_LABELS, RPY_LABELS)
+                      RPY_LABELS)
 from ..kering import (VCP_LABELS, VRT_LABELS, ISS_LABELS, BIS_LABELS, REV_LABELS,
                       BRV_LABELS, TSN_LABELS, CRED_TSN_LABELS)
 
@@ -46,7 +46,7 @@ from ..help.helping import sceil, nonStringIterable
 
 
 Labels = Ilkage(icp=ICP_LABELS, rot=ROT_LABELS, ixn=IXN_LABELS, dip=DIP_LABELS,
-                drt=DRT_LABELS, rct=[], ksn=KSN_LABELS, qry=[], rpy=RPY_LABELS,
+                drt=DRT_LABELS, rct=[], qry=[], rpy=RPY_LABELS,
                 exn=[], pro=[], bar=[],
                 vcp=VCP_LABELS, vrt=VRT_LABELS, iss=ISS_LABELS, rev=REV_LABELS,
                 bis=BIS_LABELS, brv=BRV_LABELS)

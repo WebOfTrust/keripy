@@ -33,7 +33,7 @@ from ..kering import (MissingEntryError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
 from ..kering import Version, Versionage
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
-                      KSN_LABELS, RPY_LABELS)
+                       RPY_LABELS)
 
 from ..help import helping
 
