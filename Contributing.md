@@ -90,5 +90,5 @@ Thanks to all our wonderful contributors.
 
 ## Additional Resources
 
-- [Project Documentation](kerisse.org)
+- [Project Documentation and Search Engine](https://kerisse.org)
 - [Related Projects](https://github.com/WebOfTrust)
