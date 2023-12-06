@@ -4,8 +4,7 @@ keri.vc.challenging module
 
 """
 
-from hio.base import doing
-from hio.help import decking
+from keri.core import coring
 
 
 def loadHandlers(db, signaler, exc):
@@ -55,4 +54,4 @@ class ChallengeHandler:
         self.signaler.push(msg, topic="/challenge")
 
         # Log signer against event to track successful challenges with signed response
-        self.db.reps.add(keys=(signer,), val=serder.saider)
+        self.db.reps.add(keys=(signer,), val=coring.Saider(qb64=serder.said))
