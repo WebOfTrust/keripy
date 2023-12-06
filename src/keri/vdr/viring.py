@@ -17,6 +17,7 @@ from .. import kering
 from ..app import signing
 from ..core import coring, serdering
 from ..db import dbing, basing
+from ..db.dbing import snKey
 from ..help import helping
 from ..vc import proving
 from ..vdr import eventing
@@ -398,6 +399,14 @@ class Reger(dbing.LMDBer):
         for saider in saids:
             key = saider.qb64
             creder, prefixer, seqner, asaider = self.cloneCred(said=key)
+            atc = bytearray(signing.serialize(creder, prefixer, seqner, saider))
+            del atc[0:creder.size]
+
+            iss = bytearray(self.cloneTvtAt(pre=prefixer.qb64, sn=seqner.sn))
+            iserder = serdering.SerderKERI(raw=iss)
+            issatc = bytes(iss[iserder.size:])
+
+            del iss[0:iserder.size]
 
             chainSaids = []
             for k, p in creder.edge.items():
@@ -416,6 +425,9 @@ class Reger(dbing.LMDBer):
 
             cred = dict(
                 sad=creder.sad,
+                atc=atc.decode("utf-8"),
+                iss=iserder.sad,
+                issatc=issatc.decode("utf-8"),
                 pre=creder.issuer,
                 schema=schemer.sed,
                 chains=chains,
@@ -427,7 +439,22 @@ class Reger(dbing.LMDBer):
                 )
             )
 
+            ctr = coring.Counter(qb64b=iss, strip=True)
+            if ctr.code == coring.CtrDex.AttachedMaterialQuadlets:
+                ctr = coring.Counter(qb64b=iss, strip=True)
+
+            if ctr.code == coring.CtrDex.SealSourceCouples:
+                coring.Seqner(qb64b=iss, strip=True)
+                saider = coring.Saider(qb64b=iss)
+
+                anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                aserder = serdering.SerderKERI(raw=anc)
+                ancatc = bytes(anc[aserder.size:])
+                cred['anc'] = aserder.sad
+                cred['ancatc'] = ancatc.decode("utf-8"),
+
             creds.append(cred)
+
         return creds
 
     def logCred(self, creder, prefixer, seqner, saider):

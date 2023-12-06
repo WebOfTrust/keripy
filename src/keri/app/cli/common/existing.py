@@ -46,9 +46,7 @@ def setupHby(name, base="", bran=None, cf=None):
             retries += 1
             hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf, free=True)
             break
-        except (kering.AuthError, ValueError) as e:
-            raise e
-
+        except (kering.AuthError, ValueError):
             if retries >= 3:
                 raise kering.AuthError("too many attempts")
             print("Valid passcode required, try again...")
