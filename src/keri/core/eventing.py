@@ -4494,7 +4494,7 @@ class Kevery:
                         srdr = self.db.findAnchoringEvent(pre=delpre, anchor=anchor)
                         if srdr is not None:
                             delseqner = coring.Seqner(sn=srdr.sn)
-                            delsaider = srdr.saider
+                            delsaider = coring.Saider(qb64=srdr.said)
                             couple = delseqner.qb64b + delsaider.qb64b
                             self.db.putPde(dgkey, couple)
 

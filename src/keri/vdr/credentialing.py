@@ -443,7 +443,7 @@ class SignifyRegistry(BaseRegistry):
         if self.noBackers:
             serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.said,
                                           dt=dt)
 
         self.processEvent(serder=serder)
@@ -473,7 +473,7 @@ class SignifyRegistry(BaseRegistry):
         if self.noBackers:
             serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.saider.qb64,
+            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.said,
                                            dig=iserder.said, dt=dt)
 
         self.processEvent(serder=serder)
@@ -831,7 +831,8 @@ class Credentialer(doing.DoDoer):
         self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
 
         try:
-            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner, saider=serder.saider)
+            self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner,
+                                            saider=coring.Saider(qb64=serder.said))
         except kering.MissingRegistryError:
             pass
 

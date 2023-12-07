@@ -190,7 +190,7 @@ class Boatswain(doing.DoDoer):
                         continue
                 print(f"Witness receipts complete, {pre} confirmed.")
                 self.hby.db.dpwe.rem(keys=(pre, said))
-                self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=serder.saider)
+                self.hby.db.cdel.put(keys=(pre, seqner.qb64), val=coring.Saider(qb64=serder.said))
 
 
 def loadHandlers(hby, exc, notifier):

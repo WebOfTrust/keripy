@@ -333,7 +333,7 @@ class ConfirmDoer(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, seqner, serder.saider)
+            yield from self.startCounselor(ghab, prefixer, seqner, coring.Saider(qb64=serder.said))
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)

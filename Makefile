@@ -1,11 +1,11 @@
 
 .PHONY: build-keri
 build-keri:
-	@docker buildx build --platform=linux/amd64 --no-cache -f images/keripy.dockerfile --tag weboftrust/keri:1.1.0 .
+	@docker buildx build --platform=linux/amd64 -f images/keripy.dockerfile --tag weboftrust/keri:1.1.0 .
 
 .PHONY: build-witness-demo
 build-witness-demo:
-	@@docker buildx build --platform=linux/amd64 --no-cache -f images/witness.demo.dockerfile --tag weboftrust/keri-witness-demo:1.1.0 .
+	@@docker buildx build --platform=linux/amd64 -f images/witness.demo.dockerfile --tag weboftrust/keri-witness-demo:1.1.0 .
 
 .PHONY: publish-keri
 publish-keri:
