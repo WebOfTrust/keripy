@@ -225,7 +225,7 @@ class CredentialIssuer(doing.DoDoer):
         self.registrar.issue(self.creder, iserder, aserder)
 
         acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre), coring.Seqner(sn=iserder.sn),
-                                 iserder.saider)
+                                 coring.Saider(qb64=iserder.said))
 
         if isinstance(self.hab, habbing.GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
