@@ -5,6 +5,7 @@ Test Falcon Module
 Includes Falcon ReST endpoints for testing purposes
 
 """
+import json
 import logging
 
 import falcon
@@ -398,6 +399,26 @@ def test_get_admin():
     assert rep.status == falcon.HTTP_OK
     assert rep.text == '\nKERI Admin\n\n'
     """Done Test"""
+
+def test_healthcheck():
+    name = 'zoe'
+    base = 'test'
+    with habbing.openHby(name=name, base=base) as hby:
+        hab = hby.makeHab(name=name)
+        # hab = setupTestHab(name='zoe')
+
+    # must do it here to inject into Falcon endpoint resource instances
+    tymist = tyming.Tymist(tyme=0.0)
+
+    myapp = falcon.App()  # falcon.App instances are callable WSGI apps
+    ending.loadEnds(myapp, tymth=tymist.tymen(), hby=hby)
+
+    client = testing.TestClient(app=myapp)
+    res = client.simulate_get('/health')
+    health = json.loads(res.content)
+    assert res.status == falcon.HTTP_OK
+    assert 'message' in health
+    assert health['message'].startswith('Health is okay')
 
 
 def test_get_oobi():

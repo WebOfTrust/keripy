@@ -23,7 +23,7 @@ from .. import help
 from .. import kering
 from ..app import habbing
 from ..core import coring
-from ..help import helping
+from ..help import helping, nowIso8601
 
 logger = help.ogler.getLogger()
 
@@ -645,6 +645,16 @@ def loadEnds(app, hby, *, tymth=None, default=None, static=False):
     app.add_route("/oobi/{aid}", end)
     app.add_route("/oobi/{aid}/{role}", end)
     app.add_route("/oobi/{aid}/{role}/{eid}", end)
+
+    # healthcheck endpoint
+    app.add_route("/health", HealthEnd())
+
+class HealthEnd:
+    """Health resource for determining that a container is live"""
+
+    def on_get(self, _req, resp):
+        resp.status = falcon.HTTP_OK
+        resp.media = {"message": f"Health is okay. Time is {nowIso8601()}"}
 
 
 def setup(name="who", temp=False, tymth=None, isith=None, count=1,
