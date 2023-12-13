@@ -449,13 +449,14 @@ class MatterCodex:
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
-    Tern:                 str = '1AAF'  # Tern 3 byte b2 number
+    Tag4:                 str = '1AAF'  # Tag4 4 B64 encoded chars for field tag or message kind
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     ECDSA_256r1N:         str = '1AAI'  # ECDSA secp256r1 verification key non-transferable, basic derivation.
     ECDSA_256r1:          str = '1AAJ'  # ECDSA secp256r1 verification or encryption key, basic derivation
     Null:                 str = '1AAK'  # Null None or empty value
-    Tag4:                 str = '1AAL'  # Tag4 4 B64 encoded chars for field tag or message kind
+    Yes:                  str = '1AAL'  # Yes Truthy Boolean value
+    No:                   str = '1AAM'  # No Falsey Boolean value
     TBD1:                 str = '2AAA'  # Testing purposes only fixed with lead size 1
     TBD2:                 str = '3AAA'  # Testing purposes only of fixed with lead size 2
     StrB64_L0:            str = '4A'  # String Base64 only lead size 0
@@ -873,7 +874,8 @@ class Matter:
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
