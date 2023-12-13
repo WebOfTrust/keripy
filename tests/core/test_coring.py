@@ -390,13 +390,14 @@ def test_matter():
         'Ed448N': '1AAC',
         'Ed448': '1AAD',
         'Ed448_Sig': '1AAE',
-        'Tern': '1AAF',
+        'Tag4': '1AAF',
         'DateTime': '1AAG',
         'X25519_Cipher_Salt': '1AAH',
         'ECDSA_256r1N': '1AAI',
         'ECDSA_256r1': '1AAJ',
         'Null': '1AAK',
-        'Tag4': '1AAL',
+        'Yes': '1AAL',
+        'No': '1AAM',
         'TBD1': '2AAA',
         'TBD2': '3AAA',
         'StrB64_L0': '4A',
@@ -497,7 +498,8 @@ def test_matter():
         '1AAI': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAJ': Sizage(hs=4, ss=0, fs=48, ls=0),
         '1AAK': Sizage(hs=4, ss=0, fs=4, ls=0),
-        '1AAL': Sizage(hs=4, ss=0, fs=8, ls=0),
+        '1AAL': Sizage(hs=4, ss=0, fs=4, ls=0),
+        '1AAM': Sizage(hs=4, ss=0, fs=4, ls=0),
         '2AAA': Sizage(hs=4, ss=0, fs=8, ls=1),
         '3AAA': Sizage(hs=4, ss=0, fs=8, ls=2),
         '4A': Sizage(hs=2, ss=2, fs=None, ls=0),
@@ -1591,29 +1593,33 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tern as number
-    val = int("F89CFF", 16)
-    assert val == 16293119
-    raw = val.to_bytes(3, 'big')
-    assert raw == b'\xf8\x9c\xff'
-    cs = len(MtrDex.Tern)
+    # test Tag4
+    #val = int("F89CFF", 16)
+    #assert val == 16293119
+    #raw = val.to_bytes(3, 'big')
+    #assert raw == b'\xf8\x9c\xff'
+    raw = b'hio'
+    cs = len(MtrDex.Tag4)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    assert txt == b'-Jz_'
-    qb64b = MtrDex.Tern.encode("utf-8") + txt[ps:]
-    assert qb64b == b'1AAF-Jz_'
+    #assert txt == b'-Jz_'
+    assert txt == b'aGlv'
+    qb64b = MtrDex.Tag4.encode("utf-8") + txt[ps:]
+    #assert qb64b == b'1AAF-Jz_'
+    assert qb64b == b'1AAFaGlv'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
-    assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
+    assert qb2 == b'\xd4\x00\x05hio'
+    #assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
     bs = ceil((cs * 3) / 4)
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tern)
+    matter = Matter(raw=raw, code=MtrDex.Tag4)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1625,7 +1631,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1637,7 +1643,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1649,7 +1655,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1659,18 +1665,18 @@ def test_matter():
     assert matter.digestive == False
     assert matter.prefixive == False
 
-    # test Tern as chars
+    # test Tag4 as chars
     txt = b'icp_'
     raw = decodeB64(txt)
     assert raw == b'\x89\xca\x7f'
     val = int.from_bytes(raw, 'big')
     assert val == 9030271
-    cs = len(MtrDex.Tern)
+    cs = len(MtrDex.Tag4)
     assert cs == 4
     ps = cs % 4
     assert ps == 0
     txt = encodeB64(bytes([0]*ps) + raw)
-    qb64b = MtrDex.Tern.encode("utf-8") + txt
+    qb64b = MtrDex.Tag4.encode("utf-8") + txt
     assert qb64b == b'1AAFicp_'
     qb64 = qb64b.decode("utf-8")
     qb2 = decodeB64(qb64b)
@@ -1679,9 +1685,9 @@ def test_matter():
     assert qb2[bs:] == raw  # stable value in qb2
     assert encodeB64(qb2) == qb64b
 
-    matter = Matter(raw=raw, code=MtrDex.Tern)
+    matter = Matter(raw=raw, code=MtrDex.Tag4)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1691,7 +1697,7 @@ def test_matter():
 
     matter = Matter(qb64b=qb64b)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1703,7 +1709,7 @@ def test_matter():
 
     matter = Matter(qb64=qb64)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
@@ -1713,7 +1719,7 @@ def test_matter():
 
     matter = Matter(qb2=qb2)
     assert matter.raw == raw
-    assert matter.code == MtrDex.Tern
+    assert matter.code == MtrDex.Tag4
     assert matter.qb64 == qb64
     assert matter.qb64b == qb64b
     assert matter.qb2 == qb2
