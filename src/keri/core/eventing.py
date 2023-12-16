@@ -74,7 +74,7 @@ SealDigest = namedtuple("SealDigest", 'd')
 
 # Root Seal: uniple (rd,)
 # rd = Merkle tree root digest qb64 digest of anchored (sealed) data in Merkle tree
-#SealRoot = namedtuple("SealRoot", 'rd')
+SealRoot = namedtuple("SealRoot", 'rd')
 
 # Backer Seal: couple (bi, d)
 # bi = pre qb64 backer nontrans identifier prefix
