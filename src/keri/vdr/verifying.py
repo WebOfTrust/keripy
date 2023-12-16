@@ -102,7 +102,7 @@ class Verifier:
         regk = creder.regi
         vcid = creder.said
         schema = creder.schema
-        prov = creder.edge
+        prov = creder.edge if creder.edge is not None else {}
 
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):

@@ -43,7 +43,7 @@ def export_credentials(args):
     """
     tels = args.tels
     kels = args.kels
-    chains = args.edge
+    chains = args.edge if args.edge is not None else {}
 
     if args.full:
         tels = kels = chains = True
@@ -108,7 +108,7 @@ class ExportDoer(doing.DoDoer):
                 self.outputTEL(creder.said)
 
         if self.chains:
-            chains = creder.edge
+            chains = creder.edge if creder.edge is not None else {}
             saids = []
             for key, source in chains.items():
                 if key == 'd':
