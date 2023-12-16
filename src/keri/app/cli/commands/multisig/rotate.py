@@ -176,7 +176,7 @@ class GroupMultisigRotate(doing.DoDoer):
                         raise kering.ConfigurationError(f"unknown rotation member {mid}")
 
                     mkever = self.hby.kevers[mid]  # get key state for given member
-                    migers.append(mkever.digers[0])
+                    migers.append(mkever.ndigers[0])
                     rmids.append(mid)
 
                 case [mid, sn]:
@@ -192,7 +192,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if not serder.estive:
                         raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
-                    migers.append(serder.digers[0])
+                    migers.append(serder.ndigers[0])
                     rmids.append(mid)
 
                 case _:

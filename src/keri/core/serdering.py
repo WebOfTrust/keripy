@@ -1267,16 +1267,6 @@ class SerderKERI(Serder):
 
         return self._sad.get("n")
 
-
-    @property
-    def digs(self):
-        """
-        Returns:
-            (list): digs
-        """
-        return self.ndigs
-
-
     @property
     def ndigers(self):
         """NDigers property getter
@@ -1290,18 +1280,6 @@ class SerderKERI(Serder):
 
         digs = self._sad.get("n")
         return [Diger(qb64=dig) for dig in digs] if digs is not None else None
-
-
-    @property
-    def digers(self):
-        """Digers property getter, alias of .ndigers
-
-        Returns:
-            digers (list[Diger]): instance as converted from ._sad['n'].
-            One for each next key digests.
-        """
-        return self.ndigers
-
 
 
     @property
@@ -1657,7 +1635,7 @@ class SerderACDC(Serder):
         Returns:
             edge (dict | str): from ._sad["e"]
         """
-        return self._sad.get("e") or {}
+        return self._sad.get("e") or {}  # need to fix logic so can remove or since optional
 
 
     @property
@@ -1667,6 +1645,6 @@ class SerderACDC(Serder):
         Returns:
             rule (dict | str): from ._sad["r"]
         """
-        return self._sad.get("r") or {}
+        return self._sad.get("r") or {}  # need to fix logic so can remove or since optional
 
     # ToDo Schemer property getter. Schemer object

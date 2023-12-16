@@ -2122,7 +2122,7 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sner.num == 0
         assert kever.sn == kever.sner.num  # sn property
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
-        assert kever.digs == nxt
+        assert kever.ndigs == nxt
         state = kever.db.states.get(keys=kever.prefixer.qb64)
         assert state.s == kever.sner.numh == '0'
         feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.said))
@@ -2161,7 +2161,7 @@ def test_kever(mockHelpingNowUTC):
 
         digers.reverse()
 
-        kever.digers = digers  # Monkey patch for test
+        kever.ndigers = digers  # Monkey patch for test
         ondices = kever.exposeds(sigers=sigers)
         assert ondices ==[2, 1, 0]
 
@@ -2180,7 +2180,7 @@ def test_kever(mockHelpingNowUTC):
         sigers = [siger0, siger1, siger2]
         digers = [diger0, diger1]
 
-        kever.digers = digers  # Monkey patch for test
+        kever.ndigers = digers  # Monkey patch for test
         ondices = kever.exposeds(sigers=sigers)
         assert ondices ==[0, 1]
 
@@ -2200,7 +2200,7 @@ def test_kever(mockHelpingNowUTC):
         sigers = [siger0, siger1, siger2]
         digers = [diger0, diger1]
 
-        kever.digers = digers  # Monkey patch for test
+        kever.ndigers = digers  # Monkey patch for test
         ondices = kever.exposeds(sigers=sigers)
         assert ondices ==[1]
 
@@ -2490,7 +2490,7 @@ def test_keyeventsequence_0():
         assert kever.ilk == Ilks.icp
         assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
-        assert kever.digs == nxt1
+        assert kever.ndigs == nxt1
         assert kever.estOnly is False
         assert kever.transferable is True
 
@@ -2522,7 +2522,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder1.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
-        assert kever.digs  == nxt2
+        assert kever.ndigs  == nxt2
 
         pigers = kever.fetchPriorDigers()  # digs from inception before rotation
         assert pigers is not None
@@ -2552,7 +2552,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder2.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys2
-        assert kever.digs  == nxt3
+        assert kever.ndigs  == nxt3
 
         pigers = kever.fetchPriorDigers()  # digs from rotation before rotation
         assert pigers is not None
@@ -2575,7 +2575,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder3.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
-        assert kever.digs  == nxt3  # no change
+        assert kever.ndigs  == nxt3  # no change
 
         pigers = kever.fetchPriorDigers()
         assert pigers is not None
@@ -2598,7 +2598,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder4.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys2  # no change
-        assert kever.digs  == nxt3  # no change
+        assert kever.ndigs  == nxt3  # no change
 
         pigers = kever.fetchPriorDigers()  # digs from rot before rot before ixn ixn
         assert pigers is not None
@@ -2627,7 +2627,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder5.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys3
-        assert kever.digs  == nxt4
+        assert kever.ndigs  == nxt4
 
         pigers = kever.fetchPriorDigers()  # digs from rot before ixn ixn before rot
         assert pigers is not None
@@ -2650,7 +2650,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder6.said
         assert kever.ilk == Ilks.ixn
         assert [verfer.qb64 for verfer in kever.verfers] == keys3  # no change
-        assert kever.digs  == nxt4  # no change
+        assert kever.ndigs  == nxt4  # no change
 
         # Event 7 Rotation to null NonTransferable Abandon
         serder7 = rotate(pre=pre, keys=keys4, dig=serder6.said, sn=7)
@@ -2671,7 +2671,7 @@ def test_keyeventsequence_0():
         assert kever.serder.said == serder7.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys4
-        assert kever.digs  == []
+        assert kever.ndigs  == []
         assert not kever.transferable
 
         # Event 8 Interaction
@@ -2760,7 +2760,7 @@ def test_keyeventsequence_1():
         assert kever.ilk == Ilks.icp
         assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
-        assert kever.digs  == nxt1
+        assert kever.ndigs  == nxt1
         assert kever.estOnly is True
         assert kever.transferable is True
 
@@ -2799,7 +2799,7 @@ def test_keyeventsequence_1():
         assert kever.serder.said == serder2.said
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
-        assert kever.digs  == nxt2
+        assert kever.ndigs  == nxt2
 
         db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs

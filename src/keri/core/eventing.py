@@ -1580,7 +1580,7 @@ class Kever:
         ilk (str): from Ilks for current event type
         tholder (Tholder): instance for event signing threshold
         verfers (list): of Verfer instances for current event state set of signing keys
-        digers (list): of Diger instances for current event state set  of
+        ndigers (list): of Diger instances for current event state set  of
             next (rotation) key digests
         ntholder (Tholder): instance for next (rotation) threshold
             from serder.ntholder
@@ -1602,7 +1602,7 @@ class Kever:
     Properties:
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
-        digs (list): of digests qb64 of .digers
+        ndigs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
         transferable (bool): True if .digers is not empty and pre is transferable
 
@@ -1745,12 +1745,12 @@ class Kever:
 
 
     @property
-    def digs(self):
+    def ndigs(self):
         """
         Returns:
             (list): digs of digers
         """
-        return [diger.qb64 for diger in self.digers]
+        return [diger.qb64 for diger in self.ndigers]
 
 
     @property
@@ -1769,7 +1769,7 @@ class Kever:
                 and .nextor is not None
                 False otherwise
         """
-        return True if self.digers and self.prefixer.transferable else False
+        return True if self.ndigers and self.prefixer.transferable else False
 
 
     def reload(self, state):
@@ -1789,7 +1789,7 @@ class Kever:
         self.tholder = Tholder(sith=state.kt)
         self.ntholder = Tholder(sith=state.nt)
         self.verfers = [Verfer(qb64=key) for key in state.k]
-        self.digers = [Diger(qb64=dig) for dig in state.n]
+        self.ndigers = [Diger(qb64=dig) for dig in state.n]
         self.toader = Number(numh=state.bt)  # auto converts from hex num
         self.wits = state.b
         self.cuts = state.ee.br
@@ -1856,7 +1856,7 @@ class Kever:
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
-        self.digers = serder.digers
+        self.ndigers = serder.ndigers
         self.ntholder = serder.ntholder
 
         self.cuts = []  # always empty at inception since no prev event
@@ -2020,7 +2020,7 @@ class Kever:
             self.ilk = ilk
             self.tholder = tholder
             self.verfers = serder.verfers
-            self.digers = serder.digers
+            self.ndigers = serder.ndigers
             self.ntholder = serder.ntholder
 
             self.toader = toader
@@ -2156,7 +2156,7 @@ class Kever:
                                       "".format(dig, self.serder.said, ked))
 
         # check derivation code of pre for non-transferable
-        if not self.digers:  # prior next list is empty so rotations not allowed
+        if not self.ndigers:  # prior next list is empty so rotations not allowed
             raise ValidationError("Attempted rotation for nontransferable"
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
@@ -2342,7 +2342,7 @@ class Kever:
         odxs = []
         for siger in sigers:
             try:
-                diger = self.digers[siger.ondex]
+                diger = self.ndigers[siger.ondex]
             except TypeError as ex:  # ondex may be None
                 continue
             except IndexError as ex:
@@ -2500,7 +2500,7 @@ class Kever:
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         for verfer in (serder.verfers if serder.verfers is not None else []):
             self.db.pubs.add(keys=(verfer.qb64,), val=val)
-        for diger in (serder.digers if serder.digers is not None else []):
+        for diger in (serder.ndigers if serder.ndigers is not None else []):
             self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
             if seqner and saider:  # authorized delegated or issued event
@@ -2622,7 +2622,7 @@ class Kever:
                       eevt=eevt,
                       sith=self.tholder.sith,
                       nsith=self.ntholder.sith if self.ntholder else '0',
-                      ndigs=[diger.qb64 for diger in self.digers],
+                      ndigs=[diger.qb64 for diger in self.ndigers],
                       toad=self.toader.num,
                       wits=self.wits,
                       cnfg=cnfg,
@@ -2661,7 +2661,7 @@ class Kever:
             raw = self.db.getEvt(dgkey)
             serder = serdering.SerderKERI(raw=bytes(raw))
             if serder.estive:  # establishment event
-                return serder.digers
+                return serder.ndigers
 
         return None
 
