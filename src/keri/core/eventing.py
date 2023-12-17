@@ -1840,20 +1840,11 @@ class Kever:
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        # Can't use usual serder.saider.verify(sad=ked) on inception when digestive
-        # since both 'd' and 'i' field are dummied so use prefixer verification
-        # otherwise use saider verification below
-        # don't need this with new SerderKERI because .verify() checks for this.
-        #if not self.prefixer.digestive:
-            #if not serder.saider.verify(sad=ked):
-                #raise ValidationError("Invalid SAID {} for event {}".format(ked["d"], ked))
-
-
         self.serder = serder  # need whole serder for digest agility comparisons
 
-        nxt = ked["n"]
-        if not self.prefixer.transferable and nxt:  # nxt must be empty for nontrans prefix
-            raise ValidationError("Invalid inception nxt not empty for "
+        ndigs = serder.ndigs # ked["n"]
+        if not self.prefixer.transferable and ndigs:  # nxt must be empty for nontrans prefix
+            raise ValidationError("Invalid inception next digest list not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
         self.ndigers = serder.ndigers
@@ -1951,26 +1942,19 @@ class Kever:
 
         if serder.pre != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
-                                  " = {} for evt = {}.".format(ked["i"],
+                                  " = {} for evt = {}.".format(serder.pre,
                                                                self.prefixer.qb64,
                                                                ked))
 
         sner = serder.sner  # Number instance ensures whole number for sequence number
 
-        ilk = ked["t"]
+        ilk = serder.ilk # ked["t"]
 
         if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
             if self.delegated and ilk != Ilks.drt:
                 raise ValidationError("Attempted non delegated rotation on "
                                       "delegated pre = {} with evt = {}."
-                                      "".format(ked["i"], ked))
-
-            # labels = DRT_LABELS if ilk == Ilks.dip else ROT_LABELS
-            labels = DRT_LABELS if ilk == Ilks.drt else ROT_LABELS
-            for k in labels:
-                if k not in ked:
-                    raise ValidationError("Missing element = {} from {} event for "
-                                          "evt = {}.".format(k, ilk, ked))
+                                      "".format(serder.pre, ked))
 
             tholder, toader, wits, cuts, adds = self.rotate(serder, sner)
 
@@ -2927,6 +2911,8 @@ class Kevery:
         # fetch ked ilk  pre, sn, dig to see how to process
         pre = serder.pre
         ked = serder.ked
+
+        # See todo for Prefixer fix redundancy XXX
         try:  # see if code of pre is supported and matches size of pre
             Prefixer(qb64=pre)
         except Exception as ex:  # if unsupported code or bad size raises error
@@ -2934,7 +2920,7 @@ class Kevery:
                                   "".format(pre, ked)) from ex
 
         sn = serder.sn
-        ilk = ked["t"]
+        ilk = serder.ilk # ked["t"]
         said = serder.said
 
 
@@ -2998,12 +2984,7 @@ class Kevery:
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
-                #kever.cues = self.cues This is injected when inception is accepted
                 sno = kever.sner.num + 1  # proper sn of new inorder event
-
-                # new SerderKERI.verify() already checks for this
-                #if not serder.saider.verify(sad=serder.ked):
-                    #raise ValidationError("Invalid SAID {} for event {}".format(said, serder.ked))
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
@@ -3011,8 +2992,12 @@ class Kevery:
                                        seqner=delseqner, saider=delsaider, wigers=wigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
-                elif ((sn == sno) or  # new inorder event or recovery
-                      (ilk in (Ilks.rot, Ilks.drt) and kever.lastEst.s < sn <= sno)):
+                elif ((sn == sno) or  # inorder event or
+                      (ilk in (Ilks.rot,) and  # superseding recovery or
+                        kever.lastEst.s < sn <= sno) or
+                      (ilk in (Ilks.drt,) and # delegated superseding recovery
+                        kever.lastEst.s <= sn <= sno)):
+
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
                     # Otherwise adds to KELs
