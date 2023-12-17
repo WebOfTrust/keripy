@@ -81,7 +81,7 @@ def test_counselor():
         hab1.rotate()
         hab2.rotate()
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
-        migers = [hab1.kever.digers[0], hab2.kever.digers[0]]
+        migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
@@ -126,17 +126,17 @@ def test_counselor():
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64]
+        ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
+        assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Second Partial Rotation
 
         hab1.rotate()
         hab2.rotate()
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
-        migers = [hab1.kever.digers[0], hab2.kever.digers[0], hab3.kever.digers[0]]
+        migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
@@ -183,16 +183,16 @@ def test_counselor():
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64]
+        ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64, hab3.kever.ndigers[0].qb64]
         assert ghab.kever.sn == 2
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
+        assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Third Partial Rotation with Recovery
         hab1.rotate()
         hab3.rotate()
         merfers = [hab1.kever.verfers[0], hab3.kever.verfers[0]]
-        migers = [hab1.kever.digers[0], hab3.kever.digers[0]]
+        migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
@@ -372,8 +372,8 @@ def test_the_seven():
         hab2.rotate()
         hab3.rotate()
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
-        migers = [hab1.kever.digers[0], hab2.kever.digers[0], hab3.kever.digers[0], hab4.kever.digers[0],
-                  hab5.kever.digers[0], hab6.kever.digers[0], hab7.kever.digers[0]]
+        migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
+                  hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
@@ -424,20 +424,20 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64,
-                 hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64,
-                 hab7.kever.digers[0].qb64]
+        ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64, hab3.kever.ndigers[0].qb64,
+                 hab4.kever.ndigers[0].qb64, hab5.kever.ndigers[0].qb64, hab6.kever.ndigers[0].qb64,
+                 hab7.kever.ndigers[0].qb64]
         assert ghab.kever.sn == 1
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
+        assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Second Partial Rotation
         hab1.rotate()
         hab2.rotate()
         hab3.rotate()
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
-        migers = [hab1.kever.digers[0], hab2.kever.digers[0], hab3.kever.digers[0], hab4.kever.digers[0],
-                  hab5.kever.digers[0], hab6.kever.digers[0], hab7.kever.digers[0]]
+        migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
+                  hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
@@ -489,13 +489,13 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
-        ndigs = [hab1.kever.digers[0].qb64, hab2.kever.digers[0].qb64, hab3.kever.digers[0].qb64,
-                 hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64,
-                 hab7.kever.digers[0].qb64]
+        ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64, hab3.kever.ndigers[0].qb64,
+                 hab4.kever.ndigers[0].qb64, hab5.kever.ndigers[0].qb64, hab6.kever.ndigers[0].qb64,
+                 hab7.kever.ndigers[0].qb64]
 
         assert ghab.kever.sn == 2
         assert [verfer.qb64 for verfer in ghab.kever.verfers] == nkeys
-        assert [diger.qb64 for diger in ghab.kever.digers] == ndigs
+        assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Third Partial Rotation with Recovery (using 4 members not involved in previous rotations)
         # First we have to do a replay of all multisig AID and member AID events and get members 4 - 7 up to date
@@ -516,7 +516,7 @@ def test_the_seven():
         hab5.rotate()
         hab6.rotate()
         merfers = [hab4.kever.verfers[0], hab5.kever.verfers[0], hab6.kever.verfers[0]]
-        migers = [hab4.kever.digers[0], hab5.kever.digers[0], hab6.kever.digers[0]]
+        migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn + 1)
         rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
@@ -565,10 +565,10 @@ def test_the_seven():
 
         # Validate successful partial rotation
         nkeys = [hab4.kever.verfers[0].qb64, hab5.kever.verfers[0].qb64, hab6.kever.verfers[0].qb64]
-        ndigs = [hab4.kever.digers[0].qb64, hab5.kever.digers[0].qb64, hab6.kever.digers[0].qb64]
+        ndigs = [hab4.kever.ndigers[0].qb64, hab5.kever.ndigers[0].qb64, hab6.kever.ndigers[0].qb64]
         assert ghab4.kever.sn == 3
         assert [verfer.qb64 for verfer in ghab4.kever.verfers] == nkeys
-        assert [diger.qb64 for diger in ghab4.kever.digers] == ndigs
+        assert [diger.qb64 for diger in ghab4.kever.ndigers] == ndigs
 
 
 @contextmanager

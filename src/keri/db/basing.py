@@ -1380,7 +1380,7 @@ class Baser(dbing.LMDBer):
             return members
 
         kever = self.kevers[pre]
-        for diger in kever.digers:
+        for diger in kever.ndigers:
             if (couples := self.digs.get(keys=(diger.qb64,))) is None:
                 continue
 

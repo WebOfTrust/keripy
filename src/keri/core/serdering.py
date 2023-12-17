@@ -1267,16 +1267,6 @@ class SerderKERI(Serder):
 
         return self._sad.get("n")
 
-
-    @property
-    def digs(self):
-        """
-        Returns:
-            (list): digs
-        """
-        return self.ndigs
-
-
     @property
     def ndigers(self):
         """NDigers property getter
@@ -1290,18 +1280,6 @@ class SerderKERI(Serder):
 
         digs = self._sad.get("n")
         return [Diger(qb64=dig) for dig in digs] if digs is not None else None
-
-
-    @property
-    def digers(self):
-        """Digers property getter, alias of .ndigers
-
-        Returns:
-            digers (list[Diger]): instance as converted from ._sad['n'].
-            One for each next key digests.
-        """
-        return self.ndigers
-
 
 
     @property
@@ -1542,7 +1520,7 @@ class SerderACDC(Serder):
     @property
     def uuid(self):
         """uuid property getter
-
+        Optional fields return None when not present
         Returns:
            uuid (str | None): qb64  of .sad["u"] salty nonce
         """
@@ -1552,7 +1530,7 @@ class SerderACDC(Serder):
     @property
     def uuidb(self):
         """uuid property getter (uuid bytes)
-
+        Optional fields return None when not present
         Returns:
            uuidb (bytes | None): qb64b  of .sad["u"] salty nonce as bytes
         """
@@ -1562,7 +1540,7 @@ class SerderACDC(Serder):
     @property
     def issuer(self):
         """issuer property getter (issuer AID)
-
+        Optional fields return None when not present
         Returns:
            issuer (str | None): qb64  of .sad["i"] issuer AID
         """
@@ -1572,7 +1550,7 @@ class SerderACDC(Serder):
     @property
     def issuerb(self):
         """issuerb property getter (issuer AID bytes)
-
+        Optional fields return None when not present
         Returns:
         issuerb (bytes | None): qb64b  of .issuer AID as bytes
         """
@@ -1582,7 +1560,7 @@ class SerderACDC(Serder):
     @property
     def regi(self):
         """regi property getter (registry identifier SAID)
-
+        Optional fields return None when not present
         Returns:
            regi (str | None): qb64  of .sad["ri"] registry SAID
         """
@@ -1592,6 +1570,7 @@ class SerderACDC(Serder):
     @property
     def regib(self):
         """regib property getter (registry identifier SAID bytes)
+        Optional fields return None when not present
         Returns:
         regib (bytes | None): qb64b  of .issuer AID as bytes
         """
@@ -1601,7 +1580,7 @@ class SerderACDC(Serder):
     @property
     def schema(self):
         """schema block or SAID property getter
-
+        Optional fields return None when not present
         Returns:
             schema (dict | str | None): from ._sad["s"]
         """
@@ -1611,7 +1590,7 @@ class SerderACDC(Serder):
     @property
     def attrib(self):
         """attrib block or SAID property getter (attribute)
-
+        Optional fields return None when not present
         Returns:
             attrib (dict | str | None): from ._sad["a"]
         """
@@ -1621,7 +1600,7 @@ class SerderACDC(Serder):
     @property
     def issuee(self):
         """ise property getter (issuee AID)
-
+        Optional fields return None when not present
         Returns:
            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
         """
@@ -1634,6 +1613,7 @@ class SerderACDC(Serder):
     @property
     def issueeb(self):
         """isrb property getter (issuee AID bytes)
+        Optional fields return None when not present
         Returns:
         issueeb (bytes | None): qb64b  of .issuee AID as bytes
         """
@@ -1642,8 +1622,8 @@ class SerderACDC(Serder):
 
     @property
     def attagg(self):
-        """attagg block property getter (attribute aggregate)
-
+        """Attagg block property getter (attribute aggregate)
+        Optional fields return None when not present
         Returns:
             attagg (dict | str): from ._sad["A"]
         """
@@ -1652,21 +1632,22 @@ class SerderACDC(Serder):
 
     @property
     def edge(self):
-        """edge block property getter
-
+        """Edge block property getter
+        Optional fields return None when not present
         Returns:
             edge (dict | str): from ._sad["e"]
         """
-        return self._sad.get("e") or {}
+        return self._sad.get("e")
 
 
     @property
     def rule(self):
-        """rule block property getter
+        """Rule block property getter
+        Optional fields return None when not present
 
         Returns:
             rule (dict | str): from ._sad["r"]
         """
-        return self._sad.get("r") or {}
+        return self._sad.get("r") # or {}  # need to fix logic so can remove or since optional
 
     # ToDo Schemer property getter. Schemer object

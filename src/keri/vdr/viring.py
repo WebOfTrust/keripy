@@ -409,7 +409,7 @@ class Reger(dbing.LMDBer):
             del iss[0:iserder.size]
 
             chainSaids = []
-            for k, p in creder.edge.items():
+            for k, p in (creder.edge.items() if creder.edge is not None else {}):
                 if k == "d":
                     continue
 
@@ -558,7 +558,7 @@ class Reger(dbing.LMDBer):
             list: credential sources as resolved from `e` in creder.crd
 
         """
-        chains = creder.edge
+        chains = creder.edge if creder.edge is not None else {}
         saids = []
         for key, source in chains.items():
             if key == 'd':

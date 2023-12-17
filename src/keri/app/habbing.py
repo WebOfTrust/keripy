@@ -713,7 +713,7 @@ class Habery:
 
         for mid in rmids:
             kever = self.kevers[mid]
-            digers = kever.digers
+            digers = kever.ndigers
             if digers:  # abandoned id  may have empty next digers
                 migers.append(digers[0])
             if len(digers) > 1:
@@ -1231,7 +1231,7 @@ class BaseHab:
         keys = [verfer.qb64 for verfer in verfers]
 
         indices = []
-        for idx, diger in enumerate(kever.digers):
+        for idx, diger in enumerate(kever.ndigers):
             pdigs = [coring.Diger(ser=verfer.qb64b, code=diger.code).qb64 for verfer in verfers]
             if diger.qb64 in pdigs:
                 indices.append(idx)
@@ -2329,7 +2329,7 @@ class Hab(BaseHab):
         kever = self.kever  # before rotation kever is prior next
 
         if ncount is None:
-            ncount = len(kever.digers)  # use len of prior next digers as default
+            ncount = len(kever.ndigers)  # use len of prior next digers as default
 
         try:
             verfers, digers = self.mgr.replay(pre=self.pre)
@@ -2804,7 +2804,7 @@ class GroupHab(BaseHab):
             migers = self.mhab.kever.fetchPriorDigers(sn=sn - 1)
             if migers:  # not  None or not empty
                 mig = migers[0].qb64  # always use first prior dig of mhab
-                digs = [diger.qb64 for diger in self.kever.digers]  # group habs prior digs
+                digs = [diger.qb64 for diger in self.kever.ndigers]  # group habs prior digs
                 try:
                     pni = digs.index(mig)  # find mhab dig index in group hab digs
                 except ValueError:  # not found
