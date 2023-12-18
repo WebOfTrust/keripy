@@ -1707,12 +1707,13 @@ class Kever:
                                                         delsaider=delsaider)
 
         self.delegator = delegator
-        if self.delegator is None:
-            self.delegated = False
-        else:
-            self.delegated = True
+        self.delegated = True if self.delegator else False
+        #if self.delegator is None:
+            #self.delegated = False
+        #else:
+            #self.delegated = True
 
-        wits = serder.ked["b"]
+        wits = serder.backs  # serder.ked["b"]
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
         # returns fn == None if already logged fn log is non idempotent
