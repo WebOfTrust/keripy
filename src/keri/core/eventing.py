@@ -1647,9 +1647,10 @@ class Kever:
             cues (Deck | None): reference to Kevery.cues Deck when provided
                 i.e. notices of events or requests to respond to
             prefixes (list | None): own prefixes for own local habitats.
-                May not be include the prefix of this Kever's event.
+                May not include the prefix of this Kever's event when inception
+                has not yet been accepted into KEL
                 Some restrictions if present
-                If empty then promiscuous mode
+                If empty then effectively in promiscuous mode
             local (bool): True means only process msgs for own controller's
                               events if .prefixes is not empty.
                           False means only process msgs for not own events
@@ -2248,17 +2249,18 @@ class Kever:
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
         # sigers  now have .verfer assigned
 
-        werfers = [Verfer(qb64=wit) for wit in wits]
-
-        # get unique verified wigers and windices lists from wigers list
-        wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
-        # each wiger now has werfer of corresponding wit
-
-        # check if fully signed
+        # check if minimally signed in order to continue processing
         if not indices:  # must have a least one verified sig
             raise ValidationError("No verified signatures for evt = {}."
                                   "".format(serder.ked))
 
+        werfers = [Verfer(qb64=wit) for wit in wits]  # get witnes signatures
+
+        # get unique verified wigers and windices lists from wigers list
+        wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
+        # each wiger now has added to it a werfer of its wit
+
+        # escrow if not fully signed vs threshold
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             if delseqner and delsaider:
@@ -2271,7 +2273,7 @@ class Kever:
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
                                             delseqner=delseqner, delsaider=delsaider)
 
-        # Kevery .process event logic prevents this from seeing event when
+        # Kevery .process event logic does not prevent this from seeing event when
         # not local and event pre is own pre
         if serder.pre not in self.prefixes:
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
@@ -2363,16 +2365,18 @@ class Kever:
             (str | None): qb64 delegator prefix or None if not delegated
 
         """
-        if serder.ked['t'] not in (Ilks.dip, Ilks.drt):  # not delegated
+        if serder.ilk not in (Ilks.dip, Ilks.drt):  # not delegated
             return None  # delegator is None
 
         # verify delegator and attachment pointing to delegating event
-        if serder.ked['t'] == Ilks.dip:
-            delegator = serder.ked["di"]
+        if serder.ilk == Ilks.dip:
+            delegator = serder.delpre
         else:
             delegator = self.delegator
 
-        # if we are the delegatee, accept the event without requiring the delegator validation
+        # if we are the delegatee, accept the event without requiring the
+        # delegator validation via an anchored delegation seal
+        # must also be local unless lax potential problem with distributed group multisig
         if delegator is not None and serder.pre in self.prefixes:
             return delegator
 
@@ -2382,10 +2386,10 @@ class Kever:
             raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
-        ssn = validateSN(sn=delseqner.snh, inceptive=False)
+        ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner should already do this
 
         # get the dig of the delegating event
-        key = snKey(pre=delegator, sn=ssn)
+        key = snKey(pre=delegator, sn=ssn)  # database key
         raw = self.db.getKeLast(key)  # get dig of delegating event
 
         if raw is None:  # no delegating event at key pre, sn
@@ -2404,7 +2408,7 @@ class Kever:
 
         # get the delegating event from dig
         ddig = bytes(raw)
-        key = dgKey(pre=delegator, dig=ddig)
+        key = dgKey(pre=delegator, dig=ddig)  # database key
         raw = self.db.getEvt(key)
         if raw is None:
             raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
@@ -2426,25 +2430,26 @@ class Kever:
                                   " does not allow delegation.".format(delegator,
                                                                        serder.ked))
 
-        pre = serder.ked["i"]
-        sn = serder.ked["s"]
+
         found = False  # find event seal of delegated event in delegating data
-        for dseal in dserder.ked["a"]:  # find delegating seal anchor
-            if ("i" in dseal and dseal["i"] == pre and
-                    "s" in dseal and dseal["s"] == sn and
+        # XXXX ToDo need to change logic here to support native CESR seals not just dicts
+        # for JSON, CBOR, MGPK
+        for dseal in dserder.seals:  # find delegating seal anchor
+            if ("i" in dseal and dseal["i"] == serder.pre and
+                    "s" in dseal and dseal["s"] == serder.sner.numh and
                     "d" in dseal and serder.compare(said=dseal["d"])):  # dseal["d"] == dig
                 found = True
                 break
 
         if not found:
             raise ValidationError("Missing delegation from {} in {} for evt = {}."
-                                  "".format(delegator, dserder.ked["a"], serder.ked))
+                                  "".format(delegator, dserder.seals, serder.ked))
 
-        # re-verify signatures or trust the database?
+        # re-verify signatures on delegating event or trust the database?
         # if database is loaded into memory fresh and reverified each bootup
         # when custody of disc is in question then trustable otherwise not
-
-        return delegator  # return delegator prefix
+        # for delegated inception don't yet have delegator
+        return delegator  # indicates delegation valid with return of delegator
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
@@ -2977,6 +2982,8 @@ class Kevery:
                                                   verfers=eserder.berfers)
 
                     if sigers or wigers:  # at least one verified sig or wig so log evt
+                        # this allows late arriving witness receipts or controller
+                        # signatures to be added to the databse
                         # not first seen inception so ignore return
                         kever.logEvent(serder, sigers=sigers, wigers=wigers)  # idempotent update db logs
 
@@ -2994,10 +3001,10 @@ class Kevery:
                                        seqner=delseqner, saider=delsaider, wigers=wigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
-                elif ((sn == sno) or  # inorder event or
-                      (ilk == Ilks.rot and  # superseding recovery or
+                elif ((sn == sno) or  # inorder event (ixn, rot, drt) or
+                      (ilk == Ilks.rot and  # superseding recovery rot or
                         kever.lastEst.s < sn <= sno) or
-                      (ilk == Ilks.drt and # delegated superseding recovery
+                      (ilk == Ilks.drt and # delegated superseding recovery drt
                         kever.lastEst.s <= sn <= sno)):
 
                     # verify signatures etc and update state if valid
