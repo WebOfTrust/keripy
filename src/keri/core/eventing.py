@@ -1971,7 +1971,12 @@ class Kever:
                                                             delseqner=delseqner,
                                                             delsaider=delsaider)
 
-
+            if delegator != self.delegator:  #
+                raise ValidationError("Erroneous attempted  delegated rotation"
+                                      " on either undelegated event or with"
+                                      " wrong delegator = {} for pre  = {}"
+                                      " with evt = {}."
+                                      "".format(delegator, ked["i"], ked))
 
             # current sigers and prior next digers in .digers
             ondices = self.exposeds(sigers)
@@ -1984,13 +1989,6 @@ class Kever:
                                             f"{[siger.qb64 for siger in sigers]}"
                                             f" for evt={serder.ked}.")
 
-
-            if delegator != self.delegator:  #
-                raise ValidationError("Erroneous attempted  delegated rotation"
-                                      " on either undelegated event or with"
-                                      " wrong delegator = {} for pre  = {}"
-                                      " with evt = {}."
-                                      "".format(delegator, ked["i"], ked))
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
