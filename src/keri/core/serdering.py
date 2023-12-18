@@ -1213,7 +1213,7 @@ class SerderKERI(Serder):
         """
         return self._sad.get("a")
 
-    #Properties of inceptive Serders ilks in (icp, dip)
+    #Properties of inceptive Serders ilks in (icp, dip) and version2 estive serders
 
     @property
     def traits(self):
@@ -1236,6 +1236,15 @@ class SerderKERI(Serder):
 
         """
         return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
+
+
+    @property
+    def keys(self):
+        """Returns list of qb64 keys from ._sad['k'].
+        One for each key.
+        keys property getter
+        """
+        return self._sad.get("k")
 
 
     @property
@@ -1283,7 +1292,7 @@ class SerderKERI(Serder):
 
 
     @property
-    def bner(self):
+    def bner(self):  # toader
         """
         bner (Number of backer TOAD threshold of accountable duplicity property getter
         Returns:

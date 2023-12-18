@@ -2085,27 +2085,29 @@ class Kever:
 
         """
         ked = serder.ked
-        pre = ked["i"]  # controller AID prefix
-        dig = ked["p"]  # prior event said
+        pre = serder.pre  # ked["i"]  # controller AID prefix
+        prior = serder.prior # ked["p"]  # prior event said
+        ilk = serder.ilk
 
         if sner.num > self.sner.num + 1:  # out of order event
-            raise ValidationError("Out of order event sn = {} expecting"
-                                  " = {} for evt = {}.".format(sner.num,
-                                                               self.sner.num + 1,
-                                                               ked))
+            raise ValidationError(f"Out of order event sn = {sner.num} expecting"
+                                  f" = {self.sner.num + 1} for evt = {ked}.")
 
         elif sner.num <= self.sner.num:  # stale or recovery
             #  stale events could be duplicitous
-            #  duplicity detection should have happend before .update called
-            #  so raise exception if stale
-            if sner.num <= self.lastEst.s:  # stale  event
-                raise ValidationError("Stale event sn = {} expecting"
+            #  duplicity detection should have happend in Kevery before .update
+            # and .rotate called so raise exception if stale
+            # seems redundant but protects bare .update if not called by Kevery
+
+            if ((ilk == Ilks.rot and sner.num <= self.lastEst.s) or
+                (ilk == Ilks.drt and sner.num < self.lastEst.s)):  # stale  event
+                    raise ValidationError("Stale event sn = {} expecting"
                                       " = {} for evt = {}.".format(sner.num,
                                                                    self.sner.num + 1,
                                                                    ked))
 
-            else:  # sn > self.lastEst.sn  #  recovery event
-                if self.ilk != Ilks.ixn:  # recovery  may only override ixn state
+            else:  # recovery event rot sn > self.lastEst.s or drt sn = self.lastEst.s
+                if ilk == Ilks.rot and self.ilk != Ilks.ixn:  # rot recovery  may only override ixn state
                     raise ValidationError("Invalid recovery attempt: Recovery"
                                           "at ilk = {} not ilk = {} for evt"
                                           " = {}.".format(self.ilk,
@@ -2124,20 +2126,20 @@ class Kever:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
                 pserder = serdering.SerderKERI(raw=bytes(praw))  # deserialize prior event raw
-                if not pserder.compare(said=dig):  # bad recovery event
+                if not pserder.compare(said=prior):  # bad recovery event
                     raise ValidationError("Invalid recovery attempt:"
                                           "Mismatch recovery event prior dig"
                                           "= {} with dig = {} of event sn = {}"
-                                          " evt = {}.".format(dig,
+                                          " evt = {}.".format(prior,
                                                               pserder.said,
                                                               psn,
                                                               ked))
 
         else:  # sn == self.sn + 1   new non-recovery event
-            if not self.serder.compare(said=dig):  # prior event dig not match
+            if not self.serder.compare(said=prior):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
-                                      "".format(dig, self.serder.said, ked))
+                                      "".format(prior, self.serder.said, ked))
 
         # check derivation code of pre for non-transferable
         if not self.ndigers:  # prior next list is empty so rotations not allowed
@@ -2146,10 +2148,10 @@ class Kever:
                                   "".format(self.prefixer.qb64, ked))
 
         tholder = serder.tholder  # Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
-        keys = ked["k"]  # current keys
+        keys = serder.keys # event's keys ked["k"]
         if len(keys) < tholder.size:
-            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
-                                  "".format(ked["kt"], keys, ked))
+            raise ValidationError(f"Invalid sith = {serder.tholder} for keys = "
+                                  f"{keys} for evt = {ked}.")
 
 
 
@@ -2191,7 +2193,7 @@ class Kever:
                                                                        adds,
                                                                        ked))
 
-        toader = Number(num=ked["bt"])  # auto converts hex num to int
+        toader = serder.bner # Number(num=ked["bt"])  # auto converts hex num to int
         if wits:
             if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
                 raise ValueError(f"Invalid toad = {toader.num} for backers "
@@ -2202,6 +2204,7 @@ class Kever:
                                  "(wits)={wits} for event={ked}.")
 
         return tholder, toader, wits, cuts, adds
+
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
                        wigers, toader, wits,
@@ -2993,9 +2996,9 @@ class Kevery:
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # inorder event or
-                      (ilk in (Ilks.rot,) and  # superseding recovery or
+                      (ilk == Ilks.rot and  # superseding recovery or
                         kever.lastEst.s < sn <= sno) or
-                      (ilk in (Ilks.drt,) and # delegated superseding recovery
+                      (ilk == Ilks.drt and # delegated superseding recovery
                         kever.lastEst.s <= sn <= sno)):
 
                     # verify signatures etc and update state if valid
