@@ -2160,7 +2160,7 @@ class Kever:
         # cuts and add to ensure that indexed signatures on indexed witness
         # receipts work
         witset = oset(self.wits)
-        cuts = ked["br"]
+        cuts = serder.cuts # ked["br"]
         cutset = oset(cuts)
         if len(cutset) != len(cuts):
             raise ValidationError("Invalid cuts = {}, has duplicates for evt = "
@@ -2170,7 +2170,7 @@ class Kever:
             raise ValidationError("Invalid cuts = {}, not all members in wits"
                                   " for evt = {}.".format(cuts, ked))
 
-        adds = ked["ba"]
+        adds = serder.adds # ked["ba"]
         addset = oset(adds)
         if len(addset) != len(adds):
             raise ValidationError("Invalid adds = {}, has duplicates for evt = "

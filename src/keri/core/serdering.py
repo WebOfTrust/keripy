@@ -1322,8 +1322,7 @@ class SerderKERI(Serder):
                            One for each backer (witness).
 
         """
-        backs = self._sad.get("b")
-        return backs if backs is not None else None
+        return self._sad.get("b")
 
 
     @property
@@ -1346,8 +1345,7 @@ class SerderKERI(Serder):
             prior (str): said qb64 of prior event from ._sad['p'].
 
         """
-        prior = self._sad.get("p")
-        return prior if prior is not None else None
+        return self._sad.get("p")
 
 
     @property
@@ -1369,8 +1367,8 @@ class SerderKERI(Serder):
                  One for each backer (witness) to be cut (removed).
 
         """
-        cuts = self._sad.get("br")
-        return cuts if cuts is not None else None
+        return self._sad.get("br")
+
 
     @property
     def adds(self):
@@ -1379,8 +1377,7 @@ class SerderKERI(Serder):
                  One for each backer (witness) to be added.
 
         """
-        adds = self._sad.get("ba")
-        return adds if adds is not None else None
+        return self._sad.get("ba")
 
 
     #Properties for delegated Serders ilks in (dip, drt)
@@ -1659,4 +1656,4 @@ class SerderACDC(Serder):
         """
         return self._sad.get("r") # or {}  # need to fix logic so can remove or since optional
 
-    # ToDo Schemer property getter. Schemer object
+    # ToDo Schemer property getter. Schemer object should change name to Schemar
