@@ -2393,7 +2393,7 @@ class Kever:
         raw = self.db.getKeLast(key)  # get dig of delegating event
 
         if raw is None:  # no delegating event at key pre, sn
-            #  create cue to fetch delegating event this may include MFA business logic
+            #  XXXX ToDo create cue to fetch delegating event this may include MFA business logic
             #  for the delegator
 
             #  escrow event here
@@ -2449,7 +2449,36 @@ class Kever:
         # if database is loaded into memory fresh and reverified each bootup
         # when custody of disc is in question then trustable otherwise not
         # for delegated inception don't yet have delegator
-        return delegator  # indicates delegation valid with return of delegator
+        # non-supeding delegated rotation of rotation rule
+        if ((serder.ilk == Ilks.dip) or  # delegated inception
+            (serder.sner.num == self.sner.num + 1) or  # inorder event
+            (serder.sner.num == self.sner.num and
+                self.ilk == Ilks.ixn and
+                serder.ilk == Ilks.drt)):  # recovery rotation superseding ixn
+                    return delegator  # indicates delegation valid with return of delegator
+
+
+        done = True
+        while (not done):  # superseding delegated rotation of rotation recovery rules
+
+
+
+            #  XXXX ToDo create cue to fetch delegating event this may include MFA business logic
+            #  for the delegator
+
+            #  escrow event here
+            inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
+            sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+            self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+            raise MissingDelegationError(f"No superseding delegating event from"
+                                         f"{delegator} at {delsaider.qb64} for "
+                                         f"evt = {serder.ked}.")
+
+
+        raise ValidationError(f"Invalid delegated recovery rotation of "
+                              f"delegator {delegator} by delegate {self.pre} with "
+                              f"evt = {serder.ked}.")
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
