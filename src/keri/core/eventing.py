@@ -1948,8 +1948,8 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
-        sner = serder.sner  # Number instance ensures whole number for sequence number
 
+        sner = serder.sner  # Number instance ensures whole number for sequence number
         ilk = serder.ilk # ked["t"]
 
         if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
@@ -1958,7 +1958,7 @@ class Kever:
                                       "delegated pre = {} with evt = {}."
                                       "".format(serder.pre, ked))
 
-            tholder, toader, wits, cuts, adds = self.rotate(serder, sner)
+            tholder, toader, wits, cuts, adds = self.rotate(serder)
 
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
@@ -2070,7 +2070,7 @@ class Kever:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
 
-    def rotate(self, serder, sner):
+    def rotate(self, serder):
         """
         Generic Rotate Operation Validation Processing
         Validates provisional rotation
@@ -2081,10 +2081,11 @@ class Kever:
 
         Parameters:
             serder (SerderKERI): instance of rotation ('rot' or 'drt') event.
-            sner (Number): sequence number instance
+
 
         """
         ked = serder.ked
+        sner = serder.sner
         pre = serder.pre  # ked["i"]  # controller AID prefix
         prior = serder.prior # ked["p"]  # prior event said
         ilk = serder.ilk
@@ -2460,7 +2461,7 @@ class Kever:
 
         done = True
         while (not done):  # superseding delegated rotation of rotation recovery rules
-
+            # Only get to here if drt that is superseding existing drt at same sn
 
 
             #  XXXX ToDo create cue to fetch delegating event this may include MFA business logic
