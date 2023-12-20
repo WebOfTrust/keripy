@@ -2493,7 +2493,7 @@ class Kever:
             raise ValidationError(f"Missing delegation source seal for {serfo.ked}")
             # else try to find seal the hard way
             #seal = SealEvent(i=serfo.pre, s=serfo.sn, d=serfo.said)._asdict
-            #bosso = self.db.findAnchoringEvent(pre=serfo.delpre, anchor=seal)
+            #bosso = self.db.findAnchoringSealEvent(pre=serfo.delpre, seal=seal)
         else:
             seqner, saider = deSourceCouple(couple)
             dgkey = dgKey(pre=delegator, dig=saider)  # event at its said
@@ -2501,8 +2501,8 @@ class Kever:
                 raise ValidationError(f"Missing delegation event for {serfo.ked}")
             bosso = serdering.SerderKERI(raw=bytes(raw))  # original delegating event i.e. boss original
 
-        serfn = serder
-        bossn = dserder
+        serfn = serder  # new potentially superseding delegated event i.e. serf new
+        bossn = dserder # new delegating event of superseding delegated event i.e. boss new
 
         done = True
         while (not done):  # superseding delegated rotation of rotation recovery rules
@@ -2512,12 +2512,14 @@ class Kever:
             found = False  # find event seal of delegated event in delegating data
             # XXXX ToDo need to change logic here to support native CESR seals not just dicts
             # for JSON, CBOR, MGPK
-            for sseal in sserder.seals:  # find supderseded evt delegating seal anchor
-                if ("i" in sseal and sseal["i"] == self.serder.pre and
-                        "s" in sseal and sseal["s"] == self.serder.sner.numh and
-                            "d" in sseal and self.serder.compare(said=sseal["d"])):  # sseal["d"] == dig
-                    found = True
-                    break
+            for dseal in dserder.seals:  # find delegating seal anchor
+                if tuple(dseal.keys()) == SealEvent._fields:
+                    seal = SealEvent(**dseal)
+                    if (seal.i == serder.pre and
+                        seal.s == serder.sner.numh and
+                        serder.compare(said=seal.d)):
+                            found = True
+                            break
 
             if not found:  # drop event something broken in database
                 raise ValidationError(f"Missing delegation by {delegator} in "

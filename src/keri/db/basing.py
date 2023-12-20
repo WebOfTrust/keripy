@@ -1303,6 +1303,7 @@ class Baser(dbing.LMDBer):
             for dmsg in self.clonePreIter(pre=kever.delegator, fn=0):
                 yield dmsg
 
+
     def findAnchoringSealEvent(self, pre, seal):
         """
         Search through a KEL for the event that contains a specific anchored
