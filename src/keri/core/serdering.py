@@ -1204,6 +1204,7 @@ class SerderKERI(Serder):
         """
         return self.sner.num if self.sner is not None else None
 
+
     @property
     def seals(self):
         """Seals property getter

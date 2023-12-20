@@ -504,7 +504,7 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 0
         escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.said))
-        assert escrow is None
+        assert escrow is None  # delegated inception delegation couple
 
         # Setup Del rotation event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)

@@ -1646,11 +1646,20 @@ class Number(Matter):
     @property
     def positive(self):
         """
-        Returns True if .num is positive False otherwise.
-        Because valid number .num must be non-negative, positive False means
+        Returns True if .num is strictly positive non-zero False otherwise.
+        Because valid number .num must be non-negative, positive False also means
         that .num is zero.
         """
         return True if self.num > 0 else False
+
+    @property
+    def inceptive(self):
+        """
+        Returns True if .num == 0 False otherwise.
+        Because valid number .num must be non-negative, positive False means
+        that .num is zero.
+        """
+        return True if self.num == 0 else False
 
 
 class Dater(Matter):

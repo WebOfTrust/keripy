@@ -1709,10 +1709,6 @@ class Kever:
 
         self.delegator = delegator
         self.delegated = True if self.delegator else False
-        #if self.delegator is None:
-            #self.delegated = False
-        #else:
-            #self.delegated = True
 
         wits = serder.backs  # serder.ked["b"]
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
@@ -2387,7 +2383,8 @@ class Kever:
             raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
-        ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner should already do this
+        ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
+        #ssn = sner.num sner is Number seqner is Seqner need to replace Seqners with Numbers
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)  # database key
@@ -2458,11 +2455,63 @@ class Kever:
                 serder.ilk == Ilks.drt)):  # recovery rotation superseding ixn
                     return delegator  # indicates delegation valid with return of delegator
 
+        # Kever.logEvent saves authorizer (delegator) seal source couple in
+        # db.aess data base so can use it here to recusively look up delegating
+        # events
+        # dgkey = dgKey(serder.preb, serder.saidb)
+        # if seqner and saider:  # authorizing delegating event
+        # couple = seqner.qb64b + saider.qb64b
+        # self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
         done = True
         while (not done):  # superseding delegated rotation of rotation recovery rules
             # Only get to here if drt that is superseding existing drt at same sn
 
+
+            dgkey = dgKey(pre=self.serder.preb, dig=self.serder.saidb)  # database key
+            if not (couple := self.db.getAes(dgkey)):  # delegation source couple
+                pass
+
+            supdelseqner, supdelsaider = deSourceCouple(couple)
+            # get the dig of the delegating event
+            snkey = snKey(pre=delegator, sn=supdelseqner.num)  # database key
+            if not (raw := self.db.getKeLast(snkey)):  # get dig of delegating event
+                raise ValidationError(f"Missing delegation from {delegator} "
+                                          f"at event dig = {supdelsaider.qb64} for "
+                                          f"evt = {self.serder.ked}.")
+
+
+
+            dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
+            # compare digests to make sure they match here
+            if not dserder.compare(said=delsaider.qb64):
+                raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
+                                          "".format(delegator, ddig, serder.ked))
+
+            if self.kevers is None or delegator not in self.kevers:
+                raise ValidationError("Missing Kever for delegator = {} for evt = {}."
+                                          "".format(delegator, serder.ked))
+
+            dkever = self.kevers[delegator]
+            if dkever.doNotDelegate:
+                raise ValidationError("Delegator = {} for evt = {},"
+                                          " does not allow delegation.".format(delegator,
+                                                                               serder.ked))
+
+
+            found = False  # find event seal of delegated event in delegating data
+            # XXXX ToDo need to change logic here to support native CESR seals not just dicts
+            # for JSON, CBOR, MGPK
+            for dseal in dserder.seals:  # find delegating seal anchor
+                if ("i" in dseal and dseal["i"] == serder.pre and
+                        "s" in dseal and dseal["s"] == serder.sner.numh and
+                            "d" in dseal and serder.compare(said=dseal["d"])):  # dseal["d"] == dig
+                    found = True
+                    break
+
+            if not found:
+                raise ValidationError("Missing delegation from {} in {} for evt = {}."
+                                          "".format(delegator, dserder.seals, serder.ked))
 
             #  XXXX ToDo create cue to fetch delegating event this may include MFA business logic
             #  for the delegator
@@ -2473,13 +2522,15 @@ class Kever:
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError(f"No superseding delegating event from"
-                                         f"{delegator} at {delsaider.qb64} for "
-                                         f"evt = {serder.ked}.")
+                                             f"{delegator} at {delsaider.qb64} for "
+                                             f"evt = {serder.ked}.")
+
 
 
         raise ValidationError(f"Invalid delegated recovery rotation of "
                               f"delegator {delegator} by delegate {self.pre} with "
                               f"evt = {serder.ked}.")
+
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
                  seqner=None, saider=None, firner=None, dater=None):
@@ -2524,9 +2575,9 @@ class Kever:
         for diger in (serder.ndigers if serder.ndigers is not None else []):
             self.db.digs.add(keys=(diger.qb64,), val=val)
         if first:  # append event dig to first seen database in order
-            if seqner and saider:  # authorized delegated or issued event
+            if seqner and saider:  # delegation for authorized delegated or issued event
                 couple = seqner.qb64b + saider.qb64b
-                self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+                self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
             fn = self.db.appendFe(serder.preb, serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:
