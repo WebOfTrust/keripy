@@ -71,6 +71,8 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 # seal == SealEvent(i="abc",s="1",d="efg")
 # sealdict =seal._asdict()
 # to convet dict to namedtuple use ** unpacking as in seal = SealDigest(**sealdict)
+# to check if dict of seal matches fields of associted namedtuple
+# if tuple(sealdict.keys()) == SealEvent._fields:
 
 # Digest Seal: uniple (d,)
 # d = digest qb64 of data  (usually SAID)
@@ -2442,11 +2444,20 @@ class Kever:
         # XXXX ToDo need to change logic here to support native CESR seals not just dicts
         # for JSON, CBOR, MGPK
         for dseal in dserder.seals:  # find delegating seal anchor
-            if ("i" in dseal and dseal["i"] == serder.pre and
-                    "s" in dseal and dseal["s"] == serder.sner.numh and
-                    "d" in dseal and serder.compare(said=dseal["d"])):  # dseal["d"] == dig
-                found = True
-                break
+            if tuple(dseal.keys()) == SealEvent._fields:
+                seal = SealEvent(**dseal)
+                if (seal.i == serder.pre and
+                    seal.s == serder.sner.numh and
+                    serder.compare(said=seal.d)):
+                        found = True
+                        break
+
+
+            #if ("i" in dseal and dseal["i"] == serder.pre and
+                    #"s" in dseal and dseal["s"] == serder.sner.numh and
+                    #"d" in dseal and serder.compare(said=dseal["d"])):  # dseal["d"] == dig
+                #found = True
+                #break
 
         if not found:  # drop event
             raise ValidationError("Missing delegation from {} in {} for evt = {}."
@@ -3965,7 +3976,7 @@ class Kevery:
 
             kever = self.kevers[pre]
             if anchor:
-                if not self.db.findAnchoringEvent(pre=pre, anchor=anchor):
+                if not self.db.findAnchoringSealEvent(pre=pre, seal=anchor):
                     self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
                     raise QueryNotFoundError("Query not found error={}.".format(ked))
 
@@ -4565,7 +4576,7 @@ class Kevery:
                             delpre = eserder.ked["di"]
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                        srdr = self.db.findAnchoringEvent(pre=delpre, anchor=anchor)
+                        srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=anchor)
                         if srdr is not None:
                             delseqner = coring.Seqner(sn=srdr.sn)
                             delsaider = coring.Saider(qb64=srdr.said)

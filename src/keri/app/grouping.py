@@ -175,7 +175,7 @@ class Counselor(doing.DoDoer):
                     self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
 
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
-                if serder := self.hby.db.findAnchoringEvent(kever.delegator, anchor=anchor):
+                if serder := self.hby.db.findAnchoringSealEvent(kever.delegator, seal=anchor):
                     aseq = coring.Seqner(sn=serder.sn)
                     couple = aseq.qb64b + serder.saidb
                     dgkey = dbing.dgKey(pre, saider.qb64b)

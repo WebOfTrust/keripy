@@ -111,8 +111,8 @@ class GrantDoer(doing.DoDoer):
         iserder = coring.Serder(raw=bytes(iss))
         seqner = coring.Seqner(sn=iserder.sn)
 
-        serder = self.hby.db.findAnchoringEvent(creder.ked['i'],
-                                                anchor=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
+        serder = self.hby.db.findAnchoringSealEvent(creder.ked['i'],
+                                                seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
         exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
