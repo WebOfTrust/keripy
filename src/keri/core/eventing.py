@@ -2395,8 +2395,8 @@ class Kever:
             #  for the delegator
 
             #  escrow event here
-            inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
-            sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
+            sn = validateSN(sn=serder.snh, inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingDelegationError("No delegating event from {} at {} for "
@@ -2472,58 +2472,47 @@ class Kever:
             if not (couple := self.db.getAes(dgkey)):  # delegation source couple
                 pass
 
-            supdelseqner, supdelsaider = deSourceCouple(couple)
+            sedeseqner, sedesaider = deSourceCouple(couple)
             # get the dig of the delegating event
-            snkey = snKey(pre=delegator, sn=supdelseqner.num)  # database key
+            snkey = snKey(pre=delegator, sn=sedeseqner.num)  # database key
             if not (raw := self.db.getKeLast(snkey)):  # get dig of delegating event
-                raise ValidationError(f"Missing delegation from {delegator} "
-                                          f"at event dig = {supdelsaider.qb64} for "
+                # something broke the database
+                raise ValidationError(f"Missing delegation by {delegator} "
+                                          f"at its event dig = {sedesaider.qb64} for "
                                           f"evt = {self.serder.ked}.")
 
-
-
-            dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
+            sserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event of superseded evt
             # compare digests to make sure they match here
-            if not dserder.compare(said=delsaider.qb64):
-                raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
-                                          "".format(delegator, ddig, serder.ked))
-
-            if self.kevers is None or delegator not in self.kevers:
-                raise ValidationError("Missing Kever for delegator = {} for evt = {}."
-                                          "".format(delegator, serder.ked))
-
-            dkever = self.kevers[delegator]
-            if dkever.doNotDelegate:
-                raise ValidationError("Delegator = {} for evt = {},"
-                                          " does not allow delegation.".format(delegator,
-                                                                               serder.ked))
-
+            if not sserder.compare(said=sedesaider.qb64):
+                raise ValidationError(f"Invalid delegation by {delegator} "
+                                          f"at its event dig = {sedesaider.qb64} for "
+                                          f"evt = {self.serder.ked}.")
 
             found = False  # find event seal of delegated event in delegating data
             # XXXX ToDo need to change logic here to support native CESR seals not just dicts
             # for JSON, CBOR, MGPK
-            for dseal in dserder.seals:  # find delegating seal anchor
-                if ("i" in dseal and dseal["i"] == serder.pre and
-                        "s" in dseal and dseal["s"] == serder.sner.numh and
-                            "d" in dseal and serder.compare(said=dseal["d"])):  # dseal["d"] == dig
+            for sseal in sserder.seals:  # find supderseded evt delegating seal anchor
+                if ("i" in sseal and sseal["i"] == self.serder.pre and
+                        "s" in sseal and sseal["s"] == self.serder.sner.numh and
+                            "d" in sseal and self.serder.compare(said=sseal["d"])):  # sseal["d"] == dig
                     found = True
                     break
 
-            if not found:
-                raise ValidationError("Missing delegation from {} in {} for evt = {}."
-                                          "".format(delegator, dserder.seals, serder.ked))
+            if not found:  # something broken in databse
+                raise ValidationError(f"Missing delegation by {delegator} in "
+                                      f"{sserder.seals} for evt = {self.serder.ked}.")
 
             #  XXXX ToDo create cue to fetch delegating event this may include MFA business logic
             #  for the delegator
 
             #  escrow event here
-            inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
-            sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
+            sn = validateSN(sn=serder.snh, inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
-            raise MissingDelegationError(f"No superseding delegating event from"
+            raise MissingDelegationError(f"No delegating event by"
                                              f"{delegator} at {delsaider.qb64} for "
-                                             f"evt = {serder.ked}.")
+                                             f"supderseding evt = {serder.ked}.")
 
 
 

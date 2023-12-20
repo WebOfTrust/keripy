@@ -1206,6 +1206,15 @@ class SerderKERI(Serder):
 
 
     @property
+    def snh(self):
+        """Sequence number hex str, snh property getter
+        Returns:
+            snh (hex str): of .sner.numh from .sad["s"]
+        """
+        return self.sner.numh if self.sner is not None else None
+
+
+    @property
     def seals(self):
         """Seals property getter
 
