@@ -1643,6 +1643,26 @@ class Number(Matter):
         """
         return f"{self.num:x}"
 
+
+    @property
+    def sn(self):
+        """Sequence number, sn property getter to mimic Seqner interface
+        Returns:
+            sn (int): alias for num
+        """
+        return self.num
+
+
+    @property
+    def snh(self):
+        """Sequence number hex str, snh property getter to mimic Seqner interface
+        Returns:
+            snh (hex str): alias for numh
+        """
+        return self.numh
+
+
+
     @property
     def positive(self):
         """

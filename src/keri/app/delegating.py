@@ -153,7 +153,7 @@ class Boatswain(doing.DoDoer):
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delegator]
 
-            anchor = dict(i=serder.pre, s=serder.sn, d=serder.said)
+            anchor = dict(i=serder.pre, s=serder.snh, d=serder.said)
             if dserder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb

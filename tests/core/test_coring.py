@@ -2988,7 +2988,10 @@ def test_number():
     assert number.qb2 == b'0\x00\x00'
     assert number.num == 0
     assert number.numh == '0'
+    assert number.sn == 0
+    assert number.snh == '0'
     assert not number.positive
+    assert number.inceptive
     assert hex(int.from_bytes(number.qb2, 'big')) == '0x300000'
 
     # test num as empty string defaults to 0
@@ -3019,12 +3022,17 @@ def test_number():
     with pytest.raises(InvalidValueError):
         number = Number(num=" :")
 
-    # test hex number string too long > 32 characters
-    #with pytest.raises(InvalidValueError):
-        #number = Number(numh="0"*33)
+    num = (256 ** 18 - 1)  # too big to represent
+    assert num == 22300745198530623141535718272648361505980415
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffffffff'
+    assert len(numh) == 18 * 2
 
-    #with pytest.raises(InvalidValueError):
-        #number = Number(num="0"*33)
+    with pytest.raises(InvalidValueError):
+        number = Number(num=num)
+
+    with pytest.raises(InvalidValueError):
+        number = Number(numh=numh)
 
 
     num = (256 ** 2 - 1)

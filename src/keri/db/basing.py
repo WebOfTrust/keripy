@@ -228,13 +228,6 @@ class HabitatRecord:  # baser.habs
         rmids (list | None): group signing member identifiers qb64 when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
-    ToDo: NRR
-        May need to save midxs for interact event signing by .mhab because
-        merfers and migers and mindices are not provided. Reserve members of
-        group do not participate in signing so must either ignore or raise error
-        if asked to sign interaction event.
-
-        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
 
     """
     hid: str  # hab own identifier prefix qb64
@@ -1326,10 +1319,10 @@ class Baser(dbing.LMDBer):
                 ancs = srdr.ked["a"]
                 for anc in ancs:
                     spre = anc["i"]
-                    ssn = int(anc["s"])
+                    ssn = int(anc["s"], 16)
                     sdig = anc["d"]
 
-                    if spre == anchor["i"] and ssn == int(anchor["s"]) \
+                    if spre == anchor["i"] and ssn == int(anchor["s"], 16) \
                             and anchor["d"] == sdig and self.fullyWitnessed(srdr):
                         return srdr
 
