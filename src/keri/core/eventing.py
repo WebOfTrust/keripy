@@ -2552,7 +2552,7 @@ class Kever:
             seal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)._asdict
             if not (dserder := self.db.findAnchoringSealEvent(pre=serder.delpre, seal=seal)):
                 # database broken this should never happen so do not supersede
-                raise ValidationError(f"Missing delegation source seal for {serfo.ked}")
+                raise ValidationError(f"Missing delegation source seal for {serder.ked}")
 
         return dserder
 
