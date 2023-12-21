@@ -468,7 +468,7 @@ class SignifyRegistry(BaseRegistry):
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=vcser))
-        iserder = Serder(raw=bytes(ievt))
+        iserder = serdering.serderACDC(raw=bytes(ievt))  # Serder(raw=bytes(ievt))
 
         if self.noBackers:
             serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
@@ -970,7 +970,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
             postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderACDC(raw=msg) # coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
@@ -984,16 +984,16 @@ def sendRegistry(hby, reger, postman, creder, sender, recp):
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=regk):
-        serder = coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
