@@ -12,7 +12,7 @@ from hio.base import doing
 from . import agenting, forwarding
 from .habbing import GroupHab
 from .. import kering
-from ..core import coring, serdering
+from ..core import coring, eventing, serdering
 from ..db import dbing
 from ..peer import exchanging
 
@@ -83,11 +83,11 @@ class Boatswain(doing.DoDoer):
 
         self.postman.send(hab=phab, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
 
-        srdr = coring.Serder(raw=evt)
+        srdr = serdering.SerderKERI(raw=evt)
         del evt[:srdr.size]
         self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
-        anchor = dict(i=srdr.pre, s=srdr.sn, d=srdr.said)
+        anchor = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
         self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=anchor)
 
         self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
@@ -153,8 +153,8 @@ class Boatswain(doing.DoDoer):
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delegator]
 
-            anchor = dict(i=serder.pre, s=serder.sn, d=serder.said)
-            if dserder := self.hby.db.findAnchoringEvent(dkever.prefixer.qb64, anchor=anchor):
+            anchor = dict(i=serder.pre, s=serder.snh, d=serder.said)
+            if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=anchor):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)

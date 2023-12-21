@@ -1204,6 +1204,16 @@ class SerderKERI(Serder):
         """
         return self.sner.num if self.sner is not None else None
 
+
+    @property
+    def snh(self):
+        """Sequence number hex str, snh property getter
+        Returns:
+            snh (hex str): of .sner.numh from .sad["s"]
+        """
+        return self.sner.numh if self.sner is not None else None
+
+
     @property
     def seals(self):
         """Seals property getter
@@ -1213,7 +1223,7 @@ class SerderKERI(Serder):
         """
         return self._sad.get("a")
 
-    #Properties of inceptive Serders ilks in (icp, dip)
+    #Properties of inceptive Serders ilks in (icp, dip) and version2 estive serders
 
     @property
     def traits(self):
@@ -1236,6 +1246,15 @@ class SerderKERI(Serder):
 
         """
         return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
+
+
+    @property
+    def keys(self):
+        """Returns list of qb64 keys from ._sad['k'].
+        One for each key.
+        keys property getter
+        """
+        return self._sad.get("k")
 
 
     @property
@@ -1283,7 +1302,7 @@ class SerderKERI(Serder):
 
 
     @property
-    def bner(self):
+    def bner(self):  # toader
         """
         bner (Number of backer TOAD threshold of accountable duplicity property getter
         Returns:
@@ -1313,8 +1332,7 @@ class SerderKERI(Serder):
                            One for each backer (witness).
 
         """
-        backs = self._sad.get("b")
-        return backs if backs is not None else None
+        return self._sad.get("b")
 
 
     @property
@@ -1337,8 +1355,7 @@ class SerderKERI(Serder):
             prior (str): said qb64 of prior event from ._sad['p'].
 
         """
-        prior = self._sad.get("p")
-        return prior if prior is not None else None
+        return self._sad.get("p")
 
 
     @property
@@ -1360,8 +1377,8 @@ class SerderKERI(Serder):
                  One for each backer (witness) to be cut (removed).
 
         """
-        cuts = self._sad.get("br")
-        return cuts if cuts is not None else None
+        return self._sad.get("br")
+
 
     @property
     def adds(self):
@@ -1370,8 +1387,7 @@ class SerderKERI(Serder):
                  One for each backer (witness) to be added.
 
         """
-        adds = self._sad.get("ba")
-        return adds if adds is not None else None
+        return self._sad.get("ba")
 
 
     #Properties for delegated Serders ilks in (dip, drt)
@@ -1650,4 +1666,4 @@ class SerderACDC(Serder):
         """
         return self._sad.get("r") # or {}  # need to fix logic so can remove or since optional
 
-    # ToDo Schemer property getter. Schemer object
+    # ToDo Schemer property getter. Schemer object should change name to Schemar

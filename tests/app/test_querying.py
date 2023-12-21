@@ -120,7 +120,7 @@ def test_querying():
         assert len(sdoer.witq.msgs) == 1
 
         # Test anchor querier
-        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre=subHab.pre, anchor={'s': 5})
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre=subHab.pre, anchor={'s': '5'})
         assert len(adoer.witq.msgs) == 1
 
         tock = 0.03125
@@ -131,7 +131,7 @@ def test_querying():
         assert len(sdoer.witq.msgs) == 1
 
         # Test with originally unknown AID
-        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", anchor={'s': 5})
+        adoer = AnchorQuerier(hby=hby, hab=inqHab, pre="ExxCHAI9bkl50F5SCKl2AWQbFGKeJtz0uxM2diTMxMQA", anchor={'s': '5'})
         assert len(adoer.witq.msgs) == 1
 
         tock = 0.03125

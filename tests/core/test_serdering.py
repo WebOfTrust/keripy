@@ -639,6 +639,7 @@ def test_serderkeri():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -670,6 +671,7 @@ def test_serderkeri():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -738,6 +740,7 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -773,6 +776,7 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -871,6 +875,7 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -906,6 +911,7 @@ def test_serderkeri_icp():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -991,6 +997,7 @@ def test_serderkeri_rot():
     assert serder.seals == []
     assert serder.traits == None
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -1021,6 +1028,7 @@ def test_serderkeri_rot():
     assert serder.seals == []
     assert serder.traits == None
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -1097,6 +1105,7 @@ def test_serderkeri_ixn():
     assert serder.seals == []
     assert serder.traits == None
     assert serder.tholder == None
+    assert serder.keys == None
     assert serder.verfers == None
     assert serder.ntholder == None
     assert serder.ndigers == None
@@ -1130,6 +1139,7 @@ def test_serderkeri_ixn():
     assert serder.seals == []
     assert serder.traits == None
     assert serder.tholder == None
+    assert serder.keys == None
     assert serder.verfers == None
     assert serder.ntholder == None
     assert serder.ndigers == None
@@ -1228,6 +1238,7 @@ def test_serderkeri_dip():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -1262,6 +1273,7 @@ def test_serderkeri_dip():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -1394,6 +1406,7 @@ def test_serderkeri_dip():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
@@ -1428,6 +1441,7 @@ def test_serderkeri_dip():
     assert serder.seals == []
     assert serder.traits == []
     assert serder.tholder.sith == '0'
+    assert serder.keys == []
     assert [verfer.qb64 for verfer in serder.verfers] == []
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []

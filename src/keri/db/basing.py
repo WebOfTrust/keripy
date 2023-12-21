@@ -228,13 +228,6 @@ class HabitatRecord:  # baser.habs
         rmids (list | None): group signing member identifiers qb64 when hid is group
         watchers: (list[str]) = list of id prefixes qb64 of watchers
 
-    ToDo: NRR
-        May need to save midxs for interact event signing by .mhab because
-        merfers and migers and mindices are not provided. Reserve members of
-        group do not participate in signing so must either ignore or raise error
-        if asked to sign interaction event.
-
-        #midxs: tuple[int, int] | None = None # mid index tuple (csi, pni)
 
     """
     hid: str  # hab own identifier prefix qb64
@@ -1310,28 +1303,41 @@ class Baser(dbing.LMDBer):
             for dmsg in self.clonePreIter(pre=kever.delegator, fn=0):
                 yield dmsg
 
-    def findAnchoringEvent(self, pre, anchor):
+
+    def findAnchoringSealEvent(self, pre, seal):
         """
-        Search through a KEL for the event that contains a specific anchor.
-        Returns the Serder of the first event with the anchor, None if not found
+        Search through a KEL for the event that contains a specific anchored
+        SealEvent type seal in dict form.
+        Returns the Serder of the first event with the anchored SealEvent seal,
+            None if not found
+        Searchs from inception forward
 
         Parameters:
             pre is qb64 identifier of the KEL to search
-            anchor is dict of anchor to find
+            seal is dict of SealEvent to find in anchored seals list of each event
 
         """
+        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
+            return None
+            #raise ValueError(f"Expected SealEvent got {seal}.")
+
+        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+
+
         for evt in self.clonePreIter(pre=pre):
             srdr = serdering.SerderKERI(raw=evt)
-            if "a" in srdr.ked:
-                ancs = srdr.ked["a"]
-                for anc in ancs:
-                    spre = anc["i"]
-                    ssn = int(anc["s"])
-                    sdig = anc["d"]
-
-                    if spre == anchor["i"] and ssn == int(anchor["s"]) \
-                            and anchor["d"] == sdig and self.fullyWitnessed(srdr):
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == eventing.SealEvent._fields:
+                    eseal = eventing.SealEvent(**eseal)  #convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr
+                #spre = anc["i"]
+                #ssn = int(anc["s"], 16)
+                #sdig = anc["d"]
+
+                #if spre == seal["i"] and ssn == int(seal["s"], 16) \
+                        #and seal["d"] == sdig and self.fullyWitnessed(srdr):
+                    #return srdr
 
         return None
 

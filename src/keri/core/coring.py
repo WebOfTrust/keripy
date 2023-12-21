@@ -1643,14 +1643,43 @@ class Number(Matter):
         """
         return f"{self.num:x}"
 
+
+    @property
+    def sn(self):
+        """Sequence number, sn property getter to mimic Seqner interface
+        Returns:
+            sn (int): alias for num
+        """
+        return self.num
+
+
+    @property
+    def snh(self):
+        """Sequence number hex str, snh property getter to mimic Seqner interface
+        Returns:
+            snh (hex str): alias for numh
+        """
+        return self.numh
+
+
+
     @property
     def positive(self):
         """
-        Returns True if .num is positive False otherwise.
-        Because valid number .num must be non-negative, positive False means
+        Returns True if .num is strictly positive non-zero False otherwise.
+        Because valid number .num must be non-negative, positive False also means
         that .num is zero.
         """
         return True if self.num > 0 else False
+
+    @property
+    def inceptive(self):
+        """
+        Returns True if .num == 0 False otherwise.
+        Because valid number .num must be non-negative, positive False means
+        that .num is zero.
+        """
+        return True if self.num == 0 else False
 
 
 class Dater(Matter):
