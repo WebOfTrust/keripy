@@ -2361,9 +2361,6 @@ class Kever:
         return odxs
 
 
-
-
-
     def validateDelegation(self, serder, sigers, wigers=None, delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if seal validates with respect to Delegator's KEL
@@ -2377,9 +2374,9 @@ class Kever:
             wigers (list | None): of optional Siger instance of indexed witness sigs of
                 delegated event. Assumes wigers is list of unique verified sigs
             delseqner (Seqner | None): instance of delegating event sequence number.
-                If this event is not delegated then seqner is ignored
+                If this event is not delegated then ignored
             delsaider (Saider | None): instance of of delegating event digest.
-                If this event is not delegated then diger is ignored
+                If this event is not delegated ignored
 
         Returns:
             (str | None): qb64 delegator prefix or None if not delegated
@@ -2474,13 +2471,11 @@ class Kever:
             raise ValidationError("Missing delegation from {} in {} for evt = {}."
                                   "".format(delegator, dserder.seals, serder.ked))
 
-        # re-verify signatures on delegating event or trust the database?
-        # if database is loaded into memory fresh and reverified each bootup
-        # when custody of disc is in question then trustable otherwise not
-        # for delegated inception don't yet have delegator
+        # Assumes database is reverified each bootup chain-of-custody of dic broken.
         # Rule for non-supeding delegated rotation of rotation.
-        # This successful return eventually results in Kever.logEvent which
-        # writes the delgating event source couple to db.aess so we can find it later
+        # Returning delegator indicates success and eventually results acceptance
+        # via Kever.logEvent which also writes the delgating event source couple to
+        # db.aess so we can find it later
         if ((serder.ilk == Ilks.dip) or  # delegated inception
             (serder.sner.num == self.sner.num + 1) or  # inorder event
             (serder.sner.num == self.sner.num and
@@ -2491,32 +2486,12 @@ class Kever:
         # Kever.logEvent saves authorizer (delegator) seal source couple in
         # db.aess data base so can use it here to recusively look up delegating
         # events
-        # dgkey = dgKey(serder.preb, serder.saidb)
-        # if seqner and saider:  # authorizing delegating event
-        # couple = seqner.qb64b + saider.qb64b
-        # self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
 
         # set up recursive search for superseding delegations
-        serfo = self.serder  # original delegated event i.e. serf original
-        dgkey = dgKey(pre=serfo.preb, dig=serfo.saidb)  # database key
-        if (couple := self.db.getAes(dgkey)):  # delegation source couple
-            seqner, saider = deSourceCouple(couple)
-            dgkey = dgKey(pre=delegator, dig=saider)  # event at its said
-            # get event by dig not by sn at last event because may have been superceded
-            if not (raw := self.db.getEvt(dgkey)):
-                # database broken this should never happen so do not supersede
-                raise ValidationError(f"Missing delegation event for {serfo.ked}")
-            bosso = serdering.SerderKERI(raw=bytes(raw))  # original delegating event i.e. boss original
-
-        else:  #try to find seal the hard way
-            seal = SealEvent(i=serfo.pre, s=serfo.sn, d=serfo.said)._asdict
-            if not (bosso := self.db.findAnchoringSealEvent(pre=serfo.delpre, seal=seal)):
-                # database broken this should never happen so do not supersede
-                raise ValidationError(f"Missing delegation source seal for {serfo.ked}")
-
         serfn = serder  # new potentially superseding delegated event i.e. serf new
         bossn = dserder # new delegating event of superseding delegated event i.e. boss new
-
+        serfo = self.serder  # original delegated event i.e. serf original
+        bosso = self.fetchDelegatingEvent(delegator, serfo)
 
         while (True):  # superseding delegated rotation of rotation recovery rules
             # Only get to here if same sn for drt existing and drt superseding
@@ -2527,13 +2502,12 @@ class Kever:
                     return delegator  # valid superseding delegation
 
             if bossn.said == bosso.said: # same delegating event
-                oseals = [SealEvent(**seal) for seal in bosso.seals
-                            if tuple(seal.keys()) == SealEvent._fields]
-                oindex = oseals.index(SealEvent(i=serfo.pre, s=serfo.snh, d=serfo.said))
-
                 nseals = [SealEvent(**seal) for seal in bossn.seals
                                   if tuple(seal.keys()) == SealEvent._fields]
                 nindex = nseals.index(SealEvent(i=serfn.pre, s=serfn.snh, d=serfn.said))
+                oseals = [SealEvent(**seal) for seal in bosso.seals
+                                      if tuple(seal.keys()) == SealEvent._fields]
+                oindex = oseals.index(SealEvent(i=serfo.pre, s=serfo.snh, d=serfo.said))
 
                 if nindex > oindex:  # later seal supersedes
                     # assumes index can't be None
@@ -2546,45 +2520,41 @@ class Kever:
                                           f"of {serfo.ked} by {serfn.ked}")
 
             # tie condition same sn and drt so need to climb delegation chain
-
-            serfo = bosso
-            dgkey = dgKey(pre=serfo.preb, dig=serfo.saidb)  # database key
-            if (couple := self.db.getAes(dgkey)):  # delegation source couple
-                seqner, saider = deSourceCouple(couple)
-                dgkey = dgKey(pre=delegator, dig=saider)  # event at its said
-                # get event by dig not by sn at last event because may have been superceded
-                if not (raw := self.db.getEvt(dgkey)):
-                    # database broken this should never happen so do not supersede
-                    raise ValidationError(f"Missing delegation event for {serfo.ked}")
-                bosso = serdering.SerderKERI(raw=bytes(raw))  # original delegating event i.e. boss original
-
-            else:  #try to find seal the hard way
-                seal = SealEvent(i=serfo.pre, s=serfo.sn, d=serfo.said)._asdict
-                if not (bosso := self.db.findAnchoringSealEvent(pre=serfo.delpre, seal=seal)):
-                    # database broken this should never happen so do not supersede
-                    raise ValidationError(f"Missing delegation source seal for {serfo.ked}")
-
             serfn = bossn
-            dgkey = dgKey(pre=serfn.preb, dig=serfn.saidb)  # database key
-            if (couple := self.db.getAes(dgkey)):  # delegation source couple
-                seqner, saider = deSourceCouple(couple)
-                dgkey = dgKey(pre=delegator, dig=saider)  # event at its said
-                # get event by dig not by sn at last event because may have been superceded
-                if not (raw := self.db.getEvt(dgkey)):
-                    # database broken this should never happen so do not supersede
-                    raise ValidationError(f"Missing delegation event for {serfo.ked}")
-                bossn = serdering.SerderKERI(raw=bytes(raw))  # original delegating event i.e. boss original
-
-            else:  #try to find seal the hard way
-                seal = SealEvent(i=serfn.pre, s=serfn.sn, d=serfn.said)._asdict
-                if not (bossn := self.db.findAnchoringSealEvent(pre=serfn.delpre, seal=seal)):
-                    # database broken this should never happen so do not supersede
-                    raise ValidationError(f"Missing delegation source seal for {serfn.ked}")
+            bossn = self.fetchDelegatingEvent(delegator, serfn)
+            serfo = bosso
+            bosso = self.fetchDelegatingEvent(delegator, serfo)
+            # repeat
 
 
-        #raise ValidationError(f"Invalid delegated recovery rotation of "
-                              #f"delegator {delegator} by delegate {self.pre} with "
-                              #f"evt = {serder.ked}.")
+    def fetchDelegatingEvent(self, delegator, serder):
+        """Returns delegating event by delegator of delegated event given by
+        serder otherwise raises ValidationError.
+        Assumes serder is already delegated event
+
+        Parameters:
+            delegator (str): qb64 of identifier prefix of delegator
+            serder (SerderKERI): delegated serder
+
+        """
+        dgkey = dgKey(pre=serder.preb, dig=serder.saidb)  # database key
+        if (couple := self.db.getAes(dgkey)):  # delegation source couple
+            seqner, saider = deSourceCouple(couple)
+            dgkey = dgKey(pre=delegator, dig=saider)  # event at its said
+            # get event by dig not by sn at last event because may have been superceded
+            if not (raw := self.db.getEvt(dgkey)):
+                # database broken this should never happen so do not supersede
+                raise ValidationError(f"Missing delegation event for {serder.ked}")
+
+            dserder = serdering.SerderKERI(raw=bytes(raw))  # original delegating event i.e. boss original
+
+        else:  #try to find seal the hard way
+            seal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)._asdict
+            if not (dserder := self.db.findAnchoringSealEvent(pre=serder.delpre, seal=seal)):
+                # database broken this should never happen so do not supersede
+                raise ValidationError(f"Missing delegation source seal for {serfo.ked}")
+
+        return dserder
 
 
     def logEvent(self, serder, sigers=None, wigers=None, wits=None, first=False,
