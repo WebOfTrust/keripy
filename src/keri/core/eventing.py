@@ -1779,9 +1779,10 @@ class Kever:
         return True if self.ndigers and self.prefixer.transferable else False
 
 
-    def mine(self, pre=''):
+    def isMine(self, pre=''):
         """Returns True if pre is in .prefixes False otherwise. Indicates that
-        provided identifier prefix is controlled by this instance of KERI
+        provided identifier prefix is controlled by a local controller
+        i.e pre is mine
 
         Parameters:
            pre (str): qb64 identifier prefix
@@ -1790,8 +1791,11 @@ class Kever:
         return pre in self.prefixes
 
 
-    def witness(self, wits=None, werfers=None, wigers=None):
-        """Returns True if any owned prefix is a witness in wits
+    def amWitness(self, wits=None, werfers=None, wigers=None):
+        """Returns True if any owned prefix is in wits and therefore this
+           Kever represent a KEL for whom this instance of Keri has a local
+           controller who is witness to this KEL
+           i.e.  self am witness
 
         Parameters:
            wits (list | None): qb64 identifier prefixes if any
@@ -2319,7 +2323,7 @@ class Kever:
 
         # Kevery .process event logic does not prevent this from seeing event when
         # not local and event pre is own pre
-        if not self.mine(serder.pre):  # not in self.prefixes
+        if not self.isMine(serder.pre):  # not in self.prefixes
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
                      not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
@@ -2340,7 +2344,7 @@ class Kever:
                                                        f"on witness sigs="
                                                        f"{[siger.qb64 for siger in wigers]} "
                                                        f"for event={serder.ked}.")
-        if self.mine(delegator):  # delegator may be None
+        if self.isMine(delegator):  # delegator may be None
             pass
             # ToDo XXXX  need to cue task here  to approve delegation by generating
             # and anchoring SealEvent of serder in delegators KEL
@@ -2496,7 +2500,7 @@ class Kever:
         # add to its KEL without waiting for delegation seal to be anchored i
         # n delegator's KEL  (oset(self.prefixes) & oset(wits))) receipt cue
         # in Kevery will then generate reciept
-        if self.mine(serder.pre) or self.witness(wigers=wigers):
+        if self.isMine(serder.pre) or self.amWitness(wigers=wigers):
             return delegator
 
         # during initial delegation we just escrow the delcept event

@@ -1486,11 +1486,16 @@ class BaseHab:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
+
     def witness(self, serder):
         """
         Returns own receipt, rct, message of serder with count code and witness
         indexed receipt signatures if key state of serder.pre shows that own pre
         is a current witness of event in serder
+
+        Before calling this must check that serder being witnessed has been
+        accepted as valid event into controller's KEL
+
         """
         if self.kever.prefixer.transferable:  # not non-transferable prefix
             raise ValueError("Attempt to create witness receipt with"
@@ -1520,6 +1525,7 @@ class BaseHab:
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
+
 
     def replay(self, pre=None, fn=0):
         """
@@ -2851,7 +2857,10 @@ class GroupHab(BaseHab):
 
         return self.mhab.endorse(serder, last=True)
 
+
     def witnesser(self):
+        """This method name does not match logic???
+        """
         kever = self.kever
         keys = [verfer.qb64 for verfer in kever.verfers]
         sigs = self.db.getSigs(dbing.dgKey(self.pre, kever.serder.saidb))
