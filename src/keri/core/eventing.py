@@ -1992,15 +1992,15 @@ class Kever:
 
             # rotation so check rotation threshold against exposed sigers versus
             # prior next digers in .ndigers
-            ondices = self.exposeds(sigers)
-            if not self.ntholder.satisfy(indices=ondices):
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                if delseqner and delsaider:  # save in case not attached later
-                    self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
-                raise MissingSignatureError(f"Failure satisfying nsith="
-                                            f"{self.ntholder.sith} on sigs="
-                                            f"{[siger.qb64 for siger in sigers]}"
-                                            f" for evt={serder.ked}.")
+            #ondices = self.exposeds(sigers)
+            #if not self.ntholder.satisfy(indices=ondices):
+                #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                #if delseqner and delsaider:  # save in case not attached later
+                    #self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+                #raise MissingSignatureError(f"Failure satisfying nsith="
+                                            #f"{self.ntholder.sith} on sigs="
+                                            #f"{[siger.qb64 for siger in sigers]}"
+                                            #f" for evt={serder.ked}.")
 
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
@@ -2277,17 +2277,29 @@ class Kever:
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             if delseqner and delsaider:
                 self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
-            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                        " for evt = {}.".format(tholder.sith,
-                                                                [siger.qb64 for siger in sigers],
-                                                                serder.ked))
+            raise MissingSignatureError(f"Failure satisfying sith = {tholder.sith}"
+                                        f" on sigs for {[siger.qb64 for siger in sigers]}"
+                                        f" for evt = {serder.ked}.")
+
+        if serder.ilk in (Ilks.rot, Ilks.drt):  # rotation so check prior next threshold
+            # prior next threshold in .ntholder and digers in .ndigers
+            ondices = self.exposeds(sigers)
+            if not self.ntholder.satisfy(indices=ondices):
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                if delseqner and delsaider:  # save in case not attached later
+                    self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+                raise MissingSignatureError(f"Failure satisfying prior nsith="
+                                            f"{self.ntholder.sith} with exposed "
+                                            f"sigs= {[siger.qb64 for siger in sigers]}"
+                                            f" for new est evt={serder.ked}.")
+
 
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
                                             delseqner=delseqner, delsaider=delsaider)
 
         # Kevery .process event logic does not prevent this from seeing event when
         # not local and event pre is own pre
-        if serder.pre not in self.prefixes:
+        if not self.mine(serder.pre):  # not in self.prefixes
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
                      not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
@@ -2295,18 +2307,25 @@ class Kever:
 
                 if wits:
                     if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
-                        raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
+                        raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
                 else:
                     if toader.num != 0:  # invalid toad
-                        raise ValueError(f"Invalid toad = {toader.num} for wits = {wits}")
+                        raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
 
                 if len(windices) < toader.num:  # not fully witnessed yet
-                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers, seqner=delseqner, saider=delsaider):
+                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
+                                          seqner=delseqner, saider=delsaider):
                         self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
                     raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
                                                        f"on witness sigs="
                                                        f"{[siger.qb64 for siger in wigers]} "
                                                        f"for event={serder.ked}.")
+        if self.mine(delegator):  # delegator may be None
+            pass
+            # ToDo XXXX  need to cue task here  to approve delegation by generating
+            # and anchoring SealEvent of serder in delegators KEL
+            # his may include MFA business logic   for the delegator i.e. is local
+
         return sigers, delegator, wigers
 
 
@@ -2448,16 +2467,15 @@ class Kever:
         else:  # serder.ilk == Ilks.drt so rotation
             delegator = self.delegator
 
-        if self.mine(delegator):
-            pass
-            # ToDo XXXX  need to cue task here  to approve delegation by generating
-            # and anchoring SealEvent of serder in delegators KEL
-            # his may include MFA business logic   for the delegator i.e. is local
-
         # if we are the delegatee, accept the event without requiring the
-        # delegator validation via an anchored delegation seal
-        # must also be local unless lax potential problem with distributed group multisig
-        if delegator is not None and self.mine(serder.pre):
+        # delegator validation via an anchored delegation seal or by requiring
+        # it to be witnessed
+        # ToDo XXXX add local lax check after figure out dist multisig group
+        # ToDo XXXX add check for witness to accept so that witness will
+        # add to its KEL without waiting for delegation seal to be anchored i
+        # n delegator's KEL  (oset(self.prefixes) & oset(wits))) receipt cue
+        # in Kevery will then generate reciept
+        if self.mine(serder.pre):
             return delegator
 
         # during initial delegation we just escrow the delcept event
