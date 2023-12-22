@@ -1989,14 +1989,6 @@ class Kever:
                                                             delseqner=delseqner,
                                                             delsaider=delsaider)
 
-            #if delegator != self.delegator:  # can't happen
-                #raise ValidationError("Erroneous attempted  delegated rotation"
-                                      #" on either undelegated event or with"
-                                      #" wrong delegator = {} for pre  = {}"
-                                      #" with evt = {}."
-                                      #"".format(delegator, ked["i"], ked))
-
-
 
             # rotation so check rotation threshold against exposed sigers versus
             # prior next digers in .ndigers
