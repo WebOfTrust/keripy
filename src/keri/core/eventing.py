@@ -1790,6 +1790,26 @@ class Kever:
         return pre in self.prefixes
 
 
+    def witness(self, wits=None, werfers=None, wigers=None):
+        """Returns True if any owned prefix is a witness in wits
+
+        Parameters:
+           wits (list | None): qb64 identifier prefixes if any
+           werfers (list[Verfer] | None): Verfer instances if any
+           wigers (list[Siger] | None): Siger instances if any
+
+        """
+        if not wits:
+            if werfers:
+                wits = [werfer.qb64 for werfer in werfers]
+            elif wigers:
+                try:
+                    wits = [wiger.verfer.qb64 for wiger in wigers]
+                except AttributeError:
+                    wits = None
+        return (oset(self.prefixes) & oset(wits))
+
+
     def reload(self, state):
         """
         Reload Kever attributes (aka its state) from state (KeyStateRecord)
@@ -2270,7 +2290,7 @@ class Kever:
 
         # get unique verified wigers and windices lists from wigers list
         wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
-        # each wiger now has added to it a werfer of its wit
+        # each wiger now has added to it a werfer of its wit in its .verfer property
 
         # escrow if not fully signed vs threshold
         if not tholder.satisfy(indices):  # at least one but not enough
@@ -2467,6 +2487,7 @@ class Kever:
         else:  # serder.ilk == Ilks.drt so rotation
             delegator = self.delegator
 
+
         # if we are the delegatee, accept the event without requiring the
         # delegator validation via an anchored delegation seal or by requiring
         # it to be witnessed
@@ -2475,7 +2496,7 @@ class Kever:
         # add to its KEL without waiting for delegation seal to be anchored i
         # n delegator's KEL  (oset(self.prefixes) & oset(wits))) receipt cue
         # in Kevery will then generate reciept
-        if self.mine(serder.pre):
+        if self.mine(serder.pre) or self.witness(wigers=wigers):
             return delegator
 
         # during initial delegation we just escrow the delcept event
