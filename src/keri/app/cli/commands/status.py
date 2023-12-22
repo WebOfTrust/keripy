@@ -10,7 +10,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import displaying, existing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
@@ -60,7 +60,7 @@ def status(tymth, tock=0.0, **opts):
 
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    srdr = coring.Serder(raw=msg)
+                    srdr = serdering.SerderKERI(raw=msg)
                     print(srdr.pretty(size=10000))
                     print()
 

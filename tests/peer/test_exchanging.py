@@ -4,7 +4,7 @@ tests.peer.test_exchanging module
 
 """
 from keri.app import habbing, forwarding, storing, signing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
 
@@ -119,7 +119,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                        b'rTWp4llIzVzBM7VVsDOgXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1ZgRoUsD--'
                        b'LgUQkXIdjLoQ19XPvJMJ')
 
-        exn = coring.Serder(raw=msg)
+        exn = serdering.SerderKERI(raw=msg)
 
         hab2 = hby.makeHab(name="respondant")
         regser = incept(hab2.pre,

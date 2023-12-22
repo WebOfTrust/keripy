@@ -5,7 +5,7 @@ from hio.base import doing
 
 from keri.app import indirecting, habbing, grouping
 from keri.app.cli.common import existing
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
@@ -98,7 +98,7 @@ class RegistryStatusor(doing.DoDoer):
         if self.verbose:
             cloner = reg.reger.clonePreIter(pre=reg.regk, fn=0)  # create iterator at 0
             for msg in cloner:
-                srdr = coring.Serder(raw=msg)
+                srdr = serdering.SerderKERI(raw=msg)
                 print(srdr.pretty())
                 print()
 

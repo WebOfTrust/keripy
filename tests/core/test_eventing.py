@@ -14,7 +14,7 @@ from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 from keri.core import coring, eventing, parsing, serdering
 from keri.core.coring import (Diger, MtrDex, Matter, IdrDex, Indexer,
-                              CtrDex, Counter, Salter, Serder, Siger, Cigar,
+                              CtrDex, Counter, Salter, Siger, Cigar,
                               Seqner, Verfer, Signer, Prefixer,
                               generateSigners, IdxSigDex, DigDex)
 from keri.core.eventing import Kever, Kevery
@@ -4457,7 +4457,7 @@ def test_process_nontransferable():
     assert aid0.verify(ked=ked0)
 
     # Serialize ked0
-    tser0 = Serder(ked=ked0)
+    tser0 = serdering.SerderKERI(sad=ked0)
 
     # sign serialization
     tsig0 = skp0.sign(tser0.raw, index=0)
@@ -4472,7 +4472,7 @@ def test_process_nontransferable():
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
 
     # deserialize packet
-    rser0 = Serder(raw=msgb0)
+    rser0 = serdering.SerderKERI(raw=msgb0)
     assert rser0.raw == tser0.raw
     del msgb0[:rser0.size]  # strip off event from front
 
@@ -4524,18 +4524,6 @@ def test_process_transferable():
     toad = 0  # no witnesses
     nsigs = 1  # one attached signature unspecified index
 
-    #ked0 = dict(v=versify(kind=Serials.json, size=0),
-                #t=Ilks.icp,
-                #d="",
-                #i="",  # qual base 64 prefix
-                #s="{:x}".format(sn),  # hex string no leading zeros lowercase
-                #kt="{:x}".format(sith),  # hex string no leading zeros lowercase
-                #k=keys,  # list of signing keys each qual Base64
-                #n=nxt,  # hash qual Base64
-                #wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                #w=[],  # list of qual Base64 may be empty
-                #c=[],
-                #)
 
     ked0 = dict(v=versify(kind=Serials.json, size=0),  # version string
                t=Ilks.icp,
@@ -4553,17 +4541,16 @@ def test_process_transferable():
                )
 
 
-    # Derive AID from ked
+    # Use non digestive AID
     aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
     assert aid0.code == MtrDex.Ed25519
     assert aid0.qb64 == skp0.verfer.qb64
-    _, ked0 = coring.Saider.saidify(sad=ked0)
-
     # update ked with pre
     ked0["i"] = aid0.qb64
+    _, ked0 = coring.Saider.saidify(sad=ked0)
 
     # Serialize ked0
-    tser0 = Serder(ked=ked0)
+    tser0 = serdering.SerderKERI(sad=ked0)
 
     # sign serialization
     tsig0 = skp0.sign(tser0.raw, index=0)
@@ -4578,7 +4565,7 @@ def test_process_transferable():
     msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
 
     # deserialize packet
-    rser0 = Serder(raw=msgb0)
+    rser0 = serdering.SerderKERI(raw=msgb0)
     assert rser0.raw == tser0.raw
     del msgb0[:rser0.size]  # strip off event from front
 
@@ -4604,7 +4591,7 @@ def test_process_transferable():
     assert raid0.verify(ked=rser0.ked)
 
     # verify nxt digest from event is still valid
-    digers=rser0.digers
+    digers=rser0.ndigers
     #assert rnxt1.includes(keys=nxtkeys)
     """ Done Test """
 
@@ -4674,23 +4661,24 @@ def test_process_manual():
                 k=[aidmat.qb64],  # list of signing keys each qual Base64
                 nt=nxtsith,
                 n=nxts,
-                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                w=[],  # list of qual Base64 may be empty
-                c=[],  # list of config ordered mappings may be empty
+                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                b=[],  # list of qual Base64 may be empty
+                c=[],  # list of config traits may be empty
+                a=[],  # list of seals ordered mappings may be empty
                 )
     _, ked0 = coring.Saider.saidify(sad=ked0)
 
-    txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"v":"KERI10JSON000124_","t":"icp","d":"EKlLyOddVoxzsk8UaJFvYA2YDusEenTpaYXk'
-                          b'MLtCpUbh","i":"DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL","s":"0","kt":"1'
-                          b'","k":["DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL"],"nt":"1","n":["EDcWJG'
-                          b'2wb0EXMZTzs4DgMwAWN_Qn2E6oMkTtX2C8E_4R"],"wt":"0","w":[],"c":[]}')
+    txsrdr = serdering.SerderKERI(sad=ked0, kind=Serials.json)
+    assert txsrdr.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8'
+                        b'PCWig_n4","i":"DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL","s":"0","kt":"1'
+                        b'","k":["DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL"],"nt":"1","n":["EDcWJG'
+                        b'2wb0EXMZTzs4DgMwAWN_Qn2E6oMkTtX2C8E_4R"],"bt":"0","b":[],"c":[],"a":[]}')
 
-    assert txsrdr.size == 292
+    assert txsrdr.size == 299
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = coring.Saider(sad=ked0, code=MtrDex.Blake3_256)
-    assert txdigmat.qb64 == 'EKlLyOddVoxzsk8UaJFvYA2YDusEenTpaYXkMLtCpUbh'
+    assert txdigmat.qb64 == 'EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8PCWig_n4'
 
     assert txsrdr.said == txdigmat.qb64
 
@@ -4701,17 +4689,16 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = Siger(raw=sig0raw, code=IdrDex.Ed25519_Sig, index=index)
-    assert txsigmat.qb64 == ('AAClimpgQX2jFTbYlTebmxIVRpE1SzPCcHdyNm-EsBJAOUVXH'
-                             'bdRBd6wbpePWsuEcWIK-k9kbX-PagPVG6lsKhcP')
+    assert txsigmat.qb64 == 'AAAbwxAS2DuLS4HLaiv9hHd6YEolpPjMKYRdXY3VwmWKh5gW5J2QBsZ1cMmdrlyIlgvqTQEViicNv9mHHOvj9ZAB'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 380  # 292 + 88
+    assert len(msgb) == 387  # 299 + 88
 
     #  Recieve side
-    rxsrdr = Serder(raw=msgb)
+    rxsrdr = serdering.SerderKERI(raw=msgb)
     assert rxsrdr.size == txsrdr.size
     assert rxsrdr.ked == ked0
 

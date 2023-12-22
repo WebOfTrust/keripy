@@ -11,7 +11,7 @@ from keri import kering
 from keri.app import indirecting, habbing, grouping, forwarding, connecting, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr import credentialing, verifying
@@ -119,7 +119,7 @@ class RevokeDoer(doing.DoDoer):
             else:
                 anc = hab.interact(data=[rseal])
 
-            aserder = coring.Serder(raw=bytes(anc))
+            aserder = serdering.SerderKERI(raw=bytes(anc))
             self.registrar.revoke(creder, rserder, aserder)
 
             senderHab = self.hab
@@ -143,11 +143,11 @@ class RevokeDoer(doing.DoDoer):
                 recp = creder.attrib['i']
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
-                    serder = coring.Serder(raw=msg)
+                    serder = serdering.SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
                 for msg in self.rgy.reger.clonePreIter(pre=creder.said):
-                    serder = coring.Serder(raw=msg)
+                    serder = serdering.SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
 

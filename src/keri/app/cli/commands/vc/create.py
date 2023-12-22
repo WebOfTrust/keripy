@@ -8,7 +8,7 @@ from keri import kering
 from keri.core import serdering
 from keri.app import indirecting, habbing, grouping, connecting, forwarding, signing, notifying
 from keri.app.cli.common import existing
-from keri.core import coring, eventing
+from keri.core import coring, eventing, serdering
 from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import proving
@@ -220,7 +220,7 @@ class CredentialIssuer(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = coring.Serder(raw=anc)
+        aserder = serdering.SerderACDC(raw=anc)  # coring.Serder(raw=anc)
         self.credentialer.issue(self.creder, iserder)
         self.registrar.issue(self.creder, iserder, aserder)
 

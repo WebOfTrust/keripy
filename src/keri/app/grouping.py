@@ -279,7 +279,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
 
     """
     rmids = rmids if rmids is not None else smids
-    serder = coring.Serder(raw=icp)
+    serder = serdering.SerderKERI(raw=icp) # coring.Serder(raw=icp)
     data = dict(
         gid=serder.pre,
         smids=smids,
