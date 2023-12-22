@@ -13,7 +13,7 @@ from .. import kering, help
 from ..app import agenting
 from ..app.habbing import GroupHab
 from ..core import parsing, coring, scheming, serdering
-from ..core.coring import Seqner, MtrDex, Serder
+from ..core.coring import Seqner, MtrDex
 from ..core.eventing import SealEvent, TraitDex
 from ..db import dbing
 from ..db.dbing import snKey, dgKey
@@ -371,7 +371,7 @@ class Registry(BaseRegistry):
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=vcser))
-        iserder = Serder(raw=bytes(ievt))
+        iserder = serdering.SerderKERI(raw=bytes(ievt)) #Serder(raw=bytes(ievt))
 
         if self.noBackers:
             serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)

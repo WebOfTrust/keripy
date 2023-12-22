@@ -7,7 +7,7 @@ from keri.app import indirecting, habbing, grouping, forwarding
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri.app.notifying import Notifier
-from keri.core import coring
+from keri.core import coring, serdering
 from keri.core.eventing import SealEvent
 from keri.peer import exchanging
 from keri.vdr import credentialing
@@ -132,7 +132,7 @@ class RegistryInceptor(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = coring.Serder(raw=bytes(anc))
+        aserder = serdering.SerderKERI(raw=bytes(anc))  # coring.Serder(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         if isinstance(hab, GroupHab):

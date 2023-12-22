@@ -10,7 +10,7 @@ from hio.base import doing
 from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import coring, parsing
+from keri.core import coring, parsing, serdering
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import credentialing
@@ -108,7 +108,7 @@ class GrantDoer(doing.DoDoer):
 
         iss = self.rgy.reger.cloneTvtAt(creder.said)
 
-        iserder = coring.Serder(raw=bytes(iss))
+        iserder = serdering.SerderKERI(raw=bytes(iss)) # coring.Serder(raw=bytes(iss))
         seqner = coring.Seqner(sn=iserder.sn)
 
         serder = self.hby.db.findAnchoringSealEvent(creder.ked['i'],
