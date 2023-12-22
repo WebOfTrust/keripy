@@ -91,7 +91,7 @@ def rollback(tymth, tock=0.0, **opts):
             ked['f'] = fner.numh
             ked['dt'] = helping.nowIso8601()
 
-            state = coring.Serder(ked=ked)
+            state = serdering.SerderKERI(ked=ked)  # This is wrong key state is not Serder anymore
             hby.db.states.pin(keys=hab.pre,
                               val=helping.datify(basing.KeyStateRecord,
                                                  state.ked))
