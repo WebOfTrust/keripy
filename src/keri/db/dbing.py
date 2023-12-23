@@ -1383,6 +1383,12 @@ class LMDBer(filing.Filer):
         Actual value written include prepended proem ordinal
         Assumes DB opened with dupsort=True
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
@@ -1397,6 +1403,12 @@ class LMDBer(filing.Filer):
         Returns empty list if no entry at key
         Removes prepended proem ordinal from each val  before returning
         Assumes DB opened with dupsort=True
+
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -1422,6 +1434,12 @@ class LMDBer(filing.Filer):
         Raises StopIteration Error when no remaining dup items = empty.
         Removes prepended proem ordinal from each val before returning
         Assumes DB opened with dupsort=True
+
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -1613,11 +1631,12 @@ class LMDBer(filing.Filer):
         return False
 
 
-    def getIoValsAllPreIter(self, db, pre):
+    def getIoValsAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in increasing order without gaps
-        starting with zero. Stops if gap or different pre.
+        with same prefix across all ordinal numbers in increasing order
+        without gaps between ordinal numbers
+        starting with on, default 0. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1626,14 +1645,21 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre (bytes | str): of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): ordinal number to begin iteration at
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_key(key):  # moves to first_dup
                 for val in cursor.iternext_dup():
                     # slice off prepended ordering prefix
@@ -1641,11 +1667,12 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsAllPreBackIter(self, db, pre, fn):
+    def getIoValsAllPreBackIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers in decreasing order without gaps
-        starting with fn as first sequence number.
+        between ordinals at a given pre.
+        Starting with on (default = 0) as begining ordinal number or sequence number.
         Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
@@ -1655,15 +1682,21 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
         Parameters:
             db is opened named sub db with dupsort=True
             pre is bytes of identifier prefix prepended to sn in key
                 within sub db's keyspace
-            fn is first
+            on (int): is ordinal number to begin iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt := fn)
+            key = snKey(pre, cnt := on)
             # set_key returns True if exact key else false
             while cursor.set_key(key):  # moves to first_dup if valid key
                 for val in cursor.iternext_dup():
@@ -1672,11 +1705,11 @@ class LMDBer(filing.Filer):
                 key = snKey(pre, cnt:=cnt-1)
 
 
-    def getIoValLastAllPreIter(self, db, pre):
+    def getIoValLastAllPreIter(self, db, pre, on=0):
         """
         Returns iterator of last only of dup vals of each key in insertion order
         for all entries with same prefix across all sequence numbers in increasing order
-        without gaps starting with zero. Stops if gap or different pre.
+        without gaps starting with on (default = 0). Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1685,26 +1718,38 @@ class LMDBer(filing.Filer):
 
         Duplicates are retrieved in insertion order.
 
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
+
 
         Parameters:
             db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): ordinal number to being iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_key(key):  # moves to first_dup
                 if cursor.last_dup(): # move to last_dup
                     yield cursor.value()[33:]  # slice off prepended ordering prefix
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsAnyPreIter(self, db, pre):
+    def getIoValsAnyPreIter(self, db, pre, on=0):
         """
         Returns iterator of all dup vals in insertion order for any entries
-        with same prefix across all sequence numbers in order including gaps.
+        with same prefix across all ordinal numbers in order including gaps
+        between ordinals at a given pre. Staring with on (default = 0).
         Stops when pre is different.
+
+        Duplicates that may be deleted such as duplicitous event logs need
+        to be able to iterate across gaps in ordinal number.
+
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
         Removes prepended proem ordinal from each val before returning
@@ -1722,14 +1767,15 @@ class LMDBer(filing.Filer):
             db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            on (int): beginning ordinal number to start iteration
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=on)
             while cursor.set_range(key):  #  moves to first dup of key >= key
                 key = cursor.key()  # actual key
                 front, back = bytes(key).split(sep=b'.', maxsplit=1)
-                if front != pre:
+                if front != pre:  # set range may skip pre if none
                     break
                 for val in cursor.iternext_dup():
                     yield val[33:]  # slice off prepended ordering prefix
