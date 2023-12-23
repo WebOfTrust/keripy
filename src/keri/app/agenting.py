@@ -218,7 +218,7 @@ class Receiptor(doing.DoDoer):
                 sn = msg["sn"] if "sn" in msg else None
 
                 yield from self.receipt(pre, sn)
-                self.cues.append(msg)
+                self.cues.push(msg)
 
             yield self.tock
 
@@ -351,7 +351,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 # If we started with all our recipts, exit unless told to force resubmit of all receipts
                 if completed and not self.force:
-                    self.cues.append(evt)
+                    self.cues.push(evt)
                     continue
 
                 # generate all rct msgs to send to all witnesses
@@ -399,7 +399,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                 self.remove(witers)
 
-                self.cues.append(evt)
+                self.cues.push(evt)
                 yield self.tock
 
             yield self.tock
@@ -607,7 +607,7 @@ class WitnessPublisher(doing.DoDoer):
                     _ = (yield self.tock)
 
                 self.remove(witers)
-                self.cues.append(evt)
+                self.cues.push(evt)
 
                 yield self.tock
 

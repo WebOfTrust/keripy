@@ -1779,10 +1779,11 @@ class Kever:
         return True if self.ndigers and self.prefixer.transferable else False
 
 
-    def isMine(self, pre=''):
+    def locallyOwned(self, pre=''):
         """Returns True if pre is in .prefixes False otherwise. Indicates that
-        provided identifier prefix is controlled by a local controller
-        i.e pre is mine
+        provided identifier prefix is controlled by a local controller from
+        .prefixes
+        i.e pre is a locally owned (controlled) AID (identifier prefix)
 
         Parameters:
            pre (str): qb64 identifier prefix
@@ -1791,26 +1792,18 @@ class Kever:
         return pre in self.prefixes
 
 
-    def amWitness(self, wits=None, werfers=None, wigers=None):
-        """Returns True if any owned prefix is in wits and therefore this
-           Kever represent a KEL for whom this instance of Keri has a local
-           controller who is witness to this KEL
-           i.e.  self am witness
+    def locallyWitnessed(self, serder=None):
+        """Returns True if a local controller is a witness of this Kever's KEL
+           of wits in serder of if None then current wits for this Kever.
+           i.e.  self is witnessd by locally owned (controlled) AID (identifier prefix)
 
         Parameters:
-           wits (list | None): qb64 identifier prefixes if any
-           werfers (list[Verfer] | None): Verfer instances if any
-           wigers (list[Siger] | None): Siger instances if any
+           serder ( SerderKERI | None): SerderKERI instace if any
 
         """
-        if not wits:
-            if werfers:
-                wits = [werfer.qb64 for werfer in werfers]
-            elif wigers:
-                try:
-                    wits = [wiger.verfer.qb64 for wiger in wigers]
-                except AttributeError:
-                    wits = None
+        if serder and serder.pre != self.prefixer.qb64:  # same KEL as self
+            return False
+        wits = serder.backs if serder is not None else self.wits
         return (oset(self.prefixes) & oset(wits))
 
 
@@ -2323,7 +2316,7 @@ class Kever:
 
         # Kevery .process event logic does not prevent this from seeing event when
         # not local and event pre is own pre
-        if not self.isMine(serder.pre):  # not in self.prefixes
+        if not self.locallyOwned(serder.pre):  # not in self.prefixes
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
                      not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
@@ -2339,16 +2332,13 @@ class Kever:
                 if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
                                           seqner=delseqner, saider=delsaider):
-                        self.cues.append(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
+                        # cue to query for witness receipts
+                        self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
                     raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
                                                        f"on witness sigs="
                                                        f"{[siger.qb64 for siger in wigers]} "
                                                        f"for event={serder.ked}.")
-        if self.isMine(delegator):  # delegator may be None
-            pass
-            # ToDo XXXX  need to cue task here  to approve delegation by generating
-            # and anchoring SealEvent of serder in delegators KEL
-            # his may include MFA business logic   for the delegator i.e. is local
+
 
         return sigers, delegator, wigers
 
@@ -2497,10 +2487,9 @@ class Kever:
         # it to be witnessed
         # ToDo XXXX add local lax check after figure out dist multisig group
         # ToDo XXXX add check for witness to accept so that witness will
-        # add to its KEL without waiting for delegation seal to be anchored i
-        # n delegator's KEL  (oset(self.prefixes) & oset(wits))) receipt cue
-        # in Kevery will then generate reciept
-        if self.isMine(serder.pre) or self.amWitness(wigers=wigers):
+        # add to its KEL without waiting for delegation seal to be anchored in
+        # delegator's KEL  witness cue in Kevery will then generate reciept
+        if self.locallyOwned(serder.pre) or self.locallyWitnessed(serder=serder):
             return delegator
 
         # during initial delegation we just escrow the delcept event
@@ -2518,7 +2507,11 @@ class Kever:
         raw = self.db.getKeLast(key)  # get dig of delegating event
 
         if raw is None:  # no delegating event at key pre, sn
-            #  XXXX ToDo create cue to fetch delegating event
+            # ToDo XXXX create cue to send query to fetch delegating event from
+            # delegator
+            self.cues.push(dict(kin="query", q=dict(pre=delegator,
+                                                              sn=delseqner.snh,
+                                                              dig=delsaider.qb64)))
 
             #  escrow event here
             inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
@@ -2705,8 +2698,8 @@ class Kever:
                 self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
             fn = self.db.appendFe(serder.preb, serder.saidb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
-                if self.cues is not None:
-                    self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
+                if self.cues is not None:  # cue to notice BadCloneFN
+                    self.cues.push(dict(kin="noticeBadCloneFN", serder=serder,
                                           fn=fn, firner=firner, dater=dater))
                 logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
                             "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
@@ -3158,9 +3151,24 @@ class Kevery:
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
-                    # create cue for receipt   direct mode for now
+                    # create cue for receipt  controller or watcher
                     #  receipt of actual type is dependent on own type of identifier
                     self.cues.push(dict(kin="receipt", serder=serder))
+                elif not self.direct:  # notice of new  event
+                    self.cues.push(dict(kin="notice", serder=serder))
+
+                if kever.locallyWitnessed():
+                    # ToDo XXXX  need to cue task here kin = "witness"
+                    self.cues.push(dict(kin="witness", serder=serder))
+
+                if kever.locallyOwned(kever.delegator):  # delegator may be None
+                    # ToDo XXXX  need to cue task here  to approve delegation by generating
+                    # and anchoring SealEvent of serder in delegators KEL
+                    # may include MFA business logic for the delegator i.e. is local
+                    self.cues.push(dict(kin="approveDelegation",
+                                            delegator=kever.delegator,
+                                            serder=serder))
+
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
@@ -3223,11 +3231,24 @@ class Kevery:
                                  check=self.check)
 
                     if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
-                        # create cue for receipt   direct mode for now
+                        # create cue for receipt  controller or watcher
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.push(dict(kin="receipt", serder=serder))
-                    elif not self.direct:
+                    elif not self.direct:  # notice of new  event
                         self.cues.push(dict(kin="notice", serder=serder))
+
+                    if kever.locallyWitnessed():
+                        # ToDo XXXX  need to cue task here kin = "witness"
+                        self.cues.push(dict(kin="witness", serder=serder))
+
+                    if kever.locallyOwned(kever.delegator):  # delegator may be None
+                        # ToDo XXXX  need to cue task here  to approve delegation by generating
+                        # and anchoring SealEvent of serder in delegators KEL
+                        # may include MFA business logic   for the delegator i.e. is local
+                        self.cues.push(dict(kin="approveDelegation",
+                                            delegator=kever.delegator,
+                                            serder=serder))
+
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
@@ -3994,7 +4015,7 @@ class Kevery:
 
         ksaider = coring.Saider(qb64=diger.qb64)
         self.updateKeyState(aid=aid, ksr=ksr, saider=ksaider, dater=dater)
-        self.cues.append(dict(kin="keyStateSaved", ksn=ksr._asdict()))
+        self.cues.push(dict(kin="keyStateSaved", ksn=ksr._asdict()))
 
     def updateEnd(self, keys, saider, allowed=None):
         """
@@ -4730,7 +4751,7 @@ class Kevery:
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
 
                     if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                        self.cues.append(dict(kin="psUnescrow", serder=eserder))
+                        self.cues.push(dict(kin="psUnescrow", serder=eserder))
 
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s\n", ex.args[0])
@@ -4745,7 +4766,7 @@ class Kevery:
                     self.db.delPde(dgkey)  # remove escrow if any
 
                     if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt,):
-                        self.cues.append(dict(kin="psUnescrow", serder=eserder))
+                        self.cues.push(dict(kin="psUnescrow", serder=eserder))
 
                     logger.info("Kevery unescrow succeeded in valid event: "
                                 "event=\n%s\n", json.dumps(eserder.ked, indent=1))

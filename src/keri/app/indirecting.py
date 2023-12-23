@@ -246,7 +246,7 @@ class WitnessStart(doing.DoDoer):
 
         while True:
             while self.cues:
-                cue = self.cues.popleft()
+                cue = self.cues.pull() # self.cues.popleft()
                 cueKin = cue["kin"]
                 if cueKin == "stream":
                     self.queries.append(cue)
@@ -969,7 +969,7 @@ class QryRpyMailboxIterable:
     def __next__(self):
         if self.iter is None:
             if self.cues:
-                cue = self.cues.popleft()
+                cue = self.cues.pull() # self.cues.popleft()
                 serder = cue["serder"]
                 if serder.said == self.said:
                     kin = cue["kin"]

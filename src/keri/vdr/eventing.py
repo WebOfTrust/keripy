@@ -1177,7 +1177,7 @@ class Tever:
                                          "".format(serder.ked))
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider)
-            self.cues.append(dict(kin="revoked", serder=serder))
+            self.cues.push(dict(kin="revoked", serder=serder))
 
         elif ilk in (Ilks.brv,):  # backer revoke
             if self.noBackers is True:
@@ -1193,7 +1193,7 @@ class Tever:
                                         baks=baks)
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, saider=saider, bigers=bigers)
-            self.cues.append(dict(kin="revoked", serder=serder))
+            self.cues.push(dict(kin="revoked", serder=serder))
 
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
