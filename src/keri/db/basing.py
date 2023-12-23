@@ -1309,7 +1309,69 @@ class Baser(dbing.LMDBer):
                 yield dmsg
 
 
-    def findAnchoringSealEvent(self, pre, seal):
+    def findAnchoringSealEvent(self, pre, seal, sn=0):
+        """
+        Search through a KEL for the event that contains a specific anchored
+        SealEvent type of provided seal but in dict form and is also fully
+        witnessed. Searchs from sn forward (default = 0).Searches all events in
+        KEL of pre including disputed and/or superseded events.
+        Returns the Serder of the first event with the anchored SealEvent seal,
+            None if not found
+
+
+        Parameters:
+            pre (bytes|str): identifier of the KEL to search
+            seal (dict): dict form of Seal of any type SealEvent to find in anchored
+                seals list of each event
+            sn (int): beginning sn to search
+
+        """
+        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
+            return None
+
+        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+
+        for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
+            srdr = serdering.SerderKERI(raw=evt.tobytes())
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == eventing.SealEvent._fields:
+                    eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
+
+    def findAnchoringSeal(self, pre, seal, sn=0):
+        """
+        Search through a KEL for the event that contains an anchored
+        Seal with same Seal type as provided seal but in dict form.
+        Searchs from sn forward (default = 0). Only searches last event at any
+        sn therefore does not search any disputed or superseded events.
+        Returns the Serder of the first event with the anchored Seal seal,
+            None if not found
+
+        Parameters:
+            pre (bytes|str): identifier of the KEL to search
+            seal (dict): dict form of Seal of any type to find in anchored
+                seals list of each event
+            sn (int): beginning sn to search
+
+        """
+        # create generic Seal namedtuple class using keys from provided seal dict
+        Seal = namedtuple('Seal', seal.keys())  # matching type
+
+        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
+            srdr = serdering.SerderKERI(raw=evt.tobytes())
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
+                    eseal = Seal(**eseal)  #convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
+
+
+    def findAnchoringSealEventClone(self, pre, seal):
         """
         Search through a KEL for the event that contains a specific anchored
         SealEvent type of provided seal but in dict form.
@@ -1348,7 +1410,7 @@ class Baser(dbing.LMDBer):
         return None
 
 
-    def findAnchoringSeal(self, pre, seal):
+    def findAnchoringSealClone(self, pre, seal):
         """
         Search through a KEL for the event that contains an anchored
         Seal with same Seal type as provided seal but in dict form.
@@ -1543,7 +1605,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for fn, dig in self.getKelIter(pre, sn=sn):
+        for dig in self.getKelIter(pre, sn=sn):
             try:
 
                 dgkey = dbing.dgKey(pre, dig)  # get message
@@ -1570,7 +1632,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for fn, dig in self.getKelLastIter(pre, sn=sn):
+        for dig in self.getKelLastIter(pre, sn=sn):
             try:
 
                 dgkey = dbing.dgKey(pre, dig)  # get message
@@ -2247,6 +2309,8 @@ class Baser(dbing.LMDBer):
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
+        db .kels values are digests used to lookup event in .evts sub DB
+
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
         db is opened as named sub db with dupsort=True
@@ -2269,6 +2333,8 @@ class Baser(dbing.LMDBer):
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
+        db .kels values are digests used to lookup event in .evts sub DB
+
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
         db is opened as named sub db with dupsort=True
@@ -2290,6 +2356,8 @@ class Baser(dbing.LMDBer):
         Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
+
+        db .kels values are digests used to lookup event in .evts sub DB
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
