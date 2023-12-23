@@ -21,6 +21,7 @@ need to call it
 
 import os
 import shutil
+from collections import namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
 import json
@@ -1181,6 +1182,7 @@ class Baser(dbing.LMDBer):
         if os.path.exists(copy.path):
             shutil.rmtree(copy.path)
 
+
     def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
@@ -1196,6 +1198,7 @@ class Baser(dbing.LMDBer):
             except Exception:
                 continue  # skip this event
             yield msg
+
 
     def cloneAllPreIter(self, key=b''):
         """
@@ -1214,6 +1217,7 @@ class Baser(dbing.LMDBer):
             except Exception:
                 continue  # skip this event
             yield msg
+
 
     def cloneEvtMsg(self, pre, fn, dig):
         """
@@ -1288,6 +1292,7 @@ class Baser(dbing.LMDBer):
         msg.extend(atc)
         return msg
 
+
     def cloneDelegation(self, kever):
         """
         Recursively clone delegation chain from AID of Kever if one exits.
@@ -1304,17 +1309,79 @@ class Baser(dbing.LMDBer):
                 yield dmsg
 
 
-    def findAnchoringSealEvent(self, pre, seal):
+    def findAnchoringSealEvent(self, pre, seal, sn=0):
         """
         Search through a KEL for the event that contains a specific anchored
-        SealEvent type seal in dict form.
+        SealEvent type of provided seal but in dict form and is also fully
+        witnessed. Searchs from sn forward (default = 0).Searches all events in
+        KEL of pre including disputed and/or superseded events.
+        Returns the Serder of the first event with the anchored SealEvent seal,
+            None if not found
+
+
+        Parameters:
+            pre (bytes|str): identifier of the KEL to search
+            seal (dict): dict form of Seal of any type SealEvent to find in anchored
+                seals list of each event
+            sn (int): beginning sn to search
+
+        """
+        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
+            return None
+
+        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+
+        for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
+            srdr = serdering.SerderKERI(raw=evt.tobytes())
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == eventing.SealEvent._fields:
+                    eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
+
+    def findAnchoringSeal(self, pre, seal, sn=0):
+        """
+        Search through a KEL for the event that contains an anchored
+        Seal with same Seal type as provided seal but in dict form.
+        Searchs from sn forward (default = 0). Only searches last event at any
+        sn therefore does not search any disputed or superseded events.
+        Returns the Serder of the first event with the anchored Seal seal,
+            None if not found
+
+        Parameters:
+            pre (bytes|str): identifier of the KEL to search
+            seal (dict): dict form of Seal of any type to find in anchored
+                seals list of each event
+            sn (int): beginning sn to search
+
+        """
+        # create generic Seal namedtuple class using keys from provided seal dict
+        Seal = namedtuple('Seal', seal.keys())  # matching type
+
+        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
+            srdr = serdering.SerderKERI(raw=evt.tobytes())
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
+                    eseal = Seal(**eseal)  #convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
+
+
+    def findAnchoringSealEventClone(self, pre, seal):
+        """
+        Search through a KEL for the event that contains a specific anchored
+        SealEvent type of provided seal but in dict form.
         Returns the Serder of the first event with the anchored SealEvent seal,
             None if not found
         Searchs from inception forward
 
         Parameters:
             pre is qb64 identifier of the KEL to search
-            seal is dict of SealEvent to find in anchored seals list of each event
+            seal is dict form of SealEvent to find in anchored seals list of each event
 
         """
         if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
@@ -1323,8 +1390,9 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
+        # getEvtPreIter getEvtLastPreIter
 
-        for evt in self.clonePreIter(pre=pre):
+        for evt in self.clonePreIter(pre=pre):  # all events including superseded
             srdr = serdering.SerderKERI(raw=evt)
             for eseal in srdr.seals or []:
                 if tuple(eseal.keys()) == eventing.SealEvent._fields:
@@ -1340,6 +1408,35 @@ class Baser(dbing.LMDBer):
                     #return srdr
 
         return None
+
+
+    def findAnchoringSealClone(self, pre, seal):
+        """
+        Search through a KEL for the event that contains an anchored
+        Seal with same Seal type as provided seal but in dict form.
+        Returns the Serder of the first event with the anchored Seal seal,
+            None if not found
+        Searchs from inception forward
+
+        Parameters:
+            pre is qb64 identifier of the KEL to search
+            seal is dict form of Seal of any type to find in anchored seals list of each event
+
+        """
+        # create generic Seal namedtuple class using keys from provided seal dict
+        Seal = namedtuple('Seal', seal.keys())  # matching type
+
+        # getEvtPreIter getEvtLastPreIter
+
+        for evt in self.clonePreIter(pre=pre):  # all events including superseded
+            srdr = serdering.SerderKERI(raw=evt)
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
+                    eseal = Seal(**eseal)  #convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
 
     def signingMembers(self, pre: str):
         """ Find signing members of a multisig group aid.
@@ -1484,6 +1581,7 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.evts, key)
 
+
     def delEvt(self, key):
         """
         Use dgKey()
@@ -1491,6 +1589,61 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.evts, key)
+
+
+    def getEvtPreIter(self, pre, sn=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+
+        Parameters:
+            pre (bytes|str): identifier prefix
+            sn (int): sequence number (default 0) to begin interation
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for dig in self.getKelIter(pre, sn=sn):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
+
+    def getEvtLastPreIter(self, pre, sn=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+
+        Parameters:
+            pre (bytes|str): identifier prefix
+            sn (int): sequence number (default 0) to begin interation
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for dig in self.getKelLastIter(pre, sn=sn):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
 
     def putFe(self, key, val):
         """
@@ -1558,6 +1711,7 @@ class Baser(dbing.LMDBer):
             fn is int fn to resume replay. Earliset is fn=0
         """
         return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
+
 
     def getFelItemAllPreIter(self, key=b''):
         """
@@ -2146,7 +2300,8 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVals(self.kels, key)
 
-    def getKelIter(self, pre):
+
+    def getKelIter(self, pre, sn=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers without gaps. Stops if
@@ -2154,39 +2309,47 @@ class Baser(dbing.LMDBer):
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
+        db .kels values are digests used to lookup event in .evts sub DB
+
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
         db is opened as named sub db with dupsort=True
 
         Parameters:
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre (bytes | str): of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            sn (int): initial sequence number to begin at
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsAllPreIter(self.kels, pre)
+        return self.getIoValsAllPreIter(self.kels, pre, on=sn)
 
-    def getKelBackIter(self, pre, fn):
+
+    def getKelBackIter(self, pre, sn=0):
         """
         Returns iterator of all dup vals in insertion order for all entries
         with same prefix across all sequence numbers without gaps in decreasing
-        order starting with first sequence number fn. Stops if encounters gap.
+        order starting with first sequence number sn. Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
+
+        db .kels values are digests used to lookup event in .evts sub DB
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
         db is opened as named sub db with dupsort=True
 
         Parameters:
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre (bytes | str): of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            sn (int):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsAllPreBackIter(self.kels, pre, fn)
+        return self.getIoValsAllPreBackIter(self.kels, pre, sn)
 
-    def getKelEstIter(self, pre):
+
+    def getKelLastIter(self, pre, sn=0):
         """
         Returns iterator of last one of dup vals at each key in insertion order
         for all entries with same prefix across all sequence numbers without gaps.
@@ -2194,17 +2357,21 @@ class Baser(dbing.LMDBer):
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
+        db .kels values are digests used to lookup event in .evts sub DB
+
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
         db is opened as named sub db with dupsort=True
 
         Parameters:
-            pre is bytes of itdentifier prefix prepended to sn in key
+            pre (bytes | str): of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
+            sn (int); sequence number to being iteration
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValLastAllPreIter(self.kels, pre)
+        return self.getIoValLastAllPreIter(self.kels, pre, on=sn)
+
 
     def putPses(self, key, vals):
         """

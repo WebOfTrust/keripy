@@ -2094,7 +2094,7 @@ class BaseHab:
         """
         while cues:  # iteratively process each cue in cues
             msgs = bytearray()
-            cue = cues.popleft()
+            cue = cues.pull() #cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
 
             if cueKin in ("receipt",):  # cue to receipt a received event from other pre
@@ -2132,6 +2132,19 @@ class BaseHab:
                 route = cue["route"]
                 msg = self.reply(data=data, route=route)
                 yield msg
+
+            # ToDo XXXX cue for kin = "query" various types of queries
+            #     (query witness, query delegation etc)
+            # ToDo XXXX cue for kin = "notice" new event
+            # ToDo XXXX cue for kin = "witness" to create witness receipt own is witness
+            # ToDo XXXX cue for kin = "noticeBadCloneFN"
+            # ToDo XXXX cue for kin = "approveDelegation" own is delegator
+
+            # ToDo XXXX cue for kin = "keyStateSaved"
+            # ToDo XXXX cue for kin = "psUnescrow"
+            # ToDo XXXX cue for kin = "stream"
+            # ToDo XXXX cue for kin = "invalid"
+
 
     def witnesser(self):
         return True

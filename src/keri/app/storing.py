@@ -220,7 +220,7 @@ class Respondant(doing.DoDoer):
 
         while True:
             while self.cues:  # iteratively process each cue in cues
-                cue = self.cues.popleft()
+                cue = self.cues.pull() # self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre

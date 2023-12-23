@@ -1876,7 +1876,7 @@ def test_fetchkeldel():
         for val in vals2:
             assert db.addKe(key, val) == True
 
-        vals = [bytes(val) for val in db.getKelEstIter(preb)]
+        vals = [bytes(val) for val in db.getKelLastIter(preb)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 
