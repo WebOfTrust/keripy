@@ -21,6 +21,7 @@ need to call it
 
 import os
 import shutil
+from collections import namedtuple
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
 import json
@@ -1181,6 +1182,7 @@ class Baser(dbing.LMDBer):
         if os.path.exists(copy.path):
             shutil.rmtree(copy.path)
 
+
     def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
@@ -1196,6 +1198,7 @@ class Baser(dbing.LMDBer):
             except Exception:
                 continue  # skip this event
             yield msg
+
 
     def cloneAllPreIter(self, key=b''):
         """
@@ -1214,6 +1217,7 @@ class Baser(dbing.LMDBer):
             except Exception:
                 continue  # skip this event
             yield msg
+
 
     def cloneEvtMsg(self, pre, fn, dig):
         """
@@ -1288,6 +1292,7 @@ class Baser(dbing.LMDBer):
         msg.extend(atc)
         return msg
 
+
     def cloneDelegation(self, kever):
         """
         Recursively clone delegation chain from AID of Kever if one exits.
@@ -1307,14 +1312,14 @@ class Baser(dbing.LMDBer):
     def findAnchoringSealEvent(self, pre, seal):
         """
         Search through a KEL for the event that contains a specific anchored
-        SealEvent type seal in dict form.
+        SealEvent type of provided seal but in dict form.
         Returns the Serder of the first event with the anchored SealEvent seal,
             None if not found
         Searchs from inception forward
 
         Parameters:
             pre is qb64 identifier of the KEL to search
-            seal is dict of SealEvent to find in anchored seals list of each event
+            seal is dict form of SealEvent to find in anchored seals list of each event
 
         """
         if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
@@ -1323,8 +1328,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-
-        for evt in self.clonePreIter(pre=pre):
+        for evt in self.clonePreIter(pre=pre):  # all events including superseded
             srdr = serdering.SerderKERI(raw=evt)
             for eseal in srdr.seals or []:
                 if tuple(eseal.keys()) == eventing.SealEvent._fields:
@@ -1340,6 +1344,33 @@ class Baser(dbing.LMDBer):
                     #return srdr
 
         return None
+
+
+    def findAnchoringSeal(self, pre, seal):
+        """
+        Search through a KEL for the event that contains an anchored
+        Seal with same Seal type as provided seal but in dict form.
+        Returns the Serder of the first event with the anchored Seal seal,
+            None if not found
+        Searchs from inception forward
+
+        Parameters:
+            pre is qb64 identifier of the KEL to search
+            seal is dict form of Seal of any type to find in anchored seals list of each event
+
+        """
+        # create generic Seal namedtuple class using keys from provided seal dict
+        Seal = namedtuple('Seal', seal.keys())  # matching type
+
+        for evt in self.clonePreIter(pre=pre):  # all events including superseded
+            srdr = serdering.SerderKERI(raw=evt)
+            for eseal in srdr.seals or []:
+                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
+                    eseal = Seal(**eseal)  #convert to namedtuple
+                    if seal == eseal and self.fullyWitnessed(srdr):
+                        return srdr
+        return None
+
 
     def signingMembers(self, pre: str):
         """ Find signing members of a multisig group aid.
@@ -1492,6 +1523,53 @@ class Baser(dbing.LMDBer):
         """
         return self.delVal(self.evts, key)
 
+
+    def getEvtPreIter(self, pre, sn=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for fn, dig in self.getKelIter(pre):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
+
+    def getEvtLastPreIter(self, pre, sn=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for fn, dig in self.getKelLastIter(pre):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
+
     def putFe(self, key, val):
         """
         Use fnKey()
@@ -1558,6 +1636,7 @@ class Baser(dbing.LMDBer):
             fn is int fn to resume replay. Earliset is fn=0
         """
         return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
+
 
     def getFelItemAllPreIter(self, key=b''):
         """
@@ -2130,6 +2209,52 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValLast(self.kels, key)
 
+
+    def getEvtPreIter(self, pre, on=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for fn, dig in self.getKelIter(pre):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
+
+    def getEvtLastPreIter(self, pre, on=0):
+        """
+        Returns iterator of event messages without attachments
+        in sn order from the KEL of identifier prefix pre.
+        Essentially a replay of all event messages without attachments
+        for each sn from the KEL of pre including superseded duplicates
+        """
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for fn, dig in self.getKelLastIter(pre):
+            try:
+
+                dgkey = dbing.dgKey(pre, dig)  # get message
+                if not (raw := self.getEvt(key=dgkey)):
+                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+
+            except Exception:
+                continue  # skip this event
+
+            yield raw  # event message
+
     def cntKes(self, key):
         """
         Use snKey()
@@ -2145,6 +2270,7 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.kels, key)
+
 
     def getKelIter(self, pre):
         """
@@ -2166,6 +2292,7 @@ class Baser(dbing.LMDBer):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAllPreIter(self.kels, pre)
 
+
     def getKelBackIter(self, pre, fn):
         """
         Returns iterator of all dup vals in insertion order for all entries
@@ -2186,7 +2313,8 @@ class Baser(dbing.LMDBer):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAllPreBackIter(self.kels, pre, fn)
 
-    def getKelEstIter(self, pre):
+
+    def getKelLastIter(self, pre):
         """
         Returns iterator of last one of dup vals at each key in insertion order
         for all entries with same prefix across all sequence numbers without gaps.
@@ -2205,6 +2333,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValLastAllPreIter(self.kels, pre)
+
 
     def putPses(self, key, vals):
         """

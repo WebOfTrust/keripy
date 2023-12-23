@@ -3168,7 +3168,7 @@ def test_recovery():
         assert db_digs[7] == event_digs[6]
         assert db_digs[6] == event_digs[7]
 
-        db_est_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelEstIter(pre)]
+        db_est_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelLastIter(pre)]
         assert len(db_est_digs) == 7
         assert db_est_digs[0:5] == event_digs[0:5]
         assert db_est_digs[5:7] == event_digs[7:9]
@@ -3184,7 +3184,7 @@ def test_recovery():
 
         y_db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
         assert db_digs == y_db_digs
-        y_db_est_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelEstIter(pre)]
+        y_db_est_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelLastIter(pre)]
         assert db_est_digs == y_db_est_digs
 
     assert not os.path.exists(kevery.db.path)
