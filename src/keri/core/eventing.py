@@ -4711,8 +4711,8 @@ class Kevery:
                         else:
                             delpre = eserder.ked["di"]
 
-                        anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                        srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=anchor)
+                        seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                        srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                         if srdr is not None:
                             delseqner = coring.Seqner(sn=srdr.sn)
                             delsaider = coring.Saider(qb64=srdr.said)

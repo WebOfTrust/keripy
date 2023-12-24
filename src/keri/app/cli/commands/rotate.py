@@ -142,7 +142,7 @@ class RotateDoer(doing.DoDoer):
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Boatswain(hby=self.hby)
+        self.swain = delegating.Sealer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
         self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
@@ -194,7 +194,7 @@ class RotateDoer(doing.DoDoer):
             else:
                 for wit in self.adds:
                     self.mbx.addPoller(hab, witness=wit)
-                    
+
                 print("Waiting for witness receipts...")
                 witDoer = agenting.WitnessReceiptor(hby=self.hby)
                 self.extend(doers=[witDoer])

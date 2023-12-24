@@ -27,7 +27,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         dgkey = dbing.dgKey(ser.preb, ser.saidb)
         wigs = hab.db.getWigs(dgkey)
         dgkey = dbing.dgKey(ser.preb, kever.lastEst.d)
-        anchor = hab.db.getAes(dgkey)
+        seal = hab.db.getAes(dgkey)
 
         print(f"Alias: \t{hab.name}")
         print("{}: {}".format(label, pre))
@@ -35,7 +35,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         if kever.delegated:
             print("Delegated Identifier")
             sys.stdout.write(f"    Delegator:  {kever.delegator} ")
-            if anchor:
+            if seal:
                 print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
             else:
                 print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")

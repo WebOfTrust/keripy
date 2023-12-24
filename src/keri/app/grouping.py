@@ -25,7 +25,7 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, swain=None, proxy=None, **kwa):
 
         self.hby = hby
-        self.swain = swain if swain is not None else delegating.Boatswain(hby=self.hby)
+        self.swain = swain if swain is not None else delegating.Sealer(hby=self.hby)
         self.proxy = proxy
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -81,7 +81,7 @@ class Counselor(doing.DoDoer):
            1. Sending local event with sig to other participants
            2. Waiting for signature threshold to be met.
            3. If elected and delegated identifier, send complete event to delegator
-           4. If delegated, wait for delegator's anchor
+           4. If delegated, wait for delegator's anchored seal
            5. If elected, send event to witnesses and collect receipts.
            6. Otherwise, wait for fully receipted event
 
