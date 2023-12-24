@@ -19,7 +19,7 @@ from ..peer import exchanging
 logger = help.ogler.getLogger()
 
 
-class Boatswain(doing.DoDoer):
+class Sealer(doing.DoDoer):
     """
     Sends messages to Delegator of an identifier and wait for the anchoring event to
     be processed to ensure the inception or rotation event has been approved by the delegator.
@@ -46,7 +46,7 @@ class Boatswain(doing.DoDoer):
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.proxy = proxy
 
-        super(Boatswain, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
+        super(Sealer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)],
                                         **kwa)
 
     def delegation(self, pre, sn=None, proxy=None):
@@ -87,8 +87,8 @@ class Boatswain(doing.DoDoer):
         del evt[:srdr.size]
         self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
-        anchor = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
-        self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=anchor)
+        seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
+        self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal)
 
         self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
@@ -119,7 +119,7 @@ class Boatswain(doing.DoDoer):
            1. Sending local event with sig to other participants
            2. Waiting for signature threshold to be met.
            3. If elected and delegated identifier, send complete event to delegator
-           4. If delegated, wait for delegator's anchor
+           4. If delegated, wait for delegator's anchored seal
            5. If elected, send event to witnesses and collect receipts.
            6. Otherwise, wait for fully receipted event
 
@@ -153,8 +153,8 @@ class Boatswain(doing.DoDoer):
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delegator]
 
-            anchor = dict(i=serder.pre, s=serder.snh, d=serder.said)
-            if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=anchor):
+            seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
+            if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=seal):
                 seqner = coring.Seqner(sn=dserder.sn)
                 couple = seqner.qb64b + dserder.saidb
                 dgkey = dbing.dgKey(kever.prefixer.qb64b, kever.serder.saidb)

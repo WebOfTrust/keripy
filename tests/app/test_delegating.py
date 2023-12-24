@@ -19,7 +19,7 @@ def test_boatswain(seeder):
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)
-        bts = delegating.Boatswain(hby=delHby)
+        bts = delegating.Sealer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])

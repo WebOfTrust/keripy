@@ -438,7 +438,7 @@ def state(pre,
         eilk (str): message type (ilk) oflatest event
         br (list): witness remove list (cuts)
         ba (list): witness add list (adds)
-        a (dict): key event anchor data
+        a (dict): key event anchored seal data
         dts (str) ISO 8601 formated current datetime
         toad (int): int of witness threshold
         wits (list): list of witness prefixes qb64

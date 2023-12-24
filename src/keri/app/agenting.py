@@ -515,7 +515,7 @@ class WitnessInquisitor(doing.DoDoer):
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
             sn (int): optional specific sequence number to query for
-            anchor (Seal) anchor to search for
+            anchor (Seal): anchored Seal to search for
             wits (list) witnesses to query
 
         Returns:
