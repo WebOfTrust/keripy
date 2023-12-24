@@ -12,7 +12,7 @@ from keri.core import eventing, parsing, coring
 from keri.db import dbing
 
 
-def test_boatswain(seeder):
+def test_sealer(seeder):
     with habbing.openHby(name="wes", salt=coring.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=coring.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             habbing.openHby(name="del", salt=coring.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
@@ -33,7 +33,7 @@ def test_boatswain(seeder):
             bts=bts
         )
 
-        doers = wesDoers + [witDoer, bts, doing.doify(boatswain_test_do, **opts)]
+        doers = wesDoers + [witDoer, bts, doing.doify(sealer_test_do, **opts)]
 
         limit = 1.0
         tock = 0.03125
@@ -60,7 +60,7 @@ def test_boatswain(seeder):
         assert bytes(delHby.db.getAes(dgkey)) == couple
 
 
-def boatswain_test_do(tymth=None, tock=0.0, **opts):
+def sealer_test_do(tymth=None, tock=0.0, **opts):
     yield tock  # enter context
 
     wesHab = opts["wesHab"]
