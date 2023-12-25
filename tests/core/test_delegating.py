@@ -292,8 +292,7 @@ def test_delegation_supersede():
          habbing.openHby(name="wan", base="test") as wanHby, \
          habbing.openHby(name="tee", base="test") as teeHby:
 
-        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)  # nonlocal
-        torKvy = Kevery(db=torHby.db, lax=False, local=False)  # nonlocal
+
 
         # Create Wan the witness
         wanHab = wanHby.makeHab(name="wan", transferable=False)
@@ -308,6 +307,9 @@ def test_delegation_supersede():
         torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
         torIcp = torHab.makeOwnEvent(sn=0)
+
+        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)  # remote events
+        torKvy = Kevery(db=torHby.db, lax=False, local=False)  # remote events
 
 
     """
@@ -324,7 +326,32 @@ def test_delegation_supersede():
             habbing.openHby(name="wid", base="test", salt=widSalt) as widHby,
             habbing.openHby(name="bot", base="test", salt=botSalt) as botHby,
             habbing.openHby(name="wot", base="test", salt=wotSalt) as wotHby):
-        pass
+
+        # Create witness wop and top
+        wopHab = wopHby.makeHab(name="wop", transferable=False)  # witness nontrans
+        assert wopHab.pre == 'BIDO3FhB5smF6WsTJkRRAao_wEttcbsBnDCmfQ4_f1b_'
+        wopRemKvy = eventing.Kevery(db=wopHby.db, lax=False, local=False)  # for remote events
+
+        topHab = topHby.makeHab(name="top", icount=1, isith='1',  # single sig
+                                ncount=1, nsith='1', # single next
+                                wits=[wopHab.pre], toad=1)   # one witness
+        # makehab also enters inception event into its own kel
+
+        assert topHab.pre == 'EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE7ey91KE'
+        topIcp = topHab.makeOwnInception()
+        assert topIcp == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
+                        b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
+                        b'7ey91KE","s":"0","kt":"1","k":["DPJVPYS9efLUHDOqxwG6pxISZSRACgNf'
+                        b'uZm7qK7DzQKD"],"nt":"1","n":["EN8AnwKGnCOAyP2FRXuQMyMjbRsDjRpDd_'
+                        b'_ZK2KuL0ID"],"bt":"1","b":["BIDO3FhB5smF6WsTJkRRAao_wEttcbsBnDCm'
+                        b'fQ4_f1b_"],"c":[],"a":[]}-AABAADPMCL6P4DYi3qvgR4v1UcrCYMjnmRx-xJ'
+                        b'meOfA8b8gdHZxZvVgpgLrAxFYwSEAtdhGT8LOPdGpTqxWSocCmXkH')
+
+        # let wop witness top's inception
+        # wop first process as remote
+        # wop generate witness receipt
+        # top process wop receipt
+
 
 
 

@@ -1493,8 +1493,10 @@ class BaseHab:
         indexed receipt signatures if key state of serder.pre shows that own pre
         is a current witness of event in serder
 
-        Before calling this must check that serder being witnessed has been
-        accepted as valid event into controller's KEL
+        ToDo XXXX add parameter to force check that serder as been accepted
+        as valid. Otherwise must assume that before calling this that serder
+        being witnessed has been accepted as valid event into this hab
+        controller's KEL
 
         """
         if self.kever.prefixer.transferable:  # not non-transferable prefix
