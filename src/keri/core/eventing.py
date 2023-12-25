@@ -3150,6 +3150,15 @@ class Kevery:
                               check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
+                # At this point  the inceptive event (icp or dip) given by serder
+                # together with its attachments has been accepted as valid with finality.
+                # Events that don't get to here have either been dropped as
+                # invalid by raising an error or have been escrowed as not
+                # yet complete enough to decide their validity, i.e. are
+                # missing signatures, or witness receipts or delegations.
+                # Any actions that should be triggered as a result of final
+                # acceptance should follow from here.
+
                 if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                     # create cue for receipt  controller or watcher
                     #  receipt of actual type is dependent on own type of identifier
@@ -3157,8 +3166,10 @@ class Kevery:
                 elif not self.direct:  # notice of new  event
                     self.cues.push(dict(kin="notice", serder=serder))
 
-                if kever.locallyWitnessed():
-                    # ToDo XXXX  need to cue task here kin = "witness"
+                if kever.locallyWitnessed():  #
+                    # ToDo XXXX  need to cue task here kin = "witness" and process
+                    # cued witness and then combine with reciept above so only
+                    # one receipt is generated not two
                     self.cues.push(dict(kin="witness", serder=serder))
 
                 if kever.locallyOwned(kever.delegator):  # delegator may be None
@@ -3230,6 +3241,16 @@ class Kevery:
                                  dater=dater if self.cloned else None,
                                  check=self.check)
 
+                    # At this point the non-inceptive event (rot, drt, or ixn)
+                    # given by serder together with its attachments has been
+                    # accepted as valid with finality.
+                    # Events that don't get to here have either been dropped as
+                    # invalid by raising an error or have been escrowed as not
+                    # yet complete enough to decide their validity, i.e. are
+                    # missing signatures, or witness receipts or delegations.
+                    # Any actions that should be triggered as a result of final
+                    # acceptance should follow from here.
+
                     if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                         # create cue for receipt  controller or watcher
                         #  receipt of actual type is dependent on own type of identifier
@@ -3238,7 +3259,9 @@ class Kevery:
                         self.cues.push(dict(kin="notice", serder=serder))
 
                     if kever.locallyWitnessed():
-                        # ToDo XXXX  need to cue task here kin = "witness"
+                        # ToDo XXXX  need to cue task here kin = "witness" and process
+                        # cued witness and then combine with reciept above so only
+                        # one receipt is generated not two
                         self.cues.push(dict(kin="witness", serder=serder))
 
                     if kever.locallyOwned(kever.delegator):  # delegator may be None

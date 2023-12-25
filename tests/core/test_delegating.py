@@ -6,7 +6,7 @@ tests delegation primaily from keri.core.eventing
 import os
 
 from keri import help
-from keri.app import keeping
+from keri.app import keeping, habbing
 from keri.core import coring, eventing, parsing
 from keri.db import dbing, basing
 
@@ -292,8 +292,8 @@ def test_delegation_supersede():
          habbing.openHby(name="wan", base="test") as wanHby, \
          habbing.openHby(name="tee", base="test") as teeHby:
 
-        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
-        torKvy = Kevery(db=torHby.db, lax=False, local=False)
+        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)  # nonlocal
+        torKvy = Kevery(db=torHby.db, lax=False, local=False)  # nonlocal
 
         # Create Wan the witness
         wanHab = wanHby.makeHab(name="wan", transferable=False)
@@ -311,15 +311,27 @@ def test_delegation_supersede():
 
 
     """
-
-
     topSalt = coring.Salter(raw=b'0123456789abcdef').qb64
+    wopSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     midSalt = coring.Salter(raw=b'abcdef0123456789').qb64
+    widSalt = coring.Salter(raw=b'abcdef0123456789').qb64
     botSalt = coring.Salter(raw=b'zyxwvutsrponmlkj').qb64
+    wotSalt = coring.Salter(raw=b'zyxwvutsrponmlkj').qb64
 
-    with (basing.openDB(name="bob") as bobDB, \
-            keeping.openKS(name="bob") as bobKS, \
-            basing.openDB(name="del") as delDB, \
+    with (habbing.openHby(name="top", base="test", salt=topSalt) as topHby,
+            habbing.openHby(name="wop", base="test", salt=wopSalt) as wopHby,
+            habbing.openHby(name="mid", base="test", salt=midSalt) as midHby,
+            habbing.openHby(name="wid", base="test", salt=widSalt) as widHby,
+            habbing.openHby(name="bot", base="test", salt=botSalt) as botHby,
+            habbing.openHby(name="wot", base="test", salt=wotSalt) as wotHby):
+        pass
+
+
+
+
+    with (basing.openDB(name="bob") as bobDB,
+            keeping.openKS(name="bob") as bobKS,
+            basing.openDB(name="del") as delDB,
             keeping.openKS(name="del") as delKS):
 
         # Init key pair managers
