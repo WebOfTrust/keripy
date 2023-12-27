@@ -506,7 +506,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield self.tock
 
-    def query(self, pre, r="logs", sn=0, src=None, hab=None, anchor=None, wits=None, **kwa):
+    def query(self, pre, r="logs", sn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
         """ Create, sign and return a `qry` message against the attester for the prefix
 
         Parameters:
@@ -514,7 +514,7 @@ class WitnessInquisitor(doing.DoDoer):
             hab (Hab): Hab to use instead of src if provided
             pre (str): qb64 identifier prefix being queried for
             r (str): query route
-            sn (int): optional specific sequence number to query for
+            sn (str): optional specific hex str of sequence number to query for
             anchor (Seal): anchored Seal to search for
             wits (list) witnesses to query
 

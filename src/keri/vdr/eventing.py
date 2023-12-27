@@ -334,7 +334,7 @@ def backerIssue(
     isn = 0
     ilk = Ilks.bis
 
-    seal = SealEvent(regk, regsn, regd)
+    seal = SealEvent(regk, "{:x}".format(regsn), regd)
 
     ked = dict(v=vs,  # version string
                t=ilk,
@@ -389,7 +389,7 @@ def backerRevoke(
     isn = 1
     ilk = Ilks.brv
 
-    seal = SealEvent(regk, regsn, regd)
+    seal = SealEvent(regk, "{:x}".format(regsn), regd)
 
     ked = dict(v=vs,
                t=ilk,
@@ -1567,7 +1567,6 @@ class Tevery:
         regk = self.registryKey(serder)
         pre = serder.pre
         ked = serder.ked
-        said = serder.said
         sn = ked["s"]
         ilk = ked["t"]
 
@@ -1908,7 +1907,7 @@ class Tevery:
         ra = vsr.ra
 
         if 's' in ra:
-            regsn = ra["s"]
+            regsn = int(ra["s"], 16)
         else:
             regsn = 0
 

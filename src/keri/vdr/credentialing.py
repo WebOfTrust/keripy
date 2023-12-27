@@ -630,6 +630,16 @@ class Registrar(doing.DoDoer):
         return ixn, prefixer, seqner, saider
 
     def complete(self, pre, sn=0):
+        """ Determine if registry event (inception, issuance, revocation, etc.) is finished validation
+
+        Parameters:
+            pre (str): qb64 identifier of registry event
+            sn (int): integer sequence number of regsitry event
+
+        Returns:
+            bool: True means event has completed and is commited to database
+        """
+
         seqner = coring.Seqner(sn=sn)
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None and self.witPub.sent(said=pre)
