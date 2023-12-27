@@ -1693,12 +1693,6 @@ class Kever:
                                             ilk, serder.ked))
         self.ilk = ilk
 
-        labels = DIP_LABELS if ilk == Ilks.dip else ICP_LABELS
-        for k in labels:
-            if k not in serder.ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, ilk, serder.ked))
-
         self.incept(serder=serder)  # do major event validation and state setting
 
         self.config(serder=serder, estOnly=estOnly)  # assign config traits perms
@@ -2319,7 +2313,7 @@ class Kever:
         if not self.locallyOwned(serder.pre):  # not in self.prefixes
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
-                     not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
+                     not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness  not self.locallyWitnessed(serder)
                 # validate that event is fully witnessed
 
                 if wits:
@@ -3300,6 +3294,7 @@ class Kevery:
                         self.escrowLDEvent(serder=serder, sigers=sigers)
                         raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
+
     def processReceiptWitness(self, serder, wigers):
         """
         Process one witness receipt serder with attached witness sigers
@@ -3372,7 +3367,7 @@ class Kevery:
 
     def processReceipt(self, serder, cigars):
         """
-        Process one receipt serder with attached cigars
+        Process one receipt serder with attached cigars (non-witness receipts)
 
         Parameters:
             serder is SerderKERI instance of serialized receipt message not receipted message
@@ -3426,18 +3421,19 @@ class Kevery:
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
                     wits = [wit.qb64 for wit in self.fetchWitnessState(pre, sn)]
                     rpre = cigar.verfer.qb64  # prefix of receiptor
-                    if rpre in wits:  # its a witness receipt
+                    if rpre in wits:  # its a witness receipt write in .wigs
                         index = wits.index(rpre)
                         # create witness indexed signature
                         wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
                         self.db.addWig(key=dgkey, val=wiger.qb64b)  # write to db
-                    else:  # write receipt couple to database
+                    else:  # not witness rect write receipt couple to database .rcts
                         couple = cigar.verfer.qb64b + cigar.qb64b
                         self.db.addRct(key=dgkey, val=couple)
 
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
 
     def processReceiptCouples(self, serder, cigars, firner=None):
         """

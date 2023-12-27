@@ -542,8 +542,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .wigs is named sub DB of indexed witness signatures of event
-            Witnesses always have nontransferable indetifier prefixes.
+        .wigs is named sub DB of indexed witness signatures of event that may
+            come directly or derived from a witness receipt message.
+            Witnesses always have nontransferable identifier prefixes.
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
             dgKey
@@ -551,7 +552,9 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couple is concatenation of fully qualified items.
+            signers. Used to manage out of order events such as escrowing
+            receipt couple until event receipted shows up.
+            Each couple is concatenation of fully qualified items.
             These are: non-transferale prefix plus non-indexed event signature
             by that prefix.
             dgKey
