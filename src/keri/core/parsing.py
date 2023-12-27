@@ -336,7 +336,8 @@ class Parser:
 
             yield cigar
 
-    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
+              exc=None, rvy=None, vry=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -379,7 +380,8 @@ class Parser:
             except StopIteration:
                 break
 
-    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None,
+                 exc=None, rvy=None, vry=None):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -420,7 +422,8 @@ class Parser:
             except StopIteration:
                 break
 
-    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
+                    tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -498,7 +501,8 @@ class Parser:
 
         return True
 
-    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None,
+                     tvy=None, exc=None, rvy=None, vry=None):
         """
         Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
@@ -576,7 +580,8 @@ class Parser:
 
         return done
 
-    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None, rvy=None, vry=None):
+    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None,
+                 exc=None, rvy=None, vry=None):
         """
         Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply.

@@ -327,8 +327,10 @@ def test_delegation_supersede():
             habbing.openHby(name="bot", base="test", salt=botSalt) as botHby,
             habbing.openHby(name="wot", base="test", salt=wotSalt) as wotHby):
 
-        # Create witness wop and top
+        # Create witness wop and controller top
         wopHab = wopHby.makeHab(name="wop", transferable=False)  # witness nontrans
+        # makehab also enters inception event into its own kel.
+        # Otherwise failed make raises exception ConfigurationError
         assert wopHab.pre == 'BIDO3FhB5smF6WsTJkRRAao_wEttcbsBnDCmfQ4_f1b_'
         wopRemKvy = eventing.Kevery(db=wopHby.db, lax=False, local=False)  # for remote events
 
@@ -336,10 +338,14 @@ def test_delegation_supersede():
                                 ncount=1, nsith='1', # single next
                                 wits=[wopHab.pre], toad=1)   # one witness
         # makehab also enters inception event into its own kel
-
+        # Otherwise failed make raises exception ConfigurationError
         assert topHab.pre == 'EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE7ey91KE'
-        topIcp = topHab.makeOwnInception()
-        assert topIcp == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
+        topRemKvy = eventing.Kevery(db=topHby.db, lax=False, local=False)  # for remote events
+
+        # be witness to controller's inception
+        # first make inception
+        stream = topHab.makeOwnInception()
+        assert stream == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
                         b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
                         b'7ey91KE","s":"0","kt":"1","k":["DPJVPYS9efLUHDOqxwG6pxISZSRACgNf'
                         b'uZm7qK7DzQKD"],"nt":"1","n":["EN8AnwKGnCOAyP2FRXuQMyMjbRsDjRpDd_'
@@ -347,10 +353,113 @@ def test_delegation_supersede():
                         b'fQ4_f1b_"],"c":[],"a":[]}-AABAADPMCL6P4DYi3qvgR4v1UcrCYMjnmRx-xJ'
                         b'meOfA8b8gdHZxZvVgpgLrAxFYwSEAtdhGT8LOPdGpTqxWSocCmXkH')
 
-        # let wop witness top's inception
-        # wop first process as remote
-        # wop generate witness receipt
-        # top process wop receipt
+        # add test fail process as remote since since witness of controller
+
+        # first process as local since witness
+        wopHab.psr.parse(ims=stream)  # now have controller's inception in  db
+        assert topHab.pre in wopHab.kevers  # success
+
+        serder = wopHab.kevers[topHab.pre].serder
+        # generate witness receipt and process
+        receipt = wopHab.witness(serder=serder)  # now has fully witnessd controller icp
+        count = wopHab.db.cntWigs(dbing.dgKey(topHab.pre, serder.said))
+        assert count >= 1
+
+        assert receipt == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
+                    b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
+                    b'7ey91KE","s":"0"}-VAX-BABAACf4sllk4USRirj3xNlnFgDcbWHsAi6kOigNHr'
+                    b'Ddbde06NhDELtWTeJOcz7T_rru_rpd6Uov4IN_0rthtMbxgcI')
+
+        # add test fail process as remote since own witness
+
+        # process receipt as local since own witness receipt.
+        topHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
+        count = topHab.db.cntWigs(dbing.dgKey(topHab.pre, serder.said))
+        assert count >= 1
+
+        # Create witness wid and delegated controller mid
+        widHab = widHby.makeHab(name="wid", transferable=False)  # witness nontrans
+        # makehab also enters inception event into its own kel.
+        # Otherwise failed make raises exception ConfigurationError
+        assert widHab.pre == 'BCI95exU-RepxQ0HmGcp7USLMCPxrXKzMc1DXqfRnikP'
+        widRemKvy = eventing.Kevery(db=widHby.db, lax=False, local=False)  # for remote events
+
+        midHab = midHby.makeHab(name="mid", icount=1, isith='1',  # single sig
+                                ncount=1, nsith='1', # single next
+                                wits=[widHab.pre], toad=1,   # one witness
+                                delpre=topHab.pre)  # delegated
+        # makehab also enters inception event into its own kel
+        # Otherwise failed make raises exception ConfigurationError
+        assert midHab.pre == 'EEaTQhI7QGM-usOJtpKM9L0yQjGiBYJC3tq905aC8am4'
+        assert midHab.delpre == topHab.pre
+        midRemKvy = eventing.Kevery(db=midHby.db, lax=False, local=False)  # for remote events
+
+        # be witness to controller's inception.
+        # first  make inception
+        stream = midHab.makeOwnInception()
+
+        # add test fail process as remote since since witness of controller
+
+        #first process as local since witness
+        widHab.psr.parse(ims=stream)  # now have controller's inception in db
+        assert midHab.pre in widHab.kevers  # success
+
+        serder = widHab.kevers[midHab.pre].serder
+        # generate witness receipt and process
+        receipt = widHab.witness(serder=serder)  # now has fully witnessed controller icp
+        count = widHab.db.cntWigs(dbing.dgKey(midHab.pre, serder.said))
+        assert count >= 1
+
+        # add test fail process as remote since own witness
+
+        # top process wop receipt as local since own witness receipt.
+        midHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
+        count = midHab.db.cntWigs(dbing.dgKey(midHab.pre, serder.said))
+        assert count >= 1
+
+        # Create witness wot and controller bot
+        wotHab = widHby.makeHab(name="wot", transferable=False)  # witness nontrans
+        # makehab also enters inception event into its own kel.
+        # Otherwise failed make raises exception ConfigurationError
+        assert wotHab.pre == 'BDChA_O6twrlHcXKf7xu1xYee__nZxDbBa0W_XznpLQH'
+        wotRemKvy = eventing.Kevery(db=wotHby.db, lax=False, local=False)  # for remote events
+
+        botHab = botHby.makeHab(name="bot", icount=1, isith='1',  # single sig
+                                ncount=1, nsith='1', # single next
+                                wits=[wotHab.pre], toad=1,  # one witness
+                                delpre=midHab.pre)  # delegated
+        # makehab also enters inception event into its own kel
+        # Otherwise failed make raises exception ConfigurationError
+        assert botHab.pre == 'EPtHqQJwlEj2sM0e2WslvwSsAsxAflmn7JIabs-LBqJC'
+        assert botHab.delpre == midHab.pre
+        botRemKvy = eventing.Kevery(db=botHby.db, lax=False, local=False)  # for remote events
+
+        # be witness to controller's inception.
+        # first  make inception
+        stream = botHab.makeOwnInception()
+
+        # add test fail process as remote since since witness of controller
+
+        #first process as local since witness
+        wotHab.psr.parse(ims=stream)  # now have controller inception in  db
+        assert botHab.pre in wotHab.kevers  # success
+
+        serder = wotHab.kevers[botHab.pre].serder
+        # generate witness receipt and process
+        receipt = wotHab.witness(serder=serder)  # now has fully witnessed controller icp
+        count = wotHab.db.cntWigs(dbing.dgKey(botHab.pre, serder.said))
+        assert count >= 1
+
+        # add test fail process as remote since own witness
+
+        # top process wop receipt as local since own witness receipt.
+        botHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
+        count = botHab.db.cntWigs(dbing.dgKey(botHab.pre, serder.said))
+        assert count >= 1
+
+
+
+        """End Test"""
 
 
 
