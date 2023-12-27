@@ -1400,7 +1400,7 @@ class BaseHab:
                 seal = eventing.SealLast(i=kever.prefixer.qb64)
             else:
                 seal = eventing.SealEvent(i=kever.prefixer.qb64,
-                                          s=hex(kever.lastEst.s),
+                                          s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
 
             sigers = self.sign(ser=serder.raw,

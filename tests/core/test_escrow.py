@@ -1261,7 +1261,7 @@ def test_unverified_trans_receipt_escrow():
         # create receipt(s) of rotation message with rotation message of receipter
         # create chit receipt(s) of interaction message
         seal = eventing.SealEvent(i=rpre,
-                                  s= rsrdr.ked["s"],
+                                  s=rsrdr.ked["s"],
                                   d=rsrdr.said)
         reserder = eventing.receipt(pre=pre, sn=2, said=rotdig)
         # sign event not receipt
