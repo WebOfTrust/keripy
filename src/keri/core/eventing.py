@@ -2313,7 +2313,8 @@ class Kever:
         if not self.locallyOwned(serder.pre):  # not in self.prefixes
             if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
                     (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
-                     not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness  not self.locallyWitnessed(serder)
+                     not (oset(self.prefixes) & oset(wits))) or # own prefix is not a witness  not self.locallyWitnessed(serder)
+                    (self.local and self.locallyOwned(delegator))):  # local delegator needs to be witnessed
                 # validate that event is fully witnessed
 
                 if wits:
@@ -2412,7 +2413,58 @@ class Kever:
         Returns:
             (str | None): qb64 delegator prefix or None if not delegated
 
-        Superseding Recovery
+        Process Logic:
+            A delegative event is processed differently for each of fourt different
+            parties, namely, controller of event, witness to controller of event,
+            delegator of event , and validator of event that is not controller,
+            witness or delegator. Events are processed as either local (protected)
+            or remote. A local event may assume that the event only came via a
+            protected transmission path. This might be because the event is
+            functions locally on a device under the supervision of the controller
+            or was received via some protected channel using some form of MFA.
+            A remote event is received in an unprotected manner. The purpose of
+            local and remote is to allow increased security on local events where
+            a threshold structure is imposed.
+
+            A witness pool may act a threshold structure for enchanced security
+            when each witness only accepts local events that are protected
+            by a unique authentication factor thereby making the controller's
+            signature(s) the first factor and the set of unique witness factors
+            a secondary threshold factor. An attacker therefore has to compromise
+            not merely the controller's private key(s) but also the unique second factor
+            on each of a threshold satisfycing number of witnesses.
+
+            Likewise a delegator may act as a threshold structure for enhanced security
+            when the delegator only accepts local events for delegation that are
+            protected by a unique authentication factor thereby making the
+            controller's signatures the first factor, a threshold satisfycing
+            number of unique witness factors the second layer of factors, and
+            the delegator's unique authentication factor as the third factor.
+            An attacker therefore has to compromise not merely the controller's
+            private key(s) but also the unique second factor
+            on each of a threshold satisfycing number of witnesses and the unique
+            third factor for the delegator.
+
+            Controller as delegatee must accept its own delegated event prior
+            to full witnessing or delegator approval (anchored seal) by signing the
+            event. This means a local (protected) event may be accepted into
+            controller's KEL when fully signed by controller.
+
+            Witness must accept a controller's event it witnesses prior to
+            full witnessing or delegator approval.
+            This means a local (protected) event may  accepted into witness' KEL
+            when fully signed by controller.
+
+            Delegator must accept a delegated event prior to it anchoring
+            a seal of the event in its KEL. The delegator must not
+            commit to event prior to controller acceptance nor prior to full
+            witness acceptance. Delegator may impose additional validation logic prior
+            to approval. This means a local (protected) event may  accepted into
+            delegator's KEL when fully signed by controller and fully witnessed
+            by designated witness pool.
+
+
+        Superseding Recovery:
 
         Supersede means that after an event has already been accepted as first seen
         into a KEL that a different event with the same sequence number is accepted
@@ -2479,11 +2531,19 @@ class Kever:
         # if we are the delegatee, accept the event without requiring the
         # delegator validation via an anchored delegation seal or by requiring
         # it to be witnessed
+        # Controller accepts without waiting for delegation seal to be anchored in
+        # delegator's KEL.
+        # Witness accepts without waiting for delegation seal to be anchored in
+        # delegator's KEL.  Witness cue in Kevery will then generate receipt
+        # Delegator accepts here without waiting for delegation seal to be anchored in
+        # delegator's KEL. But does wait for fully receipted above.
+        # Once fully receipt cue in Kevery will then trigger cue to approve
+        # delegation
+
         # ToDo XXXX add local lax check after figure out dist multisig group
-        # ToDo XXXX add check for witness to accept so that witness will
-        # add to its KEL without waiting for delegation seal to be anchored in
-        # delegator's KEL  witness cue in Kevery will then generate reciept
-        if self.locallyOwned(serder.pre) or self.locallyWitnessed(serder=serder):
+        if (self.local and (self.locallyOwned(serder.pre) or
+                            self.locallyWitnessed(serder=serder) or
+                            self.locallyOwned(delegator))):
             return delegator
 
         # during initial delegation we just escrow the delcept event
@@ -2493,7 +2553,8 @@ class Kever:
                                          "with evt = {}.".format(delegator, serder.ked))
 
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
-        #ssn = sner.num sner is Number seqner is Seqner need to replace Seqners with Numbers
+        #ssn = sner.num sner is Number seqner is Seqner
+        # ToDo XXXX need to replace Seqners with Numbers
 
         # get the dig of the delegating event. Using getKeLast ensures delegating
         #  event has not already been superceded
@@ -2501,7 +2562,7 @@ class Kever:
         raw = self.db.getKeLast(key)  # get dig of delegating event
 
         if raw is None:  # no delegating event at key pre, sn
-            # ToDo XXXX create cue to send query to fetch delegating event from
+            # ToDo XXXX process  this cue of query to fetch delegating event from
             # delegator
             self.cues.push(dict(kin="query", q=dict(pre=delegator,
                                                               sn=delseqner.snh,
@@ -3160,19 +3221,29 @@ class Kevery:
                 elif not self.direct:  # notice of new  event
                     self.cues.push(dict(kin="notice", serder=serder))
 
-                if kever.locallyWitnessed():  #
+                if self.local and kever.locallyWitnessed():  #
                     # ToDo XXXX  need to cue task here kin = "witness" and process
                     # cued witness and then combine with reciept above so only
                     # one receipt is generated not two
                     self.cues.push(dict(kin="witness", serder=serder))
 
-                if kever.locallyOwned(kever.delegator):  # delegator may be None
+                if self.local and kever.locallyOwned(kever.delegator):  # delegator may be None
                     # ToDo XXXX  need to cue task here  to approve delegation by generating
-                    # and anchoring SealEvent of serder in delegators KEL
+                    # an anchoring SealEvent of serder in delegators KEL
                     # may include MFA business logic for the delegator i.e. is local
+                    # event that designates this controller as delegator triggers
+                    # this cue to approave delegation
                     self.cues.push(dict(kin="approveDelegation",
                                             delegator=kever.delegator,
                                             serder=serder))
+
+                if self.local and kever.locallyOwned():
+                    # ToDo XXXX process  this cue of query to send event to delegator
+                    # to trigger generation of anchor in delegating event
+                    # note for remote validators there is query cue in
+                    # validateDelegation to query for anchoring event seal
+                    pass
+
 
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
@@ -3252,20 +3323,28 @@ class Kevery:
                     elif not self.direct:  # notice of new  event
                         self.cues.push(dict(kin="notice", serder=serder))
 
-                    if kever.locallyWitnessed():
+                    if self.local and kever.locallyWitnessed():  #
                         # ToDo XXXX  need to cue task here kin = "witness" and process
                         # cued witness and then combine with reciept above so only
                         # one receipt is generated not two
                         self.cues.push(dict(kin="witness", serder=serder))
 
-                    if kever.locallyOwned(kever.delegator):  # delegator may be None
+                    if self.local and kever.locallyOwned(kever.delegator):  # delegator may be None
                         # ToDo XXXX  need to cue task here  to approve delegation by generating
-                        # and anchoring SealEvent of serder in delegators KEL
-                        # may include MFA business logic   for the delegator i.e. is local
+                        # an anchoring SealEvent of serder in delegators KEL
+                        # may include MFA business logic for the delegator i.e. is local
+                        # event that designates this controller as delegator triggers
+                        # this cue to approave delegation
                         self.cues.push(dict(kin="approveDelegation",
-                                            delegator=kever.delegator,
-                                            serder=serder))
+                                                delegator=kever.delegator,
+                                                serder=serder))
 
+                    if self.local and kever.locallyOwned():
+                        # ToDo XXXX process  this cue of query to send event to delegator
+                        # to trigger generation of anchor in delegating event
+                        # note for remote validators there is query cue in
+                        # validateDelegation to query for anchoring event seal
+                        pass
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
