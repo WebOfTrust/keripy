@@ -2468,7 +2468,7 @@ class Kever:
             either a delegated event controller's KEL, its witness' KELs or the
             delegator's kel because superseding logic requires the anchoring seal
             be present before the rules can be fully evaluated. Any of delegated
-            controller, delegated witness, or delegator to validate delegated
+            controller, delegated witness, or delegator of delegated
             event may after the fact fully validate event by processing is as
             a remote event. Then the logic applied is same as validator below.
 
