@@ -2467,14 +2467,19 @@ class Kever:
             The logic for superseded events is NOT a requirement for acceptance in
             either a delegated event controller's KEL, its witness' KELs or the
             delegator's kel because superseding logic requires the anchoring seal
-            be present before the rules can be fully evaluated.
+            be present before the rules can be fully evaluated. Any of delegated
+            controller, delegated witness, or delegator to validate delegated
+            event may after the fact fully validate event by processing is as
+            a remote event. Then the logic applied is same as validator below.
 
             A validator of a delegated event that is not the event's controller,
             witness, or delegator must not accept the event until is is fully
             signed by the controller (threshold), fully witnessed by the witness
             pool (threshold) and its seal anchored in the delegator's KEL. The
             rules for event superseding in the delegated controller's kel must
-            also be satisfied.
+            also be satisfied. The logic should be the same for both local and
+            remote event because the validator is not one of the protected parties
+            to the event.
 
         Superseding Recovery:
 
@@ -2542,14 +2547,14 @@ class Kever:
 
         # if we are the delegatee, accept the event without requiring the
         # delegator validation via an anchored delegation seal or by requiring
-        # it to be witnessed
-        # Controller accepts without waiting for delegation seal to be anchored in
-        # delegator's KEL.
+        # it to be witnessed. Query witness cue in Kevery will then request witnessing.
+        # Controller accepts without waiting for witnessor nor for the delegation
+        # seal to be anchored in delegator's KEL.
         # Witness accepts without waiting for delegation seal to be anchored in
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
         # Delegator accepts here without waiting for delegation seal to be anchored in
         # delegator's KEL. But does wait for fully receipted above.
-        # Once fully receipt cue in Kevery will then trigger cue to approve
+        # Once fully receipted, cue in Kevery will then trigger cue to approve
         # delegation
 
         # ToDo XXXX add local lax check after figure out dist multisig group
