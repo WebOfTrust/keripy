@@ -2458,8 +2458,8 @@ class Kever:
 
             Delegator must accept a delegated event prior to it anchoring
             a seal of the event in its KEL in order to trigger its approval logic.
-            The delegator must not accept an event prior to controller acceptance
-            nor prior to full witness acceptance. A Delegator may impose
+            The delegator must not accept an event prior to controller signing
+            nor prior to full witness receipting. A Delegator may impose
             additional validation logic prior to approval. This means a local
             (protected) event may be accepted into a delegator's KEL when fully
             signed by controller and fully witnessed by designated witness pool.
