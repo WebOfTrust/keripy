@@ -39,7 +39,7 @@ class KeyStateNoticer(doing.DoDoer):
             return super(KeyStateNoticer, self).recur(tyme, deeds)
 
         if self.cues:
-            cue = self.cues.pull() # self.cues.popleft()
+            cue = self.cues.pull()
             match cue['kin']:
                 case "keyStateSaved":
                     kcue = cue

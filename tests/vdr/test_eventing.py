@@ -304,19 +304,19 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
     dig = "EC2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
     serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd)
-    assert serder.raw == (b'{"v":"KERI10JSON000160_","t":"bis","d":"EM2zBvc6fL7BvcRT-OhPR7dgja5p4Kc1G3l3'
-                        b'5Plb0CYk","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","ii":"EE3Xv6CWw'
-                        b'EMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","ra":{"i":"EE3Xv6CWwEMpW-99rhPD'
-                        b'9IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PL'
-                        b'MZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON000162_","t":"bis","d":"EK9X5Ih5z68pKA-dHMuEZXt_2avkzM8i1_gD'
+                          b'KlFBGDM7","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","ii":"EE3Xv6CWw'
+                          b'EMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","ra":{"i":"EE3Xv6CWwEMpW-99rhPD'
+                          b'9IHFCR2LN5ienLVI8yG5faBw","s":"3","d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-'
+                          b'PLMZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
     serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig)
-    assert serder.raw == (b'{"v":"KERI10JSON00015f_","t":"brv","d":"EAIZZ8ujQQl4XGMh8XPzxokkzqrWh8M6Ftxq'
-                        b'kezbVtDu","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","p":"EC'
-                        b'2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"i":"EE3Xv6CWwEMpW-99rhPD9'
-                        b'IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLM'
-                        b'Z1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON000161_","t":"brv","d":"EMBHVoEIM4GfoLtelLD6erwNLyO39PUyEAcC'
+                          b'-N77OGoq","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","p":"EC'
+                          b'2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"i":"EE3Xv6CWwEMpW-99rhPD9'
+                          b'IHFCR2LN5ienLVI8yG5faBw","s":"3","d":"EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-P'
+                          b'LMZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
     """ End Test """
 
@@ -685,11 +685,11 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         vci = vcdig
         dgkey = dgKey(pre=vci, dig=bis.said)
-        assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON000160_","t":"bis","d":"EJkHLOtyOkkQYkgyZPeVq-QjvdtMYtqnpKoL'
-                    b'LklRpdir","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"EBgdJt_AS'
-                    b'Weq7HjOmut2E8vQL8P1c9VTPDA0Pdh4KsZX","s":"0","ra":{"i":"EBgdJt_ASWeq7HjOmut2'
-                    b'E8vQL8P1c9VTPDA0Pdh4KsZX","s":1,"d":"EEc1UURU3liIomWOFeDVqCo-3QbZHFZCUorx8Md'
-                    b'ZFZvy"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
+        assert bytes(reg.getTvt(dgkey)) == (b'{"v":"KERI10JSON000162_","t":"bis","d":"EN01O_jV46iSPtJMFXLNB83OWHtUl0wEDnMT'
+                                            b'eHSWXJwf","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","ii":"EBgdJt_AS'
+                                            b'Weq7HjOmut2E8vQL8P1c9VTPDA0Pdh4KsZX","s":"0","ra":{"i":"EBgdJt_ASWeq7HjOmut2'
+                                            b'E8vQL8P1c9VTPDA0Pdh4KsZX","s":"1","d":"EEc1UURU3liIomWOFeDVqCo-3QbZHFZCUorx8'
+                                            b'MdZFZvy"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
 def test_tevery():

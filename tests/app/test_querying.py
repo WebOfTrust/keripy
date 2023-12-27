@@ -37,7 +37,7 @@ def test_querying():
         assert msg["src"] == inqHab.pre
         assert msg["pre"] == subHab.pre
         assert msg["r"] == "ksn"
-        assert msg["q"] == {'s': 0}
+        assert msg["q"] == {'s': '0'}
         assert msg["wits"] is None
 
         doist.recur(deeds=deeds)

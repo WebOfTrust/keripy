@@ -4219,7 +4219,7 @@ class Kevery:
             pre = qry["i"]
             src = qry["src"]
             anchor = qry["a"] if "a" in qry else None
-            sn = qry["s"] if "s" in qry else None
+            sn = int(qry["s"], 16) if "s" in qry else None
 
             if pre not in self.kevers:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
