@@ -1699,7 +1699,7 @@ class Kever:
 
         # Validates signers, delegation if any, and witnessing when applicable
         # If does not validate then escrows as needed and raises ValidationError
-        sigers, delegator, wigers = self.valSigsDelWigs(serder=serder,
+        sigers, wigers, delegator = self.valSigsWigsDel(serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
                                                         tholder=self.tholder,
@@ -1990,7 +1990,7 @@ class Kever:
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
-            sigers, delegator, wigers = self.valSigsDelWigs(serder=serder,
+            sigers, wigers, delegator = self.valSigsWigsDel(serder=serder,
                                                             sigers=sigers,
                                                             verfers=serder.verfers,
                                                             tholder=tholder,
@@ -2066,7 +2066,7 @@ class Kever:
 
             # Validates signers, delegation if any, and witnessing when applicable
             # If does not validate then escrows as needed and raises ValidationError
-            sigers, delegator, wigers = self.valSigsDelWigs(serder=serder,
+            sigers, wigers, delegator = self.valSigsWigsDel(serder=serder,
                                                             sigers=sigers,
                                                             verfers=self.verfers,
                                                             tholder=self.tholder,
@@ -2229,14 +2229,14 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
 
-    def valSigsDelWigs(self, serder, sigers, verfers, tholder,
+    def valSigsWigsDel(self, serder, sigers, verfers, tholder,
                        wigers, toader, wits,
                        delseqner=None, delsaider=None):
         """
-        Returns triple (sigers, delegator, wigers) where:
+        Returns triple (sigers, wigers, delegator) where:
         sigers is unique validated signature verified members of inputed sigers
-        delegator is qb64 delegator prefix if delegated else None
         wigers is unique validated signature verified members of inputed wigers
+        delegator is qb64 delegator prefix if delegated else None
 
         Validates sigers signatures by validating indexes, verifying signatures, and
             validating threshold sith.
@@ -2305,8 +2305,18 @@ class Kever:
                                             f" for new est evt={serder.ked}.")
 
 
-        delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers,
-                                            delseqner=delseqner, delsaider=delsaider)
+        # get delegator if any
+        if serder.ilk == Ilks.dip:
+            delegator = serder.delpre  # delegator from dip event
+            if not delegator:
+                raise ValidationError(f"Empty or missing delegator for delegated"
+                                          f" inception event = {serder.ked}.")
+        elif serder.ilk == Ilks.drt:  # serder.ilk == Ilks.drt so rotation
+            delegator = self.delegator
+        else:
+            delegator = None
+
+
 
         # Kevery .process event logic does not prevent this from seeing event when
         # not local and event pre is own pre
@@ -2334,8 +2344,13 @@ class Kever:
                                                        f"{[siger.qb64 for siger in wigers]} "
                                                        f"for event={serder.ked}.")
 
+        if delegator:
+            self.validateDelegation(serder, sigers=sigers, wigers=wigers,
+                                    delegator=delegator,
+                                    delseqner=delseqner, delsaider=delsaider)
 
-        return sigers, delegator, wigers
+
+        return sigers, wigers, delegator
 
 
     def exposeds(self, sigers):
@@ -2385,7 +2400,9 @@ class Kever:
         return odxs
 
 
-    def validateDelegation(self, serder, sigers, wigers=None, delseqner=None, delsaider=None):
+    def validateDelegation(self, serder, sigers, wigers=None,
+                           delegator=None,
+                           delseqner=None, delsaider=None):
         """
         Returns delegator's qb64 identifier prefix if validation successful.
         Rules:
@@ -2405,6 +2422,7 @@ class Kever:
                 delegated event. Assumes sigers is list of unique verified sigs
             wigers (list | None): of optional Siger instance of indexed witness sigs of
                 delegated event. Assumes wigers is list of unique verified sigs
+            delegator (str | None): qb64 prefix of delegator if any
             delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
             delsaider (Saider | None): instance of of delegating event digest.
@@ -2532,17 +2550,20 @@ class Kever:
           superseding rotation must be discarded.
 
         """
-        if serder.ilk not in (Ilks.dip, Ilks.drt):  # not delegated
-            return None  # delegator is None
+        if not delegator:
+            return
 
-        # verify delegator and attachment pointing to delegating event
-        if serder.ilk == Ilks.dip:
-            delegator = serder.delpre  # delegator from dip event
-            if not delegator:
-                raise ValidationError(f"Empty or missing delegator for delegated"
-                                      f" inception event = {serder.ked}.")
-        else:  # serder.ilk == Ilks.drt so rotation
-            delegator = self.delegator
+        #if serder.ilk not in (Ilks.dip, Ilks.drt):  # not delegated
+            #return None  # delegator is None
+
+        ## verify delegator and attachment pointing to delegating event
+        #if serder.ilk == Ilks.dip:
+            #delegator = serder.delpre  # delegator from dip event
+            #if not delegator:
+                #raise ValidationError(f"Empty or missing delegator for delegated"
+                                      #f" inception event = {serder.ked}.")
+        #else:  # serder.ilk == Ilks.drt so rotation
+            #delegator = self.delegator
 
 
         # if we are the delegatee, accept the event without requiring the
@@ -2552,58 +2573,76 @@ class Kever:
         # seal to be anchored in delegator's KEL.
         # Witness accepts without waiting for delegation seal to be anchored in
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
+
+
+        # ToDo XXXX add local lax check after figure out dist multisig group
+        if (self.local and (self.locallyOwned(serder.pre) or
+                            self.locallyWitnessed(serder=serder))):
+            return # delegator
+
         # Delegator accepts here without waiting for delegation seal to be anchored in
         # delegator's KEL. But does wait for fully receipted above.
         # Once fully receipted, cue in Kevery will then trigger cue to approve
         # delegation
 
-        # ToDo XXXX add local lax check after figure out dist multisig group
-        if (self.local and (self.locallyOwned(serder.pre) or
-                            self.locallyWitnessed(serder=serder) or
-                            self.locallyOwned(delegator))):
-            return delegator
 
         # during initial delegation we just escrow the delcept event
-        if delseqner is None and delsaider is None and delegator is not None:
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            raise MissingDelegationError("No delegation seal for delegator {} "
+        if delseqner is None and delsaider is None:
+            if self.local and self.locallyOwned(delegator):  # local delegator
+                # create virtual anchor seal so local delegator can evaluate
+                # superseding logic with provisional virtual seal
+                dkever = self.kevers[delegator]
+                dseal = eventing.SealEvent(i=serder.pre, s=serder.snh, d=serder.said)
+                dserder = eventing.interact(pre=dkever.prefixer.qb64,
+                                           dig=dkever.serder.said,
+                                           sn=dkever.sner.num + 1,
+                                           data=[dseal._asdict()])
+                delseqner = coring.Seqner(snh=dserder.snh)
+                delsaider = coring.Saider(qb64=dserder.said)
+            else:  # not local delegator so escrow
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                raise MissingDelegationError("No delegation seal for delegator {} "
                                          "with evt = {}.".format(delegator, serder.ked))
 
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
 
-        # get the dig of the delegating event. Using getKeLast ensures delegating
-        #  event has not already been superceded
-        key = snKey(pre=delegator, sn=ssn)  # database key
-        raw = self.db.getKeLast(key)  # get dig of delegating event
+        # if local delegator then we already created virtual dserder for delegating event
+        if not (self.local and self.locallyOwned(delegator)):  # not local delegator
+            # get the dig of the delegating event. Using getKeLast ensures delegating
+            #  event has not already been superceded
+            key = snKey(pre=delegator, sn=ssn)  # database key
+            raw = self.db.getKeLast(key)  # get dig of delegating event
 
-        if raw is None:  # no delegating event at key pre, sn
-            # ToDo XXXX process  this cue of query to fetch delegating event from
-            # delegator
-            self.cues.push(dict(kin="query", q=dict(pre=delegator,
-                                                              sn=delseqner.snh,
-                                                              dig=delsaider.qb64)))
+            if raw is None:  # no delegating event at key pre, sn
+                # ToDo XXXX process  this cue of query to fetch delegating event from
+                # delegator
+                self.cues.push(dict(kin="query", q=dict(pre=delegator,
+                                                                  sn=delseqner.snh,
+                                                                  dig=delsaider.qb64)))
 
-            #  escrow event here
-            inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
-            sn = validateSN(sn=serder.snh, inceptive=inceptive)
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
-            raise MissingDelegationError("No delegating event from {} at {} for "
-                                         "evt = {}.".format(delegator,
-                                                            delsaider.qb64,
-                                                            serder.ked))
+                #  escrow event here
+                inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
+                sn = validateSN(sn=serder.snh, inceptive=inceptive)
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+                raise MissingDelegationError("No delegating event from {} at {} for "
+                                             "evt = {}.".format(delegator,
+                                                                delsaider.qb64,
+                                                                serder.ked))
 
-        # get the delegating event from dig
-        ddig = bytes(raw)
-        key = dgKey(pre=delegator, dig=ddig)  # database key
-        raw = self.db.getEvt(key)
-        if raw is None:   # drop event
-            raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
-                                  "".format(delegator, ddig, serder.ked))
+            # get the delegating event from dig
+            ddig = bytes(raw)
+            key = dgKey(pre=delegator, dig=ddig)  # database key
+            raw = self.db.getEvt(key)
+            if raw is None:   # drop event
+                raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
+                                      "".format(delegator, ddig, serder.ked))
 
-        dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
+            dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
+
+
         # compare digests to make sure they match here
         if not dserder.compare(said=delsaider.qb64):  # drop event
             raise ValidationError("Invalid delegation from {} at event dig = {} for evt = {}."
@@ -2646,7 +2685,7 @@ class Kever:
             (serder.sner.num == self.sner.num and
                 self.ilk == Ilks.ixn and
                 serder.ilk == Ilks.drt)):  # recovery rotation superseding ixn
-                    return delegator  # indicates delegation valid with return of delegator
+                    return  # delegator  # indicates delegation valid with return of delegator
 
         # Kever.logEvent saves authorizer (delegator) seal source couple in
         # db.aess data base so can use it here to recusively look up delegating
@@ -2664,7 +2703,7 @@ class Kever:
             if (bossn.sn > bosso.sn or  # later supersedes
                 (bossn.Ilk == Ilks.drt and
                  bosso.Ilk == Ilks.ixn) ): # drt supersedes ixn
-                    return delegator  # valid superseding delegation
+                    return  # delegator  # valid superseding delegation
 
             if bossn.said == bosso.said: # same delegating event
                 nseals = [SealEvent(**seal) for seal in bossn.seals
@@ -2676,7 +2715,7 @@ class Kever:
 
                 if nindex > oindex:  # later seal supersedes
                     # assumes index can't be None
-                    return delegator  # valid superseding delegation
+                    return  # delegator  # valid superseding delegation
 
                 else:
                     # ToDo: XXXX may want to cue up business logic for delegator
