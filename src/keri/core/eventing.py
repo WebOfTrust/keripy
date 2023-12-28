@@ -3212,7 +3212,7 @@ class Kevery:
 
     def processEvent(self, serder, sigers, *, wigers=None,
                      delseqner=None, delsaider=None,
-                     firner=None, dater=None):
+                     firner=None, dater=None, local=False):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -4684,6 +4684,8 @@ class Kevery:
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -4734,7 +4736,7 @@ class Kevery:
                     wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
                     wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
 
-                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers)
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers, local=esr.local)
 
                     # If process does NOT validate event with sigs, becasue it is
                     # still out of order then process will attempt to re-escrow
@@ -4818,6 +4820,8 @@ class Kevery:
                 eserder = None
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+
                     dgkey = dgKey(pre, bytes(edig))
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgkey)
@@ -4883,7 +4887,7 @@ class Kevery:
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
                     self.processEvent(serder=eserder, sigers=sigers,
-                                      delseqner=delseqner, delsaider=delsaider)
+                                      delseqner=delseqner, delsaider=delsaider, local=esr.local)
 
                     # If process does NOT validate sigs or delegation seal (when delegated),
                     # but there is still one valid signature then process will
@@ -4978,6 +4982,8 @@ class Kevery:
             for ekey, edig in self.db.getPweItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -5046,7 +5052,7 @@ class Kevery:
                         delseqner, delsaider = deSourceCouple(couple)
 
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      delseqner=delseqner, delsaider=delsaider)
+                                      delseqner=delseqner, delsaider=delsaider, local=esr.local)
 
                     # If process does NOT validate wigs then process will attempt
                     # to re-escrow and then raise MissingWitnessSignatureError
@@ -5147,6 +5153,7 @@ class Kevery:
             for ekey, ecouple in self.db.getUweItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow db key
+
                     #  get escrowed receipt's rdiger of receipted event and
                     # wiger indexed signature of receipted event
                     rdiger, wiger = deWitnessCouple(ecouple)
@@ -5833,6 +5840,8 @@ class Kevery:
             for ekey, edig in self.db.getLdeItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
+                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -5877,7 +5886,7 @@ class Kevery:
                                               "dig = {}.".format(bytes(edig)))
 
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
-                    self.processEvent(serder=eserder, sigers=sigers)
+                    self.processEvent(serder=eserder, sigers=sigers, local=esr.local)
 
                     # If process does NOT validate event with sigs, becasue it is
                     # still out of order then process will attempt to re-escrow
