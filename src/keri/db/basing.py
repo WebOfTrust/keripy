@@ -521,14 +521,19 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .esrs is named sub DB instance of Komer with schema set to EventSourceRecord
-            keeps track of the source of the event. When .local is Truthy the
+        .esrs is named sub DB instance of Komer of EventSourceRecord
+            dgKey
+            DB is keyed by identifier prefix plus digest (said) of serialized event
+            Value is serialized instance of EventSourceRecord dataclass.
+            Only one value per DB key is allowed.
+            Keeps track of the source of the event. When .local is Truthy the
             event was sourced in a protected way such as being generated
             locally or via a protected path. When .local is Falsey the event was
             NOT sourced in a protected way. The value of .local determines what
             validation logic to run on the event. This database is used to track
             the source when processing escrows that would otherwise be decoupled
             from the original source of the event.
+
 
         .fels is named sub DB of first seen event log table (FEL) of digests
             that indexes events in first 'seen' accepted order for replay and
