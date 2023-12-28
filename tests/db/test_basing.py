@@ -158,6 +158,16 @@ def test_baser():
         assert db.delEvt(key) == True
         assert db.getEvt(key) == None
 
+        # test eventsourcerecords .srcs
+        record = basing.EventSourceRecord()
+        assert db.esrs.get(key) == None
+        assert db.esrs.put(key, record) == True
+        assert db.esrs.get(key) == record
+        record.local = False
+        assert db.esrs.pin(key, record) == True
+        assert db.esrs.get(key) == record
+
+
         # test first seen event log .fels sub db
         preA = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -2065,6 +2075,40 @@ def test_keystaterecord():
     nksr = basing.KeyStateRecord._fromdict(ksn)
     assert nksr == ksr
     assert nksr._asdict() == ksn
+
+
+    """End Test"""
+
+def test_eventsourcerecord():
+    """
+    Test EventSourceRecord dataclass
+    """
+    record = basing.EventSourceRecord()  # default local is True
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is True
+    assert record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': True}
+
+    record.local = False
+    assert record.local is False
+    assert not record.local
+    assert (asdict(record)) == {'local': False}
+
+    record = basing.EventSourceRecord(local=False)
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is False
+    assert not record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': False}
+
+    record = basing.EventSourceRecord(local=None)
+    assert isinstance(record, basing.EventSourceRecord)
+    assert record.local is None
+    assert not record.local
+    assert "local" in record  # asdict means in is against the keys (labels)
+    assert (asdict(record)) == {'local': None}
+
 
 
     """End Test"""
