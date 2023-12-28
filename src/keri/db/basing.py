@@ -1004,7 +1004,7 @@ class Baser(dbing.LMDBer):
 
         # Resolved multifactor well known OOBI auth records.  Keys by controller URL
         self.rmfa = koming.Komer(db=self,
-                                 subkey='mfa.',
+                                 subkey='rmfa.',
                                  schema=OobiRecord,
                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
 
@@ -1305,10 +1305,10 @@ class Baser(dbing.LMDBer):
 
         """
         if kever.delegated:
-            dkever = self.kevers[kever.delegator]
+            dkever = self.kevers[kever.delpre]
             yield from self.cloneDelegation(dkever)
 
-            for dmsg in self.clonePreIter(pre=kever.delegator, fn=0):
+            for dmsg in self.clonePreIter(pre=kever.delpre, fn=0):
                 yield dmsg
 
 

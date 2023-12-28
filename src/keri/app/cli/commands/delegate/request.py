@@ -86,7 +86,7 @@ class RequestDoer(doing.DoDoer):
 
         (seqner, saider) = esc[0]
         evt = hab.makeOwnEvent(sn=seqner.sn)
-        delpre = hab.kever.delegator  # get the delegator identifier
+        delpre = hab.kever.delpre  # get the delegator identifier
 
         if isinstance(hab, GroupHab):
             phab = hab.mhab
@@ -99,7 +99,7 @@ class RequestDoer(doing.DoDoer):
         srdr = serdering.SerderKERI(raw=evt) # coring.Serder(raw=evt)
         del evt[:srdr.size]
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
-        self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+        self.postman.send(src=phab.pre, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
 
         while True:
             while self.postman.cues:

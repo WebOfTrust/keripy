@@ -182,7 +182,7 @@ class RotateDoer(doing.DoDoer):
                    cuts=list(self.cuts), adds=list(self.adds),
                    data=self.data)
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=hab.kever.sn)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
@@ -206,7 +206,7 @@ class RotateDoer(doing.DoDoer):
 
                 self.remove([witDoer])
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')
