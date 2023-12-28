@@ -34,7 +34,7 @@ def printIdentifier(hby, pre, label="Identifier"):
         print("Seq No:\t{}".format(kever.sner.num))
         if kever.delegated:
             print("Delegated Identifier")
-            sys.stdout.write(f"    Delegator:  {kever.delegator} ")
+            sys.stdout.write(f"    Delegator:  {kever.delpre} ")
             if seal:
                 print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
             else:
@@ -93,7 +93,7 @@ def printExternal(hby, pre, label="Identifier"):
     print("Seq No:\t{}".format(kever.sner.num))
     if kever.delegated:
         print("Delegated Identifier")
-        sys.stdout.write(f"    Delegator:  {kever.delegator} ")
+        sys.stdout.write(f"    Delegator:  {kever.delpre} ")
         if anchor:
             print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
         else:

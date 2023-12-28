@@ -55,7 +55,7 @@ class Sealer(doing.DoDoer):
 
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
-        delpre = hab.kever.delegator  # get the delegator identifier
+        delpre = hab.kever.delpre  # get the delegator identifier
         if delpre not in hab.kevers:
             raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
 
@@ -81,7 +81,7 @@ class Sealer(doing.DoDoer):
         # Send exn message for notification purposes
         exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
 
-        self.postman.send(hab=phab, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
+        self.postman.send(hab=phab, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)
 
         srdr = serdering.SerderKERI(raw=evt)
         del evt[:srdr.size]
@@ -151,7 +151,7 @@ class Sealer(doing.DoDoer):
         """
         for (pre, said), serder in self.hby.db.dune.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            dkever = self.hby.kevers[kever.delegator]
+            dkever = self.hby.kevers[kever.delpre]
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
             if dserder := self.hby.db.findAnchoringSealEvent(dkever.prefixer.qb64, seal=seal):

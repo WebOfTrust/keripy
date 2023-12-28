@@ -1239,7 +1239,7 @@ class BaseHab:
         if not kever.ntholder.satisfy(indices):
             raise kering.ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
-        if kever.delegator is not None:  # delegator only shows up in delcept
+        if kever.delpre is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.said,

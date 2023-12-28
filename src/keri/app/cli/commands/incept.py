@@ -168,7 +168,7 @@ class InceptDoer(doing.DoDoer):
         receiptor = agenting.Receiptor(hby=self.hby)
         self.extend([witDoer, receiptor])
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=0, proxy=self.hby.habByName(self.proxy))
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
@@ -183,7 +183,7 @@ class InceptDoer(doing.DoDoer):
                 while not witDoer.cues:
                     _ = yield self.tock
 
-        if hab.kever.delegator:
+        if hab.kever.delpre:
             yield from self.postman.sendEvent(hab=hab, fn=hab.kever.sn)
 
         print(f'Prefix  {hab.pre}')

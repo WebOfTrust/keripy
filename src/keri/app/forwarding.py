@@ -143,7 +143,7 @@ class Poster(doing.DoDoer):
         del icp[:ser.size]
 
         sender = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
-        self.send(src=sender, dest=hab.kever.delegator, topic="delegate", serder=ser, attachment=icp)
+        self.send(src=sender, dest=hab.kever.delpre, topic="delegate", serder=ser, attachment=icp)
         while True:
             if self.cues:
                 cue = self.cues.popleft()
