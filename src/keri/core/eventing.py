@@ -2481,11 +2481,28 @@ class Kever:
             additional validation logic prior to approval. This means a local
             (protected) event may be accepted into a delegator's KEL when fully
             signed by controller and fully witnessed by designated witness pool.
+            The local delegator logic creates a virtual delegation event with
+            seal for the purpose of checking the delegated event as superseding
+            event logic prior to acceptance
 
             The logic for superseded events is NOT a requirement for acceptance in
-            either a delegated event controller's KEL, its witness' KELs or the
-            delegator's kel because superseding logic requires the anchoring seal
-            be present before the rules can be fully evaluated. Any of delegated
+            either a delegated event controller's KEL or its witness' KEL. The
+            delegator's kel creates a virtual (provisional) delegating interaction
+            event in order to evaluate correct superseding logic so as not to
+            accept an invalid supderseding delegated event into its local copy
+            of the delegated KEL. This virtual event is needed because superseding
+            logic requires an anchoring seal be present before the rules can
+            be fully evaluated.
+
+            Should the actual anchor be via a superseding rotation in the
+            delegator's KEL not via an interaction event then the delegator must
+            check the logic for a virtual delegating rotation instead.
+            In either case the delegated event does not change so the virtual
+            delegating interaction is sufficient to accept the delegated event
+            into the local copy of its KEL at the delegator.
+
+
+            Any of delegated
             controller, delegated witness, or delegator of delegated
             event may after the fact fully validate event by processing is as
             a remote event. Then the logic applied is same as validator below.
