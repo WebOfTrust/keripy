@@ -215,6 +215,18 @@ class KeyStateRecord(RawRecord):  # baser.state
     di: str = '' # delegator aid qb64 if any otherwise empty '' str
 
 
+@dataclass
+class EventSourceRecord:  # tracks source of event local or remote
+    """
+    Keyed by dig (said) of serder of event
+
+    Usage:
+
+    """
+    local: bool = True  # True of local (protected) else False for remote (unprotected)
+
+    def __iter__(self):
+        return iter(asdict(self))
 
 
 @dataclass
@@ -271,7 +283,7 @@ class OobiQueryRecord:  # information for responding to OOBI query
     constraint policy for endpoint discovery .
 
     Usage:
-        oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)
+
     """
     cid: str = None  # qb64
     role: str = None  # one of kering.Roles None is any or all
@@ -508,6 +520,15 @@ class Baser(dbing.LMDBer):
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
+
+        .esrs is named sub DB instance of Komer with schema set to EventSourceRecord
+            keeps track of the source of the event. When .local is Truthy the
+            event was sourced in a protected way such as being generated
+            locally or via a protected path. When .local is Falsey the event was
+            NOT sourced in a protected way. The value of .local determines what
+            validation logic to run on the event. This database is used to track
+            the source when processing escrows that would otherwise be decoupled
+            from the original source of the event.
 
         .fels is named sub DB of first seen event log table (FEL) of digests
             that indexes events in first 'seen' accepted order for replay and
@@ -826,6 +847,11 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.qnfs = self.env.open_db(key=b'qnfs.', dupsort=True)
+
+        # event source local (protected) or non-local (remote not protected)
+        self.esrs = koming.Komer(db=self,
+                                   schema=EventSourceRecord,
+                                   subkey='esrs.')
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
