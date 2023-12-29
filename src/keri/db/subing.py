@@ -509,8 +509,8 @@ class IoSetSuber(SuberBase):
             val (Union[bytes, str]): serialization
 
         Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
+            result (bool): True means unique value added among duplications,
+                            False means duplicate of same value already exists.
 
         """
         return (self.db.addIoSetVal(db=self.sdb,

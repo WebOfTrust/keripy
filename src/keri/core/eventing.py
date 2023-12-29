@@ -4443,6 +4443,48 @@ class Kevery:
             if sn < 0:  # no more events
                 return None
 
+
+    def escrowMFEvent(self, serder, sigers, wigers=None,
+                      seqner=None, saider=None, local=True):
+        """
+        Update associated logs for escrow of MisTit event
+
+        Parameters:
+            serder (SerderKERI): instance of  event
+            sigers (list): of Siger instance for  event
+            seqner (Seqner): instance of sn of event delegatint/issuing event if any
+            saider (Saider): instance of dig of event delegatint/issuing event if any
+            wigers (list): of witness signatures
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+        """
+        local = True if local else False
+        dgkey = dgKey(serder.preb, serder.saidb)
+        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else:  # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putEvt(dgkey, serder.raw)
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if seqner and saider:
+            couple = seqner.qb64b + saider.qb64b
+            self.db.putPde(dgkey, couple)  # idempotent
+        self.db.mfes.add(snKey(serder.preb, serder.sn), serder.saidb)
+        # log escrowed
+        logger.info("Kevery process: escrowed misfit event=\n%s\n",
+                    json.dumps(serder.ked, indent=1))
+
+
     def escrowOOEvent(self, serder, sigers, seqner=None, saider=None, wigers=None, local=True):
         """
         Update associated logs for escrow of Out-of-Order event
@@ -4472,12 +4514,12 @@ class Kevery:
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.addOoe(snKey(serder.preb, serder.sn), serder.saidb)
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if seqner and saider:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
+        self.db.addOoe(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.info("Kevery process: escrowed out of order event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
