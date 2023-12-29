@@ -2830,7 +2830,7 @@ class Kever:
                 esr.local = local
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
-        else: # not preexisting so put
+        else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
@@ -4815,10 +4815,14 @@ class Kevery:
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+                    dgkey = dgKey(pre, bytes(edig))
+                    if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                        # no local sourde so raise ValidationError which unescrows below
+                        raise ValidationError("Missing escrowed event source "
+                                              "at dig = {}.".format(bytes(edig)))
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(edig)))
+                    dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
                         # no date time so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event datetime"
@@ -4951,9 +4955,12 @@ class Kevery:
                 eserder = None
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
-
                     dgkey = dgKey(pre, bytes(edig))
+                    if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                        # no local sourde so raise ValidationError which unescrows below
+                        raise ValidationError("Missing escrowed event source "
+                                              "at dig = {}.".format(bytes(edig)))
+
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
@@ -5113,10 +5120,14 @@ class Kevery:
             for ekey, edig in self.db.getPweItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+                    dgkey = dgKey(pre, bytes(edig))
+                    if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                        # no local sourde so raise ValidationError which unescrows below
+                        raise ValidationError("Missing escrowed event source "
+                                              "at dig = {}.".format(bytes(edig)))
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(edig)))
+                    dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
                         # no date time so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event datetime"
@@ -5971,10 +5982,14 @@ class Kevery:
             for ekey, edig in self.db.getLdeItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    esr = self.db.esrs.get(keys=(pre, edig))  # get source of event
+                    dgkey = dgKey(pre, bytes(edig))
+                    if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
+                        # no local sourde so raise ValidationError which unescrows below
+                        raise ValidationError("Missing escrowed event source "
+                                              "at dig = {}.".format(bytes(edig)))
 
                     # check date if expired then remove escrow.
-                    dtb = self.db.getDts(dgKey(pre, bytes(edig)))
+                    dtb = self.db.getDts(dgkey)
                     if dtb is None:  # othewise is a datetime as bytes
                         # no date time so raise ValidationError which unescrows below
                         logger.info("Kevery unescrow error: Missing event datetime"
