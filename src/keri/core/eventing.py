@@ -3462,7 +3462,7 @@ class Kevery:
                               dater=dater if self.cloned else None,
                               cues=self.cues,
                               prefixes=self.prefixes,
-                              local=self.local,
+                              local=local,
                               check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
@@ -3565,7 +3565,7 @@ class Kevery:
                                  delseqner=delseqner, delsaider=delsaider,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
-                                 check=self.check)
+                                 local=local, check=self.check)
 
                     # At this point the non-inceptive event (rot, drt, or ixn)
                     # given by serder together with its attachments has been
