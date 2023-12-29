@@ -585,6 +585,19 @@ def test_missing_delegator_escrow():
     """End Test"""
 
 
+def test_misfit_escrow():
+    """
+    Test misfit escrow
+
+    """
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+
+    # stub for now
+
+    """End Test"""
+
+
+
 def test_out_of_order_escrow():
     """
     Test out of order escrow
