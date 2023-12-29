@@ -504,6 +504,15 @@ class OutOfOrderTxnStateError(ValidationError):
         raise OutOfOrderTxnStateError("error message")
     """
 
+class MisfitEventSourceError(ValidationError):
+    """
+    Error referenced event missing from log so can't verify this txn state event
+    Usage:
+        raise MisfitEventSourceError("error message")
+    """
+
+
+
 
 # Stream Parsing and Extraction Errors
 class ExtractionError(KeriError):

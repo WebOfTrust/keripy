@@ -537,6 +537,7 @@ class Baser(dbing.LMDBer):
         .mfes is named sub DB instance of CesrIoSetSuber for misfit escrows
             snKey
             DB is keyed by event controller prefix plus sn of serialized event
+            where sn is 32 char hex string with leading zeros
             Value is serialized qb64b dig (said) of event
             Misfit escrows are events with remote (nonlocal) sources that are
             inappropriate (i.e. would be dropped) unless they can be upgraded
