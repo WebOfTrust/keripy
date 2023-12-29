@@ -2813,6 +2813,7 @@ class Kever:
         """
         local = True if local else False
         fn = None  # None means not a first seen log event so does not return an fn
+        dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
         dtsb = helping.nowIso8601().encode("utf-8")
         self.db.putDts(dgkey, dtsb)  # idempotent do not change dts if already
@@ -2825,14 +2826,14 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         # update event source
-        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+        if (esr := self.db.esrs.get(keys=dgkeys)):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
+                self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=dgkeys, val=esr)
 
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         for verfer in (serder.verfers if serder.verfers is not None else []):
@@ -2878,16 +2879,17 @@ class Kever:
                 Event validation logic is a function of local or remote
         """
         local = True if local else False
+        dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
 
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
+                self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=dgkeys, val=esr)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
@@ -2965,15 +2967,16 @@ class Kever:
 
         """
         local = True if local else False
+        dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
+        if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
+                self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=dgkeys, val=esr)
 
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         if wigers:
