@@ -221,7 +221,8 @@ class Habery:
         self.exc = exchanging.Exchanger(hby=self, handlers=[])
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy, exc=self.exc)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                  exc=self.exc, local=True)
         self.habs = {}  # empty .habs
         self.namespaces = {}  # empty .namespaces
         self._signator = None

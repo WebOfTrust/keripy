@@ -224,6 +224,11 @@ def test_parser():
         kevery = Kevery(db=valDB)
 
         parser = parsing.Parser(kvy=kevery)
+        assert parser.kvy == kevery
+        assert parser.local == False
+        assert parser.framed == True
+        assert parser.pipeline == False
+        assert parser.ims == bytearray()
 
         parser.parse(ims=bytearray(msgs))  # make copy
         assert parser.ims == bytearray(b'')  # emptied
@@ -236,7 +241,7 @@ def test_parser():
         db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
         assert db_digs == event_digs
 
-        parser = parsing.Parser()  # no kevery
+        parser = parsing.Parser()  # no kevery so drops all messages
         parser.parse(ims=msgs)
         assert parser.ims == bytearray(b'')
 
