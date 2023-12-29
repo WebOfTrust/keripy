@@ -30,7 +30,8 @@ from ..kering import (MissingEntryError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
-                      UnverifiedReceiptError, UnverifiedTransferableReceiptError, QueryNotFoundError)
+                      UnverifiedReceiptError, UnverifiedTransferableReceiptError,
+                      QueryNotFoundError, MisfitEventSourceError)
 from ..kering import Version, Versionage
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                        RPY_LABELS)
@@ -1675,8 +1676,6 @@ class Kever:
         self.prefixes = prefixes if prefixes is not None else db.prefixes
         local = True if local else False
 
-        self.local = True if local else False  # ToDo XXXX remove attribute
-
         if state:  # preload from state
             self.reload(state)
             return
@@ -1708,7 +1707,7 @@ class Kever:
                                                         delseqner=delseqner,
                                                         delsaider=delsaider)
 
-        self.delpre = delpre
+        self.delpre = delpre  # may be None
         self.delegated = True if self.delpre else False
 
         wits = serder.backs  # serder.ked["b"]
@@ -1772,16 +1771,17 @@ class Kever:
         return True if self.ndigers and self.prefixer.transferable else False
 
 
-    def locallyOwned(self, pre=''):
+    def locallyOwned(self, pre):
         """Returns True if pre is in .prefixes False otherwise. Indicates that
         provided identifier prefix is controlled by a local controller from
         .prefixes
         i.e pre is a locally owned (controlled) AID (identifier prefix)
 
         Parameters:
-           pre (str): qb64 identifier prefix
+           pre (str|None): qb64 identifier prefix or None
 
         """
+        pre = pre if pre is not None else ''
         return pre in self.prefixes
 
 
@@ -1794,9 +1794,14 @@ class Kever:
            serder ( SerderKERI | None): SerderKERI instace if any
 
         """
-        if serder and serder.pre != self.prefixer.qb64:  # same KEL as self
+        if serder and serder.pre != self.prefixer.qb64:  # not same KEL as self
             return False
-        wits = serder.backs if serder is not None else self.wits
+
+        if not serder:
+            wits = self.wits
+        else:
+            wits = self.deriveWits(serder=serder)
+
         return (oset(self.prefixes) & oset(wits))
 
 
@@ -2223,6 +2228,54 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
 
+    def deriveWits(self, serder):
+        """Derives and return list of wits given current set and any changes
+        provided by serder.
+
+        Returns:
+            wits (list[str]): of prefixes of witnesses
+
+        Parameters:
+            serder (SerderKeri): instance of current event
+        """
+        if serder.ilk not in (Ilks.rot, Ilks.drt):  # no changes
+            return self.wits
+
+        witset = oset(self.wits)
+        cuts = serder.cuts
+        cutset = oset(cuts)
+        if len(cutset) != len(cuts):
+            raise ValidationError("Invalid cuts = {cuts}, has duplicates for "
+                                  f"evt = {serder.ked}.")
+
+        if (witset & cutset) != cutset:  # some cuts not in wits
+            raise ValidationError(f"Invalid cuts = {cuts}, not all members in "
+                                  f"wits for evt = {serder.ked}.")
+
+        adds = serder.adds
+        addset = oset(adds)
+        if len(addset) != len(adds):
+            raise ValidationError(f"Invalid adds = {adds}, has duplicates for "
+                                  f"evt = {serder.ked}.")
+
+        if cutset & addset:  # non empty intersection
+            raise ValidationError(f"Intersecting cuts = {cuts} and adds = {adds}"
+                                  f"for evt = {serder.ked}.")
+
+        if witset & addset:  # non empty intersection
+            raise ValidationError(f"Intersecting wits = {self.wits} and  adds ="
+                                  f"{adds} for evt = {serder.ked}.")
+
+        wits = list((witset - cutset) | addset)
+
+        if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
+            raise ValidationError(f"Invalid member combination among wits = "
+                                  f"{self.wits}, cuts ={cuts}, and adds = "
+                                  f"{adds,} for evt = {serder.ked}.")
+        return wits
+
+
+
     def valSigsWigsDel(self, serder, sigers, verfers, tholder,
                        wigers, toader, wits, local=True,
                        delseqner=None, delsaider=None):
@@ -2260,6 +2313,17 @@ class Kever:
                 If this event is not delegated then saider is ignored
 
         """
+        if (not local and
+                (self.locallyOwned(serder.pre) or
+                 self.locallyWitnessed(serder))):
+
+            self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
+                               seqner=delseqner, saider=delsaider, local=local)
+            raise MisfitEventSourceError(f"Nonlocal source for locally owned"
+                                             f"or locally witnessed event"
+                                             f" = {serder.ked}.")
+
+
         if len(verfers) < tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                                   "".format(tholder.sith,
@@ -2283,7 +2347,7 @@ class Kever:
 
         # escrow if not fully signed vs threshold
         if not tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
             if delseqner and delsaider:
                 self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
             raise MissingSignatureError(f"Failure satisfying sith = {tholder.sith}"
@@ -2294,7 +2358,7 @@ class Kever:
             # prior next threshold in .ntholder and digers in .ndigers
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 if delseqner and delsaider:  # save in case not attached later
                     self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingSignatureError(f"Failure satisfying prior nsith="
@@ -2306,7 +2370,7 @@ class Kever:
         # get delegator if any
         if serder.ilk == Ilks.dip:
             delpre = serder.delpre  # delegator from dip event
-            if not delpre:
+            if not delpre:  # empty or None
                 raise ValidationError(f"Empty or missing delegator for delegated"
                                           f" inception event = {serder.ked}.")
         elif serder.ilk == Ilks.drt:  # serder.ilk == Ilks.drt so rotation
@@ -2315,32 +2379,39 @@ class Kever:
             delpre = None
 
 
+        if not local and self.locallyOwned(delpre):
+            self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
+                               seqner=delseqner, saider=delsaider, local=local)
+            raise MisfitEventSourceError(f"Nonlocal source  for locally"
+                                                 f" delegated by {delpre} of"
+                                                 f"event = {serder.ked}.")
 
-        # Kevery .process event logic does not prevent this from seeing event when
-        # not local and event pre is own pre
-        if not self.locallyOwned(serder.pre):  # not in self.prefixes
-            if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
-                    (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
-                     not (oset(self.prefixes) & oset(wits))) or # own prefix is not a witness  not self.locallyWitnessed(serder)
-                    (self.local and self.locallyOwned(delpre))):  # local delegator needs to be witnessed
+        # short circuit witness validation when either locallyOwned or locallyWitnessed
+        # otherwise must validate fully witnessed
+        if not (self.locallyOwned(serder.pre) or self.locallyWitnessed(serder=serder)):
+            #if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
+                    #(wits and self.prefixes and not local and  # not promiscuous nonlocal
+                     #not (oset(self.prefixes) & oset(wits))) or # own prefix is not a witness  not self.locallyWitnessed(serder)
+                    #(local and self.locallyOwned(delpre))):  # local delegator needs to be witnessed
                 # validate that event is fully witnessed
 
-                if wits:
-                    if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
-                        raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
-                else:
-                    if toader.num != 0:  # invalid toad
-                        raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
+            if wits:
+                if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
+                    raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
+            else:
+                if toader.num != 0:  # invalid toad
+                    raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
 
-                if len(windices) < toader.num:  # not fully witnessed yet
-                    if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
-                                          seqner=delseqner, saider=delsaider):
-                        # cue to query for witness receipts
-                        self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
-                    raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
-                                                       f"on witness sigs="
-                                                       f"{[siger.qb64 for siger in wigers]} "
-                                                       f"for event={serder.ked}.")
+            if len(windices) < toader.num:  # not fully witnessed yet
+                if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
+                                      seqner=delseqner, saider=delsaider,
+                                      local=local):
+                    # cue to query for witness receipts
+                    self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
+                raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
+                                                   f"on witness sigs="
+                                                   f"{[siger.qb64 for siger in wigers]} "
+                                                   f"for event={serder.ked}.")
 
         if delpre:
             self.validateDelegation(serder, sigers=sigers, wigers=wigers,
@@ -2586,11 +2657,13 @@ class Kever:
         # Witness accepts without waiting for delegation seal to be anchored in
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
 
-
-        # ToDo XXXX add local lax check after figure out dist multisig group
-        if (self.local and (self.locallyOwned(serder.pre) or
-                            self.locallyWitnessed(serder=serder))):
-            return # delegator
+        if self.locallyOwned(serder.pre) or self.locallyWitnessed(serder=serder):
+            if not local:  # nonlocal remote event source so misfit
+                self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
+                raise MisfitEventSourceError(f"Nonlocal source for locally owned"
+                                             f"or locally witnessed event"
+                                             f" = {serder.ked}.")
+            return
 
 
         if self.kevers is None or delpre not in self.kevers:   # drop event
@@ -2613,7 +2686,12 @@ class Kever:
 
         # during initial delegation we just escrow the delcept event
         if delseqner is None and delsaider is None:
-            if self.local and self.locallyOwned(delpre):  # local delegator
+            if self.locallyOwned(delpre):  # local delegator
+                if not local:  # events for local delegator must be sourced locally
+                    self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
+                    raise MisfitEventSourceError(f"Nonlocal source  for locally"
+                                                 f" delegated by {delpre} of"
+                                                 f"event = {serder.ked}.")
                 # create virtual anchor seal so local delegator can evaluate
                 # superseding logic with provisional virtual seal
                 dkever = self.kevers[delpre]
@@ -2625,16 +2703,16 @@ class Kever:
                 delseqner = coring.Seqner(snh=dserder.snh)
                 delsaider = coring.Saider(qb64=dserder.said)
             else:  # not local delegator so escrow
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-                raise MissingDelegationError("No delegation seal for delegator {} "
-                                         "with evt = {}.".format(delpre, serder.ked))
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
+                raise MissingDelegationError(f"No delegation seal for delegator "
+                                             "{delpre} of evt = {serder.ked}.")
 
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
 
         # if local delegator then we already created virtual dserder for delegating event
-        if not (self.local and self.locallyOwned(delpre)):  # not local delegator
+        if not self.locallyOwned(delpre):  # not local delegator
             # get the dig of the delegating event. Using getKeLast ensures delegating
             #  event has not already been superceded
             key = snKey(pre=delpre, sn=ssn)  # database key
@@ -2650,7 +2728,7 @@ class Kever:
                 #  escrow event here
                 inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
                 sn = validateSN(sn=serder.snh, inceptive=inceptive)
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
                 raise MissingDelegationError("No delegating event from {} at {} for "
                                              "evt = {}.".format(delpre,
@@ -2862,6 +2940,47 @@ class Kever:
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                     serder.preb, serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
+
+
+    def escrowMFEvent(self, serder, sigers, wigers=None,
+                      seqner=None, saider=None, local=True):
+        """
+        Update associated logs for escrow of MisFit event
+
+        Parameters:
+            serder (SerderKERI): instance of  event
+            sigers (list): of Siger instance for  event
+            seqner (Seqner): instance of sn of event delegatint/issuing event if any
+            saider (Saider): instance of dig of event delegatint/issuing event if any
+            wigers (list): of witness signatures
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+        """
+        local = True if local else False
+        dgkey = dgKey(serder.preb, serder.saidb)
+        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else:  # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putEvt(dgkey, serder.raw)
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if seqner and saider:
+            couple = seqner.qb64b + saider.qb64b
+            self.db.putPde(dgkey, couple)  # idempotent
+        self.db.mfes.add(snKey(serder.preb, serder.sn), serder.saidb)
+        # log escrowed
+        logger.info("Kever state: escrowed misfit event=\n%s\n",
+                    json.dumps(serder.ked, indent=1))
 
 
     def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
@@ -3379,7 +3498,7 @@ class Kevery:
                                             delegator=kever.delpre,
                                             serder=serder))
 
-                if self.local and kever.locallyOwned():
+                if self.local and kever.locallyOwned(kever.prefixer.qb64):
                     # ToDo XXXX process  this cue of query to send event to delegator
                     # to trigger generation of anchor in delegating event
                     # note for remote validators there is query cue in
@@ -3481,7 +3600,7 @@ class Kevery:
                                                 delegator=kever.delpre,
                                                 serder=serder))
 
-                    if self.local and kever.locallyOwned():
+                    if self.local and kever.locallyOwned(kever.prefixer.qb64):
                         # ToDo XXXX process  this cue of query to send event to delegator
                         # to trigger generation of anchor in delegating event
                         # note for remote validators there is query cue in
@@ -4447,7 +4566,7 @@ class Kevery:
     def escrowMFEvent(self, serder, sigers, wigers=None,
                       seqner=None, saider=None, local=True):
         """
-        Update associated logs for escrow of MisTit event
+        Update associated logs for escrow of MisFit event
 
         Parameters:
             serder (SerderKERI): instance of  event

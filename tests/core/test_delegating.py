@@ -721,3 +721,4 @@ def test_delegation_supersede():
 
 if __name__ == "__main__":
     test_delegation()
+    test_delegation_supersede()
