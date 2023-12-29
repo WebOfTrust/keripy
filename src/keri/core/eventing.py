@@ -2881,15 +2881,6 @@ class Kever:
         local = True if local else False
         dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-
-        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
-            if local and not esr.local:  # local overwrites prexisting remote
-                esr.local = local
-                self.db.esrs.pin(keys=dgkeys, val=esr)
-            # otherwise don't change
-        else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkeys, val=esr)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
@@ -2897,14 +2888,14 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
-        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+        if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
+                self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
-        else: # not preexisting so put
+        else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=dgkeys, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
         self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
@@ -2934,15 +2925,6 @@ class Kever:
         """
         local = True if local else False  # ignored since not escrowing serder here
         dgkey = dgKey(serder.preb, serder.saidb)
-        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
-            if local and not esr.local:  # local overwrites prexisting remote
-                esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
-            # otherwise don't change
-        else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
-
         couple = seqner.qb64b + saider.qb64b
         self.db.putPde(dgkey, couple)  # idempotent
         logger.info("Kever state: Escrowed source couple for partially signed "
@@ -2969,15 +2951,6 @@ class Kever:
         local = True if local else False
         dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-        if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
-            if local and not esr.local:  # local overwrites prexisting remote
-                esr.local = local
-                self.db.esrs.pin(keys=dgkeys, val=esr)
-            # otherwise don't change
-        else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkeys, val=esr)
-
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
@@ -2989,14 +2962,14 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
-        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+        if (esr := self.db.esrs.get(keys=dgkeys)):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkey, val=esr)
+                self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
         else: # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkey, val=esr)
+            self.db.esrs.put(keys=dgkeys, val=esr)
 
         logger.info("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
