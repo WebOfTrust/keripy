@@ -534,6 +534,15 @@ class Baser(dbing.LMDBer):
             the source when processing escrows that would otherwise be decoupled
             from the original source of the event.
 
+        .mfes is named sub DB instance of CesrIoSetSuber for misfit escrows
+            snKey
+            DB is keyed by event controller prefix plus sn of serialized event
+            Value is serialized qb64b dig (said) of event
+            Misfit escrows are events with remote (nonlocal) sources that are
+            inappropriate (i.e. would be dropped) unless they can be upgraded
+            to local source via some extra after the fact authentication.
+            Escrow processing determines if and how to upgrade event source to
+            local and then reprocess
 
         .fels is named sub DB of first seen event log table (FEL) of digests
             that indexes events in first 'seen' accepted order for replay and
@@ -775,6 +784,9 @@ class Baser(dbing.LMDBer):
             identical message bodies across participants in group multisig body trying
             to reach concensus on events or credentials.
 
+        Missing ToDo XXXX other attributes as sub dbs not documented here
+            such as .wits etc
+
     Properties:
         kevers (dbdict): read through cache of kevers of states for KELs in db
 
@@ -857,6 +869,9 @@ class Baser(dbing.LMDBer):
         self.esrs = koming.Komer(db=self,
                                    schema=EventSourceRecord,
                                    subkey='esrs.')
+
+        # event source local (protected) or non-local (remote not protected)
+        self.mfes = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
