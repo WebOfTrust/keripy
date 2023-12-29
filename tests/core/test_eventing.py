@@ -4824,7 +4824,7 @@ def test_load_event(mockHelpingNowUTC):
             _ = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
 
         # tor events are locallyWitnessed by wan so must process as local
-        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanHab.kvy) # process as local
+        parsing.Parser().parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
 
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.pre)
@@ -4860,7 +4860,7 @@ def test_load_event(mockHelpingNowUTC):
 
         # Anchor Tee's inception event in Tor's KEL
         ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
-        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanHab.kvy)  # give to wan must be local
+        parsing.Parser().parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
 
         evt = eventing.loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
@@ -4897,12 +4897,13 @@ def test_load_event(mockHelpingNowUTC):
         nrct = wilHab.receipt(serder=teeHab.kever.serder)
 
         # Now Wan should be ready for Tee's inception
-        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanHab.kvy)
-        parsing.Parser().parse(ims=bytearray(rct), kvy=wanHab.kvy)
-        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanHab.kvy)
+        parsing.Parser().parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
+        parsing.Parser().parse(ims=bytearray(rct), kvy=wanHab.kvy, local=True) # local
+        parsing.Parser().parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
         # ToDo XXXX fix it so cues are durable in db so can process cues from
         # both and remote sources
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
 
         # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts
 
