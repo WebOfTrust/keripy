@@ -162,10 +162,21 @@ def test_baser():
         record = basing.EventSourceRecord()
         assert db.esrs.get(key) == None
         assert db.esrs.put(key, record) == True
-        assert db.esrs.get(key) == record
+        actual = db.esrs.get(key)
+        assert actual == record
         record.local = False
+        # put does not overwrite must pin
+        assert db.esrs.put(key, record) == False
+        actual = db.esrs.get(key)
+        assert actual.local != record.local
+        assert actual != record
+        assert not db.esrs.get(key) == record
         assert db.esrs.pin(key, record) == True
+        actual = db.esrs.get(key)
+        assert actual.local == record.local
         assert db.esrs.get(key) == record
+
+
 
 
         # test first seen event log .fels sub db

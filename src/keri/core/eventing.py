@@ -2822,9 +2822,18 @@ class Kever:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if wits:
             self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
-        self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
 
-        #self.db.esrs.put(keys=dgkey, val=esr)
+        self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+        # update event source
+        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else: # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
         val = (coring.Prefixer(qb64b=serder.preb), coring.Seqner(sn=serder.sn))
         for verfer in (serder.verfers if serder.verfers is not None else []):
             self.db.pubs.add(keys=(verfer.qb64,), val=val)
@@ -2852,6 +2861,7 @@ class Kever:
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                     serder.preb, serder.pretty())
         return (fn, dtsb.decode("utf-8"))  # (fn int, dts str) if first else (None, dts str)
+
 
     def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
         """
@@ -2882,11 +2892,23 @@ class Kever:
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+
         self.db.putEvt(dgkey, serder.raw)
+        # update event source
+        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else: # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
         snkey = snKey(serder.preb, serder.sn)
         self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
         logger.info("Kever state: Escrowed partially signed or delegated "
                     "event = %s\n", serder.ked)
+
 
     def escrowPACouple(self, serder, seqner, saider, local=True):
         """
@@ -2908,7 +2930,7 @@ class Kever:
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
         """
-        local = True if local else False
+        local = True if local else False  # ignored since not escrowing serder here
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -2923,6 +2945,7 @@ class Kever:
         self.db.putPde(dgkey, couple)  # idempotent
         logger.info("Kever state: Escrowed source couple for partially signed "
                     "or delegated event = %s\n", serder.ked)
+
 
     def escrowPWEvent(self, serder, wigers, sigers=None,
                       seqner=None, saider=None, local=True):
@@ -2962,6 +2985,16 @@ class Kever:
             self.db.putPde(dgkey, couple)
 
         self.db.putEvt(dgkey, serder.raw)
+        # update event source
+        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else: # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
         logger.info("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)
         return self.db.addPwe(snKey(serder.preb, serder.sn), serder.saidb)
