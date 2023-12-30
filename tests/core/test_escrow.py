@@ -388,7 +388,7 @@ def test_missing_delegator_escrow():
         bobIcpMsg = msg  # save for later
 
         # apply msg to bob's Kevery
-        psr.parse(ims=bytearray(msg), kvy=bobKvy)
+        psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bobPre]
         assert bobK.prefixer.qb64 == bobPre
@@ -425,7 +425,7 @@ def test_missing_delegator_escrow():
         bobIxnMsg = msg
 
         # apply msg to bob's Kevery
-        psr.parse(ims=bytearray(msg), kvy=bobKvy)
+        psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
@@ -446,7 +446,7 @@ def test_missing_delegator_escrow():
         msg.extend(bobSrdr.saidb)
 
         # apply Del's delegated inception event message to bob's Kevery
-        psr.parse(ims=bytearray(msg), kvy=bobKvy)
+        psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
@@ -457,7 +457,7 @@ def test_missing_delegator_escrow():
 
         # apply Del's inception msg to Del's Kevery
         # Dels event will fail but will add to its escrow
-        psr.parse(ims=bytearray(msg), kvy=delKvy)
+        psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delPre not in delKvy.kevers
         assert bobPre not in delKvy.kevers
@@ -479,7 +479,7 @@ def test_missing_delegator_escrow():
         assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
 
         # apply Bob's inception to Dels' Kvy
-        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy)
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(bobIcpMsg))  # process remote copy of msg
         assert bobPre in delKvy.kevers  # message accepted
         delKvy.processEscrowPartialSigs()  # process escrow
@@ -491,7 +491,7 @@ def test_missing_delegator_escrow():
         assert escrow == seqner.qb64b + bobSrdr.saidb  #  escrow entry for event
 
         # apply Bob's delegating interaction to Dels' Kvy
-        psr.parse(ims=bytearray(bobIxnMsg), kvy=delKvy)
+        psr.parse(ims=bytearray(bobIxnMsg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(bobIxnMsg))  # process remote copy of msg
         delKvy.processEscrowPartialSigs()  # process escrows
         assert delPre in delKvy.kevers  # event removed from escrow
@@ -534,12 +534,12 @@ def test_missing_delegator_escrow():
             msg.extend(siger.qb64b)
 
         # apply msg to bob's Kevery
-        psr.parse(ims=bytearray(msg), kvy=bobKvy)
+        psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        psr.parse(ims=bytearray(msg), kvy=delKvy)
+        psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bobPre].serder.said == bobSrdr.said
 
@@ -560,7 +560,7 @@ def test_missing_delegator_escrow():
         msg.extend(bobSrdr.saidb)
 
         # apply Del's delegated Rotation event message to del's Kevery
-        psr.parse(ims=bytearray(msg), kvy=delKvy)
+        psr.parse(ims=bytearray(msg), kvy=delKvy, local=True)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
@@ -568,7 +568,7 @@ def test_missing_delegator_escrow():
         assert couple == seqner.qb64b + bobSrdr.saidb
 
         # apply Del's delegated Rotation event message to bob's Kevery
-        psr.parse(ims=bytearray(msg), kvy=bobKvy)
+        psr.parse(ims=bytearray(msg), kvy=bobKvy, local=True)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated

@@ -718,7 +718,7 @@ class TCPMessenger(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield from self.parser.parsator()  # process messages continuously
+        yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
     def idle(self):
@@ -812,7 +812,7 @@ class TCPStreamMessenger(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
-        yield from self.parser.parsator()  # process messages continuously
+        yield from self.parser.parsator(local=True)  # process messages continuously
 
     @property
     def idle(self):

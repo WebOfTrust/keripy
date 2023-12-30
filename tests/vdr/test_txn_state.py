@@ -181,10 +181,6 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
-    #raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    #salter = coring.Salter(raw=raw)
-    #salt = salter.qb64
-    #assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # Habery.makeHab uses name as stem path for salt so different pre
     with (habbing.openHby(name="wes", base="test") as wesHby,
           habbing.openHby(name="bob", base="test") as bobHby,
@@ -214,7 +210,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy, local=True)
             iserder = serdering.SerderKERI(raw=bytearray(msg))
             wesHab.receipt(serder=iserder)
 
@@ -256,7 +252,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         bamReger = viring.Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
-        parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy, local=True)
 
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-mae", issuer.regk, wesHab.pre))
         said = b'EMoqBJpoPJCkCejSUZ8IShTeGd_WQkF0zOQc2l0HQusn'
@@ -267,14 +263,14 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue['q']['pre'] == bobHab.pre
 
         wesIcp = wesHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(wesIcp), kvy=bamKvy)
+        parsing.Parser().parse(ims=bytearray(wesIcp), kvy=bamKvy, local=True)
         assert wesHab.pre in bamHby.db.kevers
 
         msgs = bytearray()
         for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             msgs.extend(msg)
 
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
         assert bobHab.pre in bamHby.db.kevers
 
         bamTvy.processEscrows()
@@ -287,7 +283,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         saider = bamReger.txnsb.escrowdb.get(keys=("registry-ooo", issuer.regk, wesHab.pre))
         assert saider[0].qb64b == said
 
-        parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy)
+        parsing.Parser().parse(ims=bytearray(tmsgs), tvy=bamTvy, rvy=bamRvy, local=True)
 
         assert issuer.regk in bamReger.tevers
 
