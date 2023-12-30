@@ -95,7 +95,7 @@ def test_indexed_witness_replay():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
             assert kvy.kevers[camHab.pre].sn == 0  # accepted event
             assert len(kvy.cues) >= 1  # at least queued receipt cue
             # better to find receipt cue in cues exactly
@@ -105,7 +105,7 @@ def test_indexed_witness_replay():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -124,16 +124,16 @@ def test_indexed_witness_replay():
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy, local=True)
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam icp and witness rcts to Van
-        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
         # should escrow since not witnesses
         assert camHab.pre not in vanKvy.kevers
         # process receipts
-        parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy, local=True)
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers  # now accepted
         vcKvr = vanKvy.kevers[camHab.pre]
@@ -145,7 +145,7 @@ def test_indexed_witness_replay():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy, local=True)
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) >= 1  # at least queued receipt cue
             # better to find receipt cue in cues exactly
@@ -155,7 +155,7 @@ def test_indexed_witness_replay():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -174,15 +174,15 @@ def test_indexed_witness_replay():
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=kvy, local=True)
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
-        parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=vanKvy, local=True)
         vanKvy.processEscrows()
         assert vcKvr.sn == 0
-        parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy, local=True)
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
@@ -192,13 +192,13 @@ def test_indexed_witness_replay():
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
         assert len(camReplayMsg) == 2038
-        parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
+        parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
         assert len(wilKvy.cues) == 2
         wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
         assert len(wilKvy.cues) == 0
-        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy)
+        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy, local=True)
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
@@ -214,7 +214,7 @@ def test_indexed_witness_replay():
         rctMsgs = []  # list of receipt msgs from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy, local=True)
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
             assert len(kvy.cues) >= 1  # at least queued receipt cue
             # better to find receipt cue in cues exactly
@@ -224,7 +224,7 @@ def test_indexed_witness_replay():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -243,7 +243,7 @@ def test_indexed_witness_replay():
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=kvy, local=True)
             # kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
@@ -256,10 +256,10 @@ def test_indexed_witness_replay():
         # assert vcKvr.wits == camHab.kever.wits
 
         # send Cam rot's witness rcts to Van first then send Cam rot
-        parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=vanKvy, local=True)
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
-        parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy, local=True)
         assert vcKvr.sn == 1
         vanKvy.processEscrows()
         assert vcKvr.sn == 2
@@ -361,7 +361,7 @@ def test_nonindexed_witness_receipts():
         camIcpMsg = camHab.makeOwnInception()
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
-            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
             # accepted event with cam sigs since own witness
             assert kvy.kevers[camHab.pre].sn == 0
             assert len(kvy.cues) >= 1  # at least queued receipt cue
@@ -371,7 +371,7 @@ def test_nonindexed_witness_receipts():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # Cam process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -382,7 +382,7 @@ def test_nonindexed_witness_receipts():
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's icp message
         for i, msg in enumerate(rctMsgs):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
             assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
@@ -398,7 +398,7 @@ def test_nonindexed_witness_receipts():
         assert camHab.pre not in vanKvy.kevers  # still not accepted
 
         # Van process icp message from Cam
-        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
@@ -420,7 +420,7 @@ def test_nonindexed_witness_receipts():
         camIxnMsg = camHab.interact()
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
-            parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy, local=True)
             # kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) >= 1  # at least queued receipt cue
@@ -431,7 +431,7 @@ def test_nonindexed_witness_receipts():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # Cam process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -442,7 +442,7 @@ def test_nonindexed_witness_receipts():
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
             assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
@@ -457,7 +457,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.wits == wits  # no change
 
         # Van process ixn message from Cam
-        parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
@@ -477,14 +477,14 @@ def test_nonindexed_witness_receipts():
         #    Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
         assert len(camReplayMsg) == 2038
-        parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
+        parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
 
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
         assert len(wilKvy.cues) == 2
         wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
         assert len(wilKvy.cues) == 0
-        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy)
+        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy, local=True)
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
@@ -503,7 +503,7 @@ def test_nonindexed_witness_receipts():
 
         rctMsgs = []  # list of receipt msgs from each witness
         for i, kvy in enumerate(camWitKvys):
-            parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy, local=True)
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
             assert len(kvy.cues) >= 1  # at least queued receipt cue
             # better to find receipt cue in cues exactly
@@ -513,7 +513,7 @@ def test_nonindexed_witness_receipts():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:  # process rct msgs from all witnesses
-            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy, local=True)
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -524,7 +524,7 @@ def test_nonindexed_witness_receipts():
         snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
-            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
             assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
@@ -532,7 +532,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.sn == 1  # not rot yet
 
         # send stale receipts from Wil to Van
-        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=vanKvy, local=True)
 
         assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # no change
 
@@ -544,7 +544,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.wits == oldwits  # no change
 
         # Van process rot message from Cam
-        parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
         assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
@@ -590,7 +590,7 @@ def test_out_of_order_witnessed_events():
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = eventing.Kevery(db=wesHby.db, lax=False, local=False)
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
         wesHab.receipt(serder=iserder)
@@ -598,7 +598,7 @@ def test_out_of_order_witnessed_events():
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
         bobHab.rotate()
         bobRotMsg = bobHab.makeOwnEvent(sn=1)
-        parsing.Parser().parse(ims=bytearray(bobRotMsg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(bobRotMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[bobHab.pre].sn == 1
         bobRot = serdering.SerderKERI(raw=bobRotMsg)
         wesHab.receipt(serder=bobRot)
@@ -609,7 +609,7 @@ def test_out_of_order_witnessed_events():
             msgs.extend(msg)
 
         bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
-        parsing.Parser().parse(ims=msgs, kvy=bamKvy)
+        parsing.Parser().parse(ims=msgs, kvy=bamKvy, local=True)
 
         # Ensure the rot ended up in out-of-order escrow
         assert bobHab.pre not in bamKvy.kevers
