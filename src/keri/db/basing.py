@@ -778,7 +778,7 @@ class Baser(dbing.LMDBer):
             the associated event. So one can lookup event digest, get its fn here
             and then use fn to fetch event by fn from .fels.
 
-        .states (stts) is named subDB instance of SerderSuber that maps a prefix
+        .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix
             to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
