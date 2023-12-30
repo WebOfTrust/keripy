@@ -46,6 +46,79 @@ from ..help import helping
 logger = help.ogler.getLogger()
 
 
+
+# ToDo XXXX maybe
+'''
+class komerdict(dict):
+    """
+    Subclass of dict that has db as attribute and employs read through cache
+    from db Baser.stts of kever states to reload kever from state in database
+    when not found in memory as dict item.
+
+    add method that answers is a given pre a group hab pre .localGroup(pre)
+
+    ToDo XXXX change name of dbdict to stateDict since now have differen types
+    and can't subclass dict with init parameters.
+    but can change function by manually assigning attributes but that is ugly
+    need wrapper decorator to do that. So can update attributes with wrapper
+    on class that injects instance attributes when class is instanced
+    one of the injected parameters is function that that maps returned Komer to
+    object class
+    parameters are subdb (must be Komer) and function that maps retrieved dataclass
+    record  from dataabase to class instance. if no mapping function then just
+    return the dataclass record as value.
+    """
+    __slots__ = ('db')  # no .__dict__ just for db reference
+
+    def __init__(self, *pa, **kwa):
+        super(dbdict, self).__init__(*pa, **kwa)
+        self.db = None
+
+    def __getitem__(self, k):
+        try:
+            return super(dbdict, self).__getitem__(k)
+        except KeyError as ex:
+            if not self.db:
+                raise ex  # reraise KeyError
+            if (ksr := self.db.states.get(keys=k)) is None:
+                raise ex  # reraise KeyError
+            try:
+                kever = eventing.Kever(state=ksr, db=self.db)
+            except kering.MissingEntryError:  # no kel event for keystate
+                raise ex  # reraise KeyError
+            self.__setitem__(k, kever)
+            return kever
+
+    def __contains__(self, k):
+        if not super(dbdict, self).__contains__(k):
+            try:
+                self.__getitem__(k)
+                return True
+            except KeyError:
+                return False
+        else:
+            return True
+
+    def get(self, k, default=None):
+        """Override of dict get method
+
+        Parameters:
+            k (str): key for dict
+            default: default value to return if not found
+
+        Returns:
+            kever: converted from underlying dict or database
+
+        """
+        if not super(dbdict, self).__contains__(k):
+            return default
+        else:
+            return self.__getitem__(k)
+
+'''
+
+
+# ToDo XXXX change name to statedict since not a generic dbdict
 class dbdict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
@@ -98,6 +171,9 @@ class dbdict(dict):
             return default
         else:
             return self.__getitem__(k)
+
+
+
 
 
 @dataclass
