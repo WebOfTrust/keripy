@@ -947,7 +947,7 @@ class Baser(dbing.LMDBer):
                                    schema=EventSourceRecord,
                                    subkey='esrs.')
 
-        # event source local (protected) or non-local (remote not protected)
+        # misfit escrows whose processing may change the .esrs event source record
         self.mfes = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals

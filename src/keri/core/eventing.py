@@ -1815,7 +1815,7 @@ class Kever:
         else:
             wits, _, _ = self.deriveBacks(serder=serder)
 
-        return (oset(self.prefixes) & oset(wits))
+        return True if (self.prefixes & oset(wits)) else False
 
 
     def reload(self, state):
