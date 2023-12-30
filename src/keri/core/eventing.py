@@ -1784,6 +1784,16 @@ class Kever:
         pre = pre if pre is not None else ''
         return pre in self.prefixes
 
+    def locallyOwnedGroup(self, pre):
+        """Returns True if pre is locally owned group identifier prefix.
+        Reads habs database to figure this out.
+
+        Parameters:
+           pre (str|None): qb64 identifier prefix or None
+
+        """
+        return True
+
 
     def locallyWitnessed(self, serder=None):
         """Returns True if a local controller is a witness of this Kever's KEL
@@ -1800,7 +1810,7 @@ class Kever:
         if not serder:
             wits = self.wits
         else:
-            wits = self.deriveWits(serder=serder)
+            wits, _, _ = self.deriveBacks(serder=serder)
 
         return (oset(self.prefixes) & oset(wits))
 
@@ -2181,39 +2191,7 @@ class Kever:
         # use ordered set math ops to verify and ensure strict ordering of wits
         # cuts and add to ensure that indexed signatures on indexed witness
         # receipts work
-        witset = oset(self.wits)
-        cuts = serder.cuts # ked["br"]
-        cutset = oset(cuts)
-        if len(cutset) != len(cuts):
-            raise ValidationError("Invalid cuts = {}, has duplicates for evt = "
-                                  "{}.".format(cuts, ked))
-
-        if (witset & cutset) != cutset:  # some cuts not in wits
-            raise ValidationError("Invalid cuts = {}, not all members in wits"
-                                  " for evt = {}.".format(cuts, ked))
-
-        adds = serder.adds # ked["ba"]
-        addset = oset(adds)
-        if len(addset) != len(adds):
-            raise ValidationError("Invalid adds = {}, has duplicates for evt = "
-                                  "{}.".format(adds, ked))
-
-        if cutset & addset:  # non empty intersection
-            raise ValidationError("Intersecting cuts = {} and  adds = {} for "
-                                  "evt = {}.".format(cuts, adds, ked))
-
-        if witset & addset:  # non empty intersection
-            raise ValidationError("Intersecting wits = {} and  adds = {} for "
-                                  "evt = {}.".format(self.wits, adds, ked))
-
-        wits = list((witset - cutset) | addset)
-
-        if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
-            raise ValidationError("Invalid member combination among wits = {}, cuts ={}, "
-                                  "and adds = {} for evt = {}.".format(self.wits,
-                                                                       cuts,
-                                                                       adds,
-                                                                       ked))
+        wits, cuts, adds = self.deriveBacks(serder)
 
         toader = serder.bner # Number(num=ked["bt"])  # auto converts hex num to int
         if wits:
@@ -2228,18 +2206,21 @@ class Kever:
         return tholder, toader, wits, cuts, adds
 
 
-    def deriveWits(self, serder):
-        """Derives and return list of wits given current set and any changes
-        provided by serder.
+    def deriveBacks(self, serder):
+        """Derives and return tuple of (wits, cuts, adds) for backers  given
+        current set and any changes provided by serder.
 
         Returns:
-            wits (list[str]): of prefixes of witnesses
+            wca (tuple): of
+               wits (list[str]): prefixes of witnesses full list (backers)
+               cuts (list[str]): prefixes of witnesses removed in latest est evt
+               adds (list[str]): prefixes of witnesses added in latest est evt
 
         Parameters:
             serder (SerderKeri): instance of current event
         """
         if serder.ilk not in (Ilks.rot, Ilks.drt):  # no changes
-            return self.wits
+            return (self.wits, self.cuts, self.adds)
 
         witset = oset(self.wits)
         cuts = serder.cuts
@@ -2272,7 +2253,7 @@ class Kever:
             raise ValidationError(f"Invalid member combination among wits = "
                                   f"{self.wits}, cuts ={cuts}, and adds = "
                                   f"{adds,} for evt = {serder.ked}.")
-        return wits
+        return (wits, cuts, adds)
 
 
 
@@ -2329,6 +2310,10 @@ class Kever:
                                   "".format(tholder.sith,
                                             [verfer.qb64 for verfer in verfers],
                                             serder.ked))
+
+        # ToDo XXXX Filters sigers and verfers to remove any locallyOwnedGroups when local
+        # is False before verifying signatures so that remote sourced event cannot
+        # use locally owned member signatures for group to satisfy threshold.
 
         # get unique verified sigers and indices lists from sigers list
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
@@ -2417,7 +2402,6 @@ class Kever:
             self.validateDelegation(serder, sigers=sigers, wigers=wigers,
                                     local=local, delpre=delpre,
                                     delseqner=delseqner, delsaider=delsaider)
-
 
         return sigers, wigers, delpre
 
@@ -3424,8 +3408,9 @@ class Kevery:
             dater (Dater|None): instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            local (bool|None): True means local (protected) event source. False
-                means remote (unprotected), None means use default .local
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
         """
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
@@ -3635,16 +3620,19 @@ class Kevery:
                         raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
 
-    def processReceiptWitness(self, serder, wigers):
+    def processReceiptWitness(self, serder, wigers, local=None):
         """
         Process one witness receipt serder with attached witness sigers
 
         Parameters:
-            serder is SerderKERI instance of serialized receipt message not receipted event
-            sigers is list of Siger instances that with witness indexed signatures
+            serder (SerderKERI): instance of serialized receipt message not receipted event
+            wigers (list[Siger]): instances that with witness indexed signatures
                 signature in .raw. Index is offset into witness list of latest
                 establishment event for receipted event. Signature uses key pair
                 derived from nontrans witness prefix in associated witness list.
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
 
         Receipt dict labels
             vs  # version string
@@ -3653,6 +3641,9 @@ class Kevery:
             ilk  # rct
             dig  # qb64 digest of receipted event
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
@@ -3705,14 +3696,17 @@ class Kevery:
             raise UnverifiedWitnessReceiptError("Unverified witness receipt={}."
                                                 "".format(ked))
 
-    def processReceipt(self, serder, cigars):
+    def processReceipt(self, serder, cigars, local=None):
         """
         Process one receipt serder with attached cigars (non-witness receipts)
 
         Parameters:
-            serder is SerderKERI instance of serialized receipt message not receipted message
-            cigars is list of Cigar instances that contain receipt couple
+            serder (SerderKERI): instance of serialized receipt message not receipted message
+            cigars (list[Cigar]): instances that contain receipt couple
                 signature in .raw and public key in .verfer
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
 
         Receipt dict labels
             vs  # version string
@@ -3721,6 +3715,9 @@ class Kevery:
             ilk  # rct
             dig  # qb64 digest of receipted event
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
@@ -3775,19 +3772,25 @@ class Kevery:
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
-    def processReceiptCouples(self, serder, cigars, firner=None):
+    def processReceiptCouples(self, serder, cigars, firner=None, local=None):
         """
         Process attachment with receipt couple
 
         Parameters:
-            serder is SerderKERI instance of receipted serialized event message
+            serder (SerderKERI): instance of receipted serialized event message
                 to which receipts are attached from replay
-            cigars is list of Cigar instances that contain receipt couple
+            cigars (list[Cigar]): instances that contain receipt couple
                 signature in .raw and public key in .verfer
-            firner is Seqner instance of first seen ordinal,
+            firner (Seqner): instance of first seen ordinal,
                 if provided lookup event by fn = firner.sn
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
 
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
@@ -3839,14 +3842,17 @@ class Kevery:
                     couple = cigar.verfer.qb64b + cigar.qb64b
                     self.db.addRct(key=dgKey(pre, ldig), val=couple)
 
-    def processReceiptTrans(self, serder, tsgs):
+    def processReceiptTrans(self, serder, tsgs, local=None):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
 
         Parameters:
-            serder is chit serder (transferable validator receipt message)
-            tsgs is tist of tuples from extracted transferable indexed sig groups
+            serder (serderKERI): rct (transferable validator receipt message)
+            tsgs (list[tuple]): from extracted transferable indexed sig groups
                 each converted group is tuple of (i,s,d) triple plus list of sigs
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
 
         Receipt dict labels
             vs  # version string
@@ -3856,6 +3862,9 @@ class Kevery:
             dig  # qb64 digest of receipted event
 
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
@@ -3927,16 +3936,18 @@ class Kevery:
                     self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
                                    val=quadruple)  # dups kept
 
-    def processReceiptQuadruples(self, serder, trqs, firner=None):
+    def processReceiptQuadruples(self, serder, trqs, firner=None, local=None):
         """
         Process one attachment quadruple that comprises a transferable receipt
 
         Parameters:
-            serder is chit serder (transferable validator receipt message)
-            trqs is list of tuples (quadruples) of form
-                (prefixer, seqner, diger, siger)
-            firner is Seqner instance of first seen ordinal,
+            serder (serderKERI): rct (transferable validator receipt message)
+            trqs (list[tuple]): quadruples of (prefixer, seqner, diger, siger)
+            firner (Seqner): instance of first seen ordinal,
                if provided lookup event by fn = firner.sn
+            local (bool|None): True means local (protected) event source.
+                               False means remote (unprotected).
+                               None means use default .local .
 
         Seal labels
             i pre  # qb64 prefix of receipter
@@ -3944,6 +3955,9 @@ class Kevery:
             d dig  # qb64 digest of est event for receipter keys
 
         """
+        local = local if local is not None else self.local
+        local = True if local else False  # force boolean
+
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
