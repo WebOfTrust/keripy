@@ -2129,12 +2129,14 @@ def test_dbdict():
     """
     Test custom dbdict subclass of dict
     """
-    dbd = basing.dbdict(a=1, b=2, c=3)
+    dbd = basing.dbdict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
     assert 'b' in dbd
     assert 'c' in dbd
     assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+    assert list(dbd.keys()) == ['a', 'b', 'c']
+    assert list(dbd.values()) == [1, 2, 3]
 
     assert dbd.get('a') == 1
     assert dbd['a'] == 1

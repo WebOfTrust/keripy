@@ -198,6 +198,7 @@ class Revery:
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
+
     def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):
         """ Applies Best Available Data Acceptance policy to reply and signatures
