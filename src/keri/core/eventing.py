@@ -1784,8 +1784,11 @@ class Kever:
         pre = pre if pre is not None else ''
         return pre in self.prefixes
 
-    def locallyOwnedGroup(self, pre):
-        """Returns True if pre is locally owned group identifier prefix.
+
+    def locallyMembered(self, pre):
+        """Returns True if group hab identifier prefix has as a contributing
+        member a locally owned prefix
+
         Reads habs database to figure this out.
 
         Parameters:

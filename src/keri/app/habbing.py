@@ -129,8 +129,10 @@ class Habery:
         psr (parsing.Parser):  parses local messages for .kvy .rvy
 
         habs (dict): Hab instances keyed by prefix.
-            To look up Hab by name get prefix from db.habs .prefix field using
-            .habByName
+            To look up Hab by name use use .habByName
+            To look up Hab by prefix us .habByPrefix
+            to get hab from db need name for key
+            hab prefix in db.habs record .hid field
 
         inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
@@ -753,7 +755,8 @@ class Habery:
 
     def habByPre(self, pre):
         """
-        Returns the Hab from and namespace including the default namespace.
+        Returns the Hab instance from .habs or .namespace
+        including the default namespace.
 
         Args:
             pre (str): qb64 aid of hab to find
@@ -774,7 +777,8 @@ class Habery:
     def habByName(self, name, ns=None):
         """
         Returns:
-            hab (Hab): instance from .habs by name if any otherwise None
+            hab (Hab): instance by name from .habs or .namspaces
+            if any otherwise None
 
         Parameters:
            name (str): alias of Hab
@@ -1027,7 +1031,7 @@ class BaseHab:
         self.psr = psr  # injected
 
         self.name = name
-        self.ns = ns
+        self.ns = ns  # what is this?
         self.pre = pre  # wait to setup until after db is known to be opened
         self.temp = True if temp else False
 
