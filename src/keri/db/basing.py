@@ -903,7 +903,7 @@ class Baser(dbing.LMDBer):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.mfes = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
+        self.misfits = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
