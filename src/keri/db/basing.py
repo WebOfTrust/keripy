@@ -68,52 +68,6 @@ class komerdict(dict):
     record  from dataabase to class instance. if no mapping function then just
     return the dataclass record as value.
     """
-    __slots__ = ('db')  # no .__dict__ just for db reference
-
-    def __init__(self, *pa, **kwa):
-        super(dbdict, self).__init__(*pa, **kwa)
-        self.db = None
-
-    def __getitem__(self, k):
-        try:
-            return super(dbdict, self).__getitem__(k)
-        except KeyError as ex:
-            if not self.db:
-                raise ex  # reraise KeyError
-            if (ksr := self.db.states.get(keys=k)) is None:
-                raise ex  # reraise KeyError
-            try:
-                kever = eventing.Kever(state=ksr, db=self.db)
-            except kering.MissingEntryError:  # no kel event for keystate
-                raise ex  # reraise KeyError
-            self.__setitem__(k, kever)
-            return kever
-
-    def __contains__(self, k):
-        if not super(dbdict, self).__contains__(k):
-            try:
-                self.__getitem__(k)
-                return True
-            except KeyError:
-                return False
-        else:
-            return True
-
-    def get(self, k, default=None):
-        """Override of dict get method
-
-        Parameters:
-            k (str): key for dict
-            default: default value to return if not found
-
-        Returns:
-            kever: converted from underlying dict or database
-
-        """
-        if not super(dbdict, self).__contains__(k):
-            return default
-        else:
-            return self.__getitem__(k)
 
 '''
 
@@ -1198,6 +1152,9 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
+                if data.mid:  # group hab
+                    self.gids.add(data.hid)
+
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
@@ -1217,6 +1174,8 @@ class Baser(dbing.LMDBer):
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
+                if data.mid:  # group hab
+                    self.gids.add(data.hid)
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
@@ -1238,7 +1197,7 @@ class Baser(dbing.LMDBer):
                     temp=self.temp,
                     headDirPath=self.headDirPath,
                     perm=self.perm,
-                    clean=True) as copy:
+                    clean=True) as copy:  # copy is Baser instance
 
             with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly
                 if not os.path.exists(self.path):
@@ -1262,7 +1221,12 @@ class Baser(dbing.LMDBer):
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         copy.prefixes.add(val.hid)
+                        if val.mid:  # a group hab
+                            copy.gids.add(val.hid)
 
+                # ToDo XXXX
+                # is this obsolete? Should this be removed or should this be
+                # be the Signator name not the default name of the Habery?
                 if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."
                                      "".format(self.name))
@@ -1298,6 +1262,10 @@ class Baser(dbing.LMDBer):
             # clear and clone .prefixes
             self.prefixes.clear()
             self.prefixes.update(copy.prefixes)
+
+            # clear and clone .gids
+            self.gids.clear()
+            self.gids.update(copy.gids)
 
             with reopenDB(db=self, reuse=True):  # make sure can reopen
                 if not isinstance(self.env, lmdb.Environment):
