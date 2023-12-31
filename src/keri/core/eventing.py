@@ -1623,7 +1623,7 @@ class Kever:
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
                  db=None, estOnly=None, delseqner=None, delsaider=None, firner=None,
-                 dater=None, cues=None, prefixes=None, local=True, check=False):
+                 dater=None, cues=None, local=True, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1651,11 +1651,6 @@ class Kever:
                 When dater provided then use dater for first seen datetime
             cues (Deck | None): reference to Kevery.cues Deck when provided
                 i.e. notices of events or requests to respond to
-            prefixes (list | None): own prefixes for own local habitats.
-                May not include the prefix of this Kever's event when inception
-                has not yet been accepted into KEL
-                Some restrictions if present
-                If empty then effectively in promiscuous mode
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -1673,7 +1668,6 @@ class Kever:
             db = basing.Baser(reopen=True)  # default name = "main"
         self.db = db
         self.cues = cues
-        self.prefixes = prefixes if prefixes is not None else db.prefixes
         local = True if local else False
 
         if state:  # preload from state
@@ -1758,6 +1752,14 @@ class Kever:
         Returns .baser.kevers
         """
         return self.db.kevers
+
+
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
 
 
     @property
@@ -3440,7 +3442,6 @@ class Kevery:
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
-                              prefixes=self.prefixes,
                               local=local,
                               check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
