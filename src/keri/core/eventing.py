@@ -1763,6 +1763,14 @@ class Kever:
 
 
     @property
+    def groups(self):
+        """
+        Returns .db.gids oset of group hab ids (prefixes)
+        """
+        return self.db.gids
+
+
+    @property
     def transferable(self):
         """
         Property transferable:
@@ -2957,7 +2965,7 @@ class Kever:
         if seqner and saider:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
-        self.db.mfes.add(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.misfits.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.info("Kever state: escrowed misfit event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
@@ -4607,7 +4615,7 @@ class Kevery:
         if seqner and saider:
             couple = seqner.qb64b + saider.qb64b
             self.db.putPde(dgkey, couple)  # idempotent
-        self.db.mfes.add(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.misfits.add(snKey(serder.preb, serder.sn), serder.saidb)
         # log escrowed
         logger.info("Kevery process: escrowed misfit event=\n%s\n",
                     json.dumps(serder.ked, indent=1))
