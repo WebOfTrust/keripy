@@ -887,7 +887,8 @@ class Baser(dbing.LMDBer):
 
 
         """
-        self.prefixes = oset()
+        self.prefixes = oset()  # should change to hids for hab ids
+        self.gids = oset()  # group hab ids
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
@@ -1178,6 +1179,7 @@ class Baser(dbing.LMDBer):
         self.reload()
 
         return self.env
+
 
     def reload(self):
         """

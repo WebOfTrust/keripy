@@ -238,6 +238,7 @@ class Habery:
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
 
+
     def setup(self, *, seed=None, aeid=None, bran=None, pidx=None, algo=None,
               salt=None, tier=None, free=False, temp=None, ):
         """
@@ -313,6 +314,7 @@ class Habery:
         self.loadHabs()
         self.inited = True
 
+
     def loadHabs(self):
         """Load Habs instance from db
 
@@ -349,9 +351,9 @@ class Habery:
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                           name=name, pre=pre, temp=self.temp)
 
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
+            # Rules for acceptance:
+            # It is accepted into its own local KEL even if it has not been fully
+            # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
@@ -385,9 +387,9 @@ class Habery:
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                           name=name, ns=ns, pre=pre, temp=self.temp)
 
-            # Rules for acceptance
-            #  if its delegated its accepted into its own local KEL even if the
-            #    delegator has not sealed it
+            # Rules for acceptance:
+            # It is accepted into its own local KEL even if it has not been fully
+            # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
                 raise kering.ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={name} from db.")
@@ -403,6 +405,7 @@ class Habery:
             self.habs[habord.hid].mhab = self.habs[habord.mid]
 
         self.reconfigure()  # post hab load reconfiguration
+
 
     def makeHab(self, name, ns=None, cf=None, **kwa):
         """Make new Hab with name, pre is generated from **kwa
@@ -2657,6 +2660,7 @@ class GroupHab(BaseHab):
         self.rmids = rmids  # group rotating member aids in this group hab
 
         super(GroupHab, self).__init__(**kwa)
+
 
     def make(self, *, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
