@@ -842,7 +842,7 @@ class Baser(dbing.LMDBer):
 
         """
         self.prefixes = oset()  # should change to hids for hab ids
-        self.gids = oset()  # group hab ids
+        self.groups = oset()  # group hab ids
         self._kevers = dbdict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
@@ -1153,7 +1153,7 @@ class Baser(dbing.LMDBer):
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
                 if data.mid:  # group hab
-                    self.gids.add(data.hid)
+                    self.groups.add(data.hid)
 
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
@@ -1175,7 +1175,7 @@ class Baser(dbing.LMDBer):
                 self.kevers[kever.prefixer.qb64] = kever
                 self.prefixes.add(kever.prefixer.qb64)
                 if data.mid:  # group hab
-                    self.gids.add(data.hid)
+                    self.groups.add(data.hid)
             elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
                 removes.append(keys)  # no key state or KEL event for .hab record
 
@@ -1222,7 +1222,7 @@ class Baser(dbing.LMDBer):
                         copy.habs.put(keys=keys, val=val)
                         copy.prefixes.add(val.hid)
                         if val.mid:  # a group hab
-                            copy.gids.add(val.hid)
+                            copy.groups.add(val.hid)
 
                 # ToDo XXXX
                 # is this obsolete? Should this be removed or should this be
@@ -1264,8 +1264,8 @@ class Baser(dbing.LMDBer):
             self.prefixes.update(copy.prefixes)
 
             # clear and clone .gids
-            self.gids.clear()
-            self.gids.update(copy.gids)
+            self.groups.clear()
+            self.groups.update(copy.groups)
 
             with reopenDB(db=self, reuse=True):  # make sure can reopen
                 if not isinstance(self.env, lmdb.Environment):

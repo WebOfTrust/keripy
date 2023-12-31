@@ -1767,7 +1767,7 @@ class Kever:
         """
         Returns .db.gids oset of group hab ids (prefixes)
         """
-        return self.db.gids
+        return self.db.groups
 
 
     @property
@@ -1782,17 +1782,21 @@ class Kever:
 
 
     def locallyOwned(self, pre):
-        """Returns True if pre is in .prefixes False otherwise. Indicates that
-        provided identifier prefix is controlled by a local controller from
-        .prefixes
+        """Returns True if pre is in .prefixes and not in .groups
+        False otherwise.
+        Indicates that provided identifier prefix is controlled by a local
+        controller from .prefixes but is not a group with local member.
         i.e pre is a locally owned (controlled) AID (identifier prefix)
 
+        Returns:
+            (bool): True if pre is local hab but not group hab
+
         Parameters:
-           pre (str|None): qb64 identifier prefix or None
+            pre (str|None): qb64 identifier prefix or None
 
         """
         pre = pre if pre is not None else ''
-        return pre in self.prefixes
+        return pre in self.prefixes and pre not in self.groups
 
 
     def locallyMembered(self, pre):
