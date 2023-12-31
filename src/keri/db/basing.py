@@ -1192,7 +1192,6 @@ class Baser(dbing.LMDBer):
                 try:
                     kever = eventing.Kever(state=ksr,
                                            db=self,
-                                           prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
@@ -1212,7 +1211,6 @@ class Baser(dbing.LMDBer):
                 try:
                     kever = eventing.Kever(state=ksr,
                                            db=self,
-                                           prefixes=self.prefixes,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
