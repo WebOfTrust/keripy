@@ -689,6 +689,8 @@ class Habery:
 
         del self.habs[hab.pre]
         self.db.prefixes.remove(hab.pre)
+        if hab.pre in self.db.gids:
+            self.db.gids.remove(hab.pre)
 
         return True
 
