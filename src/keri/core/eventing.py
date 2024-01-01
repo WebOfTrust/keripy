@@ -3527,8 +3527,9 @@ class Kevery:
                     if sigers or wigers:  # at least one verified sig or wig so log evt
                         # this allows late arriving witness receipts or controller
                         # signatures to be added to the databse
-                        # not first seen inception so ignore return
-                        kever.logEvent(serder, sigers=sigers, wigers=wigers)  # idempotent update db logs
+                        # Not first seen version of event so ignore return
+                        # idempotent update db logs
+                        kever.logEvent(serder, sigers=sigers, wigers=wigers)
 
                 else:  # escrow likely duplicitous event
                     self.escrowLDEvent(serder=serder, sigers=sigers)
@@ -3619,7 +3620,10 @@ class Kevery:
                                                       verfers=werfers)
 
                         if sigers or wigers:  # at least one verified sig or wig so log evt
-                            # not first seen update so ignore return
+                            # this allows late arriving witness receipts or controller
+                            # signatures to be added to the databse
+                            # Not first seen version of event so ignore return
+                            # idempotent update db logs
                             kever.logEvent(serder, sigers=sigers, wigers=wigers)  # idempotent update db logs
 
                     else:  # escrow likely duplicitous event
@@ -3629,7 +3633,8 @@ class Kevery:
 
     def processReceiptWitness(self, serder, wigers, local=None):
         """
-        Process one witness receipt serder with attached witness sigers
+        Process one witness receipt serder with attached witness wigers
+        (indexed signatures)
 
         Parameters:
             serder (SerderKERI): instance of serialized receipt message not receipted event
@@ -3654,7 +3659,6 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-
         sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
@@ -3682,13 +3686,13 @@ class Kevery:
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
 
-                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is receiptor
+                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is witness
                     if pre in self.prefixes:  # skip own receiptor of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on own event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on own event
-                    if not self.local:  # own receipt on other event when not local
+                    if not local:  # so skip own receipt on other event when non-local source
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on nonlocal event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on non-local event
@@ -3705,10 +3709,13 @@ class Kevery:
 
     def processReceipt(self, serder, cigars, local=None):
         """
-        Process one receipt serder with attached cigars (non-witness receipts)
+        Process one receipt serder with attached cigars
+        may or may not be a witness receipt. If prefix matches witness then
+        promote to indexed witness signature and store appropriately. Otherwise
+        signature is nontrans nonwitness endorser (watcher etc)
 
         Parameters:
-            serder (SerderKERI): instance of serialized receipt message not receipted message
+            serder (SerderKERI): rct instance of serialized receipt message
             cigars (list[Cigar]): instances that contain receipt couple
                 signature in .raw and public key in .verfer
             local (bool|None): True means local (protected) event source.
@@ -3757,7 +3764,7 @@ class Kevery:
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on own event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on own event
-                    if not self.local:  # own receipt on other event when not local
+                    if not local:  # skip own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on nonlocal event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on non-local event
@@ -3779,17 +3786,23 @@ class Kevery:
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
-    def processReceiptCouples(self, serder, cigars, firner=None, local=None):
+    def processAttachedReceiptCouples(self, serder, cigars, firner=None, local=None):
         """
-        Process attachment with receipt couple
+        Process one attachment couple that represents an endorsement from
+        a nontransferable AID  that may or may not be a witness, maybe a watcher.
+        Originally may have been a non-transferable receipt or key event attachment
+        if signature is for witness then promote to indexed sig and store
+        appropriately.
+        The is the attachment version of .processReceipt
 
         Parameters:
-            serder (SerderKERI): instance of receipted serialized event message
-                to which receipts are attached from replay
+            serder (SerderKERI): instance serialized event message to which
+                attachments come from replay (clone)
             cigars (list[Cigar]): instances that contain receipt couple
                 signature in .raw and public key in .verfer
             firner (Seqner): instance of first seen ordinal,
                 if provided lookup event by fn = firner.sn
+                used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
                                False means remote (unprotected).
                                None means use default .local .
@@ -3832,7 +3845,7 @@ class Kevery:
                     logger.info("Kevery process: skipped own receipt attachment"
                                 " on own event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on own event
-                if not self.local:  # own receipt on other event when not local
+                if not local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
                                 " on nonlocal event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on non-local event
@@ -3852,6 +3865,8 @@ class Kevery:
     def processReceiptTrans(self, serder, tsgs, local=None):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
+        (indexed signatures) who are not controllers. Controllers may only attach signatures to
+        the associated event not by sending signature attached to receipt of event.
 
         Parameters:
             serder (serderKERI): rct (transferable validator receipt message)
@@ -3897,18 +3912,18 @@ class Kevery:
         for sprefixer, sseqner, saider, sigers in tsgs:  # iterate over each tsg
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
                 if pre in self.prefixes:  # skip own receipter of own event
-                    # sign own events not receipt them
+                    # sign own events as controller not endorse them via receipt
                     raise ValidationError("Own pre={} receipter of own event"
                                           " {}.".format(self.prefixes, serder.pretty()))
-                if not self.local:  # skip own receipts of nonlocal events
+                if not local:  # skip own receipts of nonlocal events
                     raise ValidationError("Own pre={} receipter of nonlocal event "
                                           "{}.".format(self.prefixes, serder.pretty()))
 
             # receipted event in db so attempt to get receipter est evt
-            # retrieve dig of last event at sn of est evt of receipter.
+            # retrieve dig of last event at sn of est evt of receiptor.
             sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b, sn=sseqner.sn))
             if sdig is None:
-                # receipter's est event not yet in receipters's KEL
+                # receiptor's est event not yet in receiptors's KEL
                 # so need cue to discover est evt KEL for receipter from watcher etc
                 self.escrowTReceipts(serder, sprefixer, sseqner, saider, sigers)
                 raise UnverifiedTransferableReceiptError("Unverified receipt: "
@@ -3916,7 +3931,7 @@ class Kevery:
                                                          "receipter for event={}."
                                                          "".format(ked))
 
-            # retrieve last event itself of receipter est evt from sdig.
+            # retrieve last event itself of receiptor est evt from sdig.
             sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = serdering.SerderKERI(raw=bytes(sraw))
@@ -3932,7 +3947,7 @@ class Kevery:
                                       " dig = {}  from pre ={}, no keys."
                                       "".format(saider.qb64, sprefixer.qb64))
 
-            for siger in sigers:
+            for siger in sigers:  # endorser (non-controller) signatures
                 if siger.index >= len(sverfers):
                     raise ValidationError("Index = {} to large for keys."
                                           "".format(siger.index))
@@ -3943,15 +3958,21 @@ class Kevery:
                     self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
                                    val=quadruple)  # dups kept
 
-    def processReceiptQuadruples(self, serder, trqs, firner=None, local=None):
+    def processAttachedReceiptQuadruples(self, serder, trqs, firner=None, local=None):
         """
-        Process one attachment quadruple that comprises a transferable receipt
+        Process one attachment quadruple that represents an endorsement from
+        a transferable AID that is not the controller. Maybe a watcher.
+        Originally may have been a transferable receipt or key event attachment
+
+        This is the attachement version of .processReceiptTrans
 
         Parameters:
-            serder (serderKERI): rct (transferable validator receipt message)
+            serder (serderKERI):  instance serialized event message to which
+                attachments come from replay (clone)
             trqs (list[tuple]): quadruples of (prefixer, seqner, diger, siger)
             firner (Seqner): instance of first seen ordinal,
                if provided lookup event by fn = firner.sn
+               used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
                                False means remote (unprotected).
                                None means use default .local .
@@ -3982,7 +4003,7 @@ class Kevery:
                     raise ValidationError("Own pre={} replay attached transferable "
                                           "receipt quadruple of own event {}."
                                           "".format(self.prefixes, serder.pretty()))
-                if not self.local:  # skip own trans receipt quadruples of nonlocal events
+                if not local:  # skip own trans receipt quadruples of nonlocal events
                     raise ValidationError("Own pre={} seal in replay attached "
                                           "transferable receipt quadruples of nonlocal"
                                           " event {}.".format(self.prefixes, serder.pretty()))
@@ -5773,7 +5794,13 @@ class Kevery:
                     # process event
                     sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
 
-                    #  get wigs
+                    # ToDo XXXX get wigs and attach
+                    # getWigs
+
+                    # ToDo XXXX get trans endorsements
+                    # getVrcs
+
+                    #  get nontrans endorsements
                     cigars = []
                     cigs = self.db.getRcts(dgKey(pre, bytes(edig)))  # list of wigs
                     for cig in cigs:
