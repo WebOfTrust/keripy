@@ -1077,9 +1077,11 @@ class Parser:
                                      local=local)
 
                     if cigars:
-                        kvy.processReceiptCouples(serder, cigars, firner=firner)
+                        kvy.processAttachedReceiptCouples(serder, cigars,
+                                                    firner=firner, local=local)
                     if trqs:
-                        kvy.processReceiptQuadruples(serder, trqs, firner=firner)
+                        kvy.processAttachedReceiptQuadruples(serder, trqs,
+                                                    firner=firner, local=local)
 
                 except AttributeError as ex:
                     raise kering.ValidationError("No kevery to process so dropped msg"
@@ -1092,13 +1094,16 @@ class Parser:
 
                 try:
                     if cigars:
-                        kvy.processReceipt(serder=serder, cigars=cigars)
+                        kvy.processReceipt(serder=serder, cigars=cigars,
+                                           local=local)
 
                     if wigers:
-                        kvy.processReceiptWitness(serder=serder, wigers=wigers)
+                        kvy.processReceiptWitness(serder=serder, wigers=wigers,
+                                                  local=local)
 
                     if tsgs:
-                        kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
+                        kvy.processReceiptTrans(serder=serder, tsgs=tsgs,
+                                                local=local)
 
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"

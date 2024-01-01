@@ -618,8 +618,9 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Used to manage out of order events such as escrowing
-            receipt couple until event receipted shows up.
+            signers.
+            These are endorsements from nontrasferable signers who are not witnesses
+            May be watchers or other
             Each couple is concatenation of fully qualified items.
             These are: non-transferale prefix plus non-indexed event signature
             by that prefix.
@@ -632,6 +633,8 @@ class Baser(dbing.LMDBer):
             qualified items. These are: receipted event digest,
             non-transferable receiptor identifier prefix,
             plus nonindexed receipt event signature by that prefix.
+             Used to manage out of order events such as escrowing
+            receipt couple until event receipted shows up.
             snKey
             DB is keyed by receipted event controller prefix plus sn
             of serialized event
@@ -642,6 +645,8 @@ class Baser(dbing.LMDBer):
             of validator. These are: transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus indexed event signature.
+            These are endorsements by transferable AIDs that are not the controller
+            may be watchers or others.
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
@@ -1354,14 +1359,16 @@ class Baser(dbing.LMDBer):
                                       count=1).qb64b)
             atc.extend(couple)
 
-        # add trans receipts quadruples to attachments
+        # add trans endorsement quadruples to attachments not controller
+        # may have been originally key event attachments or receipted endorsements
         if quads := self.getVrcs(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
                                       count=len(quads)).qb64b)
             for quad in quads:
                 atc.extend(quad)
 
-        # add nontrans receipts couples to attachments
+        # add nontrans endorsement couples to attachments not witnesses
+        # may have been originally key event attachments or receipted endorsements
         if coups := self.getRcts(key=dgkey):
             atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
                                       count=len(coups)).qb64b)
