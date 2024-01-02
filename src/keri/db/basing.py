@@ -820,6 +820,17 @@ class Baser(dbing.LMDBer):
             identical message bodies across participants in group multisig body trying
             to reach concensus on events or credentials.
 
+        .pubs is CatCesrIoSetSuber with subkey="pubs." of concatenated tuples
+        (qb64 pre, qb64 snh) indexed by qb64 of public key. Maps each signing
+        public key from establishment event to the events's prefix and sequence number
+        so can look up an event by any of its signing keys. Updated by Kever.logEvent
+
+        .digs is CatCesrIoSetSuber with subkey="digs." of of concatenated tuples
+        (qb64 pre, qb64 snh) indexed by qb64 of digest of next signing public key.
+        Maps each next signing public key digest from establishment event to
+        the events's prefix and sequence number so can look up an event by any
+        of its next public signing key digests. Updated by Kever.logEvent
+
         Missing ToDo XXXX other attributes as sub dbs not documented here
             such as .wits etc
 
@@ -1121,11 +1132,15 @@ class Baser(dbing.LMDBer):
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
                                      klas=coring.Saider)
 
-        # public keys mapped to the AID and event seq no they appeared in
+        # siging public keys mapped to the AID and event seq no they appeared in so
+        # can look up member event designating as signing keys
+        # updated by Kever.logEvent.
         self.pubs = subing.CatCesrIoSetSuber(db=self, subkey="pubs.",
                                              klas=(coring.Prefixer, coring.Seqner))
 
-        # next key digests mapped to the AID and event seq no they appeared in
+        # next key digests mapped to the AID and event seq no they appeared in so
+        # can look up event designating as next signing key digest
+        # updated by Kever.logEvent.
         self.digs = subing.CatCesrIoSetSuber(db=self, subkey="digs.",
                                              klas=(coring.Prefixer, coring.Seqner))
 
@@ -1470,73 +1485,6 @@ class Baser(dbing.LMDBer):
                         return srdr
         return None
 
-
-
-    def findAnchoringSealEventClone(self, pre, seal):
-        """
-        Search through a KEL for the event that contains a specific anchored
-        SealEvent type of provided seal but in dict form.
-        Returns the Serder of the first event with the anchored SealEvent seal,
-            None if not found
-        Searchs from inception forward
-
-        Parameters:
-            pre is qb64 identifier of the KEL to search
-            seal is dict form of SealEvent to find in anchored seals list of each event
-
-        """
-        if tuple(seal.keys()) != eventing.SealEvent._fields:  # wrong type of seal
-            return None
-            #raise ValueError(f"Expected SealEvent got {seal}.")
-
-        seal = eventing.SealEvent(**seal)  #convert to namedtuple
-
-        # getEvtPreIter getEvtLastPreIter
-
-        for evt in self.clonePreIter(pre=pre):  # all events including superseded
-            srdr = serdering.SerderKERI(raw=evt)
-            for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == eventing.SealEvent._fields:
-                    eseal = eventing.SealEvent(**eseal)  #convert to namedtuple
-                    if seal == eseal and self.fullyWitnessed(srdr):
-                        return srdr
-                #spre = anc["i"]
-                #ssn = int(anc["s"], 16)
-                #sdig = anc["d"]
-
-                #if spre == seal["i"] and ssn == int(seal["s"], 16) \
-                        #and seal["d"] == sdig and self.fullyWitnessed(srdr):
-                    #return srdr
-
-        return None
-
-
-    def findAnchoringSealClone(self, pre, seal):
-        """
-        Search through a KEL for the event that contains an anchored
-        Seal with same Seal type as provided seal but in dict form.
-        Returns the Serder of the first event with the anchored Seal seal,
-            None if not found
-        Searchs from inception forward
-
-        Parameters:
-            pre is qb64 identifier of the KEL to search
-            seal is dict form of Seal of any type to find in anchored seals list of each event
-
-        """
-        # create generic Seal namedtuple class using keys from provided seal dict
-        Seal = namedtuple('Seal', seal.keys())  # matching type
-
-        # getEvtPreIter getEvtLastPreIter
-
-        for evt in self.clonePreIter(pre=pre):  # all events including superseded
-            srdr = serdering.SerderKERI(raw=evt)
-            for eseal in srdr.seals or []:
-                if tuple(eseal.keys()) == Seal._fields:  # same type of seal
-                    eseal = Seal(**eseal)  #convert to namedtuple
-                    if seal == eseal and self.fullyWitnessed(srdr):
-                        return srdr
-        return None
 
 
     def signingMembers(self, pre: str):

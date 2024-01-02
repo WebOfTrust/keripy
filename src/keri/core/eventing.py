@@ -1781,7 +1781,7 @@ class Kever:
         return True if self.ndigers and self.prefixer.transferable else False
 
 
-    def locallyOwned(self, pre):
+    def locallyOwned(self, pre: str | None = None):
         """Returns True if pre is in .prefixes and not in .groups
         False otherwise.
         Indicates that provided identifier prefix is controlled by a local
@@ -1792,27 +1792,15 @@ class Kever:
             (bool): True if pre is local hab but not group hab
 
         Parameters:
-            pre (str|None): qb64 identifier prefix or None
+            pre (str|None): qb64 identifier prefix if any. Default None
+                    None means use self.prefixer.qb64
 
         """
-        pre = pre if pre is not None else ''
+        pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.prefixes and pre not in self.groups
 
 
-    def locallyMembered(self, pre):
-        """Returns True if group hab identifier prefix has as a contributing
-        member a locally owned prefix
-
-        Use db.prefixes and db.gids to figure this out
-
-        Parameters:
-           pre (str|None): qb64 identifier prefix or None
-
-        """
-        return True
-
-
-    def locallyWitnessed(self, *, wits=None, serder=None):
+    def locallyWitnessed(self, *, wits: list[str]=None, serder: (str)=None):
         """Returns True if a local controller is a witness of this Kever's KEL
            of wits in serder of if None then current wits for this Kever.
            i.e.  self is witnessd by locally owned (controlled) AID (identifier prefix)
@@ -1831,6 +1819,52 @@ class Kever:
                 wits, _, _ = self.deriveBacks(serder=serder)
 
         return True if (self.prefixes & oset(wits)) else False
+
+
+    def locallyMembered(self, pre: str | None = None):
+        """Returns True if group hab identifier prefix pre has as a contributing
+        member a locally owned prefix by virture of pre in .groups
+
+        Returns:
+            (bool): True if pre is group hab identifier in .groups
+                    False otherwise
+
+        Parameters:
+            pre (str|None): qb64 identifier prefix if any or None
+                           When None default to use self.prefixer.qb64
+
+        """
+        # assumes stale group membership is taken care of by presence of groups
+        # i.e where once a local member but no more.
+        pre = pre if pre is not None else self.prefixer.qb64
+        return pre in self.groups  # groups
+
+
+    def locallyContributedIndices(self, verfers: list[Verfer]):
+        """Returns list of indices of public keys contributed by local members
+        to the KEL with current signing keys represented by verfers
+
+        Using the pubs index to find members of a signing group
+
+        Parameters:
+            verfers (list[Verfer]): instance for each current signing key
+
+        Returns:
+            indices list[int]: list of indices of keys contributed by local members
+
+        """
+        indices = []
+
+        for i, verfer in enumerate(verfers):
+            if (couples := self.pubs.get(keys=(verfer.qb64,))) is None:
+                continue
+
+            for (prefixer, seqner) in couples:
+                if self.locallyOwned(prefixer.qb64):  # only member not group aid
+                    indices.append(i)
+                    break  # only need one local member to exclude signature
+
+        return indices
 
 
     def reload(self, state):
@@ -2318,9 +2352,15 @@ class Kever:
                                             [verfer.qb64 for verfer in verfers],
                                             serder.ked))
 
-        # ToDo XXXX Filters sigers and verfers to remove any locallyOwnedGroups when local
-        # is False before verifying signatures so that remote sourced event cannot
-        # use locally owned member signatures for group to satisfy threshold.
+        # Filters sigers to remove any signatures from locally membered groups
+        # when not local (remote) event source. So that attacker can't source
+        # compromised signature remotely to satisfy threshold.
+
+        if not local and self.locallyMembered():  # is this Kever's pre a local group
+            if (indices := self.locallyContributedIndices(verfers)):
+                for siger in list(sigers):  # copy so clean del on original elements
+                    if siger.index in indices:
+                        del sigers[siger.index]
 
         # get unique verified sigers and indices lists from sigers list
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
@@ -2334,8 +2374,8 @@ class Kever:
         # Misfit check events that must be locally sourced (protected) get
         # escrowed in order to repair the protection when appropriate
         if (not local and
-                (self.locallyOwned(serder.pre) or
-                     self.locallyWitnessed(wits=wits))):
+                (self.locallyOwned() or
+                 self.locallyWitnessed(wits=wits))):
 
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
                                    seqner=delseqner, saider=delsaider, local=local)
@@ -2344,8 +2384,7 @@ class Kever:
                                                  f" = {serder.ked}.")
 
 
-        werfers = [Verfer(qb64=wit) for wit in wits]  # get witnes signatures
-
+        werfers = [Verfer(qb64=wit) for wit in wits]  # get witness public key verifiers
         # get unique verified wigers and windices lists from wigers list
         wigers, windices = verifySigs(raw=serder.raw, sigers=wigers, verfers=werfers)
         # each wiger now has added to it a werfer of its wit in its .verfer property
@@ -2384,8 +2423,9 @@ class Kever:
         else:  # not delegable event icp, rot, ixn
             delpre = None
 
-
-        if not local and self.locallyOwned(delpre):
+        # delpre maybe None so ensure not None to pass into .locallyOwned which
+        # defaults to self.prefixer.qb64 when None
+        if not local and self.locallyOwned(delpre if delpre is not None else ''):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
             raise MisfitEventSourceError(f"Nonlocal source  for locally"
@@ -2394,7 +2434,7 @@ class Kever:
 
         # short circuit witness validation when either locallyOwned or locallyWitnessed
         # otherwise must validate fully witnessed
-        if not (self.locallyOwned(serder.pre) or self.locallyWitnessed(wits=wits)):
+        if not (self.locallyOwned() or self.locallyWitnessed(wits=wits)):
             if wits:  # is witnessed
                 if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
                     raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
@@ -2620,18 +2660,23 @@ class Kever:
 
         Superseding Rules for Recovery at given SN (sequence number)
 
-        A0. Any rotation event may supersede an interaction event at the same sn. (existing rule)
-        A1. A non-delegated rotation may not supersede another rotation at the same sn.  (modified rule)
+        A0. Any rotation event may supersede an interaction event at the same sn.
+            where that interaction event is not before any other rotation event.
+            (existing rule)
+        A1. A non-delegated rotation may not supersede another rotation at the
+            same sn.  (modified rule)
         A2. An interaction event may not supersede any event. ( existing rule).
 
         (B. and C. below provide the new rules)
 
-        B.  A delegated rotation may supersede another delegated rotation at the same sn
-        under either of the following conditions:
+        B.  A delegated rotation may supersede the latest seen delegated rotation
+            at the same sn under either of the following conditions:
+
             B1.  The superseding rotation's delegating event is later than
             the superseded rotation's delegating event in the delegator's KEL, i.e. the
             sn of the superseding event's delegation is higher than the superseded event's
             delegation.
+
             B2. The sn of the superseding rotation's delegating event is the same as
             the sn of the superseded rotation's delegating event in the delegator's KEL
             and the superseding rotation's delegating event is a rotation and the
@@ -2641,14 +2686,31 @@ class Kever:
             delgator's KEL
 
         C. IF Neither A nor B is satisfied, then recursively apply rules A. and B. to
-        the delegating events of those delegating events and so on until either  A. or B.
-        is satisfied, or the root KEL of the delegation has been reached.
-          C1. If neither A. nor B. is satisfied by recursive application on the
-          delegator's KEL (i.e. the root KEL of the delegation has been reached without
-          satisfaction) then the superseding rotation is discarded. The terminal case of
-          the recursive application will occur at the root KEL which by defintion is
-          non-delegated wherefore either A. or B. must be satisfied, or else the
-          superseding rotation must be discarded.
+            the delegating events of those delegating events and so on until
+            either  A. or B. is satisfied, or the root KEL of the delegation
+            which must be undelegated has been reached.
+
+            C1. If neither A. nor B. is satisfied by recursive application on the
+            delegator's KEL (i.e. the root KEL of the delegation has been reached
+            without satisfaction) then the superseding rotation is discarded.
+            The terminal case of the recursive application will occur at the
+            root KEL which by defintion is non-delegated wherefore either
+            A. or B. must be satisfied, or else the superseding rotation must
+            be discarded.
+
+        Note: The latest seen deleagated rotation constraint means that any earlier
+        delegated rotations can NOT be superseded. This greatly simplifies the
+        validation logic and avoids a potential infinite regress of forks in the
+        delegated identifier's KEL.
+
+        In order to capture control of a delegated identifier the attacker must
+        issue a delegated rotation that rotates to keys under the control of the
+        attacker that must be approved by the delegator. A recovery rotation must
+        therefore superseded the compromised rotation. If the attacker is able
+        to issue and get approved by the delegator a second rotation
+        that follows but does not supersede the compromising rotation then
+        recovery is no longer possible because the delegatee would no longer
+        control the privete keys needed to verifiably sign a recovery rotation.
 
         """
         if not delpre:  # not delegable so no delegation validation needed
@@ -2661,7 +2723,7 @@ class Kever:
         # seal to be anchored in delegator's KEL.
         # Witness accepts without waiting for delegation seal to be anchored in
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
-        if self.locallyOwned(serder.pre) or self.locallyWitnessed(wits=wits):
+        if self.locallyOwned() or self.locallyWitnessed(wits=wits):
             return
 
 
@@ -3196,7 +3258,7 @@ class Kever:
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
-            serder = serdering.SerderKERI(raw=bytes(raw))
+            serder = serdering.SerderKERI(raw=bytes(raw), verify=False)
             if serder.estive:  # establishment event
                 key = serder.verfers[0].qb64
                 try:
@@ -3249,7 +3311,7 @@ class Kever:
         for digb in self.db.getKelBackIter(pre, sn):
             dgkey = dgKey(pre, digb)
             raw = self.db.getEvt(dgkey)
-            serder = serdering.SerderKERI(raw=bytes(raw))
+            serder = serdering.SerderKERI(raw=bytes(raw), verify=False)
             if serder.estive:  # establishment event
                 keys = [verfer.qb64 for verfer in serder.verfers]
                 try:
@@ -3480,7 +3542,8 @@ class Kevery:
                     # one receipt is generated not two
                     self.cues.push(dict(kin="witness", serder=serder))
 
-                if self.local and kever.locallyOwned(kever.delpre):  # delegator may be None
+                if (self.local and
+                    kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
                     # ToDo XXXX  need to cue task here  to approve delegation by generating
                     # an anchoring SealEvent of serder in delegators KEL
                     # may include MFA and or business logic for the delegator i.e. is local
@@ -3490,7 +3553,7 @@ class Kevery:
                                             delegator=kever.delpre,
                                             serder=serder))
 
-                if self.local and kever.locallyOwned(kever.prefixer.qb64):
+                if self.local and kever.locallyOwned():
                     # ToDo XXXX process  this cue of query to send event to delegator
                     # to trigger generation of anchor in delegating event
                     # note for remote validators there is query cue in
@@ -3583,7 +3646,8 @@ class Kevery:
                         # one receipt is generated not two
                         self.cues.push(dict(kin="witness", serder=serder))
 
-                    if self.local and kever.locallyOwned(kever.delpre):  # delegator may be None
+                    if (self.local and
+                        kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
                         # ToDo XXXX  need to cue task here  to approve delegation by generating
                         # an anchoring SealEvent of serder in delegators KEL
                         # may include MFA and or business logic for the delegator i.e. is local
@@ -3593,7 +3657,7 @@ class Kevery:
                                                 delegator=kever.delpre,
                                                 serder=serder))
 
-                    if self.local and kever.locallyOwned(kever.prefixer.qb64):
+                    if self.local and kever.locallyOwned():
                         # ToDo XXXX process  this cue of query to send event to delegator
                         # to trigger generation of anchor in delegating event
                         # note for remote validators there is query cue in
