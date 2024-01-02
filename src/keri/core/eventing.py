@@ -1781,7 +1781,7 @@ class Kever:
         return True if self.ndigers and self.prefixer.transferable else False
 
 
-    def locallyOwned(self, pre: str):
+    def locallyOwned(self, pre: str | None = None):
         """Returns True if pre is in .prefixes and not in .groups
         False otherwise.
         Indicates that provided identifier prefix is controlled by a local
@@ -1792,10 +1792,11 @@ class Kever:
             (bool): True if pre is local hab but not group hab
 
         Parameters:
-            pre (str|None): qb64 identifier prefix or None
+            pre (str|None): qb64 identifier prefix if any. Default None
+                    None means use self.prefixer.qb64
 
         """
-        pre = pre if pre is not None else ''
+        pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.prefixes and pre not in self.groups
 
 
@@ -1818,7 +1819,6 @@ class Kever:
                 wits, _, _ = self.deriveBacks(serder=serder)
 
         return True if (self.prefixes & oset(wits)) else False
-
 
 
     def locallyMembered(self, pre: str | None = None):
@@ -2374,8 +2374,8 @@ class Kever:
         # Misfit check events that must be locally sourced (protected) get
         # escrowed in order to repair the protection when appropriate
         if (not local and
-                (self.locallyOwned(serder.pre) or
-                     self.locallyWitnessed(wits=wits))):
+                (self.locallyOwned() or
+                 self.locallyWitnessed(wits=wits))):
 
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
                                    seqner=delseqner, saider=delsaider, local=local)
@@ -2423,7 +2423,8 @@ class Kever:
         else:  # not delegable event icp, rot, ixn
             delpre = None
 
-
+        # delpre maybe None so ensure not None to pass into .locallyOwned which
+        # defaults to self.prefixer.qb64 when None
         if not local and self.locallyOwned(delpre if delpre is not None else ''):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
                                seqner=delseqner, saider=delsaider, local=local)
@@ -2433,7 +2434,7 @@ class Kever:
 
         # short circuit witness validation when either locallyOwned or locallyWitnessed
         # otherwise must validate fully witnessed
-        if not (self.locallyOwned(serder.pre) or self.locallyWitnessed(wits=wits)):
+        if not (self.locallyOwned() or self.locallyWitnessed(wits=wits)):
             if wits:  # is witnessed
                 if toader.num < 1 or toader.num > len(wits):  # out of bounds toad
                     raise ValidationError(f"Invalid toad = {toader.num} for wits = {wits}")
@@ -2722,7 +2723,7 @@ class Kever:
         # seal to be anchored in delegator's KEL.
         # Witness accepts without waiting for delegation seal to be anchored in
         # delegator's KEL.  Witness cue in Kevery will then generate receipt
-        if self.locallyOwned(serder.pre) or self.locallyWitnessed(wits=wits):
+        if self.locallyOwned() or self.locallyWitnessed(wits=wits):
             return
 
 
@@ -3541,7 +3542,8 @@ class Kevery:
                     # one receipt is generated not two
                     self.cues.push(dict(kin="witness", serder=serder))
 
-                if self.local and kever.locallyOwned(kever.delpre):  # delegator may be None
+                if (self.local and
+                    kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
                     # ToDo XXXX  need to cue task here  to approve delegation by generating
                     # an anchoring SealEvent of serder in delegators KEL
                     # may include MFA and or business logic for the delegator i.e. is local
@@ -3551,7 +3553,7 @@ class Kevery:
                                             delegator=kever.delpre,
                                             serder=serder))
 
-                if self.local and kever.locallyOwned(kever.prefixer.qb64):
+                if self.local and kever.locallyOwned():
                     # ToDo XXXX process  this cue of query to send event to delegator
                     # to trigger generation of anchor in delegating event
                     # note for remote validators there is query cue in
@@ -3644,7 +3646,8 @@ class Kevery:
                         # one receipt is generated not two
                         self.cues.push(dict(kin="witness", serder=serder))
 
-                    if self.local and kever.locallyOwned(kever.delpre):  # delegator may be None
+                    if (self.local and
+                        kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
                         # ToDo XXXX  need to cue task here  to approve delegation by generating
                         # an anchoring SealEvent of serder in delegators KEL
                         # may include MFA and or business logic for the delegator i.e. is local
@@ -3654,7 +3657,7 @@ class Kevery:
                                                 delegator=kever.delpre,
                                                 serder=serder))
 
-                    if self.local and kever.locallyOwned(kever.prefixer.qb64):
+                    if self.local and kever.locallyOwned():
                         # ToDo XXXX process  this cue of query to send event to delegator
                         # to trigger generation of anchor in delegating event
                         # note for remote validators there is query cue in
