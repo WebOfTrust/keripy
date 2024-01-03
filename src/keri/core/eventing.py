@@ -2361,6 +2361,9 @@ class Kever:
                 for siger in list(sigers):  # copy so clean del on original elements
                     if siger.index in indices:
                         del sigers[siger.index]
+                        self.cues.push(dict(kin="remoteMemberedSig",
+                                            serder=serder,
+                                              index=siger.index))
 
         # get unique verified sigers and indices lists from sigers list
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
