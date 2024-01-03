@@ -76,8 +76,8 @@ class Exchanger:
         if tsgs is not None:
             for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
                 if sender != prefixer.qb64:  # sig not by aid
-                    raise MissingSignatureError("Exchange process: skipped signature not from aid="
-                                                "%s on exn msg=\n%s\n", sender, serder.pretty())
+                    raise MissingSignatureError(f"Exchange process: skipped signature not from aid="
+                                                f"{sender}, from {prefixer.qb64} on exn msg=\n{serder.pretty()}\n")
 
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < seqner.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):

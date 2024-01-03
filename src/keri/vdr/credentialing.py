@@ -980,7 +980,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
             postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
-        serder = serdering.SerderACDC(raw=msg) # coring.Serder(raw=msg)
+        serder = serdering.SerderKERI(raw=msg) # coring.Serder(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
