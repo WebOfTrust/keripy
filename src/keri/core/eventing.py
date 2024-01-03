@@ -2361,6 +2361,9 @@ class Kever:
                 for siger in list(sigers):  # copy so clean del on original elements
                     if siger.index in indices:
                         del sigers[siger.index]
+                        self.cues.push(dict(kin="remoteMemberedSig",
+                                            serder=serder,
+                                              index=siger.index))
 
         # get unique verified sigers and indices lists from sigers list
         sigers, indices = verifySigs(raw=serder.raw, sigers=sigers, verfers=verfers)
@@ -3543,7 +3546,7 @@ class Kevery:
                     self.cues.push(dict(kin="witness", serder=serder))
 
                 if (self.local and
-                    kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
+                    kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
                     # ToDo XXXX  need to cue task here  to approve delegation by generating
                     # an anchoring SealEvent of serder in delegators KEL
                     # may include MFA and or business logic for the delegator i.e. is local
@@ -3647,7 +3650,7 @@ class Kevery:
                         self.cues.push(dict(kin="witness", serder=serder))
 
                     if (self.local and
-                        kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delegator may be None
+                        kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
                         # ToDo XXXX  need to cue task here  to approve delegation by generating
                         # an anchoring SealEvent of serder in delegators KEL
                         # may include MFA and or business logic for the delegator i.e. is local
