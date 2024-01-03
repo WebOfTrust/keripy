@@ -2156,6 +2156,7 @@ class BaseHab:
             # ToDo XXXX cue for kin = "psUnescrow"
             # ToDo XXXX cue for kin = "stream"
             # ToDo XXXX cue for kin = "invalid"
+            # ToDo XXXX cue for kin=""remoteMemberedSig""
 
 
     def witnesser(self):
