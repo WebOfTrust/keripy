@@ -31,7 +31,8 @@ from ..kering import (MissingEntryError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
-                      QueryNotFoundError, MisfitEventSourceError)
+                      QueryNotFoundError, MisfitEventSourceError,
+                      MissingDelegableApprovalError)
 from ..kering import Version, Versionage
 from ..kering import (ICP_LABELS, DIP_LABELS, ROT_LABELS, DRT_LABELS, IXN_LABELS,
                        RPY_LABELS)
@@ -2599,18 +2600,24 @@ class Kever:
             Alternatively the approval logic may be triggered immediately after
             it is received and authenticated on it its local (protected) channel
             but before it is submitted to its local Kevery for processing.
-            This would require a sandboxed kel for the delegatee in order to
-            not corrupt its pristine copy of the delegatee's KEL with a valid
-            delegated event from a malicious source.
-            The delegator must not accept an event prior to controller signing
-            nor prior to full witness receipting.  This means a local
-            (protected) event may be accepted into a delegator's KEL when fully
-            signed by controller and fully witnessed by designated witness pool.
+            The delegator MUST NOT accept a delegable event unless it is locally
+            sourced, fully signed by its controller, and fully witnessed by its
+            controller's designated witness pool.
             A Delegator may impose additional validation logic prior to approval.
-            The local delegator logic creates a virtual delegation event with
-            seal for the purpose of checking the delegated event as superseding
-            event logic prior to acceptance but this does not protect against
-            a valid but malicious delegated event.
+            The approval logic may be handled by an escrow that only runs if
+            the delegable event is sourced as local. This may require a
+            sandboxed kel for the delegatee in order to not corrupt its pristine
+            copy of the delegatee's KEL with a valid delegable event from a
+            malicious source. The sandboxing logic may create a virtual
+            delegation event with seal for the purpose of checking the delegated
+            event superseding logic prior to acceptance.
+
+            A malicious attacker that compromises the pre-rotated keys of the
+            delegatee may issue a rotation that changes its witness pool in order
+            to bypass the local security logic of the witness pool. The approval
+            logic of the delegator may choose to not automatically approve a
+            delegable rotation event unliess the change to the witness pool is
+            below the threshold.
 
             The logic for superseded events is NOT a requirement for acceptance in
             either a delegated event controller's KEL or its witness' KEL. The
@@ -2625,14 +2632,14 @@ class Kever:
             delegator's KEL not via an interaction event then the delegator must
             check the logic for a virtual delegating rotation instead.
             In either case the delegated event does not change so the virtual
-            delegating interaction is sufficient to accept the delegated event
-            into the local copy of its KEL at the delegator.
+            delegating checks are sufficient to accept the delegated event
+            into the delegator's local copy of the delegatee's KEL.
 
 
-            Any of delegated
-            controller, delegated witness, or delegator of delegated
-            event may after the fact fully validate event by processing is as
-            a remote event. Then the logic applied is same as validator below.
+            Any of delegated controller, delegated witness, or delegator
+            of delegated event may after the fact fully validate event by
+            processing it as a remote event.
+            Then the logic applied is same as validator below.
 
             A validator of a delegated event that is not the event's controller,
             witness, or delegator must not accept the event until is is fully
@@ -2747,27 +2754,24 @@ class Kever:
         # Once fully receipted, cue in Kevery will then trigger cue to approve
         # delegation
 
-        if delseqner is None and delsaider is None:
-            if self.locallyOwned(delpre):  # local delegator so virtual delegation
-                # won't get to here if not local and locallyOwned(delpre) already
-                # misfit escrowed
-                pass
-                #
-                ## ToDo XXXX This logic moves to the Delegation escrow processing
-                ## process
-                ## ToDo XXXX  need to cue task here  to approve delegation by generating
-                ## an anchoring SealEvent of serder in delegators KEL
-                ## may include MFA and or business logic for the delegator i.e. is local
-                ## event that designates this controller as delegator triggers
-                ## this cue to approave delegation
-                ##self.cues.push(dict(kin="approveDelegation",
-                                        ##delegator=kever.delpre,
-                                        ##serder=serder))
+        if delseqner is None or delsaider is None:
+            if self.locallyOwned(delpre):  # local delegator so escrow.
+                # Won't get to here if not local and locallyOwned(delpre) because
+                # valSigsWigsDel will send nonlocal sourced delegable event to
+                # misfit escrow first. Mistfit escrow must first
+                # promote to local and reprocess event before we get to here
+                self.escrowDelegableEvent(serder=serder, sigers=sigers,
+                                          wigers=wigers,local=local)
+                raise MissingDelegableApprovalError(f"Missing approval for "
+                                                    f" delegation by {delpre} of"
+                                                         f"event = {serder.ked}.")
 
-                ## ToDo XXXX put this event in delegation escrow for delegator approval
-                ## any virtual delegation or sandboxing logic happens there
-                ## create virtual anchor seal so local delegator can evaluate
-                ## superseding logic with provisional virtual seal
+                # ToDo XXXX This logic moves to the Delegable escrow processing
+                # ToDo XXXX create process escrow for delegable events "dees."
+                #in order to get delegator approval
+                # any virtual delegation or sandboxing logic happens there
+                # create virtual anchor seal so local delegator can evaluate
+                # superseding logic with provisional virtual seal
                 #dkever = self.kevers[delpre]
                 #dseal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)
                 #dserder = interact(pre=dkever.prefixer.qb64,
@@ -2776,6 +2780,16 @@ class Kever:
                                            #data=[dseal._asdict()])
                 #delseqner = coring.Seqner(snh=dserder.snh)
                 #delsaider = coring.Saider(qb64=dserder.said)
+                # ToDo XXXX  need to cue task here  to approve delegation by generating
+                # an anchoring SealEvent of serder in delegators KEL
+                # may include MFA and or business logic for the delegator i.e. is local
+                # event that designates this controller as delegator triggers
+                # this cue to approave delegation
+                #self.cues.push(dict(kin="approveDelegation",
+                                        #delegator=kever.delpre,
+                                        #serder=serder))
+
+
             else:  # not local delegator so escrow
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 raise MissingDelegationError(f"No delegation seal for delegator "
@@ -2784,10 +2798,6 @@ class Kever:
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
-
-        # if local delegator then we already created virtual dserder for delegating event
-        #if not self.locallyOwned(delpre):  # not local delegator
-
 
         # get the dig of the delegating event. Using getKeLast ensures delegating
         #  event has not already been superceded
@@ -3026,9 +3036,9 @@ class Kever:
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
+            wigers (list): of witness signatures
             seqner (Seqner): instance of sn of event delegatint/issuing event if any
             saider (Saider): instance of dig of event delegatint/issuing event if any
-            wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3059,6 +3069,44 @@ class Kever:
                     json.dumps(serder.ked, indent=1))
 
 
+    def escrowDelegableEvent(self, serder, sigers, wigers=None, local=True):
+        """
+        Update associated logs for escrow of Delegable event that needs delegation
+        via an anchored seal in delegator's KEl
+
+        Parameters:
+            serder (SerderKERI): instance of  event
+            sigers (list): of Siger instance for  event
+            wigers (list): of witness signatures
+            seqner (Seqner): instance of sn of event delegatint/issuing event if any
+            saider (Saider): instance of dig of event delegatint/issuing event if any
+            local (bool): event source for validation logic
+                True means event source is local (protected).
+                False means event source is remote (unprotected).
+                Event validation logic is a function of local or remote
+        """
+        local = True if local else False
+        dgkey = dgKey(serder.preb, serder.saidb)
+        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
+            if local and not esr.local:  # local overwrites prexisting remote
+                esr.local = local
+                self.db.esrs.pin(keys=dgkey, val=esr)
+            # otherwise don't change
+        else:  # not preexisting so put
+            esr = basing.EventSourceRecord(local=local)
+            self.db.esrs.put(keys=dgkey, val=esr)
+
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
+        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putEvt(dgkey, serder.raw)
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        self.db.delegables.add(snKey(serder.preb, serder.sn), serder.saidb)
+        # log escrowed
+        logger.info("Kever state: escrowed delegable event=\n%s\n",
+                    json.dumps(serder.ked, indent=1))
+
+
     def escrowPSEvent(self, serder, sigers, wigers=None, local=True):
         """
         Update associated logs for escrow of partially signed event
@@ -3074,7 +3122,6 @@ class Kever:
                 Event validation logic is a function of local or remote
         """
         local = True if local else False
-        dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -3083,14 +3130,14 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
-        if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
+        if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkeys, val=esr)
+                self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkeys, val=esr)
+            self.db.esrs.put(keys=dgkey, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
         self.db.addPse(snkey, serder.saidb)  # b'EOWwyMU3XA7RtWdelFt-6waurOTH_aW_Z9VTaU-CshGk.00000000000000000000000000000001'
@@ -3144,7 +3191,6 @@ class Kever:
 
         """
         local = True if local else False
-        dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
         if wigers:
@@ -3157,14 +3203,14 @@ class Kever:
 
         self.db.putEvt(dgkey, serder.raw)
         # update event source
-        if (esr := self.db.esrs.get(keys=dgkeys)):  # preexisting esr
+        if (esr := self.db.esrs.get(keys=dgkey)):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
                 esr.local = local
-                self.db.esrs.pin(keys=dgkeys, val=esr)
+                self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else: # not preexisting so put
             esr = basing.EventSourceRecord(local=local)
-            self.db.esrs.put(keys=dgkeys, val=esr)
+            self.db.esrs.put(keys=dgkey, val=esr)
 
         logger.info("Kever state: Escrowed partially witnessed "
                     "event = %s\n", serder.ked)

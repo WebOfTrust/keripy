@@ -564,16 +564,32 @@ class Baser(dbing.LMDBer):
             the source when processing escrows that would otherwise be decoupled
             from the original source of the event.
 
-        .mfes is named sub DB instance of CesrIoSetSuber for misfit escrows
+        .misfits is named sub DB instance of CesrIoSetSuber for misfit escrows
+            subkey "mfes."
             snKey
             DB is keyed by event controller prefix plus sn of serialized event
             where sn is 32 char hex string with leading zeros
             Value is serialized qb64b dig (said) of event
             Misfit escrows are events with remote (nonlocal) sources that are
-            inappropriate (i.e. would be dropped) unless they can be upgraded
+            inappropriate (i.e. would be dropped) unless they can be promoted
             to local source via some extra after the fact authentication.
-            Escrow processing determines if and how to upgrade event source to
+            Escrow processing determines if and how to promote event source to
             local and then reprocess
+
+        .delegables is named sub DB instance of CesrIoSetSuber for delegable escrows
+            subkey "dees."
+            snKey
+            DB is keyed by event controller prefix plus sn of serialized event
+            where sn is 32 char hex string with leading zeros
+            Value is serialized qb64b dig (said) of event
+            Delegable event escrows are events with local delegator that need
+            to be approved via the anchoring of the delegated event seal in
+            the delegator's KEL. Event source must be local. A nonlocal (remote)
+            source for a delegable event of a local delegator must first pass
+            through the misfit escrow and get promoted to local source.
+
+        # delegable events escrows. events with local delegator that need approval
+        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
 
         .fels is named sub DB of first seen event log table (FEL) of digests
             that indexes events in first 'seen' accepted order for replay and
@@ -920,6 +936,9 @@ class Baser(dbing.LMDBer):
 
         # misfit escrows whose processing may change the .esrs event source record
         self.misfits = subing.CesrIoSetSuber(db=self, subkey='mfes.', klas=coring.Diger)
+
+        # delegable events escrows. events with local delegator that need approval
+        self.delegables = subing.CesrIoSetSuber(db=self, subkey='dees.', klas=coring.Diger)
 
         # events as ordered by first seen ordinals
         self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)

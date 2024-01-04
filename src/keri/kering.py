@@ -511,7 +511,14 @@ class MisfitEventSourceError(ValidationError):
         raise MisfitEventSourceError("error message")
     """
 
+class MissingDelegableApprovalError(ValidationError):
+    """
+    Error referenced event missing from log so can't verify this txn state event
+    Usage:
+        raise MissingDelegableApprovalError("error message")
+    """
 
+MissingDelegableApprovalError
 
 
 # Stream Parsing and Extraction Errors
