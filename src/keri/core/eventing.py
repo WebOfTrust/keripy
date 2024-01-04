@@ -2749,58 +2749,77 @@ class Kever:
 
         if delseqner is None and delsaider is None:
             if self.locallyOwned(delpre):  # local delegator so virtual delegation
-                # create virtual anchor seal so local delegator can evaluate
-                # superseding logic with provisional virtual seal
-                dkever = self.kevers[delpre]
-                dseal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)
-                dserder = interact(pre=dkever.prefixer.qb64,
-                                           dig=dkever.serder.said,
-                                           sn=dkever.sner.num + 1,
-                                           data=[dseal._asdict()])
-                delseqner = coring.Seqner(snh=dserder.snh)
-                delsaider = coring.Saider(qb64=dserder.said)
+                # won't get to here if not local and locallyOwned(delpre) already
+                # misfit escrowed
+                pass
+                #
+                ## ToDo XXXX This logic moves to the Delegation escrow processing
+                ## process
+                ## ToDo XXXX  need to cue task here  to approve delegation by generating
+                ## an anchoring SealEvent of serder in delegators KEL
+                ## may include MFA and or business logic for the delegator i.e. is local
+                ## event that designates this controller as delegator triggers
+                ## this cue to approave delegation
+                ##self.cues.push(dict(kin="approveDelegation",
+                                        ##delegator=kever.delpre,
+                                        ##serder=serder))
+
+                ## ToDo XXXX put this event in delegation escrow for delegator approval
+                ## any virtual delegation or sandboxing logic happens there
+                ## create virtual anchor seal so local delegator can evaluate
+                ## superseding logic with provisional virtual seal
+                #dkever = self.kevers[delpre]
+                #dseal = SealEvent(i=serder.pre, s=serder.snh, d=serder.said)
+                #dserder = interact(pre=dkever.prefixer.qb64,
+                                           #dig=dkever.serder.said,
+                                           #sn=dkever.sner.num + 1,
+                                           #data=[dseal._asdict()])
+                #delseqner = coring.Seqner(snh=dserder.snh)
+                #delsaider = coring.Saider(qb64=dserder.said)
             else:  # not local delegator so escrow
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
                 raise MissingDelegationError(f"No delegation seal for delegator "
-                                             "{delpre} of evt = {serder.ked}.")
+                                         "{delpre} of evt = {serder.ked}.")
 
         ssn = validateSN(sn=delseqner.snh, inceptive=False)  # delseqner Number should already do this
         #ssn = sner.num sner is Number seqner is Seqner
         # ToDo XXXX need to replace Seqners with Numbers
 
         # if local delegator then we already created virtual dserder for delegating event
-        if not self.locallyOwned(delpre):  # not local delegator
-            # get the dig of the delegating event. Using getKeLast ensures delegating
-            #  event has not already been superceded
-            key = snKey(pre=delpre, sn=ssn)  # database key
-            raw = self.db.getKeLast(key)  # get dig of delegating event
+        #if not self.locallyOwned(delpre):  # not local delegator
 
-            if raw is None:  # no delegating event at key pre, sn
-                # ToDo XXXX process  this cue of query to fetch delegating event from
-                # delegator
-                self.cues.push(dict(kin="query", q=dict(pre=delpre,
-                                                                  sn=delseqner.snh,
-                                                                  dig=delsaider.qb64)))
 
-                #  escrow event here
-                inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
-                sn = validateSN(sn=serder.snh, inceptive=inceptive)
-                self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
-                self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
-                raise MissingDelegationError("No delegating event from {} at {} for "
-                                             "evt = {}.".format(delpre,
-                                                                delsaider.qb64,
-                                                                serder.ked))
+        # get the dig of the delegating event. Using getKeLast ensures delegating
+        #  event has not already been superceded
+        key = snKey(pre=delpre, sn=ssn)  # database key
+        raw = self.db.getKeLast(key)  # get dig of delegating event
 
-            # get the delegating event from dig
-            ddig = bytes(raw)
-            key = dgKey(pre=delpre, dig=ddig)  # database key
-            raw = self.db.getEvt(key)
-            if raw is None:   # drop event
-                raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
-                                      "".format(delpre, ddig, serder.ked))
+        if raw is None:  # no delegating event at key pre, sn
+            # ToDo XXXX process  this cue of query to fetch delegating event from
+            # delegator
+            self.cues.push(dict(kin="query", q=dict(pre=delpre,
+                                                              sn=delseqner.snh,
+                                                              dig=delsaider.qb64)))
 
-            dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
+            #  escrow event here
+            inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
+            sn = validateSN(sn=serder.snh, inceptive=inceptive)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers, local=local)
+            self.escrowPACouple(serder=serder, seqner=delseqner, saider=delsaider)
+            raise MissingDelegationError("No delegating event from {} at {} for "
+                                         "evt = {}.".format(delpre,
+                                                            delsaider.qb64,
+                                                            serder.ked))
+
+        # get the delegating event from dig
+        ddig = bytes(raw)
+        key = dgKey(pre=delpre, dig=ddig)  # database key
+        raw = self.db.getEvt(key)
+        if raw is None:   # drop event
+            raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
+                                  "".format(delpre, ddig, serder.ked))
+
+        dserder = serdering.SerderKERI(raw=bytes(raw))  # delegating event
 
 
         # compare digests to make sure they match here
@@ -3545,23 +3564,26 @@ class Kevery:
                     # one receipt is generated not two
                     self.cues.push(dict(kin="witness", serder=serder))
 
-                if (self.local and
-                    kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
-                    # ToDo XXXX  need to cue task here  to approve delegation by generating
-                    # an anchoring SealEvent of serder in delegators KEL
-                    # may include MFA and or business logic for the delegator i.e. is local
-                    # event that designates this controller as delegator triggers
-                    # this cue to approave delegation
-                    self.cues.push(dict(kin="approveDelegation",
-                                            delegator=kever.delpre,
-                                            serder=serder))
-
                 if self.local and kever.locallyOwned():
                     # ToDo XXXX process  this cue of query to send event to delegator
                     # to trigger generation of anchor in delegating event
                     # note for remote validators there is query cue in
                     # validateDelegation to query for anchoring event seal
                     pass
+
+                # Moved logic to kever.validateDelegation trigger for delegation escrow
+                #if (self.local and
+                    #kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
+                    ## ToDo XXXX  need to cue task here  to approve delegation by generating
+                    ## an anchoring SealEvent of serder in delegators KEL
+                    ## may include MFA and or business logic for the delegator i.e. is local
+                    ## event that designates this controller as delegator triggers
+                    ## this cue to approave delegation
+                    #self.cues.push(dict(kin="approveDelegation",
+                                            #delegator=kever.delpre,
+                                            #serder=serder))
+
+
 
 
 
@@ -3649,23 +3671,24 @@ class Kevery:
                         # one receipt is generated not two
                         self.cues.push(dict(kin="witness", serder=serder))
 
-                    if (self.local and
-                        kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
-                        # ToDo XXXX  need to cue task here  to approve delegation by generating
-                        # an anchoring SealEvent of serder in delegators KEL
-                        # may include MFA and or business logic for the delegator i.e. is local
-                        # event that designates this controller as delegator triggers
-                        # this cue to approave delegation
-                        self.cues.push(dict(kin="approveDelegation",
-                                                delegator=kever.delpre,
-                                                serder=serder))
-
                     if self.local and kever.locallyOwned():
                         # ToDo XXXX process  this cue of query to send event to delegator
                         # to trigger generation of anchor in delegating event
                         # note for remote validators there is query cue in
                         # validateDelegation to query for anchoring event seal
                         pass
+
+                    # Moved logic to kever.validateDelegation trigger for delegation escrow
+                    #if (self.local and
+                        #kever.locallyOwned(kever.delpre if kever.delpre is not None else '')):  # delpre may be None
+                        ## ToDo XXXX  need to cue task here  to approve delegation by generating
+                        ## an anchoring SealEvent of serder in delegators KEL
+                        ## may include MFA and or business logic for the delegator i.e. is local
+                        ## event that designates this controller as delegator triggers
+                        ## this cue to approave delegation
+                        #self.cues.push(dict(kin="approveDelegation",
+                                                #delegator=kever.delpre,
+                                                #serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
