@@ -2595,11 +2595,12 @@ class Kever:
             witnessing logic. This means a local (protected) event may be
             accepted into  a witness' KEL when fully signed by its controller.
 
-            Delegator may accept a delegated event prior to it anchoring
+            Delegator may escrow or sandbox a delegated event prior to it anchoring
             a seal of the event in its KEL in order to trigger its approval logic.
             Alternatively the approval logic may be triggered immediately after
             it is received and authenticated on it its local (protected) channel
             but before it is submitted to its local Kevery for processing.
+
             The delegator MUST NOT accept a delegable event unless it is locally
             sourced, fully signed by its controller, and fully witnessed by its
             controller's designated witness pool.
