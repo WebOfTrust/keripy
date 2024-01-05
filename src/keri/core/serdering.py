@@ -433,7 +433,7 @@ class Serder:
                     logger.error("Invalid raw for Serder %s\n%s",
                                  self.pretty(), ex.args[0])
                     raise ValidationError(f"Invalid raw for Serder = "
-                                          f"{self._sad}.") from ex
+                                          f"{self._sad}. {ex.args[0]}") from ex
 
         elif sad or makify:  # serialize sad into raw or make sad
             if makify:  # recompute properties and said(s) and reset sad
