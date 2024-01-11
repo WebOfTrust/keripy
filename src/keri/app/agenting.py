@@ -484,6 +484,10 @@ class WitnessInquisitor(doing.DoDoer):
                     continue
 
                 ctrl, locs = random.choice(list(end.items()))
+                if len(locs.items()) == 0:
+                    logger.error(f"must have location in endpoint to query for pre={pre}")
+                    continue
+
                 witer = messengerFrom(hab=hab, pre=ctrl, urls=locs)
             else:
                 wit = random.choice(wits)
