@@ -255,10 +255,10 @@ class Verifier:
                 if (dtnow - dte) > datetime.timedelta(seconds=timeout):
                     # escrow stale so raise ValidationError which unescrows below
                     logger.info("Verifier unescrow error: Stale event escrow "
-                                " at said = %s\n", bytes(said))
+                                " at said = %s\n", said)
 
                     raise kering.ValidationError("Stale event escrow "
-                                                 "at said = {}.".format(bytes(said)))
+                                                 "at said = {}.".format(said))
 
                 self.processCredential(creder, prefixer, seqner, saider)
 
