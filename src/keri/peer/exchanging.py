@@ -81,7 +81,7 @@ class Exchanger:
 
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < seqner.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
-                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.sn)))
+                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
                     raise MissingSignatureError(f"Unable to find sender {prefixer.qb64} in kevers"
                                                 f" for evt = {serder.ked}.")
 
@@ -91,7 +91,7 @@ class Exchanger:
 
                 if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=pathed):
-                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.sn)))
+                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
                     raise MissingSignatureError(f"Not enough signatures in  {indices}"
                                                 f" for evt = {serder.ked}.")
 
