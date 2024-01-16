@@ -2333,7 +2333,7 @@ class Kever:
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
                                           seqner=delseqner, saider=delsaider):
                         # cue to query for witness receipts
-                        self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.sn)))
+                        self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.snh)))
                     raise MissingWitnessSignatureError(f"Failure satisfying toad={toader.num} "
                                                        f"on witness sigs="
                                                        f"{[siger.qb64 for siger in wigers]} "
