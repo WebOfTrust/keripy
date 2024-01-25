@@ -22,7 +22,7 @@ parser.add_argument('--registry-name', '-r', help='Human readable name for regis
                     default=None)
 parser.add_argument('--nonce', help='Unique random value to seed the credential registry',
                     default=None, required=False)
-parser.add_argument("--no-backers", "-nb", help="do not allow setting up backers different from the ahcnoring KEL "
+parser.add_argument("--no-backers", "-nb", help="do not allow setting up backers different from the anchoring KEL "
                                                 "witnesses", default=True, action="store")
 parser.add_argument('--backers', help='New set of backers different from the anchoring KEL witnesses.  Can '
                                       'appear multiple times', metavar="<prefix>", default=[], action="append",
