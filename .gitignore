@@ -140,3 +140,6 @@ config/
 
 # keripy virtualenv
 keripy/
+
+# ctags
+.tags
