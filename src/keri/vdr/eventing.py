@@ -415,8 +415,6 @@ def state(pre,
           sn,
           ri,
           eilk,
-          br,
-          ba,
           dts=None,  # default current datetime
           toad=None,  # default based on wits
           wits=None,  # default to []
@@ -436,8 +434,6 @@ def state(pre,
         said (str): digest of latest event
         ri (str): qb64 AID of credential registry
         eilk (str): message type (ilk) oflatest event
-        br (list): witness remove list (cuts)
-        ba (list): witness add list (adds)
         a (dict): key event anchored seal data
         dts (str) ISO 8601 formated current datetime
         toad (int): int of witness threshold
@@ -464,8 +460,6 @@ def state(pre,
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
         "bt": "1",
         "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
-        "br": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
-        "ba": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
         "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
         "c": ["EO"],
     }
@@ -503,14 +497,6 @@ def state(pre,
                              "".format(toad, list(witset)))
 
     cnfg = cnfg if cnfg is not None else []
-
-    if len(oset(br)) != len(br):  # duplicates in cuts
-        raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
-                         ".".format(br))
-
-    if len(oset(ba)) != len(ba):  # duplicates in adds
-        raise ValueError("Invalid adds = {} in latest est event, has duplicates"
-                         ".".format(ba))
 
     rsr = viring.RegStateRecord(
                vn=list(version),  # version number as list [major, minor]
@@ -797,8 +783,6 @@ class Tever:
 
 
         """
-        br = self.cuts
-        ba = self.adds
 
         cnfg = []
         if self.noBackers:
@@ -819,8 +803,6 @@ class Tever:
                       #a=dict(s=seqner.sn, d=diger.qb64),
                       toad=self.toad,
                       wits=self.baks,
-                      br=br,
-                      ba=ba,
                       cnfg=cnfg,
                       #kind=kind
                       )
