@@ -47,7 +47,7 @@ class rbdict(dict):
             if (rsr := self.reger.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                tever = eventing.Tever(stt=rsr, db=self.db, reger=self.reger)
+                tever = eventing.Tever(rsr=rsr, db=self.db, reger=self.reger)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             super(rbdict, self).__setitem__(k, tever)

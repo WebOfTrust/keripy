@@ -525,3 +525,29 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         keys = (creder.said, bobHab.pre)
         saider = bamReger.txnsb.saiderdb.get(keys=keys)
         assert saider.qb64b == b'EIxhyBA8h6BMmtWEJzqNkoAquIkMucpXbdY3kQX25GQu'
+
+
+def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIso8601):
+
+    with habbing.openHby(name="bob", base="test") as hby:
+
+        bobHab = hby.makeHab(name="bob", isith='1', icount=1,)
+        assert bobHab.pre == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
+
+        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        bobHab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=bobHab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=bobHab.kever.serder.said))
+        regery.processEscrows()
+
+        assert issuer.regk == 'ECbNKwkTjZqsfwNLxTnraPImegy1YeQ2-pCrTBQmu3i6'
+
+        rsr = regery.reger.states.get(keys=issuer.regk)
+        tever = eventing.Tever(rsr=rsr, reger=regery.reger)
+        assert tever.regk == issuer.regk
+        assert tever.pre == bobHab.pre
