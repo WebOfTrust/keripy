@@ -682,7 +682,7 @@ class Tever:
     """
     NoBackers = False
 
-    def __init__(self, cues=None, stt=None, serder=None, seqner=None, saider=None,
+    def __init__(self, cues=None, rsr=None, serder=None, seqner=None, saider=None,
                  bigers=None, db=None, reger=None, noBackers=None, estOnly=None,
                  regk=None, local=False):
         """ Create incepting tever and state from registry inception serder
@@ -691,7 +691,7 @@ class Tever:
 
         Parameters:
             serder (Serder): instance of registry inception event
-            stt (Serder): transaction state notice state message Serder
+            rsr (RegStateRecord): transaction state notice state message Serder
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event said from controlling KEL.
             bigers (list): list of Siger instances of indexed backer signatures of
@@ -711,7 +711,7 @@ class Tever:
 
         """
 
-        if not (stt or serder):
+        if not (rsr or serder):
             raise ValueError("Missing required arguments. Need state or serder")
 
         self.reger = reger if reger is not None else viring.Reger()
@@ -720,8 +720,8 @@ class Tever:
         self.db = db if db is not None else basing.Baser(reopen=True)
         self.local = True if local else False
 
-        if stt:  # preload from state
-            self.reload(stt)
+        if rsr:  # preload from state
+            self.reload(rsr)
             return
 
         self.version = serder.version
@@ -758,40 +758,34 @@ class Tever:
 
         self.regk = self.prefixer.qb64
 
-    def reload(self, ksn):
+    def reload(self, rsr):
         """ Reload Tever attributes (aka its state) from state serder
 
         Reload Tever attributes (aka its state) from state serder
 
         Parameters:
-            ksn (Serder): instance of key stat notice 'ksn' message body
+            rsr (RegStateRecord): instance of key stat notice 'ksn' message body
 
         """
 
-        for k in TSN_LABELS:
-            if k not in ksn.ked:
-                raise ValidationError("Missing element = {} from {} event."
-                                      " evt = {}.".format(k, Ilks.ksn,
-                                                          ksn.pretty()))
+        ked = asdict(rsr)
 
-        self.version = ksn.version
-        self.pre = ksn.ked["ii"]
-        self.regk = ksn.ked["i"]
+        self.version = rsr.vn
+        self.pre = ked["ii"]
+        self.regk = ked["i"]
         self.prefixer = Prefixer(qb64=self.regk)
-        self.sn = ksn.sn
-        self.ilk = ksn.ked["et"]
-        self.toad = int(ksn.ked["bt"], 16)
-        self.baks = ksn.ked["b"]
-        self.cuts = ksn.ked["br"]
-        self.adds = ksn.ked["ba"]
+        self.sn = int(ked['s'], 16)
+        self.ilk = ked["et"]
+        self.toad = int(ked["bt"], 16)
+        self.baks = ked["b"]
 
-        self.noBackers = True if TraitDex.NoBackers in ksn.ked["c"] else False
-        self.estOnly = True if TraitDex.EstOnly in ksn.ked["c"] else False
+        self.noBackers = True if TraitDex.NoBackers in ked["c"] else False
+        self.estOnly = True if TraitDex.EstOnly in ked["c"] else False
 
         if (raw := self.reger.getTvt(key=dgKey(pre=self.prefixer.qb64,
-                                               dig=ksn.ked['d']))) is None:
+                                               dig=ked['d']))) is None:
             raise kering.MissingEntryError("Corresponding event for state={} not found."
-                                           "".format(ksn.pretty()))
+                                           "".format(ked))
         self.serder = serdering.SerderKERI(raw=bytes(raw))
 
     def state(self):  #state(self, kind=Serials.json)
