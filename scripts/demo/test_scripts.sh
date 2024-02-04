@@ -53,7 +53,7 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
-rintf "Running challenge.sh"
+printf "Running challenge.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/challenge.sh"
 isSuccess
