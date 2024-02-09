@@ -450,7 +450,7 @@ class ConfirmDoer(doing.DoDoer):
 
         if approve:
             # Create and parse the event with "their" signatures
-            rserder = serdering.SerderKERI(ked=rpy)
+            rserder = serdering.SerderKERI(sad=rpy)
             anc = bytearray(rserder.raw) + pathed["rpy"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -512,7 +512,7 @@ class ConfirmDoer(doing.DoDoer):
             # Create and parse the event with "their" signatures
             registryName = input("Name for Registry: ")
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(ked=anc)
+            aserder = serdering.SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -522,7 +522,7 @@ class ConfirmDoer(doing.DoDoer):
             self.psr.parseOne(ims=bytes(anc))
 
             vcp = embeds["vcp"]
-            vserder = serdering.SerderKERI(ked=vcp)
+            vserder = serdering.SerderKERI(sad=vcp)
             try:
                 self.rgy.tvy.processEvent(serder=vserder)
             except kering.MissingAnchorError:
@@ -606,7 +606,7 @@ class ConfirmDoer(doing.DoDoer):
         if approve:
             # Create and parse the event with "their" signatures
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(ked=anc)
+            aserder = serdering.SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -616,7 +616,7 @@ class ConfirmDoer(doing.DoDoer):
             self.psr.parseOne(ims=bytes(anc))
 
             iss = embeds["iss"]
-            iserder = serdering.SerderKERI(ked=iss)
+            iserder = serdering.SerderKERI(sad=iss)
             try:
                 self.rgy.tvy.processEvent(serder=iserder)
             except kering.MissingAnchorError:
@@ -690,8 +690,8 @@ class ConfirmDoer(doing.DoDoer):
         print(f"    Type: {schemer.sed['title']}")
         print(f"    Issued By: {hab.name} ({hab.pre})")
 
-        if "i" in creder.subject:
-            isse = creder.subject['i']
+        if "i" in creder.attrib:
+            isse = creder.attrib['i']
             contact = self.org.get(isse)
             if contact is not None and "alias" in contact:
                 print(f"    Issued To: {contact['alias']} ({isse})")
@@ -704,7 +704,7 @@ class ConfirmDoer(doing.DoDoer):
         if approve:
             # Create and parse the event with "their" signatures
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(ked=anc)
+            aserder = serdering.SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -714,7 +714,7 @@ class ConfirmDoer(doing.DoDoer):
             self.psr.parseOne(ims=bytes(anc))
 
             rev = embeds["rev"]
-            rserder = serdering.SerderKERI(ked=rev)
+            rserder = serdering.SerderKERI(sad=rev)
             try:
                 self.rgy.tvy.processEvent(serder=rserder)
             except kering.MissingAnchorError:
@@ -738,8 +738,8 @@ class ConfirmDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Credential {creder.said} revoked.")
-            if hab.witnesser() and 'i' in creder.subject:
-                recp = creder.subject['i']
+            if hab.witnesser() and 'i' in creder.attrib:
+                recp = creder.attrib['i']
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
                     serder = serdering.SerderKERI(raw=msg)
@@ -798,7 +798,7 @@ class ConfirmDoer(doing.DoDoer):
         approve = yn in ('', 'y', 'Y')
 
         if approve:
-            eserder = serdering.SerderKERI(ked=eexn)
+            eserder = serdering.SerderKERI(sad=eexn)
             anc = bytearray(eserder.raw) + pathed["exn"]
             self.psr.parseOne(ims=bytes(anc))
 
