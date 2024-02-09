@@ -1120,7 +1120,7 @@ class Parser:
                     if tsgs:
                         exc.processEvent(tsgs=tsgs, **args)
 
-                except AttributeError as e:
+                except AttributeError:
                     raise kering.ValidationError("No Exchange to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 
