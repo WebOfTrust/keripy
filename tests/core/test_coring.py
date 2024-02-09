@@ -67,7 +67,7 @@ def test_protos():
 
     """End Test"""
 
-def test_prodex():
+def test_protocol_genus_codex():
     """
     Test genera in ProDex as instance of ProtocolGenusCodex
 
@@ -2443,6 +2443,7 @@ def test_counter():
         'KERIProtocolStack': '--AAA',
     }
 
+    # new version 2
     #assert dataclasses.asdict(CtrDex) == {
         #'ControllerIdxSigs': '-A',
         #'WitnessIdxSigs': '-B',
@@ -2979,6 +2980,21 @@ def test_number():
     """
     Test Number subclass of Matter
     """
+
+    assert dataclasses.asdict(NumDex) == {
+        'Short': 'M',
+        'Long': '0H',
+        'Tall': 'R',
+        'Big': 'N',
+        'Large': 'S',
+        'Great': 'T',
+        'Huge': '0A',
+        'Vast': 'U'
+    }
+
+    assert Number.Codex == NumDex
+
+
     with pytest.raises(RawMaterialError):
         number = Number(raw=b'')
 
@@ -3121,14 +3137,14 @@ def test_number():
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
 
-    num = (256 ** 4 - 1)
-    assert num == 4294967295
+    num = (256 ** 5 - 1)
+    assert num == 1099511627775
     numh = f"{num:x}"
-    assert numh == 'ffffffff'
-    raw = b'\xff\xff\xff\xff'
-    code = NumDex.Long
-    nqb64 = '0HD_____'  # '0H_____w'
-    nqb2 = b'\xd0p\xff\xff\xff\xff'  # b'\xd0\x7f\xff\xff\xff\xf0'
+    assert numh == 'ffffffffff'
+    raw = b'\xff\xff\xff\xff\xff'
+    code = NumDex.Tall
+    nqb64 = 'RP______'  # '0HD_____'  # '0H_____w'
+    nqb2 = b'D\xff\xff\xff\xff\xff' # b'\xd0p\xff\xff\xff\xff'
 
     number = Number(num=num)
     assert number.code == code
@@ -3195,7 +3211,7 @@ def test_number():
     raw = b'\xff\xff\xff\xff\xff\xff\xff\xff'
     code = NumDex.Big
     nqb64 = 'NP__________'  # 'N__________8'
-    nqb2 = b'4\xff\xff\xff\xff\xff\xff\xff\xff'  # b'7\xff\xff\xff\xff\xff\xff\xff\xfc'
+    nqb2 = b'4\xff\xff\xff\xff\xff\xff\xff\xff'
 
     number = Number(num=num)
     assert number.code == code
@@ -3257,15 +3273,84 @@ def test_number():
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
 
-    num = (256 ** 16 - 1)
-    assert num == 340282366920938463463374607431768211455
+    num = (256 ** 11 - 1)
+    assert num == 309485009821345068724781055
     numh = f"{num:x}"
-    assert numh == 'ffffffffffffffffffffffffffffffff'
-    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
-    code = NumDex.Huge
-    nqb64 = '0AD_____________________'  # '0A_____________________w'
-    nqb2 = b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
-    #b'\xd0\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf0'
+    assert numh == 'ffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Large
+    nqb64 = 'SP______________' # 'NP__________'  # 'N__________8'
+    nqb2 = b'H\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff' # b'4\xff\xff\xff\xff\xff\xff\xff\xff'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    num = (256 ** 14 - 1)
+    assert num == 5192296858534827628530496329220095
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Great
+    nqb64 = 'TP__________________' # '0AD_____________________'
+    nqb2 = b'L\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    # b'\xd0\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
 
     number = Number(num=num)
     assert number.code == code
@@ -3327,6 +3412,78 @@ def test_number():
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
+
+    num = (256 ** 17 - 1)
+    assert num == 87112285931760246646623899502532662132735
+    numh = f"{num:x}"
+    assert numh == 'ffffffffffffffffffffffffffffffffff'
+    raw = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    code = NumDex.Vast
+    nqb64 = 'UP______________________' #'TP__________________'
+    nqb2 =  b'P\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+    # b'L\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+
+    number = Number(num=num)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(numh=numh)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(qb64=nqb64)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+    number = Number(qb2=nqb2)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
+
+    number = Number(raw=raw, code=code)
+    assert number.code == code
+    assert number.raw == raw
+    assert number.qb64 == nqb64
+    assert number.qb64b == nqb64.encode("utf-8")
+    assert number.qb2 == nqb2
+    assert number.num == num
+    assert number.numh == numh
+    assert number.positive
+    bs = ceil((len(number.code) * 3) / 4)
+    assert number.qb2[bs:] == number.raw
+
 
     # tests with wrong size raw for code short
     num = (256 ** 2 - 1)
@@ -6146,7 +6303,7 @@ if __name__ == "__main__":
     #test_counter()
     #test_prodex()
     #test_indexer()
-    #test_number()
+    test_number()
     #test_siger()
     #test_signer()
     #test_nexter()
@@ -6155,5 +6312,5 @@ if __name__ == "__main__":
     #test_labels()
     #test_prefixer()
     #test_genera()
-    test_prodex()
+    #test_protocol_genus_codex()
 

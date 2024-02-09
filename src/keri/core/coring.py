@@ -586,27 +586,6 @@ class DigCodex:
 DigDex = DigCodex()  # Make instance
 
 
-@dataclass(frozen=True)
-class NumCodex:
-    """
-    NumCodex is codex of Base64 derivation codes for compactly representing
-    numbers across a wide rage of sizes.
-
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Short:   str = 'M'  # Short 2 byte b2 number
-    Long:    str = '0H'  # Long 4 byte b2 number
-    Big:     str = 'N'  # Big 8 byte b2 number
-    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-NumDex = NumCodex()  # Make instance
-
-
 
 
 @dataclass(frozen=True)
@@ -1505,6 +1484,34 @@ class Seqner(Matter):
         return f"{self.sn:x}"  # "{:x}".format(self.sn)
 
 
+
+@dataclass(frozen=True)
+class NumCodex:
+    """
+    NumCodex is codex of Base64 derivation codes for compactly representing
+    numbers across a wide rage of sizes.
+
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Short:   str = 'M'  # Short 2 byte b2 number
+    Long:    str = '0H'  # Long 4 byte b2 number
+    Tall:    str = 'R'  # Tall 5 byte b2 number
+    Big:     str = 'N'  # Big 8 byte b2 number
+    Large:   str = 'S'  # Large 11 byte b2 number
+    Great:   str = 'T'  # Great 14 byte b2 number
+    Huge:    str = '0A'  # Huge 16 byte b2 number (same as Salt_128)
+    Vast:    str = 'U'  # Vast 17 byte b2 number
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+
+NumDex = NumCodex()  # Make instance
+
+
+
+
 class Number(Matter):
     """
     Number is subclass of Matter, cryptographic material, for ordinal counting
@@ -1557,6 +1564,7 @@ class Number(Matter):
 
     Methods:
     """
+    Codex = NumDex
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=NumDex.Short, num=None, numh=None, **kwa):
@@ -1606,14 +1614,26 @@ class Number(Matter):
             if num <= (256 ** 2 - 1):  # make short version of code
                 code = NumDex.Short
 
-            elif num <= (256 ** 4 - 1):  # make long version of code
-                code = code = NumDex.Long
+            #elif num <= (256 ** 4 - 1):  # make long version of code
+                #code = code = NumDex.Long
+
+            elif num <= (256 ** 5 - 1):  # make tall version of code
+                code = code = NumDex.Tall
 
             elif num <= (256 ** 8 - 1):  # make big version of code
                 code = code = NumDex.Big
 
-            elif num <= (256 ** 16 - 1):  # make huge version of code
-                code = code = NumDex.Huge
+            elif num <= (256 ** 11 - 1):  # make large version of code
+                code = code = NumDex.Large
+
+            elif num <= (256 ** 14 - 1):  # make great version of code
+                code = code = NumDex.Great
+
+            #elif num <= (256 ** 16 - 1):  # make huge version of code
+                #code = code = NumDex.Huge
+
+            elif num <= (256 ** 17 - 1):  # make vast version of code
+                code = code = NumDex.Vast
 
             else:
                 raise InvalidValueError(f"Invalid num = {num}, too large to encode.")
