@@ -11,7 +11,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.common import existing
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.vdr import credentialing
 
 logger = help.ogler.getLogger()
@@ -43,7 +43,7 @@ def export_credentials(args):
     """
     tels = args.tels
     kels = args.kels
-    chains = args.edge if args.edge is not None else {}
+    chains = args.chains if args.chains is not None else {}
 
     if args.full:
         tels = kels = chains = True
