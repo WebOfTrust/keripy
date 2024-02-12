@@ -94,7 +94,7 @@ class GrantDoer(doing.DoDoer):
         acdc = signing.serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
-            recp = creder.subject['i'] if 'i' in creder.subject else None
+            recp = creder.attrib['i'] if 'i' in creder.attrib else None
         elif self.recp in self.hby.kevers:
             recp = self.recp
         else:
